@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
+import { admitPacks, type BundleStamp, packContentHash } from '@skelly/engine/packs';
 import type { Plugin } from 'vite';
-import { admitPacks, type BundleStamp, packContentHash } from '../../engine/src/packs.ts';
 import { bundledPackDefines, PACK_ROOT_BASE, readAvailablePacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 

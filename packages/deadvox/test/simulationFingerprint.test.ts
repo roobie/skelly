@@ -10,6 +10,7 @@ import {
   fingerprintAfterHotChange,
   fingerprintSimulationSourceMap,
   fingerprintSimulationSources,
+  labelledPath,
   SIMULATION_ENTRIES,
   SIMULATION_EXCLUSIONS,
   type SimulationModuleGraphHost,
@@ -59,39 +60,39 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 // Unlike an exclusion, a rule here only records the file: a later runtime import brings it back
 // into identity, so a simulation use added later cannot hide behind it.
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
-  'src/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
-  'src/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
-  'src/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
-  'src/core/massProperties.ts':
+  'engine/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
+  'engine/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
+  'engine/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
+  'engine/core/massProperties.ts':
     'Voxel mass and bounds of built bodies for ragdolls and severed parts; no simulation module imports it.',
-  'src/core/actorClips.ts': 'Baked clip composer that no runtime module imports; its tests read it over a fixture.',
-  'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
-  'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
-  'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
-  'src/core/scenarioRoute.ts':
+  'engine/core/actorClips.ts': 'Baked clip composer that no runtime module imports; its tests read it over a fixture.',
+  'engine/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
+  'engine/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'engine/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
+  'engine/core/scenarioRoute.ts':
     'Test-only route-proof support; cityLots.ts imports only its types, and its value user scenarioCertificate.ts is test-only.',
-  'src/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
-  'src/core/firearmAimOffHand.ts':
+  'engine/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
+  'engine/core/firearmAimOffHand.ts':
     'Presentation-only hand-role projection; it does not alter simulation or save identity.',
-  'src/core/firearmAimPose.ts':
+  'engine/core/firearmAimPose.ts':
     'Presentation-only hand-pose projection; it does not alter simulation or save identity.',
-  'src/core/percentile.ts': 'Timing summary for the debug frame readout and the benchmark, not game runtime.',
-  'src/core/playerState.ts': 'Type-only contract; the imported interface erases from runtime code.',
+  'engine/core/percentile.ts': 'Timing summary for the debug frame readout and the benchmark, not game runtime.',
+  'engine/core/playerState.ts': 'Type-only contract; the imported interface erases from runtime code.',
   'src/game/debugNoclipStep.ts': 'Type-only contract; the imported interface erases from runtime code.',
   'src/game/mesherProtocol.ts': 'Type-only mesher messages; the imported types erase from runtime code.',
   'src/game/storageContract.ts':
     'Type-only save and mod storage contracts; the imported types erase from runtime code.',
-  'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
+  'engine/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
   'src/game/hearing.ts': 'Heard-sound record and occlusion, reached only through the excluded WebAudio adapter.',
   'src/game/bindingRegistry.ts':
     'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
   'src/game/voiceCaps.ts': 'Playback voice caps, reached only through the excluded WebAudio adapter.',
-  'src/core/schedulerIds.ts':
+  'engine/core/schedulerIds.ts':
     'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',
-  'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
-  'src/core/interactionAffordance.ts':
+  'engine/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
+  'engine/core/interactionAffordance.ts':
     'Presentation projection of the interaction highlight; replay applies recorded payloads, not the highlight.',
-  'src/core/stageMarks.ts':
+  'engine/core/stageMarks.ts':
     'Tutorial and playtest-observer stage values; core/site.ts imports only the type, so nothing simulated reads them.',
 };
 
@@ -140,8 +141,8 @@ async function mutateSimulationSource(
   before = '',
   after = '\n// Test-owned fingerprint mutation.\n',
 ) {
-  const target = resolve(projectRoot, path);
-  const sourcePath = relative(projectRoot, target).split(sep).join('/');
+  const target = labelledPath(projectRoot, path);
+  const sourcePath = path;
   const graph = await actualSimulationGraph();
   const original = graph.sources.get(sourcePath) ?? (await host.readFile(target));
   if (!original.includes(before)) {
@@ -164,13 +165,13 @@ describe('simulation source fingerprint', () => {
     const host = await actualSimulationHost();
     const proof = await collectSimulationSourceGraph(ADMISSION_ENTRIES, projectRoot, host);
     const simulation = await actualSimulationGraph();
-    for (const path of ['src/core/content.ts', 'src/core/bundleAdmission.ts', 'src/core/schema.ts']) {
+    for (const path of ['engine/core/content.ts', 'engine/core/bundleAdmission.ts', 'engine/core/schema.ts']) {
       expect(proof.sources.has(path)).toBe(true);
       expect(simulation.sources.has(path)).toBe(true);
     }
     const before = fingerprintSimulationSourceMap(proof.sources);
     const changed = new Map(proof.sources);
-    const path = 'src/core/bundleAdmission.ts';
+    const path = 'engine/core/bundleAdmission.ts';
     changed.set(path, `${changed.get(path)!}\n// Fixture admission policy mutation.\n`);
     expect(fingerprintSimulationSourceMap(changed)).not.toBe(before);
     const mutation = await mutateSimulationSource(host, path);
@@ -203,7 +204,7 @@ describe('simulation source fingerprint', () => {
     const cap = await mutateSimulationSource(host, 'src/presentation/audio.ts');
     expect(cap.value).toBe(original);
     expect(cap.included).toBe(false);
-    const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
+    const picker = await mutateSimulationSource(host, 'engine/core/soundPicker.ts', '`sound:', '`changed:');
     expect(picker.included).toBe(true);
     expect(picker.value).not.toBe(original);
     const admission = await mutateSimulationSource(
@@ -215,8 +216,8 @@ describe('simulation source fingerprint', () => {
     expect(admission.included).toBe(true);
     expect(admission.value).not.toBe(original);
     const graph = await actualSimulationGraph();
-    expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
-    expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/saveState.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/saveFormat.ts')).toBe(true);
   });
 
   it('ignores HUD/paper wording but fingerprints the gameplay interaction reach', async () => {
@@ -286,7 +287,7 @@ describe('simulation source fingerprint', () => {
     expect(firearmDrawing.value).toBe(original);
     const sharedFirearmTiming = await mutateSimulationSource(
       host,
-      'src/core/firearmAction.ts',
+      'engine/core/firearmAction.ts',
       '1 / action.roundsPerSimMinute',
       '2 / action.roundsPerSimMinute',
     );
@@ -325,11 +326,17 @@ describe('simulation source fingerprint', () => {
 
   it('classifies every core and game source module', async () => {
     const graph = await actualSimulationGraph();
-    expect(SIMULATION_EXCLUSIONS).toContain('src/core/assets.ts');
-    expect(NON_RUNTIME_SOURCE_RULES).not.toHaveProperty('src/core/assets.ts');
-    const modules = [...(await sourceFilesUnder('src/core')), ...(await sourceFilesUnder('src/game'))];
+    expect(SIMULATION_EXCLUSIONS).toContain('engine/core/assets.ts');
+    expect(NON_RUNTIME_SOURCE_RULES).not.toHaveProperty('engine/core/assets.ts');
+    // Engine files are labelled `engine/` in the manifest, as SIMULATION_ENTRIES names them.
+    const engineSource = relative(projectRoot, dirname(labelledPath(projectRoot, 'engine/core')));
+    const engineCore = await sourceFilesUnder(join(engineSource, 'core'));
+    const modules = [
+      ...engineCore.map((path) => `engine/${relative(engineSource, path).split(sep).join('/')}`),
+      ...(await sourceFilesUnder('src/game')),
+    ];
     const scopedExclusions = SIMULATION_EXCLUSIONS.filter(
-      (rule) => rule.startsWith('src/core/') || rule.startsWith('src/game/'),
+      (rule) => rule.startsWith('engine/core/') || rule.startsWith('src/game/'),
     );
     // Core/game rules must name individual files; a directory-wide exception would mask newly added modules.
     expect(scopedExclusions.every((rule) => rule.endsWith('.ts'))).toBe(true);
@@ -341,10 +348,10 @@ describe('simulation source fingerprint', () => {
       (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
     );
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
-    expect(graph.sources.has('src/core/authoredTerrain.mjs')).toBe(true);
-    expect(graph.sources.has('src/core/authoredTerrain.d.mts')).toBe(false);
+    expect(graph.sources.has('engine/core/authoredTerrain.mjs')).toBe(true);
+    expect(graph.sources.has('engine/core/authoredTerrain.d.mts')).toBe(false);
     // A vehicle piece's solid blocks come from its fitted parts, so that geometry decides collision.
-    expect(graph.sources.has('src/vehicles/solid.ts')).toBe(true);
+    expect(graph.sources.has('engine/vehicles/solid.ts')).toBe(true);
   });
 
   it('classifies the isolated feasibility graph separately from production and rejects WASM until explicitly owned', async () => {
@@ -392,10 +399,10 @@ describe('simulation source fingerprint', () => {
 
   it('fingerprints pure figure modules imported by the simulation', async () => {
     const graph = await actualSimulationGraph();
-    expect(graph.sources.has('src/core/pose.ts')).toBe(true);
-    expect(graph.sources.has('src/core/boneTree.ts')).toBe(true);
-    expect(graph.sources.has('src/core/fusedMassFigure.ts')).toBe(true);
-    expect(graph.sources.has('src/core/fusedMassCarving.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/pose.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/boneTree.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/fusedMassFigure.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/fusedMassCarving.ts')).toBe(true);
   });
 
   it('fingerprints shared model-schema changes imported by the simulation', async () => {

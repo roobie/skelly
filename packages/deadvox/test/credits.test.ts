@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
+
+import { mergeManifests, validateManifest } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
-import { mergeManifests, validateManifest } from '../../engine/src/content.ts';
 import { creditsViewModel, mountCredits } from '../src/ui/credits.ts';
 import { baseScreenText } from './baseRegistry.ts';
 

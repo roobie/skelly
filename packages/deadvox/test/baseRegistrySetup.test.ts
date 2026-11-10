@@ -6,7 +6,7 @@ import type { TestProject } from 'vitest/node';
 import { setup } from './baseRegistrySetup.ts';
 
 const fixture = vi.hoisted(() => ({ revision: 0 }));
-vi.mock('../src/core/content.ts', () => ({
+vi.mock('@skelly/engine/internal/core/content.ts', () => ({
   buildRegistry: () => ({ issues: [], registry: fixture }),
 }));
 

@@ -14,7 +14,8 @@ export interface RuntimeClosurePolicy {
   readonly leaves: readonly string[];
   /**
    * The runtime package's manifest. The workspaces its `dependencies` name are the libraries the runtime
-   * follows: a file of one is allowed when reached by the package name or from inside that library.
+   * follows: a file of one is allowed when reached by the package name or from inside that library. A runtime
+   * file may import only the npm packages it names there.
    */
   readonly manifest: string;
   /** Directories no runtime file, or local file it reaches, may reach, by any import route. */
@@ -36,13 +37,9 @@ export interface RuntimeClosureViolation {
 
 // The runtime leaves deadvox as its own package (#1532), so it may reach neither presentation code nor a
 // product's configuration, mods or pages; the forbidden entries name presentation even through a library.
+// `src/game` is the runtime still in deadvox; it reaches the runtime package as a library.
 export const RUNTIME_POLICY: RuntimeClosurePolicy = {
-  start: [
-    'packages/deadvox/src/core',
-    'packages/deadvox/src/vehicles',
-    'packages/deadvox/src/game',
-    'packages/deadvox/src/engine',
-  ],
+  start: ['packages/deadvox/src/game'],
   leaves: [],
   manifest: 'packages/deadvox/package.json',
   forbidden: [
@@ -54,6 +51,17 @@ export const RUNTIME_POLICY: RuntimeClosurePolicy = {
   forbiddenPackages: ['three', 'lit', 'lit-html'],
   viteRoot: 'packages/deadvox',
   tsconfig: 'packages/deadvox/tsconfig.json',
+};
+
+// The runtime package itself: it reaches no product package and no presentation, by any route.
+export const ENGINE_POLICY: RuntimeClosurePolicy = {
+  start: ['packages/engine/src'],
+  leaves: [],
+  manifest: 'packages/engine/package.json',
+  forbidden: ['packages/deadvox', 'packages/presentation'],
+  forbiddenPackages: RUNTIME_POLICY.forbiddenPackages,
+  viteRoot: 'packages/engine',
+  tsconfig: 'packages/engine/tsconfig.json',
 };
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
@@ -80,7 +88,7 @@ const PACKAGE_KEYS = new Set([
 // The tsconfig keys and compiler options the check models. Most cannot add files or change resolution;
 // the ones that can are constrained in `tsconfigInputs`: moduleResolution, module, paths, types (bare
 // package names, each classified like an import), lib (compiler library names) and include (paths inside
-// the package).
+// the package). customConditions needs no constraint: the check follows every condition of an `exports` value.
 const TSCONFIG_KEYS = new Set(['compilerOptions', 'include']);
 const BARE_TYPE_PACKAGE = /^(?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*(?:\/[a-z0-9][\w.-]*)*$/;
 const COMPILER_LIBRARY = /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*$/;
@@ -90,6 +98,7 @@ const COMPILER_OPTIONS = new Set([
   'target',
   'module',
   'moduleResolution',
+  'customConditions',
   'lib',
   'types',
   'strict',
@@ -331,6 +340,8 @@ interface Edge {
   readonly base?: string;
   /** A `new URL(…, import.meta.url)` target: a URL path relative to the importer, not a module specifier. */
   readonly url?: boolean;
+  /** A triple-slash `path` target: the compiler reads exactly that file, a declaration file included. */
+  readonly reference?: boolean;
 }
 
 interface AstNode {
@@ -628,7 +639,7 @@ function directiveEdges(value: string): Edge[] | string {
     if (name === 'types') {
       edges.push({ specifier: target, glob: false });
     } else if (name === 'path') {
-      edges.push({ specifier: target.startsWith('.') ? target : `./${target}`, glob: false });
+      edges.push({ specifier: target.startsWith('.') ? target : `./${target}`, glob: false, reference: true });
     } else if (name !== 'lib' && name !== 'no-default-lib') {
       return unreadable;
     }
@@ -718,6 +729,8 @@ class ClosureWalk {
   private readonly workspaces: readonly Workspace[];
   /** The directories of the workspace libraries the runtime package depends on. */
   private readonly libraries: readonly string[];
+  /** The packages the runtime package's manifest names in `dependencies`. */
+  private readonly dependencies: readonly string[];
   private readonly root: string;
   private readonly policy: RuntimeClosurePolicy;
 
@@ -729,6 +742,7 @@ class ClosureWalk {
       dependencies?: Record<string, string>;
     };
     const dependencies = Object.keys(manifest.dependencies ?? {});
+    this.dependencies = dependencies;
     this.libraries = this.workspaces.filter(({ name }) => dependencies.includes(name)).map(({ dir }) => dir);
     const roots = policy.start.map((dir) => sourceFilesUnder(root, dir));
     this.queue = roots.flatMap(({ files }) => files);
@@ -824,9 +838,10 @@ class ClosureWalk {
     }
     // Each listed type package is a dependency of every compiled file, so it is classified like an import.
     for (const name of inputs.types) {
-      // `@types/x` and `@types/scope__x` are the declarations of `x` and `@scope/x`.
+      // `@types/x` and `@types/scope__x` are the declarations of `x` and `@scope/x`. Type packages are
+      // development dependencies, so the dependencies rule does not apply to them.
       const declared = name.startsWith('@types/') ? name.slice('@types/'.length).replace(TYPES_SCOPE, '@$1/') : name;
-      this.resolveEdge(tsconfig, declared);
+      this.resolveEdge(tsconfig, declared, false);
     }
   }
 
@@ -849,8 +864,11 @@ class ClosureWalk {
       this.violations.push({ importer: file, specifier: '', target: '', reason: `uses ${edges}` });
       return;
     }
-    for (const { specifier, glob, base, url } of edges) {
-      if (url && !(MODULE_URL.test(specifier) && !URL_REWRITTEN.test(specifier))) {
+    for (const { specifier, glob, base, url, reference } of edges) {
+      const referenced = posix.normalize(posix.join(posix.dirname(file), specifier));
+      if (reference && DECLARATION_FILE.test(specifier) && isFile(join(this.root, referenced))) {
+        this.reach(file, specifier, referenced);
+      } else if (url && !(MODULE_URL.test(specifier) && !URL_REWRITTEN.test(specifier))) {
         // A module URL resolves against the importer's URL, never as a package name or from a root.
         this.violations.push({
           importer: file,
@@ -931,7 +949,7 @@ class ClosureWalk {
     return undefined;
   }
 
-  private resolveEdge(importer: string, specifier: string): void {
+  private resolveEdge(importer: string, specifier: string, shipped = true): void {
     // A query or hash would otherwise become part of a package name, so `three?raw` passes as a leaf.
     if (QUERY_OR_HASH.test(specifier)) {
       this.violations.push({ importer, specifier, target: '', reason: 'uses a query or hash suffix' });
@@ -946,6 +964,13 @@ class ClosureWalk {
       }
     } else if (this.policy.forbiddenPackages.includes(target.npm)) {
       this.violations.push({ importer, specifier, target: target.npm, reason: 'imports a forbidden package' });
+    } else if (shipped && !target.npm.startsWith('node:') && !this.dependencies.includes(target.npm)) {
+      this.violations.push({
+        importer,
+        specifier,
+        target: target.npm,
+        reason: 'imports a package its manifest does not name in dependencies',
+      });
     }
   }
 

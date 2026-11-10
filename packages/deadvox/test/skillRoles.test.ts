@@ -1,10 +1,9 @@
-import { expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
-import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
-import { planDisassembly } from '../../engine/src/core/disassembly.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { firearmSteadinessSkill } from '../../engine/src/core/skillTraining.ts';
-import { buildRegistry, type Registry, requiredContentIssues } from '../../engine/src/content.ts';
+import { buildRegistry, type Registry, requiredContentIssues } from '@skelly/engine/content';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { firearmSteadinessSkill } from '@skelly/engine/internal/core/skillTraining.ts';
 import {
   CraftCommands,
   claimed,
@@ -12,8 +11,9 @@ import {
   Inventory,
   planCraft,
   requirementStatus,
-} from '../../engine/src/inventory.ts';
-import { bindReach, Character, practiceForNextLevel, pryPlan } from '../../engine/src/sim.ts';
+} from '@skelly/engine/inventory';
+import { bindReach, Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';
+import { expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

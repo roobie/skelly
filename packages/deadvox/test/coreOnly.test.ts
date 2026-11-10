@@ -1,5 +1,5 @@
+import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { expect, it } from 'vitest';
-import { buildRegistry, requiredContentIssues } from '../../engine/src/content.ts';
 import { readBundledPacks } from '../tools/readBundledPacks.ts';
 
 /** Every core-tier mod's content files, as its manifest lists them, so a new core mod cannot skip this check. */

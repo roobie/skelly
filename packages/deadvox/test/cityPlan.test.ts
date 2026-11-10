@@ -1,16 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { buildRegistry } from '@skelly/engine/content';
 import {
   buildCityPlan,
   cityGridOf,
   perimeterGaps,
   scenarioPlanIssues,
   servicePlacement,
-} from '../../engine/src/core/cityPlan.ts';
-import { ScenarioCitySite, scenarioCityPopulation } from '../../engine/src/core/scenarioCity.ts';
-import type { ScenarioDef } from '../../engine/src/core/schema.ts';
-import { cellsOf, compileAssembly, compileTemplate, kitSlotChoices, placedSpawns } from '../../engine/src/core/templates.ts';
-import { generateChunk } from '../../engine/src/core/worldgen.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
+} from '@skelly/engine/internal/core/cityPlan.ts';
+import { ScenarioCitySite, scenarioCityPopulation } from '@skelly/engine/internal/core/scenarioCity.ts';
+import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
+import {
+  cellsOf,
+  compileAssembly,
+  compileTemplate,
+  kitSlotChoices,
+  placedSpawns,
+} from '@skelly/engine/internal/core/templates.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import {
   CHUNK,
   Chunk,
@@ -22,7 +27,8 @@ import {
   terrainShapeOf,
   toChunk,
   type Vec3,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

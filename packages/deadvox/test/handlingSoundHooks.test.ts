@@ -1,6 +1,6 @@
+import type { MoveStart } from '@skelly/engine/internal/core/handling.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import type { MoveStart } from '../../engine/src/core/handling.ts';
-import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
 import { handlingMoveCompleteCue, handlingMoveStartCue } from '../src/game/audioPresentation.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

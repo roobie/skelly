@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
-import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '../../engine/src/core/items.ts';
-import { planLiquidDraw } from '../../engine/src/core/liquids.ts';
-import type { RecipeDef } from '../../engine/src/content.ts';
+import type { RecipeDef } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '@skelly/engine/internal/core/items.ts';
+import { planLiquidDraw } from '@skelly/engine/internal/core/liquids.ts';
 import {
   CraftCommands,
   type CraftSources,
@@ -11,8 +10,9 @@ import {
   Inventory,
   ItemFactory,
   planCraft,
-} from '../../engine/src/inventory.ts';
-import { bindReach, Character } from '../../engine/src/sim.ts';
+} from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,

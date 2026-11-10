@@ -1,4 +1,4 @@
-import type { ColumnSource } from '../../../engine/src/core/site.ts';
+import type { ColumnSource } from '@skelly/engine/sim';
 import type { Session } from './session.ts';
 
 export const columnArrival = (session: Pick<Session, 'onColumn' | 'onColumnUnload'>, source: ColumnSource) => ({

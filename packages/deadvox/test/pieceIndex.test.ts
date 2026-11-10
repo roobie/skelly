@@ -1,8 +1,7 @@
 import process from 'node:process';
-import { describe, expect, it } from 'vitest';
-import type { BlockEntitiesState } from '../../engine/src/core/blockEntities.ts';
-import type { BrickOut } from '../../engine/src/core/solidBricks.ts';
-import type { FurnitureDef } from '../../engine/src/content.ts';
+import type { FurnitureDef } from '@skelly/engine/content';
+import type { BlockEntitiesState } from '@skelly/engine/internal/core/blockEntities.ts';
+import type { BrickOut } from '@skelly/engine/internal/core/solidBricks.ts';
 import {
   BlockEntities,
   type BlockEntity,
@@ -12,7 +11,8 @@ import {
   type Vec3,
   World,
   worldBricks,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

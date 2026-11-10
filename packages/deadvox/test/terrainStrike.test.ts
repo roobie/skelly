@@ -1,17 +1,14 @@
-import { Scene } from 'three';
-import { describe, expect, it, vi } from 'vitest';
-import { CanonicalTerrain, installColumn } from '../../engine/src/core/canonicalTerrain.ts';
-import { paddedIndex } from '../../engine/src/core/meshInput.ts';
-import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../../engine/src/core/site.ts';
-import type { BlockBox } from '../../engine/src/core/structure.ts';
-import { strikeTerrain } from '../../engine/src/core/terrainStrike.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { affectedChunks } from '../../engine/src/core/world.ts';
-import { BuildMode } from '../src/debug/build.ts';
-import { PILE_GRID } from '../../engine/src/inventory.ts';
-import { buildMesh } from '../../engine/src/mesh.ts';
-import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import type { BlockBlow } from '../../engine/src/sim.ts';
+import { CanonicalTerrain, installColumn } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
+import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
+import { strikeTerrain } from '@skelly/engine/internal/core/terrainStrike.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { affectedChunks } from '@skelly/engine/internal/core/world.ts';
+import { PILE_GRID } from '@skelly/engine/inventory';
+import { buildMesh } from '@skelly/engine/mesh';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import type { BlockBlow } from '@skelly/engine/sim';
 import {
   CHUNK,
   generateColumn,
@@ -21,7 +18,10 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { Scene } from 'three';
+import { describe, expect, it, vi } from 'vitest';
+import { BuildMode } from '../src/debug/build.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { playerTuning } from '../src/game/player.ts';

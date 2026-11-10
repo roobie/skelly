@@ -1,6 +1,6 @@
+import { buildSkyResult, sampleSky } from '@skelly/engine/sky';
+import type { Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { buildSkyResult, sampleSky } from '../../engine/src/sky.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { skyFixture } from './fixtures/sky.ts';
 

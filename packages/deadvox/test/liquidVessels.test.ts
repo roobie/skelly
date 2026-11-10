@@ -1,7 +1,7 @@
+import { craftComponentEligible, isEmpty, stackRoom } from '@skelly/engine/internal/core/items.ts';
+import type { LiquidContents } from '@skelly/engine/internal/core/schema.ts';
+import { Inventory, type Item, ItemFactory, weightOf } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { craftComponentEligible, isEmpty, stackRoom } from '../../engine/src/core/items.ts';
-import type { LiquidContents } from '../../engine/src/core/schema.ts';
-import { Inventory, type Item, ItemFactory, weightOf } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 

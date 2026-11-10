@@ -1,5 +1,5 @@
+import { claimed } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
-import { claimed } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('keeps aim feel policy keys disjoint from shared input and view control keys', () => {

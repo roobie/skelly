@@ -1,15 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import { ACTOR_FOOTSTEP_VOICE_CAP } from '../../engine/src/core/actorSystem.ts';
-import { MapEntityStore } from '../../engine/src/core/entities.ts';
+import { ACTOR_FOOTSTEP_VOICE_CAP } from '@skelly/engine/internal/core/actorSystem.ts';
+import { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
 import {
   advanceActorFootsteps,
   footstepEventAt,
   footstepEventForBlock,
   footstepSoundId,
   initialActorFootstepClock,
-} from '../../engine/src/core/footsteps.ts';
-import type { Actor, PlayerSense } from '../../engine/src/sim.ts';
-import { makeScale, type SolidAt, type Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/footsteps.ts';
+import type { Actor, PlayerSense } from '@skelly/engine/sim';
+import { makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

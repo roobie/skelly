@@ -1,9 +1,9 @@
+import { requireDayCycle } from '@skelly/engine/content';
+import { CONTACT_SKIN } from '@skelly/engine/internal/core/physics.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { actorBodyDimensions, dayPhaseAt } from '@skelly/engine/sim';
+import { makeScale, type SolidAt } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
-import { CONTACT_SKIN } from '../../engine/src/core/physics.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { requireDayCycle } from '../../engine/src/content.ts';
-import { actorBodyDimensions, dayPhaseAt } from '../../engine/src/sim.ts';
-import { makeScale, type SolidAt } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';

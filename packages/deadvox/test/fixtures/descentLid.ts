@@ -1,5 +1,5 @@
-import { doorPlan } from '../../../engine/src/inventory.ts';
-import type { BlockEntity } from '../../../engine/src/world.ts';
+import { doorPlan } from '@skelly/engine/inventory';
+import type { BlockEntity } from '@skelly/engine/world';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
 import type { Session } from '../../src/game/session.ts';
 

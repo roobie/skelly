@@ -1,3 +1,17 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import type { ColumnReveal } from '@skelly/engine/mesh';
+import {
+  type BlockEntities,
+  type BlockEntity,
+  type DoorPanelBox,
+  doorBarBox,
+  type Facing,
+  isBodyDoor,
+  panelFor,
+  poseKey,
+  rotationOf,
+  type Vec3,
+} from '@skelly/engine/world';
 import {
   BoxGeometry,
   type BufferGeometry,
@@ -12,20 +26,6 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import type { FurnitureDef } from '../../../engine/src/content.ts';
-import type { ColumnReveal } from '../../../engine/src/mesh.ts';
-import {
-  type BlockEntities,
-  type BlockEntity,
-  type DoorPanelBox,
-  doorBarBox,
-  type Facing,
-  isBodyDoor,
-  panelFor,
-  poseKey,
-  rotationOf,
-  type Vec3,
-} from '../../../engine/src/world.ts';
 import { doorDetail } from './doorDetail.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';

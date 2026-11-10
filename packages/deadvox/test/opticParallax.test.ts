@@ -1,10 +1,10 @@
+import { AimController } from '@skelly/engine/internal/core/aim.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { adsCameraEye, heldFirearmTransform, playerLookPose, sightedFirearmModel } from '@skelly/engine/pose';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import { Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { AimController } from '../../engine/src/core/aim.ts';
-import { firearmsSkillEffects } from '../../engine/src/core/firearmsSkill.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { adsCameraEye, heldFirearmTransform, playerLookPose, sightedFirearmModel } from '../../engine/src/pose.ts';
-import { firearmsCombatTuning } from '../../engine/src/sim.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { AIM } from './playerFixture.ts';

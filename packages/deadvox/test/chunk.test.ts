@@ -1,6 +1,6 @@
+import { CHUNK_VOLUME } from '@skelly/engine/internal/core/coords.ts';
+import { Chunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { CHUNK_VOLUME } from '../../engine/src/core/coords.ts';
-import { Chunk } from '../../engine/src/world.ts';
 import { farColumns } from '../src/game/streamer.ts';
 
 describe('Chunk', () => {

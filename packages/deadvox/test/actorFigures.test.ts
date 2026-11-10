@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
+import { actorFigure, actorFigureFileIssues, actorFigureKey } from '@skelly/engine/content';
+import { actorFigureIssues, validateContent } from '@skelly/engine/internal/core/content.ts';
+import type { ActorFigureDef } from '@skelly/engine/internal/core/schema.ts';
+import { FUSED_MASS_FIGURE_SEED } from '@skelly/engine/pose';
 import { describe, expect, it } from 'vitest';
-import { actorFigureIssues, validateContent } from '../../engine/src/core/content.ts';
-import type { ActorFigureDef } from '../../engine/src/core/schema.ts';
-import { actorFigure, actorFigureFileIssues, actorFigureKey } from '../../engine/src/content.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../../engine/src/pose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

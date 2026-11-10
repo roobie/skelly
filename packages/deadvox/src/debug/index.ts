@@ -1,8 +1,6 @@
-import { html, nothing, render, type TemplateResult } from 'lit-html';
-import { live } from 'lit-html/directives/live.js';
-import { type ActorDef, requireDayCycle, type WeatheringDef } from '../../../engine/src/content.ts';
-import { lookDefaultsOf, type ShadowState } from '../../../engine/src/look.ts';
-import { getBuildRevision } from '../../../engine/src/packs.ts';
+import { type ActorDef, requireDayCycle, type WeatheringDef } from '@skelly/engine/content';
+import { lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
+import { getBuildRevision } from '@skelly/engine/packs';
 import {
   type ActorAim,
   crosshairTarget,
@@ -13,9 +11,11 @@ import {
   firearmsCombatTuning,
   formatClock,
   type MeleeResult,
-} from '../../../engine/src/sim.ts';
-import { WEATHERING_RANGES, type WeatheringUrlState } from '../../../engine/src/sky.ts';
-import { raycast, type Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
+import { raycast, type Vec3 } from '@skelly/engine/world';
+import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';

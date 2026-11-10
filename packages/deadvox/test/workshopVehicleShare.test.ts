@@ -1,11 +1,11 @@
+import { BLUEPRINTS, meshGrid } from '@skelly/engine/vehicles';
+import type { BlockEntity } from '@skelly/engine/world';
 import type { BufferAttribute, Mesh } from 'three';
 import { expect, it, vi } from 'vitest';
-import { BLUEPRINTS, meshGrid } from '../../engine/src/vehicles.ts';
-import type { BlockEntity } from '../../engine/src/world.ts';
 import { type VehicleLook, vehicleModel } from '../src/render/workshopVehicle.ts';
 
-vi.mock('../src/vehicles/voxels.ts', async (original) => {
-  const actual = await original<typeof import('../../engine/src/vehicles/voxels.ts')>();
+vi.mock('@skelly/engine/internal/vehicles/voxels.ts', async (original) => {
+  const actual = await original<typeof import('@skelly/engine/internal/vehicles/voxels.ts')>();
   return { ...actual, meshGrid: vi.fn(actual.meshGrid) };
 });
 

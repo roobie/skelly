@@ -1,7 +1,7 @@
+import type { ActorDef } from '@skelly/engine/content';
+import { simRate } from '@skelly/engine/internal/core/time.ts';
+import { makeScale, type SolidAt, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { simRate } from '../../engine/src/core/time.ts';
-import type { ActorDef } from '../../engine/src/content.ts';
-import { makeScale, type SolidAt, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

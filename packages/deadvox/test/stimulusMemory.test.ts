@@ -1,8 +1,8 @@
+import type { VocalNoise } from '@skelly/engine/internal/core/actorSense.ts';
+import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
+import type { PlayerSense } from '@skelly/engine/sim';
+import { makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { VocalNoise } from '../../engine/src/core/actorSense.ts';
-import { canonicalJsonBytes } from '../../engine/src/core/canonicalJson.ts';
-import type { PlayerSense } from '../../engine/src/sim.ts';
-import { makeScale, type SolidAt, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

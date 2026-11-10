@@ -1,8 +1,8 @@
+import type { ActorFigureFile } from '@skelly/engine/content';
+import { bodySkeleton, decodeFrame, type Pose, quatToMat3, sampleClip, severedBoneSet } from '@skelly/engine/pose';
+import { reachTuning } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { ActorFigureFile } from '../../engine/src/content.ts';
-import { bodySkeleton, decodeFrame, type Pose, quatToMat3, sampleClip, severedBoneSet } from '../../engine/src/pose.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';

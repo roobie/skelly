@@ -1,16 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import { targetStanceWeight } from '../../engine/src/core/actorPose.ts';
-import { posedFusedMassRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import { activeFusedMassMembers } from '../../engine/src/core/actorState.ts';
-import { aimBasis } from '../../engine/src/core/aim.ts';
-import { carveAround, protectedCoreCell } from '../../engine/src/core/fusedMassCarving.ts';
-import { fusedMassStrikeOrigin } from '../../engine/src/core/fusedMassFigure.ts';
-import { FusedMassShape } from '../../engine/src/core/fusedMassShape.ts';
-import { pelletShotFromBasis, projectileShot } from '../../engine/src/core/pellets.ts';
-import { testedBricks } from '../../engine/src/core/solidBricks.ts';
-import { compileTemplate } from '../../engine/src/core/templates.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { actorFigure, actorFigureKey } from '../../engine/src/content.ts';
+import { actorFigure, actorFigureKey } from '@skelly/engine/content';
+import { targetStanceWeight } from '@skelly/engine/internal/core/actorPose.ts';
+import { posedFusedMassRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import { activeFusedMassMembers } from '@skelly/engine/internal/core/actorState.ts';
+import { aimBasis } from '@skelly/engine/internal/core/aim.ts';
+import { carveAround, protectedCoreCell } from '@skelly/engine/internal/core/fusedMassCarving.ts';
+import { fusedMassStrikeOrigin } from '@skelly/engine/internal/core/fusedMassFigure.ts';
+import { FusedMassShape } from '@skelly/engine/internal/core/fusedMassShape.ts';
+import { pelletShotFromBasis, projectileShot } from '@skelly/engine/internal/core/pellets.ts';
+import { testedBricks } from '@skelly/engine/internal/core/solidBricks.ts';
+import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import {
   actorPoseInputFor,
   FUSED_MASS_FIGURE_SEED,
@@ -21,10 +20,11 @@ import {
   NEUTRAL_AIM,
   posedActor,
   worldPosition,
-} from '../../engine/src/pose.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { actorAttackReachMetres, PLAYER_CHEST_METRES, type PlayerSense } from '../../engine/src/sim.ts';
-import { BlockEntities, makeScale, type Vec3, World } from '../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import { decodeSave } from '@skelly/engine/save';
+import { actorAttackReachMetres, PLAYER_CHEST_METRES, type PlayerSense } from '@skelly/engine/sim';
+import { BlockEntities, makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

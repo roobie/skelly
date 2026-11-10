@@ -1,8 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { StressCity } from '@skelly/engine/internal/core/city.ts';
+import { compileTemplate, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { makeScale, sitePalette } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { StressCity } from '../../engine/src/core/city.ts';
-import { compileTemplate, stackTemplate } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { makeScale, sitePalette } from '../../engine/src/world.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
 

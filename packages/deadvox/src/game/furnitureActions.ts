@@ -1,7 +1,7 @@
-import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
-import { claimed } from '../../../engine/src/core/capabilities.ts';
-import { movableRefusal, slidableFurniture } from '../../../engine/src/core/furnitureMove.ts';
-import type { Inventory } from '../../../engine/src/core/inventory.ts';
+import type { Inventory } from '@skelly/engine/inventory';
+import { claimed } from '@skelly/engine/inventory';
+import type { BlockEntity } from '@skelly/engine/world';
+import { movableRefusal, slidableFurniture } from '@skelly/engine/world';
 import { type ItemAction, ItemActionSelection } from './itemActions.ts';
 
 export const furnitureActionsFor = (inventory: Inventory, entity: BlockEntity, blockSize: number): ItemAction[] => {

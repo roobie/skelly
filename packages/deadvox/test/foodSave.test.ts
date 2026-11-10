@@ -1,8 +1,8 @@
+import { foodMillisecondsAt, spoilage } from '@skelly/engine/internal/core/food.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { foodMillisecondsAt, spoilage } from '../../engine/src/core/food.ts';
-import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
-import { savedItemTree } from '../../engine/src/core/itemTree.ts';
-import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';

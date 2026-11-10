@@ -1,8 +1,8 @@
+import type { DecalDef } from '@skelly/engine/content';
+import { Rng } from '@skelly/engine/math';
+import type { GameSeconds } from '@skelly/engine/sim';
+import { type BlockEntities, DECAL_KINDS, type Placement, panelFor, placedDecals } from '@skelly/engine/world';
 import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshLambertMaterial, Quaternion, Vector3 } from 'three';
-import type { DecalDef } from '../../../engine/src/content.ts';
-import { Rng } from '../../../engine/src/math.ts';
-import type { GameSeconds } from '../../../engine/src/sim.ts';
-import { type BlockEntities, DECAL_KINDS, type Placement, panelFor, placedDecals } from '../../../engine/src/world.ts';
 import { STAIN_NOISE_GLSL } from './bloodStain.ts';
 import { patchHeightFog } from './heightFog.ts';
 

@@ -1,9 +1,14 @@
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import {
+  gameMillisecondsAt,
+  PowerNetwork,
+  type PowerState,
+  type PowerTransition,
+} from '@skelly/engine/internal/core/power.ts';
+import { POWER_UNITS, type PowerDeviceDef } from '@skelly/engine/internal/core/powerContent.ts';
+import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
+import { dayPhaseAt } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { gameMillisecondsAt, PowerNetwork, type PowerState, type PowerTransition } from '../../engine/src/core/power.ts';
-import { POWER_UNITS, type PowerDeviceDef } from '../../engine/src/core/powerContent.ts';
-import { simTimestamp } from '../../engine/src/core/time.ts';
-import { dayPhaseAt } from '../../engine/src/sim.ts';
 import {
   deviceState,
   powerClock,

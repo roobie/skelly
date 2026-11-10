@@ -1,11 +1,11 @@
 import { deepStrictEqual } from 'node:assert/strict';
-import { beforeAll, expect, it, vi } from 'vitest';
-import { BundleAdmission } from '../../engine/src/core/bundleAdmission.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { BundleAdmission } from '@skelly/engine/internal/core/bundleAdmission.ts';
 // biome-ignore lint/performance/noNamespaceImport: the test spies on the live proof export used by admission.
-import * as cityPlan from '../../engine/src/core/cityPlan.ts';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { type BundleStamp, bundleSourceHash } from '../../engine/src/packs.ts';
+import * as cityPlan from '@skelly/engine/internal/core/cityPlan.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { type BundleStamp, bundleSourceHash } from '@skelly/engine/packs';
+import { beforeAll, expect, it, vi } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import { stampBundle } from '../tools/stampBundle.ts';
 import { startupContent } from './baseRegistry.ts';

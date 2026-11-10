@@ -1,7 +1,7 @@
+import type { ScreenText } from '@skelly/engine/content';
+import type { ScenarioRunState } from '@skelly/engine/sim';
+import { countText, decimalText, fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
-import type { ScreenText } from '../../../engine/src/content.ts';
-import type { ScenarioRunState } from '../../../engine/src/sim.ts';
-import { countText, decimalText, fillText } from '../../../engine/src/text.ts';
 
 export type WinCheckpoint = 'saved' | 'pending' | 'failed' | 'unavailable';
 

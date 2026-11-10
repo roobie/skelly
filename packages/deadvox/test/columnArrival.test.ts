@@ -1,8 +1,8 @@
+import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { CHUNK, Chunk, toChunk } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
-import type { EntitySpec } from '../../engine/src/core/blockEntities.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import { CHUNK, Chunk, toChunk } from '../../engine/src/world.ts';
 import { columnArrival } from '../src/game/columnArrival.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

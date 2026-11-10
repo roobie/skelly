@@ -3,6 +3,8 @@
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
+import type { ModelDef, Registry } from '@skelly/engine/content';
+import { attachmentFrame } from '@skelly/engine/pose';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   Bone,
@@ -19,8 +21,6 @@ import {
 } from 'three';
 import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import type { ModelDef, Registry } from '../../../engine/src/content.ts';
-import { attachmentFrame } from '../../../engine/src/pose.ts';
 import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';

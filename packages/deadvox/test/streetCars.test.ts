@@ -1,10 +1,10 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
+import { BLUEPRINTS } from '@skelly/engine/vehicles';
+import { CHUNK, type Chunk, CitySite, footprint, makeScale, terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { generateChunk } from '../../engine/src/core/worldgen.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { BLUEPRINTS } from '../../engine/src/vehicles.ts';
-import { CHUNK, type Chunk, CitySite, footprint, makeScale, terrainShapeOf, toChunk } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

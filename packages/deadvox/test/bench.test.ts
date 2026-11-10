@@ -1,3 +1,5 @@
+import { gameHours } from '@skelly/engine/internal/core/time.ts';
+import { percentile } from '@skelly/engine/math';
 import { describe, expect, it } from 'vitest';
 import {
   type BenchRecord,
@@ -23,8 +25,6 @@ import {
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats } from '../src/bench/stats.ts';
-import { gameHours } from '../../engine/src/core/time.ts';
-import { percentile } from '../../engine/src/math.ts';
 import { actorRendererFromUrl } from '../src/game/config.ts';
 
 describe('bench stats', () => {

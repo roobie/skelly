@@ -1,5 +1,5 @@
-import { getBuildRevision } from '../../../engine/src/packs.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import { getBuildRevision } from '@skelly/engine/packs';
+import type { Vec3 } from '@skelly/engine/world';
 import type { SkyRouteAttachment } from '../presentation/debugInterface.ts';
 import type { Engine } from '../presentation/engine.ts';
 import { forwardedActionHolds } from '../presentation/inputBindings.ts';

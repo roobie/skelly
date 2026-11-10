@@ -1,9 +1,9 @@
+import { requireDayCycle } from '@skelly/engine/content';
+import type { AcidSpitRelease } from '@skelly/engine/internal/core/actorSystem.ts';
+import { acidSpitWindupProgress } from '@skelly/engine/pose';
+import { dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import { makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { AcidSpitRelease } from '../../engine/src/core/actorSystem.ts';
-import { requireDayCycle } from '../../engine/src/content.ts';
-import { acidSpitWindupProgress } from '../../engine/src/pose.ts';
-import { dayPhaseAt, type PlayerSense } from '../../engine/src/sim.ts';
-import { makeScale, type SolidAt, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

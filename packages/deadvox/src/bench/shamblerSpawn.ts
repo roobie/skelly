@@ -1,6 +1,6 @@
-import type { Registry } from '../../../engine/src/content.ts';
-import type { ActorSystem } from '../../../engine/src/sim.ts';
-import type { Body } from '../../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { ActorSystem } from '@skelly/engine/sim';
+import type { Body } from '@skelly/engine/world';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 import { placeShamblerRing } from './shamblerPlacement.ts';

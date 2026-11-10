@@ -1,9 +1,9 @@
+import { actorFigure } from '@skelly/engine/content';
+import { FusedMassShape } from '@skelly/engine/internal/core/fusedMassShape.ts';
+import { testedBricks } from '@skelly/engine/internal/core/solidBricks.ts';
+import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { FusedMassShape } from '../../engine/src/core/fusedMassShape.ts';
-import { testedBricks } from '../../engine/src/core/solidBricks.ts';
-import { actorFigure } from '../../engine/src/content.ts';
-import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '../../engine/src/pose.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

@@ -1,6 +1,6 @@
+import type { Inventory } from '@skelly/engine/inventory';
+import type { MeleePoseFrame } from '@skelly/engine/pose';
 import type { PerspectiveCamera } from 'three';
-import type { Inventory } from '../../../engine/src/inventory.ts';
-import type { MeleePoseFrame } from '../../../engine/src/pose.ts';
 import { createHeldAnimation, type HeldHandlingFrame } from './actorAnimator.ts';
 import type { HeldItems } from './hands.ts';
 import type { PlayerMeshes } from './playerFigure.ts';

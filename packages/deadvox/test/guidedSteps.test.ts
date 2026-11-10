@@ -1,6 +1,6 @@
+import type { GuidanceDef, GuidanceGate } from '@skelly/engine/content';
+import { Inventory } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
-import type { GuidanceDef, GuidanceGate } from '../../engine/src/content.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
 import { type GuidanceObservation, GuidedSteps } from '../src/presentation/guidedSteps.ts';
 import { selectedGuidanceHint } from '../src/ui/guidedSteps.ts';
 import { baseRegistry } from './baseRegistry.ts';

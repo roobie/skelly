@@ -1,4 +1,4 @@
-import type { LookAtProfile } from '../../../engine/src/content.ts';
+import type { LookAtProfile } from '@skelly/engine/content';
 import {
   applyPoint,
   type Bone,
@@ -20,7 +20,7 @@ import {
   type Transform,
   transpose,
   type Vec3,
-} from '../../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
 
 export type LookAtState = Quat;
 export const LOOK_AT_REST: LookAtState = [0, 0, 0, 1];

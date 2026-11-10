@@ -1,7 +1,7 @@
+import type { Registry } from '@skelly/engine/content';
+import { findSpot } from '@skelly/engine/internal/core/items.ts';
+import { footprint, Inventory, type Item, ItemFactory, PILE_GRID, type Target } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { findSpot } from '../../engine/src/core/items.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { footprint, Inventory, type Item, ItemFactory, PILE_GRID, type Target } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const base = baseRegistry();

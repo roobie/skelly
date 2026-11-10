@@ -1,5 +1,10 @@
-import type { ModelBox } from '@skelly/thing-core/schema';
-import { describe, expect, it } from 'vitest';
+import {
+  buildRegistry,
+  type ContentSource,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  type VehicleFittingDef,
+} from '@skelly/engine/content';
 import {
   type CargoSpaceDef,
   cargoFitting,
@@ -8,18 +13,13 @@ import {
   fitIssue,
   placementRegion,
   snapBox,
-} from '../../engine/src/core/cargoSpace.ts';
-import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
-import { legalAddonPlacements, placeFitting } from '../../engine/src/core/vehicleBlueprint.ts';
-import type { VehicleInstance } from '../../engine/src/core/vehicleInstances.ts';
-import {
-  buildRegistry,
-  type ContentSource,
-  loadVehicleBlueprint,
-  type PlacedFitting,
-  type VehicleFittingDef,
-} from '../../engine/src/content.ts';
-import { ItemFactory, type ItemState } from '../../engine/src/inventory.ts';
+} from '@skelly/engine/internal/core/cargoSpace.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { legalAddonPlacements, placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import type { VehicleInstance } from '@skelly/engine/internal/core/vehicleInstances.ts';
+import { ItemFactory, type ItemState } from '@skelly/engine/inventory';
+import type { ModelBox } from '@skelly/thing-core/schema';
+import { describe, expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

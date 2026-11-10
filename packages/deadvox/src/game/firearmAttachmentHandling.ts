@@ -1,16 +1,25 @@
-import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import { claimed, claimedId } from '../../../engine/src/core/capabilities.ts';
-import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../../../engine/src/core/character.ts';
-import type { Registry } from '../../../engine/src/core/content.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../../../engine/src/core/firearmFitting.ts';
-import type { HandlingQueue, Job } from '../../../engine/src/core/handling.ts';
-import { handlingWeights, type Inventory, type Location, type Target } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import { slotsReason } from '../../../engine/src/core/magazine.ts';
-import { opticViewSettings } from '../../../engine/src/core/opticView.ts';
-import { stowTarget } from '../../../engine/src/core/options.ts';
-import { firearmsCombatTuning } from '../../../engine/src/core/skillTraining.ts';
+import type { Registry } from '@skelly/engine/content';
+import { type ActionText, actionText, fillText } from '@skelly/engine/input';
+import type { HandlingQueue, Job } from '@skelly/engine/inventory';
+import {
+  attachmentIdFor,
+  claimed,
+  claimedId,
+  defOf,
+  firearmSlotIds,
+  handlingWeights,
+  type Inventory,
+  type Item,
+  LIGHT_MOUNT_SLOT,
+  type Location,
+  SLING_SLOT,
+  slotsReason,
+  stowTarget,
+  type Target,
+} from '@skelly/engine/inventory';
+import { opticViewSettings } from '@skelly/engine/pose';
+import { firearmsCombatTuning, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 
 const ATTACHMENT_ACTION = 'firearm.attachment';
 

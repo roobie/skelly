@@ -2,9 +2,9 @@
 import { createHash } from 'node:crypto';
 // biome-ignore lint/correctness/noNodejsModules: This build-time utility runs in Vite's Node.js process.
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { canonicalJson } from '@skelly/engine/save';
 import { init, parse } from 'es-module-lexer';
 import { transformWithOxc } from 'vite';
-import { canonicalJson } from '../../engine/src/save.ts';
 
 export interface SimulationModuleGraphHost {
   resolve: (specifier: string, importer?: string) => Promise<string | undefined>;
@@ -261,7 +261,7 @@ const ENGINE_PREFIX = 'engine/';
 const engineSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../engine/src');
 
 /** The file an entry or exclusion names: `engine/` paths are in the runtime package, others in this project. */
-function labelledPath(projectRoot: string, label: string): string {
+export function labelledPath(projectRoot: string, label: string): string {
   return label.startsWith(ENGINE_PREFIX)
     ? resolve(engineSourceRoot(projectRoot), label.slice(ENGINE_PREFIX.length))
     : resolve(projectRoot, label);

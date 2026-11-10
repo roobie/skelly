@@ -1,16 +1,16 @@
-import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
 import {
   chargeOf,
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
   SunExposureCache,
-} from '../../engine/src/core/lights.ts';
-import { slotsReason } from '../../engine/src/core/magazine.ts';
-import { gameSeconds } from '../../engine/src/core/time.ts';
-import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
-import { makeScale, type SolidAt } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/lights.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { makeScale, type SolidAt } from '@skelly/engine/world';
+import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
+import { describe, expect, it } from 'vitest';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

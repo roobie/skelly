@@ -1,11 +1,17 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import { workInProgressItem } from '@skelly/engine/internal/core/inventory.ts';
+import {
+  pocketGroundItem,
+  quickbarTake,
+  quickMove,
+  toHands,
+  wieldOrPocket,
+} from '@skelly/engine/internal/core/options.ts';
+import type { ReachPlayer } from '@skelly/engine/internal/core/reach.ts';
+import { HandlingQueue, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
+import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { workInProgressItem } from '../../engine/src/core/inventory.ts';
-import { pocketGroundItem, quickbarTake, quickMove, toHands, wieldOrPocket } from '../../engine/src/core/options.ts';
-import type { ReachPlayer } from '../../engine/src/core/reach.ts';
-import type { FurnitureDef } from '../../engine/src/content.ts';
-import { HandlingQueue, Inventory, options, SLING_SLOT } from '../../engine/src/inventory.ts';
-import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '../../engine/src/sim.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

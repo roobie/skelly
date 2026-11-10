@@ -1,9 +1,9 @@
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { SkyFields } from '@skelly/engine/sky';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { afterEach, expect, it, vi } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { authoredSkyBoxes } from '../../engine/src/core/skyField.ts';
-import { graphicsTuningOf } from '../../engine/src/look.ts';
-import { SkyFields } from '../../engine/src/sky.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { createEngine } from '../src/presentation/engine.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';

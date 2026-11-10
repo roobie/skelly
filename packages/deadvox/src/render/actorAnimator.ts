@@ -1,6 +1,5 @@
-import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion, Vector3 } from 'three';
-import { type FigureDef, HELD_DISPLAY_KIND, type ModelDef } from '../../../engine/src/content.ts';
-import { defOf, type HandSide, Inventory, type Item, type Job } from '../../../engine/src/inventory.ts';
+import { type FigureDef, HELD_DISPLAY_KIND, type ModelDef } from '@skelly/engine/content';
+import { defOf, type HandSide, Inventory, type Item, type Job } from '@skelly/engine/inventory';
 import {
   type AimFrame,
   blendHeldFirearmTransforms,
@@ -19,9 +18,10 @@ import {
   revolverChamberPoint,
   sightedFirearmModel,
   throwStanceHandOffset,
-} from '../../../engine/src/pose.ts';
-import { dominantSide, firearmsCombatTuning } from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import { dominantSide, firearmsCombatTuning } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
+import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion, Vector3 } from 'three';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,

@@ -1,9 +1,9 @@
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { meleeCombatTuning } from '@skelly/engine/internal/core/skillTraining.ts';
+import { claimed } from '@skelly/engine/inventory';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { firearmsSkillEffects } from '../../engine/src/core/firearmsSkill.ts';
-import { handlingWeights } from '../../engine/src/core/inventory.ts';
-import { meleeCombatTuning } from '../../engine/src/core/skillTraining.ts';
-import { claimed } from '../../engine/src/inventory.ts';
-import { firearmsCombatTuning } from '../../engine/src/sim.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 import { advance, createRuntime } from './snapshotTestSupport.ts';

@@ -1,3 +1,10 @@
+import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '@skelly/engine/look';
+import type { MeshData } from '@skelly/engine/mesh';
+import { dayPhaseAt } from '@skelly/engine/sim';
+import { skyAt as skyAtCycle, sunShadowStrength } from '@skelly/engine/sky';
+import { CHUNK } from '@skelly/engine/world';
 import {
   BackSide,
   Box3,
@@ -18,14 +25,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
-import { SHADOW_DISTANCES } from '../../engine/src/core/mood.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '../../engine/src/look.ts';
-import type { MeshData } from '../../engine/src/mesh.ts';
-import { dayPhaseAt } from '../../engine/src/sim.ts';
-import { skyAt as skyAtCycle, sunShadowStrength } from '../../engine/src/sky.ts';
-import { CHUNK } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

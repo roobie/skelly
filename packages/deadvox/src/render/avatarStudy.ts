@@ -2,9 +2,9 @@
 // third-person view, so the art direction and the voxel class can be judged by eye. `?avatarStudy=` names
 // the model ids to show, comma-separated.
 
+import { FIGURE_BOXES } from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
 import { Group, type Object3D } from 'three';
-import { FIGURE_BOXES } from '../../../engine/src/pose.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import type { ModelLibrary } from './models.ts';
 import { type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';

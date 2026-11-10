@@ -1,8 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { benchmarkCityGrid, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { scenarioSources } from '@skelly/engine/internal/core/scenarioComposition.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { describe, expect, it } from 'vitest';
-import { benchmarkCityGrid, cityGridOf } from '../../engine/src/core/cityPlan.ts';
-import { scenarioSources } from '../../engine/src/core/scenarioComposition.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const EXCLUDED_ENTRY =

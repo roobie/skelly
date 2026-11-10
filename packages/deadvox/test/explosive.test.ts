@@ -1,22 +1,22 @@
-import { Mesh } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it, vi } from 'vitest';
-import type { ActorRegions } from '../../engine/src/core/actorRegions.ts';
-import type { Detonation } from '../../engine/src/core/actorSystem.ts';
-import { fragmentDirections } from '../../engine/src/core/explosive.ts';
-import { HUMANOID_REGION_NAMES } from '../../engine/src/core/humanoidRegionNames.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import type { Item } from '../../engine/src/inventory.ts';
-import { Rng } from '../../engine/src/math.ts';
+import type { ActorRegions } from '@skelly/engine/internal/core/actorRegions.ts';
+import type { Detonation } from '@skelly/engine/internal/core/actorSystem.ts';
+import { fragmentDirections } from '@skelly/engine/internal/core/explosive.ts';
+import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import type { Item } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import {
   decodeSave,
   encodeSave,
   type SaveContentKind,
   type SaveSnapshot,
   type SaveVersionComponents,
-} from '../../engine/src/save.ts';
-import { dominantSide } from '../../engine/src/sim.ts';
-import { makeScale, type SolidAt, type Vec3, World } from '../../engine/src/world.ts';
+} from '@skelly/engine/save';
+import { dominantSide } from '@skelly/engine/sim';
+import { makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
+import { Mesh } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { describe, expect, it, vi } from 'vitest';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { itemLook } from '../src/render/itemLook.ts';

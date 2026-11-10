@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest';
 import {
   posedActorBoneVoxelCenters,
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
-} from '../../engine/src/core/actorRegions.ts';
-import { PLAYER_ARM_REACH_M } from '../../engine/src/core/actorState.ts';
-import { actorPoseInputFor, type HumanoidHitRegion } from '../../engine/src/pose.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/actorRegions.ts';
+import { PLAYER_ARM_REACH_M } from '@skelly/engine/internal/core/actorState.ts';
+import { actorPoseInputFor, type HumanoidHitRegion } from '@skelly/engine/pose';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

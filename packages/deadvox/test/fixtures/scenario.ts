@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
-import type { StartPlacementDef } from '../../../engine/src/core/scenarioStart.ts';
-import type { StartDef } from '../../../engine/src/core/schema/starts.ts';
-import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../../engine/src/core/schema.ts';
-import { gameHours } from '../../../engine/src/core/time.ts';
-import { buildRegistry, type ContentSource, type Registry } from '../../../engine/src/content.ts';
+import { buildRegistry, type ContentSource, type Registry } from '@skelly/engine/content';
+import type { StartPlacementDef } from '@skelly/engine/internal/core/scenarioStart.ts';
+import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
+import type { MapPoolDef, ScenarioDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
 import {
   FIXTURE_BLOW_SOUND,

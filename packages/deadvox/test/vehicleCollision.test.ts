@@ -1,10 +1,10 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { type Pose, rotatedSize } from '@skelly/engine/internal/core/orientation.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { BLUEPRINTS } from '@skelly/engine/vehicles';
+import { BlockEntities, type BlockEntity, makeScale, rotationOf, stepBody, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { pickFurniture } from '../../engine/src/core/furniturePick.ts';
-import { type Pose, rotatedSize } from '../../engine/src/core/orientation.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { BLUEPRINTS } from '../../engine/src/vehicles.ts';
-import { BlockEntities, type BlockEntity, makeScale, rotationOf, stepBody, type Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';

@@ -1,6 +1,6 @@
+import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { ContentFileSchema } from '../../engine/src/core/schema.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('requires motion on weapon attacks, the unarmed attack and zombie melee moves', () => {

@@ -1,5 +1,4 @@
-import { safeParse } from 'valibot';
-import { describe, expect, it } from 'vitest';
+import { buildRegistry, type Registry } from '@skelly/engine/content';
 import {
   economyEligible,
   ItemEconomySchema,
@@ -15,12 +14,13 @@ import {
   placedTypeIssue,
   selectLootType,
   type WeightedCandidate,
-} from '../../engine/src/core/loot.ts';
-import { lootSourcesOf } from '../../engine/src/core/site.ts';
-import { compileTemplate, stackTemplate } from '../../engine/src/core/templates.ts';
-import { buildRegistry, type Registry } from '../../engine/src/content.ts';
-import { Rng } from '../../engine/src/math.ts';
-import { placementOf } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/loot.ts';
+import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
+import { compileTemplate, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { Rng } from '@skelly/engine/math';
+import { placementOf } from '@skelly/engine/world';
+import { safeParse } from 'valibot';
+import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 

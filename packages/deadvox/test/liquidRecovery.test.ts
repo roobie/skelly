@@ -1,10 +1,10 @@
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { disassemblyLiquidOutputs, planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
-import { disassemblyLiquidOutputs, planDisassembly } from '../../engine/src/core/disassembly.ts';
-import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
-import { CraftCommands, claimed, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { bindReach, Character, practiceForNextLevel } from '../../engine/src/sim.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,

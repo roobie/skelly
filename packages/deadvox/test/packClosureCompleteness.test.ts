@@ -1,6 +1,6 @@
+import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
+import { admitPacks } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
-import { buildRegistry, requiredContentIssues } from '../../engine/src/content.ts';
-import { admitPacks } from '../../engine/src/packs.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
 
 // A mod that consumes a provider must declare it, so loading the mod with only its declared closure and the core mods

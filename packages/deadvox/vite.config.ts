@@ -3,13 +3,12 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
+import { buildRevisionFromGit } from '@skelly/engine/packs';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
-import { launcherModCatalogue } from '../engine/src/modCatalogue.ts';
-import { buildRevisionFromGit } from '../engine/src/packs.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
 import { declaredAssetGlobsPlugin } from './tools/declaredAssetGlobsPlugin.ts';
 import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
@@ -193,12 +192,17 @@ const testFiles = runSweeps
 // Tests that use shipped content reach runtime internals through the engine's test-only subpath, which resolves
 // only under this condition. Vitest sets VITEST before it loads this config; the dev server, browser stages and
 // the product build never enable it. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
-// biome-ignore lint/style/noProcessEnv: Vitest's documented runner marker.
-const engineTestConditions = process.env.VITEST === 'true' ? ['skelly-engine-test'] : [];
+// Vitest gives each of its environments (`__vitest__` runs global setup) its own resolve options.
+const engineTestResolve = { resolve: { conditions: ['skelly-engine-test'] } };
+const engineTestEnvironments =
+  // biome-ignore lint/style/noProcessEnv: Vitest's documented runner marker.
+  process.env.VITEST === 'true'
+    ? // biome-ignore lint/style/useNamingConvention: Vitest names its global-setup environment.
+      { environments: { client: engineTestResolve, ssr: engineTestResolve, __vitest__: engineTestResolve } }
+    : {};
 
 export default defineConfig({
-  resolve: { conditions: [...defaultClientConditions, ...engineTestConditions] },
-  ssr: { resolve: { conditions: [...defaultServerConditions, ...engineTestConditions] } },
+  ...engineTestEnvironments,
   plugins: [
     // biome-ignore lint/style/noProcessEnv: publication tooling opts into the analytics described by its consent page.
     pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1'),

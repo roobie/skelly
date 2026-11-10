@@ -1,7 +1,8 @@
 // Read-only debug presentation: physical-unit formatting and approximate byte counts.
+
+import { formatClock } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import type { Object3D } from 'three';
-import { formatClock } from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import type { DebugReadout } from '../presentation/debugInterface.ts';
 
 type Measurements = Omit<DebugReadout, 'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors'>;

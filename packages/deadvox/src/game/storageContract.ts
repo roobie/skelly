@@ -1,6 +1,5 @@
 // What the game asks of save and mod storage, without naming a browser API: a host brings its own adapter.
-import type { SaveVersionComponents, SaveWorldOptions } from '../../../engine/src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../../../engine/src/core/saveState.ts';
+import type { SaveSnapshot, SaveVersionComponents, SaveWorldOptions } from '@skelly/engine/save';
 import type { BrowserMod } from './browserMods.ts';
 import type { RawSaveSlots } from './saveStorageProtocol.ts';
 

@@ -1,4 +1,4 @@
-import type { InputContext } from '../../../engine/src/core/inputActions.ts';
+import type { InputContext } from '@skelly/engine/input';
 import { type InputReplayRecorder, type ReplayStartState, restoreReplayStartState } from './inputReplay.ts';
 
 export interface ReplayPlayStateAccessors {

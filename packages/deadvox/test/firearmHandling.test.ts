@@ -1,26 +1,26 @@
-import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { aimBasis } from '../../engine/src/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '../../engine/src/core/character.ts';
-import { crosshairAimPoint } from '../../engine/src/core/crosshairTarget.ts';
-import { ejectSeconds } from '../../engine/src/core/firearmAction.ts';
-import { firearmsSkillEffects } from '../../engine/src/core/firearmsSkill.ts';
-import type { InventoryState } from '../../engine/src/core/inventory.ts';
-import { slotsReason } from '../../engine/src/core/magazine.ts';
-import type { PelletShot } from '../../engine/src/core/pellets.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import type { Registry } from '../../engine/src/content.ts';
+import type { Registry } from '@skelly/engine/content';
+import { aimBasis } from '@skelly/engine/internal/core/aim.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
+import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
+import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import type { PelletShot } from '@skelly/engine/internal/core/pellets.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import {
   actionCycleSeconds,
   HandlingQueue,
   Inventory,
   type Item,
   pileScatterPlacements,
-} from '../../engine/src/inventory.ts';
-import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '../../engine/src/pose.ts';
-import type { SoundId } from '../../engine/src/sound.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/inventory';
+import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
+import type { SoundId } from '@skelly/engine/sound';
+import type { Vec3 } from '@skelly/engine/world';
+import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,

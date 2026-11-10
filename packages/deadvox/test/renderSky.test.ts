@@ -1,3 +1,4 @@
+import { skyAt } from '@skelly/engine/sky';
 import {
   Color,
   DirectionalLight,
@@ -10,7 +11,6 @@ import {
 } from 'three';
 import { expect, it } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { skyAt } from '../../engine/src/sky.ts';
 import { heightFogUniforms } from '../src/render/heightFog.ts';
 import { Mood } from '../src/render/mood.ts';
 import { applySky } from '../src/render/sky.ts';

@@ -1,21 +1,14 @@
 import { readFileSync } from 'node:fs';
+import { buildRegistry, type ContentSource } from '@skelly/engine/content';
+import { simSecondsPerHour } from '@skelly/engine/internal/core/clock.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { freshnessWord, isRotten, spoilage } from '@skelly/engine/internal/core/food.ts';
+import { chargeOf, drainLight, swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import { canSprint, consume, stepNeeds, stepStamina } from '@skelly/engine/internal/core/needs.ts';
+import { gameHours, gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { freshDropTarget, Inventory, type Item, ItemFactory, type Target, toggleLight } from '@skelly/engine/inventory';
+import { Body, type Needs } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { simSecondsPerHour } from '../../engine/src/core/clock.ts';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { freshnessWord, isRotten, spoilage } from '../../engine/src/core/food.ts';
-import { chargeOf, drainLight, swapBattery } from '../../engine/src/core/lights.ts';
-import { canSprint, consume, stepNeeds, stepStamina } from '../../engine/src/core/needs.ts';
-import { gameHours, gameSeconds } from '../../engine/src/core/time.ts';
-import { buildRegistry, type ContentSource } from '../../engine/src/content.ts';
-import {
-  freshDropTarget,
-  Inventory,
-  type Item,
-  ItemFactory,
-  type Target,
-  toggleLight,
-} from '../../engine/src/inventory.ts';
-import { Body, type Needs } from '../../engine/src/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';

@@ -1,10 +1,10 @@
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import type { EventRuleDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameHours } from '@skelly/engine/internal/core/time.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { dayPhaseAt } from '@skelly/engine/sim';
+import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { EventRuleDef } from '../../engine/src/core/schema.ts';
-import { gameHours } from '../../engine/src/core/time.ts';
-import { buildRegistry, requireDayCycle } from '../../engine/src/content.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import { dayPhaseAt } from '../../engine/src/sim.ts';
-import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

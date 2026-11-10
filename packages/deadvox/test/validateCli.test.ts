@@ -3,9 +3,9 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
+import { CONTENT_CAPABILITIES } from '@skelly/engine/internal/core/capabilities.ts';
 import { describe, expect, it } from 'vitest';
 import { validate as runValidation } from '../src/cli/validate.ts';
-import { CONTENT_CAPABILITIES } from '../../engine/src/core/capabilities.ts';
 
 const COMBINATION_CAP =
   /FAIL {2}test\/fixtures\/content\/recipe-too-many-combinations\.json recipes\[0\]\.components: (\d+) component combinations exceeds maximum (\d+)/;

@@ -1,4 +1,4 @@
-import type { BlockMaterialDef } from '../../engine/src/core/schema.ts';
+import type { BlockMaterialDef } from '@skelly/engine/internal/core/schema.ts';
 import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({

@@ -1,9 +1,9 @@
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
+import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '@skelly/engine/world';
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import type { SkySnapshot } from '../../engine/src/core/skySnapshot.ts';
-import { buildSkyResult, SkyFields, type SkyResult } from '../../engine/src/sky.ts';
-import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '../../engine/src/world.ts';
 import type { MesherPort, MesherSource } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { Skylight } from '../src/render/skylight.ts';

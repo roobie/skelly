@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   foodMillisecondsAt,
   isRotten,
@@ -6,10 +5,11 @@ import {
   servingDef,
   settleFoodExposure,
   spoilage,
-} from '../../engine/src/core/food.ts';
-import { restoreItem, snapshotItem, stackRoom } from '../../engine/src/core/items.ts';
-import { HandlingQueue, Inventory, ItemFactory } from '../../engine/src/inventory.ts';
-import { assertFoodExposure } from '../../engine/src/sim.ts';
+} from '@skelly/engine/internal/core/food.ts';
+import { restoreItem, snapshotItem, stackRoom } from '@skelly/engine/internal/core/items.ts';
+import { HandlingQueue, Inventory, ItemFactory } from '@skelly/engine/inventory';
+import { assertFoodExposure } from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

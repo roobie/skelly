@@ -1,4 +1,21 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared arm-chain assertions are called only by tests.
+
+import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '@skelly/engine/content';
+import { leanFrame } from '@skelly/engine/internal/core/lean.ts';
+import { meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { insideLensAperture } from '@skelly/engine/internal/core/opticView.ts';
+import { playerLookLean } from '@skelly/engine/internal/core/playerLookPose.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import {
+  meleePoseAndContact,
+  NEUTRAL_AIM,
+  opticViewSettings,
+  type PlayerStance,
+  playerAdsPose,
+  playerEyePosition,
+  readyMeleePose,
+} from '@skelly/engine/pose';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import {
   Box3,
   BoxGeometry,
@@ -20,22 +37,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { leanFrame } from '../../engine/src/core/lean.ts';
-import { meleeContactTime } from '../../engine/src/core/meleePose.ts';
-import { insideLensAperture } from '../../engine/src/core/opticView.ts';
-import { playerLookLean } from '../../engine/src/core/playerLookPose.ts';
-import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../../engine/src/content.ts';
-import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
-import {
-  meleePoseAndContact,
-  NEUTRAL_AIM,
-  opticViewSettings,
-  type PlayerStance,
-  playerAdsPose,
-  playerEyePosition,
-  readyMeleePose,
-} from '../../engine/src/pose.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';

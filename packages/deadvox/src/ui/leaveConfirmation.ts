@@ -1,4 +1,4 @@
-import { type RealSeconds, type RealTimestamp, realSeconds } from '../../../engine/src/sim.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds } from '@skelly/engine/sim';
 
 export interface LeaveConfirmationState {
   readonly gameRunning: boolean;

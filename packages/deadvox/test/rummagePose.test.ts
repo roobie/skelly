@@ -1,3 +1,7 @@
+import type { Registry } from '@skelly/engine/content';
+import { magazineWellCalibre } from '@skelly/engine/internal/core/magazine.ts';
+import { actionCycleSeconds, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { compassBearing } from '@skelly/engine/world';
 import {
   BoxGeometry,
   CircleGeometry,
@@ -9,10 +13,6 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { magazineWellCalibre } from '../../engine/src/core/magazine.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { actionCycleSeconds, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { compassBearing } from '../../engine/src/world.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';

@@ -1,11 +1,11 @@
+import type { Registry } from '@skelly/engine/content';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import { actorPoseInputFor } from '@skelly/engine/pose';
+import { decodeSave } from '@skelly/engine/save';
+import { siteGenerationOf } from '@skelly/engine/world';
 import { parse, safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import { ContentFileSchema } from '../../engine/src/core/schema.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { actorPoseInputFor } from '../../engine/src/pose.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { siteGenerationOf } from '../../engine/src/world.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

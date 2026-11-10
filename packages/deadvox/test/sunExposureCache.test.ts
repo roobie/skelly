@@ -1,8 +1,8 @@
+import { SunExposureCache } from '@skelly/engine/internal/core/lights.ts';
+import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import { parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
+import { CHUNK, terrainShapeOf } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { SunExposureCache } from '../../engine/src/core/lights.ts';
-import { terrainHeight } from '../../engine/src/core/worldgen.ts';
-import { parseTimeOfDay, realSeconds } from '../../engine/src/sim.ts';
-import { CHUNK, terrainShapeOf } from '../../engine/src/world.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';

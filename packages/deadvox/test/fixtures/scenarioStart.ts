@@ -1,7 +1,7 @@
-import { ladderOutward } from '../../../engine/src/core/ladders.ts';
-import type { ScenarioRouteSpace } from '../../../engine/src/core/scenarioRoute.ts';
-import type { ScenarioStart } from '../../../engine/src/core/scenarioStart.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import { ladderOutward } from '@skelly/engine/internal/core/ladders.ts';
+import type { ScenarioRouteSpace } from '@skelly/engine/internal/core/scenarioRoute.ts';
+import type { ScenarioStart } from '@skelly/engine/internal/core/scenarioStart.ts';
+import type { Vec3 } from '@skelly/engine/world';
 import { IDLE, type Session } from '../../src/game/session.ts';
 
 function assert(condition: unknown, message = 'Roof traversal invariant failed'): asserts condition {

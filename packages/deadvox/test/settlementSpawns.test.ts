@@ -1,5 +1,5 @@
+import { settlementActorSpawns } from '@skelly/engine/internal/core/settlementSpawns.ts';
 import { expect, it } from 'vitest';
-import { settlementActorSpawns } from '../../engine/src/core/settlementSpawns.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('applies type rarity to settlement markers and excludes zero-weight wanderers', () => {

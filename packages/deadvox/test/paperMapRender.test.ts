@@ -1,6 +1,6 @@
+import type { TerrainShape } from '@skelly/engine/internal/core/worldgen.ts';
+import { makeScale, paperMapBounds } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { TerrainShape } from '../../engine/src/core/worldgen.ts';
-import { makeScale, paperMapBounds } from '../../engine/src/world.ts';
 import {
   type PaperMapCacheKey,
   PaperMapRenderCache,

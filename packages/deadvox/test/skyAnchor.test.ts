@@ -1,9 +1,9 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import type { SkyVolume } from '@skelly/engine/internal/core/skylight.ts';
+import { containsSky, sampleSky } from '@skelly/engine/sky';
+import { BLOCK_SIZE, type BlockEntity, type Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, type Mesh, type MeshLambertMaterial } from 'three';
 import { expect, it } from 'vitest';
-import type { SkyVolume } from '../../engine/src/core/skylight.ts';
-import type { FurnitureDef } from '../../engine/src/content.ts';
-import { containsSky, sampleSky } from '../../engine/src/sky.ts';
-import { BLOCK_SIZE, type BlockEntity, type Vec3 } from '../../engine/src/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
 

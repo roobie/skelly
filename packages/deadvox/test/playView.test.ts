@@ -1,4 +1,13 @@
 import { runInNewContext } from 'node:vm';
+import { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
+import { inventoryLightSources } from '@skelly/engine/internal/core/lights.ts';
+import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import type { Actor } from '@skelly/engine/sim';
+import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
+import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
 import {
   BoxGeometry,
   DirectionalLight,
@@ -13,15 +22,6 @@ import {
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { MapEntityStore } from '../../engine/src/core/entities.ts';
-import { inventoryLightSources } from '../../engine/src/core/lights.ts';
-import type { SkyBounds } from '../../engine/src/core/skylight.ts';
-import type { SkySnapshot } from '../../engine/src/core/skySnapshot.ts';
-import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
-import { graphicsTuningOf } from '../../engine/src/look.ts';
-import type { Actor } from '../../engine/src/sim.ts';
-import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '../../engine/src/sky.ts';
-import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '../../engine/src/world.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { ThirdPersonOrbit } from '../src/presentation/thirdPersonOrbit.ts';
 import { productAssets } from '../src/product/assets.ts';

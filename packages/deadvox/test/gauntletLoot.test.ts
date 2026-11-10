@@ -1,9 +1,9 @@
+import { lootPointStream, lootPointsByColumn, rollLootParts } from '@skelly/engine/internal/core/loot.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
+import { magazineFits } from '@skelly/engine/inventory';
+import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { lootPointStream, lootPointsByColumn, rollLootParts } from '../../engine/src/core/loot.ts';
-import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import { lootSourcesOf } from '../../engine/src/core/site.ts';
-import { magazineFits } from '../../engine/src/inventory.ts';
-import { BLOCK_SIZE, makeScale } from '../../engine/src/world.ts';
 import { firearmModelForType } from '../src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

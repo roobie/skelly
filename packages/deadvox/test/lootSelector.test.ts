@@ -1,9 +1,9 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '@skelly/engine/internal/core/loot.ts';
+import { gamePerHour, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { chargeShare, Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import { describe, expect, it } from 'vitest';
-import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../../engine/src/core/loot.ts';
-import { gamePerHour, simSeconds } from '../../engine/src/core/time.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { chargeShare, Inventory } from '../../engine/src/inventory.ts';
-import { Rng } from '../../engine/src/math.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 

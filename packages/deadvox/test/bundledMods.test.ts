@@ -1,8 +1,8 @@
+import { perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
+import { admitWithFolderPacks, selectFolderClosure } from '@skelly/engine/internal/core/packAdmission.ts';
+import type { PackInput } from '@skelly/engine/packs';
+import { currentSaveVersionIdentity, decodeSave, encodeSave } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { perceivePlayer } from '../../engine/src/core/agentPerception.ts';
-import { admitWithFolderPacks, selectFolderClosure } from '../../engine/src/core/packAdmission.ts';
-import type { PackInput } from '../../engine/src/packs.ts';
-import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../../engine/src/save.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { buildBundledContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';

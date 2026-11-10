@@ -1,10 +1,10 @@
+import { meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveContentKind } from '@skelly/engine/save';
+import { dominantSide, offSide } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { meleeContactTime } from '../../engine/src/core/meleePose.ts';
-import { PlayerCombat } from '../../engine/src/core/playerCombat.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import { decodeSave, encodeSave, type SaveContentKind } from '../../engine/src/save.ts';
-import { dominantSide, offSide } from '../../engine/src/sim.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';

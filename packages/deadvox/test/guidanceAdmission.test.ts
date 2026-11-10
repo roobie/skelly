@@ -1,5 +1,5 @@
+import { buildRegistry } from '@skelly/engine/content';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../../engine/src/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('rejects dangling guidance fact gates instead of silently blocking a step', () => {

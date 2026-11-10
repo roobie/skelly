@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { buildRegistry, checkStartReachability } from '../../engine/src/content.ts';
+import { buildRegistry, checkStartReachability } from '@skelly/engine/content';
 import { readStackContentSources } from './readBundledPacks.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');

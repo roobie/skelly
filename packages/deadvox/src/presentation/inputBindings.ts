@@ -5,7 +5,7 @@ import {
   INVENTORY_TAB_BINDINGS,
   type InputContext,
   type Modifier,
-} from '../../../engine/src/input.ts';
+} from '@skelly/engine/input';
 import {
   BindingRegistry,
   chordIssue,

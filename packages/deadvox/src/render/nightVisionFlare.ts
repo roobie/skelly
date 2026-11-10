@@ -1,6 +1,6 @@
+import type { NightVision } from '@skelly/engine/content';
+import { raycast, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { type Camera, Vector3 } from 'three';
-import type { NightVision } from '../../../engine/src/content.ts';
-import { raycast, type SolidAt, type Vec3 } from '../../../engine/src/world.ts';
 import { type LightPool, NIGHT_VISION_HALOS } from './lightPool.ts';
 import type { Mood } from './mood.ts';
 

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import type { ContentFile } from '../../../engine/src/core/schema.ts';
-import type { ContentSource } from '../../../engine/src/content.ts';
+import type { ContentSource } from '@skelly/engine/content';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { fixtureIds } from './capabilityIds.ts';
 
 const combatPolicyJson = () =>

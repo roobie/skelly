@@ -1,10 +1,10 @@
 // The inventory's item viewer (`DESIGN.md`, "Inventory screen"): one item instance's own model, turned by dragging
 // and zoomed by the wheel. It only reads the item and draws it, so opening and closing it changes no game state.
 
+import type { GraphicsTuningDef } from '@skelly/engine/content';
+import type { Item } from '@skelly/engine/inventory';
 import { html, nothing, render } from 'lit-html';
 import type { Object3D } from 'three';
-import type { GraphicsTuningDef } from '../../../engine/src/content.ts';
-import type { Item } from '../../../engine/src/inventory.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';

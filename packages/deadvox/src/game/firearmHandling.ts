@@ -1,47 +1,60 @@
 // Item-owned chamber/cycle facts. Existing simulation/handling schedulers advance them;
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
-import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import type { AimBasis, AimFrame } from '../../../engine/src/core/aim.ts';
-import { claimed } from '../../../engine/src/core/capabilities.ts';
-import { dominantSide } from '../../../engine/src/core/character.ts';
-import type { ModelDef, Registry } from '../../../engine/src/core/content.ts';
-import { CHUNK, type Vec3 } from '../../../engine/src/core/coords.ts';
-import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../../../engine/src/core/firearmAction.ts';
-import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../../../engine/src/core/firearmAttachments.ts';
-import { isLongGun } from '../../../engine/src/core/firearmFitting.ts';
-import type { FirearmCycleState, FirearmState, PendingCase } from '../../../engine/src/core/firearmState.ts';
+import type { ModelDef, Registry } from '@skelly/engine/content';
+import { type ActionText, actionText, fillText } from '@skelly/engine/input';
+import type { FirearmCycleState, FirearmState, HandlingQueue, Job, PendingCase } from '@skelly/engine/inventory';
 import {
-  adsAcquisitionDuration,
-  type FirearmStanceEffects,
-  type FirearmsCombatTuning,
-  type FirearmsSkillShotKind,
-  type FirearmsSkillZeroHandling,
-  firearmStanceEffects,
-  firearmsSkillEffects,
-  skillZeroHandlingForFirearm,
-} from '../../../engine/src/core/firearmsSkill.ts';
-import type { HandlingQueue, Job } from '../../../engine/src/core/handling.ts';
+  actionCycleSeconds,
+  actionOpenSeconds,
+  actionPhaseSeconds,
+  claimed,
+  defOf,
+  dropSpots,
+  type dropTarget,
+  ejectSeconds,
+  firearmAttachmentResponse,
+  type Inventory,
+  type Item,
+  isLongGun,
+  magazineFits,
+  magazineSpec,
+  magazineWellCalibre,
+  muzzleLoad,
+  playerPockets,
+  settleOnWorld,
+  stowTarget,
+  wearFirearmAttachments,
+} from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import type { AimBasis, AimFrame } from '@skelly/engine/pose';
 import {
   type HeldFirearmTransformInput,
   type HeldSeatFrame,
   heldEjectionPose,
   heldGripOffset,
   modelToView,
-} from '../../../engine/src/core/heldPose.ts';
-import { dropSpots, type Inventory } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import { settleOnWorld } from '../../../engine/src/core/itemThrow.ts';
-import { magazineFits, magazineSpec, magazineWellCalibre } from '../../../engine/src/core/magazine.ts';
-import { countText } from '../../../engine/src/core/numberText.ts';
-import { type dropTarget, playerPockets, stowTarget } from '../../../engine/src/core/options.ts';
-import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../../../engine/src/core/pellets.ts';
-import { Rng } from '../../../engine/src/core/random.ts';
-import { raycast, type SolidAt } from '../../../engine/src/core/raycast.ts';
-import { revolverChamberPoint } from '../../../engine/src/core/revolverPose.ts';
-import { makeScale } from '../../../engine/src/core/scale.ts';
-import { firearmsCombatTuning } from '../../../engine/src/core/skillTraining.ts';
-import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
+  revolverChamberPoint,
+} from '@skelly/engine/pose';
+import {
+  adsAcquisitionDuration,
+  coneDirection,
+  dominantSide,
+  type FirearmStanceEffects,
+  type FirearmsCombatTuning,
+  type FirearmsSkillShotKind,
+  type FirearmsSkillZeroHandling,
+  firearmStanceEffects,
+  firearmsCombatTuning,
+  firearmsSkillEffects,
+  type PelletShot,
+  pelletShotFromBasis,
+  projectileShot,
+  skillZeroHandlingForFirearm,
+} from '@skelly/engine/sim';
+import type { SoundId } from '@skelly/engine/sound';
+import { countText } from '@skelly/engine/text';
+import { CHUNK, makeScale, raycast, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 import { type RevolverFrame, RevolverHandling } from './revolverHandling.ts';

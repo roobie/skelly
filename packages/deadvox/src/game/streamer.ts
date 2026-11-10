@@ -4,21 +4,22 @@
 // and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
 // and never need a second pass.
 
-import { installColumn } from '../../../engine/src/core/canonicalTerrain.ts';
-import type { Chunk } from '../../../engine/src/core/chunk.ts';
-import { revealedColumns } from '../../../engine/src/core/columnReveal.ts';
-import { CHUNK, chunkKey, toChunk, type Vec3 } from '../../../engine/src/core/coords.ts';
-import type { FencePostDefs } from '../../../engine/src/core/fencePosts.ts';
-import type { MeshData } from '../../../engine/src/core/mesher.ts';
-import { extractPadded, extractWide } from '../../../engine/src/core/meshInput.ts';
-import type { Scale } from '../../../engine/src/core/scale.ts';
-import type { SkySnapshot } from '../../../engine/src/core/skySnapshot.ts';
-import type { SkyResult } from '../../../engine/src/core/skyTransport.ts';
-import type { BlockBox } from '../../../engine/src/core/structure.ts';
-import type { WireMeshes } from '../../../engine/src/core/wireMesh.ts';
-import type { World } from '../../../engine/src/core/world.ts';
-import { isEnclosed } from '../../../engine/src/core/world.ts';
-import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../../../engine/src/core/worldgen.ts';
+import type { FencePostDefs, MeshData, WireMeshes } from '@skelly/engine/mesh';
+import { extractPadded, extractWide, revealedColumns } from '@skelly/engine/mesh';
+import type { SkyResult, SkySnapshot } from '@skelly/engine/sky';
+import type { BlockBox, Chunk, Scale, World } from '@skelly/engine/world';
+import {
+  CHUNK,
+  chunkKey,
+  generateColumn,
+  installColumn,
+  isEnclosed,
+  type Surface,
+  type TerrainBlocks,
+  type TerrainShape,
+  toChunk,
+  type Vec3,
+} from '@skelly/engine/world';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 
 const COLUMNS_PER_FRAME = 2;

@@ -1,16 +1,8 @@
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import type { FurnitureSpawn, Site } from '../../engine/src/core/site.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import type { Rect } from '../../engine/src/sim.ts';
-import {
-  CHUNK,
-  generateColumn,
-  makeScale,
-  sitePalette,
-  terrainShapeOf,
-  type Vec3,
-  World,
-} from '../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import type { FurnitureSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import type { Rect } from '@skelly/engine/sim';
+import { CHUNK, generateColumn, makeScale, sitePalette, terrainShapeOf, type Vec3, World } from '@skelly/engine/world';
 
 /**
  * The authored test house at the template scale, with its blocks generated on demand. A caller may pass the site

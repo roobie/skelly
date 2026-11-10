@@ -1,8 +1,8 @@
+import { actorFigure } from '@skelly/engine/content';
+import { burstBones, regionSeverableParts } from '@skelly/engine/internal/core/boneTree.ts';
+import { type Bone, bodySkeleton, severedBoneSet } from '@skelly/engine/pose';
+import type { BodyRegion } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { burstBones, regionSeverableParts } from '../../engine/src/core/boneTree.ts';
-import { actorFigure } from '../../engine/src/content.ts';
-import { type Bone, bodySkeleton, severedBoneSet } from '../../engine/src/pose.ts';
-import type { BodyRegion } from '../../engine/src/sim.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

@@ -1,10 +1,10 @@
+import { SECONDS_PER_HOUR } from '@skelly/engine/internal/core/clock.ts';
+import { stepNeeds } from '@skelly/engine/internal/core/needs.ts';
+import type { TreatmentDef } from '@skelly/engine/internal/core/schema.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Rng } from '@skelly/engine/math';
+import { BODY_REGIONS, Body, type BodyRegion, type Needs } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_HOUR } from '../../engine/src/core/clock.ts';
-import { stepNeeds } from '../../engine/src/core/needs.ts';
-import type { TreatmentDef } from '../../engine/src/core/schema.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { Rng } from '../../engine/src/math.ts';
-import { BODY_REGIONS, Body, type BodyRegion, type Needs } from '../../engine/src/sim.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const recoveryNeeds = (calories = 80): Needs => ({

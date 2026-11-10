@@ -1,9 +1,9 @@
+import { actorFigure } from '@skelly/engine/content';
+import { posedHumanoidRegionBoxes, posedRegionHitDistance } from '@skelly/engine/internal/core/actorRegions.ts';
+import type { HumanoidHitRegion } from '@skelly/engine/pose';
+import type { HitImpulse } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes, posedRegionHitDistance } from '../../engine/src/core/actorRegions.ts';
-import { actorFigure } from '../../engine/src/content.ts';
-import type { HumanoidHitRegion } from '../../engine/src/pose.ts';
-import type { HitImpulse } from '../../engine/src/sim.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { angularVelocity, type RigidBody } from '../src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

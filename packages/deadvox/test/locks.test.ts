@@ -1,10 +1,10 @@
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { type CoreMessageKey, coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { doorOptions, doorPlan, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { coreLabel } from '@skelly/engine/text';
+import { makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { type CoreMessageKey, coreMessage } from '../../engine/src/core/coreText.ts';
-import { placedPieces } from '../../engine/src/core/templates.ts';
-import { doorOptions, doorPlan, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { coreLabel } from '../../engine/src/text.ts';
-import { makeScale, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

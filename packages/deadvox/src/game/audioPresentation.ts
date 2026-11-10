@@ -1,12 +1,9 @@
-import { claimed } from '../../../engine/src/core/capabilities.ts';
-import type { Registry } from '../../../engine/src/core/content.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import { type DropReceiverContext, pileDropSound } from '../../../engine/src/core/dropSounds.ts';
-import type { MoveStart } from '../../../engine/src/core/handling.ts';
-import type { Location } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import type { BodyTuningDef } from '../../../engine/src/core/schema.ts';
-import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
+import type { BodyTuningDef, Registry } from '@skelly/engine/content';
+import type { Location, MoveStart } from '@skelly/engine/inventory';
+import { claimed, defOf, type Item } from '@skelly/engine/inventory';
+import type { SoundId } from '@skelly/engine/sound';
+import { type DropReceiverContext, pileDropSound } from '@skelly/engine/sound';
+import type { Vec3 } from '@skelly/engine/world';
 
 export interface HandlingSoundCue {
   readonly event: SoundId;

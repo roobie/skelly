@@ -1,4 +1,4 @@
-import type { PackInput } from '../../../engine/src/packs.ts';
+import type { PackInput } from '@skelly/engine/packs';
 
 export const fixturePack = (id: string, dependencies: string[], optIn: boolean): PackInput => ({
   source: `mods/${id}`,

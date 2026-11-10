@@ -3,23 +3,23 @@ import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { actorFigure, buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } from '@skelly/engine/pose';
+import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSolid } from '@skelly/engine/world';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { actorFigure, buildRegistry, requireDayCycle } from '../../../engine/src/content.ts';
-import { claimed } from '../../../engine/src/inventory.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } from '../../../engine/src/pose.ts';
-import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSolid } from '../../../engine/src/world.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 
 const args = process.argv.slice(2);
 if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-9a-f]{7,40}$/.test(args[1]))) {
   throw new Error('Usage: npm run bench:fused-mass -- [--shape-ref commit-sha]');
 }
-const shapeUrl = new URL('../core/fusedMassShape.ts', import.meta.url).href;
+const shapeUrl = new URL('core/fusedMassShape.ts', import.meta.resolve('@skelly/engine/sim')).href;
 let substituted = false;
 if (args.length > 0) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
   const source = stripTypeScriptTypes(
-    execFileSync('git', ['-C', root, 'show', `${args[1]}:packages/deadvox/src/core/fusedMassShape.ts`], {
+    execFileSync('git', ['-C', root, 'show', `${args[1]}:packages/engine/src/core/fusedMassShape.ts`], {
       encoding: 'utf8',
     }),
   );
@@ -34,7 +34,7 @@ if (args.length > 0) {
   });
 }
 // The simulation entry loads the shape, so it is imported only once the hook can substitute it.
-const { ActorSystem, dayPhaseAt } = await import('../../../engine/src/sim.ts');
+const { ActorSystem, dayPhaseAt } = await import('@skelly/engine/sim');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }

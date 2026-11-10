@@ -1,9 +1,9 @@
+import type { ModelDef } from '@skelly/engine/content';
+import { type CylinderState, HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
+import { revolverChamberPoint } from '@skelly/engine/pose';
 import { Box3, Matrix4, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import type { ModelDef } from '../../engine/src/content.ts';
-import { type CylinderState, HandlingQueue, Inventory, SIDES } from '../../engine/src/inventory.ts';
-import { revolverChamberPoint } from '../../engine/src/pose.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { actionPartPaths, cloneHeldModel, poseRevolverParts } from '../src/render/firearmModel.ts';

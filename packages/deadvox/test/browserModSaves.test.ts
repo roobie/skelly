@@ -1,7 +1,7 @@
+import { admitWithFolderPacks, selectFolderClosure } from '@skelly/engine/internal/core/packAdmission.ts';
+import { admitPacks, packContentHash } from '@skelly/engine/packs';
+import { contentPackDifferences, currentSaveVersionIdentity, decodeSave, encodeSave } from '@skelly/engine/save';
 import { expect, test } from 'vitest';
-import { admitWithFolderPacks, selectFolderClosure } from '../../engine/src/core/packAdmission.ts';
-import { admitPacks, packContentHash } from '../../engine/src/packs.ts';
-import { contentPackDifferences, currentSaveVersionIdentity, decodeSave, encodeSave } from '../../engine/src/save.ts';
 import { availablePackInputs, bundledPackInputs } from '../src/product/content.ts';
 import { folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';

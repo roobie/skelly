@@ -1,13 +1,13 @@
-import type { Registry, SenseDef, SoundDef, SoundRecipe } from '../../../engine/src/content.ts';
-import { claimed } from '../../../engine/src/inventory.ts';
+import type { Registry, SenseDef, SoundDef, SoundRecipe } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
 import {
   renderSoundRecipe,
   type SoundEmission,
   type SoundId,
   soundRecipeFor,
   soundVariantKey,
-} from '../../../engine/src/sound.ts';
-import type { SolidAt, Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sound';
+import type { SolidAt, Vec3 } from '@skelly/engine/world';
 import {
   type HeartbeatTarget,
   type HeartbeatTuning,

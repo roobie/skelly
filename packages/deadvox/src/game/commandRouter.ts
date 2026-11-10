@@ -2,26 +2,29 @@
 // modal UI takes a press, the input sample and session controls and trigger at the player tick, replayed actions,
 // screen commands, furniture use and the item throw, with the firearm and melee readiness gate those read.
 
-import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
-import { claimed } from '../../../engine/src/core/capabilities.ts';
-import { dominantSide, offSide } from '../../../engine/src/core/character.ts';
-import type { Registry } from '../../../engine/src/core/content.ts';
-import { CHUNK, type Vec3 } from '../../../engine/src/core/coords.ts';
-import { coreMessage } from '../../../engine/src/core/coreText.ts';
-import type { RecoveryChoices, WorkOperation } from '../../../engine/src/core/craftCommands.ts';
-import { throwStanceWorldOffset } from '../../../engine/src/core/heldPose.ts';
-import { type InputContext, inventoryTabForAction } from '../../../engine/src/core/inputActions.ts';
-import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
-import type { Item } from '../../../engine/src/core/items.ts';
-import { flightForItem, hasMetThrowMinimumHold, type ItemFlight, throwDistanceForItem } from '../../../engine/src/core/itemThrow.ts';
-import { offHandUse } from '../../../engine/src/core/lights.ts';
-import type { RestKind } from '../../../engine/src/core/longAction.ts';
-import { countText } from '../../../engine/src/core/numberText.ts';
-import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands, wieldOrPocket } from '../../../engine/src/core/options.ts';
-import { pryPlan } from '../../../engine/src/core/prying.ts';
-import type { Simulation } from '../../../engine/src/core/sim.ts';
-import { fillText as fillScreenText } from '../../../engine/src/core/textTemplate.ts';
+import type { Registry } from '@skelly/engine/content';
+import { actionText, fillText, type InputContext, inventoryTabForAction } from '@skelly/engine/input';
+import type { HandSide, Inventory, Item, RecoveryChoices, WorkOperation } from '@skelly/engine/inventory';
+import {
+  claimed,
+  doorOptions,
+  doorPlan,
+  dropTarget,
+  flightForItem,
+  hasMetThrowMinimumHold,
+  type ItemFlight,
+  offHandUse,
+  pocketGroundItem,
+  throwDistanceForItem,
+  toHands,
+  wieldOrPocket,
+} from '@skelly/engine/inventory';
+import { throwStanceWorldOffset } from '@skelly/engine/pose';
+import type { RestKind, Simulation } from '@skelly/engine/sim';
+import { dominantSide, offSide, pryPlan } from '@skelly/engine/sim';
+import { coreMessage, countText, fillText as fillScreenText } from '@skelly/engine/text';
+import type { BlockEntity } from '@skelly/engine/world';
+import { CHUNK, type Vec3 } from '@skelly/engine/world';
 import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DOOR_ACTION } from './doorAction.ts';

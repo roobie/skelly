@@ -1,8 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { stageMarkArea } from '@skelly/engine/sim';
+import { makeScale } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { stageMarkArea } from '../../engine/src/sim.ts';
-import { makeScale } from '../../engine/src/world.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

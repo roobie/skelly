@@ -4,144 +4,193 @@
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
 
-import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import { type ActorFigureFiles, actorFigure } from '../../../engine/src/core/actorFigureFiles.ts';
-import type { PlayerMovement, VocalNoise } from '../../../engine/src/core/actorSense.ts';
-import { ActorSpawner } from '../../../engine/src/core/actorSpawns.ts';
-import { type Actor, PLAYER_ARM_REACH_M } from '../../../engine/src/core/actorState.ts';
+import type { ActorBody, EventRuleDef } from '@skelly/engine/content';
 import {
-  type AcidGroundImpact,
-  ActorSystem,
-  BACKGROUND_ACTOR_RATE,
-  BACKGROUND_ACTOR_SLICE_COUNT,
-  BACKGROUND_ACTOR_SLICE_RATE,
-  type HitImpulse,
-  type MeleeResult,
-  type MeleeWeapon,
-} from '../../../engine/src/core/actorSystem.ts';
-import { loweredStanceTuning } from '../../../engine/src/core/agentPerception.ts';
+  type ActorFigureFiles,
+  actorFigure,
+  type RecipeDef,
+  type Registry,
+  requireDayCycle,
+} from '@skelly/engine/content';
+import { actionText, fillText } from '@skelly/engine/input';
+import type { ReadRequest } from '@skelly/engine/inventory';
+import {
+  CraftCommands,
+  type CraftPreference,
+  claimed,
+  claimedId,
+  corpseLootPoint,
+  craftActionHooks,
+  defOf,
+  dropSpots,
+  freshDropTarget,
+  HandlingQueue,
+  Inventory,
+  type Item,
+  inventoryLightSources,
+  type Job,
+  type Location,
+  type MoveStart,
+  planCraft,
+  playerWearHooks,
+  rollLoot,
+  SunExposureCache,
+  settleCell,
+  spendFuel,
+  type TickResult,
+  wearMeleeWeaponOnHit,
+} from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import type { PlayerStance } from '@skelly/engine/pose';
 import {
   AimController,
   type AimWobbleNoiseTuning,
+  advanceLean,
   aimDirection,
   breathSteadying,
+  createLeanGuard,
+  leanFrame,
   NEUTRAL_AIM,
+  playerAdsPose,
   playerAimTuning,
-} from '../../../engine/src/core/aim.ts';
-import { BearTraps } from '../../../engine/src/core/bearTrap.ts';
-import type { BlockBlow } from '../../../engine/src/core/blockDamage.ts';
-import { type BlockEntity, searchTime } from '../../../engine/src/core/blockEntities.ts';
-import { bookReadingHooks } from '../../../engine/src/core/bookReading.ts';
-import type { CanonicalTerrain } from '../../../engine/src/core/canonicalTerrain.ts';
-import { claimed, claimedId } from '../../../engine/src/core/capabilities.ts';
-import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../../../engine/src/core/character.ts';
-import { hourOfDay } from '../../../engine/src/core/clock.ts';
-import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../../../engine/src/core/collision.ts';
-import { createColumnSupply } from '../../../engine/src/core/columnSupply.ts';
-import { type RecipeDef, type Registry, requireDayCycle } from '../../../engine/src/core/content.ts';
-import { CHUNK, type Vec3 } from '../../../engine/src/core/coords.ts';
-import { coreMessage } from '../../../engine/src/core/coreText.ts';
-import { CraftCommands } from '../../../engine/src/core/craftCommands.ts';
-import { type CraftPreference, planCraft } from '../../../engine/src/core/crafting.ts';
-import { craftActionHooks } from '../../../engine/src/core/craftWork.ts';
-import { dayPhaseAt } from '../../../engine/src/core/dayPhase.ts';
-import { type EntityId, MapEntityStore } from '../../../engine/src/core/entities.ts';
-import { advanceEventRules } from '../../../engine/src/core/eventRules.ts';
-import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../../../engine/src/core/explosive.ts';
+  playerEyePosition,
+  playerHeldSeatFrame,
+  playerLeanBoxes,
+  playerLookPose,
+} from '@skelly/engine/pose';
+import { freezeSnapshot, restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '@skelly/engine/save';
+import type { BlockBlow, ColumnSource, PlayerMovement, VocalNoise } from '@skelly/engine/sim';
 import {
+  type AcidGroundImpact,
+  type Actor,
+  ActorSpawner,
+  ActorSystem,
+  advanceEventRules,
+  assertScenarioRun,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+  BearTraps,
+  type BlockJolt,
+  bindReach,
+  blastShare,
+  blockJolt,
+  bodyCentre,
+  bookReadingHooks,
+  Character,
+  canSprint,
+  dayPhaseAt,
+  pileDistance as distanceToPile,
+  dominantSide,
+  type EntityId,
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
+  Fuses,
+  firearmShotPracticeSkill,
+  firearmSteadinessSkill,
   firearmsSkillEffects,
+  foodMillisecondsAt,
+  fragmentDirections,
+  fragmentHitsOnBody,
+  furnitureDistance,
+  type HitImpulse,
+  hourOfDay,
+  inSight,
+  loweredStanceTuning,
+  MapEntityStore,
+  type MeleeResult,
+  type MeleeWeapon,
+  meleeBlock,
+  modified,
+  nearDiscoveryBox,
+  offSide,
+  PLAYER_ARM_REACH_M,
+  PlayerCombat,
+  pickFurniture,
+  pryPlan,
+  reachTuning,
+  firearmsCombatTuning as readFirearmsCombatTuning,
+  meleeCombatTuning as readMeleeCombatTuning,
+  type ScenarioDiscovery,
+  ScenarioRun,
+  type ShotTrace,
+  Simulation,
+  SKILL_LEVEL_MIN,
   sameFirearmsSkillZeroHandling,
+  simTimestamp,
+  skillActivityPractice,
+  skillActivityPracticeRate,
+  skillEffectLevel,
+  spendStamina,
   steadinessTuning,
-} from '../../../engine/src/core/firearmsSkill.ts';
-import { foliageRustle, initialRustleClock } from '../../../engine/src/core/foliageRustle.ts';
-import { foodMillisecondsAt } from '../../../engine/src/core/food.ts';
-import { advanceFootsteps, footstepEventAt, initialFootstepClock, isHardLanding } from '../../../engine/src/core/footsteps.ts';
+  stepStamina,
+  strikeTerrain,
+  traceShot,
+  vehicleDistance,
+} from '@skelly/engine/sim';
+import {
+  type IlluminationScene,
+  illuminationAt,
+  readingLightRefusal,
+  type SkyFieldOwner,
+  SkyFields,
+} from '@skelly/engine/sky';
+import type { SoundId } from '@skelly/engine/sound';
+import {
+  advanceFootsteps,
+  foliageRustle,
+  footstepEventAt,
+  initialFootstepClock,
+  initialRustleClock,
+  isHardLanding,
+  type SoundEmission,
+  type SoundEmissionMeta,
+  SoundPicker,
+} from '@skelly/engine/sound';
+import { coreMessage } from '@skelly/engine/text';
+import type { VehicleWorkTarget } from '@skelly/engine/vehicles';
+import { completeVehicleRemoval, VehicleOccupancy, VehicleParts, vehicleWorkHooks } from '@skelly/engine/vehicles';
+import type { CanonicalTerrain, Scale, World } from '@skelly/engine/world';
 import {
   advanceFloorLockedPlacement,
+  type BlockEntity,
+  type Body,
+  bodyOverlapsTerrain,
+  CHUNK,
+  CONTACT_SKIN,
+  climb,
+  createColumnSupply,
   type FurnitureMover,
   type FurnitureSlideWay,
   floorLockedPlacement,
   furnitureMoveStamina,
+  LadderHold,
   liftFurniture,
+  type PlacedPowerDevice,
   placeFurniture,
   placement,
+  raycast,
   removalRefusal,
   removeFurniture,
   ruinFurniture,
+  SitePower,
+  type SolidAt,
+  type SolidBricks,
+  searchTime,
+  siteGenerationOf,
   slideDestination,
   slideFurniture,
   spreadActorDrop,
+  stepBody,
+  terrainSolid,
   tipCarried,
   turnCarried,
-} from '../../../engine/src/core/furnitureMove.ts';
-import { pickFurniture } from '../../../engine/src/core/furniturePick.ts';
-import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../../../engine/src/core/handling.ts';
-import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../../../engine/src/core/illumination.ts';
-import { dropSpots, Inventory, type Location } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import { settleCell } from '../../../engine/src/core/itemThrow.ts';
-import { climb, LadderHold } from '../../../engine/src/core/ladders.ts';
-import { advanceLean, createLeanGuard, leanFrame } from '../../../engine/src/core/lean.ts';
-import { playerLeanBoxes } from '../../../engine/src/core/leanCollision.ts';
-import { inventoryLightSources, SunExposureCache } from '../../../engine/src/core/lights.ts';
-import { corpseLootPoint, rollLoot } from '../../../engine/src/core/loot.ts';
-import { type BlockJolt, blockJolt, meleeBlock } from '../../../engine/src/core/meleeCombat.ts';
-import { modified } from '../../../engine/src/core/modifiers.ts';
-import { canSprint, spendStamina, stepStamina } from '../../../engine/src/core/needs.ts';
-import { freshDropTarget } from '../../../engine/src/core/options.ts';
-import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../../../engine/src/core/physics.ts';
-import { playerAdsPose } from '../../../engine/src/core/playerAdsPose.ts';
-import { PlayerCombat } from '../../../engine/src/core/playerCombat.ts';
-import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../../../engine/src/core/playerLookPose.ts';
-import type { PlayerStance } from '../../../engine/src/core/playerStance.ts';
-import { pryPlan } from '../../../engine/src/core/prying.ts';
-import { Rng } from '../../../engine/src/core/random.ts';
-import { raycast, type SolidAt } from '../../../engine/src/core/raycast.ts';
-import {
-  bindReach,
-  pileDistance as distanceToPile,
-  furnitureDistance,
-  reachTuning,
-  vehicleDistance,
-} from '../../../engine/src/core/reach.ts';
-import type { ReadRequest } from '../../../engine/src/core/readable.ts';
-import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../../../engine/src/core/saveState.ts';
-import type { Scale } from '../../../engine/src/core/scale.ts';
-import { nearDiscoveryBox, type ScenarioDiscovery } from '../../../engine/src/core/scenarioDiscovery.ts';
-import { assertScenarioRun, ScenarioRun } from '../../../engine/src/core/scenarioRun.ts';
-import type { ActorBody } from '../../../engine/src/core/schema/actors.ts';
-import type { EventRuleDef } from '../../../engine/src/core/schema.ts';
-import { type ShotTrace, traceShot } from '../../../engine/src/core/shotTrace.ts';
-import { Simulation } from '../../../engine/src/core/sim.ts';
-import type { ColumnSource } from '../../../engine/src/core/site.ts';
-import { siteGenerationOf } from '../../../engine/src/core/sitePalette.ts';
-import { type PlacedPowerDevice, SitePower } from '../../../engine/src/core/sitePower.ts';
-import {
-  firearmShotPracticeSkill,
-  firearmSteadinessSkill,
-  firearmsCombatTuning as readFirearmsCombatTuning,
-  meleeCombatTuning as readMeleeCombatTuning,
-  skillActivityPractice,
-  skillActivityPracticeRate,
-} from '../../../engine/src/core/skillTraining.ts';
-import { type SkyFieldOwner, SkyFields } from '../../../engine/src/core/skyField.ts';
-import { freezeSnapshot } from '../../../engine/src/core/snapshotData.ts';
-import { type SolidBricks, worldBricks } from '../../../engine/src/core/solidBricks.ts';
-import type { SoundId } from '../../../engine/src/core/soundEvents.ts';
-import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../../../engine/src/core/soundPicker.ts';
-import { strikeTerrain } from '../../../engine/src/core/terrainStrike.ts';
-import { simTimestamp } from '../../../engine/src/core/time.ts';
-import { spendFuel } from '../../../engine/src/core/torch.ts';
-import type { VehicleWorkTarget } from '../../../engine/src/core/vehicleInstances.ts';
-import { VehicleParts } from '../../../engine/src/core/vehicleParts.ts';
-import { VehicleOccupancy } from '../../../engine/src/core/vehicleProjection.ts';
-import { completeVehicleRemoval } from '../../../engine/src/core/vehicleRemoval.ts';
-import { vehicleWorkHooks } from '../../../engine/src/core/vehicleWork.ts';
-import { playerWearHooks, wearMeleeWeaponOnHit } from '../../../engine/src/core/wear.ts';
-import type { World } from '../../../engine/src/core/world.ts';
+  type Vec3,
+  worldBricks,
+  worldMeleeBlocker,
+  worldSoundBlocking,
+} from '@skelly/engine/world';
 import { actorVoiceLaw } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';

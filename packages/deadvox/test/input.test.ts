@@ -1,6 +1,6 @@
+import type { ModelDef } from '@skelly/engine/content';
+import { makeScale } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ModelDef } from '../../engine/src/content.ts';
-import { makeScale } from '../../engine/src/world.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { Input, nextMenuCursor, requestInputLock } from '../src/presentation/input.ts';

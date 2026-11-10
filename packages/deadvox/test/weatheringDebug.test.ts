@@ -1,7 +1,7 @@
+import type { WeatheringDef } from '@skelly/engine/content';
+import { WEATHERING_RANGES } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
 import { LookControls } from '../src/debug/look.ts';
-import type { WeatheringDef } from '../../engine/src/content.ts';
-import { WEATHERING_RANGES } from '../../engine/src/sky.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { defaultWeatheringId } from './fixtures/capabilityIds.ts';

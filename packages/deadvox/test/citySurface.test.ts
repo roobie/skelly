@@ -1,7 +1,7 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { CHUNK, CitySite, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { CHUNK, CitySite, makeScale } from '../../engine/src/world.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const profile = fixtureScenario();

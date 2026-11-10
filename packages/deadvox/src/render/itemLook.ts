@@ -2,9 +2,9 @@
 // owns at their slots. Every view draws an item from this, never from its type alone, so a rifle looks the same in
 // the hands and on the ground.
 
-import type { Registry } from '../../../engine/src/content.ts';
-import { defOf, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '../../../engine/src/inventory.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import { defOf, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
 
 export interface ItemStateLook {
   readonly on?: boolean;

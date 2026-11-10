@@ -1,6 +1,6 @@
+import { resolveWeatheringUrl } from '@skelly/engine/internal/core/weatheringUrl.ts';
+import { WEATHERING_RANGES, writeWeatheringParams } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
-import { resolveWeatheringUrl } from '../../engine/src/core/weatheringUrl.ts';
-import { WEATHERING_RANGES, writeWeatheringParams } from '../../engine/src/sky.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId } from './fixtures/capabilityIds.ts';
 

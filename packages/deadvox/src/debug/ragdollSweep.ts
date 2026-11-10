@@ -1,7 +1,7 @@
-import type { Registry } from '../../../engine/src/content.ts';
-import { bodyPlanModel, figureVariantOf } from '../../../engine/src/pose.ts';
-import type { ActorSystem, EntityId } from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import { bodyPlanModel, figureVariantOf } from '@skelly/engine/pose';
+import type { ActorSystem, EntityId } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import type { ActorRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';
 

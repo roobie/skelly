@@ -2,8 +2,7 @@
 // different looks (tone mapping, exposure, block colour space, mood pass, fog) can be compared by
 // eye against the game's default look (the `look` content section), which play has already applied.
 
-import type { WebGLRenderer } from 'three';
-import type { WeatheringDef } from '../../../engine/src/content.ts';
+import type { WeatheringDef } from '@skelly/engine/content';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -20,14 +19,15 @@ import {
   nextShadowDistance,
   type ShadowState,
   TORCH_STEP,
-} from '../../../engine/src/look.ts';
+} from '@skelly/engine/look';
 import {
   clampFogginess,
   isWeatheringColor,
   WEATHERING_RANGES,
   type Weather,
   type WeatheringUrlState,
-} from '../../../engine/src/sky.ts';
+} from '@skelly/engine/sky';
+import type { WebGLRenderer } from 'three';
 import { autoToneUniforms } from '../render/autoTone.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';

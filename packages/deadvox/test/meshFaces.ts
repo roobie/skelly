@@ -1,9 +1,9 @@
 // Test helpers: expand a mesh's quads back into unit faces, and list the faces a
 // plain face-culling mesher would draw, so the greedy mesher can be checked against it.
 
-import { BEDROCK, paddedIndex } from '../../engine/src/core/meshInput.ts';
-import type { MeshData } from '../../engine/src/mesh.ts';
-import { CHUNK } from '../../engine/src/world.ts';
+import { BEDROCK, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
+import type { MeshData } from '@skelly/engine/mesh';
+import { CHUNK } from '@skelly/engine/world';
 
 /** "x,y,z,axis,sign" for the unit face of block (x, y, z) facing that way. */
 const faceId = (block: readonly number[], axis: number, sign: number) => `${block.join(',')},${axis},${sign}`;

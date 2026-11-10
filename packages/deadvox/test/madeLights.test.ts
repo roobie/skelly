@@ -1,8 +1,8 @@
+import { simSecondsPerHour } from '@skelly/engine/internal/core/clock.ts';
+import { chargeOf, drainBurnLight } from '@skelly/engine/internal/core/lights.ts';
+import { HandlingQueue, Inventory, toggleLight, wornNightVision } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { simSecondsPerHour } from '../../engine/src/core/clock.ts';
-import { chargeOf, drainBurnLight } from '../../engine/src/core/lights.ts';
-import { HandlingQueue, Inventory, toggleLight, wornNightVision } from '../../engine/src/inventory.ts';
-import { bindReach } from '../../engine/src/sim.ts';
 import { Survival } from '../src/game/survival.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

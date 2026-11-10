@@ -1,27 +1,30 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
 import { readFileSync } from 'node:fs';
-import { Mesh } from 'three';
-import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues } from '../../engine/src/core/authoredLayout.ts';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { lootPointStream, rollLoot } from '../../engine/src/core/loot.ts';
-import { magazineSpec } from '../../engine/src/core/magazine.ts';
-import type { SiteLayoutDef, TemplateDef } from '../../engine/src/core/schema.ts';
-import { planFlight, STAIR_BODY_HALF_WIDTH } from '../../engine/src/core/stairFlight.ts';
-import { templateReachableStandingPositions, templateSpatialIssues } from '../../engine/src/core/templateSpatial.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { lootPointStream, rollLoot } from '@skelly/engine/internal/core/loot.ts';
+import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { planFlight, STAIR_BODY_HALF_WIDTH } from '@skelly/engine/internal/core/stairFlight.ts';
+import {
+  templateReachableStandingPositions,
+  templateSpatialIssues,
+} from '@skelly/engine/internal/core/templateSpatial.ts';
 import {
   type CompiledTemplate,
   compileTemplate,
   placedBlockAt,
   placedPieces,
   placedSpawns,
-} from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { doorOptions, Inventory } from '../../engine/src/inventory.ts';
-import { Rng } from '../../engine/src/math.ts';
-import type { buildingBounds } from '../../engine/src/terrain.mjs';
-import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '../../engine/src/vehicles.ts';
-import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { doorOptions, Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import type { buildingBounds } from '@skelly/engine/terrain';
+import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
+import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import { Mesh } from 'three';
+import { describe, expect, it } from 'vitest';
 import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';

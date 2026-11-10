@@ -1,9 +1,9 @@
+import { type MeleeProfile, meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { meleePoseAndContact, readyMeleePose } from '@skelly/engine/pose';
 import { Box3, LoadingManager, PerspectiveCamera, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { type MeleeProfile, meleeContactTime } from '../../engine/src/core/meleePose.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { meleePoseAndContact, readyMeleePose } from '../../engine/src/pose.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';

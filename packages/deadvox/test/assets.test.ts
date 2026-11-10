@@ -1,7 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { bundledCredits } from '../src/bundledCredits.ts';
 import {
   assetFileIssues,
   buildRegistry,
@@ -9,7 +7,9 @@ import {
   mergeManifests,
   modelFileIssues,
   validateManifest,
-} from '../../engine/src/content.ts';
+} from '@skelly/engine/content';
+import { describe, expect, it } from 'vitest';
+import { bundledCredits } from '../src/bundledCredits.ts';
 
 const source = (fields: Record<string, unknown> = {}) => ({
   title: 'Torch',

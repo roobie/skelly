@@ -1,5 +1,5 @@
+import type { ActorFigureFile } from '@skelly/engine/content';
 import type { BufferGeometry } from 'three';
-import type { ActorFigureFile } from '../../../engine/src/content.ts';
 import { actorFigureGeometry } from './actorFigureGeometry.ts';
 
 // Content types that share a figure model and seed bake identical figures under their own names. Drawing each

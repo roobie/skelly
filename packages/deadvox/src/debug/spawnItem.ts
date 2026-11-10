@@ -1,5 +1,5 @@
-import { freshDropTarget, type Inventory, ItemFactory, putDownRefusal } from '../../../engine/src/inventory.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import { freshDropTarget, type Inventory, ItemFactory, putDownRefusal } from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
 
 export const spawnDebugItem = (inventory: Inventory, type: string, feet: Vec3): string => {
   const preview = new ItemFactory().create(inventory.registry, type);

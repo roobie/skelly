@@ -14,7 +14,7 @@ import {
   clipBoneIssues,
   JointDeltaClipSchema,
   PoseClipSchema,
-} from '../packages/engine/src/content.ts';
+} from '@skelly/engine/content';
 import {
   applyOverlay,
   applyPoint,
@@ -26,7 +26,7 @@ import {
   slerpQuat,
   standingFit,
   walkCursor,
-} from '../packages/engine/src/pose.ts';
+} from '@skelly/engine/pose';
 import {
   packFileBytes,
   packFileOrigin,

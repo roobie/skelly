@@ -1,8 +1,8 @@
+import { bookReadingHooks } from '@skelly/engine/internal/core/bookReading.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { Character, practiceForNextLevel } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { bookReadingHooks } from '../../engine/src/core/bookReading.ts';
-import { SKILL_LEVEL_LEGENDARY } from '../../engine/src/core/character.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { Character, practiceForNextLevel } from '../../engine/src/sim.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 
 const fixture = (skill = 'crafting', level = 2, taughtRecipe = 'fixture_recipe') =>

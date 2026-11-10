@@ -1,5 +1,5 @@
+import { realTimestamp } from '@skelly/engine/sim';
 import { expect, it, vi } from 'vitest';
-import { realTimestamp } from '../../engine/src/sim.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { finishLoadingFrame, WorldLoading } from '../src/presentation/worldLoading.ts';
 

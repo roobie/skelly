@@ -1,6 +1,6 @@
-import type { Registry } from '../../../engine/src/content.ts';
-import type { Item } from '../../../engine/src/inventory.ts';
-import { mountedOptic, type OpticZoomFrame, opticViewSettings } from '../../../engine/src/pose.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { Item } from '@skelly/engine/inventory';
+import { mountedOptic, type OpticZoomFrame, opticViewSettings } from '@skelly/engine/pose';
 
 interface ActiveZoom {
   frame: OpticZoomFrame;

@@ -1,8 +1,8 @@
+import type { Modifier } from '@skelly/engine/internal/core/modifiers.ts';
+import type { AnalgesicDef } from '@skelly/engine/internal/core/pain.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Body } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import type { Modifier } from '../../engine/src/core/modifiers.ts';
-import type { AnalgesicDef } from '../../engine/src/core/pain.ts';
-import { gameMinutes, simSeconds } from '../../engine/src/core/time.ts';
-import { Body } from '../../engine/src/sim.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 

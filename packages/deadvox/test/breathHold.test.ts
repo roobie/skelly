@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   AimController,
   type AimWobbleNoiseTuning,
@@ -6,11 +5,12 @@ import {
   type BreathCue,
   type BreathHoldState,
   INITIAL_BREATH_HOLD,
-} from '../../engine/src/core/aim.ts';
-import type { PlayerStance } from '../../engine/src/pose.ts';
-import type { SaveSnapshot } from '../../engine/src/save.ts';
-import type { SoundEmission } from '../../engine/src/sound.ts';
-import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/aim.ts';
+import type { PlayerStance } from '@skelly/engine/pose';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

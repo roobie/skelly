@@ -1,4 +1,4 @@
-import { CHUNK, type World } from '../../../engine/src/world.ts';
+import { CHUNK, type World } from '@skelly/engine/world';
 import { scale } from '../snapshotTestSupport.ts';
 
 const groundTop = (world: World, x: number, z: number): number | undefined => {

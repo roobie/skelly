@@ -1,11 +1,8 @@
-import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import type { Actor } from '../../../engine/src/core/actorState.ts';
-import type { ActorSystem } from '../../../engine/src/core/actorSystem.ts';
-import type { EntityId } from '../../../engine/src/core/entities.ts';
-import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
-import type { Inventory } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import { bodyInReach, type ReachPlayer } from '../../../engine/src/core/reach.ts';
+import { actionText, fillText } from '@skelly/engine/input';
+import type { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { defOf, type Item } from '@skelly/engine/inventory';
+import type { Actor, ActorSystem, EntityId } from '@skelly/engine/sim';
+import { bodyInReach, type ReachPlayer } from '@skelly/engine/sim';
 
 const DOWNED_BODY_ACTION = 'actor.downed';
 const DOWNED_BODY_WAYS = ['finish-off', 'dismember'] as const;

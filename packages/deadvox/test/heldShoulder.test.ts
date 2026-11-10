@@ -1,9 +1,9 @@
+import type { FigureDef, Registry } from '@skelly/engine/content';
+import type { HandSide, Item } from '@skelly/engine/inventory';
+import type { PlayerStance } from '@skelly/engine/pose';
+import { makeScale } from '@skelly/engine/world';
 import { Group, type Object3D, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import type { FigureDef, Registry } from '../../engine/src/content.ts';
-import type { HandSide, Item } from '../../engine/src/inventory.ts';
-import type { PlayerStance } from '../../engine/src/pose.ts';
-import { makeScale } from '../../engine/src/world.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import { heldItemPoses } from '../src/render/heldPresentation.ts';

@@ -1,9 +1,7 @@
 // Rest controls/rate selection only. Core LongActions owns saved state and stepping.
-import type { ActionText } from '../../../engine/src/core/actionText.ts';
-import { nextSimTimeAt, SECONDS_PER_HOUR } from '../../../engine/src/core/clock.ts';
-import type { RestAction, RestKind } from '../../../engine/src/core/longAction.ts';
-import type { Simulation } from '../../../engine/src/core/sim.ts';
-import { simSeconds } from '../../../engine/src/core/time.ts';
+import type { ActionText } from '@skelly/engine/input';
+import type { RestAction, RestKind, Simulation } from '@skelly/engine/sim';
+import { nextSimTimeAt, SECONDS_PER_HOUR, simSeconds } from '@skelly/engine/sim';
 
 interface RestFurniture {
   quality: number;

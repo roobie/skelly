@@ -1,4 +1,4 @@
-import type { PackManifest } from '../../../engine/src/packs.ts';
+import type { PackManifest } from '@skelly/engine/packs';
 import { type BundledPack, bundledPacksFrom } from '../game/bundledContent.ts';
 
 // Only the product names its mod roots. Pack roots are the glob keys relative to this directory, which the

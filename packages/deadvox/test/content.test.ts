@@ -1,23 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
-import { safeParse } from 'valibot';
-import { describe, expect, it } from 'vitest';
-import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
-import { controlIssues } from '../src/cli/controlIssues.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
-import { resolveSpawnTime } from '../../engine/src/core/clock.ts';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { corpseLootPoint, lootTypeIssue } from '../../engine/src/core/loot.ts';
-import { militaryLootItems } from '../../engine/src/core/magazine.ts';
-import { blockPatterns, blockWeatherability } from '../../engine/src/core/meshInput.ts';
-import { checkReachability } from '../../engine/src/core/reachability.ts';
-import { type ContentFile, ContentFileSchema, DayCycleSchema, type TemplateDef } from '../../engine/src/core/schema.ts';
-import { ordinarySpawnWeights } from '../../engine/src/core/settlementSpawns.ts';
-import { furnitureOf, lootPointsOf } from '../../engine/src/core/site.ts';
-import { templateSpawnClearanceIssues } from '../../engine/src/core/templateSpatial.ts';
-import { compileTemplate } from '../../engine/src/core/templates.ts';
-import { gameMinutes, simSeconds } from '../../engine/src/core/time.ts';
 import {
   BLOCK_PATTERNS,
   blockColors,
@@ -25,11 +6,35 @@ import {
   CONTENT_SECTION_KEYS,
   ModelSchema,
   requiredContentIssues,
-} from '../../engine/src/content.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { parseTimeOfDay } from '../../engine/src/sim.ts';
-import { WEATHERING_RANGES } from '../../engine/src/sky.ts';
-import { isBodyDoor, type Placement, sitePalette } from '../../engine/src/world.ts';
+} from '@skelly/engine/content';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { corpseLootPoint, lootTypeIssue } from '@skelly/engine/internal/core/loot.ts';
+import { militaryLootItems } from '@skelly/engine/internal/core/magazine.ts';
+import { blockPatterns, blockWeatherability } from '@skelly/engine/internal/core/meshInput.ts';
+import { checkReachability } from '@skelly/engine/internal/core/reachability.ts';
+import {
+  type ContentFile,
+  ContentFileSchema,
+  DayCycleSchema,
+  type TemplateDef,
+} from '@skelly/engine/internal/core/schema.ts';
+import { ordinarySpawnWeights } from '@skelly/engine/internal/core/settlementSpawns.ts';
+import { furnitureOf, lootPointsOf } from '@skelly/engine/internal/core/site.ts';
+import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { parseTimeOfDay } from '@skelly/engine/sim';
+import { WEATHERING_RANGES } from '@skelly/engine/sky';
+import { isBodyDoor, type Placement, sitePalette } from '@skelly/engine/world';
+import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
+import { safeParse } from 'valibot';
+import { describe, expect, it } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
+import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
+import { controlIssues } from '../src/cli/controlIssues.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

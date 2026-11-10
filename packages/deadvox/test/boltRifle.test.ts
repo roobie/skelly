@@ -1,10 +1,10 @@
+import { actionOpenSeconds, ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave, encodeSave } from '@skelly/engine/save';
+import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { actionOpenSeconds, ejectSeconds } from '../../engine/src/core/firearmAction.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave, encodeSave } from '../../engine/src/save.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { FirearmMechanics, type FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

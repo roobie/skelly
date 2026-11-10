@@ -1,12 +1,12 @@
-import { modelMassKg } from '@skelly/thing-core/mass';
-import { describe, expect, it } from 'vitest';
 import {
   buildRegistry,
   type ContentSource,
   loadVehicleBlueprint,
   type PlacedFitting,
   type Registry,
-} from '../../engine/src/content.ts';
+} from '@skelly/engine/content';
+import { modelMassKg } from '@skelly/thing-core/mass';
+import { describe, expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import battery from './fixtures/vehicle-part.model.json' with { type: 'json' };
 import { PLAYER } from './playerFixture.ts';

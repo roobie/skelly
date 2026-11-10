@@ -1,18 +1,25 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import { breathSteadying } from '../../engine/src/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '../../engine/src/core/character.ts';
-import { firearmStanceEffects, firearmsSkillEffects, steadinessTuning } from '../../engine/src/core/firearmsSkill.ts';
+import type { ActorDef } from '@skelly/engine/content';
+import { actionText } from '@skelly/engine/input';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import { breathSteadying } from '@skelly/engine/internal/core/aim.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
+import {
+  firearmStanceEffects,
+  firearmsSkillEffects,
+  steadinessTuning,
+} from '@skelly/engine/internal/core/firearmsSkill.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
-import * as leanCollision from '../../engine/src/core/leanCollision.ts';
-import { bodyDistance } from '../../engine/src/core/reach.ts';
-import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
-import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../../engine/src/core/skillTraining.ts';
-import { compileTemplate, placedBlockAt } from '../../engine/src/core/templates.ts';
-import type { ActorDef } from '../../engine/src/content.ts';
-import { actionText } from '../../engine/src/input.ts';
+import * as leanCollision from '@skelly/engine/internal/core/leanCollision.ts';
+import { bodyDistance } from '@skelly/engine/internal/core/reach.ts';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import {
+  firearmShotPracticeSkill,
+  firearmSteadinessSkill,
+  skillActivityPractice,
+} from '@skelly/engine/internal/core/skillTraining.ts';
+import { compileTemplate, placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import {
   actorPoseInputFor,
   blendHeldFirearmTransforms,
@@ -21,18 +28,11 @@ import {
   playerAdsPose,
   playerEyePosition,
   playerLookPose,
-} from '../../engine/src/pose.ts';
-import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '../../engine/src/sim.ts';
-import {
-  BLOCK_SIZE,
-  footprint,
-  makeScale,
-  type Placement,
-  type SolidAt,
-  type Vec3,
-  World,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
+import { BLOCK_SIZE, footprint, makeScale, type Placement, type SolidAt, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';

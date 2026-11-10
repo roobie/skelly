@@ -1,4 +1,4 @@
-// The words the player's actions use: refusals, handling labels and held-item details (`DESIGN.md`,
+// The words the player's actions use: refusals, handling labels and held-item details (`packages/deadvox/DESIGN.md`,
 // "Action text is content"). Content authors every line; code only fills named placeholders.
 
 import { check, type InferOutput, nonEmpty, pipe, strictObject, string, transform } from 'valibot';

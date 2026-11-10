@@ -1,7 +1,7 @@
+import type { FigureDef, ItemDef, Registry, WearSlot } from '@skelly/engine/content';
+import { defOf, type Item } from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
 import { Group, type Object3D } from 'three';
-import type { FigureDef, ItemDef, Registry, WearSlot } from '../../../engine/src/content.ts';
-import { defOf, type Item } from '../../../engine/src/inventory.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import { type ItemLook, itemLook, itemStateLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';

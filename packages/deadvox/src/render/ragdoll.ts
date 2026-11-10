@@ -1,5 +1,4 @@
-import content from '../config/ragdoll.json' with { type: 'json' };
-import { hash3 } from '../../../engine/src/math.ts';
+import { hash3 } from '@skelly/engine/math';
 import {
   applyPoint,
   type Bone,
@@ -18,7 +17,8 @@ import {
   transpose,
   type Vec3,
   voxelBounds,
-} from '../../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
+import content from '../config/ragdoll.json' with { type: 'json' };
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 

@@ -1,10 +1,10 @@
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import type { Inventory } from '@skelly/engine/inventory';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { savedItemTree } from '../../engine/src/core/itemTree.ts';
-import { terrainHeight } from '../../engine/src/core/worldgen.ts';
-import type { Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import { terrainShapeOf, toChunk } from '../../engine/src/world.ts';
 import { layoutVehiclePlacements, registerLayoutVehicles } from '../src/game/layoutVehicles.ts';
 import { IDLE } from '../src/game/session.ts';
 import {

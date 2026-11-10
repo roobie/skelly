@@ -2,8 +2,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
-import { parse } from 'valibot';
-import { type ActorFigureFiles, type Registry, readActorFigureFiles } from '../../engine/src/content.ts';
+import { type ActorFigureFiles, type Registry, readActorFigureFiles } from '@skelly/engine/content';
 import {
   admitPacks,
   logicalKey,
@@ -13,8 +12,9 @@ import {
   PackManifestSchema,
   packContentHash,
   resolvePhysical,
-} from '../../engine/src/packs.ts';
-import { canonicalJson } from '../../engine/src/save.ts';
+} from '@skelly/engine/packs';
+import { canonicalJson } from '@skelly/engine/save';
+import { parse } from 'valibot';
 import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
 
 /** Pack roots are relative to the product modules that glob them; see `src/product/packs.ts`, `bundledPacks`. */

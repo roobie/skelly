@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { fusedMassStrikeOrigin } from '../../engine/src/core/fusedMassFigure.ts';
-import { actorFigure } from '../../engine/src/content.ts';
+import { actorFigure } from '@skelly/engine/content';
+import { fusedMassStrikeOrigin } from '@skelly/engine/internal/core/fusedMassFigure.ts';
 import {
   boneTransforms,
   FUSED_MASS_FIGURE_SEED,
@@ -14,8 +13,9 @@ import {
   severedBoneSet,
   transpose,
   worldPosition,
-} from '../../engine/src/pose.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

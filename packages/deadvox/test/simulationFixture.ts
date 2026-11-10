@@ -1,9 +1,9 @@
-import type { ClockSettings } from '../../engine/src/core/clock.ts';
-import type { CompressionCaps } from '../../engine/src/core/schema.ts';
-import type { SimOptions } from '../../engine/src/core/sim.ts';
-import { gameHours, gameMinutes, gamePerHour, simRate, simSeconds } from '../../engine/src/core/time.ts';
-import type { BodyTuningDef, Registry } from '../../engine/src/content.ts';
-import { Simulation as CoreSimulation, realSeconds } from '../../engine/src/sim.ts';
+import type { BodyTuningDef, Registry } from '@skelly/engine/content';
+import type { ClockSettings } from '@skelly/engine/internal/core/clock.ts';
+import type { CompressionCaps } from '@skelly/engine/internal/core/schema.ts';
+import type { SimOptions } from '@skelly/engine/internal/core/sim.ts';
+import { gameHours, gameMinutes, gamePerHour, simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Simulation as CoreSimulation, realSeconds } from '@skelly/engine/sim';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 

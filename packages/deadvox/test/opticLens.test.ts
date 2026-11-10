@@ -1,3 +1,5 @@
+import { graphicsTuningOf } from '@skelly/engine/look';
+import type { OpticLensFrame } from '@skelly/engine/pose';
 import {
   BoxGeometry,
   type Color,
@@ -9,8 +11,6 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { graphicsTuningOf } from '../../engine/src/look.ts';
-import type { OpticLensFrame } from '../../engine/src/pose.ts';
 import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -1,11 +1,11 @@
 // Debug mannequin: a second world body, drawn by the player's own figure code, stood near the player so
 // each avatar pose can be judged from outside. It is a drawing only: no simulation, collision or save knows it.
 
+import type { FigureDef, ModelDef, Registry, WearSlot } from '@skelly/engine/content';
+import type { Item } from '@skelly/engine/inventory';
+import type { PlayerStance } from '@skelly/engine/pose';
+import type { Body, Vec3 } from '@skelly/engine/world';
 import { Group, type Object3D } from 'three';
-import type { FigureDef, ModelDef, Registry, WearSlot } from '../../../engine/src/content.ts';
-import type { Item } from '../../../engine/src/inventory.ts';
-import type { PlayerStance } from '../../../engine/src/pose.ts';
-import type { Body, Vec3 } from '../../../engine/src/world.ts';
 import { heldItemPoses, type ItemHoldPose } from './heldPresentation.ts';
 import type { ModelLibrary } from './models.ts';
 import { type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';

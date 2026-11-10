@@ -1,14 +1,17 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { lootPointStream, lootPointsByColumn, rollLoot } from '@skelly/engine/internal/core/loot.ts';
+import { groundLootSupplyIssues } from '@skelly/engine/internal/core/placementLoot.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { furnitureOf, lootSourcesOf, type Site, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import {
+  templateGroundLootIssues,
+  templateGroundLootReservations,
+} from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate, placedPieces, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import { makeScale, type Placement, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { lootPointStream, lootPointsByColumn, rollLoot } from '../../engine/src/core/loot.ts';
-import { groundLootSupplyIssues } from '../../engine/src/core/placementLoot.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { furnitureOf, lootSourcesOf, type Site, SupplyFootprints } from '../../engine/src/core/site.ts';
-import { templateGroundLootIssues, templateGroundLootReservations } from '../../engine/src/core/templateSpatial.ts';
-import { compileTemplate, placedPieces, stackTemplate } from '../../engine/src/core/templates.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import type { SaveSnapshot } from '../../engine/src/save.ts';
-import { makeScale, type Placement, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

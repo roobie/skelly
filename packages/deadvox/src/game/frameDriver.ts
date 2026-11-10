@@ -1,6 +1,6 @@
-import type { Compression } from '../../../engine/src/core/compression.ts';
-import type { Simulation } from '../../../engine/src/core/sim.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds, type SimSeconds, simSeconds } from '../../../engine/src/core/time.ts';
+import type { Compression } from '@skelly/engine/save';
+import type { Simulation } from '@skelly/engine/sim';
+import { type RealSeconds, type RealTimestamp, realSeconds, type SimSeconds, simSeconds } from '@skelly/engine/sim';
 
 const RAMP_PROFILES = {
   normal: { up: realSeconds(1.5) },

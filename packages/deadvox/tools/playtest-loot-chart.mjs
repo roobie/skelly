@@ -2,9 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { claimedId } from '../../engine/src/inventory.ts';
-import { footprint, HORDE_MEMBERS, placementOf, TEMPLATE_BLOCK_SIZE } from '../../engine/src/world.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { claimedId } from '@skelly/engine/inventory';
+import { footprint, HORDE_MEMBERS, placementOf, TEMPLATE_BLOCK_SIZE } from '@skelly/engine/world';
 import { readStackContentSources } from './readBundledPacks.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');

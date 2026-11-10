@@ -1,7 +1,7 @@
+import { planLiquidReceive, planLiquidTransfer } from '@skelly/engine/internal/core/liquids.ts';
+import type { LiquidContents } from '@skelly/engine/internal/core/schema.ts';
+import { assertSavedLiquidContents, Inventory, type Item, type ItemState } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { planLiquidReceive, planLiquidTransfer } from '../../engine/src/core/liquids.ts';
-import type { LiquidContents } from '../../engine/src/core/schema.ts';
-import { assertSavedLiquidContents, Inventory, type Item, type ItemState } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 

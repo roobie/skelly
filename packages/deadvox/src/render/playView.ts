@@ -1,8 +1,8 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
-import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '../../../engine/src/content.ts';
-import { claimed, type Inventory, type Item } from '../../../engine/src/inventory.ts';
-import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '../../../engine/src/look.ts';
+import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
+import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
+import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import {
   adsCameraEye,
   figureStancePose,
@@ -12,7 +12,7 @@ import {
   type PlayerAdsPose,
   type PlayerStance,
   playerLookPose,
-} from '../../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
 import {
   type AcidGlobState,
   type AcidPuddleState,
@@ -22,9 +22,16 @@ import {
   type EntityStore,
   hourOfDay,
   reachTuning,
-} from '../../../engine/src/sim.ts';
-import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '../../../engine/src/sky.ts';
-import { type BlockEntities, type Body, type PoweredLight, raycast, type SolidAt, type Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
+import {
+  type BlockEntities,
+  type Body,
+  type PoweredLight,
+  raycast,
+  type SolidAt,
+  type Vec3,
+} from '@skelly/engine/world';
 import type { FromMesher } from '../game/mesherProtocol.ts';
 import { playerTuning } from '../game/player.ts';
 import type { PackAssetFiles } from '../presentation/bundledAssets.ts';

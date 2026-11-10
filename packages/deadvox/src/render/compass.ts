@@ -1,6 +1,9 @@
 // A magnetic card compass: its card and needle belong to the held object, not the HUD.
 // The card turns with the needle, so its marks name the world's directions and the model's
 // lubber mark shows the heading.
+
+import type { CompassDial, ModelDef } from '@skelly/engine/content';
+import { compassBearing, yawFromBearing } from '@skelly/engine/world';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   CanvasTexture,
@@ -14,8 +17,6 @@ import {
   SRGBColorSpace,
   Vector3,
 } from 'three';
-import type { CompassDial, ModelDef } from '../../../engine/src/content.ts';
-import { compassBearing, yawFromBearing } from '../../../engine/src/world.ts';
 import { heldModelFrame } from './models.ts';
 
 const FULL_TURN = Math.PI * 2;

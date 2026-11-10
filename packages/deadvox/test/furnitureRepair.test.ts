@@ -1,5 +1,5 @@
+import { Inventory } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
-import { Inventory } from '../../engine/src/inventory.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureMaterials } from './economyFixtures.ts';
 
 const BREACH = { minimumStrength: 10, durability: 100 };

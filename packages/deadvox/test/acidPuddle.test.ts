@@ -1,6 +1,6 @@
+import { feetInAcidPuddle } from '@skelly/engine/internal/core/acidPuddle.ts';
+import { type Body, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { feetInAcidPuddle } from '../../engine/src/core/acidPuddle.ts';
-import { type Body, makeScale } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 describe('acid puddle supporting surface', () => {

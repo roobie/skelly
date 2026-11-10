@@ -1,4 +1,4 @@
-import type { Vec3 } from '../../../engine/src/world.ts';
+import type { Vec3 } from '@skelly/engine/world';
 
 export interface DebugTargetRay {
   readonly origin: Vec3;

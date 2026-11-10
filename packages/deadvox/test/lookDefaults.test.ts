@@ -1,9 +1,9 @@
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { TONE_KEYS } from '@skelly/engine/internal/core/mood.ts';
+import { clampExposure, clampGrade, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { TONE_KEYS } from '../../engine/src/core/mood.ts';
 import { defaultLookUrlState, parseLookParams, writeLookParams } from '../src/debug/lookUrl.ts';
-import { buildRegistry, requireDayCycle } from '../../engine/src/content.ts';
-import { clampExposure, clampGrade, lookDefaultsOf, lookOf, moodOf } from '../../engine/src/look.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';

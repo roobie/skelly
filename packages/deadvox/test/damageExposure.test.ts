@@ -1,8 +1,8 @@
+import type { BodyTuningDef } from '@skelly/engine/content';
+import { type DamageExposure, DamageExposures } from '@skelly/engine/internal/core/damageExposure.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Body } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { type DamageExposure, DamageExposures } from '../../engine/src/core/damageExposure.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import type { BodyTuningDef } from '../../engine/src/content.ts';
-import { Body } from '../../engine/src/sim.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const tuning: BodyTuningDef = {

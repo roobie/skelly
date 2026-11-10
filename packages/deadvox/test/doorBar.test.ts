@@ -1,8 +1,8 @@
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { doorPlan, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import type { BlockEntity, Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { gameMinutes } from '../../engine/src/core/time.ts';
-import { doorPlan, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import type { BlockEntity, Vec3 } from '../../engine/src/world.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';

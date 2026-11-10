@@ -1,9 +1,9 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
+import type { ScreenText } from '@skelly/engine/content';
+import { claimed, type Inventory, type Item, type Location } from '@skelly/engine/inventory';
+import { countText, decimalText, fillText } from '@skelly/engine/text';
 import { html, render, type TemplateResult } from 'lit-html';
-import type { ScreenText } from '../../../engine/src/content.ts';
-import { claimed, type Inventory, type Item, type Location } from '../../../engine/src/inventory.ts';
-import { countText, decimalText, fillText } from '../../../engine/src/text.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 import { activityProgress } from './activityProgress.ts';
 import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';

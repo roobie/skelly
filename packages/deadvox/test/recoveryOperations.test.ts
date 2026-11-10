@@ -1,7 +1,7 @@
+import { type RecoveryTarget, selectRecoveryOperation } from '@skelly/engine/internal/core/disassembly.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { type RecoveryTarget, selectRecoveryOperation } from '../../engine/src/core/disassembly.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { bindReach } from '../../engine/src/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';

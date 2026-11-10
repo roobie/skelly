@@ -1,8 +1,6 @@
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
-import { expect, it, vi } from 'vitest';
-import { itemPresentationIssues } from '../../engine/src/core/itemPresentation.ts';
-import { snapshotItem } from '../../engine/src/core/items.ts';
-import { buildRegistry, modelPresentationAssetIssues } from '../../engine/src/content.ts';
+import { buildRegistry, modelPresentationAssetIssues } from '@skelly/engine/content';
+import { itemPresentationIssues } from '@skelly/engine/internal/core/itemPresentation.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import {
   chargeShare,
   Inventory,
@@ -10,7 +8,9 @@ import {
   LIGHT_MOUNT_SLOT,
   supplyShare,
   toggleLight,
-} from '../../engine/src/inventory.ts';
+} from '@skelly/engine/inventory';
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
+import { expect, it, vi } from 'vitest';
 import { type ItemLook, itemLook } from '../src/render/itemLook.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { applyItemStateLook, disposeItemStateMaterials, fittedStateGroup } from '../src/render/itemStateLook.ts';

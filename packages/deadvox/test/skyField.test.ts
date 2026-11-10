@@ -1,12 +1,11 @@
 import process from 'node:process';
-import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import type { Site } from '../../engine/src/core/site.ts';
-import { authoredSkyBoxes } from '../../engine/src/core/skyField.ts';
-import type { SkyBounds } from '../../engine/src/core/skylight.ts';
-import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '../../engine/src/core/skySnapshot.ts';
-import { buildSkyResult, SkyFields } from '../../engine/src/sky.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import type { Site } from '@skelly/engine/internal/core/site.ts';
+import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
+import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
 import {
   BlockEntities,
   CHUNK,
@@ -16,7 +15,8 @@ import {
   toChunk,
   type Vec3,
   World,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';

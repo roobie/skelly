@@ -1,7 +1,7 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import type { InteractionTarget } from '@skelly/engine/sim';
+import type { BlockEntity, Body } from '@skelly/engine/world';
 import type { ModelBox } from '@skelly/thing-core/schema';
-import type { FurnitureDef } from '../../../engine/src/content.ts';
-import type { InteractionTarget } from '../../../engine/src/sim.ts';
-import type { BlockEntity, Body } from '../../../engine/src/world.ts';
 import type { FurnitureMeshes } from './furniture.ts';
 import type { PileMeshes } from './piles.ts';
 

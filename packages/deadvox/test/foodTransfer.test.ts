@@ -1,11 +1,11 @@
+import type { RecipeDef } from '@skelly/engine/content';
+import { FOOD_EXPOSURE_DENOMINATOR } from '@skelly/engine/internal/core/food.ts';
+import { ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { HandlingQueue, Inventory, type Item, type Location, planCraft, type Target } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { FOOD_EXPOSURE_DENOMINATOR } from '../../engine/src/core/food.ts';
-import { ruinFurniture } from '../../engine/src/core/furnitureMove.ts';
-import { gameMinutes, simSeconds } from '../../engine/src/core/time.ts';
-import type { RecipeDef } from '../../engine/src/content.ts';
-import { HandlingQueue, Inventory, type Item, type Location, planCraft, type Target } from '../../engine/src/inventory.ts';
-import { bindReach } from '../../engine/src/sim.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

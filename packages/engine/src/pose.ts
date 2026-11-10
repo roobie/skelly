@@ -23,7 +23,17 @@ export {
   type HumanoidHitRegion,
 } from './core/actorRegions.ts';
 export { adsCameraEye, guardAdsCamera } from './core/adsView.ts';
-export { type AimFrame, aimDirection, NEUTRAL_AIM } from './core/aim.ts';
+export {
+  type AimBasis,
+  AimController,
+  type AimFrame,
+  type AimWobbleNoiseTuning,
+  aimBasis,
+  aimDirection,
+  breathSteadying,
+  NEUTRAL_AIM,
+  playerAimTuning,
+} from './core/aim.ts';
 export { attachmentFrame } from './core/attachmentFrame.ts';
 export {
   applyPoint,
@@ -61,6 +71,7 @@ export {
   type HeldSeatFrame,
   heldAdsStandoffMetres,
   heldAnchorOffset,
+  heldEjectionPose,
   heldFirearmTransform,
   heldGripOffset,
   heldHoldFrame,
@@ -70,9 +81,12 @@ export {
   modelToView,
   readyFirearmPose,
   throwStanceHandOffset,
+  throwStanceWorldOffset,
 } from './core/heldPose.ts';
 export { clampJointAngles, jointAngles, jointRotation } from './core/joints.ts';
 export type { LeanFrame } from './core/lean.ts';
+export { advanceLean, createLeanGuard, leanFrame } from './core/lean.ts';
+export { playerLeanBoxes } from './core/leanCollision.ts';
 export { bodyPartMass, boneVoxelCentres, massProperties, voxelBounds } from './core/massProperties.ts';
 export {
   type HandPose,
@@ -80,6 +94,7 @@ export {
   type MeleeActionPose,
   type MeleeHand,
   type MeleePoseFrame,
+  type MeleeProfile,
   meleePoseAndContact,
   readyMeleePose,
 } from './core/meleePose.ts';

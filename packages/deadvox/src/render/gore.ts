@@ -2,6 +2,11 @@
 // here is saved or read by the simulation: splats fade, and a reload starts clean. It runs every frame under
 // crowds, so the per-frame path allocates nothing: pools, slots and vectors are made once and reused.
 
+import type { GraphicsTuningDef } from '@skelly/engine/content';
+import { Rng } from '@skelly/engine/math';
+import { type FusedMassFigure, missingFlesh } from '@skelly/engine/pose';
+import { type Actor, BODY_REGIONS, type BodyRegion, type EntityStore, type HitImpulse } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import {
   BoxGeometry,
   CircleGeometry,
@@ -16,11 +21,6 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import type { GraphicsTuningDef } from '../../../engine/src/content.ts';
-import { Rng } from '../../../engine/src/math.ts';
-import { type FusedMassFigure, missingFlesh } from '../../../engine/src/pose.ts';
-import { type Actor, BODY_REGIONS, type BodyRegion, type EntityStore, type HitImpulse } from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import type { ModelLibrary } from './models.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 

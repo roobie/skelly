@@ -1,7 +1,7 @@
+import { actionText, fillText } from '@skelly/engine/input';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '@skelly/engine/text';
 import { expect, it } from 'vitest';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { actionText, fillText } from '../../engine/src/input.ts';
-import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '../../engine/src/text.ts';
 import { fillHint } from '../src/ui/keyCap.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

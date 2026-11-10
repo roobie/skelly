@@ -1,5 +1,5 @@
+import type { ActorAim } from '@skelly/engine/sim';
 import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type Scene } from 'three';
-import type { ActorAim } from '../../../engine/src/sim.ts';
 
 const GREEN = 0x00_ff_50;
 const AMBER = 0xff_b5_00;

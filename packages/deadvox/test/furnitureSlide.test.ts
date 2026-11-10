@@ -1,5 +1,4 @@
-import { Box3, Quaternion } from 'three';
-import { describe, expect, it } from 'vitest';
+import type { FurnitureDef, Registry } from '@skelly/engine/content';
 import {
   advanceFloorLockedPlacement,
   type FurnitureMover,
@@ -11,14 +10,15 @@ import {
   slideFurniture,
   tipCarried,
   turnCarried,
-} from '../../engine/src/core/furnitureMove.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import type { FurnitureDef, Registry } from '../../engine/src/content.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
-import { BLUEPRINTS } from '../../engine/src/vehicles.ts';
-import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/furnitureMove.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { reachTuning } from '@skelly/engine/sim';
+import { BLUEPRINTS } from '@skelly/engine/vehicles';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { Box3, Quaternion } from 'three';
+import { describe, expect, it } from 'vitest';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';

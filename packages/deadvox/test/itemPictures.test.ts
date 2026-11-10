@@ -1,8 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { Inventory } from '@skelly/engine/inventory';
 import { Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, type OrthographicCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
 import { fittedPictureExtent, ItemPictures, pictureSurfaceSize, referencePainter } from '../src/render/itemPictures.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 

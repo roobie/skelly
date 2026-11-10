@@ -1,9 +1,9 @@
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { gameSeconds, gameToSimSeconds } from '@skelly/engine/internal/core/time.ts';
+import { HandlingQueue, Inventory, type Item, toggleLight } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { snapshotItem } from '../../engine/src/core/items.ts';
-import { gameSeconds, gameToSimSeconds } from '../../engine/src/core/time.ts';
-import { HandlingQueue, Inventory, type Item, toggleLight } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { bindReach } from '../../engine/src/sim.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
   applyReplayActionPayload,

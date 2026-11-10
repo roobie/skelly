@@ -1,6 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import playerFamilies from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
 import {
   advanceFootsteps,
   footstepEventAt,
@@ -9,7 +7,9 @@ import {
   initialFootstepClock,
   isHardLanding,
   stepDistanceMetres,
-} from '../../engine/src/core/footsteps.ts';
+} from '@skelly/engine/internal/core/footsteps.ts';
+import { describe, expect, it } from 'vitest';
+import playerFamilies from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 

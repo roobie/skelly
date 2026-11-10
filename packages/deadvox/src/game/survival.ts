@@ -4,41 +4,52 @@
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 
-import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import { canonicalJson } from '../../../engine/src/core/canonicalJson.ts';
-import { dominantSide } from '../../../engine/src/core/character.ts';
-import { coreLabel, coreMessage } from '../../../engine/src/core/coreText.ts';
-import { freshnessWord, isRotten, servingDef } from '../../../engine/src/core/food.ts';
-import type { HandlingQueue, JobParams, JobValue } from '../../../engine/src/core/handling.ts';
-import type { HandSide, Inventory, Target, TargetState } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import { isInHeldItemSlotTree } from '../../../engine/src/core/itemTree.ts';
-import {
-  chargeOf,
-  chargeShare,
-  drainBurnLight,
-  drainLight,
-  lightInHands,
-  swapBattery,
-  toggleLight,
-  unloadBattery,
-} from '../../../engine/src/core/lights.ts';
-import { consume } from '../../../engine/src/core/needs.ts';
-import { countText } from '../../../engine/src/core/numberText.ts';
+import { type ActionText, actionText, fillText } from '@skelly/engine/input';
+import type {
+  HandlingQueue,
+  HandSide,
+  Inventory,
+  JobParams,
+  JobValue,
+  Readable,
+  ReadRequest,
+  Target,
+  TargetState,
+} from '@skelly/engine/inventory';
 import {
   batteryHandRefusal,
   batterySlotOption,
   batterySlotRefusal,
+  chargeOf,
+  chargeShare,
   consumption,
+  defOf,
+  drainBurnLight,
+  drainLight,
+  type Item,
+  isInHeldItemSlotTree,
+  lightInHands,
   pourRefusal,
   stowTarget,
+  swapBattery,
+  swapCanister,
+  toggleLight,
+  unloadBattery,
   useOption,
-} from '../../../engine/src/core/options.ts';
-import type { ReachSnapshot } from '../../../engine/src/core/reach.ts';
-import type { Readable, ReadRequest } from '../../../engine/src/core/readable.ts';
-import type { Simulation } from '../../../engine/src/core/sim.ts';
-import { gameSeconds, simSeconds, simToGameSeconds } from '../../../engine/src/core/time.ts';
-import { swapCanister } from '../../../engine/src/core/torch.ts';
+} from '@skelly/engine/inventory';
+import { canonicalJson } from '@skelly/engine/save';
+import type { ReachSnapshot, Simulation } from '@skelly/engine/sim';
+import {
+  consume,
+  dominantSide,
+  freshnessWord,
+  gameSeconds,
+  isRotten,
+  servingDef,
+  simSeconds,
+  simToGameSeconds,
+} from '@skelly/engine/sim';
+import { coreLabel, coreMessage, countText } from '@skelly/engine/text';
 import { queueTrapAction } from './bearTrapActions.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 

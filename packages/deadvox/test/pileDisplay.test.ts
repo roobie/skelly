@@ -1,9 +1,9 @@
+import { PILE_DISPLAY_KIND } from '@skelly/engine/content';
+import { pileBundleHeight } from '@skelly/engine/internal/core/pileLayout.ts';
+import { Inventory, itemFlightPoint } from '@skelly/engine/inventory';
+import { reachTuning } from '@skelly/engine/sim';
 import { InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { pileBundleHeight } from '../../engine/src/core/pileLayout.ts';
-import { PILE_DISPLAY_KIND } from '../../engine/src/content.ts';
-import { Inventory, itemFlightPoint } from '../../engine/src/inventory.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';

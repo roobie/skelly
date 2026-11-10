@@ -1,5 +1,5 @@
-import { simSeconds } from '../../../engine/src/core/time.ts';
-import type { BodyTuningDef } from '../../../engine/src/content.ts';
+import type { BodyTuningDef } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 
 const meleeKinds = ['blunt', 'cut', 'pierce'] as const;
 

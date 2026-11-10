@@ -1,4 +1,4 @@
-import type { RecipeDef, Registry, ScreenText } from '../../../engine/src/content.ts';
+import type { RecipeDef, Registry, ScreenText } from '@skelly/engine/content';
 import {
   type CraftCommands,
   type CraftPreference,
@@ -9,10 +9,10 @@ import {
   indexCraftReach,
   planCraft,
   requirementStatus,
-} from '../../../engine/src/inventory.ts';
-import type { CraftCharacter, LongJob, ReachSnapshot } from '../../../engine/src/sim.ts';
-import { decimalText, fillText, volumeText } from '../../../engine/src/text.ts';
-import type { BlockEntity } from '../../../engine/src/world.ts';
+} from '@skelly/engine/inventory';
+import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
+import { decimalText, fillText, volumeText } from '@skelly/engine/text';
+import type { BlockEntity } from '@skelly/engine/world';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>

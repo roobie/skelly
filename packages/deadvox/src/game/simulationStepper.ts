@@ -1,8 +1,7 @@
-import { skipTarget } from '../../../engine/src/core/clock.ts';
-import { SKIP_COMPRESSION } from '../../../engine/src/core/compression.ts';
-import type { SaveSnapshot } from '../../../engine/src/core/saveState.ts';
-import type { Simulation } from '../../../engine/src/core/sim.ts';
-import type { RealSeconds, SimSeconds } from '../../../engine/src/core/time.ts';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import { SKIP_COMPRESSION } from '@skelly/engine/save';
+import type { RealSeconds, SimSeconds, Simulation } from '@skelly/engine/sim';
+import { skipTarget } from '@skelly/engine/sim';
 import { advanceLiveFrame } from './frameDriver.ts';
 import {
   type InputReplayRecorder,

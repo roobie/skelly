@@ -2,7 +2,6 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { declaredFileReader, readBundledPacks } from '../../tools/readBundledPacks.ts';
 import {
   actorFigureFileIssues,
   assetFileIssues,
@@ -20,9 +19,10 @@ import {
   requiredContentIssues,
   soundFileIssues,
   validateManifest,
-} from '../../../engine/src/content.ts';
-import { bundledModCatalogueIssues } from '../../../engine/src/modCatalogue.ts';
-import { admitPacks, type PackInput, packStartIssues } from '../../../engine/src/packs.ts';
+} from '@skelly/engine/content';
+import { bundledModCatalogueIssues } from '@skelly/engine/modCatalogue';
+import { admitPacks, type PackInput, packStartIssues } from '@skelly/engine/packs';
+import { declaredFileReader, readBundledPacks } from '../../tools/readBundledPacks.ts';
 import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
 import { controlIssues } from './controlIssues.ts';
 

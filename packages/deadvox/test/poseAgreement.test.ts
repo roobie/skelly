@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { actorHitFlinchDuration, advanceStanceWeight, targetStanceWeight } from '../../engine/src/core/actorPose.ts';
-import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import { type ActorBody, actorFigure } from '../../engine/src/content.ts';
+import { type ActorBody, actorFigure } from '@skelly/engine/content';
+import {
+  actorHitFlinchDuration,
+  advanceStanceWeight,
+  targetStanceWeight,
+} from '@skelly/engine/internal/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import {
   actorPoseInputFor,
   clampJointAngles,
@@ -9,9 +12,10 @@ import {
   IDENTITY_M,
   jointAngles,
   posedActor,
-} from '../../engine/src/pose.ts';
-import type { Actor } from '../../engine/src/sim.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import type { Actor } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

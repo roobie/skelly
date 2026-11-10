@@ -1,5 +1,5 @@
+import { fillText, hundredthsText } from '@skelly/engine/text';
 import { html, render, type TemplateResult } from 'lit-html';
-import { fillText, hundredthsText } from '../../../engine/src/text.ts';
 
 const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
 export type AudioVolumeCategory = (typeof AUDIO_VOLUME_CATEGORIES)[number];

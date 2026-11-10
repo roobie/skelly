@@ -1,5 +1,13 @@
 // A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
 
+import type { Registry } from '@skelly/engine/content';
+import { AimController } from '@skelly/engine/internal/core/aim.ts';
+import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import { heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
+import { dominantSide, firearmsCombatTuning } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import {
   Box3,
   type BufferGeometry,
@@ -12,14 +20,6 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { AimController } from '../../engine/src/core/aim.ts';
-import { crosshairAimPoint } from '../../engine/src/core/crosshairTarget.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { Rng } from '../../engine/src/math.ts';
-import { heldFirearmTransform, NEUTRAL_AIM } from '../../engine/src/pose.ts';
-import { dominantSide, firearmsCombatTuning } from '../../engine/src/sim.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';

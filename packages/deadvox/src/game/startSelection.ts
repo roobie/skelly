@@ -1,4 +1,4 @@
-import type { StartDef } from '../../../engine/src/core/schema/starts.ts';
+import type { StartDef } from '@skelly/engine/content';
 import type { StartupContent } from './bundledContent.ts';
 
 export const requireStart = (content: StartupContent, id: string | undefined, debug = false): StartDef => {

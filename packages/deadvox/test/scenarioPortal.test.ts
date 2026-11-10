@@ -1,8 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf, servicePlacement } from '../../engine/src/core/cityPlan.ts';
-import { compileTemplate, placedPieces, type stampPlacement } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { doorPlan } from '../../engine/src/inventory.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf, servicePlacement } from '@skelly/engine/internal/core/cityPlan.ts';
+import { compileTemplate, placedPieces, type stampPlacement } from '@skelly/engine/internal/core/templates.ts';
+import { doorPlan } from '@skelly/engine/inventory';
 import {
   BlockEntities,
   CHUNK,
@@ -17,7 +16,8 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

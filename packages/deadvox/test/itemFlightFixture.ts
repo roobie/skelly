@@ -1,4 +1,4 @@
-import { steppedItemFlight } from '../../engine/src/core/itemThrow.ts';
+import { steppedItemFlight } from '@skelly/engine/internal/core/itemThrow.ts';
 
 export const presentationFlight = steppedItemFlight({
   from: [0, 1, 0],

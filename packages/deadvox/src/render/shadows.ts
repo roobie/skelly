@@ -29,6 +29,7 @@
 // another per-frame shadow pass. Its point-light copies do not cast shadows. The player's world figure is on
 // its own layer (shadowFlags.ts): the sun's pass sees it, the torch's pass doesn't.
 
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '@skelly/engine/look';
 import {
   BackSide,
   type Box3,
@@ -45,7 +46,6 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../../../engine/src/look.ts';
 import type { ChunkMeshes } from './chunks.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 

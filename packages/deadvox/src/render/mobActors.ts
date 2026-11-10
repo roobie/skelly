@@ -45,39 +45,16 @@
 // (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
 import {
-  type BufferGeometry,
-  type Camera,
-  Color,
-  CylinderGeometry,
-  DataTexture,
-  FloatType,
-  Frustum,
-  Group,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  Mesh,
-  MeshDepthMaterial,
-  MeshLambertMaterial,
-  NearestFilter,
-  RedFormat,
-  RGBAFormat,
-  Sphere,
-  SphereGeometry,
-  Vector3,
-  type WebGLRenderer,
-} from 'three';
-import {
   type ActorBody,
   type ActorClips,
   type ActorFigureFiles,
   actorFigure,
   actorFigureKey,
   type LookAtProfile,
-} from '../../../engine/src/content.ts';
-import type { LookDefaults } from '../../../engine/src/look.ts';
-import type { Quaternion } from '../../../engine/src/math.ts';
-import type { ColumnReveal } from '../../../engine/src/mesh.ts';
+} from '@skelly/engine/content';
+import type { LookDefaults } from '@skelly/engine/look';
+import type { Quaternion } from '@skelly/engine/math';
+import type { ColumnReveal } from '@skelly/engine/mesh';
 import {
   type ActorPoseScene,
   acidSpitWindupProgress,
@@ -112,7 +89,7 @@ import {
   type Transform,
   transpose,
   voxelBounds,
-} from '../../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
 import {
   type Actor,
   actorAttackReachMetres,
@@ -120,8 +97,31 @@ import {
   type EntityId,
   type EntityStore,
   type HitImpulse,
-} from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
+import {
+  type BufferGeometry,
+  type Camera,
+  Color,
+  CylinderGeometry,
+  DataTexture,
+  FloatType,
+  Frustum,
+  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshDepthMaterial,
+  MeshLambertMaterial,
+  NearestFilter,
+  RedFormat,
+  RGBAFormat,
+  Sphere,
+  SphereGeometry,
+  Vector3,
+  type WebGLRenderer,
+} from 'three';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { figureVariants } from './actorFigureVariants.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';

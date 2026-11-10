@@ -1,11 +1,11 @@
+import type { Registry } from '@skelly/engine/content';
+import { bookReadingHooks } from '@skelly/engine/internal/core/bookReading.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { craftingActivityTier } from '@skelly/engine/internal/core/skillTraining.ts';
+import { defOf, footprint, Inventory, planCraft } from '@skelly/engine/inventory';
+import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { bookReadingHooks } from '../../engine/src/core/bookReading.ts';
-import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
-import { dropSpots } from '../../engine/src/core/inventory.ts';
-import { craftingActivityTier } from '../../engine/src/core/skillTraining.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { defOf, footprint, Inventory, planCraft } from '../../engine/src/inventory.ts';
-import { bindReach, Character, realSeconds } from '../../engine/src/sim.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';

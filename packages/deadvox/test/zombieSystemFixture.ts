@@ -1,6 +1,6 @@
-import type { ActorSystemOptions } from '../../engine/src/core/actorSystem.ts';
-import { ActorSystem as CoreActorSystem } from '../../engine/src/sim.ts';
-import { siteGenerationOf } from '../../engine/src/world.ts';
+import type { ActorSystemOptions } from '@skelly/engine/internal/core/actorSystem.ts';
+import { ActorSystem as CoreActorSystem } from '@skelly/engine/sim';
+import { siteGenerationOf } from '@skelly/engine/world';
 import { baseRegistry } from './baseRegistry.ts';
 
 const liveness = siteGenerationOf(baseRegistry());

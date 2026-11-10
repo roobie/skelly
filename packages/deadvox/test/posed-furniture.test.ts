@@ -1,9 +1,9 @@
+import { buildRegistry } from '@skelly/engine/content';
+import type { TemplateDef } from '@skelly/engine/internal/core/content.ts';
+import { furnitureOf } from '@skelly/engine/internal/core/site.ts';
+import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { BlockEntities, rotationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { TemplateDef } from '../../engine/src/core/content.ts';
-import { furnitureOf } from '../../engine/src/core/site.ts';
-import { compileTemplate } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { BlockEntities, rotationOf } from '../../engine/src/world.ts';
 import {
   FIXTURE_MATERIAL,
   fixtureBreach,

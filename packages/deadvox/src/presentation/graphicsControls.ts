@@ -6,7 +6,7 @@ import {
   readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
-} from '../../../engine/src/look.ts';
+} from '@skelly/engine/look';
 import { readGraphicsSettings, writeGraphicsSettings } from './graphicsSettings.ts';
 
 interface GraphicsTargets {

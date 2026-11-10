@@ -1,8 +1,8 @@
-import type { FurnitureDef, ScreenText } from '../../../engine/src/content.ts';
-import { batteryCapacityMicrojoules, batteryEnergy, claimed } from '../../../engine/src/inventory.ts';
-import type { ReachSnapshot } from '../../../engine/src/sim.ts';
-import { decimalText, fillText } from '../../../engine/src/text.ts';
-import type { BlockEntity, SitePower } from '../../../engine/src/world.ts';
+import type { FurnitureDef, ScreenText } from '@skelly/engine/content';
+import { batteryCapacityMicrojoules, batteryEnergy, claimed } from '@skelly/engine/inventory';
+import type { ReachSnapshot } from '@skelly/engine/sim';
+import { decimalText, fillText } from '@skelly/engine/text';
+import type { BlockEntity, SitePower } from '@skelly/engine/world';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 
 export interface ChargerPanel {

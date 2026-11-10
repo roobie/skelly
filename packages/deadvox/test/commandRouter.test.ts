@@ -1,7 +1,7 @@
+import { Inventory } from '@skelly/engine/inventory';
+import { dominantSide, type Simulation } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { dominantSide, type Simulation } from '../../engine/src/sim.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { type CommandRouterPorts, createCommandRouter } from '../src/game/commandRouter.ts';
 import { type FirearmShotInput, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import type { ReplayControlSample } from '../src/game/inputReplay.ts';

@@ -1,8 +1,6 @@
-import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
-import { describe, expect, it, vi } from 'vitest';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { GRAPHICS_KNOBS, writeGraphicsParams } from '../../engine/src/core/graphics.ts';
-import { buildRegistry, requiredContentIssues } from '../../engine/src/content.ts';
+import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { GRAPHICS_KNOBS, writeGraphicsParams } from '@skelly/engine/internal/core/graphics.ts';
 import {
   drugVignetteShown,
   GRAPHICS_KEYS,
@@ -11,7 +9,9 @@ import {
   resolveGraphics,
   setGraphicsSetting,
   validGraphicsSettings,
-} from '../../engine/src/look.ts';
+} from '@skelly/engine/look';
+import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
+import { describe, expect, it, vi } from 'vitest';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';

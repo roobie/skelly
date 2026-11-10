@@ -4,9 +4,7 @@
 // goes through the handling queue, so it takes real seconds while the world keeps
 // running. Furniture shows its contents once it has been searched.
 
-import { html, nothing, render, type TemplateResult } from 'lit-html';
-import { live } from 'lit-html/directives/live.js';
-import type { ItemDef, Registry, ScreenText, WearSlot } from '../../../engine/src/content.ts';
+import type { ItemDef, Registry, ScreenText, WearSlot } from '@skelly/engine/content';
 import {
   batterySlotRefusal,
   bestPocket,
@@ -41,7 +39,7 @@ import {
   type WorkOption,
   weightOf,
   wornSlotOf,
-} from '../../../engine/src/inventory.ts';
+} from '@skelly/engine/inventory';
 import {
   BODY_REGIONS,
   type Body,
@@ -51,7 +49,7 @@ import {
   practiceForNextLevel,
   type ReachSnapshot,
   reachTuning,
-} from '../../../engine/src/sim.ts';
+} from '@skelly/engine/sim';
 import {
   coreLabel,
   countText,
@@ -61,8 +59,10 @@ import {
   percentText,
   statText,
   volumeText,
-} from '../../../engine/src/text.ts';
-import { type BlockEntity, searchTime, type Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/text';
+import { type BlockEntity, searchTime, type Vec3 } from '@skelly/engine/world';
+import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';

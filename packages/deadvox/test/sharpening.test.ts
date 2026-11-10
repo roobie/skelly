@@ -1,5 +1,5 @@
+import type { FurnitureDef, RecipeDef } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
-import type { FurnitureDef, RecipeDef } from '../../engine/src/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

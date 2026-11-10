@@ -1,10 +1,10 @@
-import { expect, it } from 'vitest';
 import {
   scenarioCertificate,
   scenarioLotResourceCertificate,
   scenarioStartCertificate,
-} from '../../engine/src/core/scenarioCertificate.ts';
-import type { CitySite } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/scenarioCertificate.ts';
+import type { CitySite } from '@skelly/engine/world';
+import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 
 // The full city cases live in the slow certificate file; this stub keeps the fail-closed guard in the default run.

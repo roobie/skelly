@@ -1,8 +1,8 @@
-import type { EntitySpec } from '../../../engine/src/core/blockEntities.ts';
-import { type LootPointSource, lootPointsByColumn } from '../../../engine/src/core/loot.ts';
-import { fillFurnitureLoot, type Site, SupplyFootprints } from '../../../engine/src/core/site.ts';
-import { blockId, type Registry } from '../../../engine/src/content.ts';
-import { type Scale, toChunk, type Vec3 } from '../../../engine/src/world.ts';
+import { blockId, type Registry } from '@skelly/engine/content';
+import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
+import { type LootPointSource, lootPointsByColumn } from '@skelly/engine/internal/core/loot.ts';
+import { fillFurnitureLoot, type Site, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import { type Scale, toChunk, type Vec3 } from '@skelly/engine/world';
 import fixture from './mods/reading-world.json' with { type: 'json' };
 
 export const readingWorld = (registry: Registry, seed: number, scale: Scale): Site => {

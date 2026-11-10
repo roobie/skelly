@@ -3,6 +3,18 @@
 // taller the more it holds.
 
 import {
+  defOf,
+  type EffectivePileDisplay,
+  effectivePileDisplays,
+  type Inventory,
+  type Item,
+  PILE_BUNDLE_WIDTH,
+  type PileScatterPlacement,
+  type Placed,
+  SPENT_CASE_SCATTER_CAP,
+} from '@skelly/engine/inventory';
+import type { ColumnReveal } from '@skelly/engine/mesh';
+import {
   Box3,
   BoxGeometry,
   Color,
@@ -15,18 +27,6 @@ import {
   Object3D,
   Vector3,
 } from 'three';
-import {
-  defOf,
-  type EffectivePileDisplay,
-  effectivePileDisplays,
-  type Inventory,
-  type Item,
-  PILE_BUNDLE_WIDTH,
-  type PileScatterPlacement,
-  type Placed,
-  SPENT_CASE_SCATTER_CAP,
-} from '../../../engine/src/inventory.ts';
-import type { ColumnReveal } from '../../../engine/src/mesh.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { itemLook } from './itemLook.ts';

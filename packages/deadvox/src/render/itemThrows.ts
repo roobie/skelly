@@ -1,5 +1,4 @@
-import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
-import { PILE_DISPLAY_KIND, type Registry } from '../../../engine/src/content.ts';
+import { PILE_DISPLAY_KIND, type Registry } from '@skelly/engine/content';
 import {
   cellCount,
   defOf,
@@ -10,8 +9,9 @@ import {
   type ItemFlight,
   itemFlightPoint,
   PILE_GRID,
-} from '../../../engine/src/inventory.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
+import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { itemLook } from './itemLook.ts';

@@ -1,16 +1,5 @@
-import {
-  BoxGeometry,
-  Group,
-  Matrix4,
-  Mesh,
-  MeshBasicMaterial,
-  MeshLambertMaterial,
-  Object3D,
-  Quaternion,
-  Vector3,
-} from 'three';
-import type { ArmRigDef, FigureDef, ModelDef, Registry } from '../../../engine/src/content.ts';
-import { defOf, type HandSide, type Item } from '../../../engine/src/inventory.ts';
+import type { ArmRigDef, FigureDef, ModelDef, Registry } from '@skelly/engine/content';
+import { defOf, type HandSide, type Item } from '@skelly/engine/inventory';
 import {
   type AimFrame,
   type HandPose,
@@ -22,8 +11,19 @@ import {
   heldHoldFrame,
   heldProneSupportAt,
   interpolateHandPose,
-} from '../../../engine/src/pose.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
+import {
+  BoxGeometry,
+  Group,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
+  Object3D,
+  Quaternion,
+  Vector3,
+} from 'three';
 import { type ArmRig, type ArmSolution, buildArmRig, solveArmRig } from './armRig.ts';
 import { presentHeldDisplay } from './heldDisplay.ts';
 import { itemLook } from './itemLook.ts';

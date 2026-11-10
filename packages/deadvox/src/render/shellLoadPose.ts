@@ -1,6 +1,6 @@
-import type { RoundFeedPoseTuning } from '../../../engine/src/content.ts';
-import type { HandSide } from '../../../engine/src/inventory.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import type { RoundFeedPoseTuning } from '@skelly/engine/content';
+import type { HandSide } from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
 
 /** Presentation estimates; the load job owns time and BR's look owns this path. */
 const FEED = {

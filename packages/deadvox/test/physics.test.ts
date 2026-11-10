@@ -1,12 +1,5 @@
+import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, makeScale, raycast, stepBody } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import {
-  type Body,
-  bodyOverlapsBlock,
-  bodyOverlapsTerrain,
-  makeScale,
-  raycast,
-  stepBody,
-} from '../../engine/src/world.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
 import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from './playerFixture.ts';
 

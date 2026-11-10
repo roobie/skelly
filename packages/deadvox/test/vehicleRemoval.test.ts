@@ -1,11 +1,11 @@
+import { CanonicalTerrain, installColumn } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { HandlingQueue, type Item, PILE_GRID } from '@skelly/engine/inventory';
+import { CHUNK, generateColumn, makeScale, type Terrain, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { CanonicalTerrain, installColumn } from '../../engine/src/core/canonicalTerrain.ts';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { dropSpots } from '../../engine/src/core/inventory.ts';
-import type { ColumnSource } from '../../engine/src/core/site.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { HandlingQueue, type Item, PILE_GRID } from '../../engine/src/inventory.ts';
-import { CHUNK, generateColumn, makeScale, type Terrain, type Vec3, World } from '../../engine/src/world.ts';
 import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

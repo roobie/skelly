@@ -1,7 +1,7 @@
+import { FUSED_MASS_FIGURE_SEED } from '@skelly/engine/pose';
+import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '@skelly/engine/sim';
+import { type Body, raycast, type Vec3 } from '@skelly/engine/world';
 import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../../../engine/src/pose.ts';
-import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '../../../engine/src/sim.ts';
-import { type Body, raycast, type Vec3 } from '../../../engine/src/world.ts';
 import type { Engine } from '../presentation/engine.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */

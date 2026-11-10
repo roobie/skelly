@@ -1,11 +1,11 @@
+import type { Registry } from '@skelly/engine/content';
+import { assertFirearmState, snapshotFirearm } from '@skelly/engine/internal/core/firearmState.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { NEUTRAL_AIM } from '@skelly/engine/pose';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { assertFirearmState, snapshotFirearm } from '../../engine/src/core/firearmState.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { defOf, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { NEUTRAL_AIM } from '../../engine/src/pose.ts';
-import { decodeSave, encodeSave, type SaveVersionComponents } from '../../engine/src/save.ts';
-import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { RevolverHandling } from '../src/game/revolverHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

@@ -1,4 +1,18 @@
 import {
+  type FurnitureMover,
+  liftFurniture,
+  placeFurniture,
+  placement,
+  tipCarried,
+  turnCarried,
+} from '@skelly/engine/internal/core/furnitureMove.ts';
+import { LadderHold } from '@skelly/engine/internal/core/ladders.ts';
+import { type Pose, rotatedSize, turnPose } from '@skelly/engine/internal/core/orientation.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { reachTuning } from '@skelly/engine/sim';
+import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '@skelly/engine/world';
+import {
   Box3,
   DirectionalLight,
   Group,
@@ -10,20 +24,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import {
-  type FurnitureMover,
-  liftFurniture,
-  placeFurniture,
-  placement,
-  tipCarried,
-  turnCarried,
-} from '../../engine/src/core/furnitureMove.ts';
-import { LadderHold } from '../../engine/src/core/ladders.ts';
-import { type Pose, rotatedSize, turnPose } from '../../engine/src/core/orientation.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
-import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { HeldItems } from '../src/render/hands.ts';

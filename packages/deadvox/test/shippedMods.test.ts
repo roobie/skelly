@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import process from 'node:process';
+import type { PackInput } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
-import type { PackInput } from '../../engine/src/packs.ts';
 import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 
 const folderIssues = (packs: readonly PackInput[]): string[] =>

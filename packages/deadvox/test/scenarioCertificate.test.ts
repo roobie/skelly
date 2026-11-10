@@ -1,22 +1,25 @@
 import { deepStrictEqual } from 'node:assert/strict';
-import { describe, expect, it, vi } from 'vitest';
-import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { perimeterRouteIssues } from '../../engine/src/core/cityLots.ts';
-import { buildCityPlan, type CityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
-import { climbCertificate } from '../../engine/src/core/climbCertificate.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { perimeterRouteIssues } from '@skelly/engine/internal/core/cityLots.ts';
+import { buildCityPlan, type CityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { climbCertificate } from '@skelly/engine/internal/core/climbCertificate.ts';
 import {
   type CertificatePhase,
   scenarioCertificate,
   scenarioCityCertificate,
   scenarioLotResourceCertificate,
   scenarioStartCertificate,
-} from '../../engine/src/core/scenarioCertificate.ts';
-import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import { undergroundPortIssues } from '../../engine/src/core/scenarioPortal.ts';
-import { ScenarioRouteSpace } from '../../engine/src/core/scenarioRoute.ts';
-import { compileAssembly, compileTemplate, placedBlockAt, placedPieces } from '../../engine/src/core/templates.ts';
-import { generateChunk } from '../../engine/src/core/worldgen.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
+} from '@skelly/engine/internal/core/scenarioCertificate.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { undergroundPortIssues } from '@skelly/engine/internal/core/scenarioPortal.ts';
+import { ScenarioRouteSpace } from '@skelly/engine/internal/core/scenarioRoute.ts';
+import {
+  compileAssembly,
+  compileTemplate,
+  placedBlockAt,
+  placedPieces,
+} from '@skelly/engine/internal/core/templates.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import {
   CHUNK,
   type Chunk,
@@ -29,7 +32,9 @@ import {
   terrainShapeOf,
   toChunk,
   type Vec3,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

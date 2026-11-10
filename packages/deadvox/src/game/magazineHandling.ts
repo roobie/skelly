@@ -1,14 +1,11 @@
 // Each round is one handling job, so releasing the input loses no ammunition.
 // See `SLICE-3.md`, "Firearms for real".
-import { type ActionText, actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
-import type { Inventory } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import { magazineSpec } from '../../../engine/src/core/magazine.ts';
-import { countText } from '../../../engine/src/core/numberText.ts';
-import { stowTarget } from '../../../engine/src/core/options.ts';
-import type { SoundEventId } from '../../../engine/src/core/soundEvents.ts';
+import { type ActionText, actionText, fillText } from '@skelly/engine/input';
+import type { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { defOf, type Item, magazineSpec, stowTarget } from '@skelly/engine/inventory';
+import type { SoundEventId } from '@skelly/engine/sound';
+import { countText } from '@skelly/engine/text';
+import type { Vec3 } from '@skelly/engine/world';
 
 export const MAGAZINE_LOAD_ACTION = 'magazine.load';
 export const MAGAZINE_STRIP_ACTION = 'magazine.strip';

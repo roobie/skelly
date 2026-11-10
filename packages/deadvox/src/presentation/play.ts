@@ -2,7 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from '../../../engine/src/content.ts';
+import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from '@skelly/engine/content';
 import {
   type ActionText,
   actionText,
@@ -11,7 +11,7 @@ import {
   type inventoryTabForAction,
   isForwardButton,
   PressDedupe,
-} from '../../../engine/src/input.ts';
+} from '@skelly/engine/input';
 import {
   chargeShare,
   claimed,
@@ -26,8 +26,8 @@ import {
   type Pile,
   pileScatterPlacements,
   wornNightVision,
-} from '../../../engine/src/inventory.ts';
-import { getBuildRevision } from '../../../engine/src/packs.ts';
+} from '@skelly/engine/inventory';
+import { getBuildRevision } from '@skelly/engine/packs';
 import {
   aimDirection,
   heldFirearmTransform,
@@ -37,8 +37,8 @@ import {
   playerHeldSeatFrame,
   playerLookPose,
   sightedFirearmModel,
-} from '../../../engine/src/pose.ts';
-import type { SaveSnapshot } from '../../../engine/src/save.ts';
+} from '@skelly/engine/pose';
+import type { SaveSnapshot } from '@skelly/engine/save';
 import {
   type Actor,
   applyStartState,
@@ -63,10 +63,10 @@ import {
   realSeconds as realDuration,
   realTimestamp,
   stageMarkArea,
-} from '../../../engine/src/sim.ts';
-import { type SoundEmission, soundVariantKey } from '../../../engine/src/sound.ts';
-import { fillText as fillScreenText } from '../../../engine/src/text.ts';
-import { type BlockEntity, CitySite, raycast, type Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import { type SoundEmission, soundVariantKey } from '@skelly/engine/sound';
+import { fillText as fillScreenText } from '@skelly/engine/text';
+import { type BlockEntity, CitySite, raycast, type Vec3 } from '@skelly/engine/world';
 import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/audioPresentation.ts';
 import { columnArrival } from '../game/columnArrival.ts';
 import { createCommandRouter } from '../game/commandRouter.ts';

@@ -1,8 +1,8 @@
 import process from 'node:process';
 import { gunzipSync } from 'node:zlib';
+import { DEFAULT_MAX_PAYLOAD_BYTES, SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { expect, it } from 'vitest';
-import { DEFAULT_MAX_PAYLOAD_BYTES, SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
 import { columnArrival } from '../src/game/columnArrival.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

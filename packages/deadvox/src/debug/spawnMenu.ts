@@ -2,8 +2,8 @@
 // content and drops it at your feet, for looking at models and trying things out
 // without hunting through the world's furniture.
 
+import type { Registry } from '@skelly/engine/content';
 import { html, render, type TemplateResult } from 'lit-html';
-import type { Registry } from '../../../engine/src/content.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 
 const WHITESPACE = /\s+/;

@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
+import type { ItemDef } from '@skelly/engine/content';
+import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import { dayPhaseAt } from '@skelly/engine/sim';
+import { skyAt } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
-import type { ItemDef } from '../../engine/src/content.ts';
-import { dayPhaseAt } from '../../engine/src/sim.ts';
-import { skyAt } from '../../engine/src/sky.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';

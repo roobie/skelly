@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   economyEligible,
   LOOT_TIERS,
@@ -8,11 +7,12 @@ import {
   militaryOnlyEconomy,
   rollLoot,
   withLootDepth,
-} from '../../engine/src/core/loot.ts';
-import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import { lootSourcesOf } from '../../engine/src/core/site.ts';
-import { compileAssembly, placedGroundLoot, placedPieces } from '../../engine/src/core/templates.ts';
-import { BLOCK_SIZE, makeScale } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/loot.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
+import { compileAssembly, placedGroundLoot, placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';

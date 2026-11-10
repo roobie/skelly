@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import type { MeleeWeapon } from '../../../engine/src/core/actorSystem.ts';
-import type { MeleeClassDef } from '../../../engine/src/core/content.ts';
+import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
+import type { MeleeClassDef } from '@skelly/engine/internal/core/content.ts';
 import { unarmedMeleeWeapon } from '../../src/game/melee.ts';
 
 const baseMeleeClasses = (): ReadonlyMap<string, MeleeClassDef> => {

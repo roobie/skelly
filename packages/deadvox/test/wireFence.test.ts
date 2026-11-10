@@ -1,8 +1,7 @@
-import { expect, it } from 'vitest';
-import { perceivePlayer } from '../../engine/src/core/agentPerception.ts';
-import { extractPadded, extractWide } from '../../engine/src/core/meshInput.ts';
-import { isEnclosed } from '../../engine/src/core/world.ts';
-import { buildMesh } from '../../engine/src/mesh.ts';
+import { perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
+import { extractPadded, extractWide } from '@skelly/engine/internal/core/meshInput.ts';
+import { isEnclosed } from '@skelly/engine/internal/core/world.ts';
+import { buildMesh } from '@skelly/engine/mesh';
 import {
   BlockEntities,
   type Body,
@@ -12,7 +11,8 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';

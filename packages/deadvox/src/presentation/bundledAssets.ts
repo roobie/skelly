@@ -1,4 +1,4 @@
-import { declaredAsset } from '../../../engine/src/packs.ts';
+import { declaredAsset } from '@skelly/engine/packs';
 import type { BundledPack } from '../game/bundledContent.ts';
 
 /** Asset URLs keyed by owning pack id and path, with the packs whose roots own them; the product globs both. */

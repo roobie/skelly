@@ -1,6 +1,6 @@
+import { claimed, type Inventory, type Item, type Location, lightExposureFor } from '@skelly/engine/inventory';
+import type { PoweredLight } from '@skelly/engine/world';
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
-import { claimed, type Inventory, type Item, type Location, lightExposureFor } from '../../../engine/src/inventory.ts';
-import type { PoweredLight } from '../../../engine/src/world.ts';
 import type { HeldItems } from './hands.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 import type { PileMeshes } from './piles.ts';

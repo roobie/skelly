@@ -1,10 +1,10 @@
+import { buildRegistry, type Registry, requiredContentIssues } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { resolveWeatheringUrl } from '@skelly/engine/internal/core/weatheringUrl.ts';
+import { claimed, claimedId } from '@skelly/engine/inventory';
+import { worldGravity } from '@skelly/engine/sim';
+import { siteGenerationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { resolveWeatheringUrl } from '../../engine/src/core/weatheringUrl.ts';
-import { buildRegistry, type Registry, requiredContentIssues } from '../../engine/src/content.ts';
-import { claimed, claimedId } from '../../engine/src/inventory.ts';
-import { worldGravity } from '../../engine/src/sim.ts';
-import { siteGenerationOf } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const compression = (id: string) => ({

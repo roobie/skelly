@@ -1,8 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { heldEjectionPose } from '../../engine/src/core/heldPose.ts';
-import { blockId } from '../../engine/src/content.ts';
-import { defOf, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { NEUTRAL_AIM } from '../../engine/src/pose.ts';
+import { blockId } from '@skelly/engine/content';
+import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
+import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { NEUTRAL_AIM } from '@skelly/engine/pose';
 import {
   BlockEntities,
   type Body,
@@ -13,13 +12,14 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { firearmsCombatTuning } from '../../engine/src/sim.ts';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import {
   FirearmMechanics,
   type FirearmShotEffect,

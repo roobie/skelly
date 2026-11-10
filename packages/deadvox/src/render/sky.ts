@@ -1,3 +1,4 @@
+import type { Rgb, Sky } from '@skelly/engine/sky';
 import {
   type Color,
   type DirectionalLight,
@@ -7,7 +8,6 @@ import {
   type Scene,
   SRGBColorSpace,
 } from 'three';
-import type { Rgb, Sky } from '../../../engine/src/sky.ts';
 import { installDistanceFog } from './distanceFog.ts';
 
 export interface SkyTargets {

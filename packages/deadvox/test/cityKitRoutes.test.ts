@@ -1,10 +1,15 @@
+import { cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '@skelly/engine/internal/core/stairFlight.ts';
+import { OWNERSHIP_AIR as OWNED_AIR } from '@skelly/engine/internal/core/templateOwnership.ts';
+import { templateReachableStandingPositions } from '@skelly/engine/internal/core/templateSpatial.ts';
+import {
+  type CompiledTemplate,
+  cellsOf,
+  compileAssembly,
+  kitSlotChoices,
+} from '@skelly/engine/internal/core/templates.ts';
+import { ownershipCell, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { cityGridOf } from '../../engine/src/core/cityPlan.ts';
-import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../../engine/src/core/stairFlight.ts';
-import { OWNERSHIP_AIR as OWNED_AIR } from '../../engine/src/core/templateOwnership.ts';
-import { templateReachableStandingPositions } from '../../engine/src/core/templateSpatial.ts';
-import { type CompiledTemplate, cellsOf, compileAssembly, kitSlotChoices } from '../../engine/src/core/templates.ts';
-import { ownershipCell, type Vec3 } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

@@ -1,4 +1,4 @@
-import { toChunk } from '../../../engine/src/core/coords.ts';
+import { toChunk } from '@skelly/engine/world';
 import type {
   ReplayAction,
   ReplayColumnChange,

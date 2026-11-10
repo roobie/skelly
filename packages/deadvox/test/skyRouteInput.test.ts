@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
+
+import type { Binding } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import type { Binding } from '../../engine/src/input.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { forwardedActionHolds, KeyboardInput } from '../src/presentation/inputBindings.ts';
 

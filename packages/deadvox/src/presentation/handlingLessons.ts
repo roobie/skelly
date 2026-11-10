@@ -1,5 +1,5 @@
-import type { GuidanceDef, HandlingFact, Registry } from '../../../engine/src/content.ts';
-import { defOf, type Item } from '../../../engine/src/inventory.ts';
+import type { GuidanceDef, HandlingFact, Registry } from '@skelly/engine/content';
+import { defOf, type Item } from '@skelly/engine/inventory';
 import type { FirearmOutcome } from '../game/firearmHandling.ts';
 
 type Track = GuidanceDef['handling'][number];

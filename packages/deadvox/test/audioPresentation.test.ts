@@ -1,9 +1,9 @@
+import type { Registry, SoundDef } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import type { Item } from '@skelly/engine/inventory';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import type { Registry, SoundDef } from '../../engine/src/content.ts';
-import type { Item } from '../../engine/src/inventory.ts';
-import type { SoundEmission } from '../../engine/src/sound.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { createRefusalPresenter, firearmShotSound, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

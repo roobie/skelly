@@ -1,10 +1,10 @@
+import { authoredLayoutIssues, inPolygon } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { profileHeight } from '@skelly/engine/internal/core/authoredTerrain.mjs';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { generateChunk, terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import { CHUNK, generateColumn, makeScale, sitePalette, terrainShapeOf, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues, inPolygon } from '../../engine/src/core/authoredLayout.ts';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { profileHeight } from '../../engine/src/core/authoredTerrain.mjs';
-import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
-import { generateChunk, terrainHeight } from '../../engine/src/core/worldgen.ts';
-import { CHUNK, generateColumn, makeScale, sitePalette, terrainShapeOf, World } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const scale = makeScale(0.5);

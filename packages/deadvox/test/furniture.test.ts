@@ -1,15 +1,19 @@
-import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
-import { doorPanel } from '../../engine/src/core/blockEntities.ts';
-import type { TemplateDef } from '../../engine/src/core/content.ts';
-import { furnitureMoveStamina } from '../../engine/src/core/furnitureMove.ts';
-import { pickFurniture } from '../../engine/src/core/furniturePick.ts';
-import { handlingWeights } from '../../engine/src/core/inventory.ts';
-import { couldFit } from '../../engine/src/core/items.ts';
-import { cellsOf, compileTemplate, placedPieces, stampPlacement, type Turn } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { HandlingQueue, Inventory, ItemFactory, weightOf } from '../../engine/src/inventory.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { doorPanel } from '@skelly/engine/internal/core/blockEntities.ts';
+import type { TemplateDef } from '@skelly/engine/internal/core/content.ts';
+import { furnitureMoveStamina } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { couldFit } from '@skelly/engine/internal/core/items.ts';
+import {
+  cellsOf,
+  compileTemplate,
+  placedPieces,
+  stampPlacement,
+  type Turn,
+} from '@skelly/engine/internal/core/templates.ts';
+import { HandlingQueue, Inventory, ItemFactory, weightOf } from '@skelly/engine/inventory';
+import { reachTuning } from '@skelly/engine/sim';
 import {
   BLOCK_SIZE,
   BlockEntities,
@@ -19,7 +23,9 @@ import {
   panelFor,
   poseKey,
   searchTime,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { describe, expect, it } from 'vitest';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';

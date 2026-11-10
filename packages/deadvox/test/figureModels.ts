@@ -1,8 +1,9 @@
 // The player figure's exported models, loaded from their files, behind the `ModelLibrary` calls the world figure
 // and the first-person arms make. Tests spread it into their library fakes so the view arms rig the real arm model.
+
+import { FIGURE_LIMBS, type Registry } from '@skelly/engine/content';
 import { Group, type Object3D } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { FIGURE_LIMBS, type Registry } from '../../engine/src/content.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
 import { indexModelMaterials, type ModelLibrary } from '../src/render/models.ts';
 import { modFileBytes } from './modFile.ts';

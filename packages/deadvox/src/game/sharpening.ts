@@ -1,14 +1,15 @@
-import type { BlockEntity } from '../../../engine/src/core/blockEntities.ts';
-import type { Character } from '../../../engine/src/core/character.ts';
-import type { RecipeDef } from '../../../engine/src/core/content.ts';
-import { craftWorkDuration } from '../../../engine/src/core/crafting.ts';
-import type { HandlingQueue, JobParams } from '../../../engine/src/core/handling.ts';
-import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
-import type { ReachSnapshot } from '../../../engine/src/core/reach.ts';
-import { recipeSkillLevel, recipeSkillRequirements } from '../../../engine/src/core/recipeSkills.ts';
-import { craftingActivityTier } from '../../../engine/src/core/skillTraining.ts';
-import { gameSecondsToMinutes } from '../../../engine/src/core/time.ts';
+import type { RecipeDef } from '@skelly/engine/content';
+import type { HandlingQueue, HandSide, Inventory, JobParams } from '@skelly/engine/inventory';
+import {
+  craftWorkDuration,
+  defOf,
+  type Item,
+  recipeSkillLevel,
+  recipeSkillRequirements,
+} from '@skelly/engine/inventory';
+import type { Character, ReachSnapshot } from '@skelly/engine/sim';
+import { craftingActivityTier, gameSecondsToMinutes } from '@skelly/engine/sim';
+import type { BlockEntity } from '@skelly/engine/world';
 
 export const sharpeningMethods = (inventory: Inventory, blade: Item): RecipeDef[] =>
   [...inventory.registry.recipes.values()].filter(

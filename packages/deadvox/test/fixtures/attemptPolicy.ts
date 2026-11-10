@@ -1,5 +1,5 @@
-import type { SiteLayoutDef } from '../../../engine/src/core/schema.ts';
-import type { AttemptPolicyDef } from '../../../engine/src/content.ts';
+import type { AttemptPolicyDef } from '@skelly/engine/content';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
 import { fixtureLootContext } from '../economyFixtures.ts';
 
 export const makeAttemptPolicy = (overrides: Partial<AttemptPolicyDef> = {}): AttemptPolicyDef => ({

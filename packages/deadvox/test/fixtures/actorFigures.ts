@@ -1,5 +1,5 @@
-import { actorFigureKey } from '../../../engine/src/content.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../../../engine/src/pose.ts';
+import { actorFigureKey } from '@skelly/engine/content';
+import { FUSED_MASS_FIGURE_SEED } from '@skelly/engine/pose';
 
 interface FixtureActor {
   readonly id: string;

@@ -1,8 +1,15 @@
-import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../../../engine/src/core/canonicalJson.ts';
-import { SKIP_COMPRESSION } from '../../../engine/src/core/compression.ts';
-import { INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../../../engine/src/core/inputActions.ts';
-import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../../../engine/src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../../../engine/src/core/saveState.ts';
+import { INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '@skelly/engine/input';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import {
+  canonicalJsonBytes,
+  decodeSave,
+  encodeSave,
+  isPlainRecord,
+  type SaveContentKind,
+  type SaveWorldOptions,
+  SHA256_HEX,
+  SKIP_COMPRESSION,
+} from '@skelly/engine/save';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';

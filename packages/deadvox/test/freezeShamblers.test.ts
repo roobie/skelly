@@ -1,9 +1,9 @@
+import { actorFigure } from '@skelly/engine/content';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import type { HumanoidHitRegion } from '@skelly/engine/pose';
+import type { Actor, MeleeResult } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import { actorFigure } from '../../engine/src/content.ts';
-import type { HumanoidHitRegion } from '../../engine/src/pose.ts';
-import type { Actor, MeleeResult } from '../../engine/src/sim.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

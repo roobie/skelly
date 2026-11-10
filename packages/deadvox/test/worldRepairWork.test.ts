@@ -1,10 +1,10 @@
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { craftActionHooks } from '../../engine/src/core/craftWork.ts';
-import { snapshotItem } from '../../engine/src/core/items.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { CraftCommands, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { bindReach, Character, realSeconds } from '../../engine/src/sim.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';

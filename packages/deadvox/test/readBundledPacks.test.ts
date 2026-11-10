@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { buildRegistry } from '@skelly/engine/content';
+import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
+import { admitPacks, packContentHash } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { validate } from '../src/cli/validate.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { launcherModCatalogue } from '../../engine/src/modCatalogue.ts';
-import { admitPacks, packContentHash } from '../../engine/src/packs.ts';
 import { declaredAssetGlobsPlugin } from '../tools/declaredAssetGlobsPlugin.ts';
 import {
   bundledPackDefines,

@@ -1,6 +1,5 @@
-import { expect, it } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { generateChunk } from '../../engine/src/core/worldgen.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import {
   BlockEntities,
   raycast,
@@ -10,7 +9,8 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { expect, it } from 'vitest';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';

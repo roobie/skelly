@@ -1,8 +1,14 @@
-import { BundleAdmission, type BundleStamp } from '../../../engine/src/core/bundleAdmission.ts';
-import { buildRegistry, type ContentSource } from '../../../engine/src/core/content.ts';
-import { admitPacks, type PackInput, type PackManifest, packStartIssues } from '../../../engine/src/core/packAdmission.ts';
-import { logicalKey } from '../../../engine/src/core/packFiles.ts';
-import type { SaveVersionComponents } from '../../../engine/src/core/saveFormat.ts';
+import { buildRegistry, type ContentSource } from '@skelly/engine/content';
+import {
+  admitPacks,
+  BundleAdmission,
+  type BundleStamp,
+  logicalKey,
+  type PackInput,
+  type PackManifest,
+  packStartIssues,
+} from '@skelly/engine/packs';
+import type { SaveVersionComponents } from '@skelly/engine/save';
 
 declare const __SKELLY_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
 declare const __SKELLY_ADMISSION_FINGERPRINT__: string | undefined;

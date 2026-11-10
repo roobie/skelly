@@ -1,12 +1,9 @@
-import { actionText } from '../../../engine/src/core/actionText.ts';
-import type { BlockEntity, DoorOperation } from '../../../engine/src/core/blockEntities.ts';
-import { dominantSide } from '../../../engine/src/core/character.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import type { HandlingQueue, JobParams } from '../../../engine/src/core/handling.ts';
-import type { Inventory } from '../../../engine/src/core/inventory.ts';
-import { doorPlan, heldDoorBar, heldKeyLocks } from '../../../engine/src/core/options.ts';
-import type { Body } from '../../../engine/src/core/physics.ts';
-import type { SoundEventId } from '../../../engine/src/core/soundEvents.ts';
+import { actionText } from '@skelly/engine/input';
+import type { HandlingQueue, Inventory, JobParams } from '@skelly/engine/inventory';
+import { doorPlan, heldDoorBar, heldKeyLocks } from '@skelly/engine/inventory';
+import { dominantSide } from '@skelly/engine/sim';
+import type { SoundEventId } from '@skelly/engine/sound';
+import type { BlockEntity, Body, DoorOperation, Vec3 } from '@skelly/engine/world';
 
 export const DOOR_ACTION = 'furniture.door';
 

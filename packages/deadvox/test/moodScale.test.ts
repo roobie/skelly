@@ -1,3 +1,4 @@
+import type { GraphicsOptions } from '@skelly/engine/look';
 import {
   type FramebufferTexture,
   NoToneMapping,
@@ -8,7 +9,6 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { GraphicsOptions } from '../../engine/src/look.ts';
 import { Mood } from '../src/render/mood.ts';
 
 const query = vi.hoisted(() => ({ begin: vi.fn(), end: vi.fn() }));

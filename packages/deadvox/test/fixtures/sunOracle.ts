@@ -1,6 +1,6 @@
-import type { DayCycle } from '../../../engine/src/core/dayPhase.ts';
-import { sunDirection } from '../../../engine/src/core/sky.ts';
-import { raycast, type SolidAt } from '../../../engine/src/world.ts';
+import type { DayCycle } from '@skelly/engine/internal/core/dayPhase.ts';
+import { sunDirection } from '@skelly/engine/internal/core/sky.ts';
+import { raycast, type SolidAt } from '@skelly/engine/world';
 
 /** An uncached daylight sky-exposure test: the oracle `SunExposureCache` is checked against. */
 export const sunExposedAt = ({

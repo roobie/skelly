@@ -1,5 +1,4 @@
-import type { Body } from '../../../engine/src/core/physics.ts';
-import type { Scale } from '../../../engine/src/core/scale.ts';
+import type { Body, Scale } from '@skelly/engine/world';
 import type { MoveIntent } from './player.ts';
 
 export interface DebugNoclipStep {

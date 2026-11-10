@@ -1,5 +1,5 @@
+import { realTimestamp } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { realTimestamp } from '../../engine/src/sim.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

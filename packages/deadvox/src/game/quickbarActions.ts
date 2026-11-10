@@ -1,9 +1,7 @@
-import { actionText } from '../../../engine/src/core/actionText.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
-import type { Inventory } from '../../../engine/src/core/inventory.ts';
-import type { Item } from '../../../engine/src/core/items.ts';
-import { quickbarPutAway, quickbarTake } from '../../../engine/src/core/options.ts';
+import { actionText } from '@skelly/engine/input';
+import type { HandlingQueue, Inventory, Item } from '@skelly/engine/inventory';
+import { quickbarPutAway, quickbarTake } from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
 import type { Survival } from './survival.ts';
 
 interface Dependencies {

@@ -1,9 +1,9 @@
+import { pileDropSound } from '@skelly/engine/internal/core/dropSounds.ts';
+import { settleCell } from '@skelly/engine/internal/core/itemThrow.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { pileDropSound } from '../../engine/src/core/dropSounds.ts';
-import { settleCell } from '../../engine/src/core/itemThrow.ts';
 import { spawnDebugItem } from '../src/debug/spawnItem.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { World } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const fixture = (floor: boolean) => {

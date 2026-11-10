@@ -1,16 +1,17 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Shared routing assertions are called only by tests.
-import { describe, expect, it, vi } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import { StressCity } from '../../engine/src/core/city.ts';
-import { dropSpots } from '../../engine/src/core/inventory.ts';
+
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { StressCity } from '@skelly/engine/internal/core/city.ts';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
-import * as selection from '../../engine/src/core/loot.ts';
-import { placementLootIssues } from '../../engine/src/core/placementLoot.ts';
-import { lootSourcesOf, type Site } from '../../engine/src/core/site.ts';
-import { compileTemplate, placedPieces } from '../../engine/src/core/templates.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { PILE_GRID } from '../../engine/src/inventory.ts';
-import { CHUNK, makeScale, type Placement, toChunk, type Vec3, World } from '../../engine/src/world.ts';
+import * as selection from '@skelly/engine/internal/core/loot.ts';
+import { placementLootIssues } from '@skelly/engine/internal/core/placementLoot.ts';
+import { lootSourcesOf, type Site } from '@skelly/engine/internal/core/site.ts';
+import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { PILE_GRID } from '@skelly/engine/inventory';
+import { CHUNK, makeScale, type Placement, toChunk, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
 import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';

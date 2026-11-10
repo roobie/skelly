@@ -1,4 +1,4 @@
-import type { LookDefaults } from '../../engine/src/look.ts';
+import type { LookDefaults } from '@skelly/engine/look';
 
 // A default look of the test's own, with every switch on and the tone mapper non-trivial, so the
 // URL tests exercise both directions of each switch without depending on the content's look.

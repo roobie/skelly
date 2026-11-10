@@ -1,7 +1,7 @@
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { CraftCommands, HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { gameMinutes } from '../../engine/src/core/time.ts';
-import { CraftCommands, HandlingQueue, type HandSide, Inventory } from '../../engine/src/inventory.ts';
-import { bindReach, Character } from '../../engine/src/sim.ts';
 import { ItemActionSelection, itemActionsFor } from '../src/game/itemActions.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Sharpening, sharpeningTargetForHand } from '../src/game/sharpening.ts';

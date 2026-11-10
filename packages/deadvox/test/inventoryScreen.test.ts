@@ -1,12 +1,9 @@
-import { Window } from 'happy-dom';
-import { Group } from 'three';
-import { afterAll, describe, expect, it, vi } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY } from '../../engine/src/core/character.ts';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { swapBattery } from '../../engine/src/core/lights.ts';
-import { toHands, wieldOrPocket } from '../../engine/src/core/options.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { inventoryTabForAction } from '../../engine/src/input.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { inventoryTabForAction } from '@skelly/engine/input';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
 import {
   firearmSlotIds,
   HandlingQueue,
@@ -14,9 +11,12 @@ import {
   planCraft,
   type WorkOperation,
   type WorkOption,
-} from '../../engine/src/inventory.ts';
-import { Body, bindReach, Character, practiceForNextLevel } from '../../engine/src/sim.ts';
-import { coreLabel, countText, decimalText, fillText } from '../../engine/src/text.ts';
+} from '@skelly/engine/inventory';
+import { Body, bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
+import { coreLabel, countText, decimalText, fillText } from '@skelly/engine/text';
+import { Window } from 'happy-dom';
+import { Group } from 'three';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';

@@ -1,5 +1,23 @@
 // Transitional optical effects and carry adapter; physical actor colour belongs to PlayerMeshes.
 
+import type { FigureDef } from '@skelly/engine/content';
+import {
+  claimed,
+  defOf,
+  type HandSide,
+  type Inventory,
+  type Item,
+  isInHeldItemSlotTree,
+} from '@skelly/engine/inventory';
+import {
+  heldAdsStandoffMetres,
+  heldTorsoForwardDegrees,
+  type MeleePoseFrame,
+  type OpticLensFrame,
+  presentedOptic,
+  projectLensAperture,
+  projectOpticReticle,
+} from '@skelly/engine/pose';
 import {
   DirectionalLight,
   DoubleSide,
@@ -16,17 +34,6 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import type { FigureDef } from '../../../engine/src/content.ts';
-import { claimed, defOf, type HandSide, type Inventory, type Item, isInHeldItemSlotTree } from '../../../engine/src/inventory.ts';
-import {
-  heldAdsStandoffMetres,
-  heldTorsoForwardDegrees,
-  type MeleePoseFrame,
-  type OpticLensFrame,
-  presentedOptic,
-  projectLensAperture,
-  projectOpticReticle,
-} from '../../../engine/src/pose.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';

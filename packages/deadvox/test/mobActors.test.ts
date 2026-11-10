@@ -2,23 +2,15 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import {
-  type BufferGeometry,
-  type DataTexture,
-  type InstancedBufferAttribute,
-  type InstancedMesh,
-  PerspectiveCamera,
-} from 'three';
-import { describe, expect, it, vi } from 'vitest';
-import { actorHitFlinchDuration, flinchSideForId } from '../../engine/src/core/actorPose.ts';
-import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import type { AgentMode } from '../../engine/src/core/actorState.ts';
-import type { ActorSystemOptions } from '../../engine/src/core/actorSystem.ts';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { MapEntityStore } from '../../engine/src/core/entities.ts';
-import { initialActorFootstepClock } from '../../engine/src/core/footsteps.ts';
-import { type ActorBody, actorFigure, buildRegistry } from '../../engine/src/content.ts';
-import { Rng } from '../../engine/src/math.ts';
+import { type ActorBody, actorFigure, buildRegistry } from '@skelly/engine/content';
+import { actorHitFlinchDuration, flinchSideForId } from '@skelly/engine/internal/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import type { AgentMode } from '@skelly/engine/internal/core/actorState.ts';
+import type { ActorSystemOptions } from '@skelly/engine/internal/core/actorSystem.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
+import { initialActorFootstepClock } from '@skelly/engine/internal/core/footsteps.ts';
+import { Rng } from '@skelly/engine/math';
 import {
   actorPoseInputFor,
   applyPoint,
@@ -35,9 +27,17 @@ import {
   quatToMat3,
   severedBoneSet,
   transpose,
-} from '../../engine/src/pose.ts';
-import { type Actor, reachTuning } from '../../engine/src/sim.ts';
-import { CHUNK, makeScale, type Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import { type Actor, reachTuning } from '@skelly/engine/sim';
+import { CHUNK, makeScale, type Vec3 } from '@skelly/engine/world';
+import {
+  type BufferGeometry,
+  type DataTexture,
+  type InstancedBufferAttribute,
+  type InstancedMesh,
+  PerspectiveCamera,
+} from 'three';
+import { describe, expect, it, vi } from 'vitest';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';

@@ -2,17 +2,17 @@
 import { webcrypto } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { afterEach, expect, it, vi } from 'vitest';
-import { ScenarioRun } from '../../engine/src/core/scenarioRun.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { ScenarioRun } from '@skelly/engine/internal/core/scenarioRun.ts';
 import {
   type ActiveBrowserMod,
   currentSaveVersionIdentity,
   decodeSave,
   encodeSave,
   type SaveSnapshot,
-} from '../../engine/src/save.ts';
-import { Character, realTimestamp } from '../../engine/src/sim.ts';
+} from '@skelly/engine/save';
+import { Character, realTimestamp } from '@skelly/engine/sim';
+import { afterEach, expect, it, vi } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

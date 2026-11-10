@@ -1,4 +1,4 @@
-import type { LongJob } from '../../../engine/src/core/longAction.ts';
+import type { LongJob } from '@skelly/engine/sim';
 
 export const continueActionResumesJob = (jobType: LongJob['jobType'] | undefined): boolean =>
   jobType === 'wait' ||

@@ -1,5 +1,5 @@
-import { type ActorPlayerHit, pickActorHitRegion } from '../../../engine/src/core/actorSystem.ts';
-import type { Simulation } from '../../../engine/src/core/sim.ts';
+import type { Simulation } from '@skelly/engine/sim';
+import { type ActorPlayerHit, pickActorHitRegion } from '@skelly/engine/sim';
 
 export const applyActorPlayerHit = (sim: Simulation, hit: ActorPlayerHit): void => {
   const region = pickActorHitRegion(hit.hitRegions, hit.regionRoll);

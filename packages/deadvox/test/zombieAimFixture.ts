@@ -1,7 +1,7 @@
-import type { CrosshairTarget } from '../../engine/src/core/crosshairTarget.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { crosshairTarget } from '../../engine/src/sim.ts';
-import { BlockEntities, makeScale, type Vec3 } from '../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { CrosshairTarget } from '@skelly/engine/internal/core/crosshairTarget.ts';
+import { crosshairTarget } from '@skelly/engine/sim';
+import { BlockEntities, makeScale, type Vec3 } from '@skelly/engine/world';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

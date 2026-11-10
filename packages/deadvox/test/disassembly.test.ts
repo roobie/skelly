@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildRegistry, type ItemDef } from '@skelly/engine/content';
+import { disassemblyOutputs, planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
+import type { MeleeClassDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { disassemblyOutputs, planDisassembly } from '../../engine/src/core/disassembly.ts';
-import type { MeleeClassDef } from '../../engine/src/core/schema.ts';
-import { gameMinutes } from '../../engine/src/core/time.ts';
-import { buildRegistry, type ItemDef } from '../../engine/src/content.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { bindReach, Character } from '../../engine/src/sim.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';

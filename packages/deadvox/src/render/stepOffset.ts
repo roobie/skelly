@@ -1,5 +1,5 @@
-import { type StepOffsetState, updateStepOffset } from '../../../engine/src/pose.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import { type StepOffsetState, updateStepOffset } from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
 
 /** Render-only vertical compensation for grounded, one-step terrain snaps. */
 export class StepOffset {

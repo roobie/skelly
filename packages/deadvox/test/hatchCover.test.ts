@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { type FurnitureMover, movableRefusal, placement } from '../../engine/src/core/furnitureMove.ts';
-import { pickFurniture } from '../../engine/src/core/furniturePick.ts';
-import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import { cellsOf, pieceSize } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { type FurnitureMover, movableRefusal, placement } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { cellsOf, pieceSize } from '@skelly/engine/internal/core/templates.ts';
+import { Inventory } from '@skelly/engine/inventory';
 import {
   type BlockEntity,
   footprint,
@@ -15,7 +14,8 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

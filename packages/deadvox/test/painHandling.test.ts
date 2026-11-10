@@ -1,7 +1,7 @@
+import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
+import { dominantSide, offSide } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { applyStartKit } from '../../engine/src/core/startState.ts';
-import { dominantSide, offSide } from '../../engine/src/sim.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { pumpStart } from './fixtures/debugStarts.ts';

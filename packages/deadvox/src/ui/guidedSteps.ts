@@ -1,7 +1,7 @@
+import type { GuidanceDef } from '@skelly/engine/content';
+import type { Inventory } from '@skelly/engine/inventory';
+import { dominantSide } from '@skelly/engine/sim';
 import { html, render } from 'lit-html';
-import type { GuidanceDef } from '../../../engine/src/content.ts';
-import type { Inventory } from '../../../engine/src/inventory.ts';
-import { dominantSide } from '../../../engine/src/sim.ts';
 import { showControlsTopic } from '../presentation/controls.ts';
 import type { GuidedSteps } from '../presentation/guidedSteps.ts';
 import { type KeyLabels, keyCap } from './keyCap.ts';

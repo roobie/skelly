@@ -1,20 +1,21 @@
 // glTF names belong to the parser, not Object3D.name (Three.js sanitizes colons).
 // Child-index paths carry the association into independent held clones without name lookup.
-import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
-import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
-import type { GunModelDef, ModelDef } from '../../../engine/src/content.ts';
+
+import type { GunModelDef, ModelDef } from '@skelly/engine/content';
 import {
   actionCycleSeconds,
   type CylinderState,
   type FirearmAction,
   type FirearmMode,
   type HandSide,
-} from '../../../engine/src/inventory.ts';
-import { heldAnchorOffset } from '../../../engine/src/pose.ts';
+} from '@skelly/engine/inventory';
+import { heldAnchorOffset } from '@skelly/engine/pose';
+import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
+import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 import type { FirearmCycleFrame } from '../game/firearmHandling.ts';
 import type { RevolverFrame } from '../game/revolverHandling.ts';
 
-export type { FirearmAction, FirearmMode } from '../../../engine/src/inventory.ts';
+export type { FirearmAction, FirearmMode } from '@skelly/engine/inventory';
 
 export interface ActionPartPath {
   readonly id: string;

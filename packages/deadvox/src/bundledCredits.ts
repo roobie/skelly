@@ -1,4 +1,4 @@
-import { mergeManifests } from '../../engine/src/content.ts';
+import { mergeManifests } from '@skelly/engine/content';
 
 const manifests = {
   ...import.meta.glob<unknown>('../mods/*/assets/manifest.json', { eager: true, import: 'default' }),

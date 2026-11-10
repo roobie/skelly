@@ -1,7 +1,7 @@
+import type { Registry, ScreenText } from '@skelly/engine/content';
+import { claimed, defOf } from '@skelly/engine/inventory';
+import { countText, fillText } from '@skelly/engine/text';
 import { html, render, type TemplateResult } from 'lit-html';
-import type { Registry, ScreenText } from '../../../engine/src/content.ts';
-import { claimed, defOf } from '../../../engine/src/inventory.ts';
-import { countText, fillText } from '../../../engine/src/text.ts';
 
 export interface DeathSummary {
   cause: string;

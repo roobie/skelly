@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { playerWearHooks, wearMeleeWeaponOnHit, wearOnPlayerHit } from '@skelly/engine/internal/core/wear.ts';
+import { Inventory } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { playerWearHooks, wearMeleeWeaponOnHit, wearOnPlayerHit } from '../../engine/src/core/wear.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';

@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
-import { sizeFits } from '../../engine/src/core/items.ts';
+import { sizeFits } from '@skelly/engine/internal/core/items.ts';
+import { pairAcross } from '@skelly/engine/internal/vehicles/authoring.ts';
+import { catalogueOf, type PartType, supportProblems } from '@skelly/engine/internal/vehicles/model.ts';
+import { rasterize } from '@skelly/engine/internal/vehicles/voxels.ts';
+import { WEAR_MATERIALS } from '@skelly/engine/internal/vehicles/wear.ts';
 import {
   APC,
   addFitting,
@@ -26,11 +29,8 @@ import {
   voxelKey,
   wearGrid,
   wearKey,
-} from '../../engine/src/vehicles.ts';
-import { pairAcross } from '../../engine/src/vehicles/authoring.ts';
-import { catalogueOf, type PartType, supportProblems } from '../../engine/src/vehicles/model.ts';
-import { rasterize } from '../../engine/src/vehicles/voxels.ts';
-import { WEAR_MATERIALS } from '../../engine/src/vehicles/wear.ts';
+} from '@skelly/engine/vehicles';
+import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 

@@ -1,6 +1,6 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 
-import { type Binding, bindingIsDebugOnly, type Chord, INPUT_ACTIONS, type Modifier } from '../../../engine/src/core/inputActions.ts';
+import { type Binding, bindingIsDebugOnly, type Chord, INPUT_ACTIONS, type Modifier } from '@skelly/engine/input';
 
 const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
   INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] }));

@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
+
+import type { Binding, Chord, InputContext } from '@skelly/engine/input';
 import { describe, expect, it } from 'vitest';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
-import type { Binding, Chord, InputContext } from '../../engine/src/input.ts';
 import {
   BindingRegistry,
   bindingConflict,

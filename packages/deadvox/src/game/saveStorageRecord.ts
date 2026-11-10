@@ -1,4 +1,4 @@
-import { SHA256_HEX } from '../../../engine/src/core/canonicalJson.ts';
+import { SHA256_HEX } from '@skelly/engine/save';
 
 const MAGIC = new TextEncoder().encode('DVXSLOT1');
 const IDENTITY_BYTES = 64;

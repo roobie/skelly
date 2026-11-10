@@ -1,7 +1,7 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { SECONDS_PER_HOUR } from '@skelly/engine/internal/core/clock.ts';
+import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { SECONDS_PER_HOUR } from '../../engine/src/core/clock.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';

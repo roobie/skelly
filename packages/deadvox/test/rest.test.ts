@@ -1,11 +1,11 @@
+import type { BodyTuningDef } from '@skelly/engine/content';
+import { actionText } from '@skelly/engine/input';
+import { SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '@skelly/engine/internal/core/clock.ts';
+import { type RecoveryState, stepNeeds } from '@skelly/engine/internal/core/needs.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Body, hourOfDay, type Needs, realSeconds } from '@skelly/engine/sim';
+import { BlockEntities, makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../../engine/src/core/clock.ts';
-import { type RecoveryState, stepNeeds } from '../../engine/src/core/needs.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import type { BodyTuningDef } from '../../engine/src/content.ts';
-import { actionText } from '../../engine/src/input.ts';
-import { Body, hourOfDay, type Needs, realSeconds } from '../../engine/src/sim.ts';
-import { BlockEntities, makeScale, World } from '../../engine/src/world.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';

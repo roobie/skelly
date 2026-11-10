@@ -1,8 +1,8 @@
+import { cellsOf, placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { vehicleCells } from '@skelly/engine/internal/core/vehicleProjection.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { CHUNK, footprint, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { cellsOf, placedPieces } from '../../engine/src/core/templates.ts';
-import { vehicleCells } from '../../engine/src/core/vehicleProjection.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { CHUNK, footprint, type Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { testHouseSite } from './testHouseSite.ts';
 

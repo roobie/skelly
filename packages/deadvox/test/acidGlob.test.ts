@@ -1,13 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { AcidGroundImpact } from '../../engine/src/core/actorSystem.ts';
+import type { ActorDef } from '@skelly/engine/content';
+import type { AcidGroundImpact } from '@skelly/engine/internal/core/actorSystem.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy must observe the actual melee block boundary.
-import * as meleeCombat from '../../engine/src/core/meleeCombat.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import { simRate, simSeconds } from '../../engine/src/core/time.ts';
-import type { ActorDef } from '../../engine/src/content.ts';
-import { decodeSave, encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
-import { BODY_REGIONS, type BodyRegion } from '../../engine/src/sim.ts';
-import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
+import * as meleeCombat from '@skelly/engine/internal/core/meleeCombat.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { BODY_REGIONS, type BodyRegion } from '@skelly/engine/sim';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

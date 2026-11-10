@@ -1,8 +1,8 @@
 // Which configurations the benchmark runs, and where results are kept between the
 // page reloads that separate runs (each run starts from a fresh page and GPU state).
 
-import type { ItemDef } from '../../../engine/src/content.ts';
-import type { StorageStats } from '../../../engine/src/sim.ts';
+import type { ItemDef } from '@skelly/engine/content';
+import type { StorageStats } from '@skelly/engine/sim';
 import type { ActorRenderMode } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 

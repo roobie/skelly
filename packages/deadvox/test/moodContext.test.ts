@@ -1,3 +1,6 @@
+import type { NightVision } from '@skelly/engine/content';
+import { realSeconds } from '@skelly/engine/sim';
+import type { Sky } from '@skelly/engine/sky';
 import {
   Color,
   Fog,
@@ -15,9 +18,6 @@ import { expect, it, vi } from 'vitest';
 import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { benchDraw } from '../src/bench/post.ts';
-import type { NightVision } from '../../engine/src/content.ts';
-import { realSeconds } from '../../engine/src/sim.ts';
-import type { Sky } from '../../engine/src/sky.ts';
 import type { RenderedEngine } from '../src/presentation/engine.ts';
 import { Mood } from '../src/render/mood.ts';
 import { baseRegistry } from './baseRegistry.ts';

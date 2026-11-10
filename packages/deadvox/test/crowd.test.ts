@@ -2,8 +2,7 @@
 // (src/render/mobActors.ts) uploads, over the fixture actor body's skeleton.
 
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { compose, rotation, translation } from '../../engine/src/core/boneMath.ts';
+import { compose, rotation, translation } from '@skelly/engine/internal/core/boneMath.ts';
 import {
   allocateBoneTransforms,
   applyPoint,
@@ -15,7 +14,8 @@ import {
   rotY,
   type Transform,
   type Vec3,
-} from '../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
+import { describe, expect, it } from 'vitest';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
   type CrowdCellMaskLayout,

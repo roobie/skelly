@@ -1,3 +1,6 @@
+import type { Registry, WeatheringDef } from '@skelly/engine/content';
+import type { ColumnReveal, MeshData } from '@skelly/engine/mesh';
+import { toChunk, type Vec3 } from '@skelly/engine/world';
 import {
   type Box3,
   BufferAttribute,
@@ -14,9 +17,6 @@ import {
   Sphere,
   Vector3,
 } from 'three';
-import type { Registry, WeatheringDef } from '../../../engine/src/content.ts';
-import type { ColumnReveal, MeshData } from '../../../engine/src/mesh.ts';
-import { toChunk, type Vec3 } from '../../../engine/src/world.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { createSurfaceNoise } from './surfaceNoise.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';

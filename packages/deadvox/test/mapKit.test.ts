@@ -1,9 +1,9 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { compileMapSite } from '@skelly/engine/internal/core/mapKit.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { compileAssembly } from '@skelly/engine/internal/core/templates.ts';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { compileMapSite } from '../../engine/src/core/mapKit.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { compileAssembly } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const FIXTURE = JSON.parse(

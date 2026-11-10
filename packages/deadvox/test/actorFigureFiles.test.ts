@@ -1,5 +1,5 @@
+import { buildRegistry, loadActorFigureFiles, readActorFigureFiles } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, loadActorFigureFiles, readActorFigureFiles } from '../../engine/src/content.ts';
 import { stackActorFigureFiles, startupContentSources } from './baseContentFiles.ts';
 
 const json = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value));

@@ -1,10 +1,10 @@
+import type { ItemDef, Registry } from '@skelly/engine/content';
+import type { LootContext } from '@skelly/engine/internal/core/loot.ts';
+import { groundPileIssue } from '@skelly/engine/internal/core/pileBound.ts';
+import { groundLootSupplyIssues } from '@skelly/engine/internal/core/placementLoot.ts';
+import type { CompiledTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import type { LootContext } from '../../engine/src/core/loot.ts';
-import { groundPileIssue } from '../../engine/src/core/pileBound.ts';
-import { groundLootSupplyIssues } from '../../engine/src/core/placementLoot.ts';
-import type { CompiledTemplate } from '../../engine/src/core/templates.ts';
-import type { ItemDef, Registry } from '../../engine/src/content.ts';
-import { Inventory, PILE_GRID } from '../../engine/src/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 type LootDef = typeof base.loot extends Map<string, infer T> ? T : never;

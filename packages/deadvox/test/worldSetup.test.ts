@@ -1,7 +1,7 @@
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import type { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import type { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import { makeScale } from '../../engine/src/world.ts';
 import { configFromUrl as readConfig } from '../src/game/config.ts';
 import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../src/game/worldSetup.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

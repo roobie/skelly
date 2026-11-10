@@ -1,8 +1,8 @@
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { HandlingQueue, Inventory, type Item, type Target } from '@skelly/engine/inventory';
+import type { MeleePoseFrame } from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { HandlingQueue, Inventory, type Item, type Target } from '../../engine/src/inventory.ts';
-import type { MeleePoseFrame } from '../../engine/src/pose.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { grabPose, worldGrabProgress } from '../src/render/grabPose.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

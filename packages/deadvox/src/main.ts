@@ -1,15 +1,15 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
+import { claimed } from '@skelly/engine/inventory';
+import { getBuildRevision } from '@skelly/engine/packs';
+import { parseTimeOfDay } from '@skelly/engine/sim';
 import { loadRecord } from './bench/plan.ts';
 import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
-import { claimed } from '../../engine/src/inventory.ts';
-import { getBuildRevision } from '../../engine/src/packs.ts';
-import { parseTimeOfDay } from '../../engine/src/sim.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import {
   applyWeatheringConfig,

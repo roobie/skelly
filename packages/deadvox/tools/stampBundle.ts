@@ -2,14 +2,8 @@
 import { realpathSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { buildRegistry, type ContentSource, requiredContentIssues } from '../../engine/src/content.ts';
-import {
-  admitPacks,
-  type BundleStamp,
-  bundleSourceHash,
-  type PackInput,
-  packContentHash,
-} from '../../engine/src/packs.ts';
+import { buildRegistry, type ContentSource, requiredContentIssues } from '@skelly/engine/content';
+import { admitPacks, type BundleStamp, bundleSourceHash, type PackInput, packContentHash } from '@skelly/engine/packs';
 
 export async function stampBundle(sources: readonly ContentSource[], proofHash: string): Promise<BundleStamp> {
   const { registry, issues } = buildRegistry(sources);

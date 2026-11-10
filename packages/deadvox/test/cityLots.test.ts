@@ -1,12 +1,12 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots } from '@skelly/engine/internal/core/cityLots.ts';
+import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { ScenarioRouteSpace } from '@skelly/engine/internal/core/scenarioRoute.ts';
+import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
+import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
+import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { CitySite, footprint, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots } from '../../engine/src/core/cityLots.ts';
-import { buildCityPlan, cityGridOf } from '../../engine/src/core/cityPlan.ts';
-import { ScenarioRouteSpace } from '../../engine/src/core/scenarioRoute.ts';
-import type { ScenarioDef } from '../../engine/src/core/schema.ts';
-import { rectsOverlap } from '../../engine/src/core/site.ts';
-import { compileTemplate } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { CitySite, footprint, makeScale } from '../../engine/src/world.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const QUOTA_CANNOT_FIT = /quota cannot fit/;

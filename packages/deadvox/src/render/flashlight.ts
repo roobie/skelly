@@ -1,11 +1,11 @@
 // Keep the light and its shader installed through warm-up; on/off and content spill
 // changes then update light properties and uniforms without recompiling materials.
 
+import type { BeamSpill, Registry } from '@skelly/engine/content';
+import { defOf, type Inventory, type Item, inventoryLightEntries, lightExposureFor } from '@skelly/engine/inventory';
+import { DEFAULT_TORCH } from '@skelly/engine/look';
+import type { Sky } from '@skelly/engine/sky';
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
-import type { BeamSpill, Registry } from '../../../engine/src/content.ts';
-import { defOf, type Inventory, type Item, inventoryLightEntries, lightExposureFor } from '../../../engine/src/inventory.ts';
-import { DEFAULT_TORCH } from '../../../engine/src/look.ts';
-import type { Sky } from '../../../engine/src/sky.ts';
 import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
 import type { PileMeshes } from './piles.ts';

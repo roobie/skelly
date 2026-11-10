@@ -1,5 +1,5 @@
+import type { ActorBody } from '@skelly/engine/content';
 import { BufferAttribute, BufferGeometry } from 'three';
-import type { ActorBody } from '../../../engine/src/content.ts';
 
 // The built actor GLB (`packages/skelly-assets/tools/actorBake.mjs`, `actorGlb`) read synchronously into the
 // crowd geometry the bone-texture shader draws. A session decodes every figure before its first frame, so the

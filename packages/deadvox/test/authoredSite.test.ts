@@ -1,8 +1,8 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared rejection assertions called only by tests.
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues, inPolygon } from '../../engine/src/core/authoredLayout.ts';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
+import type { Registry } from '@skelly/engine/content';
+import { authoredLayoutIssues, inPolygon } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import {
   LOT_APRON_M,
   LOT_BLEND_M,
@@ -10,18 +10,17 @@ import {
   polylineDistance,
   profileHeight,
   rectDistance,
-} from '../../engine/src/core/authoredTerrain.mjs';
-import { couldFit } from '../../engine/src/core/items.ts';
-import { lootTypeIssue } from '../../engine/src/core/loot.ts';
-import { militaryLootItems } from '../../engine/src/core/magazine.ts';
-import type { SiteLayoutDef, TemplateDef } from '../../engine/src/core/schema.ts';
-import { rectsOverlap } from '../../engine/src/core/site.ts';
-import { actorBodyDimensions } from '../../engine/src/core/spawnClearance.ts';
-import { templateSpawnClearanceIssues } from '../../engine/src/core/templateSpatial.ts';
-import { compileTemplate, placedBlockAt, placedSpawns } from '../../engine/src/core/templates.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { claimedId, ItemFactory } from '../../engine/src/inventory.ts';
-import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '../../engine/src/terrain.mjs';
+} from '@skelly/engine/internal/core/authoredTerrain.mjs';
+import { couldFit } from '@skelly/engine/internal/core/items.ts';
+import { lootTypeIssue } from '@skelly/engine/internal/core/loot.ts';
+import { militaryLootItems } from '@skelly/engine/internal/core/magazine.ts';
+import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
+import { actorBodyDimensions } from '@skelly/engine/internal/core/spawnClearance.ts';
+import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate, placedBlockAt, placedSpawns } from '@skelly/engine/internal/core/templates.ts';
+import { claimedId, ItemFactory } from '@skelly/engine/inventory';
+import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '@skelly/engine/terrain';
 import {
   CHUNK,
   compassBearing,
@@ -34,7 +33,8 @@ import {
   toChunk,
   type Vec3,
   World,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';

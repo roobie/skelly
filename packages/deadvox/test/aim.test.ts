@@ -1,18 +1,18 @@
-import { Euler, Vector3 } from 'three';
-import { expect, it } from 'vitest';
 import {
   AimController,
   type AimWobbleNoiseTuning,
   advanceOrnsteinUhlenbeckAxis,
   aimBasis,
   assertAimState,
-} from '../../engine/src/core/aim.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
-import { firearmStanceEffects, firearmsSkillEffects } from '../../engine/src/core/firearmsSkill.ts';
-import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '../../engine/src/core/footsteps.ts';
-import { Rng } from '../../engine/src/math.ts';
-import { aimDirection, NEUTRAL_AIM } from '../../engine/src/pose.ts';
-import type { FirearmsSkillShotKind } from '../../engine/src/sim.ts';
+} from '@skelly/engine/internal/core/aim.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { firearmStanceEffects, firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '@skelly/engine/internal/core/footsteps.ts';
+import { Rng } from '@skelly/engine/math';
+import { aimDirection, NEUTRAL_AIM } from '@skelly/engine/pose';
+import type { FirearmsSkillShotKind } from '@skelly/engine/sim';
+import { Euler, Vector3 } from 'three';
+import { expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 

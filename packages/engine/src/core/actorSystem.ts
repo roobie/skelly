@@ -268,7 +268,7 @@ export interface MeleeResult {
 }
 
 /** A shot's outcome: how many pellets struck a body, and per direction the distance in blocks at which a body
- * stopped that pellet, undefined when it struck none. The session clips its shot trace there (`DESIGN.md`,
+ * stopped that pellet, undefined when it struck none. The session clips its shot trace there (`packages/deadvox/DESIGN.md`,
  * "Shot impacts"). */
 export interface PelletHits {
   readonly hits: number;
@@ -1464,7 +1464,7 @@ export class ActorSystem {
     this.resolveAcidSpit(actor.agent?.mode === 'chase');
   }
 
-  /** Doc: `docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
+  /** Doc: `packages/deadvox/docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
   private resolveAcidSpit(chasing: boolean): void {
     const scratch = this.tickScratch;
     const { actor, dt, player, blockSize, type, pos, isSolid } = scratch;
@@ -2033,7 +2033,7 @@ export class ActorSystem {
   }
 
   /**
-   * A detonation at the fragments' origin (`DESIGN.md`, "Hand grenade"). The blast takes its falloff damage from
+   * A detonation at the fragments' origin (`packages/deadvox/DESIGN.md`, "Hand grenade"). The blast takes its falloff damage from
    * every region of each standing body whose centre it sees, the lethal region last so limbs come off before the
    * kill; then the fragments fly as a shot does. Returns the bodies the blast reached.
    */
@@ -2217,7 +2217,7 @@ export class ActorSystem {
     this.options.onCarve?.(id, actor, cells, strikes.find((strike) => strike.cell === struck)!.hit);
   }
 
-  /** Doc: `docs/stagger.md`. A heavy enough hit spoils the attack in progress; position is never touched. */
+  /** Doc: `packages/deadvox/docs/stagger.md`. A heavy enough hit spoils the attack in progress; position is never touched. */
   private stagger(actor: Actor, impulse: number): void {
     const { stagger } = actor.type;
     if (!stagger || impulse < stagger.impulseThreshold) {

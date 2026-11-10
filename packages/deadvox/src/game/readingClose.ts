@@ -1,4 +1,4 @@
-import type { Simulation } from '../../../engine/src/core/sim.ts';
+import type { Simulation } from '@skelly/engine/sim';
 
 export const stopReadingOnClose = (sim: Simulation): void => {
   const { actions, compression } = sim;

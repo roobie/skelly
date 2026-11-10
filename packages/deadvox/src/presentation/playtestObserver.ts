@@ -1,7 +1,7 @@
-import type { AttemptPolicyDef } from '../../../engine/src/content.ts';
-import type { CompletedMove, HandlingQueue, Inventory, Location, MoveJob, TickResult } from '../../../engine/src/inventory.ts';
-import { formatClock, type PlaytestMarks, stageMarksAt } from '../../../engine/src/sim.ts';
-import type { BlockEntity } from '../../../engine/src/world.ts';
+import type { AttemptPolicyDef } from '@skelly/engine/content';
+import type { CompletedMove, HandlingQueue, Inventory, Location, MoveJob, TickResult } from '@skelly/engine/inventory';
+import { formatClock, type PlaytestMarks, stageMarksAt } from '@skelly/engine/sim';
+import type { BlockEntity } from '@skelly/engine/world';
 import type { Session } from '../game/session.ts';
 import {
   type HandBackFile,

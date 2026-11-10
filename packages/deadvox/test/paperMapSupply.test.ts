@@ -1,9 +1,9 @@
+import { type LootSpawnPoint, rollLoot } from '@skelly/engine/internal/core/loot.ts';
+import { paperMapAt } from '@skelly/engine/internal/core/paperMap.ts';
+import { WORLD_REGION_METRES } from '@skelly/engine/internal/core/worldRegion.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import { describe, expect, it } from 'vitest';
-import { type LootSpawnPoint, rollLoot } from '../../engine/src/core/loot.ts';
-import { paperMapAt } from '../../engine/src/core/paperMap.ts';
-import { WORLD_REGION_METRES } from '../../engine/src/core/worldRegion.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { Rng } from '../../engine/src/math.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

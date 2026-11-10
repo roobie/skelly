@@ -1,5 +1,5 @@
-import { type FusedMassFigure, type Mat3, mulMV, type Transform } from '../../../engine/src/pose.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import { type FusedMassFigure, type Mat3, mulMV, type Transform } from '@skelly/engine/pose';
+import type { Vec3 } from '@skelly/engine/world';
 
 export interface FusedMassTentaclePoseInput {
   readonly start: Vec3;

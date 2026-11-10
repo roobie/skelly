@@ -1,13 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import type { ActorPoseInput } from '../../engine/src/core/actorPose.ts';
+import { type ActorDef, actorFigure } from '@skelly/engine/content';
+import type { ActorPoseInput } from '@skelly/engine/internal/core/actorPose.ts';
 import {
   posedActorBoneVoxelCenters,
   posedFusedMassRegionBoxes,
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
-} from '../../engine/src/core/actorRegions.ts';
-import { HUMANOID_REGION_NAMES } from '../../engine/src/core/humanoidRegionNames.ts';
-import { type ActorDef, actorFigure } from '../../engine/src/content.ts';
+} from '@skelly/engine/internal/core/actorRegions.ts';
+import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import {
   FUSED_MASS_FIGURE_SEED,
   figureVariantOf,
@@ -15,7 +14,8 @@ import {
   type HumanoidHitRegion,
   type Vec3 as MobVec3,
   transpose,
-} from '../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

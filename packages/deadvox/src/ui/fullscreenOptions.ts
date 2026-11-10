@@ -1,6 +1,6 @@
+import type { ScreenText } from '@skelly/engine/content';
+import { fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
-import type { ScreenText } from '../../../engine/src/content.ts';
-import { fillText } from '../../../engine/src/text.ts';
 import { BROWSER_CHORD_LOCK_CODES } from '../presentation/inputBindings.ts';
 import { factDetail } from './factDetail.ts';
 

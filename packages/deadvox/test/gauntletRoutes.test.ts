@@ -1,7 +1,7 @@
+import { scenarioCertificate } from '@skelly/engine/internal/core/scenarioCertificate.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { scenarioCertificate } from '../../engine/src/core/scenarioCertificate.ts';
-import { ScenarioCitySite } from '../../engine/src/core/scenarioCity.ts';
-import { BLOCK_SIZE, makeScale } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

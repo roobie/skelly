@@ -1,9 +1,9 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { decodeSave } from '@skelly/engine/save';
+import { CHUNK, Chunk, makeScale, type Terrain, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { bashBlock } from '../../engine/src/core/blockDamage.ts';
-import { CanonicalTerrain } from '../../engine/src/core/canonicalTerrain.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { CHUNK, Chunk, makeScale, type Terrain, type Vec3, World } from '../../engine/src/world.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';

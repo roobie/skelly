@@ -1,14 +1,14 @@
+import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '@skelly/engine/internal/core/cityPlan.ts';
+import { scenarioCertificate, scenarioStartCertificate } from '@skelly/engine/internal/core/scenarioCertificate.ts';
+import { type StartDescent, scenarioStartIssues } from '@skelly/engine/internal/core/scenarioStart.ts';
+import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
+import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
+import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
+import { templateReachableStandingPositions } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { type Chunk, CitySite, makeScale, type Vec3 } from '@skelly/engine/world';
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../../engine/src/core/cityPlan.ts';
-import { scenarioCertificate, scenarioStartCertificate } from '../../engine/src/core/scenarioCertificate.ts';
-import { type StartDescent, scenarioStartIssues } from '../../engine/src/core/scenarioStart.ts';
-import type { StartDef } from '../../engine/src/core/schema/starts.ts';
-import { ContentFileSchema } from '../../engine/src/core/schema.ts';
-import { startIssues } from '../../engine/src/core/startIssues.ts';
-import { type BlockBox, stampChunk } from '../../engine/src/core/structure.ts';
-import { templateReachableStandingPositions } from '../../engine/src/core/templateSpatial.ts';
-import { type Chunk, CitySite, makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

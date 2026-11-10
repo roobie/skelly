@@ -7,7 +7,7 @@
 // the feet (plus a transient step smoothing), so the feet restore the view exactly. Roll only comes from damage
 // feedback; it is written but ignored on restore. Anything unparseable reads as absent.
 
-import type { Vec3 } from '../../../engine/src/world.ts';
+import type { Vec3 } from '@skelly/engine/world';
 
 export interface CamPose {
   /** Feet position, metres. */

@@ -1,5 +1,5 @@
+import { yawFromBearing } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { yawFromBearing } from '../../engine/src/world.ts';
 import { marchingSquares, siteMapWorldToRaster } from '../src/render/siteMap.ts';
 
 const forwardFromBearing = (bearing: number): [number, number] => {

@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
+import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '@skelly/engine/internal/core/coreText.ts';
+import type { PackManifest } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { validateContent } from '../../engine/src/core/content.ts';
-import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../../engine/src/core/coreText.ts';
-import { buildRegistry, requiredContentIssues } from '../../engine/src/content.ts';
-import type { PackManifest } from '../../engine/src/packs.ts';
 import { bundledAssetFiles } from '../src/presentation/bundledAssets.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
+
+import { fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
 import { afterEach, expect, it, vi } from 'vitest';
-import { fillText } from '../../engine/src/text.ts';
 import { type ComboBoxOption, comboBox } from '../src/ui/comboBox.ts';
 import { renderCrafting } from '../src/ui/crafting.ts';
 import type { CraftRow } from '../src/ui/craftReadout.ts';

@@ -1,7 +1,7 @@
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import type { PlaytestMarks } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { measureSessionSnapshot } from '../src/debug/snapshotMeasurement.ts';
-import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import type { PlaytestMarks } from '../../engine/src/sim.ts';
 import type { Session } from '../src/game/session.ts';
 import { PlaytestObserver } from '../src/presentation/playtestObserver.ts';
 import { SessionMetrics } from '../src/presentation/playtestTools.ts';

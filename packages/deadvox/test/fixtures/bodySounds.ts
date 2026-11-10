@@ -1,5 +1,5 @@
-import { simSeconds } from '../../../engine/src/core/time.ts';
-import type { BodyTuningDef } from '../../../engine/src/content.ts';
+import type { BodyTuningDef } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 
 export const bodySoundIds = (
   body: Pick<BodyTuningDef, 'sounds'> & { heartbeat: Pick<BodyTuningDef['heartbeat'], 'sounds'> },

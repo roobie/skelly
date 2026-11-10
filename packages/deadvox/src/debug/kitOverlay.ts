@@ -1,5 +1,5 @@
+import { ownershipCell, type Placement, placedPoint, type Vec3, type VoxelProvenance } from '@skelly/engine/world';
 import { html, render } from 'lit-html';
-import { ownershipCell, type Placement, placedPoint, type Vec3, type VoxelProvenance } from '../../../engine/src/world.ts';
 
 export interface KitCell {
   readonly local: Vec3;

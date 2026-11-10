@@ -1,5 +1,5 @@
-import type { RecipeCategoryDef, Registry } from '../../../engine/src/content.ts';
-import { fillText } from '../../../engine/src/text.ts';
+import type { RecipeCategoryDef, Registry } from '@skelly/engine/content';
+import { fillText } from '@skelly/engine/text';
 import { craftingText } from './craftReadout.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
 

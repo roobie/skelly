@@ -1,5 +1,5 @@
+import type { PartData, ShapeData } from '@skelly/engine/vehicles';
 import { BufferAttribute, BufferGeometry, Sphere, Vector3 } from 'three';
-import type { PartData, ShapeData } from '../../../engine/src/vehicles.ts';
 import type { FromMesher, ToMesher } from '../game/mesherProtocol.ts';
 import { buildShape } from './vehicleShape.ts';
 

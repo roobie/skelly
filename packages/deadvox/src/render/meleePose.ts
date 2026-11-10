@@ -1,12 +1,12 @@
-import type { HeldPosesDef } from '../../../engine/src/content.ts';
+import type { HeldPosesDef } from '@skelly/engine/content';
 import {
   type MeleeActionPose,
   type MeleeHand,
   type MeleePoseFrame,
   meleePoseAndContact,
   readyMeleePose,
-} from '../../../engine/src/pose.ts';
-import { DEFAULT_HANDED_CHARACTER } from '../../../engine/src/sim.ts';
+} from '@skelly/engine/pose';
+import { DEFAULT_HANDED_CHARACTER } from '@skelly/engine/sim';
 
 /** Build a held-item render pose, keeping an occupied support hand in its natural hold pose. */
 export const renderMeleePose = (

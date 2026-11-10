@@ -1,3 +1,4 @@
+import type { Vec3 } from '@skelly/engine/world';
 import {
   DirectionalLight,
   type Mesh,
@@ -8,7 +9,6 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 

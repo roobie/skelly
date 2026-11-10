@@ -1,10 +1,10 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { resolveGraphics } from '@skelly/engine/look';
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
 import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
-import { buildRegistry } from '../../engine/src/content.ts';
-import { resolveGraphics } from '../../engine/src/look.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createEngine } from '../src/presentation/engine.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';

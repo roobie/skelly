@@ -1,8 +1,8 @@
 // Capped render-only effects follow firearm cases; simulation commits the corresponding pile items at impact.
 
+import { Rng } from '@skelly/engine/math';
+import type { Vec3 } from '@skelly/engine/world';
 import { Group, type Object3D, Vector3 } from 'three';
-import { Rng } from '../../../engine/src/math.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import type { FirearmShotEffect } from '../game/firearmHandling.ts';
 import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
 import type { ModelLibrary } from './models.ts';

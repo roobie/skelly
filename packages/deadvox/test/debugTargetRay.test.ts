@@ -1,5 +1,5 @@
+import type { Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { debugTargetRay } from '../src/presentation/debugTargetRay.ts';
 
 it('keeps debug targets on the view ray while a wielded firearm is lowered', () => {

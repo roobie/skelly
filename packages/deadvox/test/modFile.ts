@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { PackInput } from '../../engine/src/packs.ts';
+import type { PackInput } from '@skelly/engine/packs';
 import { packFileBytes, readAvailablePacks } from '../tools/readBundledPacks.ts';
 
 const PACKAGE_ROOT = resolve(import.meta.dirname, '..');

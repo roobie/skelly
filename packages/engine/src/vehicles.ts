@@ -3,9 +3,13 @@ export {
   VehicleInstances,
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
+  validVehicleWorkPlacement,
   vehicleSiteName,
 } from './core/vehicleInstances.ts';
-export { projectVehicleParts, type VehiclePartProjection } from './core/vehicleProjection.ts';
+export { VehicleParts } from './core/vehicleParts.ts';
+export { projectVehicleParts, VehicleOccupancy, type VehiclePartProjection } from './core/vehicleProjection.ts';
+export { completeVehicleRemoval } from './core/vehicleRemoval.ts';
+export { vehicleWorkHooks } from './core/vehicleWork.ts';
 export { APC } from './vehicles/apc.ts';
 export { BOX_VAN } from './vehicles/boxVan.ts';
 export { BLUEPRINTS, CATALOGUE } from './vehicles/catalogue.ts';

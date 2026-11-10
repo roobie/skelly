@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
+import { buildRegistry } from '@skelly/engine/content';
+import { FIGURE_VARIANTS } from '@skelly/engine/internal/core/actorModels.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { describe, expect, it } from 'vitest';
-import { FIGURE_VARIANTS } from '../../engine/src/core/actorModels.ts';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 
 // Shipped actor rows as authored, so each witness carries the fields its body plan requires.

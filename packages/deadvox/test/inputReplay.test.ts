@@ -1,18 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { canonicalJsonBytes } from '../../engine/src/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY } from '../../engine/src/core/character.ts';
-import { pocketGroundItem, stowTarget, toHands } from '../../engine/src/core/options.ts';
-import type { ActorSpawn, Site } from '../../engine/src/core/site.ts';
-import { gameTimeOfDay } from '../../engine/src/core/time.ts';
-import { type Item, SLING_SLOT } from '../../engine/src/inventory.ts';
-import { encodeSave, type SaveSnapshot } from '../../engine/src/save.ts';
+import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/core/options.ts';
+import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
+import { type Item, SLING_SLOT } from '@skelly/engine/inventory';
+import { encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import {
   BACKGROUND_ACTOR_SLICE_COUNT,
   dominantSide,
   practiceForNextLevel,
   realSeconds as realDuration,
-} from '../../engine/src/sim.ts';
-import { CHUNK, toChunk, type Vec3 } from '../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
   clearPendingInputReplay,

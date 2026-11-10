@@ -1,11 +1,16 @@
-import type { ActorAim, ActorSystem, MeleeWeapon } from '../../../engine/src/core/actorSystem.ts';
-import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../../../engine/src/core/aim.ts';
-import type { ModelDef } from '../../../engine/src/core/content.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import { type CrosshairTarget, crosshairAimPoint } from '../../../engine/src/core/crosshairTarget.ts';
-import { type HeldFirearmTransformInput, type HeldSeatFrame, heldFirearmTransform } from '../../../engine/src/core/heldPose.ts';
-import type { HandSide } from '../../../engine/src/core/inventory.ts';
-import type { HeldPosesDef } from '../../../engine/src/core/schema.ts';
+import type { HeldPosesDef, ModelDef } from '@skelly/engine/content';
+import type { HandSide } from '@skelly/engine/inventory';
+import {
+  type AimFrame,
+  aimBasis,
+  type HeldFirearmTransformInput,
+  type HeldSeatFrame,
+  heldFirearmTransform,
+  NEUTRAL_AIM,
+} from '@skelly/engine/pose';
+import type { ActorAim, ActorSystem, MeleeWeapon } from '@skelly/engine/sim';
+import { type CrosshairTarget, crosshairAimPoint } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 
 export interface FirearmBoreRayInput {
   readonly holds: HeldPosesDef;

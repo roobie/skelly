@@ -1,10 +1,9 @@
-import { expect, it } from 'vitest';
-import { settleCell } from '../../engine/src/core/itemThrow.ts';
-import { type BrickOut, brickHas } from '../../engine/src/core/solidBricks.ts';
-import { spawnOverlappingSolidBlock } from '../../engine/src/core/spawnClearance.ts';
-import { VehicleOccupancy } from '../../engine/src/core/vehicleProjection.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { projectVehicleParts } from '../../engine/src/vehicles.ts';
+import { settleCell } from '@skelly/engine/internal/core/itemThrow.ts';
+import { type BrickOut, brickHas } from '@skelly/engine/internal/core/solidBricks.ts';
+import { spawnOverlappingSolidBlock } from '@skelly/engine/internal/core/spawnClearance.ts';
+import { VehicleOccupancy } from '@skelly/engine/internal/core/vehicleProjection.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
 import {
   BlockEntities,
   bodyOverlapsTerrain,
@@ -13,7 +12,8 @@ import {
   World,
   worldBricks,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { expect, it } from 'vitest';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

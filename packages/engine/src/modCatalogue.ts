@@ -1,1 +1,1 @@
-export { bundledModCatalogueIssues, launcherModCatalogue } from './core/bundledModCatalogue.ts';
+export { bundledModCatalogue, bundledModCatalogueIssues, launcherModCatalogue } from './core/bundledModCatalogue.ts';

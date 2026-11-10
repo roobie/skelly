@@ -1,8 +1,8 @@
+import type { ColumnReveal } from '@skelly/engine/mesh';
+import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '@skelly/engine/pose';
+import { type Actor, BACKGROUND_ACTOR_RATE, type EntityId, type EntityStore } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
-import type { ColumnReveal } from '../../../engine/src/mesh.ts';
-import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../../../engine/src/pose.ts';
-import { type Actor, BACKGROUND_ACTOR_RATE, type EntityId, type EntityStore } from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';

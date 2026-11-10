@@ -1,4 +1,4 @@
-import type { PlayerDef } from '../../../engine/src/core/schema.ts';
+import type { PlayerDef } from '@skelly/engine/content';
 
 export type FreeLookTuning = PlayerDef['aim']['freeLook'];
 

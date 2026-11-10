@@ -1,4 +1,3 @@
-import { BufferAttribute, BufferGeometry } from 'three';
 import {
   BLUEPRINTS,
   fittedGrid,
@@ -10,7 +9,8 @@ import {
   type ShapeData,
   VOXEL,
   voxelKey,
-} from '../../../engine/src/vehicles.ts';
+} from '@skelly/engine/vehicles';
+import { BufferAttribute, BufferGeometry } from 'three';
 import { addSkyOpeningAnchors } from './skyAnchor.ts';
 
 const partOf = (

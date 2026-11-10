@@ -2,7 +2,7 @@
 // tier, the colour drains in a short pulse as deep as the tier says and as often as its interval says, and a
 // hit's tilt settles more slowly. Time is the frame loop's, like `DamageFeedback`, so scripted frames repeat.
 
-import type { BodyTuningDef } from '../../../engine/src/content.ts';
+import type { BodyTuningDef } from '@skelly/engine/content';
 
 type PainTierDef = BodyTuningDef['pain']['tiers'][number];
 

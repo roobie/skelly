@@ -1,10 +1,11 @@
 // Carry and armour worn on the torso (`DESIGN.md`, "Worn items seen"), drawn from their exported models on the real
 // figure: each item shows while worn, taking one off leaves the rest, and the whole kit clears the body and itself.
+
+import type { ItemDef, WearSlot } from '@skelly/engine/content';
+import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '@skelly/engine/inventory';
+import { makeScale } from '@skelly/engine/world';
 import { Box3, Mesh, type Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { ItemDef, WearSlot } from '../../engine/src/content.ts';
-import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '../../engine/src/inventory.ts';
-import { makeScale } from '../../engine/src/world.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';

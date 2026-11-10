@@ -1,14 +1,19 @@
-import { describe, expect, it } from 'vitest';
-import { posedHumanoidRegionBoxes } from '../../engine/src/core/actorRegions.ts';
-import { perceivePlayer } from '../../engine/src/core/agentPerception.ts';
-import { foliageRustle, initialRustleClock } from '../../engine/src/core/foliageRustle.ts';
-import { footstepEventForBlock } from '../../engine/src/core/footsteps.ts';
-import { PlayerCombat } from '../../engine/src/core/playerCombat.ts';
-import { rectsOverlap } from '../../engine/src/core/site.ts';
-import { soundOcclusion } from '../../engine/src/core/soundOcclusion.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../../engine/src/core/vegetation.ts';
-import { actorPoseInputFor } from '../../engine/src/pose.ts';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import { perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
+import { foliageRustle, initialRustleClock } from '@skelly/engine/internal/core/foliageRustle.ts';
+import { footstepEventForBlock } from '@skelly/engine/internal/core/footsteps.ts';
+import { PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
+import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
+import { soundOcclusion } from '@skelly/engine/internal/core/soundOcclusion.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import {
+  forestDensityAt,
+  leafLitterAt,
+  placeTree,
+  stampTrees,
+  TreeIndex,
+} from '@skelly/engine/internal/core/vegetation.ts';
+import { actorPoseInputFor } from '@skelly/engine/pose';
 import {
   BlockEntities,
   Chunk,
@@ -20,7 +25,8 @@ import {
   World,
   worldOpaque,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

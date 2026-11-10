@@ -1,9 +1,15 @@
+import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import {
+  type CapturedSky,
+  captureSky,
+  growSky,
+  SKY_SHELL,
+  type SkySnapshot,
+} from '@skelly/engine/internal/core/skySnapshot.ts';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
+import type { Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
-import type { SkyBounds } from '../../../engine/src/core/skylight.ts';
-import { type CapturedSky, captureSky, growSky, SKY_SHELL, type SkySnapshot } from '../../../engine/src/core/skySnapshot.ts';
-import { graphicsTuningOf } from '../../../engine/src/look.ts';
-import { buildSkyResult, SkyFields, type SkyResult } from '../../../engine/src/sky.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import { Skylight } from '../../src/render/skylight.ts';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 

@@ -1,18 +1,18 @@
-import { expect, it } from 'vitest';
-import { type AimStep, assertAimState } from '../../engine/src/core/aim.ts';
-import { firearmsSkillEffects } from '../../engine/src/core/firearmsSkill.ts';
-import { pelletShot } from '../../engine/src/core/pellets.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import type { Item } from '../../engine/src/inventory.ts';
+import { type AimStep, assertAimState } from '@skelly/engine/internal/core/aim.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { pelletShot } from '@skelly/engine/internal/core/pellets.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import type { Item } from '@skelly/engine/inventory';
 import {
   decodeSave,
   encodeSave,
   type SaveContentKind,
   type SaveSnapshot,
   type SaveVersionComponents,
-} from '../../engine/src/save.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
+} from '@skelly/engine/save';
+import { reachTuning } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
+import { expect, it } from 'vitest';
 import {
   type FirearmShotEffect,
   type FirearmShotInput,

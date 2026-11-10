@@ -1,6 +1,6 @@
+import { Inventory, type Item } from '@skelly/engine/inventory';
+import { copyVehicleWorkPlacement } from '@skelly/engine/vehicles';
 import { expect, it } from 'vitest';
-import { Inventory, type Item } from '../../engine/src/inventory.ts';
-import { copyVehicleWorkPlacement } from '../../engine/src/vehicles.ts';
 import { vehicleInspectionViewModel } from '../src/ui/vehicleInspection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

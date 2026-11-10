@@ -1,4 +1,20 @@
 import { readFileSync } from 'node:fs';
+import { adsLimits } from '@skelly/engine/internal/core/adsView.ts';
+import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import {
+  adsCameraEye,
+  figureStancePose,
+  heldHoldFrame,
+  modelToView,
+  mountedOptic,
+  NEUTRAL_AIM,
+  playerAdsPose,
+  playerEyePosition,
+  playerLookPose,
+  readyMeleePose,
+} from '@skelly/engine/pose';
+import { makeScale } from '@skelly/engine/world';
 import {
   Box3,
   BoxGeometry,
@@ -17,22 +33,6 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { adsLimits } from '../../engine/src/core/adsView.ts';
-import { applyStartKit } from '../../engine/src/core/startState.ts';
-import { HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import {
-  adsCameraEye,
-  figureStancePose,
-  heldHoldFrame,
-  modelToView,
-  mountedOptic,
-  NEUTRAL_AIM,
-  playerAdsPose,
-  playerEyePosition,
-  playerLookPose,
-  readyMeleePose,
-} from '../../engine/src/pose.ts';
-import { makeScale } from '../../engine/src/world.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';

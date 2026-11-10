@@ -1,22 +1,24 @@
 import process from 'node:process';
-import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
-import { actorHitFlinchDuration, gaitPhaseGain } from '../../engine/src/core/actorPose.ts';
-import { posedHumanoidRegionBoxes, posedRegionHit, posedRegionHitDistance } from '../../engine/src/core/actorRegions.ts';
-import { ActorSpawner } from '../../engine/src/core/actorSpawns.ts';
-import { lethalRegion, pickActorHitRegion, pickActorMove } from '../../engine/src/core/actorSystem.ts';
-import { hearPlayer, hearVocalNoise, perceivePlayer } from '../../engine/src/core/agentPerception.ts';
-import { resolveSpawnTime, SECONDS_PER_DAY } from '../../engine/src/core/clock.ts';
-import { HUMANOID_REGION_NAMES } from '../../engine/src/core/humanoidRegionNames.ts';
-import { lightSenseSourceFor } from '../../engine/src/core/lights.ts';
-import type { PoseClip } from '../../engine/src/core/schema/actors.ts';
-import type { DoorLockDef } from '../../engine/src/core/schema.ts';
-import type { ActorSpawn, Site } from '../../engine/src/core/site.ts';
-import { sunDirection } from '../../engine/src/core/sky.ts';
-import { gameTimeOfDay, simRate, simSeconds } from '../../engine/src/core/time.ts';
-import { type ActorDef, actorFigure, requireDayCycle } from '../../engine/src/content.ts';
-import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
-import { Rng } from '../../engine/src/math.ts';
+import { type ActorDef, actorFigure, requireDayCycle } from '@skelly/engine/content';
+import { actorHitFlinchDuration, gaitPhaseGain } from '@skelly/engine/internal/core/actorPose.ts';
+import {
+  posedHumanoidRegionBoxes,
+  posedRegionHit,
+  posedRegionHitDistance,
+} from '@skelly/engine/internal/core/actorRegions.ts';
+import { ActorSpawner } from '@skelly/engine/internal/core/actorSpawns.ts';
+import { lethalRegion, pickActorHitRegion, pickActorMove } from '@skelly/engine/internal/core/actorSystem.ts';
+import { hearPlayer, hearVocalNoise, perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
+import { resolveSpawnTime, SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
+import { lightSenseSourceFor } from '@skelly/engine/internal/core/lights.ts';
+import type { PoseClip } from '@skelly/engine/internal/core/schema/actors.ts';
+import type { DoorLockDef } from '@skelly/engine/internal/core/schema.ts';
+import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import { sunDirection } from '@skelly/engine/internal/core/sky.ts';
+import { gameTimeOfDay, simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import {
   actorCrawls,
   actorPoseInputFor,
@@ -30,7 +32,7 @@ import {
   quatToMat3,
   sampleClip,
   walkCursor,
-} from '../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
 import {
   type Actor,
   type BodyRegion,
@@ -38,7 +40,7 @@ import {
   type HitImpulse,
   type PlayerSense,
   Simulation,
-} from '../../engine/src/sim.ts';
+} from '@skelly/engine/sim';
 import {
   BlockEntities,
   type Body,
@@ -48,7 +50,9 @@ import {
   type SolidAt,
   stepBody,
   type Vec3,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
+import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
+import { describe, expect, it } from 'vitest';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
@@ -160,7 +164,11 @@ const spawnSite = (spawn: ActorSpawn): Site => ({
   furnitureIn: () => [],
   actorsIn: () => [spawn],
 });
-const nearestRegionDistance = (actor: import('../../engine/src/core/actorState.ts').Actor, origin: Vec3, direction: Vec3) => {
+const nearestRegionDistance = (
+  actor: import('@skelly/engine/internal/core/actorState.ts').Actor,
+  origin: Vec3,
+  direction: Vec3,
+) => {
   let nearest = Number.POSITIVE_INFINITY;
   const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, 1, POSE_SCENE));
   for (const region of HUMANOID_REGION_NAMES) {
@@ -431,7 +439,7 @@ describe('actor attack moves', () => {
 
 describe('melee hit sounds', () => {
   const emittedFor = (
-    weapon: import('../../engine/src/core/actorSystem.ts').MeleeWeapon,
+    weapon: import('@skelly/engine/internal/core/actorSystem.ts').MeleeWeapon,
     isFist = false,
   ): { hit: boolean; events: string[] } => {
     const emitted: string[] = [];

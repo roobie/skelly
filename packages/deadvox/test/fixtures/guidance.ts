@@ -1,4 +1,4 @@
-import type { GuidanceDef, GuidanceGate, HandlingFact } from '../../../engine/src/content.ts';
+import type { GuidanceDef, GuidanceGate, HandlingFact } from '@skelly/engine/content';
 
 export const handlingTracksFixture = (): GuidanceDef['handling'] => {
   const facts: HandlingFact[] = ['unpack', 'wield', 'inspect', 'partial', 'ready', 'reload', 'sighted', 'unload'];

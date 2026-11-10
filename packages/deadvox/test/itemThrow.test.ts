@@ -1,16 +1,16 @@
-import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
-import { describe, expect, it } from 'vitest';
+import type { Registry } from '@skelly/engine/content';
 import {
   flightForItem,
   hasMetThrowMinimumHold,
   steppedItemFlight,
   throwDistanceForItem,
-} from '../../engine/src/core/itemThrow.ts';
-import { pileItemPosition } from '../../engine/src/core/pileLayout.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { type Inventory, type Item, itemFlightPoint } from '../../engine/src/inventory.ts';
-import { worldGravity } from '../../engine/src/sim.ts';
-import type { SolidAt } from '../../engine/src/world.ts';
+} from '@skelly/engine/internal/core/itemThrow.ts';
+import { pileItemPosition } from '@skelly/engine/internal/core/pileLayout.ts';
+import { type Inventory, type Item, itemFlightPoint } from '@skelly/engine/inventory';
+import { worldGravity } from '@skelly/engine/sim';
+import type { SolidAt } from '@skelly/engine/world';
+import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
+import { describe, expect, it } from 'vitest';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';

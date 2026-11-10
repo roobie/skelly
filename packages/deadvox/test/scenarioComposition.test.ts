@@ -1,13 +1,18 @@
-import { describe, expect, it, vi } from 'vitest';
-import { buildCityPlan, cityGridOf, scenarioPlanIssues, servicePlacement } from '../../engine/src/core/cityPlan.ts';
+import {
+  buildCityPlan,
+  cityGridOf,
+  scenarioPlanIssues,
+  servicePlacement,
+} from '@skelly/engine/internal/core/cityPlan.ts';
 // biome-ignore lint/performance/noNamespaceImport: A module spy observes every scenario-source handoff.
-import * as lootSelection from '../../engine/src/core/loot.ts';
-import { composeScenario } from '../../engine/src/core/scenarioComposition.ts';
-import { startIssues } from '../../engine/src/core/startIssues.ts';
-import { compileTemplate, placedPieces } from '../../engine/src/core/templates.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { discoveryForPlan } from '../../engine/src/sim.ts';
-import { CitySite, makeScale, toChunk } from '../../engine/src/world.ts';
+import * as lootSelection from '@skelly/engine/internal/core/loot.ts';
+import { composeScenario } from '@skelly/engine/internal/core/scenarioComposition.ts';
+import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
+import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { discoveryForPlan } from '@skelly/engine/sim';
+import { CitySite, makeScale, toChunk } from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

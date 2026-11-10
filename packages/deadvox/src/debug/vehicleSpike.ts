@@ -1,37 +1,13 @@
-import { html, render } from 'lit-html';
-import {
-  BoxGeometry,
-  BufferAttribute,
-  BufferGeometry,
-  CanvasTexture,
-  Color,
-  DirectionalLight,
-  Group,
-  HemisphereLight,
-  Mesh,
-  MeshLambertMaterial,
-  MeshPhongMaterial,
-  type Object3D,
-  PerspectiveCamera,
-  PlaneGeometry,
-  Scene,
-  Sprite,
-  SpriteMaterial,
-  SRGBColorSpace,
-  Vector3,
-  WebGLRenderer,
-} from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {
   assembledVehicle,
   loadVehicleBlueprint,
   type PlacedFitting,
   requireDayCycle,
   type VehicleFittingDef,
-} from '../../../engine/src/content.ts';
-import { claimed } from '../../../engine/src/inventory.ts';
-import { graphicsTuningOf } from '../../../engine/src/look.ts';
-import { skyAt } from '../../../engine/src/sky.ts';
+} from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { skyAt } from '@skelly/engine/sky';
 import {
   APC,
   addFitting,
@@ -74,8 +50,32 @@ import {
   wearKey,
   wearPalette,
   wheel,
-} from '../../../engine/src/vehicles.ts';
-import { BLOCK_SIZE, type Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/vehicles';
+import { BLOCK_SIZE, type Vec3 } from '@skelly/engine/world';
+import { html, render } from 'lit-html';
+import {
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  CanvasTexture,
+  Color,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  Mesh,
+  MeshLambertMaterial,
+  MeshPhongMaterial,
+  type Object3D,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Scene,
+  Sprite,
+  SpriteMaterial,
+  SRGBColorSpace,
+  Vector3,
+  WebGLRenderer,
+} from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { productAssets } from '../product/assets.ts';
 import { buildBundledContent } from '../product/content.ts';
 import { ModelLibrary } from '../render/models.ts';

@@ -1,10 +1,15 @@
+import type { BashOutcome } from '@skelly/engine/internal/core/blockEntities.ts';
+import {
+  commitRuin,
+  type FurnitureMover,
+  planRuin,
+  ruinFurniture,
+} from '@skelly/engine/internal/core/furnitureMove.ts';
+import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
+import type { BlockEntity, Body, Vec3 } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import type { BashOutcome } from '../../engine/src/core/blockEntities.ts';
-import { commitRuin, type FurnitureMover, planRuin, ruinFurniture } from '../../engine/src/core/furnitureMove.ts';
-import { ContentFileSchema } from '../../engine/src/core/schema.ts';
-import { Inventory, PILE_GRID } from '../../engine/src/inventory.ts';
-import type { BlockEntity, Body, Vec3 } from '../../engine/src/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { createRuntime } from './snapshotTestSupport.ts';

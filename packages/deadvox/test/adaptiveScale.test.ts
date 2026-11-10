@@ -1,5 +1,5 @@
+import type { GraphicsOptions } from '@skelly/engine/look';
 import { expect, it } from 'vitest';
-import type { GraphicsOptions } from '../../engine/src/look.ts';
 import { AdaptiveScale } from '../src/render/adaptiveScale.ts';
 
 const policy: GraphicsOptions['renderScale'] = {

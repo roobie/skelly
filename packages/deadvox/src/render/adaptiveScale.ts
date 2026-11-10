@@ -1,4 +1,4 @@
-import type { GraphicsOptions } from '../../../engine/src/look.ts';
+import type { GraphicsOptions } from '@skelly/engine/look';
 
 type Policy = GraphicsOptions['renderScale'];
 

@@ -1,12 +1,12 @@
+import { type ModelDef, ModelSchema } from '@skelly/engine/content';
+import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
+import { simPerMinute, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { heldGripOffset } from '@skelly/engine/pose';
 import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../../mods/skelly.firearms/models-firearms.json' with { type: 'json' };
-import { heldEjectionPose } from '../../engine/src/core/heldPose.ts';
-import { simPerMinute, simSeconds } from '../../engine/src/core/time.ts';
-import { type ModelDef, ModelSchema } from '../../engine/src/content.ts';
-import { heldGripOffset } from '../../engine/src/pose.ts';
 import {
   actionPartPaths,
   cloneHeldModel,

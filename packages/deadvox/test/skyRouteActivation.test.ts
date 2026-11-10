@@ -1,9 +1,9 @@
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { realTimestamp } from '@skelly/engine/sim';
+import type { SkyResult } from '@skelly/engine/sky';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { SkySnapshot } from '../../engine/src/core/skySnapshot.ts';
 import { attachSkyRoute } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
-import { realTimestamp } from '../../engine/src/sim.ts';
-import type { SkyResult } from '../../engine/src/sky.ts';
 import { observeRealFrame } from '../src/game/frameDriver.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import type { Skylight } from '../src/render/skylight.ts';

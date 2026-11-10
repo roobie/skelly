@@ -1,11 +1,11 @@
+import { requireDayCycle } from '@skelly/engine/content';
+import { type IlluminationScene, litEnoughToRead } from '@skelly/engine/internal/core/illumination.ts';
+import { chargeOf, drainLight } from '@skelly/engine/internal/core/lights.ts';
+import type { DayCycleDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { type IlluminationScene, litEnoughToRead } from '../../engine/src/core/illumination.ts';
-import { chargeOf, drainLight } from '../../engine/src/core/lights.ts';
-import type { DayCycleDef } from '../../engine/src/core/schema.ts';
-import { gameSeconds } from '../../engine/src/core/time.ts';
-import { requireDayCycle } from '../../engine/src/content.ts';
-import { Inventory, toggleLight } from '../../engine/src/inventory.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

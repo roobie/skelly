@@ -1,11 +1,11 @@
+import { buildRegistry, type ContentSource, type Registry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '@skelly/engine/internal/core/cityPlan.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { STAIR_BODY_HEIGHT } from '@skelly/engine/internal/core/stairFlight.ts';
+import { type CompiledTemplate, compileAssembly, type PlacedPiece } from '@skelly/engine/internal/core/templates.ts';
+import { ownershipCell, placedPoint } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../../engine/src/core/cityPlan.ts';
-import type { ContentFile } from '../../engine/src/core/schema.ts';
-import { STAIR_BODY_HEIGHT } from '../../engine/src/core/stairFlight.ts';
-import { type CompiledTemplate, compileAssembly, type PlacedPiece } from '../../engine/src/core/templates.ts';
-import { buildRegistry, type ContentSource, type Registry } from '../../engine/src/content.ts';
-import { ownershipCell, placedPoint } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';

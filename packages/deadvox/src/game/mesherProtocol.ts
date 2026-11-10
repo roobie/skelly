@@ -1,9 +1,6 @@
-import type { FencePostDefs } from '../../../engine/src/core/fencePosts.ts';
-import type { MeshData } from '../../../engine/src/core/mesher.ts';
-import type { SkySnapshot } from '../../../engine/src/core/skySnapshot.ts';
-import type { SkyResult } from '../../../engine/src/core/skyTransport.ts';
-import type { WireMeshes } from '../../../engine/src/core/wireMesh.ts';
-import type { ShapeData } from '../../../engine/src/vehicles/shapeData.ts';
+import type { FencePostDefs, MeshData, WireMeshes } from '@skelly/engine/mesh';
+import type { SkyResult, SkySnapshot } from '@skelly/engine/sky';
+import type { ShapeData } from '@skelly/engine/vehicles';
 
 export type ToMesher =
   | {

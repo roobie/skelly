@@ -1,8 +1,8 @@
+import type { ItemDef } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { bestPocket, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character, dominantSide, offSide } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import type { ItemDef } from '../../engine/src/content.ts';
-import { bestPocket, HandlingQueue, Inventory } from '../../engine/src/inventory.ts';
-import { bindReach, Character, dominantSide, offSide } from '../../engine/src/sim.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
 import { baseContentSources } from './baseContentFiles.ts';

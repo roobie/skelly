@@ -1,5 +1,5 @@
-import type { HandSide, Inventory } from '../../../engine/src/core/inventory.ts';
-import { defOf, type Item } from '../../../engine/src/core/items.ts';
+import type { HandSide, Inventory } from '@skelly/engine/inventory';
+import { defOf, type Item } from '@skelly/engine/inventory';
 
 export const unpackingTool = (inventory: Inventory, target: Item): Item | undefined => {
   const at = inventory.locate(target);

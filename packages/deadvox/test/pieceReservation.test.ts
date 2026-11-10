@@ -1,6 +1,6 @@
+import { decodeSave } from '@skelly/engine/save';
+import { BlockEntities } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { decodeSave } from '../../engine/src/save.ts';
-import { BlockEntities } from '../../engine/src/world.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseContentSources } from './baseContentFiles.ts';

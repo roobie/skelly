@@ -1,5 +1,5 @@
+import type { Vec3 } from '@skelly/engine/world';
 import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type Scene } from 'three';
-import type { Vec3 } from '../../../engine/src/world.ts';
 
 export type DebugPrimitive =
   | { kind: 'line'; start: Vec3; end: Vec3; color: number; expiresAtRealMs: number | null }

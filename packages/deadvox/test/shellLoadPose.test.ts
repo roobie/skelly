@@ -1,9 +1,9 @@
+import { HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
+import { heldAnchorOffset } from '@skelly/engine/pose';
+import { Character } from '@skelly/engine/sim';
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { HandlingQueue, Inventory, SIDES } from '../../engine/src/inventory.ts';
-import { heldAnchorOffset } from '../../engine/src/pose.ts';
-import { Character } from '../../engine/src/sim.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';

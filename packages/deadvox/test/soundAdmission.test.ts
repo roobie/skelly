@@ -1,9 +1,9 @@
+import type { Registry } from '@skelly/engine/content';
+import type { SoundEventId } from '@skelly/engine/internal/core/soundEvents.ts';
+import { SoundPicker } from '@skelly/engine/internal/core/soundPicker.ts';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import type { SoundEventId } from '../../engine/src/core/soundEvents.ts';
-import { SoundPicker } from '../../engine/src/core/soundPicker.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import type { SoundEmission } from '../../engine/src/sound.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
 import { productAssets } from '../src/product/assets.ts';

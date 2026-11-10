@@ -161,36 +161,39 @@
       "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
     },
     {
-      // Vite requires a default export.
-      "includes": ["**/vite.config.ts"],
+      // Vite and Vitest require a default export.
+      "includes": ["**/vite.config.ts", "**/vitest.config.ts"],
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
+      // Deadvox tests reach runtime internals through the engine's test-only subpath, whose export condition
+      // Biome's resolver does not apply. tsc applies it (packages/deadvox/tsconfig.json, customConditions) and
+      // resolves every import in these files, so an unresolved one still fails the typecheck.
+      "includes": ["packages/deadvox/test/**/*.ts"],
+      "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
     },
     {
       // The posing hot path runs once per bone per actor per frame. Profiling found
       // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
       // indexing it directly — a measured, deliberate choice at each of these call sites, not an
       // oversight useDestructuring should keep flagging.
-      "includes": ["**/deadvox/src/core/pose.ts", "**/deadvox/src/render/crowd.ts"],
+      "includes": ["packages/engine/src/core/pose.ts", "**/deadvox/src/render/crowd.ts"],
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
     },
     {
       // The runtime's curated entries are re-export modules by design: product code reaches the
       // runtime only through them. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
-      "includes": ["packages/deadvox/src/engine/**"],
+      "includes": ["packages/engine/src/*.ts", "packages/engine/src/*.mjs"],
       "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
     },
     {
-      // The runtime set's no-DOM typecheck (packages/deadvox/tsconfig.runtime.json) keeps Node types,
-      // which declare navigator, MessageEvent, localStorage and sessionStorage, so the typecheck alone
-      // lets them through. It also never reads JavaScript runtime files (src/core/authoredTerrain.mjs),
-      // so document, window and requestAnimationFrame are banned here too. The paths are the ones that
-      // tsconfig includes. `event` and `error` keep the rule's default ban.
-      "includes": [
-        "packages/deadvox/src/core/**",
-        "packages/deadvox/src/vehicles/**",
-        "packages/deadvox/src/game/**",
-        "packages/deadvox/src/engine/**"
-      ],
+      // The runtime's no-DOM typechecks (packages/engine/tsconfig.json and
+      // packages/deadvox/tsconfig.runtime.json) keep Node types, which declare navigator, MessageEvent,
+      // localStorage and sessionStorage, so the typecheck alone lets them through. They also never read
+      // JavaScript runtime files (packages/engine/src/core/authoredTerrain.mjs), so document, window and
+      // requestAnimationFrame are banned here too. The paths are the runtime source those tsconfigs
+      // include. `event` and `error` keep the rule's default ban.
+      "includes": ["packages/engine/src/**", "packages/deadvox/src/game/**"],
       "linter": {
         "rules": {
           "style": {

@@ -1,9 +1,9 @@
+import type { FurnitureDef, GunModelDef, ItemDef, Registry } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { defOf, HandlingQueue, Inventory, type Item, SLING_SLOT } from '@skelly/engine/inventory';
+import { opticViewSettings } from '@skelly/engine/pose';
+import { bindReach, Character, type HandedCharacter } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import type { FurnitureDef, GunModelDef, ItemDef, Registry } from '../../engine/src/content.ts';
-import { defOf, HandlingQueue, Inventory, type Item, SLING_SLOT } from '../../engine/src/inventory.ts';
-import { opticViewSettings } from '../../engine/src/pose.ts';
-import { bindReach, Character, type HandedCharacter } from '../../engine/src/sim.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

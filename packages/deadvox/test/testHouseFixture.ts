@@ -1,6 +1,6 @@
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import { CHUNK } from '../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { CHUNK } from '@skelly/engine/world';
 import type { GameConfig } from '../src/game/config.ts';
 
 export const houseScene = (config: GameConfig, registry: Registry) => {

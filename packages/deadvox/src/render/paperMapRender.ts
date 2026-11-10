@@ -4,7 +4,7 @@ import {
   paperMapBounds,
   type Terrain,
   worldGroundAt,
-} from '../../../engine/src/world.ts';
+} from '@skelly/engine/world';
 import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from './siteMap.ts';
 
 export interface PaperMapRenderConfig {

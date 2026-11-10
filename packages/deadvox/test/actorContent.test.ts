@@ -1,11 +1,11 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { type ActorModel, FIGURE_VARIANTS } from '@skelly/engine/internal/core/actorModels.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { footstepSoundId } from '@skelly/engine/internal/core/footsteps.ts';
+import { settlementActorSpawns, settlementHordeSpawn } from '@skelly/engine/internal/core/settlementSpawns.ts';
+import { claimed } from '@skelly/engine/inventory';
+import { figureVariantOf } from '@skelly/engine/pose';
 import { expect, it } from 'vitest';
-import { type ActorModel, FIGURE_VARIANTS } from '../../engine/src/core/actorModels.ts';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { footstepSoundId } from '../../engine/src/core/footsteps.ts';
-import { settlementActorSpawns, settlementHordeSpawn } from '../../engine/src/core/settlementSpawns.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { claimed } from '../../engine/src/inventory.ts';
-import { figureVariantOf } from '../../engine/src/pose.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';

@@ -1,11 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../../engine/src/core/character.ts';
-import { ejectSeconds } from '../../engine/src/core/firearmAction.ts';
-import { heldEjectionPose } from '../../engine/src/core/heldPose.ts';
-import { dropSpots } from '../../engine/src/core/inventory.ts';
-import { type PelletShot, pelletSpreadRadians } from '../../engine/src/core/pellets.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import { applyStartKit } from '../../engine/src/core/startState.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { type PelletShot, pelletSpreadRadians } from '@skelly/engine/internal/core/pellets.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
 import {
   defOf,
   HandlingQueue,
@@ -14,11 +13,12 @@ import {
   PILE_GRID,
   typeWeightGrams,
   weightOf,
-} from '../../engine/src/inventory.ts';
-import { decodeSave, encodeSave, type SaveVersionComponents } from '../../engine/src/save.ts';
-import { dominantSide } from '../../engine/src/sim.ts';
-import type { SoundId } from '../../engine/src/sound.ts';
-import { makeScale, type Vec3, World } from '../../engine/src/world.ts';
+} from '@skelly/engine/inventory';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
+import { dominantSide } from '@skelly/engine/sim';
+import type { SoundId } from '@skelly/engine/sound';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,

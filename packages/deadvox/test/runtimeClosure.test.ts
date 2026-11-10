@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
-import { RUNTIME_POLICY, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
+import { ENGINE_POLICY, RUNTIME_POLICY, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 type Tree = Record<string, string>;
@@ -15,6 +15,7 @@ const cleanTree: Tree = {
     type: 'module',
     workspaces: [
       'packages/deadvox',
+      'packages/engine',
       'packages/skelly-assets/tools/packages/thing-core',
       'packages/presentation',
       'packages/mods',
@@ -23,16 +24,22 @@ const cleanTree: Tree = {
   'packages/deadvox/package.json': JSON.stringify({
     name: '@skelly/deadvox',
     type: 'module',
-    dependencies: { '@skelly/presentation': '*', '@skelly/thing-core': '*', kit: '*' },
+    dependencies: { '@skelly/engine': '*', '@skelly/presentation': '*', '@skelly/thing-core': '*', kit: '*' },
   }),
   'packages/deadvox/tsconfig.json':
     '{\n  // Only resolution the check models.\n  "compilerOptions": {\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "types": ["node"],\n  },\n  "include": ["src"],\n}\n',
-  'packages/deadvox/src/core/sim.ts':
-    "import { rule } from './rule.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nexport const tick = () => [rule, schema, join];\n",
-  'packages/deadvox/src/core/rule.ts': 'export const rule = 1;\n',
-  'packages/deadvox/src/vehicles/solid.ts': "import { rule } from '../core/rule.ts';\nexport const solid = rule;\n",
-  'packages/deadvox/src/engine/sim.ts': "export { tick } from '../core/sim.ts';\n",
-  'packages/deadvox/src/game/session.ts': "import { tick } from '../core/sim.ts';\nexport const session = tick;\n",
+  'packages/deadvox/src/game/sim.ts':
+    "import { rule } from './rule.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nimport { solid } from '@skelly/engine/sim';\nexport const tick = () => [rule, schema, join, solid];\n",
+  'packages/deadvox/src/game/rule.ts': 'export const rule = 1;\n',
+  'packages/deadvox/src/game/session.ts': "import { tick } from './sim.ts';\nexport const session = tick;\n",
+  // The runtime package, a library the runtime in deadvox follows by its package name.
+  'packages/engine/package.json': JSON.stringify({
+    name: '@skelly/engine',
+    type: 'module',
+    exports: { './sim': './src/sim.ts' },
+  }),
+  'packages/engine/src/sim.ts': "export { solid } from './vehicles/solid.ts';\n",
+  'packages/engine/src/vehicles/solid.ts': 'export const solid = 1;\n',
   'packages/deadvox/src/render/view.ts':
     "import { session } from '../game/session.ts';\nexport const view = session;\n",
   'packages/skelly-assets/tools/packages/thing-core/package.json': JSON.stringify({
@@ -140,7 +147,7 @@ const thingCoreSchema = 'packages/skelly-assets/tools/packages/thing-core/src/sc
 const thingCoreStep = 'packages/skelly-assets/tools/packages/thing-core/src/step.ts';
 // From thing-core's src up to `packages/`; built, not literal, since the import-boundary scan reads literals.
 const UP_TO_PACKAGES = '../'.repeat(5);
-const catalog = 'packages/deadvox/src/core/catalog.ts';
+const catalog = 'packages/deadvox/src/game/catalog.ts';
 // Literal file names that Vite's matcher reaches through syntax Node's globSync reads differently.
 const oddlyNamedRender: Tree = {
   'packages/deadvox/src/render/brackets/[ab].ts': 'export const ab = 1;\n',
@@ -151,6 +158,10 @@ const oddlyNamedRender: Tree = {
 describe('runtime closure', () => {
   it('keeps the runtime and the libraries it follows inside the runtime set and away from three and Lit', () => {
     expect(runtimeClosureViolations(repoRoot, RUNTIME_POLICY)).toEqual([]);
+  });
+
+  it('keeps the runtime package off deadvox, presentation, three and Lit, and on the packages it declares', () => {
+    expect(runtimeClosureViolations(repoRoot, ENGINE_POLICY)).toEqual([]);
   });
 
   // The loaded config is checked, not the file's text, because a config file may compute its values.
@@ -186,10 +197,10 @@ describe('runtime closure', () => {
 
   it('fails a runtime file that only type-imports a render file (W1)', () => {
     const violations = violationsIn({
-      'packages/deadvox/src/core/rule.ts':
+      'packages/deadvox/src/game/rule.ts':
         "import type { view } from '../render/view.ts';\nexport const rule: typeof view | 1 = 1;\n",
     });
-    expect(importers(violations)).toEqual(['packages/deadvox/src/core/rule.ts']);
+    expect(importers(violations)).toEqual(['packages/deadvox/src/game/rule.ts']);
   });
 
   it('fails a forbidden file reached only through a followed library (W2)', () => {
@@ -236,6 +247,13 @@ describe('runtime closure', () => {
     ]);
   });
 
+  it('fails a runtime file that imports an npm package its manifest does not name in dependencies', () => {
+    const violations = violationsIn({ [catalog]: "import * as v from 'valibot';\nexport const schema = v;\n" });
+    expect(violations.map((v) => [v.importer, v.target, v.reason])).toEqual([
+      [catalog, 'valibot', 'imports a package its manifest does not name in dependencies'],
+    ]);
+  });
+
   it('fails a followed library that imports three', () => {
     const violations = violationsIn({
       [thingCoreSchema]: "import { Vector3 } from 'three';\nexport const schema = Vector3;\n",
@@ -255,22 +273,22 @@ describe('runtime closure', () => {
 
   it('fails a glob whose pattern is neither relative nor rooted', () => {
     const violations = violationsIn({
-      'packages/deadvox/src/core/catalog.ts': "export const rigs = import.meta.glob('@kit/rig/*.ts');\n",
+      'packages/deadvox/src/game/catalog.ts': "export const rigs = import.meta.glob('@kit/rig/*.ts');\n",
     });
     expect(violations.map((v) => [v.importer, v.reason])).toEqual([
-      ['packages/deadvox/src/core/catalog.ts', 'uses a glob that does not resolve'],
+      ['packages/deadvox/src/game/catalog.ts', 'uses a glob that does not resolve'],
     ]);
   });
 
   it('fails a glob whose options spread after a literal base, but passes a literal base that matches nothing', () => {
     const spread = violationsIn({
-      'packages/deadvox/src/core/catalog.ts':
+      'packages/deadvox/src/game/catalog.ts':
         "export const views = import.meta.glob('./*.ts', {\n  base: './missing',\n  ...(true ? { base: '/src/render' } : {}),\n});\n",
     });
-    expect(importers(spread)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(importers(spread)).toEqual(['packages/deadvox/src/game/catalog.ts']);
     expect(
       violationsIn({
-        'packages/deadvox/src/core/catalog.ts':
+        'packages/deadvox/src/game/catalog.ts':
           "export const views = import.meta.glob('./*.ts', { base: './missing' });\n",
       }),
     ).toEqual([]);
@@ -278,13 +296,13 @@ describe('runtime closure', () => {
 
   it('fails case-insensitive matching, but passes the case-sensitive default that matches nothing', () => {
     const nocase = violationsIn({
-      'packages/deadvox/src/core/catalog.ts':
+      'packages/deadvox/src/game/catalog.ts':
         "export const views = import.meta.glob('/src/render/*.TS', { caseSensitive: false });\n",
     });
-    expect(importers(nocase)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(importers(nocase)).toEqual(['packages/deadvox/src/game/catalog.ts']);
     expect(
       violationsIn({
-        'packages/deadvox/src/core/catalog.ts':
+        'packages/deadvox/src/game/catalog.ts':
           "export const parts = import.meta.glob('./parts/*.ts', { caseSensitive: true, exhaustive: false });\n",
       }),
     ).toEqual([]);
@@ -292,11 +310,11 @@ describe('runtime closure', () => {
 
   it('fails exhaustive matching, which also matches dotfiles', () => {
     const violations = violationsIn({
-      'packages/deadvox/src/core/catalog.ts':
+      'packages/deadvox/src/game/catalog.ts':
         "export const panels = import.meta.glob('/src/render/hidden/*.ts', { exhaustive: true });\n",
       'packages/deadvox/src/render/hidden/.panel.ts': 'export const panel = 1;\n',
     });
-    expect(importers(violations)).toEqual(['packages/deadvox/src/core/catalog.ts']);
+    expect(importers(violations)).toEqual(['packages/deadvox/src/game/catalog.ts']);
   });
 
   it('fails a wildcard over a symlinked directory, which Vite follows', () => {
@@ -399,7 +417,7 @@ describe('runtime closure', () => {
     ['on one line', "/** @type {import('three').Vector3 | undefined} */\nexport let v;\n"],
     ['across a line break and its asterisk', "/** @type {import\n * ('three').Vector3} */\nexport let v;\n"],
   ])('fails a JSDoc type import in a JavaScript runtime file, %s', (_name, source) => {
-    const legacy = 'packages/deadvox/src/core/legacy.js';
+    const legacy = 'packages/deadvox/src/game/legacy.js';
     expect(importers(violationsIn({ [legacy]: source }))).toEqual([legacy]);
   });
 
@@ -516,9 +534,9 @@ describe('runtime closure', () => {
   it('fails a symlinked file in a runtime root', () => {
     const violations = violationsIn(
       { 'packages/deadvox/src/render/linkTarget.ts': "export type V = import('three').Vector3;\n" },
-      { 'packages/deadvox/src/core/linked.ts': '../render/linkTarget.ts' },
+      { 'packages/deadvox/src/game/linked.ts': '../render/linkTarget.ts' },
     );
-    expect(importers(violations)).toEqual(['packages/deadvox/src/core/linked.ts']);
+    expect(importers(violations)).toEqual(['packages/deadvox/src/game/linked.ts']);
   });
 
   it.each([

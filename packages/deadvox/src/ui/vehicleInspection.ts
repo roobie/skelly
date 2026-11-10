@@ -1,12 +1,12 @@
-import { claimed, conditionWord, type Inventory, type Item } from '../../../engine/src/inventory.ts';
-import type { ReachSnapshot } from '../../../engine/src/sim.ts';
-import { fillText } from '../../../engine/src/text.ts';
+import { claimed, conditionWord, type Inventory, type Item } from '@skelly/engine/inventory';
+import type { ReachSnapshot } from '@skelly/engine/sim';
+import { fillText } from '@skelly/engine/text';
 import {
   copyVehicleWorkPlacement,
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
   vehicleSiteName,
-} from '../../../engine/src/vehicles.ts';
+} from '@skelly/engine/vehicles';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 
 export type VehicleWorkPayload = Extract<ReplayActionPayload, { kind: 'vehicle.work' }>;

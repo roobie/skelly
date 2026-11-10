@@ -1,3 +1,6 @@
+import type { MeshData } from '@skelly/engine/mesh';
+import { skyAt } from '@skelly/engine/sky';
+import { CHUNK } from '@skelly/engine/world';
 import {
   Box3,
   DirectionalLight,
@@ -11,9 +14,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { MeshData } from '../../engine/src/mesh.ts';
-import { skyAt } from '../../engine/src/sky.ts';
-import { CHUNK } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

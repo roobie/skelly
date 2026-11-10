@@ -1,10 +1,10 @@
+import type { ActorDef } from '@skelly/engine/content';
+import { ActorSpawner } from '@skelly/engine/internal/core/actorSpawns.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import type { ActorSystem } from '@skelly/engine/sim';
+import { CHUNK, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { ActorSpawner } from '../../engine/src/core/actorSpawns.ts';
-import { AuthoredSite } from '../../engine/src/core/authoredSite.ts';
-import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
-import type { ActorDef } from '../../engine/src/content.ts';
-import type { ActorSystem } from '../../engine/src/sim.ts';
-import { CHUNK, makeScale, toChunk, type Vec3 } from '../../engine/src/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

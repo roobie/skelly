@@ -1,9 +1,9 @@
 // The shambler mode of the shared ?bench= harness. It loads the forest, runs the
 // real fixed-step ActorSystem and player physics, and records frame/tick/render costs.
 
-import { type ActorFigureFiles, requireDayCycle } from '../../../engine/src/content.ts';
-import { claimed } from '../../../engine/src/inventory.ts';
-import { graphicsTuningOf, lookDefaultsOf } from '../../../engine/src/look.ts';
+import { type ActorFigureFiles, requireDayCycle } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
 import {
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
@@ -15,9 +15,9 @@ import {
   reachTuning,
   Simulation,
   worldGravity,
-} from '../../../engine/src/sim.ts';
-import { skyAt } from '../../../engine/src/sky.ts';
-import { type Body, siteGenerationOf, stepBody } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import { skyAt } from '@skelly/engine/sky';
+import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
 import { type ActorRenderMode, actorRendererFromUrl } from '../game/config.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { PHYSICS_RATE } from '../game/session.ts';

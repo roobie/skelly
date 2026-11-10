@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { dot, normalize } from '../../engine/src/core/boneMath.ts';
-import { actorFigure } from '../../engine/src/content.ts';
+import { actorFigure } from '@skelly/engine/content';
+import { dot, normalize } from '@skelly/engine/internal/core/boneMath.ts';
 import {
   applyPoint,
   bodySkeleton,
@@ -11,7 +10,8 @@ import {
   type Pose,
   type Transform,
   transpose,
-} from '../../engine/src/pose.ts';
+} from '@skelly/engine/pose';
+import { describe, expect, it } from 'vitest';
 import { LOOK_AT_REST, lookAtPose } from '../src/render/lookAt.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

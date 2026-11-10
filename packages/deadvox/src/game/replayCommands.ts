@@ -1,14 +1,19 @@
-import { actionText } from '../../../engine/src/core/actionText.ts';
-import type { RecoveryChoices, WorkOperation } from '../../../engine/src/core/craftCommands.ts';
-import type { CraftPreference, CraftSources } from '../../../engine/src/core/crafting.ts';
-import type { HandlingQueue } from '../../../engine/src/core/handling.ts';
-import type { Inventory, TargetState } from '../../../engine/src/core/inventory.ts';
+import { actionText } from '@skelly/engine/input';
+import type {
+  CraftPreference,
+  CraftSources,
+  HandlingQueue,
+  Inventory,
+  RecoveryChoices,
+  TargetState,
+  WorkOperation,
+} from '@skelly/engine/inventory';
 import {
   copyVehicleWorkPlacement,
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
   validVehicleWorkPlacement,
-} from '../../../engine/src/core/vehicleInstances.ts';
+} from '@skelly/engine/vehicles';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 

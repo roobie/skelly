@@ -1,4 +1,4 @@
-import type { SenseDef } from '../../../engine/src/core/schema.ts';
+import type { SenseDef } from '@skelly/engine/content';
 
 export type ActorVoiceTuning = SenseDef['actorVoice'];
 

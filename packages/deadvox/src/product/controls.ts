@@ -1,5 +1,5 @@
+import type { Binding } from '@skelly/engine/input';
 import controlsFile from '../../../mods/skelly.controls/controls.json' with { type: 'json' };
-import type { Binding } from '../../../engine/src/input.ts';
 import { bindingsFromControls, type ControlsFile } from '../game/bindingRegistry.ts';
 
 /** The game's bindings with the shipped default keys. */

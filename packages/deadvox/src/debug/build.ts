@@ -1,12 +1,12 @@
 // Debug block editing. Gated semantic slot selection and the wheel share the same selected block.
 
+import { blockId } from '@skelly/engine/content';
+import { actionText, fillText } from '@skelly/engine/input';
+import type { BlockBlow } from '@skelly/engine/sim';
+import { decimalText } from '@skelly/engine/text';
+import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '@skelly/engine/world';
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
-import { blockId } from '../../../engine/src/content.ts';
-import { actionText, fillText } from '../../../engine/src/input.ts';
-import type { BlockBlow } from '../../../engine/src/sim.ts';
-import { decimalText } from '../../../engine/src/text.ts';
-import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '../../../engine/src/world.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { playerTuning } from '../game/player.ts';
 import type { Engine } from '../presentation/engine.ts';

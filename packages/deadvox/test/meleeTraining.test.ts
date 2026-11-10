@@ -1,6 +1,6 @@
+import type { Registry } from '@skelly/engine/content';
+import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Registry } from '../../engine/src/content.ts';
-import { makeScale, World } from '../../engine/src/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

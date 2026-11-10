@@ -1,8 +1,8 @@
+import type { ModelDef } from '@skelly/engine/content';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import type { Vec3 } from '@skelly/engine/world';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import type { ModelDef } from '../../engine/src/content.ts';
-import { graphicsTuningOf } from '../../engine/src/look.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 

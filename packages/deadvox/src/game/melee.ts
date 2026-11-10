@@ -1,10 +1,7 @@
-import type { MeleeWeapon } from '../../../engine/src/core/actorSystem.ts';
-import { claimed } from '../../../engine/src/core/capabilities.ts';
-import type { MeleeClassDef } from '../../../engine/src/core/content.ts';
-import type { Needs } from '../../../engine/src/core/needs.ts';
-import { spendStamina } from '../../../engine/src/core/needs.ts';
-import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../../../engine/src/core/playerCombat.ts';
-import type { ItemDef } from '../../../engine/src/core/schema.ts';
+import type { ItemDef, MeleeClassDef } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import type { MeleeWeapon, Needs } from '@skelly/engine/sim';
+import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat, spendStamina } from '@skelly/engine/sim';
 
 export const meleeProfileForWeapon = (classes: ReadonlyMap<string, MeleeClassDef>, kind: string) => {
   const tuning = classes.get(kind);

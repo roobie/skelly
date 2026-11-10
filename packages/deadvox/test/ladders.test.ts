@@ -1,11 +1,11 @@
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { pieceSize } from '@skelly/engine/internal/core/templates.ts';
+import type { HandSide, Item } from '@skelly/engine/inventory';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import { dominantSide, offSide } from '@skelly/engine/sim';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
+import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { pickFurniture } from '../../engine/src/core/furniturePick.ts';
-import { pieceSize } from '../../engine/src/core/templates.ts';
-import type { HandSide, Item } from '../../engine/src/inventory.ts';
-import type { SaveSnapshot } from '../../engine/src/save.ts';
-import { dominantSide, offSide } from '../../engine/src/sim.ts';
-import { projectVehicleParts } from '../../engine/src/vehicles.ts';
-import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '../../engine/src/world.ts';
 import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

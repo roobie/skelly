@@ -1,4 +1,17 @@
 import {
+  containsSky,
+  type Sky,
+  type SkyChannel,
+  type SkyField,
+  type SkyFields,
+  type SkyResult,
+  type SkySubmit,
+  sampleSky,
+  skyIndex,
+  skyRoofAt,
+} from '@skelly/engine/sky';
+import { CHUNK, type Vec3 } from '@skelly/engine/world';
+import {
   Data3DTexture,
   DataTexture,
   FloatType,
@@ -15,19 +28,6 @@ import {
   Vector2,
   Vector3,
 } from 'three';
-import {
-  containsSky,
-  type Sky,
-  type SkyChannel,
-  type SkyField,
-  type SkyFields,
-  type SkyResult,
-  type SkySubmit,
-  sampleSky,
-  skyIndex,
-  skyRoofAt,
-} from '../../../engine/src/sky.ts';
-import { CHUNK, type Vec3 } from '../../../engine/src/world.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';

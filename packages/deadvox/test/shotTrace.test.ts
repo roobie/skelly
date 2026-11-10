@@ -1,8 +1,8 @@
+import { traceShot } from '@skelly/engine/internal/core/shotTrace.ts';
+import type { ShotTrace } from '@skelly/engine/sim';
+import type { SolidAt, Vec3 } from '@skelly/engine/world';
 import { Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { traceShot } from '../../engine/src/core/shotTrace.ts';
-import type { ShotTrace } from '../../engine/src/sim.ts';
-import type { SolidAt, Vec3 } from '../../engine/src/world.ts';
 import { IMPACT_MARK_CAP, ImpactEffects, PING_SECONDS } from '../src/render/impactEffects.ts';
 
 const RANGE_BLOCKS = 12;

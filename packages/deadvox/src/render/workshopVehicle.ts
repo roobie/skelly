@@ -1,3 +1,6 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import { BLUEPRINTS, GLASS, MATERIALS, newInstance, type Paint, quadColors, type Rgb } from '@skelly/engine/vehicles';
+import { BLOCK_SIZE, type BlockEntity, rotationOf } from '@skelly/engine/world';
 import {
   BoxGeometry,
   BufferAttribute,
@@ -11,9 +14,6 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import type { FurnitureDef } from '../../../engine/src/content.ts';
-import { BLUEPRINTS, GLASS, MATERIALS, newInstance, type Paint, quadColors, type Rgb } from '../../../engine/src/vehicles.ts';
-import { BLOCK_SIZE, type BlockEntity, rotationOf } from '../../../engine/src/world.ts';
 import { type Part, type Shape, VehicleShapes } from './vehicleShapes.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */

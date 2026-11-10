@@ -1,17 +1,17 @@
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { buildRegistry, requireDayCycle } from '../../../engine/src/content.ts';
-import { claimed } from '../../../engine/src/inventory.ts';
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
 import {
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
   BACKGROUND_ACTOR_SLICE_COUNT,
   dayPhaseAt,
   parseTimeOfDay,
-} from '../../../engine/src/sim.ts';
-import { siteGenerationOf } from '../../../engine/src/world.ts';
+} from '@skelly/engine/sim';
+import { siteGenerationOf } from '@skelly/engine/world';
+import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';

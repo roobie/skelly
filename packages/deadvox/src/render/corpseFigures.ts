@@ -2,10 +2,10 @@
 // dressed in the outfit its furniture row names. Only the drawing lives here; the piece stays furniture for loot,
 // picking and saves.
 
+import type { FurnitureDef, Registry } from '@skelly/engine/content';
+import type { ColumnReveal } from '@skelly/engine/mesh';
+import { type BlockEntities, type BlockEntity, type Body, rotationOf } from '@skelly/engine/world';
 import { Group, Matrix4, Vector3 } from 'three';
-import type { FurnitureDef, Registry } from '../../../engine/src/content.ts';
-import type { ColumnReveal } from '../../../engine/src/mesh.ts';
-import { type BlockEntities, type BlockEntity, type Body, rotationOf } from '../../../engine/src/world.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 import { FIGURE_PIVOT, PlayerMeshes } from './playerFigure.ts';
 

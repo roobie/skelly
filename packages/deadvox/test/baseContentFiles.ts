@@ -1,7 +1,7 @@
 import process from 'node:process';
-import { actorFigureKeyParts } from '../../engine/src/core/schema/actors.ts';
-import { type ActorFigureFiles, actorFigureKey, type Registry } from '../../engine/src/content.ts';
-import { admitPacks } from '../../engine/src/packs.ts';
+import { type ActorFigureFiles, actorFigureKey, type Registry } from '@skelly/engine/content';
+import { actorFigureKeyParts } from '@skelly/engine/internal/core/schema/actors.ts';
+import { admitPacks } from '@skelly/engine/packs';
 import {
   readBundledPacks,
   readStackActorFigureFiles,

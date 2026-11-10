@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
+
+import { damageWord } from '@skelly/engine/inventory';
+import { bodyRegionLabel } from '@skelly/engine/sim';
+import { fillText } from '@skelly/engine/text';
+import { BlockEntities } from '@skelly/engine/world';
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { damageWord } from '../../engine/src/inventory.ts';
-import { bodyRegionLabel } from '../../engine/src/sim.ts';
-import { fillText } from '../../engine/src/text.ts';
-import { BlockEntities } from '../../engine/src/world.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';

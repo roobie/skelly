@@ -1,7 +1,7 @@
-import { magazineSpec } from '../../../engine/src/core/magazine.ts';
-import type { StartDef, StartKitEntry } from '../../../engine/src/core/schema/starts.ts';
-import type { Registry } from '../../../engine/src/content.ts';
-import { defOf, firearmSlotIds, type Inventory, type Item } from '../../../engine/src/inventory.ts';
+import type { Registry } from '@skelly/engine/content';
+import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import type { StartDef, StartKitEntry } from '@skelly/engine/internal/core/schema/starts.ts';
+import { defOf, firearmSlotIds, type Inventory, type Item } from '@skelly/engine/inventory';
 
 export const fixtureStart = (kit: StartKitEntry[], site = 'testHouse'): StartDef => ({
   id: 'fixture_start',

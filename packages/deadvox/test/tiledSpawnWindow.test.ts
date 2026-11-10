@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
+import { buildRegistry } from '@skelly/engine/content';
+import type { LootContext } from '@skelly/engine/internal/core/loot.ts';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { placementOf } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import type { LootContext } from '../../engine/src/core/loot.ts';
-import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { placementOf } from '../../engine/src/world.ts';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
 const mapsPath = join(process.cwd(), 'maps');

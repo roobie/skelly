@@ -1,8 +1,7 @@
-import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import type { InputContext } from '../../../engine/src/core/inputActions.ts';
-import type { Inventory } from '../../../engine/src/core/inventory.ts';
-import type { Item } from '../../../engine/src/core/items.ts';
-import { countText } from '../../../engine/src/core/numberText.ts';
+import type { InputContext } from '@skelly/engine/input';
+import { actionText, fillText } from '@skelly/engine/input';
+import type { Inventory, Item } from '@skelly/engine/inventory';
+import { countText } from '@skelly/engine/text';
 import type { InputReplayRecorder } from './inputReplay.ts';
 import type { PlayerTickActions } from './playerTickActions.ts';
 import type { ReplayActionPayload } from './replayCommands.ts';

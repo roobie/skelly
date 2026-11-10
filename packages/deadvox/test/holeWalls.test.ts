@@ -1,6 +1,6 @@
+import { type FusedMassGrid, worldPosition } from '@skelly/engine/pose';
 import { Color } from 'three';
 import { describe, expect, it } from 'vitest';
-import { type FusedMassGrid, worldPosition } from '../../engine/src/pose.ts';
 import { crowdCellMaskLayout, isCellInMask, packCellMask } from '../src/render/crowd.ts';
 import { holeWallGeometry } from '../src/render/holeWalls.ts';
 

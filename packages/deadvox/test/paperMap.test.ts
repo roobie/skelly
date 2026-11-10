@@ -1,14 +1,14 @@
 import { createHash } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import type { ItemDef } from '@skelly/engine/content';
+import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { paperMapAt } from '@skelly/engine/internal/core/paperMap.ts';
+import { WORLD_REGION_METRES } from '@skelly/engine/internal/core/worldRegion.ts';
+import { Inventory, ItemFactory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { paperMapBounds } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { canonicalJsonBytes } from '../../engine/src/core/canonicalJson.ts';
-import { restoreItem, snapshotItem } from '../../engine/src/core/items.ts';
-import { paperMapAt } from '../../engine/src/core/paperMap.ts';
-import { WORLD_REGION_METRES } from '../../engine/src/core/worldRegion.ts';
-import type { ItemDef } from '../../engine/src/content.ts';
-import { Inventory, ItemFactory } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { paperMapBounds } from '../../engine/src/world.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import {
   capture,

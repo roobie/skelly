@@ -1,9 +1,9 @@
 // "What am I looking at": names the block or furniture under the crosshair for the debug
 // readout, so colours and materials can be talked about by id.
 
-import type { Registry } from '../../../engine/src/content.ts';
-import { crosshairTarget } from '../../../engine/src/sim.ts';
-import type { BlockEntities, BlockEntity, SolidAt, Vec3, World } from '../../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import { crosshairTarget } from '@skelly/engine/sim';
+import type { BlockEntities, BlockEntity, SolidAt, Vec3, World } from '@skelly/engine/world';
 
 /** Metres: how far the readout looks. */
 const LOOK_REACH = 16;

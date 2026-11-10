@@ -1,7 +1,7 @@
+import type { Registry } from '@skelly/engine/content';
+import type { GridSize, Item } from '@skelly/engine/inventory';
 import type { Object3D } from 'three';
 import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, Vector3, WebGLRenderer } from 'three';
-import type { Registry } from '../../../engine/src/content.ts';
-import type { GridSize, Item } from '../../../engine/src/inventory.ts';
 import { itemLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import { ModelFlames } from './modelFlame.ts';

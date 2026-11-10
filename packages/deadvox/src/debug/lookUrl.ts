@@ -28,7 +28,7 @@
 //
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
-import type { WeatheringDef } from '../../../engine/src/content.ts';
+import type { WeatheringDef } from '@skelly/engine/content';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -45,13 +45,13 @@ import {
   type MoodState,
   moodOf,
   type ShadowState,
-} from '../../../engine/src/look.ts';
+} from '@skelly/engine/look';
 import {
   clampFogginess,
   WEATHERING_URL_PARAMS,
   type WeatheringUrlState,
   writeWeatheringParams,
-} from '../../../engine/src/sky.ts';
+} from '@skelly/engine/sky';
 import { TONE_MODES } from '../render/look.ts';
 
 export interface LookUrlState extends LookState, MoodState {

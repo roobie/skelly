@@ -1,8 +1,8 @@
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
+import { swapCanister } from '@skelly/engine/internal/core/torch.ts';
+import { freshDropTarget, Inventory, type Target } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { chargeOf } from '../../engine/src/core/lights.ts';
-import { swapCanister } from '../../engine/src/core/torch.ts';
-import { freshDropTarget, Inventory, type Target } from '../../engine/src/inventory.ts';
 import { createRuntime, registry } from './snapshotTestSupport.ts';
 
 const doorDef = registry.furniture.get('steel_armoury_door')!;

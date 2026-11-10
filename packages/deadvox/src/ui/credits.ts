@@ -3,9 +3,9 @@
 // swaps them back. Every source is listed, CC0 too, with its title, author, where it
 // came from, its licence and what we changed.
 
+import { type AssetSource, LICENCES, type Manifest, type ScreenText } from '@skelly/engine/content';
+import { fillText } from '@skelly/engine/text';
 import { html, render, type TemplateResult } from 'lit-html';
-import { type AssetSource, LICENCES, type Manifest, type ScreenText } from '../../../engine/src/content.ts';
-import { fillText } from '../../../engine/src/text.ts';
 import { fillHint } from './keyCap.ts';
 
 interface CreditsLink {

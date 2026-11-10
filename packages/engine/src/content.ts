@@ -30,12 +30,14 @@ export {
   type FigureDef,
   type FurnitureDef,
   type ItemDef,
+  type MeleeClassDef,
   type ModelDef,
   type RecipeDef,
   type Registry,
   requireDayCycle,
   requiredContentIssues,
   type SoundDef,
+  validateContent,
 } from './core/content.ts';
 export type { HandlingFact } from './core/guidanceFacts.ts';
 export { modelPresentationAssetIssues } from './core/itemPresentation.ts';
@@ -55,6 +57,7 @@ export {
 } from './core/schema/actors.ts';
 export type { AttemptPolicyDef, MetricsLimits } from './core/schema/attemptPolicy.ts';
 export type { GuidanceDef, GuidanceGate } from './core/schema/guidance.ts';
+export type { StartDef } from './core/schema/starts.ts';
 export {
   ARM_SEGMENTS,
   type ArmRigDef,
@@ -66,6 +69,7 @@ export {
   CONTENT_SECTIONS,
   type CompassDial,
   type DecalDef,
+  type EventRuleDef,
   FIGURE_LIMB_JOINTS,
   FIGURE_LIMBS,
   type FigureJoint,
@@ -85,9 +89,11 @@ export {
   type PlayerDef,
   type RecipeCategoryDef,
   type RoundFeedPoseTuning,
+  type ScenarioDef,
   type ScreenText,
   type SenseDef,
   type SoundRecipe,
+  type TreatmentDef,
   type VehicleFittingDef,
   type WearSlot,
   type WeatheringDef,

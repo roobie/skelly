@@ -1,7 +1,7 @@
-import { bundledModCatalogue } from '../../../engine/src/core/bundledModCatalogue.ts';
-import type { ContentIssue } from '../../../engine/src/core/content.ts';
-import { selectFolderClosure } from '../../../engine/src/core/packAdmission.ts';
-import type { SaveVersionComponents } from '../../../engine/src/core/saveFormat.ts';
+import type { ContentIssue } from '@skelly/engine/content';
+import { bundledModCatalogue } from '@skelly/engine/modCatalogue';
+import { selectFolderClosure } from '@skelly/engine/packs';
+import type { SaveVersionComponents } from '@skelly/engine/save';
 import { type BrowserMod, evaluateMods, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
 

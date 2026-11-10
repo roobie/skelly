@@ -1,10 +1,9 @@
 // A held item's throw, from the press that picks its hand and item through release or cancel. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches").
 
-import { actionText, fillText } from '../../../engine/src/core/actionText.ts';
-import { dominantSide, offSide } from '../../../engine/src/core/character.ts';
-import type { HandSide, Inventory, Target } from '../../../engine/src/core/inventory.ts';
-import type { Item } from '../../../engine/src/core/items.ts';
-import type { LadderHold } from '../../../engine/src/core/ladders.ts';
+import { actionText, fillText } from '@skelly/engine/input';
+import type { HandSide, Inventory, Item, Target } from '@skelly/engine/inventory';
+import { dominantSide, offSide } from '@skelly/engine/sim';
+import type { LadderHold } from '@skelly/engine/world';
 
 /** What a press did: refused, nothing to throw, already throwing, waiting for handling to finish, or charging. */
 export type ThrowStart =

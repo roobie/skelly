@@ -1,8 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { SiteLayoutSchema } from '@skelly/engine/internal/core/schema/layouts.ts';
+import { ScenarioSchema } from '@skelly/engine/internal/core/schema/scenarios.ts';
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import { SiteLayoutSchema } from '../../engine/src/core/schema/layouts.ts';
-import { ScenarioSchema } from '../../engine/src/core/schema/scenarios.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
 import { makeAttemptLayout, makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
 

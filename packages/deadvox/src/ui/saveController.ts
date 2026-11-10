@@ -1,6 +1,5 @@
-import { html, render } from 'lit-html';
-import { type Registry, requireDayCycle, type ScreenText } from '../../../engine/src/content.ts';
-import { assertSavedLiquidContents, type ItemState } from '../../../engine/src/inventory.ts';
+import { type Registry, requireDayCycle, type ScreenText } from '@skelly/engine/content';
+import { assertSavedLiquidContents, type ItemState } from '@skelly/engine/inventory';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
@@ -15,9 +14,10 @@ import {
   type SaveVersionIdentity,
   type SaveWorldIdentity,
   type SaveWorldOptions,
-} from '../../../engine/src/save.ts';
-import { assertFoodExposure, type HandedCharacter, type RealTimestamp, realTimestamp } from '../../../engine/src/sim.ts';
-import { countText, fillText } from '../../../engine/src/text.ts';
+} from '@skelly/engine/save';
+import { assertFoodExposure, type HandedCharacter, type RealTimestamp, realTimestamp } from '@skelly/engine/sim';
+import { countText, fillText } from '@skelly/engine/text';
+import { html, render } from 'lit-html';
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
 import type { SaveBackendPreference, SaveLoadResult, SaveStorageStatus, SaveStore } from '../game/storageContract.ts';
 import { SaveStorage } from '../presentation/saveStorage.ts';

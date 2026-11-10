@@ -1,13 +1,13 @@
+import type { Registry } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { legalAddonPlacements } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import type { Item } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '@skelly/engine/vehicles';
+import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../../engine/src/core/coreText.ts';
-import { savedItemTree } from '../../engine/src/core/itemTree.ts';
-import { simSeconds } from '../../engine/src/core/time.ts';
-import { legalAddonPlacements } from '../../engine/src/core/vehicleBlueprint.ts';
-import type { Registry } from '../../engine/src/content.ts';
-import type { Item } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '../../engine/src/vehicles.ts';
-import { CHUNK } from '../../engine/src/world.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,

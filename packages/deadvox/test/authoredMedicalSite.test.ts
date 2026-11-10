@@ -1,12 +1,15 @@
 import { readFileSync } from 'node:fs';
+import { buildRegistry } from '@skelly/engine/content';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '@skelly/engine/internal/core/stairFlight.ts';
+import {
+  templateReachableStandingPositions,
+  templateSpatialIssues,
+} from '@skelly/engine/internal/core/templateSpatial.ts';
+import { type CompiledTemplate, compileTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { reachTuning } from '@skelly/engine/sim';
+import { BLOCK_SIZE, type Facing } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
-import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../../engine/src/core/stairFlight.ts';
-import { templateReachableStandingPositions, templateSpatialIssues } from '../../engine/src/core/templateSpatial.ts';
-import { type CompiledTemplate, compileTemplate } from '../../engine/src/core/templates.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { reachTuning } from '../../engine/src/sim.ts';
-import { BLOCK_SIZE, type Facing } from '../../engine/src/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { PLAYER } from './playerFixture.ts';
 

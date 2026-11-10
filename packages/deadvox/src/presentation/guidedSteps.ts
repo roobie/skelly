@@ -1,6 +1,6 @@
-import type { GuidanceDef, GuidanceGate } from '../../../engine/src/content.ts';
-import { insideStageArea, type Rect } from '../../../engine/src/sim.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
+import type { GuidanceDef, GuidanceGate } from '@skelly/engine/content';
+import { insideStageArea, type Rect } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { HandlingLessons } from './handlingLessons.ts';
 
 export interface GuidanceObservation {

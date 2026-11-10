@@ -4,11 +4,11 @@
 import { createHash } from 'node:crypto';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { buildRegistry, requireDayCycle } from '../../engine/src/content.ts';
-import { claimed } from '../../engine/src/inventory.ts';
-import { admitPacks } from '../../engine/src/packs.ts';
-import { ActorSystem, dayPhaseAt, type PlayerSense } from '../../engine/src/sim.ts';
-import { makeScale, siteGenerationOf } from '../../engine/src/world.ts';
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { admitPacks } from '@skelly/engine/packs';
+import { ActorSystem, dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import { makeScale, siteGenerationOf } from '@skelly/engine/world';
 import { physicsFor, playerTuning } from '../src/game/player.ts';
 import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
 

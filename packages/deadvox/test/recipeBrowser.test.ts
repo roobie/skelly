@@ -1,7 +1,7 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../../engine/src/core/content.ts';
-import { gameMinutes } from '../../engine/src/core/time.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
 import { type RecipeBrowserQuery, recipeBrowser } from '../src/ui/recipeBrowser.ts';
 import { fixtureSources } from './economyFixtures.ts';
 

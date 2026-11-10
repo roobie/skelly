@@ -1,6 +1,6 @@
+import type { ItemDef, ModelDef } from '@skelly/engine/content';
+import type { Item } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import type { ItemDef, ModelDef } from '../../engine/src/content.ts';
-import type { Item } from '../../engine/src/inventory.ts';
 import { OpticZoom } from '../src/presentation/opticZoom.ts';
 
 const fixture = (rememberPerWeapon = true, fixed = false) => {

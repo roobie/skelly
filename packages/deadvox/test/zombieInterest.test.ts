@@ -1,8 +1,8 @@
+import { type ActorDef, requireDayCycle } from '@skelly/engine/content';
+import { simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { type Actor, dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { simRate, simSeconds } from '../../engine/src/core/time.ts';
-import { type ActorDef, requireDayCycle } from '../../engine/src/content.ts';
-import { type Actor, dayPhaseAt, type PlayerSense } from '../../engine/src/sim.ts';
-import { makeScale, type Vec3 } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';

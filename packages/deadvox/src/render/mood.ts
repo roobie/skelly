@@ -13,6 +13,24 @@
 // Bloom therefore works in pre-exposure linear light: its threshold is the tone mapper's clip / exposure
 // (core/mood.ts), set each frame, so it follows what OutputPass will push towards white.
 
+import type { GraphicsTuningDef, NightVision } from '@skelly/engine/content';
+import {
+  assertGraphicsValue,
+  BLOOM_RADIUS,
+  bloomClipFor,
+  bloomThreshold,
+  clampBloomClip,
+  clampGrade,
+  drugVignetteShown,
+  GRAIN,
+  type GraphicsOptions,
+  gradeParams,
+  type MoodState,
+  targetColorScale,
+  VIGNETTE,
+} from '@skelly/engine/look';
+import type { OpticLensFrame } from '@skelly/engine/pose';
+import type { Sky } from '@skelly/engine/sky';
 import {
   ACESFilmicToneMapping,
   type Camera,
@@ -38,24 +56,6 @@ import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import type { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import type { GraphicsTuningDef, NightVision } from '../../../engine/src/content.ts';
-import {
-  assertGraphicsValue,
-  BLOOM_RADIUS,
-  bloomClipFor,
-  bloomThreshold,
-  clampBloomClip,
-  clampGrade,
-  drugVignetteShown,
-  GRAIN,
-  type GraphicsOptions,
-  gradeParams,
-  type MoodState,
-  targetColorScale,
-  VIGNETTE,
-} from '../../../engine/src/look.ts';
-import type { OpticLensFrame } from '../../../engine/src/pose.ts';
-import type { Sky } from '../../../engine/src/sky.ts';
 import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';

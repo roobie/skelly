@@ -1,6 +1,6 @@
+import { AUTO_TONE } from '@skelly/engine/look';
 import { CustomToneMapping, ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
-import { AUTO_TONE } from '../../engine/src/look.ts';
 import {
   autoToneUniforms,
   installAutoToneMapping,

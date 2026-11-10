@@ -1,7 +1,7 @@
-import { AuthoredSite } from '../../../engine/src/core/authoredSite.ts';
-import { type BlockBox, stampChunk } from '../../../engine/src/core/structure.ts';
-import type { Registry } from '../../../engine/src/content.ts';
-import { CHUNK, type Chunk, type Scale } from '../../../engine/src/world.ts';
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
+import { CHUNK, type Chunk, type Scale } from '@skelly/engine/world';
 
 /** A small authored world with independent furniture, zombie and foliage columns. */
 export class SnapshotSite extends AuthoredSite {

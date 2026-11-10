@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
+
+import { simSecondsPerHour } from '@skelly/engine/internal/core/clock.ts';
+import { formatClock, type RestAction, realSeconds } from '@skelly/engine/sim';
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { simSecondsPerHour } from '../../engine/src/core/clock.ts';
-import { formatClock, type RestAction, realSeconds } from '../../engine/src/sim.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

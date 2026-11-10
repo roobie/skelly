@@ -1,8 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { CONTACT_SKIN } from '@skelly/engine/internal/core/physics.ts';
+import type { ScenarioDiscovery } from '@skelly/engine/internal/core/scenarioDiscovery.ts';
+import { BlockEntities, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { CONTACT_SKIN } from '../../engine/src/core/physics.ts';
-import type { ScenarioDiscovery } from '../../engine/src/core/scenarioDiscovery.ts';
-import { buildRegistry } from '../../engine/src/content.ts';
-import { BlockEntities, makeScale, type Vec3, World } from '../../engine/src/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

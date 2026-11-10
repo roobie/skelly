@@ -1,8 +1,8 @@
+import { SKILL_LEVEL_MAX, skillSaturation } from '@skelly/engine/internal/core/character.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX, skillSaturation } from '../../engine/src/core/character.ts';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { decodeSave } from '../../engine/src/save.ts';
-import { Character, practiceForNextLevel, pryPlan } from '../../engine/src/sim.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import {

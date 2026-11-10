@@ -1,11 +1,11 @@
-import { localIndex } from '../../engine/src/core/coords.ts';
-import type { MapEntityStore } from '../../engine/src/core/entities.ts';
-import { foodMillisecondsAt, projectFoodExposure } from '../../engine/src/core/food.ts';
-import { SAVE_SCHEMA_VERSION } from '../../engine/src/core/saveFormat.ts';
-import type { snapshotSession } from '../../engine/src/core/saveState.ts';
-import type { BodyTuningDef, Registry } from '../../engine/src/content.ts';
-import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '../../engine/src/save.ts';
-import { SkyFields } from '../../engine/src/sky.ts';
+import type { BodyTuningDef, Registry } from '@skelly/engine/content';
+import { localIndex } from '@skelly/engine/internal/core/coords.ts';
+import type { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
+import { foodMillisecondsAt, projectFoodExposure } from '@skelly/engine/internal/core/food.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import type { snapshotSession } from '@skelly/engine/internal/core/saveState.ts';
+import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
+import { SkyFields } from '@skelly/engine/sky';
 import {
   BlockEntities,
   CHUNK,
@@ -18,7 +18,7 @@ import {
   type Vec3,
   World,
   worldSolid,
-} from '../../engine/src/world.ts';
+} from '@skelly/engine/world';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
@@ -153,8 +153,8 @@ export function createRuntime(
     registry?: Registry;
     /** Fixture type ids, each wearing the figures of the registered type it copies. */
     fixtureFigures?: Readonly<Record<string, string>>;
-    powerDevices?: import('../../engine/src/core/sitePower.ts').PlacedPowerDevice[];
-    skyBoxes?: readonly import('../../engine/src/core/skylight.ts').SkyBounds[];
+    powerDevices?: import('@skelly/engine/internal/core/sitePower.ts').PlacedPowerDevice[];
+    skyBoxes?: readonly import('@skelly/engine/internal/core/skylight.ts').SkyBounds[];
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -353,7 +353,7 @@ export const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => {
 };
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
-const inspectItem = (item: import('../../engine/src/core/items.ts').Item, at: number): unknown => ({
+const inspectItem = (item: import('@skelly/engine/internal/core/items.ts').Item, at: number): unknown => ({
   uid: item.uid,
   type: item.type,
   count: item.count,
@@ -502,7 +502,7 @@ const IDLE_GROANER_DISTANCE = 20;
 export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstActor = runtime.zombies.store.entries().next().value as
-    | [number, import('../../engine/src/core/actorState.ts').Actor]
+    | [number, import('@skelly/engine/internal/core/actorState.ts').Actor]
     | undefined;
   if (!firstActor) {
     throw new Error('Snapshot continuation requires a live shambler');
@@ -553,7 +553,7 @@ export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, sto
 export const contentLookup = (
   kind: SaveContentKind,
   id: string,
-  item?: import('../../engine/src/core/items.ts').ItemState,
+  item?: import('@skelly/engine/internal/core/items.ts').ItemState,
 ): boolean => lookupSaveContent(registry, kind, id, item);
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

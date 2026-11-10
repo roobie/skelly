@@ -1,14 +1,11 @@
 // The player's body and movement, specified in metres and converted to blocks.
 
-import { claimed } from '../../../engine/src/core/capabilities.ts';
-import type { Registry } from '../../../engine/src/core/content.ts';
-import type { Vec3 } from '../../../engine/src/core/coords.ts';
-import type { Body, PhysicsParams } from '../../../engine/src/core/physics.ts';
-import type { PlayerStance } from '../../../engine/src/core/playerStance.ts';
-import type { PlayerState } from '../../../engine/src/core/playerState.ts';
-import type { Scale } from '../../../engine/src/core/scale.ts';
-import type { PlayerDef } from '../../../engine/src/core/schema.ts';
-import { freezeSnapshot } from '../../../engine/src/core/snapshotData.ts';
+import type { PlayerDef, Registry } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import type { PlayerStance } from '@skelly/engine/pose';
+import { freezeSnapshot } from '@skelly/engine/save';
+import type { PlayerState } from '@skelly/engine/sim';
+import type { Body, PhysicsParams, Scale, Vec3 } from '@skelly/engine/world';
 
 export const playerTuning = (registry: Registry): PlayerDef => {
   const tuning = claimed(registry.player, 'player');

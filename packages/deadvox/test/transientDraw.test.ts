@@ -1,7 +1,7 @@
+import type { Vec3 } from '@skelly/engine/world';
 import { type LineSegments, Scene } from 'three';
 import { expect, it, vi } from 'vitest';
 import { TransientDebugDraw } from '../src/debug/transientDraw.ts';
-import type { Vec3 } from '../../engine/src/world.ts';
 
 it('keeps a default-lifetime primitive for one render frame', () => {
   const draw = new TransientDebugDraw(new Scene(), true);

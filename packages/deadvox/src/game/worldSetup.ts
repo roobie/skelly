@@ -1,25 +1,30 @@
-import { AuthoredSite } from '../../../engine/src/core/authoredSite.ts';
-import { BlockEntities } from '../../../engine/src/core/blockEntities.ts';
-import { CanonicalTerrain } from '../../../engine/src/core/canonicalTerrain.ts';
-import { StressCity } from '../../../engine/src/core/city.ts';
-import { worldOpaque, worldSolid, worldSoundBlocking } from '../../../engine/src/core/collision.ts';
-import { blockColors, type Registry } from '../../../engine/src/core/content.ts';
-import { CHUNK, type Vec3 } from '../../../engine/src/core/coords.ts';
-import { Forest } from '../../../engine/src/core/forest.ts';
-import { graphicsTuningOf } from '../../../engine/src/core/graphicsTuning.ts';
-import { blockLiquids, blockPatterns, blockWeatherability } from '../../../engine/src/core/meshInput.ts';
-import type { Scale } from '../../../engine/src/core/scale.ts';
-import { ScenarioCitySite } from '../../../engine/src/core/scenarioCity.ts';
-import type { ScenarioKind } from '../../../engine/src/core/scenarioKinds.ts';
-import type { AttemptPolicyDef } from '../../../engine/src/core/schema/attemptPolicy.ts';
-import type { ScenarioDef } from '../../../engine/src/core/schema.ts';
-import { TEMPLATE_BLOCK_SIZE } from '../../../engine/src/core/settlementSpawns.ts';
-import type { ColumnSource, Site } from '../../../engine/src/core/site.ts';
-import { sitePalette, terrainShapeOf } from '../../../engine/src/core/sitePalette.ts';
-import { type PlacedPowerDevice, placedPowerDevices } from '../../../engine/src/core/sitePower.ts';
-import { authoredSkyBoxes, SkyFields } from '../../../engine/src/core/skyField.ts';
-import { World } from '../../../engine/src/core/world.ts';
-import { worldGroundAt } from '../../../engine/src/core/worldgen.ts';
+import type { AttemptPolicyDef, ScenarioDef } from '@skelly/engine/content';
+import { blockColors, type Registry } from '@skelly/engine/content';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { blockLiquids, blockPatterns, blockWeatherability } from '@skelly/engine/mesh';
+import type { ColumnSource, ScenarioKind, Site } from '@skelly/engine/sim';
+import { ScenarioCitySite } from '@skelly/engine/sim';
+import { authoredSkyBoxes, SkyFields } from '@skelly/engine/sky';
+import type { Scale } from '@skelly/engine/world';
+import {
+  AuthoredSite,
+  BlockEntities,
+  CanonicalTerrain,
+  CHUNK,
+  Forest,
+  type PlacedPowerDevice,
+  placedPowerDevices,
+  StressCity,
+  sitePalette,
+  TEMPLATE_BLOCK_SIZE,
+  terrainShapeOf,
+  type Vec3,
+  World,
+  worldGroundAt,
+  worldOpaque,
+  worldSolid,
+  worldSoundBlocking,
+} from '@skelly/engine/world';
 import type { DebugStart, GameConfig } from './config.ts';
 import type { MesherSource } from './mesherProtocol.ts';
 import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';

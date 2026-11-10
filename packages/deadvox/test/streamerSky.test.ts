@@ -1,9 +1,9 @@
+import { Inventory } from '@skelly/engine/inventory';
+import { buildMesh } from '@skelly/engine/mesh';
+import { buildSkyResult } from '@skelly/engine/sky';
+import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { Inventory } from '../../engine/src/inventory.ts';
-import { buildMesh } from '../../engine/src/mesh.ts';
-import { buildSkyResult } from '../../engine/src/sky.ts';
-import { CHUNK, makeScale, World } from '../../engine/src/world.ts';
 import type { FromMesher, MesherHandlers, MesherPort, MesherSource, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

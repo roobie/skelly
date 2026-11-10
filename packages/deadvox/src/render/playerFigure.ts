@@ -1,6 +1,5 @@
 // The player's world body: the figure row's authored models posed about their joints.
 
-import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
 import {
   FIGURE_LIMB_JOINTS,
   FIGURE_LIMBS,
@@ -12,8 +11,8 @@ import {
   type ModelDef,
   type Registry,
   type WearSlot,
-} from '../../../engine/src/content.ts';
-import { defOf, type HandSide, type Inventory, type Item } from '../../../engine/src/inventory.ts';
+} from '@skelly/engine/content';
+import { defOf, type HandSide, type Inventory, type Item } from '@skelly/engine/inventory';
 import {
   FIGURE_BOXES,
   type FigureBox,
@@ -30,9 +29,10 @@ import {
   playerPosePoint,
   presentedOptic,
   readyMeleePose,
-} from '../../../engine/src/pose.ts';
-import { type BodyRegion, dominantSide } from '../../../engine/src/sim.ts';
-import type { Body, Vec3 } from '../../../engine/src/world.ts';
+} from '@skelly/engine/pose';
+import { type BodyRegion, dominantSide } from '@skelly/engine/sim';
+import type { Body, Vec3 } from '@skelly/engine/world';
+import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';

@@ -1,6 +1,7 @@
 // Applies the look (core/mood.ts `LookState`) to the renderer and the block materials. Play does it
 // once at start-up with the content's default look (core/lookDefaults.ts); the debug controls change the same settings afterwards.
 
+import { AUTO_TONE, clampExposure, type LookState } from '@skelly/engine/look';
 import {
   ACESFilmicToneMapping,
   AgXToneMapping,
@@ -10,7 +11,6 @@ import {
   type ToneMapping,
   type WebGLRenderer,
 } from 'three';
-import { AUTO_TONE, clampExposure, type LookState } from '../../../engine/src/look.ts';
 import type { ChunkMeshes } from './chunks.ts';
 
 /** `key` is the `?tone=` URL value (see debug/lookUrl.ts) and `LookState.tone`. */

@@ -1,8 +1,8 @@
+import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
+import { fillText } from '@skelly/engine/text';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '../../engine/src/inventory.ts';
-import { bindReach, Character } from '../../engine/src/sim.ts';
-import { fillText } from '../../engine/src/text.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/craftReadout.ts';

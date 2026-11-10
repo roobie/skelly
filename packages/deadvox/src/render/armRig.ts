@@ -1,9 +1,9 @@
 // The first-person arm is the figure's authored arm model bent at its joints (`DESIGN.md`, "Models"): each
 // segment is a part of that model turned about the anchor the figure row's rig names, so both views draw one arm.
 
+import { ARM_SEGMENTS, type ArmRigDef, type ArmSegment, type HandPoseDef, type ModelDef } from '@skelly/engine/content';
+import type { HandSide } from '@skelly/engine/inventory';
 import { Box3, Group, Matrix4, Object3D, Quaternion, Vector3 } from 'three';
-import { ARM_SEGMENTS, type ArmRigDef, type ArmSegment, type HandPoseDef, type ModelDef } from '../../../engine/src/content.ts';
-import type { HandSide } from '../../../engine/src/inventory.ts';
 
 /** The pivots a view arm is posed through, by name, so tests and poses find them without knowing the tree. */
 export const ARM_NODE = {

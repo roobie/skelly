@@ -1,4 +1,4 @@
-import type { Registry } from '../../../engine/src/content.ts';
+import type { Registry } from '@skelly/engine/content';
 import {
   BlockEntities,
   CHUNK,
@@ -13,7 +13,7 @@ import {
   worldGroundAt,
   worldOpaque,
   worldSolid,
-} from '../../../engine/src/world.ts';
+} from '@skelly/engine/world';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 

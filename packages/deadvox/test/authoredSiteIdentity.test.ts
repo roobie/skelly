@@ -1,5 +1,5 @@
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
 import { expect, it } from 'vitest';
-import type { SiteLayoutDef } from '../../engine/src/core/schema.ts';
 import { siteFromUrl } from '../src/game/config.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 

@@ -11,16 +11,37 @@ export {
   type AlternativeRef,
   type CraftPreference,
   type CraftSources,
+  craftWorkDuration,
   indexCraftReach,
   planCraft,
   requirementStatus,
 } from './core/crafting.ts';
-export { actionCycleSeconds, type FirearmAction, type FirearmMode } from './core/firearmAction.ts';
-export { firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from './core/firearmFitting.ts';
-export type { CylinderState } from './core/firearmState.ts';
-export { type CompletedMove, HandlingQueue, type Job, type MoveJob, type TickResult } from './core/handling.ts';
+export { craftActionHooks } from './core/craftWork.ts';
 export {
+  actionCycleSeconds,
+  actionOpenSeconds,
+  actionPhaseSeconds,
+  ejectSeconds,
+  type FirearmAction,
+  type FirearmMode,
+} from './core/firearmAction.ts';
+export { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from './core/firearmAttachments.ts';
+export { attachmentIdFor, firearmSlotIds, isLongGun, LIGHT_MOUNT_SLOT, SLING_SLOT } from './core/firearmFitting.ts';
+export type { CylinderState, FirearmCycleState, FirearmState, PendingCase } from './core/firearmState.ts';
+export {
+  type CompletedMove,
+  HandlingQueue,
+  type Job,
+  type JobParams,
+  type JobValue,
+  type MoveJob,
+  type MoveStart,
+  type TickResult,
+} from './core/handling.ts';
+export {
+  dropSpots,
   type HandSide,
+  handlingWeights,
   Inventory,
   type Location,
   type Pile,
@@ -28,6 +49,7 @@ export {
   sameGrid,
   spotOf,
   type Target,
+  type TargetState,
   wornSlotOf,
 } from './core/inventory.ts';
 export { GRID_CELL_REM } from './core/inventoryGridName.ts';
@@ -47,31 +69,64 @@ export {
   typeWeightGrams,
   weightOf,
 } from './core/items.ts';
-export { type ItemFlight, itemFlightPoint, putDownRefusal } from './core/itemThrow.ts';
+export {
+  flightForItem,
+  hasMetThrowMinimumHold,
+  type ItemFlight,
+  itemFlightPoint,
+  putDownRefusal,
+  settleCell,
+  settleOnWorld,
+  throwDistanceForItem,
+} from './core/itemThrow.ts';
 export { isInHeldItemSlotTree } from './core/itemTree.ts';
 export {
+  canUnloadBattery,
+  chargeOf,
   chargeShare,
+  drainBurnLight,
+  drainLight,
   inventoryLightEntries,
+  inventoryLightSources,
   lightExposureFor,
+  lightInHands,
+  offHandUse,
+  SunExposureCache,
   supplyShare,
+  swapBattery,
   toggleLight,
+  unloadBattery,
   wornNightVision,
 } from './core/lights.ts';
-export { magazineFits } from './core/magazine.ts';
+export { corpseLootPoint, rollLoot } from './core/loot.ts';
+export { magazineFits, magazineSpec, magazineWellCalibre, slotsReason } from './core/magazine.ts';
 export {
+  batteryHandRefusal,
+  batterySlotOption,
   batterySlotRefusal,
   bestPocket,
+  consumption,
   doorOptions,
   doorPlan,
   dropTarget,
   freshDropTarget,
   heldDoorBar,
+  heldKeyLocks,
   inventoryPocket,
+  isReadableItem,
   type Option,
   options,
   otherHandPour,
+  playerPockets,
+  pocketGroundItem,
   pourRefusal,
+  quickbarPutAway,
+  quickbarTake,
   quickestPockets,
+  stowTarget,
+  toHands,
+  useOption,
+  wieldOrPocket,
 } from './core/options.ts';
 export {
   type EffectivePileDisplay,
@@ -80,5 +135,8 @@ export {
   effectivePileItemPosition,
 } from './core/pileDisplay.ts';
 export { PILE_BUNDLE_WIDTH } from './core/pileLayout.ts';
-export type { ReadRequest } from './core/readable.ts';
+export type { Readable, ReadRequest } from './core/readable.ts';
+export { recipeSkillLevel, recipeSkillRequirements } from './core/recipeSkills.ts';
 export { type PileScatterPlacement, pileScatterPlacements, SPENT_CASE_SCATTER_CAP } from './core/scatterPile.ts';
+export { spendFuel, swapCanister } from './core/torch.ts';
+export { playerWearHooks, wearMeleeWeaponOnHit } from './core/wear.ts';

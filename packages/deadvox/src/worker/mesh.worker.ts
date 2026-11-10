@@ -1,8 +1,8 @@
 // Builds chunk meshes off the main thread. Buffers are transferred, not copied.
 
-import { buildMesh, type FencePostDefs, type MeshData, type WireMeshes } from '../../../engine/src/mesh.ts';
-import { buildSkyResult } from '../../../engine/src/sky.ts';
-import { CHUNK, type Vec3 } from '../../../engine/src/world.ts';
+import { buildMesh, type FencePostDefs, type MeshData, type WireMeshes } from '@skelly/engine/mesh';
+import { buildSkyResult } from '@skelly/engine/sky';
+import { CHUNK, type Vec3 } from '@skelly/engine/world';
 import type { FromMesher, ToMesher } from '../game/mesherProtocol.ts';
 import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
 
