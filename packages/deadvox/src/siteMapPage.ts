@@ -28,6 +28,7 @@ import {
 import { buildBundledContent } from './product/content.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { debugGameHref } from './siteMapGameLink.ts';
+import { mapWorldShape } from './siteMapWorld.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
@@ -38,15 +39,8 @@ const params = new URLSearchParams(globalThis.location.search);
 const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
-const MAX_STOREYS = 20;
 const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
-Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'));
-// The map draws the world play passes in its own query; the game reads storeys and density only from its start.
-const storeys = Number(params.get('storeys') ?? 1);
-const densityText = params.get('density');
-const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
-config.storeys = Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1;
-config.density = density !== null && Number.isFinite(density) && density >= 0 && density <= 1 ? density : null;
+Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'), mapWorldShape(params));
 config.debug = true;
 if (registry.scenarios.has(config.site)) {
   // A scenario city is reviewed as its default start places it.
