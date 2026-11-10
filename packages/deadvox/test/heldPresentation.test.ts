@@ -109,7 +109,7 @@ it('both views resolve registry item holds through one owner, including the mann
       models,
       registry,
     },
-    '?mannequin=',
+    { mannequin: '' },
   )!;
   expect(mannequin.poses.filter((pose) => pose.catalogue).flatMap((pose) => (pose.hold ? [pose.hold] : []))).toEqual(
     catalogue,

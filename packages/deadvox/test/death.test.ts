@@ -5,7 +5,6 @@ import {
   type DeathSummary,
   deathViewModel,
   lootedText,
-  newWorldQuery,
   showDeath,
 } from '@skelly/presentation/internal/ui/death.ts';
 import { describe, expect, it } from 'vitest';
@@ -112,14 +111,5 @@ describe('lootedText', () => {
     expect(text).toContain('can of beans');
     expect(text).toContain('flashlight');
     expect(text.indexOf('can of beans')).toBeLessThan(text.indexOf('flashlight'));
-  });
-});
-
-describe('newWorldQuery', () => {
-  it('bumps the seed and drops the start time, keeping other params', () => {
-    const query = new URLSearchParams(newWorldQuery('?seed=3&radius=64&time=120', 3));
-    expect(query.get('seed')).toBe('4');
-    expect(query.get('radius')).toBe('64');
-    expect(query.has('time')).toBe(false);
   });
 });

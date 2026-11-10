@@ -255,14 +255,6 @@ describe('flashlight cone', () => {
     }
   });
 
-  it('reads the torchspill URL switch as on, off or follow content', async () => {
-    const { spillSwitchFromSearch } = await import('@skelly/presentation/internal/render/flashlight.ts');
-    expect(spillSwitchFromSearch('?torchspill=1')).toBe(true);
-    expect(spillSwitchFromSearch('?torchspill=0')).toBe(false);
-    expect(spillSwitchFromSearch('')).toBeUndefined();
-    expect(spillSwitchFromSearch('?torchspill=maybe')).toBeUndefined();
-  });
-
   it('no base beam ships with spill enabled', () => {
     const beams = baseContentSources().flatMap(({ data }) => {
       const content = data as ContentFile;

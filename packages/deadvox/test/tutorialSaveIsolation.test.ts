@@ -1,6 +1,6 @@
 import { BindingRegistry } from '@skelly/engine/input';
 import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
-import { type Engine, startPlay } from '@skelly/presentation/play';
+import { type Engine, type PlayPage, startPlay } from '@skelly/presentation/play';
 import type { SaveController } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
@@ -25,7 +25,12 @@ it('rejects a save-bound content-selected guide before runtime actions or save a
   const none = { packs: [], urls: {} };
   const assets = { audio: none, models: none, cursors: none, figures: none };
   const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
+  const unusedPage = new Proxy({} as PlayPage, {
+    get: () => {
+      throw new Error('Page accessed before save-isolation admission');
+    },
+  });
   await expect(
-    startPlay(engine, undefined, { assets, keyboard, ragdoll: ragdollConfig, saveController }),
+    startPlay(engine, undefined, { assets, page: unusedPage, keyboard, ragdoll: ragdollConfig, saveController }),
   ).rejects.toThrow('Practice cannot bind a save or restore a world');
 });

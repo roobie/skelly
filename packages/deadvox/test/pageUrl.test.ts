@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
+import { newWorldHref, tutorialHash } from '../src/product/page.ts';
 
 describe('page hash', () => {
   it('reads back what it writes, through the address bar encoding', () => {
@@ -31,5 +32,20 @@ describe('page query', () => {
   it('names a query parameter the game entry does not take', () => {
     expect(readPageUrl('?mods=fixture&fixtureUnknown=1', '').refused).toBe('fixtureUnknown');
     expect(readPageUrl('?mods=fixture', '').refused).toBeUndefined();
+  });
+});
+
+describe('page links', () => {
+  it('starts a new world with the hash seed, keeping the rest of the hash and dropping the start time', () => {
+    const next = new URL(newWorldHref('https://example.org/?mods=fixture&time=12:00#{debug:true}', { debug: true }, 4));
+    expect(next.searchParams.get('mods')).toBe('fixture');
+    expect(next.searchParams.has('time')).toBe(false);
+    expect(readHash(next.hash)).toEqual({ hash: { debug: true, seed: 4 } });
+  });
+
+  it('carries only the view radius and actor models into and out of practice', () => {
+    expect(readHash(tutorialHash({ debug: true, seed: 3, radius: 64, actors: 'boxes' }))).toEqual({
+      hash: { radius: 64, actors: 'boxes' },
+    });
   });
 });

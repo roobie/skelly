@@ -125,13 +125,13 @@ import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
-import { createPlayView } from '../render/playView.ts';
+import { createPlayView, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { runningCraftPresentation } from '../ui/craftReadout.ts';
-import { newWorldQuery, showDeath } from '../ui/death.ts';
+import { showDeath } from '../ui/death.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
@@ -211,7 +211,6 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { tutorialUrl } from './tutorialUrl.ts';
 import { finishLoadingFrame, WorldLoading } from './worldLoading.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -283,13 +282,6 @@ const bindPlayErrorReport = ({
     replayFile: async () => replayFile(await exportReplay(), new Date()),
   };
   setErrorReportContext(context);
-};
-
-const debugErrorEnabled = (debug: boolean, search: string): boolean => {
-  if (!debug) {
-    return false;
-  }
-  return new URLSearchParams(search).get('debug-error') === '1';
 };
 
 const guardDebugErrorFrame = (
@@ -628,8 +620,27 @@ const createPlayRefusalPresenter = (
   );
 };
 
+/**
+ * What play asks of the page it runs in. The product owns the page URL, so presentation never reads it; see
+ * `docs/decisions/0006-url-mods-and-hash-state.md`, "Decision".
+ */
+export interface PlayPage {
+  /** A debug run's harness asked for the deliberate error frame. */
+  readonly debugError: boolean;
+  /** Leaves practice for the page it came from. */
+  readonly leaveTutorial: () => void;
+  /** Loads a new world from `seed`, keeping the page's content and developer state. */
+  readonly newWorld: (seed: number) => void;
+  /** Reloads in debug so the stashed input replay starts. */
+  readonly reloadForReplay: () => void;
+  /** The review map page, which the debug overlay opens with its own parameters. */
+  readonly reviewMapHref: string;
+  readonly probes: ViewProbes;
+}
+
 export interface StartPlayOptions {
   readonly assets: PresentationAssets;
+  readonly page: PlayPage;
   /** The page's keyboard, which play drives and whose keys its hints show. */
   readonly keyboard: KeyboardInput;
   /** The product's corpse physics tuning. */
@@ -687,8 +698,7 @@ const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): vo
   }
 };
 
-const leaveTutorial = () => location.assign(tutorialUrl(location.href, false));
-const createPlayGuidance = (engine: Engine, keys: KeyLabels) => {
+const createPlayGuidance = (engine: Engine, keys: KeyLabels, leaveTutorial: () => void) => {
   const definition = engine.site?.guidance;
   if (!definition) {
     return {};
@@ -763,7 +773,7 @@ const startPlayWith = (
   configureReplayStreaming(engine, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
-  const { guide, drawGuidance } = createPlayGuidance(engine, inputBindings);
+  const { guide, drawGuidance } = createPlayGuidance(engine, inputBindings, options.page.leaveTutorial);
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
@@ -1206,6 +1216,7 @@ const startPlayWith = (
       models: options.assets.models,
       actorFigureFiles,
       ragdoll: options.ragdoll,
+      probes: options.page.probes,
       poweredLights: () => session.power?.lights() ?? [],
       physicalSolid: session.physicalSolid,
     },
@@ -1414,11 +1425,7 @@ const startPlayWith = (
 
   const importReplay = (bytes: Uint8Array): void => {
     stashInputReplay(() => sessionStorage, bytes);
-    const url = new URL(location.href);
-    url.searchParams.delete('cam');
-    url.searchParams.delete('freeze');
-    url.searchParams.set('debug', '1');
-    location.assign(url);
+    options.page.reloadForReplay();
   };
   const inputReplayHooks: DebugHooks['inputReplay'] = {
     state: (): InputReplayStatusState => {
@@ -1506,7 +1513,7 @@ const startPlayWith = (
     reviewMapFrame.hidden = !open;
     if (open) {
       debugTools?.closeMenus();
-      const mapUrl = new URL('map.html', globalThis.location.href);
+      const mapUrl = new URL(options.page.reviewMapHref);
       mapUrl.searchParams.set('overlay', '1');
       mapUrl.searchParams.set('debug', '1');
       mapUrl.searchParams.set('seed', String(config.seed));
@@ -3072,7 +3079,7 @@ const startPlayWith = (
       },
       () => skyRoute,
     ),
-    debugErrorEnabled(config.debug, location.search),
+    config.debug && options.page.debugError,
     () => input.locked,
   );
 
@@ -3099,8 +3106,8 @@ const startPlayWith = (
       checkpoint: options.saveController?.winCheckpointStatus ?? 'unavailable',
       checkpointMessages: screenText.winCheckpointMessages,
       text: screenText.win,
-      newWorld: () => location.assign(newWorldQuery(location.search, config.seed)),
-      freshAttempt: () => location.assign(newWorldQuery(location.search, config.seed - 1)),
+      newWorld: () => options.page.newWorld(config.seed + 1),
+      freshAttempt: () => options.page.newWorld(config.seed),
       exportRun: exportMetrics,
     });
   };
@@ -3130,7 +3137,7 @@ const startPlayWith = (
       $('death'),
       registry,
       summary,
-      guide ? leaveTutorial : () => location.assign(newWorldQuery(location.search, config.seed)),
+      guide ? options.page.leaveTutorial : () => options.page.newWorld(config.seed + 1),
     );
   };
   if (options.saveController) {

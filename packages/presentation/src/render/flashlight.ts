@@ -43,14 +43,6 @@ const SHADOW_RADIUS = 2;
 /** The lens sits just ahead of the eye, so the map starts close in. */
 const SHADOW_NEAR = 0.1;
 
-/** The `torchspill` URL parameter as the constructor's switch: `1` true, `0` false, anything else follows content. */
-export const spillSwitchFromSearch = (search: string): boolean | undefined => {
-  const value = new URLSearchParams(search).get('torchspill');
-  if (value === '1' || value === '0') {
-    return value === '1';
-  }
-  return undefined;
-};
 
 export class Flashlight {
   readonly light = new SpotLight(undefined, 0);

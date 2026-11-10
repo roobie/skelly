@@ -29,14 +29,6 @@ const formatSpan = (seconds: number, text: DeathText): string => {
     : fillText(text.spanShort, { mins: countText(m) });
 };
 
-/** The page's query with the next seed, keeping the other settings but not the start time. */
-export const newWorldQuery = (search: string, seed: number): string => {
-  const params = new URLSearchParams(search);
-  params.set('seed', String(seed + 1));
-  params.delete('time');
-  return `?${params.toString()}`;
-};
-
 /** Looted item names, most taken first, with a count where more than one was taken. */
 export const lootedText = (registry: Registry, looted: ReadonlyMap<string, number>): string =>
   [...looted]

@@ -41,7 +41,7 @@ import { PainCue } from '../presentation/painCue.ts';
 import { THIRD_PERSON_CAMERA } from '../presentation/thirdPersonOrbit.ts';
 import { AcidEffects } from './acidEffects.ts';
 import { ActorMeshes } from './actors.ts';
-import { createAvatarMannequin } from './avatarMannequin.ts';
+import { createAvatarMannequin, type MannequinRequest } from './avatarMannequin.ts';
 import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CarriedPiece } from './carriedPiece.ts';
@@ -49,7 +49,7 @@ import { CaseEffects } from './caseEffects.ts';
 import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
-import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './flashlight.ts';
+import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
@@ -200,6 +200,14 @@ const thirdPersonCameraPosition = ({
   return [eye[0] + direction[0] * distance, eye[1] + direction[1] * distance, eye[2] + direction[2] * distance];
 };
 
+/** Developer view probes the product reads from its page and passes in; presentation never reads the URL. */
+export interface ViewProbes extends MannequinRequest {
+  /** Forces the torch spill light on or off; absent follows content. */
+  readonly torchspill?: boolean | undefined;
+  /** Model ids the debug avatar study stands beside the player figure. */
+  readonly avatarStudy?: readonly string[] | undefined;
+}
+
 type PlayViewEngine = Readonly<
   Pick<
     Engine,
@@ -231,6 +239,7 @@ export const createPlayView = (
     page = globalThis,
     poweredLights = () => [],
     physicalSolid = engine.isSolid,
+    probes = {},
   }: {
     /** The product's bundled models; see `PresentationAssets`, `models`. */
     models: PackAssetFiles;
@@ -242,6 +251,8 @@ export const createPlayView = (
     poweredLights?: () => readonly PoweredLight[];
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
     physicalSolid?: (x: number, y: number, z: number) => boolean;
+    /** The developer's view probes, as the product read them from its page. */
+    probes?: ViewProbes;
   },
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
@@ -349,21 +360,25 @@ export const createPlayView = (
     scene,
     lightTuning.renderedBeamLimit,
     lightTuning.illumination.nearFieldMetres,
-    spillSwitchFromSearch(globalThis.location?.search ?? ''),
+    probes.torchspill,
   );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(piles.group, vehicles.group, furniture.group, corpses.group, playerMeshes.group, modelMaterialWarmUp(true));
-  const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
-  const avatarMannequin = createAvatarMannequin(scene, {
-    registry,
-    debug: config.debug,
-    blockSize: s,
-    figure: playerFigure,
-    modelDefs: registry.models,
-    models,
-  }); // Both actors implement the same presentation contract. Gameplay keeps synchronous
+  const avatarStudy = createAvatarStudy(scene, config.debug, s, models, probes.avatarStudy);
+  const avatarMannequin = createAvatarMannequin(
+    scene,
+    {
+      registry,
+      debug: config.debug,
+      blockSize: s,
+      figure: playerFigure,
+      modelDefs: registry.models,
+      models,
+    },
+    probes,
+  ); // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
   const actorMeshes: ActorRenderer =
     config.actors === 'detailed'

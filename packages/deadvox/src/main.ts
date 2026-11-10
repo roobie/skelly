@@ -41,11 +41,12 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
-import { writeHash } from './hashState.ts';
+import { readHash, writeHash } from './hashState.ts';
 import { pageUrl } from './pageUrl.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
+import { playPage, tutorialHash } from './product/page.ts';
 import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
@@ -185,6 +186,8 @@ if (bench === 'report') {
   );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
+  const page = playPage();
+  const engineOptions = { render: !renderFree, graphicsOverrides: params };
   if (pendingReplay) {
     try {
       const preliminary = await decodeInputReplay(pendingReplay, { contentLookup: () => true });
@@ -197,13 +200,14 @@ if (bench === 'report') {
       replayConfig.storeys = identity.storeys;
       replayConfig.density = identity.density;
       applyWeatheringConfig(replayConfig, params, hash);
-      const engine = createEngine(replayConfig, view, undefined, { render: !renderFree });
+      const engine = createEngine(replayConfig, view, undefined, engineOptions);
       const decoded = await decodeInputReplay(pendingReplay, {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
       });
       clearPendingInputReplay(replayStash);
       await startPlay(engine, debugModule!, {
         assets,
+        page,
         keyboard: keyboardInput,
         ragdoll: ragdollConfig,
         restore: decoded.snapshot,
@@ -220,16 +224,25 @@ if (bench === 'report') {
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else if (tutorialRequested(params)) {
-    const practiceParams = new URLSearchParams(new URL(tutorialUrl(location.href, true)).search);
+    const practice = new URL(tutorialUrl(location.href, true, tutorialHash(hash)));
+    const practiceParams = new URLSearchParams(practice.search);
     practiceParams.set('site', 'tutorial');
-    const practiceHash = {
-      ...(hash.radius === undefined ? {} : { radius: hash.radius }),
-      ...(hash.actors === undefined ? {} : { actors: hash.actors }),
-    };
-    const practiceConfig = configFromUrl(practiceParams, practiceHash, content, ragdollSweepViewer);
-    const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
+    const practiceHash = readHash(practice.hash);
+    const practiceConfig = configFromUrl(
+      practiceParams,
+      'hash' in practiceHash ? practiceHash.hash : {},
+      content,
+      ragdollSweepViewer,
+    );
+    const engine = createEngine(practiceConfig, view, undefined, engineOptions);
     try {
-      await startPlay(engine, undefined, { assets, keyboard: keyboardInput, ragdoll: ragdollConfig, tutorial: true });
+      await startPlay(engine, undefined, {
+        assets,
+        page,
+        keyboard: keyboardInput,
+        ragdoll: ragdollConfig,
+        tutorial: true,
+      });
       document.getElementById('new-character-options')!.hidden = true;
       document.getElementById('tutorial-start')!.hidden = true;
       document.getElementById('save-status')!.textContent = 'Unsaved practice';
@@ -240,7 +253,7 @@ if (bench === 'report') {
   } else {
     document.getElementById('tutorial-start')!.addEventListener('click', (event) => {
       event.stopPropagation();
-      location.assign(tutorialUrl(location.href, true));
+      location.assign(tutorialUrl(location.href, true, tutorialHash(hash)));
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
@@ -289,12 +302,13 @@ if (bench === 'report') {
       applyWeatheringConfig(resumed, params, hash);
       config = resumed;
     }
-    const engine = createEngine(config, view, undefined, { render: !renderFree });
+    const engine = createEngine(config, view, undefined, engineOptions);
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {
       try {
         await startPlay(engine, debugModule, {
           assets,
+          page,
           keyboard: keyboardInput,
           ragdoll: ragdollConfig,
           saveController,
@@ -318,6 +332,7 @@ if (bench === 'report') {
         try {
           entry = await startPlay(engine, debugModule, {
             assets,
+            page,
             keyboard: keyboardInput,
             ragdoll: ragdollConfig,
             saveController,

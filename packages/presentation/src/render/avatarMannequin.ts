@@ -93,14 +93,19 @@ export interface MannequinFigure {
   models: ModelLibrary;
 }
 
-/** The mannequin the debug query asks for, added to the scene; undefined when debug is off or the query is absent. */
+/** The mannequin a debug run asks for and what it wears, as the product read them from its page. */
+export interface MannequinRequest {
+  readonly mannequin?: string | undefined;
+  readonly mannequinWear?: readonly string[] | undefined;
+}
+
+/** The requested mannequin, added to the scene; undefined when debug is off or none is requested. */
 export const createAvatarMannequin = (
   scene: Object3D,
   { debug, blockSize, figure, modelDefs, models, registry }: MannequinFigure,
-  search: string = globalThis.location?.search ?? '',
+  { mannequin: requested, mannequinWear = [] }: MannequinRequest = {},
 ): AvatarMannequin | undefined => {
-  const requested = debug ? new URLSearchParams(search).get('mannequin') : null;
-  if (requested === null) {
+  if (!debug || requested === undefined) {
     return undefined;
   }
   const meshes = new PlayerMeshes(blockSize, figure, modelDefs, models);
@@ -109,7 +114,7 @@ export const createAvatarMannequin = (
     blockSize,
     placement: figure.mannequinPlacement,
     requested,
-    wear: (new URLSearchParams(search).get('mannequinWear') ?? '').split(',').filter(Boolean),
+    wear: mannequinWear.filter(Boolean),
   });
   scene.add(mannequin.group);
   return mannequin;

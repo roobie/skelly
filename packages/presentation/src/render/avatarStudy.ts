@@ -1,6 +1,6 @@
 // Debug look study for the player figure: authored body models stood beside the box figure in the
-// third-person view, so the art direction and the voxel class can be judged by eye. `?avatarStudy=` names
-// the model ids to show, comma-separated.
+// third-person view, so the art direction and the voxel class can be judged by eye. The product passes the
+// model ids to show.
 
 import { FIGURE_BOXES } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
@@ -12,10 +12,15 @@ import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 /** Metres between neighbouring figures, centre to centre. */
 const SPACING = 0.7;
 
-/** The study the debug query asks for, added to the scene; it holds no figure when the query is off or names none. */
-export const createAvatarStudy = (scene: Object3D, debug: boolean, blockSize: number, models: ModelLibrary) => {
-  const search = debug ? (globalThis.location?.search ?? '') : '';
-  const ids = (new URLSearchParams(search).get('avatarStudy') ?? '').split(',').filter(Boolean);
+/** The study a debug run asks for, added to the scene; it holds no figure when debug is off or it names none. */
+export const createAvatarStudy = (
+  scene: Object3D,
+  debug: boolean,
+  blockSize: number,
+  models: ModelLibrary,
+  requested: readonly string[] = [],
+) => {
+  const ids = debug ? requested.filter(Boolean) : [];
   const study = new AvatarStudy(blockSize, ids, models);
   scene.add(study.group);
   return study;

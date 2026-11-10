@@ -48,7 +48,7 @@ it.each(['world', 'mannequin'] as const)(
               modelDefs: registry.models,
               models,
             },
-            `?mannequin=${samples[0]!.name}`,
+            { mannequin: samples[0]!.name },
           )!
         : undefined;
     try {
