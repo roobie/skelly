@@ -623,19 +623,23 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. A tap-and-hold opens
-  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
-  deliberate hold. Readability does not fasten a board; its ordinary use stays
-  on the tap. The list belongs to movable kinds: building parts keep direct use
-  because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the list and explains why
-  it cannot move, so fitting does not silently change that kind's controls.
-  An open list is a single confirmation, not a persistent interaction mode:
-  returning from a pause or another target must not unexpectedly act instead of
-  offering choices. Each action keeps one authored direction on the radial
-  menu, so muscle memory survives a piece gaining or losing actions, and
-  nothing is chosen until the pull leaves the dead zone toward an entry, so a
-  release without a clear lean does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
+  search, rest, read), so the common action stays one tap. Holding opens the
+  radial action menu of rarer actions, which move or break the piece and so sit
+  behind a deliberate hold; releasing on an entry confirms it. Repair, taking
+  apart and continuing held work enter through the same menu, so every hold
+  choice reads alike, and their directions are authored before they are offered
+  so their arrival moves no existing entry. Readability does not fasten a board;
+  its ordinary use stays on the tap. The menu belongs to movable kinds, even
+  with lift alone: building parts keep direct use because offering impossible
+  moves would obstruct their ordinary interaction. A fitted placement of a
+  movable kind still offers the menu and explains why it cannot move, so
+  fitting does not silently change that kind's controls. An open menu is a
+  single confirmation, not a persistent interaction mode: returning from a
+  pause or another target must not unexpectedly act instead of offering
+  choices. Each action keeps one authored direction, so muscle memory survives
+  a piece gaining or losing actions. Nothing is chosen until the pull leaves the
+  dead zone within an entry's selection angle, so a release at the centre or a
+  pull away from the only entry does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
   `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
   `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
