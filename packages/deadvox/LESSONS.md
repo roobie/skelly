@@ -71,9 +71,7 @@ Hands, worn slots and container/pile/furniture trees own items. Quickbar binding
 
 Bound lock acquisition separately from worker I/O. Cancel only a queued lock request; never steal a held writer lock. A frozen page can hold the origin lock, so the current page cannot recover it. Use a controlled lock holder to prove timeout and recovery rather than depending on a timing race. See `packages/presentation/src/presentation/saveStorage.ts`, `SaveStorage.withLock`, and `docs/decisions/0002-saves.md`.
 
-An unanswered worker request keeps its deadline. Only a clearly late deadline callback grants one short dispatch grace: a stalled main thread can run a due timer before an already queued healthy reply. A matching reply cancels the active timer, including that grace; an on-time timeout fails immediately. The grace cannot repeat even if its callback is also delayed, so a silent worker is still terminated. See `packages/presentation/src/presentation/saveStorage.ts`, `SaveStorage.request` and `SAVE_REPLY_GRACE_REAL_MS`.
-
-The timeout error and console warning identify the unanswered request's phase, selected backend and elapsed time, along with the initial timer's lateness and available binary-payload size. An unselected backend or unmeasured payload size remains unknown, not a zero-cost observation. These details distinguish main-thread dispatch delay from ordinary deadline expiry and locate the operation to investigate; they do not prove a backend hang or that an unacknowledged commit never reached disk. Payload size is not the entire cloned-message size, and timeout diagnostics are not worker-execution timings.
+A stalled main thread can run a due deadline before an already queued healthy reply, so a late deadline must be told apart from a worker that never answered, while a silent worker is still terminated. Timeout diagnostics locate the operation to investigate; they do not prove a backend hang, that an unacknowledged commit never reached disk, or how long the worker ran. See `packages/presentation/src/presentation/saveStorage.ts`, `SaveStorage.request`.
 
 ## Sparse vehicle meshing
 
