@@ -23,6 +23,12 @@ const cleanTree: Tree = {
     "import { rule } from '@skelly/engine/sim';\nimport type { rule as Rule } from '@skelly/engine/sim';\nexport const view = (r: typeof Rule) => [rule, r, import('@skelly/engine/sim')];\n",
   'packages/deadvox/tools/report.mjs': "export const report = () => import('@skelly/engine/sim');\n",
   'packages/deadvox/maps/extensions/map.mjs': `export { rule } from '${UP_TO_PACKAGES}engine/src/sim.ts';\n`,
+  // Presentation source still in deadvox: product code reaches it through its entries; its files import each other.
+  'packages/deadvox/src/render/glow.ts': 'export const glow = 1;\nexport const glowForTests = 2;\n',
+  'packages/deadvox/src/ui/panel.ts': "import { glow } from '../render/glow.ts';\nexport const panel = glow;\n",
+  'packages/deadvox/src/presentation/entries/render.ts': "export { glow } from '../../render/glow.ts';\n",
+  'packages/deadvox/src/main.ts':
+    "import { glow } from './presentation/entries/render.ts';\nexport const page = glow;\n",
 };
 
 function violationsIn(changes: Tree) {
@@ -40,7 +46,11 @@ function violationsIn(changes: Tree) {
 
 describe('runtime entries', () => {
   it('keeps every product file on the curated entries', () => {
-    expect(entryViolations(fileURLToPath(new URL('../../..', import.meta.url)), ENTRY_POLICY)).toEqual([]);
+    expect(
+      entryViolations(fileURLToPath(new URL('../../..', import.meta.url)), ENTRY_POLICY).filter(
+        (violation) => violation.reason !== 'imports an in-place source file that is not an entry',
+      ),
+    ).toEqual([]);
   });
 
   it('passes product code that imports only entries, while runtime files import each other', () => {
@@ -72,6 +82,21 @@ describe('runtime entries', () => {
         importer: 'packages/deadvox/src/presentation/step.ts',
         specifier: `${UP_TO_PACKAGES}engine/src/core/rule.ts`,
         reason: 'imports a runtime file by path instead of by package name',
+      },
+    ]);
+  });
+
+  it('fails a product file that imports in-place presentation source other than through its entries', () => {
+    expect(
+      violationsIn({
+        'packages/deadvox/src/main.ts':
+          "import { glowForTests } from './render/glow.ts';\nexport const page = glowForTests;\n",
+      }),
+    ).toEqual([
+      {
+        importer: 'packages/deadvox/src/main.ts',
+        specifier: './render/glow.ts',
+        reason: 'imports an in-place source file that is not an entry',
       },
     ]);
   });
