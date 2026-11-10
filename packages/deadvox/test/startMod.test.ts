@@ -1,7 +1,14 @@
-import { type ModIntake, practiceModId, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
+import {
+  bundledModIdsFromUrl,
+  type ModIntake,
+  practiceModId,
+  selectBundledMods,
+  startModFromUrl,
+} from '@skelly/engine/packs';
 import { currentSaveVersionIdentity } from '@skelly/engine/save';
 import { configFromUrl, isPracticeStart } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
+import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { describe, expect, it } from 'vitest';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { productModIntake } from '../src/product/mods.ts';
@@ -93,8 +100,12 @@ describe('start-mod parameter', () => {
   });
 
   it('starts from the start mod even when the practice pack is listed', () => {
-    const practice = practiceModId(intake, startupContent().registry)!;
-    expect(startOf(select(inline(startMod), [practice])).startId).toBe('fixture_start_mod_start');
+    const practice = practiceModId(intake, startupContent().registry);
+    expect(practice).toBeDefined();
+    const selection = select(inline(startMod), [practice!]);
+    expect(selection.issues).toEqual([]);
+    expect(selection.admitted.map(({ id }) => id)).toContain(practice);
+    expect(startOf(selection).startId).toBe('fixture_start_mod_start');
   });
 
   it('starts from the start mod, else a scenario loaded through mods, else the product default', () => {
@@ -179,6 +190,24 @@ describe('committed scenario mods', () => {
     };
     expect(practiceRun([scenario.id, practice!])).toBe(true);
     expect(practiceRun([practice!, scenario.id])).toBe(false);
+  });
+
+  it('starts practice from the practice link even when the page already lists the practice pack before another scenario', () => {
+    const practice = practiceModId(productModIntake, startupContent().registry);
+    const other = scenarios.find(([id]) => id !== practice)?.[0];
+    expect(practice).toBeDefined();
+    expect(other).toBeDefined();
+    const runOn = (href: string) => {
+      const url = new URL(href);
+      const read = readPageUrl(url.search, url.hash);
+      expect(read.refused).toBeUndefined();
+      const { content, issues } = selectBundledMods(productModIntake, bundledModIdsFromUrl(read.query));
+      expect(issues).toEqual([]);
+      return isPracticeStart(content.registry, configFromUrl(read.query, {}, content, ragdollSweepViewer).startId);
+    };
+    const page = `https://example.test/deadvox/?mods=${practice},${other}`;
+    expect(runOn(page)).toBe(false);
+    expect(runOn(tutorialUrl(page, practice!))).toBe(true);
   });
 
   it('gives a stack of single-file mods and folder packs a save identity that follows its load order', async () => {
