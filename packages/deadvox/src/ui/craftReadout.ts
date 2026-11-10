@@ -1,22 +1,18 @@
-import type { BlockEntity } from '../core/blockEntities.ts';
-import { claimed } from '../core/capabilities.ts';
-import type { CraftCharacter } from '../core/character.ts';
-import type { RecipeDef, Registry } from '../core/content.ts';
-import type { CraftCommands } from '../core/craftCommands.ts';
+import type { RecipeDef, Registry, ScreenText } from '../engine/content.ts';
 import {
+  type CraftCommands,
   type CraftPreference,
   type CraftSources,
+  claimed,
+  type Inventory,
+  type Item,
   indexCraftReach,
   planCraft,
   requirementStatus,
-} from '../core/crafting.ts';
-import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import type { LongJob } from '../core/longAction.ts';
-import { decimalText, volumeText } from '../core/numberText.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
-import type { ScreenText } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
+} from '../engine/inventory.ts';
+import type { CraftCharacter, LongJob, ReachSnapshot } from '../engine/sim.ts';
+import { decimalText, fillText, volumeText } from '../engine/text.ts';
+import type { BlockEntity } from '../engine/world.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>

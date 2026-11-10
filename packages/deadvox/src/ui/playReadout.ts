@@ -1,7 +1,7 @@
 // Read-only debug presentation: physical-unit formatting and approximate byte counts.
 import type { Object3D } from 'three';
-import { formatClock } from '../core/clock.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { formatClock } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import type { DebugReadout } from '../presentation/debugInterface.ts';
 
 type Measurements = Omit<DebugReadout, 'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors'>;

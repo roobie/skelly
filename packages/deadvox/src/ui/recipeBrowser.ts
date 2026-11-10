@@ -1,6 +1,5 @@
-import type { Registry } from '../core/content.ts';
-import type { RecipeCategoryDef } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
+import type { RecipeCategoryDef, Registry } from '../engine/content.ts';
+import { fillText } from '../engine/text.ts';
 import { craftingText } from './craftReadout.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
 

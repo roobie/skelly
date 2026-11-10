@@ -1,27 +1,23 @@
 import { html, render } from 'lit-html';
-import type { HandedCharacter } from '../core/character.ts';
-import { type Registry, requireDayCycle } from '../core/content.ts';
-import { assertFoodExposure } from '../core/food.ts';
-import { assertSavedLiquidContents, type ItemState } from '../core/items.ts';
-import { countText } from '../core/numberText.ts';
+import { type Registry, requireDayCycle, type ScreenText } from '../engine/content.ts';
+import { assertSavedLiquidContents, type ItemState } from '../engine/inventory.ts';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
   contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,
+  KNOWN_SCHEDULER_IDS,
   readSaveVersionMetadata,
   type SaveContentKind,
+  type SaveSnapshot,
   type SaveVersionComponents,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
   type SaveWorldOptions,
-} from '../core/saveFormat.ts';
-import type { SaveSnapshot } from '../core/saveState.ts';
-import { KNOWN_SCHEDULER_IDS } from '../core/schedulerIds.ts';
-import type { ScreenText } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
-import { type RealTimestamp, realTimestamp } from '../core/time.ts';
+} from '../engine/save.ts';
+import { assertFoodExposure, type HandedCharacter, type RealTimestamp, realTimestamp } from '../engine/sim.ts';
+import { countText, fillText } from '../engine/text.ts';
 import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
 import type { SaveBackendPreference, SaveLoadResult, SaveStorageStatus, SaveStore } from '../game/storageContract.ts';
 import { SaveStorage } from '../presentation/saveStorage.ts';

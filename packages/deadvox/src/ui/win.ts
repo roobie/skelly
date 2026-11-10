@@ -1,8 +1,7 @@
 import { html, render } from 'lit-html';
-import { countText, decimalText } from '../core/numberText.ts';
-import type { ScenarioRunState } from '../core/scenarioRun.ts';
-import type { ScreenText } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
+import type { ScreenText } from '../engine/content.ts';
+import type { ScenarioRunState } from '../engine/sim.ts';
+import { countText, decimalText, fillText } from '../engine/text.ts';
 
 export type WinCheckpoint = 'saved' | 'pending' | 'failed' | 'unavailable';
 

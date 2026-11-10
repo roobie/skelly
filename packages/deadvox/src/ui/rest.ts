@@ -1,9 +1,7 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { calendarAt, formatClock } from '../core/clock.ts';
-import type { RestAction, RestKind } from '../core/longAction.ts';
-import type { ScreenText } from '../core/schema.ts';
-import type { Simulation } from '../core/sim.ts';
-import { fillText } from '../core/textTemplate.ts';
+import type { ScreenText } from '../engine/content.ts';
+import { calendarAt, formatClock, type RestAction, type RestKind, type Simulation } from '../engine/sim.ts';
+import { fillText } from '../engine/text.ts';
 import { activityProgress } from './activityProgress.ts';
 import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';
 

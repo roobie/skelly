@@ -1,12 +1,9 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
-import { claimed } from '../core/capabilities.ts';
-import type { Inventory, Location } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import { countText, decimalText } from '../core/numberText.ts';
-import type { ScreenText } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
+import type { ScreenText } from '../engine/content.ts';
+import { claimed, type Inventory, type Item, type Location } from '../engine/inventory.ts';
+import { countText, decimalText, fillText } from '../engine/text.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 import { activityProgress } from './activityProgress.ts';
 import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';

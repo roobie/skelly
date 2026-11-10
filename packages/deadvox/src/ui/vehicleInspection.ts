@@ -1,14 +1,12 @@
-import { claimed } from '../core/capabilities.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { conditionWord, type Item } from '../core/items.ts';
-import type { ReachSnapshot } from '../core/reach.ts';
-import { fillText } from '../core/textTemplate.ts';
+import { claimed, conditionWord, type Inventory, type Item } from '../engine/inventory.ts';
+import type { ReachSnapshot } from '../engine/sim.ts';
+import { fillText } from '../engine/text.ts';
 import {
   copyVehicleWorkPlacement,
   type VehicleWorkPlacement,
   type VehicleWorkTarget,
   vehicleSiteName,
-} from '../core/vehicleInstances.ts';
+} from '../engine/vehicles.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 
 export type VehicleWorkPayload = Extract<ReplayActionPayload, { kind: 'vehicle.work' }>;

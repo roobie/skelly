@@ -6,35 +6,63 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
-import { claimed } from '../core/capabilities.ts';
-import { offSide, practiceForNextLevel } from '../core/character.ts';
-import type { ItemDef, Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { coreLabel } from '../core/coreText.ts';
-import type { RecoveryChoices, RecoveryProjection, WorkOperation, WorkOption } from '../core/craftCommands.ts';
-import { firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
-import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
-import { PILE_GRID } from '../core/inventoryScale.ts';
-import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '../core/numberText.ts';
+import type { ItemDef, Registry, ScreenText, WearSlot } from '../engine/content.ts';
 import {
   batterySlotRefusal,
   bestPocket,
+  GRID_CELL_REM as CELL_REM,
+  claimed,
+  conditionWord,
+  defOf,
   dropTarget,
+  firearmSlotIds,
+  footprint,
+  type GridSize,
+  type HandlingQueue,
+  type Inventory,
+  type Item,
   inventoryPocket,
+  LIGHT_MOUNT_SLOT,
   type Option,
   options,
   otherHandPour,
+  PILE_GRID,
+  type Pile,
+  type Placed,
   pourRefusal,
   quickestPockets,
-} from '../core/options.ts';
-import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
-import type { ScreenText, WearSlot } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
+  type RecoveryChoices,
+  type RecoveryProjection,
+  SLING_SLOT,
+  sameGrid,
+  spotOf,
+  type Target,
+  type WorkOperation,
+  type WorkOption,
+  weightOf,
+  wornSlotOf,
+} from '../engine/inventory.ts';
+import {
+  BODY_REGIONS,
+  type Body,
+  type BodyRegion,
+  bodyRegionLabel,
+  offSide,
+  practiceForNextLevel,
+  type ReachSnapshot,
+  reachTuning,
+} from '../engine/sim.ts';
+import {
+  coreLabel,
+  countText,
+  decimalText,
+  fillText,
+  hundredthsText,
+  percentText,
+  statText,
+  volumeText,
+} from '../engine/text.ts';
+import { type BlockEntity, searchTime, type Vec3 } from '../engine/world.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';

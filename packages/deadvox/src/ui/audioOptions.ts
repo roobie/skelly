@@ -1,6 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
-import { hundredthsText } from '../core/numberText.ts';
-import { fillText } from '../core/textTemplate.ts';
+import { fillText, hundredthsText } from '../engine/text.ts';
 
 const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
 export type AudioVolumeCategory = (typeof AUDIO_VOLUME_CATEGORIES)[number];

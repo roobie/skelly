@@ -1,4 +1,4 @@
-import { type RealSeconds, type RealTimestamp, realSeconds } from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds } from '../engine/sim.ts';
 
 export interface LeaveConfirmationState {
   readonly gameRunning: boolean;

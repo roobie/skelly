@@ -4,9 +4,8 @@
 // came from, its licence and what we changed.
 
 import { html, render, type TemplateResult } from 'lit-html';
-import { type AssetSource, LICENCES, type Manifest } from '../core/assets.ts';
-import type { ScreenText } from '../core/schema.ts';
-import { fillText } from '../core/textTemplate.ts';
+import { type AssetSource, LICENCES, type Manifest, type ScreenText } from '../engine/content.ts';
+import { fillText } from '../engine/text.ts';
 import { fillHint } from './keyCap.ts';
 
 interface CreditsLink {

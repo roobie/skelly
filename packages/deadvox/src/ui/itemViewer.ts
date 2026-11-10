@@ -3,8 +3,8 @@
 
 import { html, nothing, render } from 'lit-html';
 import type { Object3D } from 'three';
-import type { Item } from '../core/items.ts';
-import type { GraphicsTuningDef } from '../core/schema.ts';
+import type { GraphicsTuningDef } from '../engine/content.ts';
+import type { Item } from '../engine/inventory.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';

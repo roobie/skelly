@@ -1,9 +1,8 @@
 // User-facing unsupported-item copy is presentation, not simulation/save identity.
 
-import { claimed } from '../core/capabilities.ts';
-import type { Registry } from '../core/content.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { fillText } from '../core/textTemplate.ts';
+import type { Registry } from '../engine/content.ts';
+import { claimed, defOf, type Item } from '../engine/inventory.ts';
+import { fillText } from '../engine/text.ts';
 
 export const primaryActionHint = (registry: Registry, item: Item): string =>
   fillText(claimed(registry.ui, 'interface')!.screenText.primaryAction.nothingToDo, {
