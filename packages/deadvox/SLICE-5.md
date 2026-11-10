@@ -30,8 +30,9 @@ supplies, improve its defences, connect useful appliances, and choose how much
 light to expose at night. Leave it working, return to consequential resource use,
 and decide whether to defend, repair or abandon it after a breach or fire.
 The playtest is a scenario whose first wave arrives after three elapsed scenario
-days and whose later waves never stop coming, each harder than the last, so
-preparation and defence receive a deliberate and then an enduring pressure test.
+days and whose later waves never stop coming, growing harder through an authored
+list and then holding at its last row, so preparation and defence receive a
+deliberate and then an enduring pressure test.
 Data-driven event rules author the waves; this does not select an authored
 shelter-and-supply route. Every wave day is a content tunable, not an engine
 constant. The value of staying must compete with the cost of attracting attention,
@@ -202,10 +203,10 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   content growth warrants a longer preparation loop; this is author tuning, not
   automatic code-based scaling. Keep the day in scenario content under
   `PILLARS.md`, "Content forward compatibility" (repo root).
-- **Waves never end:** after the first wave the scenario keeps sending waves, each
-  harder in both quantity and quality, so holding ground is an endurance test rather
-  than one scripted fight. Survival time is still not a pass threshold; see
-  "Playtest questions and exit".
+- **Waves never end:** after the first wave the scenario keeps sending waves, harder
+  in both quantity and quality through the authored list under "Escalation" below and
+  then level, so holding ground is an endurance test rather than one scripted fight.
+  Survival time is still not a pass threshold; see "Playtest questions and exit".
 - **Wave gap:** later waves arrive five scenario days apart, a middle value that
   leaves room for supply excursions without long waits with little to do. The gap is
   authored in scenario content, not chosen at game start, so timing has one
@@ -226,10 +227,10 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
 
 The base-building playtest, the third playtest round, is scoped in #1332.
 
-- **Site:** a new small authored site, on the order of a square kilometre, built for
-  defence rather than a reused playtest or gauntlet site, so the shelter, its
-  approaches and its supply runs are deliberate. The mansion stays deferred past
-  this playtest under #1332.
+- **Site:** a new small authored site, built for defence rather than a reused
+  playtest or gauntlet site, so the shelter, its approaches and its supply runs are
+  deliberate. Its size is open under #1332. The mansion stays deferred past this
+  playtest under #1332.
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes
@@ -364,23 +365,23 @@ The first three rounds, in dispatch order:
    held item holds its own repeat or charge instead of a menu; Treat opens a list, not
    a wheel; every movable piece opens the menu even with Lift alone; no keyboard aim.
    Directions for repair, continue and take-apart are authored now so later rounds
-   add no layout change, but the menu offers none of them until the #1469 view.
-   Its reasons go in `DESIGN.md`, "Moving furniture".
-2. **Take a world piece apart through work.** One recorded command that starts
-   disassembly on an entity target: contents refuse (no auto-unload), the piece is
-   reserved in the saved set, the yield plan is snapshotted on the work item (intact
-   parts keeping the donor's condition; skill and tools decide only admission), and
-   completion revalidates before removing the piece and emitting the yield once.
-   Cancel releases without yield. The menu offers it when the definition declares a
-   disassembly operation; choosing it opens a short-lived review of target, yield,
-   time and blockers, and work starts only on Start, because review is not consent.
-   Its reasons go in `DESIGN.md`, "Edits persist". The review selects no inputs, so
-   it does not wait for the #1469 view.
-3. **Adopt the first wave in a base-building scenario pack.** A new entry pack and
-   `.play` start pack on an existing authored site with buildings, importing
-   `holding-wave.libsonnet` with an arrival cell reachable from the start, following
-   `docs/url-mods.md`, "Committed scenarios". No engine code, recurrence, shelter
-   identity or supply authoring: those are the later playtest-pack rounds.
+   add no layout change, but this round offers none of them: take-apart arrives with
+   round 2, and Repair waits on the #1469 view. Its reasons go in `DESIGN.md`,
+   "Moving furniture".
+2. **Take a world piece apart through work.** The menu's first job after adoption:
+   a recorded player command that runs disassembly on a world piece under the
+   existing work, reservation and yield contract, so no second ownership path
+   appears; see `packages/engine/src/game/commandRouter.ts`, `craftRepairEntity`, and
+   `packages/engine/src/core/disassembly.ts`, `planDisassembly`. Choosing it shows a
+   review first and work starts only on Start, because review is not consent. The
+   review selects no inputs, so this round does not wait for the #1469 view. Its
+   reasons go in `DESIGN.md`, "Edits persist".
+3. **Adopt the first wave in a base-building scenario pack.** A committed scenario
+   pack on an existing authored site with buildings, so the other lanes have a
+   shipped scenario to test in before the new site exists; see `docs/url-mods.md`,
+   "Committed scenarios", and `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`,
+   `rule`. No engine code, recurrence, shelter identity or supply authoring: those
+   are the later playtest-pack rounds.
 
 ## State and technical proof
 
