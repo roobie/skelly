@@ -3409,7 +3409,7 @@ useful fitted cargo; further compartments extend the same ownership model rather
 than turning the entire wreck into a container.
 
 **Part finish.** The fitted spot sets the paint at spawn, and after that the part owns
-it: each fitting names a finish, which becomes that copy's paint when the vehicle is
+it: a fitting may name a finish, which becomes that copy's paint when the vehicle is
 spawned. A door pulled off a red car stays red, loose and in saves, and fitted to
 another car keeps its red until something repaints it. One part model painted per
 vehicle lets paint-only near-duplicates merge, and it matches how vehicles already
@@ -3417,11 +3417,15 @@ choose their parts. See `packages/engine/src/core/items.ts`, `ItemState`, and
 `packages/engine/src/core/inventory.ts`, `Inventory.registerVehicle`.
 
 Paint is cosmetic and per copy, so no copy shares another's paint: it replaces only
-materials the asset marks `paintable`, wear and damage draw over it, and mass, strength
-and collision never read it. See `packages/presentation/src/render/itemStateLook.ts`,
-`applyItemStateLook`. A finish names a library entry, so a mod adds one without engine
-change; a part with none, or naming one no pack provides, shows its own authored
-material. See `packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
+materials the asset marks `paintable`, and mass, strength and collision never read it.
+Wear and damage draw over paint where they are drawn; a fitted part draws no wear. See
+`packages/presentation/src/render/itemStateLook.ts`, `applyItemStateLook`, and
+`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`. A finish names a library
+entry and wears all of it, as a model's own material would, so any entry looks the same
+painted or authored. A mod adds one without engine change; a part with none, or naming
+one no pack provides, shows its own authored material. See
+`packages/presentation/src/render/modelMaterials.ts`, `paintedCopy`,
+`packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
 `packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `vehicleFinishes`. Finishes
 apply to vehicles only.
 
