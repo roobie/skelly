@@ -9,6 +9,7 @@ read_if:
   - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
+  - you change the browser, validation or build-stamp pack closure
   - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
   - you plan SkellyEngine runtime and content extraction
   - you place a recipe, power tuning, a manual or a household electrical device in a mod
@@ -32,13 +33,15 @@ its sandbox campaign scenario. An ordinary top-level entry pack declares the pro
 dependencies and chooses its default scenario and start. Metadata marks the entry as
 a product; anyone can author one.
 
-The Deadvox entry depends on every scenario mod without the opt-in marker of
-`docs/pack-split.md`, "Debug mods". The browser loads every unmarked bundled mod folder
-while the CLI and tests load the entry's closure, so one set keeps them in step without a
-second loading path. The cost is that the entry stack
-carries every demo. See `src/product/packs.ts`, `bundledPacks`, and
-`tools/readBundledPacks.ts`, `readBundledPacks`. The entry is therefore the one pack
-whose dependencies may sit in a higher tier than its own: it selects the stack rather
+The browser admits only the entry pack's dependency closure plus selected opt-in
+closures. Loading, validation, build stamps and saved identity must agree on that
+selection: an unrelated folder must not change the game or invalidate a save.
+The shared closure boundary is `packages/engine/src/core/packAdmission.ts`,
+`selectFolderClosure`; product wiring is in `src/product/packSelection.ts`,
+`selectAvailableProductPacks`, and validation uses `tools/readBundledPacks.ts`,
+`readBundledPacks`. The build may prepare proofs and hashes for selectable opt-ins,
+but their presence alone does not admit them. The entry is the one pack whose
+dependencies may sit in a higher tier than its own: it selects the stack rather
 than defining reusable content.
 
 First-party ids use `skelly.*`, named for their content. The manifest, not the id,
@@ -394,11 +397,11 @@ under `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope"
 
 ## Debug mods
 
-A debug mod is a folder mod whose folder equals its id, like any other, but its manifest
-carries the opt-in marker; see `packages/engine/src/core/packAdmission.ts`, `PackManifestSchema`. Without
-the marker every folder under a mod root loads for everyone, so a debug mod's overrides
-would change normal play. The marker only withholds a pack from the default set: it is
-not a tier, grants no privilege and is never inferred from the id.
+A debug mod uses the opt-in marker so it remains selectable without becoming an
+entry dependency that changes normal play. The marker is not a tier, grants no
+privilege and is never inferred from the id; ordinary dependencies still determine
+what a selected pack needs. See `packages/engine/src/core/packAdmission.ts`,
+`PackManifestSchema`.
 
 A marked pack loads only when `?mods=` or a CLI stack names it. Selection walks the named
 pack's dependencies over every shipped pack and drops those the default set already
@@ -408,9 +411,9 @@ cycle, and folder packs never pass through the single-file mod reader. See
 `packages/engine/src/core/packAdmission.ts`, `selectFolderClosure`, and `packages/engine/src/game/bundledMods.ts`,
 `selectBundledMods`.
 
-The build hashes marked packs beside the default ones and keeps their identities in a
-separate define, so a selection reuses the build's hashes. See
-`tools/readBundledPacks.ts`, `bundledPackDefines`.
+Selected opt-ins reuse build-time identities, including dependencies outside the
+entry closure, so selecting a pack never invents an identity or omits its dependencies.
+See `tools/readBundledPacks.ts`, `bundledPackDefines`.
 
 Each scenario's debug mod depends only on that scenario and the tiers below, so none but
 the test house's may override the test-house layout. A scenario split into city and start
@@ -433,9 +436,9 @@ mod is selected too, and the grid lays rows out in load order. See
 Record each admitted pack separately and in order so a refusal can identify the
 changed pack; see `packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity` and
 `contentPackDifferences`. Scenario and product topic packs use the same identity rule.
-The identity records only admitted packs: the default packs, then each selected marked
-pack once under its own id, in admission order. A normal save therefore names no debug
-mod, and a world saved with one resumes only with it.
+Identity records only admitted packs, including every dependency of a selected opt-in,
+in admission order. An available but unselected debug mod must not affect save identity;
+a world saved with one resumes only with it.
 This remains pack-list identity until #1395 implements evaluated-content identity
 under `docs/decisions/0008-deterministic-world.md`, "Decision". Generator identity
 follows body plans rather than setting model names, so renaming an actor does not

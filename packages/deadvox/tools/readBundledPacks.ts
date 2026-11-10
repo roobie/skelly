@@ -12,6 +12,7 @@ import {
   PackManifestSchema,
   packContentHash,
   resolvePhysical,
+  selectFolderClosure,
 } from '@skelly/engine/packs';
 import { canonicalJson } from '@skelly/engine/save';
 import { parse } from 'valibot';
@@ -191,20 +192,10 @@ export const readBundledPacks = (packageRoot: string, stack?: string): PackInput
   if (stack === undefined) {
     return inputs.filter(({ manifest }) => !manifest.optIn);
   }
-  const selected = new Set<string>();
-  const visit = (id: string): void => {
-    if (selected.has(id)) {
-      return;
-    }
-    selected.add(id);
-    const pack = inputs.find(({ manifest }) => manifest.id === id);
-    if (!pack) {
-      throw new Error(`Unknown stack pack "${id}"`);
-    }
-    pack.manifest.dependencies.forEach(visit);
-  };
-  visit(stack);
-  return inputs.filter(({ manifest }) => selected.has(manifest.id));
+  if (!inputs.some(({ manifest }) => manifest.id === stack)) {
+    throw new Error(`Unknown stack pack "${stack}"`);
+  }
+  return selectFolderClosure([stack], inputs, []);
 };
 
 /** A stack's content files, following its packs so a reader keeps seeing a row when its mod moves. */
@@ -257,10 +248,14 @@ const identities = (packs: readonly PackInput[]) =>
     })),
   );
 
-/** Identities of the default packs and, separately, of the opt-in packs, plus every available pack's file hashes. */
-export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<Record<string, string>> => {
+/** Opt-ins must reuse build identities for every dependency without changing the default save identity. */
+export const bundledPackDefines = async (
+  inputs: readonly PackInput[],
+  entryPack: string,
+): Promise<Record<string, string>> => {
   const packs = admitted(inputs);
-  const defaults = admitted(inputs.filter(({ manifest }) => !manifest.optIn));
+  const defaults = admitted(selectFolderClosure([entryPack], inputs, []));
+  const defaultIds = new Set(defaults.map(({ manifest }) => manifest.id));
   const hashes = Object.fromEntries(
     packs.flatMap((pack) =>
       pack.manifest.files
@@ -273,7 +268,9 @@ export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<
   );
   return {
     [CONTENT_PACKS_DEFINE]: JSON.stringify(await identities(defaults)),
-    [OPT_IN_PACKS_DEFINE]: JSON.stringify(await identities(packs.filter(({ manifest }) => manifest.optIn))),
+    [OPT_IN_PACKS_DEFINE]: JSON.stringify(
+      await identities(packs.filter(({ manifest }) => !defaultIds.has(manifest.id))),
+    ),
     [FILE_HASHES_DEFINE]: JSON.stringify(hashes),
   };
 };

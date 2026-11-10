@@ -43,7 +43,7 @@ it('injects exporter JSON digests without model payloads while preserving runtim
     writeFileSync(modelPath, JSON.stringify({ fixtureGeometry: 1, fixtureMaterial: 'plain' }));
     writeFileSync(join(directory, 'model.glb'), new Uint8Array([1, 2, 3]));
     const [input] = readBundledPacks(root);
-    const defines = await bundledPackDefines([input!]);
+    const defines = await bundledPackDefines([input!], input!.manifest.id);
     const hashesDefine = '__SKELLY_FILE_HASHES__';
     const identitiesDefine = '__SKELLY_CONTENT_PACKS__';
     const hashes: Record<string, string> = JSON.parse(defines[hashesDefine]!);
@@ -96,7 +96,7 @@ it('keeps opt-in packs out of the default identity and no-stack set while hashin
     expect(ids(readBundledPacks(root))).toEqual(['fixture.default']);
     expect(ids(readBundledPacks(root, 'fixture.opt-in'))).toEqual(['fixture.default', 'fixture.opt-in']);
     const available = readAvailablePacks(root);
-    const defines = await bundledPackDefines(available);
+    const defines = await bundledPackDefines(available, 'fixture.default');
     const listed = (define: string) => JSON.parse(defines[define]!).map(({ id }: { id: string }) => id);
     expect(listed('__SKELLY_CONTENT_PACKS__')).toEqual(['fixture.default']);
     expect(listed('__SKELLY_OPT_IN_PACKS__')).toEqual(['fixture.opt-in']);
@@ -344,7 +344,7 @@ it('a directory under the external root naming no bundled pack is not listed and
 it('external json and asset entries admit in the browser with the reader hashes', () =>
   withExternalPack(async (root) => {
     const [input] = readAvailablePacks(root, EXTERNAL);
-    const defines = await bundledPackDefines([input!]);
+    const defines = await bundledPackDefines([input!], input!.manifest.id);
     const hashes: Record<string, string> = JSON.parse(defines.__SKELLY_FILE_HASHES__!);
     const identities = JSON.parse(defines.__SKELLY_CONTENT_PACKS__!);
     // The browser looks each entry up by its logical key, as `packages/engine/src/game/bundledContent.ts` does.

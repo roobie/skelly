@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { admitPacks, type BundleStamp, packContentHash } from '@skelly/engine/packs';
 import type { Plugin } from 'vite';
+import { PRODUCT_ENTRY_PACK, selectAvailableProductPacks } from '../src/product/packSelection.ts';
 import { bundledPackDefines, PACK_ROOT_BASE, readAvailablePacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 
@@ -35,7 +36,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
           readFile: async (path) => readFileSync(path, 'utf8'),
         });
       proofHash = await fingerprint();
-      const selected = admitPacks(readAvailablePacks(packageRoot));
+      const selected = admitPacks(selectAvailableProductPacks(readAvailablePacks(packageRoot)));
       if (selected.issues.length > 0) {
         throw new Error(JSON.stringify(selected.issues));
       }
@@ -67,7 +68,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
       }
       config.define[BUNDLE_STAMP_DEFINE] = JSON.stringify(stamp);
       config.define[ADMISSION_FINGERPRINT_DEFINE] = JSON.stringify(proofHash);
-      Object.assign(config.define, await bundledPackDefines(packs));
+      Object.assign(config.define, await bundledPackDefines(packs, PRODUCT_ENTRY_PACK));
     },
     load(id) {
       // Emitted content must be the exact input validated, even if a file is edited during the build.
@@ -75,7 +76,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
     },
     async generateBundle() {
       if (packHashes) {
-        const selected = admitPacks(readAvailablePacks(packageRoot));
+        const selected = admitPacks(selectAvailableProductPacks(readAvailablePacks(packageRoot)));
         const current = await Promise.all(selected.packs.map(packContentHash));
         if (selected.issues.length > 0) {
           this.error('Pack admission changed during bundle validation');
