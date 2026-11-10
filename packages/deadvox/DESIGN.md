@@ -2848,8 +2848,10 @@ matters for a far kill at the loaded edge together with full supported spots,
 so the case is rare; loss is already the outcome when no room is found.
 Readiness uses the replay-aware zombie rule.
 
-With no supported landing or no room found by the permitted search, the item is
-lost: the zombie has been removed or the limb cut, so no owner can retain it.
+With no supported landing or no room found by the permitted search, including an
+unready column that cannot search farther, discard the item. The zombie has been
+removed or the limb cut, so no owner can retain it. Discarding avoids a pending-drop
+queue in saves; pre-pre-alpha accepts loot lost at the loaded edge.
 Loss adds neither a notice nor a sound. Zombie loot can yield nothing, and a
 line about an unseen body would narrate what the character cannot know; see
 `INTERFACE.md`, "Text". Zombie drops search wider because they have no retained
