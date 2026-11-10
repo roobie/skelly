@@ -36,7 +36,14 @@
         "heightFog": 0.01,
         "heightFogColor": "#1c2430",
         "bloom": 0.5,
-        "tone": 1
+        "tone": 1,
+        "dome": {
+          "zenith": "#070a10",
+          "horizonGlow": "#141b26",
+          "physical": { "weight": 0, "turbidity": 3, "rayleigh": 1.3, "mie": 0.005, "mieDirectional": 0.8 },
+          "clouds": { "cover": 0.45, "opacity": 0.6 },
+          "stars": 1
+        }
       },
       "deepNight": {
         "sky": "#040508",
@@ -50,7 +57,14 @@
         "heightFog": 0.012,
         "heightFogColor": "#121821",
         "bloom": 0.55,
-        "tone": 1
+        "tone": 1,
+        "dome": {
+          "zenith": "#030407",
+          "horizonGlow": "#0a0f16",
+          "physical": { "weight": 0, "turbidity": 3, "rayleigh": 1.3, "mie": 0.005, "mieDirectional": 0.8 },
+          "clouds": { "cover": 0.45, "opacity": 0.6 },
+          "stars": 1
+        }
       },
       "dawn": {
         "sky": "#8a807e",
@@ -64,7 +78,14 @@
         "heightFog": 0.014,
         "heightFogColor": "#b09a90",
         "bloom": 0.2,
-        "tone": 0.85
+        "tone": 0.85,
+        "dome": {
+          "zenith": "#80786f",
+          "horizonGlow": "#b7b1a4",
+          "physical": { "weight": 0.5, "turbidity": 3, "rayleigh": 1.3, "mie": 0.005, "mieDirectional": 0.8 },
+          "clouds": { "cover": 0.45, "opacity": 1 },
+          "stars": 0
+        }
       },
       "day": {
         "sky": "#a9bfd0",
@@ -78,7 +99,14 @@
         "heightFog": 0.002,
         "heightFogColor": "#b4c6d4",
         "bloom": 0.08,
-        "tone": 0
+        "tone": 0,
+        "dome": {
+          "zenith": "#6f8aa3",
+          "horizonGlow": "#c9c4b8",
+          "physical": { "weight": 1, "turbidity": 3, "rayleigh": 1.3, "mie": 0.005, "mieDirectional": 0.8 },
+          "clouds": { "cover": 0.45, "opacity": 1 },
+          "stars": 0
+        }
       },
       "dusk": {
         "sky": "#6e5e5c",
@@ -92,13 +120,28 @@
         "heightFog": 0.008,
         "heightFogColor": "#8a6e66",
         "bloom": 0.25,
-        "tone": 0.85
+        "tone": 0.85,
+        "dome": {
+          "zenith": "#80786f",
+          "horizonGlow": "#b7b1a4",
+          "physical": { "weight": 0.5, "turbidity": 3, "rayleigh": 1.3, "mie": 0.005, "mieDirectional": 0.8 },
+          "clouds": { "cover": 0.45, "opacity": 1 },
+          "stars": 0
+        }
       }
     },
     "weather": {
       "defaultFogginess": 0.2,
       "nearTighten": 0.85,
       "farTighten": 0.6
+    },
+    "clouds": {
+      "warp": 0.6,
+      "layers": [
+        { "scale": 0.35, "angle": 0, "drift": [0.0006, 0.00013], "opacity": 0.32 },
+        { "scale": 0.83, "angle": 2.1, "drift": [-0.0011, 0.0004], "opacity": 0.5 },
+        { "scale": 2.07, "angle": 4.0, "drift": [0.0028, -0.0019], "opacity": 0.42 }
+      ]
     }
   }
 }
