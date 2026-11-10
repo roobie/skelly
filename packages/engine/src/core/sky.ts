@@ -16,6 +16,8 @@ export interface Sky {
   sky: Rgb;
   /** Unit vector towards the main light: the sun by day, the moon by night. */
   light: Vec3;
+  /** The true solar direction, unclamped, so a sky dome can draw the sun at the horizon. */
+  sunDirection: Vec3;
   lightColor: Rgb;
   lightIntensity: number;
   /** Hemisphere light: sky and ground colours and intensity. */
@@ -42,7 +44,7 @@ export interface Sky {
   tone: number;
 }
 
-type Look = Omit<Sky, 'light' | 'dayPhase'>;
+type Look = Omit<Sky, 'light' | 'dayPhase' | 'sunDirection'>;
 
 const DAY_SECONDS = 24 * 60 * 60;
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -115,7 +117,12 @@ export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const [x, , z] = state.sunDirection;
   const y = Math.max(state.sunDirection[1], MIN_LIGHT_Y);
   const len = Math.hypot(x, y, z);
-  return { ...lookAt(state, time, cycle), dayPhase: state.phase, light: [x / len, y / len, z / len] };
+  return {
+    ...lookAt(state, time, cycle),
+    dayPhase: state.phase,
+    light: [x / len, y / len, z / len],
+    sunDirection: state.sunDirection,
+  };
 };
 
 /**
