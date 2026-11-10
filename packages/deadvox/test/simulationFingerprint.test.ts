@@ -82,11 +82,14 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/game/mesherProtocol.ts': 'Type-only mesher messages; the imported types erase from runtime code.',
   'src/game/storageContract.ts':
     'Type-only save and mod storage contracts; the imported types erase from runtime code.',
-  'engine/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
-  'src/game/hearing.ts': 'Heard-sound record and occlusion, reached only through the excluded WebAudio adapter.',
+  'engine/core/soundOcclusion.ts':
+    'Presentation-only filtering, reached only from the WebAudio adapter, which no simulation entry reaches.',
+  'src/game/hearing.ts':
+    'Heard-sound record and occlusion, reached only from the WebAudio adapter, which no simulation entry reaches.',
   'src/game/bindingRegistry.ts':
     'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
-  'src/game/voiceCaps.ts': 'Playback voice caps, reached only through the excluded WebAudio adapter.',
+  'src/game/voiceCaps.ts':
+    'Playback voice caps, reached only from the WebAudio adapter, which no simulation entry reaches.',
   'engine/core/schedulerIds.ts':
     'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',
   'engine/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
@@ -331,9 +334,10 @@ describe('simulation source fingerprint', () => {
     // Engine files are labelled `'engine/'` in the manifest, as SIMULATION_ENTRIES names them.
     const engineSource = relative(projectRoot, dirname(labelledPath(projectRoot, 'engine/core')));
     const engineCore = await sourceFilesUnder(join(engineSource, 'core'));
+    // Curated entries only re-export modules classified here, like the engine package's own entries.
     const modules = [
       ...engineCore.map((path) => `engine/${relative(engineSource, path).split(sep).join('/')}`),
-      ...(await sourceFilesUnder('src/game')),
+      ...(await sourceFilesUnder('src/game')).filter((path) => !path.startsWith(join('src/game', 'entries', sep))),
     ];
     const scopedExclusions = SIMULATION_EXCLUSIONS.filter(
       (rule) => rule.startsWith('engine/core/') || rule.startsWith('src/game/'),
