@@ -17,7 +17,12 @@ export interface BrowserMod {
   enabled: boolean;
 }
 
-type AdmittedFile = { id: string; version: string; data: unknown; source: string };
+interface AdmittedFile {
+  id: string;
+  version: string;
+  data: unknown;
+  source: string;
+}
 
 export interface ModEvaluation {
   content: StartupContent;
