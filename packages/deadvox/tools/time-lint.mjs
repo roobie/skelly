@@ -8,6 +8,13 @@ import ts from '../../../tools/lit-check/node_modules/typescript/lib/typescript.
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');
+// The runtime package's source; its files are keyed relative to it, as deadvox's are to SOURCE.
+const ENGINE = join(DEADVOX, '..', 'engine', 'src');
+const SOURCES = [SOURCE, ENGINE];
+const sourceRelative = (file) => {
+  const root = SOURCES.find((dir) => file.startsWith(`${dir}/`));
+  return root ? file.slice(root.length + 1) : file;
+};
 const CONTENT_ROOTS = [join(DEADVOX, 'mods'), join(DEADVOX, '..', 'mods')];
 const RUNTIME_BASELINE = join(DEADVOX, 'tools', 'time-lint-baseline.json');
 const ALLOW_REAL = new Set([join(SOURCE, 'game', 'frameDriver.ts')]);
@@ -75,7 +82,7 @@ const typeProgram = (file) => {
     const roots = fixture
       ? [absolute]
       : [
-          ...walkFiles(SOURCE, (path) => ['.ts', '.tsx'].includes(extname(path))),
+          ...SOURCES.flatMap((dir) => walkFiles(dir, (path) => ['.ts', '.tsx'].includes(extname(path)))),
           ...walkFiles(fixtureRoot, (path) => path.endsWith('.ts')),
         ];
     program = ts.createProgram(roots, {
@@ -261,7 +268,7 @@ export const runtimeTemporalCounts = (files, read = readFileSync) => {
     const visit = (node) => {
       const name = ambiguousTemporalProperty(node);
       if (name) {
-        const relativeFile = file.startsWith(SOURCE) ? file.slice(SOURCE.length + 1) : file;
+        const relativeFile = sourceRelative(file);
         const key = `${relativeFile}\\0${name}`;
         counts.set(key, (counts.get(key) ?? 0) + 1);
       }
@@ -302,8 +309,8 @@ export const compareRuntimeTemporalCounts = (observed, baseline) => {
 };
 
 const runtimeSourceFiles = () =>
-  walkFiles(SOURCE, (path) => CODE_EXTENSIONS.has(extname(path))).filter(
-    (path) => path !== join(SOURCE, 'core', 'schema.ts') && path !== join(SOURCE, 'core', 'temporalFields.ts'),
+  SOURCES.flatMap((dir) => walkFiles(dir, (path) => CODE_EXTENSIONS.has(extname(path)))).filter(
+    (path) => path !== join(ENGINE, 'core', 'schema.ts') && path !== join(ENGINE, 'core', 'temporalFields.ts'),
   );
 
 const runtimeTemporalFindings = () => {
@@ -396,7 +403,7 @@ export const analyzeFiles = (files, read = readFileSync) => {
 };
 
 const simulationDependencies = () => {
-  const queue = walkFiles(join(SOURCE, 'core'), (path) => CODE_EXTENSIONS.has(extname(path)));
+  const queue = walkFiles(join(ENGINE, 'core'), (path) => CODE_EXTENSIONS.has(extname(path)));
   const visited = new Set();
   while (queue.length > 0) {
     const file = queue.pop();
@@ -406,7 +413,7 @@ const simulationDependencies = () => {
     visited.add(file);
     for (const imported of localImports(file, readFileSync(file, 'utf8'))) {
       const resolved = resolveSource(imported);
-      if (resolved?.startsWith(SOURCE)) {
+      if (resolved && SOURCES.some((dir) => resolved.startsWith(`${dir}/`))) {
         queue.push(resolved);
       }
     }
@@ -423,8 +430,8 @@ const temporalFileMode = (file) => {
 
 const authoredTemporalFindings = () => {
   const contentFiles = CONTENT_ROOTS.flatMap((root) => walkFiles(root, (path) => extname(path) === '.json'));
-  const catalogueFile = join(SOURCE, 'core', 'temporalFields.ts');
-  const temporalFiles = [...contentFiles, join(SOURCE, 'core', 'schema.ts'), catalogueFile];
+  const catalogueFile = join(ENGINE, 'core', 'temporalFields.ts');
+  const temporalFiles = [...contentFiles, join(ENGINE, 'core', 'schema.ts'), catalogueFile];
   const findings = [];
   for (const file of temporalFiles) {
     findings.push(...temporalNameFindings(file, readFileSync(file, 'utf8'), temporalFileMode(file)));
