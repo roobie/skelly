@@ -714,6 +714,8 @@ class ClosureWalk {
   private readonly libraries: readonly string[];
   /** The packages the runtime package's manifest names in `dependencies`. */
   private readonly dependencies: readonly string[];
+  /** The runtime package's own name, which its files never import; see `packages/engine/PROJECT.md`, "Entry points". */
+  private readonly ownName: string | undefined;
   private readonly root: string;
   private readonly policy: RuntimeClosurePolicy;
 
@@ -722,10 +724,12 @@ class ClosureWalk {
     this.policy = policy;
     this.workspaces = workspacesOf(root);
     const manifest = JSON.parse(readFileSync(join(root, policy.manifest), 'utf8')) as {
+      name?: string;
       dependencies?: Record<string, string>;
     };
     const dependencies = Object.keys(manifest.dependencies ?? {});
     this.dependencies = dependencies;
+    this.ownName = manifest.name;
     this.libraries = this.workspaces.filter(({ name }) => dependencies.includes(name)).map(({ dir }) => dir);
     const roots = policy.start.map((dir) => sourceFilesUnder(root, dir));
     this.queue = roots.flatMap(({ files }) => files);
@@ -936,6 +940,11 @@ class ClosureWalk {
     // A query or hash would otherwise become part of a package name, so `three?raw` passes as a leaf.
     if (QUERY_OR_HASH.test(specifier)) {
       this.violations.push({ importer, specifier, target: '', reason: 'uses a query or hash suffix' });
+      return;
+    }
+    const bare = !(specifier.startsWith('.') || isAbsolute(specifier) || specifier.startsWith('node:'));
+    if (bare && packageName(specifier) === this.ownName) {
+      this.violations.push({ importer, specifier, target: '', reason: 'imports its own package by name' });
       return;
     }
     const target = this.resolveSpecifier(importer, specifier);

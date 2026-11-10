@@ -18,7 +18,8 @@ Other packages import the runtime only through the curated entries that the `exp
 per domain.
 An entry carries only what code outside the package uses, so the package's surface is chosen rather than every
 file it holds. Files inside the package import each other by relative path, not through these entries: an entry
-loads every module it re-exports, so going through one would load modules the importer does not use.
+loads every module it re-exports, so going through one would load modules the importer does not use. See
+`packages/deadvox/tools/runtimeClosure.ts`, `ownName`.
 
 The `./internal/*` subpath is the test-only surface: it resolves only under the `skelly-engine-test` export
 condition, which the deadvox Vitest config and the dev servers of its browser stages enable, and which the

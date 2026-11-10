@@ -262,6 +262,11 @@ describe('runtime closure', () => {
     ]);
   });
 
+  it('fails a runtime file that imports its own package by name instead of by relative path', () => {
+    const violations = violationsIn({ [catalog]: "export { rule } from '@skelly/deadvox/rule';\n" });
+    expect(reasons(violations)).toEqual([[catalog, 'imports its own package by name']]);
+  });
+
   it('fails a runtime file that imports an npm package its manifest does not name in dependencies', () => {
     const violations = violationsIn({ [catalog]: "import * as v from 'valibot';\nexport const schema = v;\n" });
     expect(violations.map((v) => [v.importer, v.target, v.reason])).toEqual([
