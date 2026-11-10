@@ -365,7 +365,7 @@ it('external json and asset entries admit in the browser with the reader hashes'
 it('stamps each pack in a multi-root stack with its own content identity', () =>
   withMultiRootFixture(async (root) => {
     const inputs = readBundledPacks(root, 'fixture.entry');
-    const stamps = await stampPacks(inputs, 'fixture-proof');
+    const stamps = await stampPacks(inputs, 'fixture-proof', 'fixture.entry');
     expect(Object.keys(stamps).sort()).toEqual(inputs.map(({ manifest }) => manifest.id).sort());
     const hashes = await Promise.all(inputs.map(packContentHash));
     inputs.forEach((input, index) => {

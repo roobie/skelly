@@ -7,7 +7,7 @@ import {
   selectFolderClosure,
 } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
-import { bundledPackInputs } from '../src/product/content.ts';
+import { bundledPackInputs, productContent } from '../src/product/content.ts';
 import { PRODUCT_ENTRY_PACK, selectAvailableProductPacks } from '../src/product/packSelection.ts';
 import { bundledPackDefines, readBundledPacks } from '../tools/readBundledPacks.ts';
 
@@ -23,6 +23,60 @@ it('admits the same real pack closure in the browser as validate --stack and the
   expect(browser.issues).toEqual([]);
   expect(ids(browser.packs)).toEqual(ids(validated.packs));
   expect(__SKELLY_CONTENT_PACKS__.map(({ id }) => id)).toEqual(ids(validated.packs));
+});
+
+it('admits each shipped start-pack selection after its default-start owner', () => {
+  const starts = productContent.availablePackInputs.filter(
+    ({ manifest }) => manifest.optIn && manifest.defaultStart !== undefined,
+  );
+  expect(starts.length).toBeGreaterThan(0);
+  for (const pack of starts) {
+    const selected = selectFolderClosure(
+      [pack.manifest.id],
+      productContent.availablePackInputs,
+      productContent.bundledPackInputs,
+    );
+    const result = admitPacks([...productContent.bundledPackInputs, ...selected]);
+    expect(result.issues, pack.manifest.id).toEqual([]);
+    expect(result.packs.findLast(({ manifest }) => manifest.defaultStart !== undefined)).toBe(pack);
+  }
+});
+
+it('prepares identities for alternative start packs without admitting them together', async () => {
+  const entry: PackInput = {
+    source: 'fixture.entry',
+    manifest: {
+      id: 'fixture.entry',
+      version: '1',
+      tier: 'product',
+      product: true,
+      defaultStart: 'fixture_base',
+      dependencies: [],
+      overrides: [],
+      files: [],
+    },
+    files: [],
+  };
+  const alternatives = ['fixture.first', 'fixture.second'].map(
+    (id): PackInput => ({
+      source: id,
+      manifest: {
+        ...entry.manifest,
+        id,
+        optIn: true,
+        defaultStart: id,
+        dependencies: [entry.manifest.id],
+        overrides: [{ pack: entry.manifest.id, entry: 'defaultStart' }],
+      },
+      files: [],
+    }),
+  );
+  const inputs = [entry, ...alternatives];
+  expect(admitPacks(inputs).issues.length).toBeGreaterThan(0);
+  const defines = await bundledPackDefines(inputs, entry.manifest.id);
+  expect(JSON.parse(defines.__SKELLY_OPT_IN_PACKS__!).map(({ id }: { id: string }) => id)).toEqual(ids(alternatives));
+  alternatives[0]!.manifest.overrides = [];
+  await expect(bundledPackDefines(inputs, entry.manifest.id)).rejects.toThrow('defaultStart');
 });
 
 it('leaves an unrelated folder unloaded and out of identity while retaining opt-in dependency identities', async () => {

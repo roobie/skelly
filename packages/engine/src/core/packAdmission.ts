@@ -215,14 +215,16 @@ const contentEntries = (data: unknown): string[] => {
 const entrySetters = (packs: readonly PackInput[]): Map<string, PackInput[]> => {
   const setters = new Map<string, PackInput[]>();
   for (const pack of packs) {
-    for (const { data } of packSources(pack)) {
-      for (const entry of contentEntries(data)) {
-        const history = setters.get(entry) ?? [];
-        if (!history.includes(pack)) {
-          history.push(pack);
-        }
-        setters.set(entry, history);
+    const entries = packSources(pack).flatMap(({ data }) => contentEntries(data));
+    if (pack.manifest.defaultStart !== undefined) {
+      entries.push('defaultStart');
+    }
+    for (const entry of entries) {
+      const history = setters.get(entry) ?? [];
+      if (!history.includes(pack)) {
+        history.push(pack);
       }
+      setters.set(entry, history);
     }
   }
   return setters;

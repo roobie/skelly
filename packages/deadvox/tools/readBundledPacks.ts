@@ -248,13 +248,25 @@ const identities = (packs: readonly PackInput[]) =>
     })),
   );
 
+/** Alternative opt-ins need not coexist; validate each selectable closure with the defaults. */
+export const admittedSelections = (inputs: readonly PackInput[], entryPack: string): PackInput[][] => {
+  const defaults = admitted(selectFolderClosure([entryPack], inputs, []));
+  return [
+    defaults,
+    ...inputs
+      .filter(({ manifest }) => manifest.optIn)
+      .map((pack) => admitted([...defaults, ...selectFolderClosure([pack.manifest.id], inputs, defaults)])),
+  ];
+};
+
 /** Opt-ins must reuse build identities for every dependency without changing the default save identity. */
 export const bundledPackDefines = async (
   inputs: readonly PackInput[],
   entryPack: string,
 ): Promise<Record<string, string>> => {
-  const packs = admitted(inputs);
-  const defaults = admitted(selectFolderClosure([entryPack], inputs, []));
+  const selections = admittedSelections(inputs, entryPack);
+  const defaults = selections[0]!;
+  const packs = [...new Set(selections.flat())];
   const defaultIds = new Set(defaults.map(({ manifest }) => manifest.id));
   const hashes = Object.fromEntries(
     packs.flatMap((pack) =>
