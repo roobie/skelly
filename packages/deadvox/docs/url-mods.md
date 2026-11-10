@@ -106,7 +106,10 @@ Browser scripts do not concatenate query strings. One helper builds a game URL f
 
 ## Slices
 
-The slices preserve each later slice's URLs while migrating one concern at a time. Their delivery must obey `docs/decisions/0009-content-defined-products.md`, "Refactor gate": use an existing PR or wait until the refactor is executed. Start state comes first so the flashlight demo proves the mod path before other setup moves onto it. Tests follow `AGENTS.md`, "Tests": extend an existing flow rather than adding a browser stage.
+The slices preserve each later slice's URLs while migrating one concern at a time. Start
+state comes first so the flashlight demo proves the mod path before other setup moves
+onto it. Tests follow `AGENTS.md`, "Tests": extend an existing flow rather than adding
+a browser stage.
 
 1. **Start state and URL mod loading.** Build URL mod loading on the admitted new-game path in `packages/engine/src/core/startState.ts`, `applyStartState`: the remaining work is the demo source root, `?mods=` admitting demo mods and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
 2. **Hash state.** The game page and the bench read their developer keys and run settings from the hash through `src/pageUrl.ts`, `pageUrl`, and the debug panel writes them back; the remaining work is the hash bounds in `docs/url-mods.md`, "Hash state".

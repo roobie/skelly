@@ -38,7 +38,7 @@ interface RagdollGroupRule {
 
 /**
  * The product's corpse physics tuning, which the product entry passes in; presentation names no product path.
- * See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+ * See `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
  */
 export interface RagdollConfig {
   readonly timestepRealSeconds: number;

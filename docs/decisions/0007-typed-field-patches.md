@@ -117,10 +117,9 @@ can check before applying and explain afterwards.
 
 The engine owns the patch merge: addressing, the refusal category, derive resolution and
 per-address origins. Design-check it against this ADR and `packages/engine/src/core/content.ts`
-before implementation. It retains priority over queued engine work within the PR gate in
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate"; that priority does not permit
-opening a PR during the freeze. Tool editing waits for the merge, while read-only inspection
-can proceed through the shared API. See `docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
+before implementation. It retains priority over queued engine work. Tool editing waits for
+the merge, while read-only inspection can proceed through the shared API. See
+`docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
 
 Patch admission must retain the bundled loader's dependency and entry-conflict boundary
 and extend enforcement to typed addresses, rather than assuming that entry checks prove

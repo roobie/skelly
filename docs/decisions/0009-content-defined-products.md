@@ -2,7 +2,7 @@
 read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
   - you classify mods, choose their ids or combine a theme with a product
-  - you change remote mod intake, product save separation or the framework refactor gate
+  - you change remote mod intake, product save separation or package boundaries
   - you name reusable mechanisms, runtime storage and build contracts, descriptive actor body plans or content-selected providers
   - you separate actor bodies from agent decisions, memory and save ownership
   - you change scenario guidance, observations, staging or authored start admission
@@ -240,7 +240,7 @@ later consumer, not a feasibility claim or a requirement of this refactor. Give 
 assumptions named owners instead of freezing them as universal APIs; missing space
 mechanisms still require scoped engine work.
 
-## Refactor gate
+## Package boundaries
 
 The runtime is its own workspace package, `packages/engine`, `@skelly/engine`, outside
 `packages/deadvox`, and content lives in `skelly.*` mods. The assembly/geometry library
@@ -313,11 +313,3 @@ modules that read keys, and it passes its ragdoll config to play, which hands it
 corpse renderer, so presentation needs no product import. See
 `packages/deadvox/src/product/input.ts`, `keyboardInput`, and
 `packages/deadvox/src/product/ragdoll.ts`, `ragdollConfig`.
-
-The framework refactor's own PR and the asset-pipeline move PRs are allowed under the
-#1532 freeze. Open permitted PRs as drafts for CI; unrelated new PRs remain frozen until the
-refactor lands, though other work can use an existing PR. The freeze prevents unrelated
-file moves during extraction, not CI for the extraction itself. One extraction avoids
-paying for a temporary internal-edge phase and its later removal. See
-`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision", for the asset
-boundary, and `packages/deadvox/docs/pack-split.md` for the content-extraction plan.

@@ -1,6 +1,6 @@
 // Browser stages are test runs, so the dev servers they create resolve the framework packages' test-only subpaths
 // as the unit tests do; the product dev server and build never load this module. See
-// `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+// `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 import { createServer, defaultClientConditions, defaultServerConditions, mergeConfig } from 'vite';
 
 const TEST_CONDITION = 'skelly-test';

@@ -10,7 +10,7 @@ read_if:
 `@skelly/engine` is the game runtime that deadvox runs: simulation, world, items, bodies, sky, saves and vehicles,
 and the game session, input and replay around them (`src/game`). It
 holds no presentation code and no product content; the boundary and its reasons are in
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+`docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 
 ## Entry points
 

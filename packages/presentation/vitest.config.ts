@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { TEST_POOL } from '../../testPool.ts';
 
 // A test here may reach engine internals through the engine's test-only subpath, which resolves only under this
-// condition. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+// condition. See `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 // Vitest gives each of its environments its own resolve options.
 const testResolve = { resolve: { conditions: ['skelly-test'] } };
 

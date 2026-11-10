@@ -17,9 +17,7 @@ Asset producers and their authoring tools belong in skelly-assets, while product
 content, pack ownership and admission stay in skelly. Export recipes are pipeline
 inputs and move with their exporters. This gives deadvox and arpg1 one shared asset
 database and pipeline for a vast library of models and rigs, rather than separate
-copies that drift. The asset move precedes further framework extraction so the
-runtime is not extracted around tool dependencies the move removes; see
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+copies that drift.
 
 Use a git submodule, not a second tracked copy, so each product revision selects an
 explicit asset revision. Built output comes from that revision's CI release, not from
