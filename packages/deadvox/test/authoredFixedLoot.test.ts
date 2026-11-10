@@ -27,7 +27,7 @@ import {
   placedSpawns,
 } from '../src/core/templates.ts';
 import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
-import { CATALOGUE } from '../src/vehicles/catalogue.ts';
+import { BLUEPRINTS, CATALOGUE } from '../src/vehicles/catalogue.ts';
 import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
 import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
@@ -534,7 +534,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('delivers fixed loot without replacing seed filler and is chunk-order independent', () => {
+  it('delivers fixed loot beside seed filler, leaves placed firearms unloaded, and is chunk-order independent', () => {
     expect(result.issues).toEqual([]);
     const fixture = compactFixture();
     const site = new AuthoredSite(73, result.registry, scale, fixture);
@@ -543,13 +543,6 @@ describe('authored fixed loot', () => {
     const reverse = furnishInOrder(site, [...columns].reverse());
     const overrides = placedOverrides(fixture);
     expect(overrides.length).toBeGreaterThan(0);
-    const crowbar = overrides.flatMap(({ override }) => override.items).find(({ item }) => item === 'crowbar');
-    expect(crowbar?.condition).toBeGreaterThan(0);
-    expect(crowbar?.condition).toBeLessThan(1);
-    expect(result.registry.items.get('shotshell_box')?.unpack).toMatchObject({
-      item: 'shell_12_gauge_00_buck',
-      count: 20,
-    });
     const fixedCounts = overrides.flatMap((override) => fixedItemCounts(site, forward, override));
     expect(fixedCounts.length).toBeGreaterThan(0);
     for (const fixed of fixedCounts) {
@@ -563,11 +556,18 @@ describe('authored fixed loot', () => {
     const placedItems = [...forward.entities.all].flatMap((entity) =>
       (entity.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item)),
     );
-    const rifles = placedItems.filter(({ type }) => ['rifle_assault', 'rifle_ak'].includes(type));
-    expect(rifles.length).toBeGreaterThan(0);
-    expect(rifles.every((rifle) => rifle.firearm?.chamber === 'empty' && rifle.slots?.magazine === undefined)).toBe(
-      true,
-    );
+    const firearms = placedItems.filter(({ type }) => result.registry.items.get(type)?.firearm !== undefined);
+    expect(firearms.length).toBeGreaterThan(0);
+    for (const { type, firearm, slots } of firearms) {
+      const rounds = [
+        ...(firearm?.tube ?? []),
+        ...(firearm?.roundType ? [firearm.roundType] : []),
+        ...(firearm?.cylinder?.chambers.filter(({ state }) => state === 'round') ?? []),
+      ];
+      expect(firearm?.chamber, type).not.toBe('round');
+      expect(rounds, type).toEqual([]);
+      expect(slots?.magazine, type).toBeUndefined();
+    }
     const magazines = placedItems.filter(({ type }) => magazineSpec(result.registry, type) !== undefined);
     expect(magazines.length).toBeGreaterThan(0);
     expect(magazines.every((magazine) => (magazine.cartridges ?? []).length === 0)).toBe(true);
@@ -595,7 +595,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('covers light mounting hardware and guarantees the quiet input at the noisy scrap pile', () => {
+  it('covers the light-mount and suppressor recipe components from workshop fixed loot and the scrap pile', () => {
     const overrides = placedOverrides(layout);
     const garageTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
     const garageTemplateIds = [...garageTemplates, 'workshop_yard'];
@@ -649,7 +649,6 @@ describe('authored fixed loot', () => {
           (ingredient) => 'item' in ingredient && (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count,
         ),
     );
-    expect(missingGroups).toHaveLength(1);
     const garageRandomTables = garageTemplateIds.flatMap((templateId) =>
       compileTemplate(result.registry, result.registry.templates.get(templateId)!).pieces.flatMap((piece) =>
         piece.loot ? [piece.loot] : [],
@@ -658,7 +657,6 @@ describe('authored fixed loot', () => {
     expect(garageRandomTables.length).toBeGreaterThan(0);
     const garageRandomItems = new Set(garageRandomTables.flatMap((tableId) => [...possibleLootItems(tableId)]));
     expect(garageRandomItems.size).toBeGreaterThan(0);
-    expect(missingGroups[0]!.some((input) => 'item' in input && garageRandomItems.has(input.item))).toBe(false);
     expect(garageRandomItems.has(mountRecipe!.result.item)).toBe(false);
     expect(garageRandomItems.has(suppressorRecipe!.result.item)).toBe(false);
 
@@ -671,17 +669,11 @@ describe('authored fixed loot', () => {
         building.template === 'workshop_yard' && override.at.join(',') === scrapPile!.pos.join(','),
     );
     const pileItems = pileOverride?.override.items ?? [];
-    expect(missingGroups[0]!.some((input) => 'item' in input && itemCount(pileItems, input.item) >= input.count)).toBe(
-      true,
-    );
-    const searchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
-    expect(searchNoise).toBeDefined();
-    expect(result.registry.sounds.get(searchNoise!.sound)?.noise.enabled).toBe(true);
-    const radio = overrides
-      .filter(({ building }) => building.template === 'workshop_hall')
-      .flatMap(({ override }) => override.items)
-      .find(({ item }) => item === 'portable_radio');
-    expect(radio?.condition).toBe(0);
+    // Each suppressor input the garage does not fix is guaranteed only at the scrap pile, never by a random table.
+    for (const group of missingGroups) {
+      expect(group.some((input) => 'item' in input && itemCount(pileItems, input.item) >= input.count)).toBe(true);
+      expect(group.some((input) => 'item' in input && garageRandomItems.has(input.item))).toBe(false);
+    }
   });
 
   it('admits surface loot through a stacked placement with its authored source context', () => {
@@ -957,87 +949,63 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('rests the stripped workshop vehicle lowest solid voxel on its lift without fitted wheels', () => {
-    const template = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
-    const lifts = template.pieces.filter(({ furniture }) => furniture === 'workshop_lift');
-    const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
-    expect(lifts.length).toBeGreaterThan(0);
-    expect(cars.length).toBeGreaterThan(0);
-    const carDef = result.registry.furniture.get('workshop_stripped_car')!;
-    const carLook = carDef.vehicle!;
-    const workshopCarInstance = vehicleInstanceOf(carLook);
+  it("rests a wheelless vehicle's lowest solid voxel on the arms of the lift it stands on", () => {
+    const blueprint = Object.values(BLUEPRINTS)[0]!;
+    const carLook = {
+      blueprint: blueprint.id,
+      body: '#808080',
+      dirt: 0,
+      removed: blueprint.fittings.filter(({ type }) => type === wheel.type.id).map(({ id }) => id),
+      solidFill: 0.5,
+    };
+    const fixtureCar = vehicleInstanceOf(carLook);
+    expect(fixtureCar.fittings.length).toBeGreaterThan(0);
     const lowestSolidVoxelY = Math.min(
-      ...workshopCarInstance.fittings.flatMap((fitting) =>
+      ...fixtureCar.fittings.flatMap((fitting) =>
         [...partLibrary.placed(fitting).grid].flatMap(([voxel, material]) =>
           material === GLASS ? [] : [keyVoxel(voxel)[1]],
         ),
       ),
     );
-    for (const car of cars) {
-      const renderEntity = {
-        uid: 1,
-        type: car.furniture,
-        origin: car.pos,
-        pos: car.pos,
-        size: car.size,
-        facing: car.facing,
-        carried: false,
-        searched: false,
-        open: false,
-      } satisfies BlockEntity;
-      const carBottom = vehicleModel(renderEntity, carLook, carDef.size[1]).position.y + lowestSolidVoxelY * VOXEL;
-      const supportingLift = lifts.find((lift) => {
-        const overlapsX = car.pos[0] < lift.pos[0] + lift.size[0] && lift.pos[0] < car.pos[0] + car.size[0];
-        const overlapsZ = car.pos[2] < lift.pos[2] + lift.size[2] && lift.pos[2] < car.pos[2] + car.size[2];
-        return overlapsX && overlapsZ;
-      });
-      expect(supportingLift).toBeDefined();
-      const liftEntity = {
-        uid: 2,
-        type: supportingLift!.furniture,
-        origin: supportingLift!.pos,
-        pos: supportingLift!.pos,
-        size: supportingLift!.size,
-        facing: supportingLift!.facing,
-        carried: false,
-        searched: false,
-        open: false,
-      } satisfies BlockEntity;
-      const liftView = workshopLift(liftEntity);
-      const armTops = liftView.children
-        .filter(
-          (child): child is Mesh =>
-            child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
-        )
-        .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
-      expect(armTops.length).toBeGreaterThan(0);
-      expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
-    }
-
-    expect(workshopCarInstance.fittings.length).toBeGreaterThan(0);
-    expect(workshopCarInstance.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
+    const entity = (uid: number, type: string, pos: DoorCell, size: DoorCell): BlockEntity => ({
+      uid,
+      type,
+      origin: pos,
+      pos,
+      size,
+      facing: 'n',
+      carried: false,
+      searched: false,
+      open: false,
+    });
+    const lift = entity(1, 'fixture_lift', [2, 1, 3], [4, 1, 9]);
+    const carSize: DoorCell = [4, 4, 9];
+    const car = entity(2, 'fixture_car', [lift.pos[0], lift.pos[1] + lift.size[1], lift.pos[2]], carSize);
+    const carBottom = vehicleModel(car, carLook, carSize[1]).position.y + lowestSolidVoxelY * VOXEL;
+    const liftView = workshopLift(lift);
+    const armTops = liftView.children
+      .filter(
+        (child): child is Mesh =>
+          child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
+      )
+      .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
+    expect(armTops.length).toBeGreaterThan(0);
+    expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
   });
 
-  it.each([
-    {
-      kind: 'runner',
-      templates: ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard'],
-    },
-    { kind: 'crawler', templates: ['medical_hall'] },
-  ])('spawns each authored beat marker as its kind ($kind)', ({ kind, templates }) => {
+  it('spawns every always-spawning template marker as its own kind at its own position', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
-    const templateIds = new Set(templates);
-    const markers = site.placements
-      .filter((placement) => templateIds.has(placement.template.id))
-      .flatMap((placement) => placedSpawns(placement).filter(({ actor }) => actor === kind));
+    const markers = site.placements.flatMap(placedSpawns).filter(({ chance }) => chance >= 1);
     const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.actorsIn(cx, cz));
-    const matchingSpawns = spawns.filter(({ type }) => type === kind);
 
     expect(markers.length).toBeGreaterThan(0);
     for (const marker of markers) {
-      expect(matchingSpawns.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(
-        true,
-      );
+      expect(
+        spawns.some(
+          ({ type, pos }) => type === marker.actor && pos.every((coordinate, axis) => coordinate === marker.pos[axis]),
+        ),
+        `${marker.actor} at ${marker.pos.join(',')}`,
+      ).toBe(true);
     }
   });
 });

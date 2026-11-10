@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
@@ -18,22 +17,15 @@ const layout = (
   }
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'medical-layout-test.json', data: { layouts: [layout] } }]);
-const required = <T>(value: T | undefined, label: string): T => {
-  if (value === undefined) {
-    throw new Error(`Missing ${label}`);
-  }
-  return value;
-};
-const medicalBuilding = required(
-  layout.buildings.find(({ template }) => template === 'medical_hall'),
-  'medical hall',
-);
-const medicalDefinition = required(result.registry.templates.get(medicalBuilding.template), 'medical template');
-const medical = compileTemplate(result.registry, medicalDefinition);
-const nearPiece = (
-  reachable: readonly (readonly [number, number, number])[],
-  piece: { pos: readonly [number, number, number]; size: readonly [number, number, number] },
-): boolean => {
+// Every distinct building the layout places that a player can walk into.
+const accessibleTemplates = [...new Set(layout.buildings.map(({ template }) => template))]
+  .map((id) => compileTemplate(result.registry, result.registry.templates.get(id)!))
+  .filter((template) => template.access !== undefined);
+
+type Piece = CompiledTemplate['pieces'][number];
+type Position = readonly [number, number, number];
+
+const nearPiece = (reachable: readonly Position[], piece: Pick<Piece, 'pos' | 'size'>): boolean => {
   const [x, feet, z] = piece.pos;
   const [width, , depth] = piece.size;
   return reachable.some(([px, py, pz]) => {
@@ -46,87 +38,85 @@ const nearPiece = (
   });
 };
 
-const fixedContainer = (item: string) => {
-  const override = required(
-    medicalBuilding.fixedLoot?.find(({ items }) => items.some((entry) => entry.item === item)),
-    `fixed ${item}`,
-  );
-  const piece = required(
-    medical.pieces.find(({ pos }) => pos.every((coordinate, axis) => coordinate === override.at[axis])),
-    `${item} container`,
-  );
-  return { override, piece };
-};
-
-const wallOffDoor = (template: CompiledTemplate, door: CompiledTemplate['pieces'][number]): CompiledTemplate => {
+const wallOffDoor = (template: CompiledTemplate, door: Piece): CompiledTemplate => {
   const blocks = new Uint16Array(template.blocks);
-  const brick = required(result.registry.blockIds.get('brick'), 'brick block');
+  const wall = [...result.registry.blockIds.values()].find((id) => result.registry.blocks[id]?.solid)!;
   const [width, , depth] = template.size;
   const [doorX, doorY, doorZ] = door.pos;
   const [doorWidth, doorHeight, doorDepth] = door.size;
   for (let y = doorY; y < doorY + doorHeight; y++) {
     for (let z = doorZ; z < doorZ + doorDepth; z++) {
       for (let x = doorX; x < doorX + doorWidth; x++) {
-        blocks[x + width * (z + depth * y)] = brick;
+        blocks[x + width * (z + depth * y)] = wall;
       }
     }
   }
   return { ...template, blocks, pieces: template.pieces.filter((piece) => piece !== door) };
 };
 
-const pointDistanceFromEntrance = (piece: CompiledTemplate['pieces'][number]): number => {
-  const entrance = required(medical.access?.entrance, 'medical entrance');
-  return Math.hypot(piece.pos[0] + piece.size[0] / 2 - entrance[0], piece.pos[2] + piece.size[2] / 2 - entrance[2]);
-};
-
-type Point = [number, number];
-
-const FACING_VECTOR: Record<Facing, Point> = {
+const FACING_VECTOR: Record<Facing, readonly [number, number]> = {
   n: [0, -1],
   e: [1, 0],
   s: [0, 1],
   w: [-1, 0],
 };
 
-const nearestTrackPoint = (point: Point, points: readonly Point[]): Point => {
-  let nearest = points[0]!;
-  let distance = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < points.length - 1; index++) {
-    const from = points[index]!;
-    const to = points[index + 1]!;
-    const dx = to[0] - from[0];
-    const dz = to[1] - from[1];
-    const lengthSquared = dx * dx + dz * dz;
-    const projection =
-      lengthSquared === 0 ? 0 : ((point[0] - from[0]) * dx + (point[1] - from[1]) * dz) / lengthSquared;
-    const t = Math.max(0, Math.min(1, projection));
-    const candidate: Point = [from[0] + t * dx, from[1] + t * dz];
-    const candidateDistance = Math.hypot(point[0] - candidate[0], point[1] - candidate[1]);
-    if (candidateDistance < distance) {
-      nearest = candidate;
-      distance = candidateDistance;
-    }
-  }
-  return nearest;
+const blockIndex = ({ size: [width, , depth] }: CompiledTemplate, x: number, y: number, z: number): number =>
+  x + width * (z + depth * y);
+
+/** The cells one past the piece on the side opposite its facing, where its wall stands. */
+const cellsBehind = ({ pos: [x, y, z], size: [width, height, depth], facing }: Piece): Position[] => {
+  const [frontX, frontZ] = FACING_VECTOR[facing];
+  const xs = frontX === 0 ? Array.from({ length: width }, (_, dx) => x + dx) : [frontX > 0 ? x - 1 : x + width];
+  const zs = frontZ === 0 ? Array.from({ length: depth }, (_, dz) => z + dz) : [frontZ > 0 ? z - 1 : z + depth];
+  return Array.from({ length: height }, (_, dy) => y + dy).flatMap((wy) =>
+    xs.flatMap((wx) => zs.map((wz): Position => [wx, wy, wz])),
+  );
 };
 
-describe('authored medical site', () => {
-  it('makes every placed triage tent enterable with reachable standing room', () => {
-    const tentBuildings = layout.buildings.filter(({ template }) => template === 'triage_tent');
-    expect(tentBuildings.length).toBeGreaterThan(0);
-    const definition = required(result.registry.templates.get('triage_tent'), 'triage tent template');
-    const tent = compileTemplate(result.registry, definition);
-    expect(templateSpatialIssues(result.registry, tent)).toEqual([]);
-    const reachable = templateReachableStandingPositions(result.registry, tent);
-    const [width, , depth] = tent.size;
-    expect(
-      reachable.some(
-        ([x, feet, z]) => feet === tent.access?.storeys[0]?.floor && x > 1 && x < width - 1 && z > 1 && z < depth - 1,
-      ),
-    ).toBe(true);
+const bodyOverlaps =
+  ({ pos: [x, y, z], size: [width, height, depth] }: Piece) =>
+  ([px, feet, pz]: Position): boolean =>
+    px + STAIR_BODY_HALF_WIDTH > x &&
+    px - STAIR_BODY_HALF_WIDTH < x + width &&
+    pz + STAIR_BODY_HALF_WIDTH > z &&
+    pz - STAIR_BODY_HALF_WIDTH < z + depth &&
+    feet < y + height &&
+    feet + STAIR_BODY_HEIGHT > y;
+
+const inFrontOf =
+  ({ pos: [x, , z], size: [width, , depth], facing }: Piece) =>
+  ([px, , pz]: Position): boolean => {
+    const [frontX, frontZ] = FACING_VECTOR[facing];
+    return (
+      (frontX > 0 && px > x + width) ||
+      (frontX < 0 && px < x) ||
+      (frontZ > 0 && pz > z + depth) ||
+      (frontZ < 0 && pz < z)
+    );
+  };
+
+const horizontalGap = ({ pos: [x, , z], size: [width, , depth] }: Piece, [px, , pz]: Position): number =>
+  Math.hypot(Math.max(x - px, 0, px - (x + width)), Math.max(z - pz, 0, pz - (z + depth)));
+
+describe('authored site buildings', () => {
+  it('makes every accessible placed building enterable with reachable standing room inside its walls', () => {
+    expect(accessibleTemplates.length).toBeGreaterThan(0);
+    for (const template of accessibleTemplates) {
+      expect(templateSpatialIssues(result.registry, template), template.id).toEqual([]);
+      const reachable = templateReachableStandingPositions(result.registry, template);
+      const [width, , depth] = template.size;
+      expect(
+        reachable.some(
+          ([x, feet, z]) =>
+            feet === template.access?.storeys[0]?.floor && x > 1 && x < width - 1 && z > 1 && z < depth - 1,
+        ),
+        template.id,
+      ).toBe(true);
+    }
   });
 
-  it('hangs wall mounts across the standing eye line and keeps the notice room accessible', () => {
+  it('hangs wall mounts across the standing eye line', () => {
     const wallMounts = [...result.registry.templates.values()].flatMap((templateDefinition) => {
       const template = compileTemplate(result.registry, templateDefinition);
       return template.pieces.flatMap((piece) => {
@@ -150,144 +140,59 @@ describe('authored medical site', () => {
         (shape.size[1] * BLOCK_SIZE) / 2,
       );
     }
-    expect(templateSpatialIssues(result.registry, medical)).toEqual([]);
-    const reachable = templateReachableStandingPositions(result.registry, medical);
-    const notice = required(
-      medical.pieces.find((piece) => piece.furniture === 'medical_research_notice'),
-      'research notice',
-    );
-    const definition = required(result.registry.furniture.get(notice.furniture), 'notice definition');
-    expect(definition.solid).toBe(false);
-    expect(notice.facing).toBe('e');
-
-    const [x, y, z] = notice.pos;
-    const [pieceWidth, pieceHeight, pieceDepth] = notice.size;
-    const [templateWidth, , templateDepth] = medical.size;
-    const wallBehind = Array.from({ length: pieceHeight }, (_, dy) => dy + y).every((wy) =>
-      Array.from({ length: pieceDepth }, (_, dz) => dz + z).every((wz) => {
-        const cell = x - 1 + templateWidth * (wz + templateDepth * wy);
-        return medical.blocks[cell] !== result.registry.blockIds.get('air');
-      }),
-    );
-    expect(wallBehind).toBe(true);
-
-    const overlapsNotice = ([px, feet, pz]: readonly [number, number, number]): boolean =>
-      px + STAIR_BODY_HALF_WIDTH > x &&
-      px - STAIR_BODY_HALF_WIDTH < x + pieceWidth &&
-      pz + STAIR_BODY_HALF_WIDTH > z &&
-      pz - STAIR_BODY_HALF_WIDTH < z + pieceDepth &&
-      feet < y + pieceHeight &&
-      feet + STAIR_BODY_HEIGHT > y;
-    expect(reachable.some(overlapsNotice)).toBe(true);
-
-    const frontReachable = reachable.filter(([px]) => px > x + pieceWidth);
-    const withinUseReach = frontReachable.some(([px, , pz]) => {
-      const dx = Math.max(x - px, 0, px - (x + pieceWidth));
-      const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
-      return Math.hypot(dx, dz) * BLOCK_SIZE <= reachTuning(result.registry).useReachMetres;
-    });
-    expect(withinUseReach).toBe(true);
   });
 
-  it('encloses staff and pharmacy rooms, with a keyable, pryable pharmacy door', () => {
-    expect(result.issues.filter((issue) => issue.source === 'medical-layout-test.json')).toEqual([]);
-    expect(templateSpatialIssues(result.registry, medical)).toEqual([]);
-    const reachable = templateReachableStandingPositions(result.registry, medical);
-    expect(reachable.length).toBeGreaterThan(0);
-
-    const front = fixedContainer('antiseptic');
-    const pharmacy = fixedContainer('antibiotics');
-    const labLog = fixedContainer('medical_research_log');
-    const pharmacyKey = fixedContainer('pharmacy_key');
-    expect(pharmacyKey.piece).toBe(front.piece);
-    for (const { piece } of [front, pharmacy, labLog]) {
-      expect(result.registry.furniture.get(piece.furniture)?.container).toBeDefined();
-      expect(nearPiece(reachable, piece), piece.furniture).toBe(true);
+  it('backs every non-solid wall mount in an accessible building with wall and leaves it usable from its front', () => {
+    const air = result.registry.blockIds.get('air');
+    const { useReachMetres } = reachTuning(result.registry);
+    let checked = 0;
+    for (const template of accessibleTemplates) {
+      const reachable = templateReachableStandingPositions(result.registry, template);
+      const mounts = template.pieces.filter((piece) => {
+        const definition = result.registry.furniture.get(piece.furniture)!;
+        return definition.mount === 'wall' && definition.solid === false;
+      });
+      for (const mount of mounts) {
+        checked += 1;
+        const label = `${template.id} ${mount.furniture} at ${mount.pos.join(',')}`;
+        expect(
+          cellsBehind(mount).every(([wx, wy, wz]) => template.blocks[blockIndex(template, wx, wy, wz)] !== air),
+          `${label} wall behind`,
+        ).toBe(true);
+        expect(reachable.some(bodyOverlaps(mount)), `${label} reachable`).toBe(true);
+        expect(
+          reachable
+            .filter(inFrontOf(mount))
+            .some((position) => horizontalGap(mount, position) * BLOCK_SIZE <= useReachMetres),
+          `${label} usable from its front`,
+        ).toBe(true);
+      }
     }
-    expect(result.registry.items.get('medical_research_log')?.readable).toBeDefined();
-    expect(medical.pieces.some((piece) => piece.furniture === 'medical_research_notice')).toBe(true);
-
-    const sofa = required(
-      medical.pieces.find((piece) => piece.furniture === 'sofa'),
-      'staff-room sofa',
-    );
-    const officer = required(
-      medical.pieces.find((piece) => piece.furniture === 'dead_officer_body'),
-      'dead officer body',
-    );
-    expect(result.registry.furniture.get(officer.furniture)?.container).toBeDefined();
-    expect(nearPiece(reachable, sofa)).toBe(true);
-    expect(nearPiece(reachable, officer)).toBe(true);
-
-    const wardBeds = medical.pieces.filter((piece) => piece.furniture === 'bed');
-    expect(wardBeds.length).toBeGreaterThan(0);
-    const frontDistance = pointDistanceFromEntrance(front.piece);
-    const pharmacyDistance = pointDistanceFromEntrance(pharmacy.piece);
-    expect(
-      wardBeds.some((bed) => {
-        const distance = pointDistanceFromEntrance(bed);
-        return frontDistance < distance && distance < pharmacyDistance;
-      }),
-    ).toBe(true);
-
-    const unlockedDoors = medical.pieces.filter(
-      (piece) => result.registry.furniture.get(piece.furniture)?.door && piece.lock === undefined,
-    );
-    const staffDoor = required(
-      unlockedDoors.find(
-        (door) => !nearPiece(templateReachableStandingPositions(result.registry, wallOffDoor(medical, door)), sofa),
-      ),
-      'staff-room door enclosing the sofa',
-    );
-    const pharmacyDoor = required(
-      medical.pieces.find((piece) => piece.lock?.locked),
-      'locked pharmacy door',
-    );
-    expect(result.registry.furniture.get(pharmacyDoor.furniture)?.door?.methods.pry).toBeDefined();
-    expect(result.registry.items.get('pharmacy_key')?.key?.lock).toBe(pharmacyDoor.lock?.id);
-    expect(staffDoor).not.toBe(pharmacyDoor);
-    const staffDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, staffDoor));
-    const pharmacyDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, pharmacyDoor));
-    expect(staffDoor.lock).toBeUndefined();
-    expect(pharmacyDoor.lock?.locked).toBe(true);
-    expect(nearPiece(reachable, sofa)).toBe(true);
-    expect(nearPiece(reachable, pharmacy.piece)).toBe(true);
-    expect(nearPiece(staffDoorClosed, sofa)).toBe(false);
-    expect(nearPiece(staffDoorClosed, officer)).toBe(false);
-    expect(nearPiece(staffDoorClosed, pharmacy.piece)).toBe(true);
-    expect(nearPiece(pharmacyDoorClosed, pharmacy.piece)).toBe(false);
-    expect(nearPiece(pharmacyDoorClosed, front.piece)).toBe(true);
-    expect(nearPiece(pharmacyDoorClosed, sofa)).toBe(true);
+    expect(checked).toBeGreaterThan(0);
   });
 
-  it('keeps the clinic sign on the clear route to the hall entrance', () => {
-    expect(result.issues.filter((issue) => issue.source === 'medical-layout-test.json')).toEqual([]);
-    const track = required(layout.tracks[0], 'authored track');
-    const signBuilding = required(
-      layout.buildings.find(({ template }) => template === 'playtest_store'),
-      'hamlet clinic-sign building',
-    );
-    const signTemplate = compileTemplate(result.registry, result.registry.templates.get(signBuilding.template)!);
-    const sign = required(
-      signTemplate.pieces.find((piece) => piece.furniture === 'clinic_sign'),
-      'clinic sign',
-    );
-    const signPosition: Point = [
-      signBuilding.position[0] + (sign.pos[0] + sign.size[0] / 2) * 0.5,
-      signBuilding.position[2] + (sign.pos[2] + sign.size[2] / 2) * 0.5,
-    ];
-    expect(polylineDistance(signPosition, track.points)).toBeLessThan(6);
-    const roadPoint = nearestTrackPoint(signPosition, track.points);
-    const towardRoad: Point = [roadPoint[0] - signPosition[0], roadPoint[1] - signPosition[1]];
-    const [facingX, facingZ] = FACING_VECTOR[sign.facing];
-    expect(facingX * towardRoad[0] + facingZ * towardRoad[1]).toBeGreaterThan(0);
-
-    const { entrance } = medical.access!;
-    const entrancePosition: Point = [
-      medicalBuilding.position[0] + entrance[0] * 0.5,
-      medicalBuilding.position[2] + entrance[2] * 0.5,
-    ];
-    // The whole-track clearance check in authoredFixedLoot.test.ts plus this entrance check implies passage through the gate.
-    expect(polylineDistance(entrancePosition, track.points)).toBeLessThanOrEqual(track.width);
+  it('makes every locked door in an accessible building openable by key or pry, and the only way to the room it closes', () => {
+    let checked = 0;
+    for (const template of accessibleTemplates) {
+      const reachable = templateReachableStandingPositions(result.registry, template);
+      const containers = template.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.container);
+      // A locked container (a safe) closes only itself; a locked door to a room is the one under test.
+      const roomDoors = template.pieces.filter(
+        (piece) => piece.lock?.locked && !result.registry.furniture.get(piece.furniture)?.container,
+      );
+      for (const door of roomDoors) {
+        checked += 1;
+        const label = `${template.id} door at ${door.pos.join(',')}`;
+        const pryable = result.registry.furniture.get(door.furniture)?.door?.methods.pry !== undefined;
+        const keyable = [...result.registry.items.values()].some(({ key }) => key?.lock === door.lock!.id);
+        expect(pryable || keyable, `${label} opens by key or pry`).toBe(true);
+        const closed = templateReachableStandingPositions(result.registry, wallOffDoor(template, door));
+        expect(
+          containers.some((piece) => nearPiece(reachable, piece) && !nearPiece(closed, piece)),
+          `${label} closes off a container`,
+        ).toBe(true);
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 });

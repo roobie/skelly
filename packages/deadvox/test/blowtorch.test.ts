@@ -143,18 +143,13 @@ const fittedTorch = () => {
   return { inventory, torch, old, fresh };
 };
 
-it('a cartridge swap with no ground for the old one to land on refuses and keeps it fitted', () => {
-  const { inventory, torch, old, fresh } = fittedTorch();
-  expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(coreMessage(inventory.registry, 'noLanding'));
-  expect(torch.slots!.canister).toBe(old);
-  expect(inventory.locate(fresh)?.kind).toBe('hand');
-});
-
-it('a refused cartridge swap leaves the fitted cartridge exactly as it was', () => {
+it('a cartridge swap with no ground for the old one to land on refuses and leaves the fitted one exactly as it was', () => {
   const { inventory, torch, old, fresh } = fittedTorch();
   const before = { ...old };
   expect(swapCanister(inventory, torch, fresh, () => undefined)).toBe(coreMessage(inventory.registry, 'noLanding'));
+  expect(torch.slots!.canister).toBe(old);
   expect(old).toEqual(before);
+  expect(inventory.locate(fresh)?.kind).toBe('hand');
 });
 
 it('plans where the old cartridge lands with the fill it comes out with', () => {

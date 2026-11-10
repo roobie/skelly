@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { figureVariantOf } from '../src/core/actorModels.ts';
+import { type ActorModel, FIGURE_VARIANTS, figureVariantOf } from '../src/core/actorModels.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { footstepSoundId } from '../src/core/footsteps.ts';
@@ -10,35 +10,35 @@ import { FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 
-it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
-  'admits a %s figure as a property of humanoid anatomy',
-  (figure) => {
-    const source = claimed(baseRegistry().actors, 'settlementHorde')!;
-    const actor = {
-      ...source,
-      id: 'fixture_humanoid_variant',
-      capability: undefined,
-      model: 'humanoid',
-      figure,
-      figureSeeds: [1],
-    };
-    const { registry, issues } = buildRegistry([
-      ...baseSources,
-      { source: 'fixture-variant', data: { actors: [actor], actorFigures: fixtureActorFigures(actor) } },
-    ]);
-    expect(issues).toEqual([]);
-    const admitted = registry.actors.get(actor.id)!;
-    expect(admitted.model).toBe('humanoid');
-    expect(figureVariantOf(admitted)).toBe(figure);
-    const invalid = validateContent({
-      source: 'fixture-invalid-plan',
-      data: { actors: [{ ...actor, model: figure }] },
-    });
-    expect(
-      invalid.some(({ source: origin, path }) => origin === 'fixture-invalid-plan' && path === 'actors[0].model'),
-    ).toBe(true);
-  },
-);
+it('admits a figure variant as a property of humanoid anatomy, not as a body plan', () => {
+  const figure = (Object.keys(FIGURE_VARIANTS) as ActorModel[]).find(
+    (variant) => variant !== 'humanoid' && FIGURE_VARIANTS[variant].bodyPlan === 'humanoid',
+  )!;
+  const source = claimed(baseRegistry().actors, 'settlementHorde')!;
+  const actor = {
+    ...source,
+    id: 'fixture_humanoid_variant',
+    capability: undefined,
+    model: 'humanoid',
+    figure,
+    figureSeeds: [1],
+  };
+  const { registry, issues } = buildRegistry([
+    ...baseSources,
+    { source: 'fixture-variant', data: { actors: [actor], actorFigures: fixtureActorFigures(actor) } },
+  ]);
+  expect(issues).toEqual([]);
+  const admitted = registry.actors.get(actor.id)!;
+  expect(admitted.model).toBe('humanoid');
+  expect(figureVariantOf(admitted)).toBe(figure);
+  const invalid = validateContent({
+    source: 'fixture-invalid-plan',
+    data: { actors: [{ ...actor, model: figure }] },
+  });
+  expect(
+    invalid.some(({ source: origin, path }) => origin === 'fixture-invalid-plan' && path === 'actors[0].model'),
+  ).toBe(true);
+});
 
 it('rejects a figure property whose anatomy differs from the selected body plan', () => {
   const source = claimed(baseRegistry().actors, 'settlementHorde')!;

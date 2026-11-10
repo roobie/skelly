@@ -18,7 +18,7 @@ import {
 } from '../src/core/authoredTerrain.mjs';
 import { claimedId } from '../src/core/capabilities.ts';
 import type { Registry } from '../src/core/content.ts';
-import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
+import { CHUNK, compassBearing, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
 import { lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -29,7 +29,7 @@ import { rectsOverlap } from '../src/core/site.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
+import { compileTemplate, footprint, placedBlockAt, placedSpawns } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { baseContentSources } from './baseContentFiles.ts';
@@ -303,6 +303,35 @@ const invalid = (data: unknown, message: string) => {
 const invalidWithSharedRegistry = (data: SiteLayoutDef, message: string) => {
   expect(authoredLayoutIssues(data, registry).some(([, issue]) => issue.includes(message))).toBe(true);
 };
+// A non-square building from the layout, so a quarter turn changes its footprint.
+const fixtureBuildingSource = layout.buildings.find(({ template }) => {
+  const [width, , depth] = registry.templates.get(template)!.size;
+  return width !== depth;
+})!;
+const fixtureBuildingRect = (building: SiteLayoutDef['buildings'][number]) =>
+  buildingBounds(building, registry.templates.get(building.template)!.size);
+/** One building on flat ground with the player beside it, accepted by both the shared and the minimal registry. */
+const acceptedSiteFixture = (): SiteLayoutDef => {
+  const empty = validationLayout('fixture_site');
+  const { fixedLoot: _, ...source } = fixtureBuildingSource;
+  const unplaced = { ...source, position: [0, empty.ground, 0] as [number, number, number], rotation: 0 as const };
+  const rect = fixtureBuildingRect(unplaced);
+  const span = Math.ceil(Math.max(rect.x1 - rect.x0, rect.z1 - rect.z0));
+  const fixture: SiteLayoutDef = {
+    ...empty,
+    bounds: { x0: 0, z0: 0, x1: span * 4, z1: span * 4 },
+    buildings: [{ ...unplaced, storeys: 1, position: [span, empty.ground, span] }],
+    player: { position: [span / 2, empty.player.position[1], span / 2], bearing: 0 },
+  };
+  expect(authoredLayoutIssues(fixture, registry)).toEqual([]);
+  expect(
+    buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [fixture] } },
+    ]).issues.filter((issue) => issue.source === 'layout-test.json'),
+  ).toEqual([]);
+  return fixture;
+};
 const fixedLootBuilding = layout.buildings[0]!;
 const fixedLootTemplate = compileTemplate(registry, registry.templates.get(fixedLootBuilding.template)!);
 const fixedLootContainer = fixedLootTemplate.pieces.find(
@@ -511,15 +540,24 @@ describe('authored layout acceptance', () => {
     expect(compassBearing(east.spawn.yaw)).toBeCloseTo(90, 8);
   });
   it('rejects floating foundations and buried interior cells even when footprint corners fit', () => {
-    invalid({ ...layout, buildings: [{ ...layout.buildings[0], position: [55, 23, 55] }] }, 'foundation cut or fill');
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const rect = fixtureBuildingRect(building);
     invalid(
-      { ...layout, terrain: [{ kind: 'hill', centre: [60, 58.5], radii: [1, 1], rise: 2 }] },
+      {
+        ...fixture,
+        buildings: [{ ...building, position: [building.position[0], fixture.ground + 2, building.position[2]] }],
+      },
       'foundation cut or fill',
     );
+    const centre: [number, number] = [(rect.x0 + rect.x1) / 2, (rect.z0 + rect.z1) / 2];
+    invalid({ ...fixture, terrain: [{ kind: 'hill', centre, radii: [1, 1], rise: 2 }] }, 'foundation cut or fill');
   });
   it('rejects a player spawn floating above its terrain floor', () => {
+    const fixture = acceptedSiteFixture();
+    const [x, y, z] = fixture.player.position;
     invalidWithSharedRegistry(
-      { ...layout, player: { ...layout.player, position: [72, 22.5, 65] } },
+      { ...fixture, player: { ...fixture.player, position: [x, y + 1, z] } },
       'supported surface',
     );
   });
@@ -581,8 +619,34 @@ describe('authored layout acceptance', () => {
     expect([...rejected.registry.layouts.keys()]).toEqual(baseLayoutIds);
   });
   it('rejects a player spawn on an unsupported building cell', () => {
+    const fixture = acceptedSiteFixture();
+    const placement = placementOf(registry, fixture.buildings[0]!, fixture.lootContext);
+    const [width, depth] = footprint(placement);
+    const [x0, y0, z0] = placement.origin;
+    const cells = Array.from(
+      { length: placement.template.size[1] * width * depth },
+      (_, index): Vec3 => [
+        x0 + (index % width),
+        y0 + Math.floor(index / (width * depth)),
+        z0 + (Math.floor(index / width) % depth),
+      ],
+    );
+    const open = cells.find((cell) => {
+      const block = placedBlockAt(placement, cell);
+      return block !== undefined && registry.blocks[block]?.solid !== true;
+    });
+    if (open === undefined) {
+      throw new Error('fixture building needs a non-solid cell');
+    }
+    const [bx, by, bz] = open;
     invalidWithSharedRegistry(
-      { ...layout, player: { ...layout.player, position: [55, 21.5, 55] } },
+      {
+        ...fixture,
+        player: {
+          ...fixture.player,
+          position: [(bx + 0.5) * scale.blockSize, (by + 1) * scale.blockSize, (bz + 0.5) * scale.blockSize],
+        },
+      },
       'supported surface',
     );
   });
@@ -706,27 +770,53 @@ describe('authored layout acceptance', () => {
     invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], type: 'missing' }] }, 'no zombie type');
   });
   it('rejects a building whose rotated depth leaves the bounds', () => {
-    invalid({ ...layout, buildings: [{ ...layout.buildings[1], position: [0, 21, 125] }] }, 'outside site bounds');
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const unrotated = fixtureBuildingRect(building);
+    // Flush with both upper bounds unrotated, so the quarter turn's swapped extents overrun one of them.
+    const flush = {
+      ...building,
+      position: [
+        fixture.bounds.x1 - (unrotated.x1 - unrotated.x0),
+        building.position[1],
+        fixture.bounds.z1 - (unrotated.z1 - unrotated.z0),
+      ] as [number, number, number],
+    };
+    expect(
+      authoredLayoutIssues({ ...fixture, buildings: [flush] }, registry).filter(([, issue]) =>
+        issue.includes('outside site bounds'),
+      ),
+    ).toEqual([]);
+    invalid({ ...fixture, buildings: [{ ...flush, rotation: 90 }] }, 'outside site bounds');
   });
   it('rejects a player spawn on the exclusive upper boundary', () => {
-    invalid({ ...layout, player: { ...layout.player, position: [128, 21.5, 65] } }, 'outside site bounds');
+    const fixture = acceptedSiteFixture();
+    const [, y, z] = fixture.player.position;
+    invalid({ ...fixture, player: { ...fixture.player, position: [fixture.bounds.x1, y, z] } }, 'outside site bounds');
   });
   it('rejects an out-of-bounds shambler even when its chance is zero', () => {
+    const fixture = acceptedSiteFixture();
+    const [, y, z] = fixture.player.position;
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [129, 25, 60], chance: 0 }] },
+      {
+        ...fixture,
+        shamblers: [{ ...layout.shamblers[0]!, position: [fixture.bounds.x1 + 1, y, z], chance: 0 }],
+      },
       'outside site bounds',
     );
   });
   it('rejects a woodland vertex outside the bounds', () => {
+    const fixture = acceptedSiteFixture();
+    const { x0, z0, x1, z1 } = fixture.bounds;
     invalid(
       {
-        ...layout,
+        ...fixture,
         woodlands: [
           {
             polygon: [
-              [0, 0],
-              [129, 0],
-              [0, 10],
+              [x0, z0],
+              [x1 + 1, z0],
+              [x0, z1],
             ],
             density: 1,
           },
@@ -736,17 +826,22 @@ describe('authored layout acceptance', () => {
     );
   });
   it('checks the track width, not only its centreline, against bounds', () => {
+    const fixture = acceptedSiteFixture();
+    const { x1, z0, z1 } = fixture.bounds;
+    const width = 4;
+    // The centreline sits inside the bounds by less than half the track width.
+    const x = x1 - width / 4;
     invalid(
       {
-        ...layout,
+        ...fixture,
         tracks: [
           {
             points: [
-              [127, 10],
-              [127, 20],
+              [x, z0 + width],
+              [x, z1 - width],
             ],
-            width: 4,
-            surface: 'dirt',
+            width,
+            surface: layout.tracks[0]!.surface,
           },
         ],
       },
@@ -754,13 +849,21 @@ describe('authored layout acceptance', () => {
     );
   });
   it('rejects overlapping rotated building footprints', () => {
-    invalid(
-      { ...layout, buildings: [layout.buildings[0], { ...layout.buildings[1], position: [54, 21, 56] }] },
-      'overlaps buildings[0]',
-    );
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const rect = fixtureBuildingRect(building);
+    const overlapping = {
+      ...building,
+      rotation: 90 as const,
+      position: [(rect.x0 + rect.x1) / 2, building.position[1], (rect.z0 + rect.z1) / 2] as [number, number, number],
+    };
+    invalid({ ...fixture, buildings: [building, overlapping] }, 'overlaps buildings[0]');
   });
   it('rejects building positions between half-metre blocks', () => {
-    invalid({ ...layout, buildings: [{ ...layout.buildings[0], position: [55.25, 21, 55] }] }, 'snapped to 0.5 m');
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const [x, y, z] = building.position;
+    invalid({ ...fixture, buildings: [{ ...building, position: [x + 0.25, y, z] }] }, 'snapped to 0.5 m');
   });
   it('rejects a non-quarter-turn building rotation', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], rotation: 45 }] }, 'quarter turn');

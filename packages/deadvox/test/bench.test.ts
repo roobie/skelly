@@ -10,6 +10,7 @@ import {
   type RunResult,
   type ShamblerRunResult,
 } from '../src/bench/plan.ts';
+import { benchPostFromUrl } from '../src/bench/post.ts';
 import {
   HEADERS,
   markdownReport,
@@ -24,6 +25,7 @@ import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats } from '../src/bench/stats.ts';
 import { percentile } from '../src/core/percentile.ts';
 import { gameHours } from '../src/core/time.ts';
+import { actorRendererFromUrl } from '../src/game/config.ts';
 
 describe('bench stats', () => {
   it('takes nearest-rank percentiles', () => {
@@ -43,14 +45,34 @@ describe('bench stats', () => {
 
 describe('bench plan', () => {
   it('defaults and validates shambler benchmark counts, seed, and time', () => {
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers'))).toEqual({
+    const defaults = shamblerRunFromUrl(new URLSearchParams('bench=shamblers'))!;
+    expect(defaults).toMatchObject({
       counts: [...DEFAULT_SHAMBLER_COUNTS],
       index: 0,
-      seed: 1,
-      time: '23:30',
-      actors: 'detailed',
-      post: false,
+      actors: actorRendererFromUrl(new URLSearchParams()),
+      post: benchPostFromUrl(new URLSearchParams()),
     });
+    expect(Number.isInteger(defaults.seed)).toBe(true);
+    expect(
+      shamblerRunFromUrl(new URLSearchParams(`bench=shamblers&seed=${defaults.seed}&time=${defaults.time}`)),
+    ).toEqual(defaults);
+    // The count cap: every count up to the largest accepted one parses, and one more is refused.
+    let low = Math.max(...DEFAULT_SHAMBLER_COUNTS);
+    let high = Number.MAX_SAFE_INTEGER;
+    expect(parseShamblerCounts(String(low))).toEqual([low]);
+    expect(parseShamblerCounts(String(high))).toBeUndefined();
+    while (high - low > 1) {
+      const middle = Math.floor((low + high) / 2);
+      if (parseShamblerCounts(String(middle))) {
+        low = middle;
+      } else {
+        high = middle;
+      }
+    }
+    const max = low;
+    expect(parseShamblerCounts(`1,${max}`)).toEqual([1, max]);
+    expect(parseShamblerCounts(String(max + 1))).toBeUndefined();
+    expect(shamblerRunFromUrl(new URLSearchParams(`bench=shamblers&n=${max + 1}`))).toBeUndefined();
     expect(
       shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1&actors=detailed')),
     ).toEqual({
@@ -61,16 +83,14 @@ describe('bench plan', () => {
       actors: 'detailed',
       post: false,
     });
-    expect(parseShamblerCounts('1,500')).toEqual([1, 500]);
     expect(parseShamblerSeed('-2147483648')).toBe(-2_147_483_648);
     expect(parseShamblerSeed('2147483647')).toBe(2_147_483_647);
     for (const nonsense of ['', '1.5', '2147483648', '-2147483649', '0x10', 'nope']) {
       expect(parseShamblerSeed(nonsense), nonsense).toBeUndefined();
     }
-    for (const nonsense of ['', '0', '-1', '1.5', '501', '10,nope', '10,10']) {
+    for (const nonsense of ['', '0', '-1', '1.5', '10,nope', '10,10']) {
       expect(parseShamblerCounts(nonsense), nonsense).toBeUndefined();
     }
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=501'))).toBeUndefined();
     expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10&i=1'))).toBeUndefined();
     expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&seed=nope'))).toBeUndefined();
     expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&seed=2147483648'))).toBeUndefined();

@@ -56,10 +56,11 @@ const mul = (r: readonly number[], p: readonly number[]): Vec3 => [
 const add = (a: readonly number[], b: readonly number[]): Vec3 => [a[0]! + b[0]!, a[1]! + b[1]!, a[2]! + b[2]!];
 const sub = (a: readonly number[], b: readonly number[]): Vec3 => [a[0]! - b[0]!, a[1]! - b[1]!, a[2]! - b[2]!];
 
-/** One shambler pose: its region boxes and the rendered voxels they must cover, from the same pose input. */
-const posed = (seed: number, testPose: PoseCase) => {
-  const figure = actorFigure(FIGURES, SHAMBLER, seed);
+/** One actor pose: its region boxes and the rendered voxels they must cover, from the same pose input. */
+const posed = (seed: number, testPose: PoseCase, type: ActorDef = SHAMBLER) => {
+  const figure = actorFigure(FIGURES, type, seed);
   const input: ActorPoseInput = {
+    model: figureVariantOf(type),
     seed,
     figure,
     position: [0, 0, 0],
@@ -167,29 +168,19 @@ describe('posed shambler hit regions', () => {
     }
   });
 
-  it('stands an acid zombie about as tall as a shambler beside it', () => {
-    const headTop = (type: ActorDef, seed: number) => {
-      const boxes = posedHumanoidRegionBoxes({
-        model: figureVariantOf(type),
-        seed,
-        figure: actorFigure(FIGURES, type, seed),
-        position: [0, 0, 0],
-        facing: [0, 0, -1],
-        headYaw: 0,
-        gaitPhase: 0,
-        speed: 0,
-        chasing: false,
-        attackWindup: 0,
-        attackWindupSeconds: 0.8,
-        severed: [],
-        blockSize: BLOCK,
-      });
-      return Math.max(...boxes.head.map((box) => box.topY!)) * BLOCK;
-    };
-    const seeds = SHAMBLER_FIGURE_SEEDS.slice(0, 4);
-    const mean = (type: ActorDef) => seeds.reduce((sum, seed) => sum + headTop(type, seed), 0) / seeds.length;
-    // Within a tenth of the shambler's height, standing on the same floor.
-    expect(Math.abs(mean(registry.actors.get('acid_zombie')!) / mean(SHAMBLER) - 1)).toBeLessThan(0.1);
+  it('keeps every posed acid-body bone box around its rendered voxel centres', () => {
+    const acid = [...registry.actors.values()].find((type) => type.model === 'acid')!;
+    expect(acid).toBeDefined();
+    for (const [index, seed] of SHAMBLER_FIGURE_SEEDS.slice(0, 4).entries()) {
+      const testPose = POSES[index % POSES.length]!;
+      const figure = posed(seed, testPose, acid);
+      const boxes = Object.values(figure.boxes).flat();
+      expect(boxes.length, `${seed} ${testPose.name}`).toBeGreaterThan(0);
+      expect(
+        boxes.flatMap((box) => posedBoxErrors(figure, box)),
+        `${seed} ${testPose.name}`,
+      ).toEqual([]);
+    }
   });
 
   it('removes severed bones from their hit region without hiding the rest of the arm', () => {
