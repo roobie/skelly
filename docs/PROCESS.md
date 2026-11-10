@@ -115,9 +115,11 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
   another machine, so the review origin is supplied outside tracked work.
 - **Tool-specific look rules** sit beside the pages they describe, so they change with them.
 - **deadvox:** every look runs from a fixture start that prepares the test: a debug-only start
-  in a test-house debug mod whose site spawns the maintainer beside the target, with the gear
-  the check needs already in hand. The look link selects it
-  (`/?start=<fixture start>&mods=<debug mod>#{debug:true}`). Reason: a look spends the tester's time
+  row whose site spawns the maintainer beside the target, with the gear the check needs already
+  in hand. The look link names it as its start mod, by the id of a mod whose one start row it is
+  or inline, and names any debug mods its scene needs
+  (`/?start-mod=<fixture mod>&mods=<debug mods>#{debug:true}`); see
+  `packages/deadvox/docs/url-mods.md`, "Start mod". Reason: a look spends the tester's time
   on the check, not on setup. A start cannot hand over a loaded weapon until #1570, so a look
   that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
 - **deadvox debug, review and test starts give every skill its top level.** Each builds on

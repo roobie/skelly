@@ -31,7 +31,8 @@ content rather than runtime synthesis. See
 
 The debug scenario mod depends on the test house's scenario mod, because it only stages
 that scenario; its id extends the scenario's id. Its opt-in marker keeps it out of normal
-play until a URL names it, as in `?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug`.
+play until a URL names it in `?mods=`, as a launcher link to the test house does when that
+mod is ticked.
 See `docs/pack-split.md`, "Debug mods".
 
 The charging corner belongs to the same template and layout sources, rather than a
@@ -178,8 +179,9 @@ that any mod may add, so unlisted furniture stays absent instead of being discov
 from the registry; `docs/pack-split.md`, "Debug mods", gives the reason rows are their
 own section and which debug mod holds which rows. The test-house debug mod's layout override
 hosts the floor but holds no row, so the floor shows only the rows of the debug mods
-selected with it. Select them together for the full showroom:
-`?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug,skelly.deadvox.scenario.debug,skelly.deadvox.scenario.gauntlet.debug,skelly.deadvox.scenario.playtest.debug,skelly.deadvox.scenario.tutorial.debug`.
+selected with it. For the full showroom, start at the test house, as the launcher's test
+house site does, with them together:
+`?mods=skelly.deadvox.scenario.test-house.debug,skelly.deadvox.scenario.debug,skelly.deadvox.scenario.gauntlet.debug,skelly.deadvox.scenario.playtest.debug,skelly.deadvox.scenario.tutorial.debug`.
 See `mods/skelly.deadvox.scenario.debug/catalogue.jsonnet`, `catalogueRows`, and
 `packages/engine/src/core/showroom.ts`, `ShowroomCatalogue`.
 
