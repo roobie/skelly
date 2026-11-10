@@ -777,21 +777,33 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
   }
 
+  // ---- key admission ----
+
+  /** A key press ends a ramp-down; replay never snaps, the recorded sample decides. */
+  const keyAdmitted = (): boolean => {
+    const { compression } = ports.session().sim;
+    if (ports.replaying()) {
+      return !(ports.replaySample()?.inputLocked ?? compression.locksInput);
+    }
+    return compression.admitKey();
+  };
+
   // ---- reload ----
 
-  function reloadBinding(): ReloadBinding | undefined {
+  /** `locked` is asked last among the refusals, so a refused press never ends a ramp-down. */
+  function reloadBindingWhen(locked: () => boolean): ReloadBinding | undefined {
     const session = ports.session();
     const { sim, queue, firearms } = session;
-    if (
+    const refused =
       !(ports.pointerLocked() || ports.replaying()) ||
       (ports.menuPointer() && !ports.replaying()) ||
-      sim.compression.locksInput ||
       sim.paused ||
       sim.dead ||
       sim.body.actionRefusal ||
       ports.buildMode() ||
-      session.throwCharge.startedAt !== undefined
-    ) {
+      session.throwCharge.startedAt !== undefined;
+    const target = refused ? undefined : reloadTarget(firearms, session.magazines, lines.play.notHoldingGun);
+    if (!target || locked()) {
       return;
     }
     // An admitted gesture is recorded; replay drives it back through this binding.
@@ -803,10 +815,6 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       }
       return reason === undefined;
     };
-    const target = reloadTarget(firearms, session.magazines, lines.play.notHoldingGun);
-    if (!target) {
-      return;
-    }
     // A reload works the firearm with both hands, so a hand on a ladder refuses it.
     const ladder = (): string | undefined => {
       const hand = session.ladderHold.hand();
@@ -825,6 +833,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     };
   }
 
+  const reloadBinding = (): ReloadBinding | undefined =>
+    reloadBindingWhen(() => ports.session().sim.compression.locksInput);
+  const reloadKeyBinding = (): ReloadBinding | undefined => reloadBindingWhen(() => !keyAdmitted());
+
   // ---- furniture ----
 
   const furnitureActions = (entity: BlockEntity): ItemAction[] =>
@@ -837,7 +849,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     if (!already) {
-      if (compression.locksInput) {
+      if (!keyAdmitted()) {
         return;
       }
       queue.cancel();
@@ -939,7 +951,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (session.isObjective(entity)) {
       return session.activateGoal(entity);
     }
-    if (session.sim.compression.locksInput && session.rest.action?.furnitureUid !== entity.uid) {
+    if (session.rest.action?.furnitureUid !== entity.uid && !keyAdmitted()) {
       return undefined;
     }
     if (alternatives && furnitureActions(entity).length > 0) {
@@ -971,10 +983,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (!tab) {
       return false;
     }
-    if (ports.session().sim.compression.locksInput) {
-      return true;
+    if (keyAdmitted()) {
+      presentation.openInventory(tab);
     }
-    presentation.openInventory(tab);
     return true;
   };
   const { modal } = presentation;
@@ -985,7 +996,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       readingAction: (command) => modal.readingAction(command),
       readingMovementAction: () => modal.readingMovementAction(),
       toggleInventory: () => {
-        if (!ports.session().sim.compression.locksInput) {
+        if (keyAdmitted()) {
           modal.toggleInventory();
         }
       },
@@ -1000,7 +1011,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
   // ---- live input commands ----
 
   const withUnlockedInput = (action: () => void): void => {
-    if (!(ports.replaySample()?.inputLocked ?? ports.session().sim.compression.locksInput)) {
+    if (keyAdmitted()) {
       action();
     }
   };
@@ -1021,7 +1032,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
   };
   const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
-    if (slot !== undefined && !ports.session().sim.compression.locksInput) {
+    if (slot !== undefined && keyAdmitted()) {
       liveGestures.quickbar.keyDown(slot, at);
     }
   };
@@ -1061,7 +1072,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         }
         break;
       case 'firearm.reload':
-        controls.reload.keyDown(at, reloadBinding());
+        controls.reload.keyDown(at, reloadKeyBinding());
         break;
       case 'world.interact':
         withUnlockedInput(() => liveGestures.interact.keyDown(action, at));
