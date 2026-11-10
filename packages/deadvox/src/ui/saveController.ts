@@ -18,8 +18,13 @@ import {
 import { assertFoodExposure, type HandedCharacter, type RealTimestamp, realTimestamp } from '@skelly/engine/sim';
 import { countText, fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
-import { SaveCorruptionError } from '../game/saveStorageProtocol.ts';
-import type { SaveBackendPreference, SaveLoadResult, SaveStorageStatus, SaveStore } from '../game/storageContract.ts';
+import {
+  type SaveBackendPreference,
+  SaveCorruptionError,
+  type SaveLoadResult,
+  type SaveStorageStatus,
+  type SaveStore,
+} from '../game/entries/save.ts';
 import { SaveStorage } from '../presentation/saveStorage.ts';
 import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';
