@@ -42,7 +42,12 @@ export interface PackInput {
  * The one order of pack manifest keys: by UTF-16 code unit, so locale and platform never reorder packs. The bundle
  * stamp and the save identity list packs in this order, so the browser and the build must share it.
  */
-export const comparePackKeys = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+export const comparePackKeys = (left: string, right: string): number => {
+  if (left < right) {
+    return -1;
+  }
+  return left > right ? 1 : 0;
+};
 
 // An id in no inventory stays out of the closure, so admission reports it as a missing dependency.
 export const selectFolderClosure = (
@@ -219,30 +224,59 @@ const contentEntries = (data: unknown): string[] => {
   return entries;
 };
 
+/** The entries each of a pack's content files sets, by the path its manifest lists. */
+const packFileEntries = (pack: PackInput): { path: string; entries: string[] }[] => {
+  const sources = packSources(pack);
+  return pack.manifest.files
+    .filter(({ kind }) => kind === 'content')
+    .map(({ path }, index) => ({ path, entries: contentEntries(sources[index]!.data) }));
+};
+
+/** One pack may set an entry id in one file only. */
+const checkSameIdFiles = (
+  pack: PackInput,
+  files: readonly { path: string; entries: string[] }[],
+  fail: Report,
+): void => {
+  const seen = new Map<string, string>();
+  for (const { path, entries } of files) {
+    for (const entry of entries) {
+      const first = seen.get(entry);
+      if (first !== undefined && first !== path) {
+        fail(pack, 'files', `Pack ${pack.manifest.id}: entry ${entry} is set by both ${first} and ${path}; keep one`);
+      }
+      seen.set(entry, first ?? path);
+    }
+  }
+};
+
 const entrySetters = (packs: readonly PackInput[], fail: Report): Map<string, PackInput[]> => {
   const setters = new Map<string, PackInput[]>();
   for (const pack of packs) {
-    const seen = new Map<string, string>();
-    const contentFiles = pack.manifest.files.filter(({ kind }) => kind === 'content');
-    for (const { path, data } of packSources(pack).map((source, index) => ({
-      ...source,
-      path: contentFiles[index]!.path,
-    }))) {
-      for (const entry of contentEntries(data)) {
-        const first = seen.get(entry);
-        if (first !== undefined && first !== path) {
-          fail(pack, 'files', `Pack ${pack.manifest.id}: entry ${entry} is set by both ${first} and ${path}; keep one`);
-        }
-        seen.set(entry, first ?? path);
-        const history = setters.get(entry) ?? [];
-        if (!history.includes(pack)) {
-          history.push(pack);
-        }
-        setters.set(entry, history);
-      }
+    const files = packFileEntries(pack);
+    checkSameIdFiles(pack, files, fail);
+    for (const entry of new Set(files.flatMap(({ entries }) => entries))) {
+      setters.set(entry, [...(setters.get(entry) ?? []), pack]);
     }
   }
   return setters;
+};
+
+/** A setter that displaces an owner's entry must depend on the owner and declare the override. */
+const checkOverride = (
+  { setter, owner, entry, depends }: { setter: PackInput; owner: PackInput; entry: string; depends: boolean },
+  fail: Report,
+): void => {
+  const declared = setter.manifest.overrides.some(
+    (override) => override.pack === owner.manifest.id && override.entry === entry,
+  );
+  if (!(depends && declared)) {
+    fail(
+      setter,
+      'overrides',
+      `Pack ${setter.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
+    );
+  }
 };
 
 const checkOverrides = (
@@ -258,18 +292,8 @@ const checkOverrides = (
       const last = index === history.length - 1;
       for (const owner of history.slice(0, index)) {
         const depends = dependencies.get(setter.manifest.id)!.has(owner.manifest.id);
-        if (!last && !depends) {
-          continue;
-        }
-        const declared = setter.manifest.overrides.some(
-          (override) => override.pack === owner.manifest.id && override.entry === entry,
-        );
-        if (!(depends && declared)) {
-          fail(
-            setter,
-            'overrides',
-            `Pack ${setter.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
-          );
+        if (last || depends) {
+          checkOverride({ setter, owner, entry, depends }, fail);
         }
       }
     });

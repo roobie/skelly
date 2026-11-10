@@ -1,6 +1,12 @@
 import { BundleAdmission, type BundleStamp } from '../core/bundleAdmission.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
-import { admitPacks, comparePackKeys, type PackInput, type PackManifest, packStartIssues } from '../core/packAdmission.ts';
+import {
+  admitPacks,
+  comparePackKeys,
+  type PackInput,
+  type PackManifest,
+  packStartIssues,
+} from '../core/packAdmission.ts';
 import { logicalKey } from '../core/packFiles.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
 

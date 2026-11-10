@@ -79,8 +79,13 @@ export const capabilityIssues = (registry: Registry, requireAll = true): Content
             providers.length === 0
               ? `missing required capability "${capability}"`
               : `competing claimants for capability "${capability}": ${providers
-                  .map(({ id }) => `${id} (${registry.contentOrigins.get(`${section}:${id}`)?.source ?? 'unknown source'})`)
-                  .join(', ')}; a pack that depends on the owner takes over by declaring an override of the owner's entry, otherwise remove one claim`,
+                  .map(
+                    ({ id }) =>
+                      `${id} (${registry.contentOrigins.get(`${section}:${id}`)?.source ?? 'unknown source'})`,
+                  )
+                  .join(
+                    ', ',
+                  )}; a pack that depends on the owner takes over by declaring an override of the owner's entry, otherwise remove one claim`,
         });
       }
     }
