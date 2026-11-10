@@ -298,10 +298,20 @@ and reads its own configuration, then passes the maps in, so the runtime carries
 product's layout nor build-tool coupling and another product can supply different sources.
 See `packages/deadvox/src/product/content.ts`, `productContent`, and
 `packages/deadvox/src/product/mods.ts`, `productModIntake`. The product entry owns all
-product wiring, the page's keyboard included: it builds the keyboard from the product's
-default keys and passes it to the UI, debug and presentation modules that read keys, so
-the presentation package can move out of the runtime package without a product import.
-See `packages/deadvox/src/product/input.ts`, `keyboardInput`.
+product wiring, the page's keyboard and the corpse physics tuning included: it builds the
+keyboard from the product's default keys and passes it to the UI, debug and presentation
+modules that read keys, and it passes its ragdoll config to play, which hands it to the
+corpse renderer, so presentation can move out of deadvox without a product import. See
+`packages/deadvox/src/product/input.ts`, `keyboardInput`, and
+`packages/deadvox/src/product/ragdoll.ts`, `ragdollConfig`.
+
+Presentation (deadvox's `src/render`, `src/ui`, `src/presentation` and `src/worker`) gets
+the same curated surface before it becomes its own package (#1532): entries in
+`packages/deadvox/src/presentation/entries`, one per domain and named after the package
+export each becomes, each carrying only what product code outside presentation uses.
+Product code imports presentation only through them; the entry-only check fails any other
+route, see `packages/deadvox/tools/runtimeEntries.ts`, `ENTRY_POLICY`. Tests take a name
+from an entry when it carries one and otherwise import the module.
 
 The framework refactor's own PR and the asset-pipeline move PRs are allowed under the
 #1532 freeze. The asset move targets `framework/refactor` and precedes framework
