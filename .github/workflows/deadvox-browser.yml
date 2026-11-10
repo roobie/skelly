@@ -232,6 +232,11 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-atlas
+      - name: Main first-mesh reference browser contract
+        if: ${{ inputs.shard == 'main-reference' }}
+        # Boots main's startup beside the branch and waits for delivered geometry, not pixels.
+        timeout-minutes: 5
+        run: node test/browser/main-first-mesh.mjs
       - name: Reading consumer browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3

@@ -17,6 +17,7 @@ import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
+import { addCamoWitnessTemplate, CAMO_WITNESS, injectSiteFixture, RAISED_CABIN } from './stairs-fixture.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(
@@ -80,9 +81,6 @@ const timePhase = async (phase, action) => {
   }
 };
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
-const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
-// Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
-const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
 const hasSkyControl = isLightingMode || mode === 'camo';
 const arrivalObservation =
   mode === 'camo'
@@ -118,17 +116,7 @@ const vite = await createStageServer({
       enforce: 'pre',
       transform(code, id) {
         if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')) {
-          const content = JSON.parse(code);
-          const floor = new Array(8).fill('########');
-          const walls = ['########', ...new Array(6).fill('c......#'), '########'];
-          content.templates.push({
-            id: 'stairs_camo_witness',
-            lootContext: { usage: ['Residential'], tier: 'Tier1' },
-            size: [8, 4, 8],
-            palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
-            layers: [floor, walls, walls, new Array(8).fill('........')],
-          });
-          return JSON.stringify(content);
+          return addCamoWitnessTemplate(code);
         }
         if (mode === 'camo' && id.endsWith('/mods/skelly.manufactured-blocks/manufactured-blocks.json')) {
           const content = JSON.parse(code);
@@ -140,20 +128,13 @@ const vite = await createStageServer({
           return JSON.stringify(content);
         }
         if (mode !== 'traversal' && id.endsWith('/engine/src/core/authoredSite.ts')) {
-          const anchor = '    const s = scale.blockSize;';
-          assert.equal(code.split(anchor).length, 2);
-          const fixtureName = isLightingMode ? 'raisedCabin' : 'camoWitness';
-          const fixture = isLightingMode ? RAISED_CABIN : CAMO_WITNESS;
-          let transformed = code.replace(
-            anchor,
-            `${anchor}\n    const ${fixtureName} = ${JSON.stringify(fixture)};\n    layout = {...layout, buildings: [...layout.buildings, ${fixtureName}]};`,
-          );
+          let transformed = injectSiteFixture(code, isLightingMode ? RAISED_CABIN : CAMO_WITNESS);
           if (isLightingMode) {
             const lot = 'lotOf(building, rect)';
             assert.equal(code.split(lot).length, 2);
             transformed = transformed.replace(
               lot,
-              '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}',
+              '{...lotOf(building, rect), ...(building === siteFixture ? {floor: layout.ground} : {})}',
             );
           }
           return transformed;
