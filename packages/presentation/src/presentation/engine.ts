@@ -8,6 +8,7 @@ import { claimed } from '@skelly/engine/inventory';
 import type { GameConfig } from '@skelly/engine/session';
 import { skyAt } from '@skelly/engine/sky';
 import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@skelly/engine/world';
+import { MATERIALS } from '@skelly/thing-core/materials';
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
@@ -15,11 +16,14 @@ import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts'
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
+import { GradientSkyReflection } from '../render/skyReflection.ts';
+import { VehicleFinishes } from '../render/vehicleFinishes.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
 
 export interface Engine extends WorldSetup {
   skylight?: Skylight;
+  vehicleFinishes?: VehicleFinishes;
   renderer?: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
@@ -131,9 +135,17 @@ export function createEngine(
 
   const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
   const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
+  const vehicleFinishes = renderer
+    ? new VehicleFinishes(new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection), MATERIALS)
+    : undefined;
   const graphics = new GraphicsControls(
     graphicsTuning,
-    { meshes, ...(mood ? { mood } : {}), ...(shadows ? { shadows } : {}) },
+    {
+      meshes,
+      ...(mood ? { mood } : {}),
+      ...(shadows ? { shadows } : {}),
+      ...(vehicleFinishes ? { vehicleFinishes } : {}),
+    },
     { source: graphicsSource },
   );
 
@@ -157,5 +169,6 @@ export function createEngine(
     sky,
     ...(mood ? { mood } : {}),
     ...(shadows ? { shadows } : {}),
+    ...(vehicleFinishes ? { vehicleFinishes } : {}),
   };
 }

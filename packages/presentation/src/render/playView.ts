@@ -223,6 +223,7 @@ type PlayViewEngine = Readonly<
     | 'isSolid'
     | 'entities'
     | 'skylight'
+    | 'vehicleFinishes'
     | 'site'
     | 'scenario'
   >
@@ -283,7 +284,7 @@ export const createPlayView = (
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
   const playerFigure = claimed(registry.figures, 'player')!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
-  const vehicles = new VehicleMeshes(registry, models, s);
+  const vehicles = new VehicleMeshes(registry, models, s, engine.vehicleFinishes);
   const caseEffects = new CaseEffects(s, gravityMetresPerSimSecondSquared, models);
   const gore = new Gore(s, gravityMetresPerSimSecondSquared, graphics.gore, { seed: config.seed, models });
   const decals =
@@ -365,7 +366,14 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, vehicles.group, furniture.group, corpses.group, playerMeshes.group, modelMaterialWarmUp(true));
+  scene.add(
+    piles.group,
+    vehicles.group,
+    furniture.group,
+    corpses.group,
+    playerMeshes.group,
+    modelMaterialWarmUp(true, engine.vehicleFinishes?.warmUpVariants),
+  );
   const avatarStudy = createAvatarStudy(scene, s, models, config.debug ? probes.avatarStudy : []);
   const avatarMannequin = createAvatarMannequin(
     scene,
@@ -598,6 +606,7 @@ export const createPlayView = (
       held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
       engine.skylight?.setDaylight(sky);
+      engine.vehicleFinishes?.update(sky);
       flashlight.daylightScale = engine.skylight ? 1 : flashlightDaylightScale(sky);
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },

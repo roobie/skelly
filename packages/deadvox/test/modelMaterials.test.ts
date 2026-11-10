@@ -1,6 +1,7 @@
 import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
 import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { VehicleFinishes } from '@skelly/presentation/internal/render/vehicleFinishes.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   BoxGeometry,
@@ -13,7 +14,7 @@ import {
   MeshStandardMaterial,
   NormalBlending,
   SRGBColorSpace,
-  type Texture,
+  Texture,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
@@ -98,6 +99,7 @@ const programKey = (mesh: Mesh, material: Material): string => {
     fields.flatShading,
     fields.fog,
     Number(fields.sheen ?? 0) > 0,
+    Number(fields.clearcoat ?? 0) > 0,
     maps,
     mesh instanceof InstancedMesh && mesh.instanceColor !== null,
     mesh.constructor.name,
@@ -147,6 +149,22 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     );
     expect([...new Set(keys)].filter((key) => !warmed.has(key))).toEqual([]);
   }
+  const finishes = new VehicleFinishes({ texture: new Texture(), update: () => {} }, MATERIALS);
+  finishes.setEnabled(true);
+  const finishedMeshes = meshes.map((mesh) => mesh.clone());
+  finishes.dress(new Group().add(...finishedMeshes));
+  expect(finishedMeshes.some((mesh) => Number((mesh.material as MeshPhysicalMaterial).clearcoat ?? 0) > 0)).toBe(true);
+  const warmedFinishes = new Set(
+    (modelMaterialWarmUp(false, finishes.warmUpVariants).children as Mesh[]).map((mesh) =>
+      programKey(mesh, mesh.material as Material),
+    ),
+  );
+  const finishedKeys = finishedMeshes.flatMap((mesh) =>
+    (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map((material: Material) =>
+      programKey(mesh, material),
+    ),
+  );
+  expect([...new Set(finishedKeys)].filter((key) => !warmedFinishes.has(key))).toEqual([]);
 });
 
 describe('material reference validation', () => {

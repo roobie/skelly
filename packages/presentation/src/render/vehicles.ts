@@ -2,15 +2,17 @@ import type { Registry } from '@skelly/engine/content';
 import { projectVehicleParts, type VehicleInstances, type VehiclePartProjection } from '@skelly/engine/vehicles';
 import { Group, type Object3D } from 'three';
 import type { ModelLibrary } from './models.ts';
+import type { VehicleFinishes } from './vehicleFinishes.ts';
 
 interface RenderedVehicle {
   readonly signature: string;
   readonly group: Group;
 }
 
-const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: number): string =>
+const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: number, finished: boolean): string =>
   JSON.stringify([
     modelVersion,
+    finished,
     parts.map(({ fittingId, item, model, transform }) => [
       fittingId,
       item.uid,
@@ -30,11 +32,18 @@ export class VehicleMeshes {
   private readonly registry: Registry;
   private readonly models: ModelLibrary;
   private readonly blockSize: number;
+  private readonly finishes: Pick<VehicleFinishes, 'enabled' | 'dress'> | undefined;
 
-  constructor(registry: Registry, models: ModelLibrary, blockSize: number) {
+  constructor(
+    registry: Registry,
+    models: ModelLibrary,
+    blockSize: number,
+    finishes?: Pick<VehicleFinishes, 'enabled' | 'dress'>,
+  ) {
     this.registry = registry;
     this.models = models;
     this.blockSize = blockSize;
+    this.finishes = finishes;
   }
 
   groupFor(id: number): Object3D | undefined {
@@ -55,7 +64,7 @@ export class VehicleMeshes {
       return;
     }
     const parts = projectVehicleParts(this.registry, id, vehicle, this.blockSize);
-    const signature = signatureOf(parts, this.models.version);
+    const signature = signatureOf(parts, this.models.version, this.finishes?.enabled ?? false);
     const previous = this.rendered.get(id);
     if (previous?.signature === signature) {
       return;
@@ -65,6 +74,9 @@ export class VehicleMeshes {
       const model = part.model === undefined ? undefined : this.models.part(part.model);
       if (!model) {
         continue;
+      }
+      if (this.finishes?.enabled) {
+        this.finishes.dress(model);
       }
       model.traverse((object) => {
         object.castShadow = true;

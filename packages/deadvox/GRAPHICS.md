@@ -8,6 +8,7 @@ read_if:
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
   - you're interpreting or changing debug draw submission counters
   - you're changing crowd pose texture transfers
+  - you're changing how vehicle bodies reflect the sky, their clear coats or the option that switches them
 ---
 
 # Deadvox graphics
@@ -95,6 +96,19 @@ Clearing a preference returns ownership to content rather than saving its resolv
 Debug overrides remain separate from preferences, and unrelated look changes must not promote
 player or mod values into the URL. See `packages/presentation/src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
 `packages/presentation/src/presentation/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
+
+## Vehicle finishes
+
+A vehicle body read as matte plastic because nothing in the game gave it anything to reflect. The option adds a reflection and a clear coat to vehicles and to nothing else, for these reasons:
+
+- The reflection sits on the vehicle's own materials, never on the scene's environment. A scene environment also reaches every Lambert and Standard surface, so it would relight the terrain and every building.
+- Vehicles draw finished copies and models keep their shared originals, because the same model material also draws in hands, piles and the item viewer, and because off has to draw exactly what the game drew without the option.
+- The reflection is specular only. The hemisphere light is already the ambient term on these materials; a diffuse reflection term on top would brighten the paint in place of making it glossy.
+- Its source is the sky's own gradient, because the game has no sky image to reflect. A real sky bake (#1542) replaces it behind `packages/presentation/src/render/skyReflection.ts`, `ReflectionMap`.
+- The map follows the time of day by redrawing only when the sky has drifted visibly, because a redraw every frame is cost with nothing to see.
+- Reflections dim per fragment by the same sky visibility that dims ambient light, so a car in a garage does not mirror a sky it cannot see.
+- A coat is finish content because how glossy a paint is belongs with the paint. A coat carries its own metalness: the older finishes raised metalness to stand in for gloss, and under a real coat that stand-in would tint the highlight.
+- The finished programs compile in the scene's warm-up even with the option off, so switching it during play does not stall.
 
 ## Performance diagnostics
 

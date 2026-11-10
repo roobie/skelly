@@ -17,21 +17,28 @@ import {
 import { parse } from 'valibot';
 import { glowingCopy } from './itemEmissive.ts';
 
-/** Only the physical material draws a sheen, so a sheened definition swaps the loader's standard one for it. */
-const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
-  if (material instanceof MeshPhysicalMaterial) {
-    return material;
-  }
+/** Three.js's own copy cannot cross from standard to physical: it reads physical fields the source lacks. */
+export const physicalCopy = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
   const physical = new MeshPhysicalMaterial({
     name: material.name,
+    color: material.color,
     map: material.map,
     side: material.side,
     vertexColors: material.vertexColors,
     flatShading: material.flatShading,
+    roughness: material.roughness,
+    metalness: material.metalness,
+    opacity: material.opacity,
+    transparent: material.transparent,
+    depthWrite: material.depthWrite,
   });
   physical.userData = material.userData;
   return physical;
 };
+
+/** Only the physical material draws a sheen, so a sheened definition swaps the loader's standard one for it. */
+const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial =>
+  material instanceof MeshPhysicalMaterial ? material : physicalCopy(material);
 
 const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
   if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
@@ -89,10 +96,14 @@ export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<stri
  * takes, so the scene's warm-up compiles them before any model has loaded. A model material varies the
  * program only by see-through, double-sidedness, a colour texture and a sheen (colour, finish and texels
  * are uniforms), and a lit item's glow adds its own. `instanced` adds the instanced copies ground piles
- * draw with. Content outside these variants compiles on first draw, which
+ * draw with, and `finishedVariants` the finished copies vehicles draw with while that option is on, so turning it on
+ * compiles nothing. Content outside these variants compiles on first draw, which
  * `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
-export const modelMaterialWarmUp = (instanced: boolean): Group => {
+export const modelMaterialWarmUp = (
+  instanced: boolean,
+  finishedVariants?: (plain: MeshStandardMaterial) => readonly Material[],
+): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
   const variants = [false, true].flatMap((transparent) =>
     [FrontSide, DoubleSide].flatMap((side) => [
@@ -105,14 +116,20 @@ export const modelMaterialWarmUp = (instanced: boolean): Group => {
     .setAttribute('position', new Float32BufferAttribute([], 3))
     .setAttribute('normal', new Float32BufferAttribute([], 3));
   const group = new Group();
+  const hide = (mesh: Mesh): void => {
+    mesh.receiveShadow = true;
+    mesh.visible = false;
+    group.add(mesh);
+  };
   for (const material of variants.flatMap((plain) => [plain, glowingCopy(plain, 0xff_ff_ff, 1)])) {
     for (const mesh of instanced
       ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
       : [new Mesh(geometry, material)]) {
-      mesh.receiveShadow = true;
-      mesh.visible = false;
-      group.add(mesh);
+      hide(mesh);
     }
+  }
+  for (const material of finishedVariants ? variants.flatMap(finishedVariants) : []) {
+    hide(new Mesh(geometry, material));
   }
   return group;
 };
