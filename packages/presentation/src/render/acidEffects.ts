@@ -58,7 +58,7 @@ export class AcidEffects {
     this.droplets.push({ mesh, velocity: [...velocity], floor });
   }
 
-  /** The sac bursting as an acid zombie dies: droplets thrown out from `position` (metres). Presentation only. */
+  /** The acid sac bursting as its bearer dies: droplets thrown out from `position` (metres). Presentation only. */
   deathSplash(position: Vec3, actor: Actor): void {
     const body = actor.type.acidBody;
     if (!body) {

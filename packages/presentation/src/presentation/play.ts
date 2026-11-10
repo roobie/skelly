@@ -1052,8 +1052,8 @@ const startPlayWith = (
     onBlock: (jolt) => view.block(jolt),
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
-    // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse, blood for every wound, and flesh chunks for a carve or a hard hit. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
+    // Presentation only: what the simulation decided (a part severed, an actor dead) drawn as debris and a
+    // corpse, blood for every wound, and flesh chunks for a carve or a hard hit. Only MobActorMeshes implements the actor-effect hooks; ActorMeshes leaves
     // them undefined.
     actorEffects: {
       onWound: (id, _actor, hit, damage) => {

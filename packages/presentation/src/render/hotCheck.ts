@@ -25,7 +25,7 @@ export const HOT_CATEGORIES = {
   chunk: { label: 'chunk', rgb: [0, 1, 1], css: '#00ffff' },
   furniture: { label: 'furniture', rgb: [1, 1, 0], css: '#ffff00' },
   piles: { label: 'piles', rgb: [1, 0.5, 0], css: '#ff8800' },
-  actor: { label: 'zombie boxes', rgb: [1, 0, 0], css: '#ff0000' },
+  actor: { label: 'actor boxes', rgb: [1, 0, 0], css: '#ff0000' },
   player: { label: 'player figure', rgb: [0, 1, 0], css: '#00ff00' },
   mob: { label: 'mob actors', rgb: [0, 0, 1], css: '#4466ff' },
 } as const satisfies Record<string, { label: string; rgb: readonly [number, number, number]; css: string }>;
