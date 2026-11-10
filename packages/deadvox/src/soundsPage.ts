@@ -1,6 +1,3 @@
-// The page's style sheets come from the presentation package, which a page link cannot name by package.
-import '@skelly/presentation/style.css';
-import '@skelly/presentation/sounds.css';
 import { claimed } from '@skelly/engine/inventory';
 import type { SoundId } from '@skelly/engine/sound';
 import { playerHeartbeat } from '@skelly/engine/sound';

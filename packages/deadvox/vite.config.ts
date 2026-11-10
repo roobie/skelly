@@ -11,6 +11,7 @@ import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
 import { declaredAssetGlobsPlugin } from './tools/declaredAssetGlobsPlugin.ts';
+import { packageStylesheetsPlugin } from './tools/packageStylesheetsPlugin.ts';
 import { bundledPackDefines, readAvailablePacks } from './tools/readBundledPacks.ts';
 import {
   fingerprintAfterHotChange,
@@ -208,6 +209,7 @@ export default defineConfig({
     // biome-ignore lint/style/noProcessEnv: publication tooling opts into the analytics described by its consent page.
     pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1'),
     simulationFingerprintPlugin(),
+    packageStylesheetsPlugin(),
     bundleStampPlugin(packageRoot),
     bundledModListPlugin(),
     declaredAssetGlobsPlugin(packageRoot, packs),

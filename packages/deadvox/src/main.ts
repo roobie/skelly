@@ -1,8 +1,6 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
-// The page's style sheet comes from the presentation package, which a page link cannot name by package.
-import '@skelly/presentation/style.css';
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
 import { bundledModIdsFromUrl, getBuildRevision, selectBundledMods } from '@skelly/engine/packs';

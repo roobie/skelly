@@ -1,4 +1,5 @@
-// Contract: an insecure LAN-style context must play without touching unavailable save APIs.
+// Contract: the game and sounds pages paint styled before their modules load, and an insecure LAN-style context
+// must play without touching unavailable save APIs.
 // biome-ignore-all lint/correctness/noNodejsModules: standalone Playwright browser contract
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node browser contract
 // biome-ignore-all lint/style/noProcessEnv: test runner selects the browser executable
@@ -25,6 +26,32 @@ try {
   const address = server.httpServer.address();
   assert(address && typeof address !== 'string');
   browser = await launchChromium('insecure-saves', { headless: true });
+  // A page's style sheets block its first paint, so the startup screen is styled before the page's module is fetched.
+  const styledBeforeModule = async ({ path, module, styled }) => {
+    const page = await browser.newPage();
+    // Never answered: the check runs while the module is still pending.
+    await page.route(module, () => new Promise(() => undefined));
+    await page.goto(`http://127.0.0.1:${address.port}${path}`, { waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
+    await page.locator(styled).waitFor({ state: 'attached', timeout: STAGE_TIMEOUT_MS });
+    const links = page.locator('link[rel="stylesheet"]');
+    assert.ok((await links.count()) > 0, `${path} links its style sheets in the page`);
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('link[rel="stylesheet"]')].every((link) => link.sheet !== null),
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    const style = await page.evaluate((selector) => {
+      const body = getComputedStyle(document.body).backgroundColor;
+      return { body, position: getComputedStyle(document.querySelector(selector)).position };
+    }, styled);
+    assert.notEqual(style.body, 'rgba(0, 0, 0, 0)', `${path} body is styled while its module is pending`);
+    if (path === '/') {
+      assert.equal(style.position, 'fixed', 'the startup screen is styled while the main module is pending');
+    }
+    await page.close();
+  };
+  await styledBeforeModule({ path: '/', module: '**/src/main.ts', styled: '#startup-screen' });
+  await styledBeforeModule({ path: '/sounds.html', module: '**/src/soundsPage.ts', styled: '#sound-sheet' });
   const context = await browser.newContext();
   await context.addInitScript(() => {
     Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: false });
@@ -58,7 +85,7 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Chromium: insecure-context New world remains playable; Continue disabled, explicit no-save message shown, no page errors\n',
+    'Chromium: pages styled while their modules are pending; insecure-context New world remains playable; Continue disabled, explicit no-save message shown, no page errors\n',
   );
 } finally {
   await browser?.close();
