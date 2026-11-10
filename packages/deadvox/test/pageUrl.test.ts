@@ -1,7 +1,8 @@
+import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { describe, expect, it } from 'vitest';
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
-import { newWorldHref, tutorialHash } from '../src/product/page.ts';
+import { newWorldHref, replayHref, tutorialHash } from '../src/product/page.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
 describe('page hash', () => {
@@ -64,6 +65,30 @@ describe('page links', () => {
   it('carries only the view radius and actor models into and out of practice', () => {
     expect(readHash(tutorialHash({ debug: true, seed: 3, radius: 64, actors: 'boxes' }))).toEqual({
       hash: { radius: 64, actors: 'boxes' },
+    });
+  });
+
+  it('builds only links the game reads back without refusing them', () => {
+    const page =
+      'https://example.org/deadvox/?mods=fixture&site=city&render=0#{debug:true,seed:3,radius:64,cam:[1,2,3,0,0,0]}';
+    const { hash } = readPageUrl(new URL(page).search, new URL(page).hash);
+    const links = {
+      newWorld: newWorldHref(page, hash, 4),
+      replay: replayHref(page, hash),
+      enterPractice: tutorialUrl(page, true, tutorialHash(hash)),
+      leavePractice: tutorialUrl(page, false, tutorialHash(hash)),
+    };
+    for (const [name, href] of Object.entries(links)) {
+      const url = new URL(href);
+      const read = readPageUrl(url.search, url.hash);
+      expect(read.refused, name).toBeUndefined();
+      expect(read.query.get('mods'), name).toBe('fixture');
+    }
+    expect(readPageUrl(new URL(links.newWorld).search, new URL(links.newWorld).hash).hash.seed).toBe(4);
+    expect(readPageUrl(new URL(links.replay).search, new URL(links.replay).hash).hash).toEqual({
+      debug: true,
+      seed: 3,
+      radius: 64,
     });
   });
 });

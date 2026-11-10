@@ -5,8 +5,9 @@ import type { SkyResult } from '@skelly/engine/sky';
 import type { Engine } from '@skelly/presentation/play';
 import type { Skylight } from '@skelly/presentation/render';
 import { afterEach, expect, it, vi } from 'vitest';
-import { attachSkyRoute } from '../src/debug/skyRoute.ts';
+import { attachSkyRoute, skyRouteUrl } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
+import { readPageUrl } from '../src/pageUrl.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));
 const inputFixture = vi.hoisted(() => ({ context: 'play', issued: [] as string[] }));
@@ -37,6 +38,15 @@ afterEach(() => {
   inputFixture.issued.length = 0;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+it('launches the route through a link the game reads back without refusing it', () => {
+  vi.stubGlobal('location', { href: 'https://example.invalid/deadvox/?mods=fixture#{radius:64}' });
+  const url = new URL(skyRouteUrl());
+  const read = readPageUrl(url.search, url.hash);
+  expect(read.refused).toBeUndefined();
+  expect(read.query.get('skyRoute')).toBe('1');
+  expect(read.hash).toMatchObject({ debug: true });
 });
 
 it('route activation excludes inactive rendered work without clearing startup jobs or censoring evidence', () => {
