@@ -167,7 +167,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [input, stages, save-other, opfs, indexeddb, firefox]
+        # The main first-mesh reference gets its own shard: it fetches the pull request's base revision and
+        # boots main beside the branch, so its git and network work and its failure mode must not sit in front
+        # of any branch-scene stage; see `docs/browser-ci.md`, "Main first-mesh reference shard".
+        shard: [input, stages, save-other, opfs, indexeddb, firefox, main-reference]
     uses: ./.github/workflows/deadvox-browser.yml
     with:
       shard: ${{ matrix.shard }}
