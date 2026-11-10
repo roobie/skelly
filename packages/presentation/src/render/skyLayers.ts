@@ -131,7 +131,7 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform float uSunGlow;
   uniform float uStarWeight;
   uniform float uDaylight;
-  uniform float uTime;
+  uniform float uSimSeconds;
   uniform sampler2D uCloudNoise[3];
   uniform vec2 uDrift[3];
   uniform float uScale[3];
@@ -149,15 +149,15 @@ const FRAGMENT_SHADER = /* glsl */ `
     // GLSL ES 1.0 needs literal sampler indices, so the three layers are unrolled.
     float sunSide = 0.6 + 0.4 * clamp( dot( dir, uSunDir ), 0.0, 1.0 );
     vec3 litCloud = cloudLight * sunSide;
-    vec2 uv0 = dir.xz / max( dir.y, 0.06 ) * uScale[0] + uDrift[0] * uTime;
+    vec2 uv0 = dir.xz / max( dir.y, 0.06 ) * uScale[0] + uDrift[0] * uSimSeconds;
     vec2 noise0 = texture2D( uCloudNoise[0], uv0 ).rg;
     float coverage0 = smoothstep( 0.45, 0.75, noise0.r + ( noise0.g - 0.5 ) * 0.35 );
     col = mix( col, litCloud, coverage0 * uOpacity[0] * horizonFade );
-    vec2 uv1 = dir.xz / max( dir.y, 0.06 ) * uScale[1] + uDrift[1] * uTime;
+    vec2 uv1 = dir.xz / max( dir.y, 0.06 ) * uScale[1] + uDrift[1] * uSimSeconds;
     vec2 noise1 = texture2D( uCloudNoise[1], uv1 ).rg;
     float coverage1 = smoothstep( 0.45, 0.75, noise1.r + ( noise1.g - 0.5 ) * 0.35 );
     col = mix( col, litCloud, coverage1 * uOpacity[1] * horizonFade );
-    vec2 uv2 = dir.xz / max( dir.y, 0.06 ) * uScale[2] + uDrift[2] * uTime;
+    vec2 uv2 = dir.xz / max( dir.y, 0.06 ) * uScale[2] + uDrift[2] * uSimSeconds;
     vec2 noise2 = texture2D( uCloudNoise[2], uv2 ).rg;
     float coverage2 = smoothstep( 0.45, 0.75, noise2.r + ( noise2.g - 0.5 ) * 0.35 );
     col = mix( col, litCloud, coverage2 * uOpacity[2] * horizonFade );
@@ -209,7 +209,7 @@ export const createLayeredSkyDome = (): SkyDome => {
       uSunGlow: { value: 0.5 },
       uStarWeight: { value: 0 },
       uDaylight: { value: 1 },
-      uTime: { value: 0 },
+      uSimSeconds: { value: 0 },
       uCloudNoise: { value: LAYERS.map((layer) => textures[layer.texture]!) },
       uDrift: { value: LAYERS.map((layer) => layer.drift) },
       uScale: { value: LAYERS.map((layer) => layer.scale) },
@@ -219,7 +219,7 @@ export const createLayeredSkyDome = (): SkyDome => {
     fragmentShader: FRAGMENT_SHADER,
   });
   const mesh = domeMesh(material);
-  const update = ({ sky, time, camera, skyVisibility }: SkyDomeFrame): void => {
+  const update = ({ sky, simSeconds, camera, skyVisibility }: SkyDomeFrame): void => {
     const { uniforms } = material;
     const stops = gradientStops(sky);
     setSrgb(uniforms.uZenith!.value as Color, stops.zenith);
@@ -233,7 +233,7 @@ export const createLayeredSkyDome = (): SkyDome => {
     uniforms.uSunGlow!.value = Math.min(1, sky.lightIntensity);
     uniforms.uStarWeight!.value = starWeightOf(sky);
     uniforms.uDaylight!.value = Math.min(1, Math.max(0, sky.sunDirection[1] * 3));
-    uniforms.uTime!.value = time;
+    uniforms.uSimSeconds!.value = simSeconds;
     placeDome(mesh, camera);
   };
   return {

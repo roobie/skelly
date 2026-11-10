@@ -111,8 +111,8 @@ export const createScatterSkyDome = (): SkyDome => {
   const { uniforms } = material;
   return {
     mesh: scatter.mesh,
-    update({ sky, time, camera, skyVisibility }: SkyDomeFrame): void {
-      applyLook(sky, time);
+    update({ sky, simSeconds, camera, skyVisibility }: SkyDomeFrame): void {
+      applyLook(sky, simSeconds);
       fogColorLinear(uniforms.uFogColor!.value as Color, sky, skyVisibility);
       uniforms.uSkyVisibility!.value = skyVisibility;
       uniforms.uStarWeight!.value = starWeightOf(sky);

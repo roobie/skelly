@@ -121,8 +121,8 @@ export const createPanoSkyDome = (renderer: WebGLRenderer, dayCycle: Parameters<
   const moonDir = runtime.uniforms.uMoonDir!.value as Vector3;
   return {
     mesh,
-    update({ sky, hour, camera, skyVisibility }: SkyDomeFrame): void {
-      const position = (hour / 24) * STOPS;
+    update({ sky, gameHour, camera, skyVisibility }: SkyDomeFrame): void {
+      const position = (gameHour / 24) * STOPS;
       const first = Math.floor(position) % STOPS;
       runtime.uniforms.uStopA!.value = stops[first]!.texture;
       runtime.uniforms.uStopB!.value = stops[(first + 1) % STOPS]!.texture;

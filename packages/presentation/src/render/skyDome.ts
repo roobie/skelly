@@ -9,10 +9,10 @@ import { type Color, type Material, Mesh, type PerspectiveCamera, SphereGeometry
 /** What each spike dome needs per frame; render/sky.ts has already applied `sky`. */
 export interface SkyDomeFrame {
   sky: Sky;
-  /** Local solar hour in [0, 24). */
-  hour: number;
+  /** Local solar hour in [0, 24) on the game clock. */
+  gameHour: number;
   /** Simulation seconds, so cloud drift follows the world clock. */
-  time: number;
+  simSeconds: number;
   camera: PerspectiveCamera;
   /** Diffuse sky visibility where the camera stands; dims the dome indoors. */
   skyVisibility: number;

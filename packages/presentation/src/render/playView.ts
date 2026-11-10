@@ -595,13 +595,21 @@ export const createPlayView = (
       actorMeshes.setPlayerChestPosition?.(playerChest);
       actorMeshes.setPerceptionLabels?.(perceptionLabels);
       actorMeshes.sync(actors, dt, alpha, frozen, backgroundAlpha, time);
-      return { sky, hour, time };
+      return { sky, gameHour: hour, simSeconds: time };
     },
-    prepareLighting: ({ sky, hour, time }: { sky: ReturnType<typeof skyInWeather>; hour: number; time: number }) => {
+    prepareLighting: ({
+      sky,
+      gameHour,
+      simSeconds,
+    }: {
+      sky: ReturnType<typeof skyInWeather>;
+      gameHour: number;
+      simSeconds: number;
+    }) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
-      skybox?.update({ sky, hour, time, camera, skyVisibility });
+      skybox?.update({ sky, gameHour, simSeconds, camera, skyVisibility });
       skybox?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
