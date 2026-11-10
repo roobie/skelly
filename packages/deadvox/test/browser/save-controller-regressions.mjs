@@ -70,7 +70,7 @@ const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 const REFUSED_SAVE_FIXTURE = /refused save fixture/i;
 
 try {
-  await test('practice launch, lifecycle and death leave the normal save untouched and exit returns to start', async () => {
+  await test('practice launch, lifecycle and death leave the normal save untouched and Back returns to start', async () => {
     const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
     const modelAudit = await auditModelLoads(context);
     try {
@@ -94,8 +94,10 @@ try {
         const record = await storage.load(namespace);
         return { namespace, generation: record.generation, payload: Array.from(record.payload) };
       });
-      await page.reload();
-      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
+      // Practice is its own link, which a page that names its start does not offer; the plain page does.
+      const plainUrl = new URL(url);
+      plainUrl.searchParams.delete('start-mod');
+      await page.goto(plainUrl.href);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       assert.equal(
@@ -224,19 +226,13 @@ try {
         });
         gauntletWitness.manual = true;
         try {
-          const draw = mountTutorial(
-            tutorial,
-            () => undefined,
-            () => undefined,
-            inputBindings,
-          );
+          const draw = mountTutorial(tutorial, () => undefined, inputBindings);
           const actions = () =>
             [...document.querySelectorAll('#tutorial-objective [data-tutorial-action]')].map(
               (node) => node.dataset.tutorialAction,
             );
           mountTutorial(
             lootTutorial,
-            () => undefined,
             () => undefined,
             inputBindings,
           )({
@@ -303,7 +299,6 @@ try {
         const { inputBindings } = await import('/src/product/input.ts');
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
-        let finished = false;
         const definition = inventory.registry.layouts.get('tutorial').guidance;
         const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, definition);
         tutorial.opened('canned_beans');
@@ -328,28 +323,14 @@ try {
         const original = inputBindings.chords(id);
         gauntletWitness.manual = true;
         try {
-          const draw = mountTutorial(
-            tutorial,
-            () => {
-              finished = true;
-            },
-            () => undefined,
-            inputBindings,
-          );
+          const draw = mountTutorial(tutorial, () => undefined, inputBindings);
           draw(presentation);
-          const exitChoice = definition.choices.find(
-            (choice) => choice.action === 'exit' && tutorial.canChoose(choice.id),
-          );
-          const offered =
-            !finished && Boolean(exitChoice && document.querySelector(`[data-tutorial-choice="${exitChoice.id}"]`));
           const handlingChoice = definition.choices.find(
             (choice) =>
-              choice.action === 'choose' &&
-              tutorial.canChoose(choice.id) &&
-              definition.steps.some((step) => step.enabled.none.includes(choice.id)),
+              tutorial.canChoose(choice.id) && definition.steps.some((step) => step.enabled.none.includes(choice.id)),
           );
           document.querySelector(`[data-tutorial-choice="${handlingChoice.id}"]`).click();
-          const branched = tutorial.step.complete.handling !== undefined && !finished;
+          const branched = tutorial.step.complete.handling !== undefined;
           const bag = inventory.create('hiking_backpack');
           const box = inventory.create('cartridge_box_357_h_magnum');
           if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
@@ -433,7 +414,6 @@ try {
           draw(presentation);
           const rebound = document.querySelector(`[data-tutorial-action="${id}"] kbd`)?.textContent;
           return {
-            offered,
             branched,
             inspect,
             details: openedDetails,
@@ -479,12 +459,7 @@ try {
         tutorial.observe(prerequisites);
         tutorial.observe({ ...prerequisites, lightOn: false });
         const { inputBindings } = await import('/src/product/input.ts');
-        const draw = mountTutorial(
-          tutorial,
-          () => undefined,
-          () => undefined,
-          inputBindings,
-        );
+        const draw = mountTutorial(tutorial, () => undefined, inputBindings);
         const observe = () => {
           tutorial.observe({
             ...prerequisites,
@@ -577,27 +552,21 @@ try {
         await page.evaluate((namespace) => sessionStorage.getItem(`skelly.dead-world:${namespace}`), saved.namespace),
         null,
       );
-      // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
+      // Native pointer activation of the death button is quarantined in #705; its root cause is unresolved.
       const practiceHref = page.url();
-      await Promise.all([
-        page.waitForURL((target) => target.href !== practiceHref),
-        page.locator('#death button').press('Enter'),
-      ]);
+      await Promise.all([page.waitForEvent('load'), page.locator('#death button').press('Enter')]);
+      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      assert.equal(page.url(), practiceHref, 'death in practice restarts practice on its own page');
+      await page.goBack();
+      await page.locator('#tutorial-start').waitFor({ state: 'visible' });
+      assert.equal(page.url(), plainUrl.href, 'Back leaves practice for the page that linked it');
+      await page.goBack();
       await page.waitForFunction(
-        () => document.querySelector('#tutorial-start') && document.querySelector('#startup-screen').hidden,
+        () => globalThis.skellySaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
       );
-      assert.equal(await page.locator('#tutorial-start').isVisible(), true);
       assert.equal(await page.locator('#continue').isEnabled(), true);
       assert.equal(await page.locator('#title-prompt').isHidden(), true, 'saved-world choice hides the centre prompt');
-      await page.click('#tutorial-start');
-      await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
-      const reenteredHref = page.url();
-      await Promise.all([
-        page.waitForURL((target) => target.href !== reenteredHref),
-        page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
-      ]);
-      await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);
-      assert.equal(await page.locator('#continue').isEnabled(), true);
+      assert.equal(await page.locator('#tutorial-start').isHidden(), true, 'a page with start-mod offers no practice');
     } finally {
       await modelAudit.close();
     }
