@@ -18,11 +18,13 @@ function pageEngineModules() {
     name: 'skelly:stage-engine-modules',
     enforce: 'pre',
     resolveId(id) {
-      return id.startsWith(`${PAGE_PREFIX}@skelly/engine/`) ? `${PAGE_MODULE}${id.slice(PAGE_PREFIX.length)}` : undefined;
+      return id.startsWith(`${PAGE_PREFIX}@skelly/engine/`)
+        ? `${PAGE_MODULE}${id.slice(PAGE_PREFIX.length)}`
+        : undefined;
     },
     async load(id) {
       if (!id.startsWith(PAGE_MODULE)) {
-        return undefined;
+        return;
       }
       const resolved = await this.resolve(id.slice(PAGE_MODULE.length), undefined, { skipSelf: true });
       if (!resolved) {
