@@ -18,7 +18,7 @@ import { InventoryTuningSchema } from './inventory.ts';
 import { ItemSchema, LiquidSchema, MeleeClassSchema, type TreatmentSchema, VehicleBlueprintSchema } from './items.ts';
 import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutSchema } from './layouts.ts';
 import { LookDefaultsSchema } from './look.ts';
-import { LootTableSchema } from './loot.ts';
+import { LootPolicySchema, LootTableSchema } from './loot.ts';
 import { type GunModelSchema, ItemWearSchema, ModelSchema, type SoundRecipeSchema, SoundSchema } from './models.ts';
 import { PlayerSchema } from './player.ts';
 import { Id } from './primitives.ts';
@@ -60,6 +60,7 @@ const SECTION_DESCRIPTOR = {
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
+  lootPolicy: { schema: optional(array(LootPolicySchema)), label: 'loot policy', order: 4.1 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
   actors: {
     schema: optional(

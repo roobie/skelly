@@ -28,8 +28,8 @@ import {
 import { itemPresentationIssues } from './itemPresentation.ts';
 import { crawlsAfterLegLoss } from './legLoss.ts';
 import { vesselAccepts } from './liquids.ts';
-import { lootTypeIssue } from './loot.ts';
-import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
+import { lootTypeIssue, militaryLootItems } from './loot.ts';
+import { magazineWellCalibre } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
 import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
@@ -717,6 +717,9 @@ const addLootTableItems = (
       addLootTableItems(registry, entry.table, items, visitedTables);
     }
   }
+  for (const { item } of registry.loot.get(tableId)?.cartridgeOdds ?? []) {
+    items.add(item);
+  }
 };
 
 const addDerivedItems = (registry: Registry, item: ItemDef, items: Set<string>): void => {
@@ -1082,6 +1085,11 @@ const checkLoot = (registry: Registry, report: Report) => {
       }
       if (entry.table !== undefined && !registry.loot.has(entry.table)) {
         report('loot', table.id, `.entries[${i}].table`, `no loot table "${entry.table}"`);
+      }
+    });
+    table.cartridgeOdds?.forEach(({ item }, i) => {
+      if (registry.items.get(item)?.ammo === undefined) {
+        report('loot', table.id, `.cartridgeOdds[${i}].item`, `"${item}" is not a cartridge`);
       }
     });
     const loop = findLoop(registry, table.id);

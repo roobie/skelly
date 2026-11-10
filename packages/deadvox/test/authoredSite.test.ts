@@ -12,8 +12,7 @@ import {
   rectDistance,
 } from '@skelly/engine/internal/core/authoredTerrain.mjs';
 import { couldFit } from '@skelly/engine/internal/core/items.ts';
-import { lootTypeIssue } from '@skelly/engine/internal/core/loot.ts';
-import { militaryLootItems } from '@skelly/engine/internal/core/magazine.ts';
+import { lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
 import { actorBodyDimensions } from '@skelly/engine/internal/core/spawnClearance.ts';

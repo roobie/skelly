@@ -14,6 +14,7 @@ export const CONTENT_CAPABILITIES = {
   skillProgression: { progression: 'optional' },
   rangedTuning: { ranged: 'optional' },
   combatPolicy: { player: 'optional' },
+  lootPolicy: { magazines: 'optional' },
   skills: {
     firearmsCombat: 'optional',
     meleeCombat: 'optional',
