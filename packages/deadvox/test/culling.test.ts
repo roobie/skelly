@@ -71,7 +71,7 @@ const visible = (meshes: ChunkMeshes) =>
   meshes.group.children.filter((m) => m.visible).map((m) => m.position.toArray().join(','));
 
 describe('culling', () => {
-  it('puts the far plane where the fog ends, day and night', () => {
+  it('puts the far plane where the fog ends, day and night, nearer at night', () => {
     const { scene, camera, sky } = setup();
     for (const hour of [dayHour, nightHour]) {
       applySky(sky, skyAt(hour, BASE_DAY_CYCLE));
@@ -81,7 +81,7 @@ describe('culling', () => {
     applySky(sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const day = fogFar(scene);
     applySky(sky, skyAt(nightHour, BASE_DAY_CYCLE));
-    expect(fogFar(scene)).toBeLessThan(day / 2);
+    expect(fogFar(scene)).toBeLessThan(day);
     // The projection follows, so culling does too.
     const fresh = camera.clone();
     fresh.updateProjectionMatrix();

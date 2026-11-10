@@ -61,13 +61,10 @@ const benchmarkEntries = (source: Registry): BenchmarkEntry[] => {
       entries.push({ type: itemType, count: Math.min(remaining, stack) });
     }
   }
-  const fillerTypes = ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'];
-  for (let nextFiller = 0; entries.length < 199; nextFiller += 1) {
-    const fillerType = fillerTypes[nextFiller % fillerTypes.length]!;
-    entries.push({ type: fillerType, count: Math.min(3, source.items.get(fillerType)?.stack ?? 1) });
-  }
-  if (entries.length > 199) {
-    throw new Error('The benchmark recipe inputs exceed one 200-item reach snapshot');
+  // Pad with more of the inputs to a large inventory; content with more inputs than that sizes the snapshot itself.
+  const inputs = entries.length;
+  for (let next = 0; entries.length < 199; next += 1) {
+    entries.push({ ...entries[next % inputs]! });
   }
   return entries;
 };
@@ -241,9 +238,29 @@ describe('pure craft planner', () => {
     expect(result.missing.components).toEqual(requirementStatus(definition, snapshot, character).components);
   });
   it('bounds overlapping multi-quality provider work while retaining the cheapest disjoint components', () => {
+    // Fixture tools: the pry bar alone provides two qualities, so the four-quality search overlaps.
+    const Hammering = 'fixture_hammering';
+    const Prying = 'fixture_prying';
+    const Cutting = 'fixture_cutting';
+    const Opening = 'fixture_opening';
+    const { stack: _, ...toolTemplate } = [...registry.items.values()].find((item) => item.tool)!;
+    const bagTemplate = [...registry.items.values()].find((item) => item.container && item.wearable)!;
+    const fixtureTool = (id: string, qualities: Record<string, number>, stack?: number) => ({
+      ...toolTemplate,
+      id,
+      ...(stack === undefined ? {} : { stack }),
+      tool: { ...toolTemplate.tool!, qualities },
+    });
+    const tools = [
+      fixtureTool('fixture_pry_bar', { [Hammering]: 1, [Prying]: 1 }, 4),
+      fixtureTool('fixture_blade', { [Cutting]: 1 }),
+      fixtureTool('fixture_opener', { [Opening]: 1 }),
+    ];
+    const types = tools.map(({ id }) => id);
+    const span = Math.max(...tools.flatMap(({ size }) => size));
     const definition = {
-      ...recipe(['crowbar', 'kitchen_knife', 'can_opener'].map((item) => [{ item, count: 1 }])),
-      qualities: { hammering: 1, prying: 1, cutting: 1, opening: 1 },
+      ...recipe(types.map((item) => [{ item, count: 1 }])),
+      qualities: Object.assign({}, ...tools.map(({ tool }) => tool.qualities)) as RecipeDef['qualities'],
     };
     const stressRegistry = baseRegistryWith([
       {
@@ -251,12 +268,13 @@ describe('pure craft planner', () => {
         data: {
           recipes: [definition],
           items: [
-            { ...registry.items.get('crowbar')!, stack: 4 },
+            ...tools,
             {
-              ...registry.items.get('school_backpack')!,
+              ...bagTemplate,
+              id: 'fixture_bag',
               container: {
                 wideReason: 'The crafting stress fixture needs one large pocket for disjoint placements.',
-                pockets: [{ name: 'Fixture', grid: [600, 8], handlingSimSeconds: 0.5 }],
+                pockets: [{ name: 'Fixture', grid: [200 * span, span], handlingSimSeconds: 0.5 }],
               },
             },
           ],
@@ -264,9 +282,8 @@ describe('pure craft planner', () => {
       },
     ]);
     const inventory = new Inventory(stressRegistry);
-    const bag = inventory.create('school_backpack');
+    const bag = inventory.create('fixture_bag');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const types = ['crowbar', 'kitchen_knife', 'can_opener'];
     for (let i = 0; i < 199; i += 1) {
       const item = inventory.create(types[i % 3]!);
       item.condition = (i + 1) / 200;
@@ -275,7 +292,7 @@ describe('pure craft planner', () => {
           kind: 'pocket',
           owner: bag,
           pocket: 0,
-          at: { x: i * 3, y: 0, rotated: false },
+          at: { x: i * span, y: 0, rotated: false },
         }),
       ).toBe(true);
     }
@@ -313,28 +330,31 @@ describe('pure craft planner', () => {
       return { ...result, reads };
     };
     // Independent control: even the old search completes this exact stock with one quality.
-    const control = counted({ hammering: 1 });
+    const control = counted({ [Hammering]: 1 });
     const full = counted(definition.qualities);
-    process.stdout.write(`craft-tool-provider reads: one=${control.reads} four=${full.reads}\n`);
-    expect(full.plan.tools.map(({ quality }) => quality)).toEqual(['cutting', 'hammering', 'opening', 'prying']);
-    expect(full.plan.tools.find(({ quality }) => quality === 'hammering')!.item.uid).toBe(
-      full.plan.tools.find(({ quality }) => quality === 'prying')!.item.uid,
+    expect(full.plan.tools.map(({ quality }) => quality)).toEqual(Object.keys(definition.qualities).sort());
+    expect(full.plan.tools.find(({ quality }) => quality === Hammering)!.item.uid).toBe(
+      full.plan.tools.find(({ quality }) => quality === Prying)!.item.uid,
     );
     const fourClasses = counted(definition.qualities, 4);
-    process.stdout.write(`craft-tool-provider four-class reads: ${fourClasses.reads}\n`);
+    if (benchmarking) {
+      process.stdout.write(
+        `craft-tool-provider reads: one=${control.reads} four=${full.reads} four-class=${fourClasses.reads}\n`,
+      );
+    }
     expect(inventory.snapshotState()).toEqual(before);
     // Keeping only one representative per class would lose this feasible cheapest
     // allocation: reserving both cheap singleton tools avoids two retrievals.
     const varied = stock(
       [
-        { type: 'crowbar', time: 0.9 },
-        { type: 'crowbar', time: 0.9 },
-        { type: 'crowbar', count: 4, time: 1 },
+        { type: 'fixture_pry_bar', time: 0.9 },
+        { type: 'fixture_pry_bar', time: 0.9 },
+        { type: 'fixture_pry_bar', count: 4, time: 1 },
       ],
       stressRegistry,
     );
     const cheapest = planCraft(
-      recipe([[{ item: 'crowbar', count: 2 }]], { hammering: 1, prying: 1 }),
+      recipe([[{ item: 'fixture_pry_bar', count: 2 }]], tools[0]!.tool.qualities),
       varied.snapshot,
       character,
     );
@@ -466,18 +486,21 @@ describe('pure craft planner', () => {
     expect(trained.plan.work).toBeLessThan(novice.plan.work);
   });
 
-  it('records planning every base recipe against one indexed 200-item reach snapshot', () => {
+  it('plans every base recipe under full stock in one indexed reach snapshot', () => {
     const benchmarkRegistry = { ...registry, items: new Map(registry.items) };
-    const baseBag = registry.items.get('school_backpack')!;
+    const entries = benchmarkEntries(registry);
+    const baseBag = [...registry.items.values()].find((item) => item.container && item.wearable)!;
     const span = Math.max(...[...registry.items.values()].flatMap((def) => def.size));
-    benchmarkRegistry.items.set(baseBag.id, {
+    benchmarkRegistry.items.set('fixture_bag', {
       ...baseBag,
-      container: { pockets: [{ name: 'Benchmark', grid: [200 * span, span], handlingSimSeconds: simSeconds(0.5) }] },
+      id: 'fixture_bag',
+      container: {
+        pockets: [{ name: 'Benchmark', grid: [entries.length * span, span], handlingSimSeconds: simSeconds(0.5) }],
+      },
     });
     const inventory = new Inventory(benchmarkRegistry);
-    const bag = inventory.create('school_backpack');
+    const bag = inventory.create('fixture_bag');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const entries = benchmarkEntries(benchmarkRegistry);
     entries.forEach(({ type: itemType, count }, entryIndex) => {
       const item = inventory.create(itemType, count);
       expect(
@@ -497,7 +520,7 @@ describe('pure craft planner', () => {
       ).toBeDefined();
     }
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
-    expect(snapshot.entries).toHaveLength(200);
+    expect(snapshot.entries).toHaveLength(entries.length + 1);
     const actor = new Character(benchmarkRegistry);
     actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
     const skillGates = new Map<string, number>();

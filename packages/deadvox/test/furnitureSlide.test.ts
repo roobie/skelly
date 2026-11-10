@@ -1,6 +1,6 @@
 import { Box3, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
+import type { FurnitureDef, Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import {
   advanceFloorLockedPlacement,
@@ -19,11 +19,13 @@ import { reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -341,17 +343,24 @@ describe('floor furniture steps', () => {
     expect(placeFurniture(mover, [8, 1, 6])).toBeUndefined();
     expect(entity.pos[1]).toBe(spec.pos[1]);
   });
-  it.each(['mount', 'door', 'climbable', 'vehicle', 'scenarioGoal', 'cover'] as const)(
-    'keeps oversized content with %s out of the movement selector',
-    (field) => {
-      const source = [...base.furniture.values()].find((def) => Boolean(def[field]));
-      expect(source).toBeDefined();
+  const fixedKinds: Record<string, Partial<FurnitureDef>> = {
+    mount: { mount: 'wall' },
+    door: { door: { handlingSimSeconds: simSeconds(0.5), methods: {} } },
+    climbable: { climbable: { speedMetresPerSimSecond: 1 } },
+    vehicle: {
+      vehicle: { blueprint: Object.keys(BLUEPRINTS)[0]!, body: '#777777', dirt: 0, removed: [], solidFill: 0.5 },
+    },
+    scenarioGoal: { scenarioGoal: true },
+    cover: { cover: true },
+  };
+  it.each(Object.entries(fixedKinds))(
+    'keeps an oversized fixture with %s out of the movement selector',
+    (_field, fields) => {
       const inventory = new Inventory({
         ...registry,
         furniture: new Map(registry.furniture).set('slide_fixture', {
-          ...source!,
-          id: 'slide_fixture',
-          size: spec.size,
+          ...registry.furniture.get('slide_fixture')!,
+          ...fields,
         }),
       });
       const entity = inventory.furnish(spec)!;

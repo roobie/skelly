@@ -9,7 +9,9 @@ const registry = baseRegistry();
 const dressedInventory = () => {
   const inventory = new Inventory(registry);
   const backpack = inventory.create('school_backpack');
-  inventory.worn.back = backpack;
+  if (!inventory.add(backpack, { kind: 'worn' })) {
+    throw new Error('could not wear fixture backpack');
+  }
   const item = inventory.create('canned_beans');
   if (!inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
     throw new Error('could not put fixture item on floor');

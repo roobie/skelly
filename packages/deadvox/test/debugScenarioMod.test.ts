@@ -51,20 +51,16 @@ describe('authored debug scenario mod', () => {
     },
   );
 
-  it('loads two selected debug folder mods together', () => {
-    const tutorialDebug = 'skelly.deadvox.scenario.tutorial.debug';
+  it('loads the test-house debug mod together with another selected opt-in folder mod', () => {
+    const other = debugPacks.find(({ manifest }) => manifest.id !== debugManifest.id);
+    expect(other).toBeDefined();
+    const owners = debugPacks.filter(({ manifest }) => manifest.id === debugManifest.id).concat(other!);
+    const ids = owners.map(({ manifest }) => manifest.id);
     const both = withReusedBuilds(() =>
-      selectBundledMods(
-        productModIntake,
-        bundledModIdsFromUrl(new URLSearchParams({ mods: `${debugManifest.id},${tutorialDebug}` })),
-      ),
+      selectBundledMods(productModIntake, bundledModIdsFromUrl(new URLSearchParams({ mods: ids.join(',') }))),
     );
     expect(both.issues).toEqual([]);
-    expect(both.admittedFolderPacks.map(({ id }) => id).sort()).toEqual([debugManifest.id, tutorialDebug].sort());
-    const owners = readAvailablePacks('.').filter(({ manifest }) =>
-      [debugManifest.id, tutorialDebug].includes(manifest.id),
-    );
-    expect(owners.length).toBe(2);
+    expect(both.admittedFolderPacks.map(({ id }) => id).sort()).toEqual([...ids].sort());
     for (const { manifest, files } of owners) {
       for (const { data } of files) {
         for (const { id } of (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []) {

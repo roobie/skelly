@@ -8,6 +8,7 @@ import {
   parseCamParam,
   poseChanged,
 } from '../src/debug/camUrl.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 
 const pose: CamPose = { position: [12.345, 1.6, -7.891], yaw: 1, pitch: -0.25, roll: 0 };
 const params = (value: string) => new URLSearchParams({ cam: value });
@@ -24,9 +25,10 @@ describe('cam URL parameter', () => {
     expect(camValue(back)).toBe(camValue(pose));
   });
 
-  it('wraps yaw to [-180, 180) and clamps a hand-edited pitch like the mouse look', () => {
+  it('wraps yaw to [-180, 180) and clamps a hand-edited pitch to the mouse-look limit', () => {
     expect(camValue({ ...pose, yaw: 3 * Math.PI })).toBe('12.35,1.60,-7.89,-180.0,-14.3,0.0');
-    expect(parseCamParam(params('0,0,0,0,90,0'))!.pitch).toBeCloseTo(1.55, 9);
+    expect(parseCamParam(params('0,0,0,0,90,0'))!.pitch).toBeCloseTo(LOOK_PITCH_LIMIT, 9);
+    expect(parseCamParam(params('0,0,0,0,-90,0'))!.pitch).toBeCloseTo(-LOOK_PITCH_LIMIT, 9);
   });
 
   it('ignores a missing or malformed value without throwing', () => {

@@ -9,7 +9,7 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { GunModelDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
@@ -352,9 +352,8 @@ describe('certified firearm fitting', () => {
     expect(durations(0, 10)).toEqual(untrained);
   });
 
-  it('requires Firearms Combat 4 to fit a suppressor but not to remove one', () => {
+  it('refuses a suppressor fit below its authored fit skill level but removes one at no skill', () => {
     const character = new Character(baseRegistry);
-    character.skills.firearms_combat = 3;
     const fixture = makeFixture(character);
     const suppressorType = [...fixture.registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
@@ -363,6 +362,13 @@ describe('certified firearm fitting', () => {
     if (!suppressorType) {
       throw new Error('Fixture registry needs a suppressor');
     }
+    const effects = defOf(fixture.registry, suppressorType).firearmAttachmentEffects;
+    if (effects?.kind !== 'suppressor') {
+      throw new Error('Fixture suppressor needs suppressor attachment effects');
+    }
+    expect(effects.fitSkillLevel).toBeGreaterThan(0);
+    const skill = attachmentWorkSkill(fixture.registry);
+    character.skills[skill] = effects.fitSkillLevel - 1;
     const suppressor = fixture.inventory.create(suppressorType);
     const suppressorId = fixture.registry.models.get(defOf(fixture.registry, suppressor.type).model!)!.gun!.attachment!
       .id;
@@ -383,15 +389,15 @@ describe('certified firearm fitting', () => {
       throw new Error('Fixture suppressor could not be placed');
     }
 
-    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBe("I can't fit this suppressor yet");
+    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBe(effects.fitRefusal);
     expect(queue.jobs).toHaveLength(0);
 
-    character.skills.firearms_combat = 4;
+    character.skills[skill] = effects.fitSkillLevel;
     expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBeUndefined();
     queue.tick(10);
     expect(fixture.firearm.slots?.[slot]).toBe(suppressor);
 
-    character.skills.firearms_combat = 0;
+    character.skills[skill] = 0;
     expect(handling.remove(fixture.firearm.uid, slot)).toBeUndefined();
     queue.tick(10);
     expect(fixture.firearm.slots?.[slot]).toBeUndefined();

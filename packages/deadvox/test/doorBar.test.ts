@@ -5,6 +5,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { doorPlan } from '../src/core/options.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { gameMinutes } from '../src/core/time.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
@@ -24,6 +25,24 @@ const registry = baseRegistryWith(
             color: '#777777',
             door: { handlingSimSeconds: 0.5, methods: {} },
           },
+          {
+            id: 'fixture_bench',
+            name: 'Fixture bench',
+            size: [1, 1, 1],
+            color: '#777777',
+            workstation: { id: 'fixture_station', qualities: {}, workFactorBonus: 0.5 },
+          },
+        ],
+        recipes: [
+          {
+            id: 'fixture_bar_recipe',
+            result: { item: 'fixture_bar', count: 1 },
+            timeGameMinutes: gameMinutes(20),
+            skills: {},
+            qualities: {},
+            components: [[{ item: 'fixture_plank', count: 1 }]],
+            workstation: 'fixture_station',
+          },
         ],
         items: [
           {
@@ -35,6 +54,7 @@ const registry = baseRegistryWith(
             twoHanded: true,
             doorBar: { setSimSeconds: 1, liftSimSeconds: 1, look: { color: '#555555', thickness: 0.1 } },
           },
+          { id: 'fixture_plank', name: 'Fixture plank', category: 'tool', size: [1, 1], weight: 1 },
         ],
       },
     },
@@ -119,9 +139,9 @@ it('a save round-trip keeps the barred side of a door', async () => {
   expect(opensFrom(loaded.inventory, restored, BACK)).toBe(false);
 });
 
-it('a save round-trip restores a discounted door-bar craft in progress', async () => {
+it('a save round-trip restores a craft in progress that a workstation bonus shortened', async () => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
-  const recipe = registry.recipes.get('door_bar')!;
+  const recipe = registry.recipes.get('fixture_bar_recipe')!;
   runtime.session.character.initializeProgression({}, [recipe.id]);
   const component = recipe.components[0]!.find((part) => 'item' in part)!;
   const pos = runtime.player.body.pos.map(Math.floor) as Vec3;
@@ -132,9 +152,9 @@ it('a save round-trip restores a discounted door-bar craft in progress', async (
     }
   }
   runtime.inventory.entities.add({
-    type: 'workbench',
+    type: 'fixture_bench',
     pos,
-    size: registry.furniture.get('workbench')!.size,
+    size: registry.furniture.get('fixture_bench')!.size,
     facing: 'n',
   });
   expect(

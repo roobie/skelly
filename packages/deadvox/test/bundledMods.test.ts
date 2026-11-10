@@ -24,15 +24,20 @@ describe('beginner bundled mod', () => {
     expect(beginner.admitted.map(({ id }) => id)).toEqual([BEGINNER_ID]);
   });
 
-  it('scales every hostile kind consistently from its core row', () => {
+  it('weakens every hostile kind by one shared factor per trait, each below its core row', () => {
     const [firstId, firstPlain] = base.actors.entries().next().value!;
     const firstEasy = beginner.content.registry.actors.get(firstId)!;
+    const firstRegion = Object.keys(firstPlain.regions)[0]!;
     const factors = {
       damage: firstEasy.attack!.moves[0]!.damage / firstPlain.attack!.moves[0]!.damage,
       speed: firstEasy.speed.wanderMetresPerSimSecond / firstPlain.speed.wanderMetresPerSimSecond,
       detection: firstEasy.agent!.sight / firstPlain.agent!.sight,
-      health: firstEasy.regions.head! / firstPlain.regions.head!,
+      health: firstEasy.regions[firstRegion]! / firstPlain.regions[firstRegion]!,
     };
+    for (const [trait, factor] of Object.entries(factors)) {
+      expect(factor, trait).toBeGreaterThan(0);
+      expect(factor, trait).toBeLessThan(1);
+    }
     expect(beginner.content.registry.actors.size).toBe(base.actors.size);
     for (const [id, plain] of base.actors) {
       const easy = beginner.content.registry.actors.get(id)!;

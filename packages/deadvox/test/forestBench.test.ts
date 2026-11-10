@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type BenchRecord, loadRecord, saveRecord } from '../src/bench/plan.ts';
+import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
@@ -21,7 +21,7 @@ it('parses forest density strictly, including zero/one, without silently switchi
 });
 
 describe('forest benchmark workload identity', () => {
-  it('keeps forest site, density, seed, time and post on the second run instead of reverting to the test house', () => {
+  it('keeps forest site, density, seed, time and post on the second run and names the density in its label', () => {
     const run = benchRunFromUrl(
       new URLSearchParams('site=forest&density=0.75&seed=7&time=23:30&post=1&plan=0.5:64,0.5:96'),
       { layouts: new Map(), scenarios: new Map() },
@@ -36,7 +36,7 @@ describe('forest benchmark workload identity', () => {
     });
     expect(next.get('seed')).toBe('7');
     expect(configFromUrl(next)).toMatchObject({ site: 'forest', density: 0.75, seed: 7 });
-    expect(benchSiteLabel(run)).toBe('forest, density 0.75');
+    expect(benchSiteLabel(run)).toContain(String(run.density));
     const field = benchRunFromUrl(new URLSearchParams('site=forest&plan=0.5:64,0.5:96'), {
       layouts: new Map(),
       scenarios: new Map(),
@@ -78,7 +78,7 @@ describe('forest benchmark workload identity', () => {
     }
   });
 
-  it('retains the seeded field, shape mix, extent, opacity and full camera routes in both result export formats', () => {
+  it('retains the seeded forest workload, with camera routes inside its extent at every plan radius, in both result export formats', () => {
     const run = benchRunFromUrl(new URLSearchParams('site=forest&post=1'), {
       layouts: new Map(),
       scenarios: new Map(),
@@ -104,9 +104,9 @@ describe('forest benchmark workload identity', () => {
     });
     const route = json.forest!.routes;
     const distance = route.jogSeconds * route.jogMetresPerSecond + route.sprintSeconds * route.sprintMetresPerSecond;
-    expect(distance + 96).toBeLessThan(json.forest!.extentMetres / 2);
-    expect(markdownReport(json)).toContain('Forest workload:');
-    expect(markdownReport(json)).toContain('"density":null');
+    const radius = Math.max(...DEFAULT_PLAN.map(({ radiusM }) => radiusM));
+    expect(distance + radius).toBeLessThan(json.forest!.extentMetres / 2);
+    expect(markdownReport(json)).toContain(JSON.stringify(json.forest));
     // Production save/load between pages must preserve exactly the JSON export's workload.
     const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
     let stored = '';

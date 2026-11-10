@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { actionOpenSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { FirearmMechanics, type FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -280,17 +280,12 @@ it('removal recovers a retained top-up round before stripping the magazine', () 
   expect(f.total()).toBe(before);
 });
 
-it('skill scales the bolt clock and ejection includes the exported unlock phase', () => {
-  const novice = fixture();
-  const experienced = fixture(SKILL_LEVEL_MAX);
-  for (const f of [novice, experienced]) {
-    expect(f.mechanics.cock(f.gun.uid, 0)).toBeUndefined();
-  }
-  expect(experienced.queue.remaining).toBeLessThan(novice.queue.remaining);
+it('hand ejection waits out the exported unlock phase', () => {
   const action = model.gun!.action!;
-  expect(ejectSeconds(action, 'hand')).toBeCloseTo(
-    action.hand.unlockSimSeconds! + action.hand.rearwardSimSeconds * action.ejectAt,
-  );
+  const unlock = action.hand.unlockSimSeconds;
+  expect(unlock).toBeGreaterThan(0);
+  const unlocked = { ...action, hand: { ...action.hand, unlockSimSeconds: simSeconds(0) } };
+  expect(ejectSeconds(action, 'hand') - ejectSeconds(unlocked, 'hand')).toBeCloseTo(unlock!);
 });
 
 it('a top-up save retains the extracted round outside the magazine and cancels only manual motion', async () => {

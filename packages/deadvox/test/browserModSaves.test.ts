@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { admitPacks, admitWithFolderPacks, packContentHash, selectFolderClosure } from '../src/core/packAdmission.ts';
-import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
+import { contentPackDifferences, currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import { availablePackInputs, bundledPackInputs } from '../src/product/content.ts';
 import { folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
@@ -30,21 +30,26 @@ test('a save round-trip preserves the admitted ordered browser mod identity', as
   expect(decoded.versionIdentity.digest).toBe(identity.digest);
 });
 
-test('Continue refuses missing, changed and reordered mods with a named reason', async () => {
+test('Continue refuses missing, changed and reordered mods with the first pack difference, naming a changed mod', async () => {
   const identity = await currentSaveVersionIdentity([], mods);
+  const saved = identity.components.contentPacks;
+  const firstId = saved.find(({ id }) => id.endsWith(mods[0]!.id))!.id;
   const bytes = await encodeSave(capture(createRuntime()), {
     generation: 1,
     version: identity.components,
     worldOptions: formatWorldOptions,
   });
-  for (const [selected, reason] of [
-    [mods.slice(1), 'Missing mod: browser.fixture-first'],
-    [[{ ...mods[0]!, data: { items: [{ id: 'fixture-new' }] } }, mods[1]!], 'Different mod: browser.fixture-first'],
-    [[{ ...mods[0]!, version: '3' }, mods[1]!], 'Different mod: browser.fixture-first'],
-    [[...mods].reverse(), 'Different mod order'],
+  for (const [selected, namesFirst] of [
+    [mods.slice(1), true],
+    [[{ ...mods[0]!, data: { items: [{ id: 'fixture-new' }] } }, mods[1]!], true],
+    [[{ ...mods[0]!, version: '3' }, mods[1]!], true],
+    [[...mods].reverse(), false],
   ] as const) {
     // biome-ignore lint/performance/noAwaitInLoops: each compatibility case must finish before the next decode.
     const running = await currentSaveVersionIdentity([], selected);
+    const [reason] = contentPackDifferences(saved, running.components.contentPacks);
+    expect(reason).toBeDefined();
+    expect(reason!.includes(firstId)).toBe(namesFirst);
     await expect(decodeSave(bytes, { version: running.components, contentLookup })).rejects.toThrow(reason);
   }
 });
