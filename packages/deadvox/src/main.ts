@@ -3,7 +3,7 @@
 
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
-import { bundledModIdsFromUrl, getBuildRevision, selectBundledMods } from '@skelly/engine/packs';
+import { bundledModIdsFromUrl, getBuildRevision, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
 import type { SaveBackendPreference } from '@skelly/engine/save';
 import {
   applyWeatheringConfig,
@@ -13,7 +13,7 @@ import {
   savingEnabledFromUrl,
 } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
-import { fillText } from '@skelly/engine/text';
+import { countText, fillText } from '@skelly/engine/text';
 import type { StreamerStats } from '@skelly/engine/world';
 import {
   createEngine,
@@ -67,7 +67,12 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
-const bundled = selectBundledMods(productModIntake, showMods ? [] : bundledModIdsFromUrl(params));
+const bundled = selectBundledMods(
+  productModIntake,
+  showMods ? [] : bundledModIdsFromUrl(params),
+  [],
+  startModFromUrl(params),
+);
 const saveStatus = document.getElementById('save-status')!;
 const saveStatusHome = saveStatus.parentElement!;
 const saveStatusNextSibling = saveStatus.nextSibling;
@@ -91,9 +96,13 @@ if (bundled.issues.length > 0) {
   // Refused mods must not start a game with other content; stop the module here.
   await new Promise<never>(() => undefined);
 }
-if (refused !== undefined) {
-  const { linkRefused } = claimed(bundled.content.registry.ui, 'interface')!.screenText.startup;
-  showStartupFailure(fillText(linkRefused, { name: refused }));
+if (refused !== undefined || bundled.startModRows !== undefined) {
+  const { linkRefused, startModRows } = claimed(bundled.content.registry.ui, 'interface')!.screenText.startup;
+  showStartupFailure(
+    refused === undefined
+      ? fillText(startModRows, { count: countText(bundled.startModRows!) })
+      : fillText(linkRefused, { name: refused }),
+  );
   // A link the game cannot read must not start a game that ignores part of it; stop the module here.
   await new Promise<never>(() => undefined);
 }
@@ -272,7 +281,7 @@ if (bench === 'report') {
       { backend, savingEnabled: savingEnabledFromUrl(hash) },
       {
         bundledMods: bundled.admitted,
-        browserMods: browserSelection?.admitted ?? [],
+        browserMods: [...bundled.inlineAdmitted, ...(browserSelection?.admitted ?? [])],
         folderPacks: bundled.admittedFolderPacks,
       },
     );

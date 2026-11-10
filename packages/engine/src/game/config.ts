@@ -9,7 +9,7 @@ import { resolveWeatheringUrl, type WeatheringTuning } from '../core/weatheringU
 import type { VoicePitchOverrides } from './actorAudio.ts';
 import type { StartupContent } from './bundledContent.ts';
 import { sweepFromUrl } from './ragdollConfig.ts';
-import { requireStart, startForSite } from './startSelection.ts';
+import { requireStart, runStartId, startForSite } from './startSelection.ts';
 
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
@@ -212,7 +212,7 @@ export const applyWeatheringConfig = (
 const applyStartConfig = (config: GameConfig, params: URLSearchParams, hash: DeveloperState): void => {
   const { content } = config;
   const requestedStart = params.get('start');
-  const selected = requireStart(content, requestedStart ?? content.defaultStart, config.debug);
+  const selected = requireStart(content, requestedStart ?? runStartId(content), config.debug);
   const siteSelection = siteFromUrl(params, selected.site, content.registry, config.debug);
   const start =
     requestedStart === null && params.has('site') ? startForSite(content, siteSelection.site, config.debug) : selected;

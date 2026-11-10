@@ -21,7 +21,7 @@ export interface ModEvaluation {
   content: StartupContent;
   issues: ReadonlyMap<string, readonly ContentIssue[]>;
   canStart: boolean;
-  admitted: { id: string; version: string; data: unknown }[];
+  admitted: { id: string; version: string; data: unknown; source: string }[];
   /** The selected folder packs that admission kept, in admission order. */
   admittedFolderPacks: PackInput[];
 }
@@ -145,7 +145,7 @@ export const evaluateMods = (
     content,
     admitted: admission.packs
       .filter((pack): pack is IdentifiedSource => selected.includes(pack as IdentifiedSource))
-      .map(({ id, version, manifest, data }) => ({ id, version, data: { manifest, content: data } })),
+      .map(({ id, version, manifest, data, source }) => ({ id, version, data: { manifest, content: data }, source })),
     admittedFolderPacks: admission.folderPacks,
     issues,
     canStart: content.issues.length === 0 && mods.every((mod) => !(mod.enabled && issues.get(mod.source)?.length)),

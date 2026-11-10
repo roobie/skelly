@@ -74,7 +74,7 @@
     restored: 'Defaults restored',
   },
   worldLoading: { loading: 'Loading world…', failed: 'Unable to load the world: {error}', reload: 'Reload game' },
-  startup: { linkRefused: 'Unknown link setting: {name}' },
+  startup: { linkRefused: 'Unknown link setting: {name}', startModRows: 'Start mod start rows: {count}, need 1' },
   menu: { play: 'Play', continue: 'Continue' },
   credits: {
     heading: 'Credits',

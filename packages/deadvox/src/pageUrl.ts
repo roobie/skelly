@@ -4,8 +4,8 @@
 
 import { type HashState, readHash, writeHash } from './hashState.ts';
 
-/** The mod list and the switches that choose a harness. */
-const HARNESS_QUERY = ['mods', 'bench', 'render', 'skyRoute', 'save-backend', 'save-test', 'debug-error'];
+/** The mod list, the run's start mod and the switches that choose a harness. */
+const HARNESS_QUERY = ['mods', 'start-mod', 'bench', 'render', 'skyRoute', 'save-backend', 'save-test', 'debug-error'];
 
 /**
  * World setup whose home is not decided yet, so the game still reads it from the query; see
@@ -14,6 +14,24 @@ const HARNESS_QUERY = ['mods', 'bench', 'render', 'skyRoute', 'save-backend', 's
 const UNHOMED_QUERY = ['site', 'time', 'start', 'tutorial'];
 
 const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY]);
+
+/**
+ * A link names its start one way, so these are not read beside `start-mod`; see
+ * `packages/deadvox/docs/url-mods.md`, "Start mod".
+ */
+const START_MOD_EXCLUDES = new Set(['site', 'start', 'tutorial']);
+
+/** The first query parameter the game does not read; a repeated `start-mod` or one beside the mods panel is refused. */
+const unreadQuery = (query: URLSearchParams): string | undefined => {
+  const unknown = [...query.keys()].find((name) => !GAME_QUERY.has(name));
+  if (unknown !== undefined || !query.has('start-mod')) {
+    return unknown;
+  }
+  if (query.getAll('start-mod').length > 1 || query.get('mods') === '1') {
+    return 'start-mod';
+  }
+  return [...query.keys()].find((name) => START_MOD_EXCLUDES.has(name));
+};
 
 export interface PageUrl {
   readonly query: URLSearchParams;
@@ -27,7 +45,7 @@ export const readPageUrl = (search: string, fragment: string): PageUrl => {
   const query = new URLSearchParams(search);
   const read = readHash(fragment);
   const hash = 'hash' in read ? read.hash : {};
-  const unknown = [...query.keys()].find((name) => !GAME_QUERY.has(name));
+  const unknown = unreadQuery(query);
   const refused = unknown ?? ('refused' in read ? read.refused : undefined);
   return { query, hash, ...(refused === undefined ? {} : { refused }) };
 };

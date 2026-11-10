@@ -31,7 +31,11 @@ export interface BundledContentSources {
   readonly files: Readonly<Record<string, unknown>>;
 }
 
-export type StartupContent = ReturnType<typeof buildRegistry> & { defaultStart?: string | undefined };
+export type StartupContent = ReturnType<typeof buildRegistry> & {
+  defaultStart?: string | undefined;
+  /** The one start row of the page's `start-mod`; see `startSelection.ts`, `runStartId`. */
+  startModStart?: string | undefined;
+};
 
 export interface BundledContent {
   /** The packs that start without selection: every shipped pack except the opt-in ones. */

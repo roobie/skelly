@@ -799,7 +799,8 @@
           "version": "{build} · {digest}"
         },
         "startup": {
-          "linkRefused": "Unknown link setting: {name}"
+          "linkRefused": "Unknown link setting: {name}",
+          "startModRows": "Start mod start rows: {count}, need 1"
         },
         "stats": {
           "bleeding": "{tier} — {region}",

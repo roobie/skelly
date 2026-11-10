@@ -52,6 +52,14 @@ URL mods and panel mods combine, so a demo can be tried with a player's own mods
 
 The tutorial is a bundled mod with its own start row, and the game recognises a tutorial run from the loaded start row.
 
+## Start mod
+
+`start-mod` names the run's starting point and gear, so a test or link that needs its own fixture owns that start config itself rather than fiddling with one parameter per setting. Its value is either a bundled or committed mod id or inline mod JSON: a value whose first non-space character is `{` is inline data, anything else is an id. One parameter takes both forms, so a link cannot name its start two ways; a refusal names the form it read. See `packages/engine/src/game/bundledMods.ts`, `startModFromUrl`.
+
+Inline data goes through the same intake as a player's mod, with its admission, diagnostics and byte limit, and the save identity records it as an intake-admitted mod hashed from its data, so a world resumes only with the same data. An id loads like a `?mods=` entry. The start mod loads after the `?mods=` list and must supply exactly one start row; any other count stops startup with a visible error. See `packages/engine/src/game/bundledMods.ts`, `selectBundledMods`.
+
+The run starts from the start mod's row, else the default start of the last admitted pack that names one, so a scenario loaded through `?mods=` comes before the product entry pack's default. See `packages/engine/src/game/startSelection.ts`, `runStartId`. Beside `start-mod`, a link cannot name `site`, `start` or `tutorial`, repeat `start-mod` or open the mods panel; see `src/pageUrl.ts`, `readPageUrl`. The time of day is the start row's, else the day cycle's default; while the `time` query remains, it overrides both, so a stage that still passes it keeps its light.
+
 ## Hash state
 
 The hash is one object in a relaxed JSON-like form: bare keys, bare word strings, numbers, booleans and arrays, as in `#{debug:true,cam:[1.5,2,3,90,0,0]}`. Strict JSON would turn every quote into `%22` in the address bar. Other text is a JSON string, escapes and all, and the writer writes `%` as `%25`, so the address bar's percent-encoding is the only encoding the reader undoes and every value written reads back; see `src/hashState.ts`, `writeHash`. The page reads it once at startup through `src/pageUrl.ts`, `pageUrl`. Its keys and value types are checked against one schema, `src/hashState.ts`, `HASH_KEYS`, and an unknown key or a value of the wrong type stops startup with a visible error naming the key, as an unknown query parameter does. Its remaining bounds belong to slice 2:

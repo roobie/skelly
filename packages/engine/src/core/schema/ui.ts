@@ -119,7 +119,7 @@ const UiScreenTextSchema = strictObject({
   }),
   worldLoading: slottedTable({ loading: [], failed: ['error'], reload: [] }),
   /** A page link the game refuses to start from, naming the setting it refused. */
-  startup: slottedTable({ linkRefused: ['name'] }),
+  startup: slottedTable({ linkRefused: ['name'], startModRows: ['count'] }),
   /** The main menu's play button before and after the world starts. */
   menu: slottedTable({ play: [], continue: [] }),
   credits: slottedTable({

@@ -1,8 +1,9 @@
 import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
+import { isPlainRecord } from '../core/canonicalJson.ts';
 import type { ContentIssue } from '../core/content.ts';
 import { selectFolderClosure } from '../core/packAdmission.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
-import { type BrowserMod, evaluateMods, type ModIntake } from './browserMods.ts';
+import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
 
 export interface BundledMod {
@@ -46,35 +47,69 @@ export const bundledModIdsFromUrl = (params: URLSearchParams): string[] => {
     .filter(Boolean);
 };
 
+/**
+ * The page's `start-mod`, told apart by its first character: `{` starts inline mod JSON, anything else is a bundled
+ * mod id. Why one parameter takes both: `packages/deadvox/docs/url-mods.md`, "Start mod".
+ */
+type StartModRequest =
+  | { readonly form: 'id'; readonly id: string }
+  | { readonly form: 'inline'; readonly text: string };
+
+export const startModFromUrl = (params: URLSearchParams): StartModRequest | undefined => {
+  const value = params.get('start-mod');
+  if (value === null) {
+    return undefined;
+  }
+  return value.trimStart().startsWith('{') ? { form: 'inline', text: value } : { form: 'id', id: value.trim() };
+};
+
+/** The source an issue names, so a refusal says which form of `start-mod` it read. */
+const startModSource = (request: StartModRequest): string =>
+  request.form === 'inline' ? 'start-mod (inline mod)' : `start-mod (mod id "${request.id}")`;
+
+type AdmittedMod = ModEvaluation['admitted'][number];
+
 export interface BundledSelection {
   content: StartupContent;
   /** Data of each admitted bundled mod, for the save identity. */
   admitted: { id: string; version: string; data: unknown }[];
+  /** Data of an admitted inline start mod, which the save identity records as an intake-admitted mod. */
+  inlineAdmitted: { id: string; version: string; data: unknown }[];
   /** Identity entries of the admitted opt-in folder packs, in admission order. */
   admittedFolderPacks: SaveVersionComponents['contentPacks'];
   issues: ContentIssue[];
+  /** The number of start rows an admitted start mod supplies when it is not exactly one, which refuses the run. */
+  startModRows?: number;
 }
+
+const startRowIds = (content: unknown): string[] => {
+  const starts = isPlainRecord(content) ? content.starts : undefined;
+  return Array.isArray(starts) ? starts.map((row: { id: string }) => row.id) : [];
+};
+
+const identity = ({ id, version, data }: AdmittedMod) => ({ id, version, data });
 
 /**
  * Admits the named bundled mods: an opt-in folder pack with its closure through pack admission, a single-file mod
- * through the same intake as player mods. Unknown ids are issues.
+ * through the same intake as player mods. Unknown ids are issues. The start mod is admitted last, inline data through
+ * the same intake and byte limit, and must supply exactly one start row, which begins the run.
  */
 export const selectBundledMods = (
   intake: ModIntake,
   ids: readonly string[],
   additional: readonly BundledMod[] = [],
+  startMod?: StartModRequest,
 ): BundledSelection => {
   const { availablePackInputs, bundledPackInputs } = intake.content;
   const optInIds = availablePackInputs.filter(({ manifest }) => manifest.optIn).map(({ manifest }) => manifest.id);
   const issues: ContentIssue[] = [];
   const mods: BrowserMod[] = [];
   const roots: string[] = [];
-  for (const id of ids) {
+  const select = (id: string, source: string) => {
     const found = intake.bundledMods.find((mod) => mod.id === id);
-    const source = `mods=${id}`;
     if (optInIds.includes(id)) {
       roots.push(id);
-      continue;
+      return;
     }
     if (!found) {
       issues.push({
@@ -82,22 +117,41 @@ export const selectBundledMods = (
         path: 'id',
         message: `Unknown bundled mod "${id}"; available: ${[...optInIds, ...intake.bundledMods.map((mod) => mod.id)].join(', ')}`,
       });
-      continue;
+      return;
     }
-    const { data } = found;
-    mods.push({ source, text: JSON.stringify(data), enabled: true });
+    mods.push({ source, text: JSON.stringify(found.data), enabled: true });
+  };
+  for (const id of ids) {
+    select(id, `mods=${id}`);
   }
   for (const { id, data } of additional) {
     mods.push({ source: id, text: JSON.stringify(data), enabled: true });
+  }
+  const startSource = startMod && startModSource(startMod);
+  if (startMod?.form === 'id') {
+    select(startMod.id, startSource!);
+  } else if (startMod?.form === 'inline') {
+    mods.push({ source: startSource!, text: startMod.text, enabled: true });
   }
   const result = evaluateMods(intake, mods, selectFolderClosure(roots, availablePackInputs, bundledPackInputs));
   for (const list of result.issues.values()) {
     issues.push(...list);
   }
+  const startFile = result.admitted.find(({ source }) => source === startSource);
+  const startFolder =
+    startMod?.form === 'id'
+      ? result.admittedFolderPacks.find(({ manifest }) => manifest.id === startMod.id)
+      : undefined;
+  const startRows = startFolder
+    ? startFolder.files.flatMap(({ data }) => startRowIds(data))
+    : startFile && startRowIds((startFile.data as { content: unknown }).content);
+  const inline = startMod?.form === 'inline' ? startFile : undefined;
   return {
-    content: result.content,
-    admitted: result.admitted,
+    content: startRows?.length === 1 ? { ...result.content, startModStart: startRows[0] } : result.content,
+    admitted: result.admitted.filter((mod) => mod !== inline).map(identity),
+    inlineAdmitted: inline ? [identity(inline)] : [],
     admittedFolderPacks: result.admittedFolderPacks.map(optInPackIdentity),
     issues,
+    ...(startRows && startRows.length !== 1 ? { startModRows: startRows.length } : {}),
   };
 };

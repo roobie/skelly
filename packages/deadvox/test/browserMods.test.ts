@@ -134,6 +134,7 @@ describe('browser mod admission', () => {
           },
           content: { items: data.items, actors: data.actors },
         },
+        source: 'fixture.json',
       },
     ]);
     expect(result.content.registry.items.has(data.items[0]!.id)).toBe(true);

@@ -27,4 +27,9 @@ export {
   createBundledContent,
   type StartupContent,
 } from './game/bundledContent.ts';
-export { bundledModIdsFromUrl, bundledModsFrom, selectBundledMods } from './game/bundledMods.ts';
+export {
+  bundledModIdsFromUrl,
+  bundledModsFrom,
+  selectBundledMods,
+  startModFromUrl,
+} from './game/bundledMods.ts';
