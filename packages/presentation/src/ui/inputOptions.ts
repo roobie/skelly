@@ -48,9 +48,9 @@ export const mountInputOptions = (
     };
     draw();
   };
-  const bindings = inputBindings.bindings.filter((binding) => debugRun || !bindingIsDebugOnly(binding));
-  const contexts = [...new Set(bindings.flatMap((binding) => contextsForRun(binding, debugRun)))];
   const draw = () => {
+    const bindings = inputBindings.bindings.filter((binding) => debugRun || !bindingIsDebugOnly(binding));
+    const contexts = [...new Set(bindings.flatMap((binding) => contextsForRun(binding, debugRun)))];
     render(
       html`
       <details class="input-options"><summary>${text.heading}</summary>

@@ -10,11 +10,11 @@ import {
   type Modifier,
 } from '../core/inputActions.ts';
 
-// The keyboard exists before content loads, so a keyed spawn row spells its actor from the id, not the content name.
+// The keyboard exists before content loads, so a keyed spawn row holds its bare id until `setSpawnActorNames`.
 const keyedSpawnRows = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
   [...defaults].flatMap(([id, keys]) => {
     const typeId = debugSpawnActorType(id);
-    return typeId === undefined ? [] : [{ ...debugSpawnActorRow(typeId, typeId.replaceAll('_', ' ')), defaults: keys }];
+    return typeId === undefined ? [] : [{ ...debugSpawnActorRow(typeId, typeId), defaults: keys }];
   });
 const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] => [
   ...INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] })),
@@ -295,7 +295,7 @@ const codeLabel = (code: string, layout?: ReadonlyMap<string, string>): string =
 const preferenceObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 export class BindingRegistry {
-  readonly bindings: readonly Binding[];
+  private rows: readonly Binding[];
   readonly diagnostics: string[] = [];
   revision = 0;
   private overrides = new Map<string, readonly Chord[]>();
@@ -307,7 +307,7 @@ export class BindingRegistry {
   private readonly keyboardLayout: KeyboardLayoutSource | undefined;
   private debugRun = false;
   constructor(bindings: readonly Binding[], storage?: PreferenceStorage, keyboardLayout?: KeyboardLayoutSource) {
-    this.bindings = bindings;
+    this.rows = bindings;
     this.storage = storage;
     this.keyboardLayout = keyboardLayout;
     let stored: unknown;
@@ -335,6 +335,23 @@ export class BindingRegistry {
         }
       }
     }
+  }
+  get bindings(): readonly Binding[] {
+    return this.rows;
+  }
+  /** Describes each keyed debug spawn row by its actor's content name, once content has loaded. */
+  setSpawnActorNames(actors: Iterable<{ readonly id: string; readonly name: string }>): void {
+    const named = new Map(
+      Array.from(actors, ({ id, name }) => {
+        const row = debugSpawnActorRow(id, name);
+        return [row.id, row.description] as const;
+      }),
+    );
+    this.rows = this.rows.map((binding) => {
+      const description = named.get(binding.id);
+      return description === undefined ? binding : { ...binding, description };
+    });
+    this.changed(false);
   }
   setDebugRun(): void {
     if (this.debugRun) {
