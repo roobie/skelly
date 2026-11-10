@@ -28,6 +28,8 @@ Everything that sets up a world or a player comes from mods, and the URL only na
 
 Every caller follows the same homes, the bench and the tutorial included, so no harness keeps a private URL format that a later change has to work around. A prepared game then has one way to start, whether it is a demo, a bench world or the tutorial.
 
+Settings without a home are not supported. One that is needed comes back as a mod, not a query parameter, so the query does not keep a second, untested path for state that content or the hash should own. The parameters still in the query pending a decision are listed in `packages/deadvox/docs/url-mods.md`, "Where each parameter goes".
+
 The product entry pack declares its stack and selects its default scenario and start. Start rows belong to scenarios, which may offer several starts; see `docs/decisions/0009-content-defined-products.md`, "Starts and mixing". Pack dependency admission, not URL parsing, owns the composition rules.
 
 The design plan and its slices are in `packages/deadvox/docs/url-mods.md`.

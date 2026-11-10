@@ -89,7 +89,7 @@ queries or profiling; GPU cost remains absent rather than zero. See
 `packages/deadvox/tools/perf-baseline-browser.mjs`, `install`, and
 `packages/deadvox/tools/perf-baseline-stats.mjs`, `summarize`. Query-free collection also suspends
 the adapter's GPU-driven resolution feedback, so compare only frames at matching effective
-scene scale. Diagnostic URL overrides and sampling configs are not proposed game defaults.
+scene scale. Sampling configs are not proposed game defaults.
 
 Raw warm frames accompany each summary, enabling different aggregation without repeating
 the expensive hardware run. Compare repeat spreads as well as pooled results; no automatic

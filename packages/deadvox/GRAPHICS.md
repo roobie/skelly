@@ -46,7 +46,7 @@ A performance change may alter the default look only slightly, and each such cha
 
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `packages/presentation/src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `packages/presentation/src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `packages/presentation/src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
-Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeating lattice. The cell coordinates and smoothing keep world anchoring, but CPU float evaluation, byte quantization and hardware filtering do not promise the arithmetic shader's exact image. It is on by default because it cuts chunk fragment cost substantially while its image differs from the arithmetic shader only imperceptibly, which was approved by eye. The option and the debug URL switch stay so a player or a look review can compare against the arithmetic path. See `packages/presentation/src/render/surfaceNoise.ts`, `createSurfaceNoise`; `packages/presentation/src/render/surfacePatterns.ts`, `SURFACE_PATTERN_GLSL`; and `packages/engine/src/core/graphics.ts`, `GRAPHICS_KNOBS`.
+Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeating lattice. The cell coordinates and smoothing keep world anchoring, but CPU float evaluation, byte quantization and hardware filtering do not promise the arithmetic shader's exact image. It is on by default because it cuts chunk fragment cost substantially while its image differs from the arithmetic shader only imperceptibly, which was approved by eye. The option stays so a player or a look review can compare against the arithmetic path. See `packages/presentation/src/render/surfaceNoise.ts`, `createSurfaceNoise`; `packages/presentation/src/render/surfacePatterns.ts`, `SURFACE_PATTERN_GLSL`; and `packages/engine/src/core/graphics.ts`, `GRAPHICS_KNOBS`.
 
 Sun shadows must block buried rooms even when a thick solid's sun-facing surface lies outside the bounded shadow map. Retain its interior-facing surface as an occluder too, without dropping the entry faces that prevent PCF leaks at joined interior corners. See `packages/presentation/src/render/shadows.ts`, `Shadows.drawMaps`, and `test/browser/underground-sun.ts`, `undergroundSunProof`.
 
@@ -55,30 +55,26 @@ Wide ambient occlusion darkens indirect light according to enclosure, while dire
 ## Graphics policy
 
 Keep graphics defaults and permitted choices in the core mod, while the player owns the
-choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
-win over player choices, which must win over content defaults. Explicit false values are
-choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
+choice for their machine: a content pack cannot know their GPU. Player choices must win over
+content defaults, and no link sets them; see `docs/decisions/0006-url-mods-and-hash-state.md`,
+"Decision". Explicit false values are choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
 `packages/engine/src/core/graphics.ts`, `resolveGraphics`, and `packages/presentation/src/presentation/graphicsSettings.ts`.
 
-Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
-silently change a comparison workload. Scene scale stays fixed at the content default because
-GPU-dependent adaptation would change the pixel workload during a run. The full-post workload keeps
-an independent look so visual-policy changes cannot redefine it. The goggles comparison instead follows
-play's content-default look and shares its flare update: measuring another look or omitting source
-occlusion would not establish the cost players pay. Source placement belongs to the benchmark query
-so comparisons can vary the workload without changing code. Content-owned benchmark weathering
-lets mods choose that workload without changing benchmark logic. See
+Benchmarks isolate machine preferences so saved choices cannot silently change a comparison
+workload. Scene scale stays fixed at the content default because GPU-dependent adaptation would
+change the pixel workload during a run. The full-post workload keeps an independent look so
+visual-policy changes cannot redefine it. The bench has no night-vision or flare-source workload:
+those switches had no home, and one that is needed comes back as a mod. Content-owned benchmark
+weathering lets mods choose that workload without changing benchmark logic. See
 `packages/presentation/src/presentation/engine.ts`, `createEngine`, `packages/presentation/src/presentation/graphicsControls.ts`, `GraphicsControls`,
-`src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`,
-`src/bench/lightFixture.ts`, `benchFlareSourcesFromUrl`, and
-`packages/presentation/src/render/nightVisionFlare.ts`, `createNightVisionFlareUpdate`.
+and `src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`.
 
 Automatic scene resolution applies with or without post effects, because choosing the plain
 look must not disable the machine's quality trade. It follows GPU execution cost rather than
 frame intervals: reducing pixels cannot fix simulation work, browser scheduling or a slow display. Windowed measurements
 and a dead band suppress transient spikes and visible pumping; recovery reserves headroom for
 the next size instead of immediately undoing a reduction. Unsupported GPU timing leaves the
-content default intact. Explicit player or debug URL scene-scale choices suspend adaptation;
+content default intact. An explicit player scene-scale choice suspends adaptation;
 clearing a player choice returns ownership to content. See `packages/presentation/src/render/adaptiveScale.ts`,
 `AdaptiveScale`, `packages/presentation/src/render/gpuFrameTime.ts`, `GpuFrameTime`, and
 `packages/presentation/src/render/mood.ts`, `Mood.recordGpuTime`. Plain presentation copies already display-encoded
