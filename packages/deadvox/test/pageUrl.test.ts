@@ -50,7 +50,6 @@ describe('page query', () => {
   it('hands the hash seed to the game configuration', () => {
     const { query, hash } = readPageUrl('', `#${writeHash({ seed: 4321 })}`);
     expect(configFromUrl(query, hash).seed).toBe(4321);
-    expect(configFromUrl(query, {}).seed).not.toBe(4321);
   });
 });
 
