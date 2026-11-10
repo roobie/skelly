@@ -235,19 +235,29 @@ const checkOverrides = (
   fail: Report,
 ): void => {
   for (const [entry, history] of entrySetters(packs)) {
-    const winner = history.at(-1)!;
-    for (const owner of history.slice(0, -1)) {
-      const declared = winner.manifest.overrides.some(
-        (override) => override.pack === owner.manifest.id && override.entry === entry,
-      );
-      if (!(dependencies.get(winner.manifest.id)!.has(owner.manifest.id) && declared)) {
-        fail(
-          winner,
-          'overrides',
-          `Pack ${winner.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
+    // The last setter answers for every earlier one. A middle setter answers only for a predecessor it depends on:
+    // independent setters are a clash that a later pack settles by depending on and declaring both
+    // (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
+    history.forEach((setter, index) => {
+      const last = index === history.length - 1;
+      const owners = last ? history.slice(0, -1) : history.slice(Math.max(index - 1, 0), index);
+      for (const owner of owners) {
+        const depends = dependencies.get(setter.manifest.id)!.has(owner.manifest.id);
+        if (!last && !depends) {
+          continue;
+        }
+        const declared = setter.manifest.overrides.some(
+          (override) => override.pack === owner.manifest.id && override.entry === entry,
         );
+        if (!(depends && declared)) {
+          fail(
+            setter,
+            'overrides',
+            `Pack ${setter.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
+          );
+        }
       }
-    }
+    });
   }
 };
 

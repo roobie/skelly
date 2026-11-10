@@ -82,6 +82,21 @@ it('a compatibility pack settles independent entry setters only by declaring bot
   expect(admitPacks([resolver, first, second]).sources).toEqual([]);
 });
 
+it('refuses a middle pack that redefines an earlier entry undeclared even when the last pack declares both', () => {
+  const a = pack('fixture.a');
+  const b = pack('fixture.b', [a.manifest.id]);
+  const c = pack('fixture.c', [a.manifest.id, b.manifest.id]);
+  for (const input of [a, b, c]) {
+    input.files[0]!.data = { blocks: [{ id: 'fixture_shared' }] };
+  }
+  c.manifest.overrides = [a, b].map(({ manifest }) => ({ pack: manifest.id, entry: 'blocks:fixture_shared' }));
+  const refused = admitPacks([a, b, c]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: b.source, path: 'overrides' })]);
+  expect(refused.issues[0]!.message).toContain(a.manifest.id);
+  b.manifest.overrides = [{ pack: a.manifest.id, entry: 'blocks:fixture_shared' }];
+  expect(admitPacks([a, b, c]).issues).toEqual([]);
+});
+
 it('refuses a dependency cycle without admitting part of it', () => {
   const first = pack('fixture.first', ['fixture.second']);
   const second = pack('fixture.second', ['fixture.first']);
