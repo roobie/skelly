@@ -221,11 +221,27 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
-  it('links practice after the page mods', () => {
-    for (const mods of [null, 'scenario', 'scenario,beginner']) {
-      const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
-      const entered = new URL(tutorialUrl(page, 'practice'));
-      expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : `${mods},practice`);
+  it('keeps non-start mods when practice replaces the listed start packs', () => {
+    const packs = [
+      { id: 'scenario', defaultStart: 'fixture_start' },
+      { id: 'other', defaultStart: 'fixture_other' },
+      { id: 'beginner' },
+    ];
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      for (const mods of [null, 'beginner', 'scenario,other,scenario,beginner,practice']) {
+        warning.mockClear();
+        const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
+        const entered = new URL(tutorialUrl(page, 'practice', packs));
+        expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : 'beginner,practice');
+        const dropped = packs.filter(({ defaultStart, id }) => defaultStart !== undefined && mods?.includes(id));
+        expect(warning).toHaveBeenCalledTimes(dropped.length);
+        for (const { id } of dropped) {
+          expect(warning.mock.calls.flat().some((value) => String(value).includes(id))).toBe(true);
+        }
+      }
+    } finally {
+      warning.mockRestore();
     }
   });
 
@@ -234,6 +250,7 @@ describe('practice objectives', () => {
       tutorialUrl(
         'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl#{debug:true}',
         'practice',
+        [],
       ),
     );
     expect(entered.pathname).toBe('/deadvox/');

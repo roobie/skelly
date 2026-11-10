@@ -1,6 +1,7 @@
 ---
 read_if:
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
+  - you change how practice links replace other start packs or warn about dropped packs
   - you author a demo mod or change how a URL selects mods
   - you name a run's start in a link or test with `start-mod`, or add a committed scenario pack
   - you change scenario-owned starts, product defaults or the starting kit
@@ -57,13 +58,15 @@ URL mods and panel mods combine, so a demo can be tried with a player's own mods
 
 Inline data goes through the same intake as a player's mod, with its admission, diagnostics and byte limit, and the save identity records it as an intake-admitted mod hashed from its data, so a world resumes only with the same data. An id loads like a `?mods=` entry. The start mod loads after the `?mods=` list and must supply exactly one start row; any other count stops startup with a visible error. See `packages/engine/src/game/bundledMods.ts`, `selectBundledMods`. Browser stages and tools build inline start mods with `test/browser/gameUrl.mjs`, `inlineStartMod`; product links with `src/product/page.ts`, `linkStartMod`; and the launcher with `site/launcher.js`, `launcherStartMod`.
 
-The run starts from the start mod's row, else the default start of the last admitted pack that names one, so a scenario picked through `?mods=` wins over the product entry pack's default, else the product default. The game and the bench choose the same way; see `packages/engine/src/game/startSelection.ts`, `runStartId`.
+The start mod selects its own row; otherwise the admitted stack supplies the default. Competing default setters require declared dependency overrides, not a winner chosen by URL order; see `docs/decisions/0007-typed-field-patches.md`, "Decision". The game and the bench share start selection; see `packages/engine/src/game/startSelection.ts`, `runStartId`.
 
 ## Committed scenarios
 
 Committed scenarios, the tutorial among them, are real mods a link picks through `?mods=`, so a playtest link, the practice link and a test name a world the same way a player's mod does. Each scenario has one opt-in `.play` pack that names the scenario's start as its default start and depends on the scenario's content; see `packages/deadvox/mods/skelly.deadvox.scenario.playtest.play/pack/manifest.jsonnet`. The content stays in the product's default stack, which other pages and tools read, so picking the pack changes only where the run starts. One `.play` pack per scenario is the most straightforward approach, with the least surprise. As a consequence, picking a start and loading content stay in separate packs, so a scenario whose content is itself opt-in needs no `.play` pack. A loader rule that picks an already-loaded pack's start instead stays open.
 
-Practice is its own page, not a mode inside a run. Its link adds the practice pack after the page's own mods, so its start wins by load order whichever format those mods have, while the player's mods carry over. The link never carries `start-mod`, which would win, and a page whose link carries `start-mod` does not offer practice. One link names one start, so start order needs no practice exception, and the browser already owns leaving a page: the player leaves practice by Back or by closing the tab. See `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`, and `docs/tutorial.md`, "Disposable practice". Practice is picked through `?mods=`, not `start-mod`, because `start-mod` refuses a pack without exactly one start row of its own. The game finds the practice pack from content rather than naming it in code, and knows a practice run from its start row, so every link that starts the tutorial gets practice's isolation from saves. See `packages/engine/src/game/bundledMods.ts`, `practiceModId`, and `packages/engine/src/game/startSelection.ts`, `isPracticeStart`.
+Practice is its own page, not a mode inside a run; see `docs/tutorial.md`, "Disposable practice". Its link replaces other listed start packs with practice while keeping non-start packs. Keeping another start pack would make admission refuse the link: load order never chooses between competing default setters. Each dropped pack gets a warning so the developer or mod author can see why it left the URL. Start setters come from pack metadata rather than a list of scenario identities; see `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`, and `src/main.ts`.
+
+A page that names `start-mod` does not offer practice. Practice uses `mods` because `start-mod` requires exactly one start row owned by the selected pack. Practice discovery and save isolation follow content rather than a hard-coded scenario identity; see `packages/engine/src/game/bundledMods.ts`, `practiceModId`, and `packages/engine/src/game/startSelection.ts`, `isPracticeStart`.
 
 ## Hash state
 

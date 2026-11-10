@@ -184,7 +184,8 @@ describe('committed scenario mods', () => {
     expect(practiceRun([])).toBe(false);
   });
 
-  it('starts practice from the practice link even when the page already lists the practice pack before another scenario', () => {
+  it('replaces another start pack in the practice link and warns about the dropped pack', async () => {
+    const { vi } = await import('vitest');
     const practice = practiceModId(productModIntake, startupContent().registry);
     const other = scenarios.find(([id]) => id !== practice)?.[0];
     expect(practice).toBeDefined();
@@ -198,8 +199,20 @@ describe('committed scenario mods', () => {
       return isPracticeStart(content.registry, configFromUrl(read.query, {}, content, ragdollSweepViewer).startId);
     };
     const page = `https://example.test/deadvox/?mods=${practice},${other}`;
-    expect(runOn(page)).toBe(false);
-    expect(runOn(tutorialUrl(page, practice!))).toBe(true);
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const href = tutorialUrl(
+        page,
+        practice!,
+        productModIntake.content.availablePackInputs.map(({ manifest }) => manifest),
+      );
+      expect(new URL(href).searchParams.get('mods')?.split(',')).not.toContain(other);
+      expect(runOn(href)).toBe(true);
+      expect(warning).toHaveBeenCalledTimes(1);
+      expect(warning.mock.calls.flat().some((value) => String(value).includes(other!))).toBe(true);
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   it('gives a stack of single-file mods and folder packs a save identity that follows its load order', async () => {

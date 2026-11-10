@@ -276,7 +276,17 @@ if (bench === 'report') {
     if (!practiceStart.hidden) {
       practiceStart.addEventListener('click', (event) => {
         event.stopPropagation();
-        location.assign(tutorialUrl(location.href, practiceMod!, tutorialHash(hash)));
+        location.assign(
+          tutorialUrl(
+            location.href,
+            practiceMod!,
+            [
+              ...productModIntake.content.availablePackInputs.map(({ manifest }) => manifest),
+              ...productModIntake.bundledMods.map(({ id, data }) => ({ id, defaultStart: data.defaultStart })),
+            ],
+            tutorialHash(hash),
+          ),
+        );
       });
     }
     const saveBackend = params.get('save-backend');

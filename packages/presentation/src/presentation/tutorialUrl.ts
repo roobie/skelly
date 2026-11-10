@@ -1,11 +1,10 @@
-/**
- * The practice page linked from `href`. Practice is a scenario picked through `mods`, so the link moves the practice
- * mod after the page's own mods, whose start then begins the run; a repeated pack loads at its first place, so an
- * earlier listing of practice is dropped. It drops the page's `start-mod`, which would
- * otherwise win, and every other setting but the renderer and the hash text the product keeps. Why practice is its
- * own page: `packages/deadvox/docs/tutorial.md`, "Disposable practice".
- */
-export const tutorialUrl = (href: string, practiceMod: string, keptHash = ''): string => {
+/** Why practice replaces other starts: `packages/deadvox/docs/url-mods.md`, "Committed scenarios". */
+export const tutorialUrl = (
+  href: string,
+  practiceMod: string,
+  packs: readonly { id: string; defaultStart?: unknown }[],
+  keptHash = '',
+): string => {
   const url = new URL(href);
   const presentation = new URLSearchParams();
   const render = url.searchParams.get('render');
@@ -16,7 +15,14 @@ export const tutorialUrl = (href: string, practiceMod: string, keptHash = ''): s
     .split(',')
     .map((id) => id.trim())
     .filter((id) => id !== '' && id !== '1' && id !== practiceMod);
-  presentation.set('mods', [...mods, practiceMod].join(','));
+  const startPacks = new Set(packs.filter(({ defaultStart }) => defaultStart !== undefined).map(({ id }) => id));
+  for (const id of new Set(mods)) {
+    if (startPacks.has(id)) {
+      // biome-ignore lint/suspicious/noConsole: replacing a start must be visible to its developer or mod author.
+      console.warn(`Practice link removed start pack "${id}"`);
+    }
+  }
+  presentation.set('mods', [...mods.filter((id) => !startPacks.has(id)), practiceMod].join(','));
   url.search = presentation.toString();
   url.hash = keptHash;
   return url.href;
