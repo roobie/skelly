@@ -1531,14 +1531,14 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     for (const { order, id, actor: saved } of region.actors) {
       actorOrders.push(order);
       if (actorIds.has(id)) {
-        throw new Error(`Duplicate zombie id ${id}`);
+        throw new Error(`Duplicate actor id ${id}`);
       }
       actorIds.add(id);
       if (
         regionIndex(saved.body.pos[0], worldOptions.blockSize) !== regionX ||
         regionIndex(saved.body.pos[2], worldOptions.blockSize) !== regionZ
       ) {
-        throw new Error(`Zombie ${id} is in the wrong region`);
+        throw new Error(`Actor ${id} is in the wrong region`);
       }
     }
     for (const { order, entity } of region.entities) {
@@ -1576,7 +1576,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     }
   };
   checkOrder(chunkOrders, 'chunk');
-  checkOrder(actorOrders, 'zombie');
+  checkOrder(actorOrders, 'actor');
   checkOrder(entityOrders, 'block entity');
   checkOrder(pileOrders, 'pile');
   checkOrder(vehicleOrders, 'vehicle');
@@ -1590,7 +1590,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     throw new Error('Invalid rolled column keys');
   }
   if (new Set(wire.world.spawned).size !== wire.world.spawned.length) {
-    throw new Error('Duplicate zombie spawn key');
+    throw new Error('Duplicate actor spawn key');
   }
   for (const key of wire.world.spawned) {
     spawnKeys.add(key);
@@ -1620,13 +1620,13 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   }
   const maxActor = [...actorIds].reduce((maximum, id) => Math.max(maximum, id), 0);
   if (snapshot.world.actors.nextEntityId <= maxActor) {
-    throw new Error('Next zombie id does not exceed saved zombie ids');
+    throw new Error('Next actor id does not exceed saved actor ids');
   }
   if (snapshot.world.id === snapshot.character.id) {
     throw new Error('World and character IDs must be distinct');
   }
   if (new Set(snapshot.world.actors.actors.map(({ id }) => id)).size !== snapshot.world.actors.actors.length) {
-    throw new Error('Duplicate zombie id');
+    throw new Error('Duplicate actor id');
   }
   if (
     new Set(snapshot.character.inventory.looted.map(([id]) => id)).size !== snapshot.character.inventory.looted.length
@@ -1942,7 +1942,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   }
   for (const { actor: actorState } of snapshot.world.actors.actors) {
     if ((actorState.agent?.hordeId === undefined) !== (actorState.agent?.hordeOffset === undefined)) {
-      throw new Error('Incomplete zombie horde membership');
+      throw new Error('Incomplete actor horde membership');
     }
     if (actorState.agent?.hordeId !== undefined) {
       const hordeState = hordes.get(actorState.agent.hordeId);
@@ -1961,7 +1961,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     throw new Error('Invalid next block entity id');
   }
   if (snapshot.world.actors.nextEntityId <= Math.max(0, ...snapshot.world.actors.actors.map(({ id }) => id))) {
-    throw new Error('Next zombie id does not exceed saved zombie ids');
+    throw new Error('Next actor id does not exceed saved actor ids');
   }
   if (WORLD_REGION_METRES / (CHUNK * 0.5) <= 0) {
     throw new Error('Invalid region layout');

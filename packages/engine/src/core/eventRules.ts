@@ -36,7 +36,7 @@ export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, regi
     rule.effects.forEach((effect, index) => {
       const type = registry.actors.get(effect.actor);
       if (!type) {
-        throw new Error(`Event rule ${rule.id} names no zombie type "${effect.actor}"`);
+        throw new Error(`Event rule ${rule.id} names no actor type "${effect.actor}"`);
       }
       actors.releaseHorde(`event:${rule.id}:${index}`, type, {
         center: [...effect.at],

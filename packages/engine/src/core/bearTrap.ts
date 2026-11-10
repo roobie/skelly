@@ -1,6 +1,6 @@
 // Bear traps (`packages/deadvox/SLICE-5.md`, "Settled bear-trap rules — issue #107"). A trap is an ordinary item: set, it lies
 // in a ground pile with its state on the item, so the pile's save keeps it armed or shut, and recovering it moves
-// that same item. It springs by mechanism on whatever stands in its cell; nothing about it is known to zombies.
+// that same item. It springs by mechanism on whatever stands in its cell; nothing about it is known to actors.
 
 import type { Vec3 } from './coords.ts';
 import type { EntityId } from './entities.ts';
@@ -21,7 +21,7 @@ export interface LyingTrap {
 export interface TrapContacts {
   /** The player's feet, in blocks. */
   player: Readonly<Vec3>;
-  /** Zombies' feet, in blocks, in the store's order. */
+  /** Actors' feet, in blocks, in the store's order. */
   actors: Iterable<readonly [EntityId, Readonly<Vec3>]>;
   blockSize: number;
   alive: (id: EntityId) => boolean;
@@ -59,7 +59,7 @@ export class BearTraps {
     }
   }
 
-  /** Whether a shut trap holds the zombie with this id, or the player without one. */
+  /** Whether a shut trap holds the actor with this id, or the player without one. */
   holds(actor?: EntityId): boolean {
     for (const { item } of this.lying()) {
       if (item.trap?.state === 'holding' && item.trap.actor === actor) {

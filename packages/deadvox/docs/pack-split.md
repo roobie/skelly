@@ -280,8 +280,10 @@ a role such as aiming or handling. This replaces fixed skill ids without making 
 item name a skill or inventing a combination rule for several providers.
 
 **Competing providers fail closed.** A takeover requires a declared override and a
-direct or transitive dependency on the role owner. An unrelated second provider is a
-load error naming the role, both packs and the fix. Load order alone never decides.
+direct or transitive dependency on the role owner. A takeover overrides the owner's
+claiming entry by id; a new entry beside it is a second claimant. An unrelated second
+provider is a load error naming the role, each claimant with its pack and source file,
+and the fix. Load order alone never decides.
 The replaced skill leaves the live skill list, gains no progression and has no saved
 state: restore under a different pack set is refused, so hidden state would have no
 valid return path. This shares the field-patch conflict rule in

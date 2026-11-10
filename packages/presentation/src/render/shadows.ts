@@ -56,7 +56,7 @@ const BOX_TOWARDS_SUN = 2;
 const BOX_AWAY_FROM_SUN = 1.5;
 // Wider PCF footprint hides texel crawl as the sun rotates without changing sampling cost.
 const SUN_SHADOW_RADIUS = 4;
-/** Frames between redraws of the sun's map while nothing it shows has changed (animated zombies still move). */
+/** Frames between redraws of the sun's map while nothing it shows has changed (animated actors still move). */
 export const IDLE_REFRESH_EVERY = 2;
 
 export const sunShadowTexelSize = (distance: number, mapSize = SUN_MAP_SIZE): number => (2 * distance) / mapSize;
@@ -254,7 +254,7 @@ export class Shadows {
    * and decides whether the map is redrawn this frame. Call after `applySky` and before rendering.
    * The map is redrawn when the box moved by a texel, the sun turned, a chunk changed or the
    * distance did (all of which make the old map wrong), and otherwise every `IDLE_REFRESH_EVERY` frames,
-   * which keeps animated zombies and the figure current while halving the cost of standing still.
+   * which keeps animated actors and the figure current while halving the cost of standing still.
    */
   update(strength: number, center: Vector3): void {
     const { light, rig, meshes } = this;

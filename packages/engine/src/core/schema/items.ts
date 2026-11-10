@@ -381,7 +381,7 @@ const AmmoSchema = strictObject({
   /** Base half-angle for pellet directions; the firearm's choke scale multiplies it. */
   spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most a right angle')),
   diameterMm: Positive,
-  /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
+  /** Region health a projectile takes, before the actor's per-region pierce resistance. */
   damage: Positive,
   /** Push in N·s on the struck body. */
   impulse: Positive,
@@ -519,7 +519,7 @@ const ExplosiveSchema = strictObject({
     /** Push in N·s on the struck body. */
     impulse: Positive,
   }),
-  /** Sound event at detonation; its noise draws zombies. */
+  /** Sound event at detonation; its noise draws actors. */
   sound: Id,
 });
 
@@ -532,7 +532,7 @@ const TrapSchema = strictObject({
   holdSimSeconds: PositiveSimSeconds,
   /** The player's wound when it springs on them. */
   playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: Id }),
-  /** Health taken from a caught zombie's legs, shared between those not yet destroyed. */
+  /** Health taken from a caught actor's legs, shared between those not yet destroyed. */
   actorLegDamage: NonNegative,
 });
 

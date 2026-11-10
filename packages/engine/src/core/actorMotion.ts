@@ -41,7 +41,7 @@ const approachAngle = (current: number, target: number, amount: number): number 
 const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
 /**
- * Turns a zombie by up to `radians` and gives the heading it moves along. A forward walker turns toward `move`
+ * Turns an actor by up to `radians` and gives the heading it moves along. A forward walker turns toward `move`
  * and moves only where it faces, so it turns before it heads somewhere new; an omnidirectional one moves along
  * `move` at once and turns to face `goal`.
  */
@@ -55,7 +55,7 @@ export const steer = (actor: Actor, move: Vec3, radians: number, goal: Vec3 = mo
 };
 export const inRange = (rng: Rng, range: { min: number; max: number }): number => rng.range(range.min, range.max);
 
-/** The player point every zombie attack aims at, in metres above the feet: the chest. */
+/** The player point every actor attack aims at, in metres above the feet: the chest. */
 export const PLAYER_CHEST_METRES = 1;
 
 interface AttackReachProbe {
@@ -79,7 +79,7 @@ const grabOrigin = (
     ? undefined
     : [actorPos[0], actorPos[1] + chestOffset, actorPos[2]];
 
-/** An amalgam's tentacle strikes in a straight line from its core, at any height, as far as its reach. */
+/** A fused mass's tentacle strikes in a straight line from its core, at any height, as far as its reach. */
 const strikeOrigin = (
   { actor, actorPos, blockSize, figure }: AttackReachProbe,
   reachMetres: number,

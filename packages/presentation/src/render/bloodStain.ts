@@ -1,4 +1,4 @@
-// Blood stains on zombie bodies, patched into the crowd material after its gore tint (mobActors.ts). How much
+// Blood stains on actor bodies, patched into the crowd material after its gore tint (mobActors.ts). How much
 // of a body is stained comes from the crowd texture (./crowd.ts, `packBloodiness`); which parts are
 // stained comes from noise over the bone-local position, so the stains stay put as the body moves.
 //

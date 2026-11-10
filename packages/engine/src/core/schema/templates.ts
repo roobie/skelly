@@ -91,7 +91,7 @@ const PaletteThingSchema = pipe(
     fixed: optional(literal(true)),
     /** Stock every copy of this piece always holds, beside its table's roll. */
     items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
-    /** A zombie type that may stand here; the cell itself is air. */
+    /** An actor type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
     /** Daily game-clock window; omitted markers spawn when their column loads. */

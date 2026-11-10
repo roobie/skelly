@@ -521,7 +521,7 @@ export const separateBodyPair = ({
   separatePair(first, second, dt / blockSize, { isSolid, bodies: obstacles, shapeOf, meetShapes: true });
 };
 
-/** Separates zombies from each other by their boxes, the cheap test a crowd needs; pushes clip by shape. */
+/** Separates actors from each other by their boxes, the cheap test a crowd needs; pushes clip by shape. */
 export const separateBodies = ({
   bodies,
   dt,

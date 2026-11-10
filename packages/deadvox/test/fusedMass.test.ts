@@ -880,7 +880,7 @@ describe('fused-mass body and combat seam', () => {
     actor.figureSeed = FUSED_MASS_FIGURE_SEED + 1;
 
     expect(() => system().restoreState(state, (typeId) => registry.actors.get(typeId))).toThrow(
-      `Invalid amalgam figure seed for entity ${id}`,
+      `Invalid fused-mass figure seed for entity ${id}`,
     );
   });
 

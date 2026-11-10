@@ -1,12 +1,14 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildRegistry } from '@skelly/engine/content';
 import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
 import { admitPacks, packContentHash } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { validate } from '../src/cli/validate.ts';
+import { bundledPacks } from '../src/product/packs.ts';
 import { declaredAssetGlobsPlugin } from '../tools/declaredAssetGlobsPlugin.ts';
 import {
   bundledPackDefines,
@@ -16,6 +18,13 @@ import {
   readBundledPacks,
 } from '../tools/readBundledPacks.ts';
 import { stampPacks } from '../tools/stampBundle.ts';
+
+it('lists the real pack tree in the same order for the browser and for the build', () => {
+  const packageRoot = fileURLToPath(new URL('..', import.meta.url));
+  expect(bundledPacks.map(({ manifest }) => manifest.id)).toEqual(
+    readAvailablePacks(packageRoot).map(({ manifest }) => manifest.id),
+  );
+});
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
   const root = mkdtempSync(join(tmpdir(), 'pack-digests-'));

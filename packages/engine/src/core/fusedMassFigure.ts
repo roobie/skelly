@@ -33,7 +33,7 @@ export interface FusedMassFigure {
   readonly grid: FusedMassGrid;
 }
 
-/** The fused mass's one figure seed: every amalgam draws the same body. */
+/** The fused mass's one figure seed: every fused-mass body draws the same figure. */
 export const FUSED_MASS_FIGURE_SEED = 1;
 
 /** Decodes a fused-mass body once, rebuilding the dense owner grid from its sparse `cells`. */
