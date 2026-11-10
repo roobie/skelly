@@ -54,7 +54,7 @@ The tutorial is a bundled mod with its own start row, and the game recognises a 
 
 ## Hash state
 
-The hash is one object in a relaxed JSON-like form: bare keys, bare word strings, numbers, booleans and arrays, as in `#{debug:true,cam:[1.5,2,3,90,0,0]}`. Strict JSON would turn every quote into `%22` in the address bar. The page reads it once at startup through `src/pageUrl.ts`, `pageUrl`. Its keys and value types are checked against one schema, `src/hashState.ts`, `HASH_KEYS`, and an unknown key or a value of the wrong type stops startup with a visible error naming the key, as an unknown query parameter does. Its remaining bounds belong to slice 2:
+The hash is one object in a relaxed JSON-like form: bare keys, bare word strings, numbers, booleans and arrays, as in `#{debug:true,cam:[1.5,2,3,90,0,0]}`. Strict JSON would turn every quote into `%22` in the address bar. Other text is a JSON string, escapes and all, and the writer writes `%` as `%25`, so the address bar's percent-encoding is the only encoding the reader undoes and every value written reads back; see `src/hashState.ts`, `writeHash`. The page reads it once at startup through `src/pageUrl.ts`, `pageUrl`. Its keys and value types are checked against one schema, `src/hashState.ts`, `HASH_KEYS`, and an unknown key or a value of the wrong type stops startup with a visible error naming the key, as an unknown query parameter does. Its remaining bounds belong to slice 2:
 
 - A byte limit in trusted startup configuration under `src/config`, like the browser-mod intake limit, checked before parsing.
 - A fixed nesting depth.
@@ -81,11 +81,12 @@ After death, New world keeps the query and the rest of the hash and changes only
 
 **Staying as harness query switches:** save-backend, save-test, render, bench, skyRoute and debug-error. They choose the harness, not the game.
 
-**Bench mode:** `bench` stays a harness switch and picks which bench runs; everything else the bench reads follows the same homes as the game.
+**Bench mode:** `bench` stays a harness switch and picks which bench runs; everything else the bench reads follows the same homes as the game, through the same reader and the same refusal of unknown parameters.
 
 - Its world setup, the site with its storeys and density and the time of day, becomes demo mods that a bench link names through `?mods=`, including the default bench worlds that `src/bench/run.ts`, `benchRunFromUrl` and `src/bench/shamblers.ts`, `shamblerRunFromUrl` fall back to.
-- Its run settings, the plan, the run index, quick mode, the shambler counts and the post-processing switch, become hash keys. The seed is the hash seed override.
-- A bench steps to its next run by rewriting the hash and reloading, keeping the query, so each run loads the same mods. See `src/bench/run.ts`, `nextUrl`.
+- Its run settings are hash keys: the plan, the run index, quick mode, the shambler counts of either bench and the post-processing switch, with the seed as the hash seed override. A key the game already has keeps its one meaning, so the bench reuses `post`, `debug` and `actors`.
+- A bench steps to its next run by changing only the run index in the hash and reloading, keeping the query, so each run loads the same world. See `src/bench/run.ts`, `loadNextRun`.
+- The night-vision and flare-source workload switches have no home decided, so the bench still reads them from the query; see `src/pageUrl.ts`, `UNDECIDED_BENCH_QUERY`.
 
 **Out of scope:** the site map and vehicle spike pages keep their own parameters.
 
@@ -100,6 +101,6 @@ Browser scripts stop concatenating query strings. One helper under `test/browser
 The slices preserve each later slice's URLs while migrating one concern at a time. Their delivery must obey `docs/decisions/0009-content-defined-products.md`, "Refactor gate": use an existing PR or wait until the refactor is executed. Start state comes first so the flashlight demo proves the mod path before other setup moves onto it. Tests follow `AGENTS.md`, "Tests": extend an existing flow rather than adding a browser stage.
 
 1. **Start state and URL mod loading.** Build URL mod loading on the admitted new-game path in `packages/engine/src/core/startState.ts`, `applyStartState`: the remaining work is the demo source root, `?mods=` admitting demo mods and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
-2. **Hash state.** The game page reads its developer keys from the hash through `src/pageUrl.ts`, `pageUrl`, and the debug panel writes them back; the remaining work is the hash bounds in `docs/url-mods.md`, "Hash state", the browser URL helper, and the bench run settings moving to the hash with the bench's `nextUrl` functions and the scripts that start a bench.
+2. **Hash state.** The game page and the bench read their developer keys and run settings from the hash through `src/pageUrl.ts`, `pageUrl`, and the debug panel writes them back; the remaining work is the hash bounds in `docs/url-mods.md`, "Hash state", and the browser URL helper.
 3. **World setup to mods.** Prepared debug inventory, wounds and skill levels belong in mod-owned start rows. Site, time, storeys, density and the weathering profile leave the query for demo mods, with the playtest publisher and CI workflows that use them. The seed moves into the start row, with its hash override, and New world changes the hash seed. The bench's world setup becomes demo mods. The voice-size probe in `packages/engine/src/game/actorAudio.ts` gates on the started layout instead of the site parameter. The tutorial becomes a bundled mod: `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialRequested`, detects it from the loaded start row instead of `site=tutorial`, and `tutorialUrl` selects it through `?mods=`.
 4. **Player options.** Graphics leaves the URL. Kept separate because it adds options UI, which slices 1 to 3 do not need. Once every parameter this plan moves has left the query with the scripts that use it, `src/pageUrl.ts`, `UNHOMED_QUERY`, is empty and goes.
