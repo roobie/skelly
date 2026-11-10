@@ -3401,6 +3401,23 @@ or free-form-building follow-up, not a permanently excluded interaction. Start w
 useful fitted cargo; further compartments extend the same ownership model rather
 than turning the entire wreck into a container.
 
+**Part finish.** The fitted spot sets the paint at spawn, and after that the part owns
+it: each fitting names a finish, which becomes that copy's paint when the vehicle is
+spawned. A door pulled off a red car stays red, loose and in saves, and fitted to
+another car keeps its red until something repaints it. One part model painted per
+vehicle lets paint-only near-duplicates merge, and it matches how vehicles already
+choose their parts. See `packages/engine/src/core/items.ts`, `ItemState`, and
+`packages/engine/src/core/inventory.ts`, `Inventory.registerVehicle`.
+
+Paint is cosmetic and per copy, so no copy shares another's paint: it replaces only
+materials the asset marks `paintable`, wear and damage draw over it, and mass, strength
+and collision never read it. See `packages/presentation/src/render/itemStateLook.ts`,
+`applyItemStateLook`. A finish names a library entry, so a mod adds one without engine
+change; a part with none, or naming one no pack provides, shows its own authored
+material. See `packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
+`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `vehicleFinishes`. Finishes
+apply to vehicles only.
+
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
 structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built
 frames are in the goal (point 1) but come after factory structures (point 8); #322
