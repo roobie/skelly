@@ -8,12 +8,12 @@ export const fittedStateGroup = (slot: string): string => `item-slot:${slot}`;
 
 const tintFor = (material: Material, model: ModelDef, state: ItemStateLook, registry: Registry) => {
   const presentation = model.itemPresentation;
-  if (!presentation) {
+  if (!presentation || state.wear === undefined) {
     return;
   }
   const index = material.userData.itemMaterialIndex as number;
   const classId = presentation.materials[index];
-  const band = state.wear === undefined ? undefined : registry.itemWear.get(presentation.wear)?.bands[state.wear];
+  const band = registry.itemWear.get(presentation.wear)?.bands[state.wear];
   const tint = classId === undefined ? undefined : band?.tints[classId];
   if (!tint) {
     throw new Error(`Missing item material class or wear tint in model ${model.id}`);
@@ -28,10 +28,20 @@ const copyMaterial = (material: Material, model: ModelDef, state: ItemStateLook,
   const tint = tintFor(material, model, state, registry);
   const glowing = state.on && state.supply !== 'absent' && material.name === model.emissiveMaterial;
   const glow = glowing ? state.glow : undefined;
-  if (!(tint || glow)) {
+  const finish = material.userData.paintable === true ? state.finish : undefined;
+  if (!(tint || glow || finish)) {
     return material;
   }
   const copy = glow ? glowingCopy(material, glow.color, glow.intensity) : material.clone();
+  if (finish) {
+    copy.color.setRGB(...finish.baseColor);
+    copy.opacity = finish.opacity;
+    copy.transparent = finish.opacity < 1;
+    copy.depthWrite = finish.opacity === 1;
+    copy.metalness = finish.metallic;
+    copy.roughness = finish.roughness;
+  }
+  // Wear draws over the paint.
   if (tint) {
     copy.color.lerp(new Color(tint.color), tint.mix);
   }

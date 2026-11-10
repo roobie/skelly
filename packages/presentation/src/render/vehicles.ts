@@ -1,6 +1,8 @@
 import type { Registry } from '@skelly/engine/content';
 import { projectVehicleParts, type VehicleInstances, type VehiclePartProjection } from '@skelly/engine/vehicles';
 import { Group, type Object3D } from 'three';
+import { itemFinishLook } from './itemLook.ts';
+import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
 
 interface RenderedVehicle {
@@ -16,6 +18,7 @@ const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: numb
       item.uid,
       item.type,
       item.cargo,
+      item.finish,
       model,
       transform.position,
       transform.yaw,
@@ -70,6 +73,14 @@ export class VehicleMeshes {
         object.castShadow = true;
         object.receiveShadow = true;
       });
+      const finish = itemFinishLook(this.registry, part.item);
+      if (finish && part.model !== undefined) {
+        applyItemStateLook(
+          model,
+          { model: part.model, state: { finish }, slots: [], hidden: [], key: '' },
+          this.registry,
+        );
+      }
       const holder = new Group();
       holder.position.set(...part.transform.position);
       holder.rotation.y = part.transform.yaw;
@@ -79,6 +90,7 @@ export class VehicleMeshes {
     }
     if (previous) {
       this.group.remove(previous.group);
+      disposeItemStateMaterials(previous.group);
     }
     this.group.add(group);
     this.rendered.set(id, { signature, group });
@@ -88,12 +100,14 @@ export class VehicleMeshes {
     for (const [id, rendered] of this.rendered) {
       if (!live.has(id)) {
         this.group.remove(rendered.group);
+        disposeItemStateMaterials(rendered.group);
         this.rendered.delete(id);
       }
     }
   }
 
   dispose(): void {
+    disposeItemStateMaterials(this.group);
     this.group.clear();
     this.rendered.clear();
   }

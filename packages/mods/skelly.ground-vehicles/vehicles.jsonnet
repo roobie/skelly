@@ -1,5 +1,6 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
+local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local part(id, name, size, capabilities, description=null) = {
   id: id,
   name: name,
@@ -314,6 +315,17 @@ local boxVan = [
     part('box_van_side', 'Box van side wall', pileSize, ['protection']),
     part('box_van_front', 'Box van front wall', pileSize, ['protection']),
     part('box_van_roof', 'Box van roof', pileSize, ['protection']),
+  ],
+  // The release's whole finish library: a site may name any entry.
+  vehicleFinishes: [
+    {
+      id: id,
+      baseColor: finishes[id].pbrMetallicRoughness.baseColorFactor[:3],
+      opacity: finishes[id].pbrMetallicRoughness.baseColorFactor[3],
+      metallic: finishes[id].pbrMetallicRoughness.metallicFactor,
+      roughness: finishes[id].pbrMetallicRoughness.roughnessFactor,
+    }
+    for id in std.objectFields(finishes)
   ],
   vehicleBlueprints: [
     { id: 'hatchback', name: 'Hatchback', fittings: hatchback },

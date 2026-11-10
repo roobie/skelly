@@ -136,6 +136,11 @@ describe('vehicle export contract', () => {
       blueprint(fitting('a', 'car_battery', ['b']), fitting('b', 'hatchback_battery_tray', ['a'])),
       'vehicleBlueprints[0].fittings',
     ],
+    [
+      'a fitting naming a finish no pack provides',
+      blueprint({ ...fitting('cell', 'car_battery'), finish: 'fixture-no-such-paint' }),
+      'vehicleBlueprints[0].fittings[0].finish',
+    ],
     ['a lifting part without a rated load', modPart('fixture_cell', ['lift']), 'items[0].vehicle'],
     [
       'a rated load on a part that does not lift',

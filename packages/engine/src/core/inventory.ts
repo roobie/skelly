@@ -608,12 +608,15 @@ export class Inventory {
       sites: blueprint.fittings.map(copyVehiclePlacement),
       fittings: blueprint.fittings
         .filter(({ id }) => !absent.includes(id))
-        .map((fitting) => ({
-          ...copyVehiclePlacement(fitting),
-          item: fitting.cargo
+        .map((fitting) => {
+          const item = fitting.cargo
             ? cargoSpaceItem(this.factory, this.registry, fitting.part, fitting.cargo)
-            : this.factory.create(this.registry, fitting.part),
-        })),
+            : this.factory.create(this.registry, fitting.part);
+          if (fitting.finish !== undefined) {
+            item.finish = fitting.finish;
+          }
+          return { ...copyVehiclePlacement(fitting), item };
+        }),
     };
     const vehicleId = this.vehicles.add(this.registry, vehicle);
     this.version += 1;

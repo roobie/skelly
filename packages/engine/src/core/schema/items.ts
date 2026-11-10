@@ -875,6 +875,18 @@ export const ItemSchema = strictObject({
   ),
 });
 
+/** Library material names carry hyphens, unlike content ids. */
+const FinishId = pipe(string(), nonEmpty('must not be empty'));
+
+/** One paint in the finish library: the glTF material a painted surface in it carries, colour in linear RGB. */
+export const VehicleFinishSchema = strictObject({
+  id: FinishId,
+  baseColor: tuple([Fraction, Fraction, Fraction]),
+  opacity: Fraction,
+  metallic: Fraction,
+  roughness: Fraction,
+});
+
 const VehicleFittingSchema = strictObject({
   id: Id,
   /** An item with a `vehicle` block. */
@@ -887,6 +899,8 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is z by x. */
   cargo: optional(tuple([Cells, Cells, Cells])),
+  /** The `vehicleFinishes` entry this copy of the part is painted when the vehicle spawns; the part owns it after. */
+  finish: optional(FinishId),
   /** Overrides the part's work requirements at this authored site. */
   service: optional(
     strictObject({
