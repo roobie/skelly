@@ -7,11 +7,12 @@
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
+import { build as viteBuild, preview as vitePreview } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
@@ -57,7 +58,7 @@ const startWebServer = async () => {
     });
     return vite.httpServer.address();
   }
-  vite = await createServer({
+  vite = await createStageServer({
     configFile: viteConfig,
     root: projectRoot,
     logLevel: 'error',

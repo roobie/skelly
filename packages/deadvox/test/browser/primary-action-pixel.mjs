@@ -8,10 +8,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const [, , group] = process.argv;
@@ -1004,7 +1004,7 @@ const lakeSurfaceCheck = (chromium, port) =>
     }
   });
 
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'error',

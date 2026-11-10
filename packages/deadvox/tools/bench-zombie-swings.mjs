@@ -1,8 +1,8 @@
 import { resolve } from 'node:path';
-import { createServer } from 'vite';
+import { createStageServer } from '../test/browser/stageServer.mjs';
 
 const projectRoot = resolve(import.meta.dirname, '..');
-const server = await createServer({
+const server = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'silent',

@@ -5,12 +5,12 @@
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
 const { firefox } = await import('playwright');
@@ -41,10 +41,10 @@ const observation = {
       loadingMarker,
       `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { figureVariantOf } from '../core/actorModels.ts';\n${withLoading}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';\nimport { figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';\n${withLoading}\n`;
   },
 };
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   root: projectRoot,
   logLevel: 'error',

@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { PLAYER } from '../playerFixture.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
@@ -14,6 +13,7 @@ import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -62,7 +62,7 @@ ${marker}`,
     );
   },
 };
-const vite = await createServer({
+const vite = await createStageServer({
   root: projectRoot,
   configFile: resolve(projectRoot, 'vite.config.ts'),
   logLevel: 'error',

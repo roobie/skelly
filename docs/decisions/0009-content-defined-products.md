@@ -280,14 +280,14 @@ name, so the mod catalogue has its own entry; see `packages/engine/src/modCatalo
 Tests that use shipped content stay in deadvox, yet need runtime internals no entry
 carries. They import those through the package's one test-only subpath,
 `@skelly/engine/internal/*`, which resolves only under the `skelly-engine-test` export
-condition. Only the deadvox Vitest config enables it, so neither the dev server nor a
-product build can resolve that subpath. Tests also take a name from an entry when the
-entry carries it. A separate test-only surface keeps product code on the curated entries
-without growing the entries to serve tests. Browser stages run under the dev server
-without the condition: they load a runtime module into the page by the URL the dev server
-gives the package's file, which is the URL the game's own imports load, so the stage
-shares the game's module instances; see `packages/deadvox/test/browser/engineModules.mjs`.
-The entry-only check fails a product file that imports a non-entry subpath or reaches the
+condition. Tests also take a name from an entry when the entry carries it. A separate
+test-only surface keeps product code on the curated entries without growing the entries
+to serve tests. Two places enable the condition: the deadvox Vitest config, and the dev
+servers browser stages create. Browser stages are test runs too, so their fixtures and
+page code share the unit tests' test-only surface; all of them create their server in one
+place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. The
+product dev server and the product build never enable it, so they cannot resolve the
+subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a product file that imports a non-entry subpath or reaches the
 package's files by path; see `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
 It reads import syntax with a literal target; a module path a browser stage or the dev
 server loads from a string is not checked.

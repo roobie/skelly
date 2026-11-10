@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, posix, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
-import { createServer } from 'vite';
+import { createStageServer } from './stageServer.mjs';
 
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
 
@@ -70,7 +70,7 @@ function contentLookView(source) {
   const rewritten = source
     .replace(
       "import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';",
-      "import { lookDefaultsOf } from '../core/lookDefaults.ts';\nimport { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';",
+      "import { lookDefaultsOf } from '@skelly/engine/internal/core/lookDefaults.ts';\nimport { DEFAULT_SHADOWS, lookOf, moodOf } from '@skelly/engine/internal/core/mood.ts';",
     )
     .replace(
       'applyLook(renderer, meshes, DEFAULT_LOOK);\n    mood.restore(DEFAULT_MOOD);',
@@ -105,7 +105,7 @@ const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : fig
 // model, only the pool seeds that realize, as the branch builds each model's own authored seeds; any other build
 // error still fails the run. A base that builds per-model seeds needs no seed rewrite. The overlay retains branch
 // body-plan identities, while the base's profiles, templates and ragdoll catalogs keep implementation names;
-// reverting either side would mix content and mechanism contracts. See `src/core/content.ts`, `actorFigureIssues`.
+// reverting either side would mix content and mechanism contracts. See `packages/engine/src/core/content.ts`, `actorFigureIssues`.
 export function adaptMainSeedPool(source) {
   return source
     .replaceAll('ZombieModel', 'ActorModel')
@@ -125,7 +125,7 @@ export function adaptMainSeedPool(source) {
     )
     .replace(
       "import type { ActorModel } from '../core/actorModels.ts';",
-      "import { type ActorModel, bodyPlanModel, figureVariantOf } from '../core/actorModels.ts';",
+      "import { type ActorModel, bodyPlanModel, figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';",
     )
     .replaceAll('zombie.type.model', 'figureVariantOf(zombie.type)')
     .replaceAll('type.model', 'figureVariantOf(type)')
@@ -432,7 +432,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   };
   const mainHtml = git(['show', `${base}:${basePackage}/index.html`]);
   const appliedSources = new Set();
-  const server = await createServer({
+  const server = await createStageServer({
     root,
     configFile: resolve(root, 'vite.config.ts'),
     logLevel: 'error',

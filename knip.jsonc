@@ -44,7 +44,18 @@
         "/test/browser/water-depth.ts",
         "/test/browser/gauntlet-doors.mjs",
         "/src/feasibility/runner.ts",
-        "/tools/rapier-f64/candidate.ts"
+        "/tools/rapier-f64/candidate.ts",
+        // A stage's dev server serves this browser URL as the game's own engine module; see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`.
+        "/@stage/@skelly/engine/internal/core/inventory.ts",
+        "/@stage/@skelly/engine/internal/core/handling.ts",
+        "/@stage/@skelly/engine/internal/core/reach.ts",
+        "/@stage/@skelly/engine/internal/core/stageMarks.ts",
+        "/@stage/@skelly/engine/internal/core/character.ts",
+        "/@stage/@skelly/engine/internal/core/templates.ts",
+        "/@stage/@skelly/engine/internal/core/furnitureSurface.ts",
+        "/@stage/@skelly/engine/internal/core/scenarioCertificate.ts",
+        "/@stage/@skelly/engine/internal/core/options.ts",
+        "/@stage/@skelly/engine/internal/core/ladders.ts"
       ],
       "entry": [
         "index.html!",

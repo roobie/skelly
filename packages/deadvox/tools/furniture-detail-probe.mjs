@@ -5,9 +5,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from '../test/browser/chromium.mjs';
-import { engineModule } from '../test/browser/engineModules.mjs';
+import { createStageServer } from '../test/browser/stageServer.mjs';
 
 const [out, ...rest] = process.argv.slice(2);
 const compare = rest[0] === '--compare';
@@ -46,7 +45,7 @@ const contentFiles = (
 )
   .flat()
   .sort();
-const server = await createServer({
+const server = await createStageServer({
   root: fileURLToPath(new URL('../', import.meta.url)),
   server: { host: '127.0.0.1', port: 0, open: false, fs: { allow: [dirname(threeFile), ...modRoots] } },
 });
@@ -72,10 +71,10 @@ try {
   );
   await page.goto(url);
   const cost = await page.evaluate(
-    async ({ threeModule, contentModule, worldModule, contentNames, ids, withPlain }) => {
+    async ({ threeModule, contentNames, ids, withPlain }) => {
       const Three = await import(new URL(threeModule, location.href).href);
-      const { buildRegistry } = await import(new URL(contentModule, location.href).href);
-      const { BlockEntities } = await import(new URL(worldModule, location.href).href);
+      const { buildRegistry } = await import(new URL('/@stage/@skelly/engine/content', location.href).href);
+      const { BlockEntities } = await import(new URL('/@stage/@skelly/engine/world', location.href).href);
       const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
       const files = await Promise.all(
         contentNames.map(async (file) => (await import(new URL(file, location.href).href)).default),
@@ -187,14 +186,7 @@ try {
         triangles: renderer.info.render.triangles,
       };
     },
-    {
-      threeModule: threeUrl,
-      contentModule: engineModule('content.ts'),
-      worldModule: engineModule('world.ts'),
-      contentNames: contentFiles,
-      ids: only,
-      withPlain: compare,
-    },
+    { threeModule: threeUrl, contentNames: contentFiles, ids: only, withPlain: compare },
   );
   await page.screenshot({ path: out });
   console.log(JSON.stringify({ out, cost, errors }));

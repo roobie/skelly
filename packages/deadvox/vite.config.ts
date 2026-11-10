@@ -190,8 +190,9 @@ const testFiles = runSweeps
   : { include: ['test/**/*.test.ts'], exclude: [...configDefaults.exclude, ...SLOW_TEST_FILES] };
 
 // Tests that use shipped content reach runtime internals through the engine's test-only subpath, which resolves
-// only under this condition. Vitest sets VITEST before it loads this config; the dev server, browser stages and
-// the product build never enable it. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+// only under this condition. Vitest sets VITEST before it loads this config; the product dev server and build never
+// enable it, and browser stages add it to the servers they create. See
+// `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 // Vitest gives each of its environments (`__vitest__` runs global setup) its own resolve options.
 const engineTestResolve = { resolve: { conditions: ['skelly-engine-test'] } };
 const engineTestEnvironments =

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { createServer } = await import('vite');
+const { createStageServer } = await import('./stageServer.mjs');
 const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
@@ -70,7 +70,7 @@ const observation = {
 
 /** The observed game server both save-controller stages drive, and the address each stage opens. */
 export const saveControllerServer = async () => {
-  const server = await createServer({
+  const server = await createStageServer({
     root,
     configFile: `${root}/vite.config.ts`,
     logLevel: 'error',

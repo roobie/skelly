@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const probePath = resolve(root, '__casePoolProbe.js');
@@ -162,7 +162,7 @@ renderer.dispose();
 globalThis.__casePoolResult = result;
 `;
 
-const server = await createServer({
+const server = await createStageServer({
   configFile: resolve(root, 'vite.config.ts'),
   root,
   logLevel: 'error',

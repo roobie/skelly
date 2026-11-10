@@ -1,5 +1,5 @@
 import { buildRegistry } from '@skelly/engine/content';
-import type { snapshotItem as SnapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { ItemFactory } from '@skelly/engine/inventory';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
@@ -27,11 +27,8 @@ const coloredPixels = (canvas: HTMLCanvasElement) => {
   return { red, blue };
 };
 
-/**
- * Fixture geometry keeps pixel proof independent of authored items and tuning. The stage passes `snapshotItem`
- * because no engine entry carries it.
- */
-export const statePixelFixture = async (snapshotItem: typeof SnapshotItem) => {
+/** Fixture geometry keeps pixel proof independent of authored items and tuning. */
+export const statePixelFixture = async () => {
   const scene = new Group();
   const material = (name: string, color: string, opacity = 1) => {
     const result = new MeshStandardMaterial({ color, opacity, transparent: opacity < 1, depthWrite: opacity === 1 });

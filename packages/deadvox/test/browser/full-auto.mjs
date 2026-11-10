@@ -6,11 +6,11 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { modFileBytes } from '../modFile.ts';
 import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_stanag_30.model.json').toString('utf8'));
@@ -32,7 +32,7 @@ const requireAnchor = (code, file, marker) => {
 for (const [file, marker] of anchors) {
   requireAnchor(readFileSync(resolve(root, file), 'utf8'), file, marker);
 }
-const vite = await createServer({
+const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',

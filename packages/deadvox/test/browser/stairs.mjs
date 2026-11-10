@@ -9,13 +9,13 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(
@@ -72,7 +72,7 @@ engine.scene.onBeforeRender = function(...args) {
 `
     : '';
 await mkdir(artifacts, { recursive: true });
-const vite = await createServer({
+const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',
@@ -143,7 +143,7 @@ const vite = await createServer({
         }
         const marker = 'startRealFrames(frame);';
         assert.ok(code.includes(marker));
-        return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
+        return `import { doorPanel as stairsDoorPanel } from '@skelly/engine/internal/core/blockEntities.ts';\n${code.replace(
           marker,
           `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse:router.performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${arrivalObservation}\n${marker}`,
         )}`;

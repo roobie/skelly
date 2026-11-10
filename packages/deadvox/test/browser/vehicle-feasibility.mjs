@@ -4,13 +4,13 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const { firefox, webkit } = await import('playwright');
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: false,
   root,
   logLevel: 'error',

@@ -19,7 +19,8 @@ An entry carries only what code outside the package uses, so the package's surfa
 file it holds.
 
 The `./internal/*` subpath is the test-only surface: it resolves only under the `skelly-engine-test` export
-condition, which the deadvox Vitest config enables and no product build does. Deadvox tests that use shipped
+condition, which the deadvox Vitest config and the dev servers of its browser stages enable, and which the
+product dev server and build never do. Deadvox tests that use shipped
 content need runtime internals no entry carries; this surface serves them without growing the entries. See
 `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`, for the check that keeps product code off it.
 

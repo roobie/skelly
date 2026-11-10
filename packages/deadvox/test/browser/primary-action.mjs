@@ -7,14 +7,13 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
-import { engineModule } from './engineModules.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 // The flow group is the long live-page journey; the replays group is the independent replay and search contexts.
 // They are separate CI steps so each keeps headroom under its own timeout.
@@ -28,19 +27,19 @@ const authoredStarts = JSON.parse(
 const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
 assert(houseStart, 'the product supplies an authored start for the existing house flow');
 const debugHouseStart = { id: 'primary_action_fixture_start' };
-const startStateModule = engineModule('core/startState.ts', projectRoot);
+const startStateModule = '/@stage/@skelly/engine/internal/core/startState.ts';
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
-const firearmActionModule = engineModule('core/firearmAction.ts', projectRoot);
+const firearmActionModule = '/@stage/@skelly/engine/internal/core/firearmAction.ts';
 const inputBindingsModule = '/src/product/input.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
 const reloadInputModule = '/src/game/reloadInput.ts';
-const magazineModule = engineModule('core/magazine.ts', projectRoot);
-const heldPoseModule = engineModule('core/heldPose.ts', projectRoot);
-const optionsModule = engineModule('core/options.ts', projectRoot);
+const magazineModule = '/@stage/@skelly/engine/internal/core/magazine.ts';
+const heldPoseModule = '/@stage/@skelly/engine/internal/core/heldPose.ts';
+const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
-const pileLayoutModule = engineModule('core/pileLayout.ts', projectRoot);
-const vehicleProjectionModule = engineModule('core/vehicleProjection.ts', projectRoot);
+const pileLayoutModule = '/@stage/@skelly/engine/internal/core/pileLayout.ts';
+const vehicleProjectionModule = '/@stage/@skelly/engine/internal/core/vehicleProjection.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -406,12 +405,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       {
         fixture: '/test/liquidCraftFixture.ts',
         economy: '/test/economyFixtures.ts',
-        inventory: engineModule('core/inventory.ts', projectRoot),
-        character: engineModule('core/character.ts', projectRoot),
-        reach: engineModule('core/reach.ts', projectRoot),
+        inventory: '/@stage/@skelly/engine/internal/core/inventory.ts',
+        character: '/@stage/@skelly/engine/internal/core/character.ts',
+        reach: '/@stage/@skelly/engine/internal/core/reach.ts',
         readout: '/src/ui/craftReadout.ts',
         view: '/src/ui/crafting.ts',
-        numbers: engineModule('core/numberText.ts', projectRoot),
+        numbers: '/@stage/@skelly/engine/internal/core/numberText.ts',
       },
     );
     assert(liquidRow.visible && liquidRow.picker, 'the crafting flow renders a liquid draw and its source picker');
@@ -1486,7 +1485,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       },
       {
         pileLayoutModuleUrl: pileLayoutModule,
-        playerLookPoseModuleUrl: engineModule('core/playerLookPose.ts', projectRoot),
+        playerLookPoseModuleUrl: '/@stage/@skelly/engine/internal/core/playerLookPose.ts',
         inputModuleUrl: '/src/game/playerControls.ts',
         ground: placed,
       },
@@ -1816,7 +1815,7 @@ const verifyVehicleService = async (page) => {
   assert.equal(witness.savedCopies, 1, 'the part has exactly one saved owner');
 };
 
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'error',
@@ -3423,57 +3422,56 @@ try {
     await pressAction(page, 'ui.inventory-toggle');
 
     // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
-    const firearm = await page.evaluate(
-      async ({ magazineUrl, optionsUrl }) => {
-        const moduleUrl = '/src/game/firearmHandling.ts';
-        const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
-        const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
-        const { stowTarget } = await import(optionsUrl);
-        const r = globalThis.primaryActionTest;
-        const { registry } = r.inventory;
-        const { firearms, magazines, queue, sim } = r.session;
-        const must = (refusal) => {
-          if (refusal) {
-            throw new Error(`Could not ready the fixture firearm: ${refusal}`);
-          }
-        };
-        const settle = () => {
-          for (let step = 0; queue.busy; step += 1) {
-            if (step > 600) {
-              throw new Error('Fixture firearm handling did not finish');
-            }
-            r.session.frame(1 / 20);
-          }
-        };
-        const calibre = magazineWellCalibre(registry, r.types.gun);
-        const ids = [...registry.items.keys()].sort();
-        const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
-        r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
-        r.clearHand(r.off);
-        r.setHand(r.dominant, magazine);
-        must(magazines.loadNext(magazine.uid, sim.time));
-        settle();
-        const pocket = stowTarget(r.inventory, magazine, r.feet());
-        if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
-          throw new Error('Could not pocket the loaded fixture magazine');
+    const firearm = await page.evaluate(async () => {
+      const moduleUrl = '/src/game/firearmHandling.ts';
+      const magazineUrl = '/@stage/@skelly/engine/internal/core/magazine.ts';
+      const optionsUrl = '/@stage/@skelly/engine/internal/core/options.ts';
+      const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
+      const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
+      const { stowTarget } = await import(optionsUrl);
+      const r = globalThis.primaryActionTest;
+      const { registry } = r.inventory;
+      const { firearms, magazines, queue, sim } = r.session;
+      const must = (refusal) => {
+        if (refusal) {
+          throw new Error(`Could not ready the fixture firearm: ${refusal}`);
         }
-        const gun = r.inventory.create(r.types.gun);
-        r.setHand(r.dominant, gun);
-        must(firearms.loadNext(gun.uid, sim.time));
-        settle();
-        must(firearms.cock(gun.uid, sim.time));
-        settle();
-        r.caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
-        return {
-          uid: gun.uid,
-          cases: [...r.inventory.piles.values()]
-            .flatMap((p) => p.items)
-            .filter(({ item }) => item.type === r.caseType)
-            .reduce((sum, { item }) => sum + item.count, 0),
-        };
-      },
-      { magazineUrl: magazineModule, optionsUrl: optionsModule },
-    );
+      };
+      const settle = () => {
+        for (let step = 0; queue.busy; step += 1) {
+          if (step > 600) {
+            throw new Error('Fixture firearm handling did not finish');
+          }
+          r.session.frame(1 / 20);
+        }
+      };
+      const calibre = magazineWellCalibre(registry, r.types.gun);
+      const ids = [...registry.items.keys()].sort();
+      const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
+      r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
+      r.clearHand(r.off);
+      r.setHand(r.dominant, magazine);
+      must(magazines.loadNext(magazine.uid, sim.time));
+      settle();
+      const pocket = stowTarget(r.inventory, magazine, r.feet());
+      if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
+        throw new Error('Could not pocket the loaded fixture magazine');
+      }
+      const gun = r.inventory.create(r.types.gun);
+      r.setHand(r.dominant, gun);
+      must(firearms.loadNext(gun.uid, sim.time));
+      settle();
+      must(firearms.cock(gun.uid, sim.time));
+      settle();
+      r.caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
+      return {
+        uid: gun.uid,
+        cases: [...r.inventory.piles.values()]
+          .flatMap((p) => p.items)
+          .filter(({ item }) => item.type === r.caseType)
+          .reduce((sum, { item }) => sum + item.count, 0),
+      };
+    });
     await page.mouse.down({ button: 'right' });
     const raiseDuration = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;

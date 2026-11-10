@@ -8,9 +8,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
-import { createServer } from 'vite';
 import { launchChromium } from '../test/browser/chromium.mjs';
-import { engineModule } from '../test/browser/engineModules.mjs';
 import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
@@ -18,6 +16,7 @@ import {
   pressWithDrawnCursor,
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { createStageServer } from '../test/browser/stageServer.mjs';
 
 const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
@@ -55,7 +54,7 @@ const waitFor = async (test, message, timeout = 30_000) => {
 };
 
 try {
-  vite = await createServer({
+  vite = await createStageServer({
     root: cwd,
     logLevel: 'error',
     server: { host: '127.0.0.1', port: 0 },
@@ -353,7 +352,7 @@ try {
   // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
   // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
   const uiTokens = await evaluate(`(async () => {
-    const { buildRegistry } = await import('${engineModule('content.ts')}');
+    const { buildRegistry } = await import('/@stage/@skelly/engine/content');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
     const { productAssets } = await import('/src/product/assets.ts');
     const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
@@ -441,7 +440,7 @@ try {
   );
   await action('debug.panel-toggle');
   const requestedCalendar = await evaluate(`(async () => {
-    const { nextTimeOfDay, parseTimeOfDay } = await import('${engineModule('sim.ts')}');
+    const { nextTimeOfDay, parseTimeOfDay } = await import('/@stage/@skelly/engine/sim');
     const sim = window.uiContractRuntime.sim;
     const expected = nextTimeOfDay(sim.calendar, parseTimeOfDay('08:00'));
     document.querySelector('#debug-time').value = '08:00';
@@ -455,7 +454,7 @@ try {
   );
   await waitFor(
     () =>
-      evaluate(`import('${engineModule('sim.ts')}').then(({ formatClock }) =>
+      evaluate(`import('/@stage/@skelly/engine/sim').then(({ formatClock }) =>
       document.querySelector('#debug-readout').textContent.includes(formatClock(window.uiContractRuntime.sim.calendar)))`),
     'debug readout follows the owner clock',
   );

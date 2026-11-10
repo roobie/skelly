@@ -6,11 +6,11 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { verifyAltRelease } from './alt-release.mjs';
 import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -29,7 +29,7 @@ const observation = {
     );
   },
 };
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   root: projectRoot,
   logLevel: 'error',
