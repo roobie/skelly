@@ -49,6 +49,18 @@ export const GraphicsTuningSchema = strictObject({
   skyPreloadRings: Count,
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
+  /** The sky gradient vehicle finishes reflect (`packages/deadvox/GRAPHICS.md`, "Vehicle finishes"). */
+  vehicleReflection: strictObject({
+    cubeSize: pipe(
+      number(),
+      integer(),
+      minValue(16),
+      check((size) => Number.isInteger(Math.log2(size)), 'must be a power of two'),
+    ),
+    skyDrift: Fraction,
+    zenithHeight: pipe(Positive, maxValue(1)),
+    groundEdge: pipe(Positive, maxValue(1)),
+  }),
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({

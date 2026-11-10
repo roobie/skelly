@@ -38,6 +38,7 @@ const tuning: GraphicsOptions = {
   fastCamo: toggle('Fixture camo'),
   coarseWeathering: toggle('Fixture weather'),
   cachedSurfaceNoise: toggle('Fixture noise'),
+  vehicleFinishes: toggle('Fixture finishes'),
 };
 const source = (options: GraphicsOptions) => ({
   source: 'fixture-graphics.json',
@@ -54,6 +55,7 @@ const source = (options: GraphicsOptions) => ({
         itemPicture: { framing: 1.1 },
         modelLoadConcurrency: 2,
         unbuiltSkyCap: 0.5,
+        vehicleReflection: { cubeSize: 16, skyDrift: 0.1, zenithHeight: 0.5, groundEdge: 0.1 },
         skyJobsInFlight: 2,
         skyPreloadRings: 1,
         itemViewer: {
@@ -168,6 +170,7 @@ it('applies all resolved knobs on startup and player changes', () => {
     mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn(), setDrugVignetteScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
     meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
+    vehicleFinishes: { setEnabled: vi.fn() },
   };
   let saved = '';
   const storage = {
@@ -187,6 +190,10 @@ it('applies all resolved knobs on startup and player changes', () => {
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(tuning.cachedSurfaceNoise.default);
   controls.set('cachedSurfaceNoise', false);
   expect(targets.meshes.setCachedSurfaceNoise).toHaveBeenLastCalledWith(false);
+  expect(targets.vehicleFinishes.setEnabled).toHaveBeenLastCalledWith(tuning.vehicleFinishes.default);
+  controls.set('vehicleFinishes', !tuning.vehicleFinishes.default);
+  expect(targets.vehicleFinishes.setEnabled).toHaveBeenLastCalledWith(!tuning.vehicleFinishes.default);
+  controls.clear('vehicleFinishes');
   controls.clear('cachedSurfaceNoise');
   controls.clear('renderScale');
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default, false);

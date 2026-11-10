@@ -38,6 +38,7 @@ const tuning: GraphicsOptions = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  vehicleFinishes: toggle,
 };
 const opticLens = { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 };
 

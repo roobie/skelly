@@ -17,6 +17,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     skyJobsInFlight: 3,
     skyPreloadRings: 1,
     unbuiltSkyCap: 0.5,
+    vehicleReflection: { cubeSize: 64, skyDrift: 0.02, zenithHeight: 0.45, groundEdge: 0.02 },
     itemViewer: {
       framing: 1.1,
       startYawDegrees: 45,
@@ -51,5 +52,6 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
     cachedSurfaceNoise: toggle('Cached surface noise', true),
+    vehicleFinishes: toggle('Vehicle reflections'),
   }],
 }

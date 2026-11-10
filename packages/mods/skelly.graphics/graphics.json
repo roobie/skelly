@@ -85,7 +85,18 @@
         "options": [false, true]
       },
       "streamHysteresisM": 16,
-      "unbuiltSkyCap": 0.5
+      "unbuiltSkyCap": 0.5,
+      "vehicleFinishes": {
+        "default": false,
+        "label": "Vehicle reflections",
+        "options": [false, true]
+      },
+      "vehicleReflection": {
+        "cubeSize": 64,
+        "groundEdge": 0.02,
+        "skyDrift": 0.02,
+        "zenithHeight": 0.45000000000000001
+      }
     }
   ]
 }

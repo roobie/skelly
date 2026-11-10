@@ -79,6 +79,7 @@ export const GRAPHICS_KNOBS = {
   fastCamo: { kind: 'toggle', schema: ToggleOptionSchema },
   coarseWeathering: { kind: 'toggle', schema: ToggleOptionSchema },
   cachedSurfaceNoise: { kind: 'toggle', schema: ToggleOptionSchema },
+  vehicleFinishes: { kind: 'toggle', schema: ToggleOptionSchema },
 } as const;
 
 export type GraphicsKey = keyof typeof GRAPHICS_KNOBS;
