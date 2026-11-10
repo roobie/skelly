@@ -5,11 +5,45 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+const houseStart = {
+  density: null,
+  id: 'melee_build_click_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '10:00',
+  storeys: 1,
+  wounds: [],
+};
 const observationPlugin = {
   name: 'melee-build-click-observation',
   enforce: 'pre',
@@ -44,7 +78,10 @@ try {
   await page.goto(
     browserStageUrl(
       'melee-build-click',
-      `http://127.0.0.1:${address.port}/?site=testHouse#{debug:true,seed:73,radius:16}`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.melee-build-click.house', houseStart),
+        hash: { debug: true, seed: 73, radius: 16 },
+      }),
     ),
     {
       waitUntil: 'domcontentloaded',

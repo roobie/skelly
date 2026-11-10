@@ -10,10 +10,56 @@ import { fileURLToPath } from 'node:url';
 import { build as viteBuild, preview as vitePreview } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
+const BUSY_LOCK_START = inlineStartMod('fixture.save-storage.busy-lock', {
+  density: null,
+  id: 'save_storage_busy_lock_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  placement: {
+    cell: [0, 0],
+    descents: [
+      { kind: 'ladder', ladder: [39, 1, 10], lower: [41, 1, 11], upper: [36, 41, 11] },
+      { hatch: [10, 40, 5], kind: 'stairs', lower: [14, 1, 1], upper: [18, 41, 6] },
+      { edge: [5, 41, 8], kind: 'drop', landing: [5, 3, 8], lower: [5, 1, 14], upper: [6, 41, 8] },
+    ],
+    fixedLoot: [{ at: [35, 17, 6], items: [{ condition: 0.7, item: 'revolver_357', key: true }] }],
+    minimumOpenDescents: 2,
+    spawn: [22, 41, 4],
+    template: 'gauntlet_start',
+  },
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'gauntlet',
+  skills: {},
+  startTimeGameTimeOfDay: '18:30',
+  storeys: 1,
+  wounds: [],
+});
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
 const browserName = process.argv[2] ?? 'chromium';
@@ -201,7 +247,7 @@ try {
         }
       });
       globalThis.addEventListener('DOMContentLoaded', () => {
-        if (!new URLSearchParams(location.search).has('start')) {
+        if (!location.pathname.endsWith('/index.html')) {
           return;
         }
         let frames = 0;
@@ -1063,8 +1109,9 @@ try {
         globalThis.__lifecycleHoldNextSave = true;
       });
     }
+    // Only the path differs, so the destination is a new document on the same content and save namespace.
     const freshStartUrl = new URL(appUrl);
-    freshStartUrl.searchParams.set('start', 'gauntlet');
+    freshStartUrl.pathname += 'index.html';
     await navigationPhase('destination save discovery', async () => {
       await navigatePage('navigation-only goto normal start', () =>
         page.goto(freshStartUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
@@ -1224,7 +1271,11 @@ try {
   if (busyLockOnly) {
     const appUrl = browserStageUrl(
       stageId,
-      `http://127.0.0.1:${address.port}/?time=18%3A30&save-backend=indexeddb&save-test=1#{seed:73}`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: BUSY_LOCK_START,
+        harness: { 'save-backend': 'indexeddb', 'save-test': 1 },
+        hash: { seed: 73 },
+      }),
     );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {

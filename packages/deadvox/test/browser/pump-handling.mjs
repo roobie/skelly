@@ -9,39 +9,68 @@ import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+const noonStart = {
+  density: null,
+  id: 'pump_handling_noon_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const shotgunStart = {
+  ...noonStart,
+  id: 'pump_handling_fixture_start',
+  debugOnly: true,
+  kit: [
+    ...noonStart.kit,
+    { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+    { id: 'firearm', item: 'pump_shotgun', destination: { kind: 'hand', role: 'dominant' } },
+    { id: 'box', item: 'shotshell_box', destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
+    {
+      id: 'rounds',
+      item: 'shell_12_gauge_00_buck',
+      count: 20,
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+  ],
+};
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
 const observation = {
   name: 'pump-handling-readonly-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
-      const data = JSON.parse(code);
-      const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
-      data.starts.push({
-        ...start,
-        id: 'pump_handling_fixture_start',
-        debugOnly: true,
-        kit: [
-          ...start.kit,
-          { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
-          { id: 'firearm', item: 'pump_shotgun', destination: { kind: 'hand', role: 'dominant' } },
-          { id: 'box', item: 'shotshell_box', destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
-          {
-            id: 'rounds',
-            item: 'shell_12_gauge_00_buck',
-            count: 20,
-            destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
-          },
-        ],
-      });
-      return JSON.stringify(data);
-    }
     if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
@@ -192,7 +221,11 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?start=pump_handling_fixture_start&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&time=12%3A00#{debug:true,seed:7,radius:64}`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.pump-handling.shotgun', shotgunStart),
+        mods: ['skelly.deadvox.scenario.test-house.debug'],
+        hash: { debug: true, seed: 7, radius: 64 },
+      }),
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -1227,7 +1260,11 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&time=12%3A00#{debug:true,seed:7,radius:64,ragdollSweep:19}`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.pump-handling.noon', noonStart),
+        mods: ['skelly.deadvox.scenario.test-house.debug'],
+        hash: { debug: true, seed: 7, radius: 64, ragdollSweep: 19 },
+      }),
     ),
     { waitUntil: 'domcontentloaded' },
   );

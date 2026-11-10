@@ -6,31 +6,459 @@
   "routes": [
     {
       "driver": "sky",
+      "harness": {
+        "skyRoute": 1
+      },
+      "hash": {
+        "at": [430, 523, -90],
+        "cam": [430, 21.5, 523, -90, 0, 0],
+        "debug": true,
+        "radius": 48,
+        "seed": 1
+      },
       "id": "sky",
-      "path": "/?site=playtest&skyRoute=1&time=13:00#{debug:true,seed:1,radius:48,at:[430,523,-90],cam:[430,21.5,523,-90,0,0]}"
+      "start": {
+        "density": null,
+        "id": "perf_baseline_sky_start",
+        "kit": [
+          {
+            "condition": 0.69999999999999996,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "jeans",
+            "item": "jeans"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "sneakers",
+            "item": "sneakers"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "hoodie",
+            "item": "hoodie"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "beans",
+            "item": "canned_beans"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "matches",
+            "item": "matches"
+          },
+          {
+            "count": 2,
+            "destination": {
+              "kind": "pocket",
+              "parent": "jeans",
+              "pocket": 2
+            },
+            "id": "bandages",
+            "item": "bandage"
+          }
+        ],
+        "recipes": [
+          "torch",
+          "candle",
+          "repair_kit",
+          "repair_crowbar",
+          "sawn_plank",
+          "door_bar",
+          "make_rope",
+          "grind_kitchen_knife",
+          "hone_kitchen_knife",
+          "grind_kabar",
+          "hone_kabar",
+          "grind_machete",
+          "hone_machete"
+        ],
+        "seed": 1,
+        "site": "playtest",
+        "skills": {},
+        "startTimeGameTimeOfDay": "13:00",
+        "storeys": 1,
+        "wounds": []
+      }
     },
     {
       "cpuProfile": true,
       "driver": "orbit",
+      "hash": {
+        "debug": true,
+        "radius": 96,
+        "seed": 1
+      },
       "id": "gauntlet-default-start",
-      "path": "/?site=gauntlet&time=19:30#{debug:true,seed:1,radius:96}",
+      "start": {
+        "density": null,
+        "id": "perf_baseline_gauntlet_dusk_start",
+        "kit": [
+          {
+            "condition": 0.69999999999999996,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "jeans",
+            "item": "jeans"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "sneakers",
+            "item": "sneakers"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "hoodie",
+            "item": "hoodie"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "beans",
+            "item": "canned_beans"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "matches",
+            "item": "matches"
+          },
+          {
+            "count": 2,
+            "destination": {
+              "kind": "pocket",
+              "parent": "jeans",
+              "pocket": 2
+            },
+            "id": "bandages",
+            "item": "bandage"
+          }
+        ],
+        "placement": {
+          "cell": [0, 0],
+          "descents": [
+            {
+              "kind": "ladder",
+              "ladder": [39, 1, 10],
+              "lower": [41, 1, 11],
+              "upper": [36, 41, 11]
+            },
+            {
+              "hatch": [10, 40, 5],
+              "kind": "stairs",
+              "lower": [14, 1, 1],
+              "upper": [18, 41, 6]
+            },
+            {
+              "edge": [5, 41, 8],
+              "kind": "drop",
+              "landing": [5, 3, 8],
+              "lower": [5, 1, 14],
+              "upper": [6, 41, 8]
+            }
+          ],
+          "fixedLoot": [
+            {
+              "at": [35, 17, 6],
+              "items": [
+                {
+                  "condition": 0.69999999999999996,
+                  "item": "revolver_357",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "minimumOpenDescents": 2,
+          "spawn": [22, 41, 4],
+          "template": "gauntlet_start"
+        },
+        "recipes": [
+          "torch",
+          "candle",
+          "repair_kit",
+          "repair_crowbar",
+          "sawn_plank",
+          "door_bar",
+          "make_rope",
+          "grind_kitchen_knife",
+          "hone_kitchen_knife",
+          "grind_kabar",
+          "hone_kabar",
+          "grind_machete",
+          "hone_machete"
+        ],
+        "seed": 1,
+        "site": "gauntlet",
+        "skills": {},
+        "startTimeGameTimeOfDay": "19:30",
+        "storeys": 1,
+        "wounds": []
+      },
       "yawAmplitudeDegrees": 0,
       "yawCycles": 1
     },
     {
       "cpuProfile": true,
       "driver": "orbit",
+      "hash": {
+        "debug": true,
+        "radius": 96,
+        "seed": 73
+      },
       "id": "gauntlet-horde",
       "liftMetres": 3,
-      "path": "/?site=gauntlet&time=12:00#{debug:true,seed:73,radius:96}",
       "spawnCount": 40,
+      "start": {
+        "density": null,
+        "id": "perf_baseline_gauntlet_noon_start",
+        "kit": [
+          {
+            "condition": 0.69999999999999996,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "jeans",
+            "item": "jeans"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "sneakers",
+            "item": "sneakers"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "hoodie",
+            "item": "hoodie"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "beans",
+            "item": "canned_beans"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "matches",
+            "item": "matches"
+          },
+          {
+            "count": 2,
+            "destination": {
+              "kind": "pocket",
+              "parent": "jeans",
+              "pocket": 2
+            },
+            "id": "bandages",
+            "item": "bandage"
+          }
+        ],
+        "placement": {
+          "cell": [0, 0],
+          "descents": [
+            {
+              "kind": "ladder",
+              "ladder": [39, 1, 10],
+              "lower": [41, 1, 11],
+              "upper": [36, 41, 11]
+            },
+            {
+              "hatch": [10, 40, 5],
+              "kind": "stairs",
+              "lower": [14, 1, 1],
+              "upper": [18, 41, 6]
+            },
+            {
+              "edge": [5, 41, 8],
+              "kind": "drop",
+              "landing": [5, 3, 8],
+              "lower": [5, 1, 14],
+              "upper": [6, 41, 8]
+            }
+          ],
+          "fixedLoot": [
+            {
+              "at": [35, 17, 6],
+              "items": [
+                {
+                  "condition": 0.69999999999999996,
+                  "item": "revolver_357",
+                  "key": true
+                }
+              ]
+            }
+          ],
+          "minimumOpenDescents": 2,
+          "spawn": [22, 41, 4],
+          "template": "gauntlet_start"
+        },
+        "recipes": [
+          "torch",
+          "candle",
+          "repair_kit",
+          "repair_crowbar",
+          "sawn_plank",
+          "door_bar",
+          "make_rope",
+          "grind_kitchen_knife",
+          "hone_kitchen_knife",
+          "grind_kabar",
+          "hone_kabar",
+          "grind_machete",
+          "hone_machete"
+        ],
+        "seed": 1,
+        "site": "gauntlet",
+        "skills": {},
+        "startTimeGameTimeOfDay": "12:00",
+        "storeys": 1,
+        "wounds": []
+      },
       "yawAmplitudeDegrees": 35,
       "yawCycles": 1
     },
     {
       "driver": "orbit",
+      "hash": {
+        "cam": [56, 21.5, 57.5, -90, 0, 0],
+        "debug": true,
+        "radius": 32,
+        "seed": 1
+      },
       "id": "interior",
-      "path": "/?site=stair_demo&time=12:00#{debug:true,seed:1,radius:32,cam:[56,21.5,57.5,-90,0,0]}",
+      "start": {
+        "density": null,
+        "id": "perf_baseline_interior_start",
+        "kit": [
+          {
+            "condition": 0.69999999999999996,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "jeans",
+            "item": "jeans"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "sneakers",
+            "item": "sneakers"
+          },
+          {
+            "condition": 0.80000000000000004,
+            "count": 1,
+            "destination": {
+              "kind": "worn"
+            },
+            "id": "hoodie",
+            "item": "hoodie"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "beans",
+            "item": "canned_beans"
+          },
+          {
+            "destination": {
+              "kind": "pocket",
+              "parent": "hoodie",
+              "pocket": 0
+            },
+            "id": "matches",
+            "item": "matches"
+          },
+          {
+            "count": 2,
+            "destination": {
+              "kind": "pocket",
+              "parent": "jeans",
+              "pocket": 2
+            },
+            "id": "bandages",
+            "item": "bandage"
+          }
+        ],
+        "recipes": [
+          "torch",
+          "candle",
+          "repair_kit",
+          "repair_crowbar",
+          "sawn_plank",
+          "door_bar",
+          "make_rope",
+          "grind_kitchen_knife",
+          "hone_kitchen_knife",
+          "grind_kabar",
+          "hone_kabar",
+          "grind_machete",
+          "hone_machete"
+        ],
+        "seed": 1,
+        "site": "stair_demo",
+        "skills": {},
+        "startTimeGameTimeOfDay": "12:00",
+        "storeys": 1,
+        "wounds": []
+      },
       "yawAmplitudeDegrees": 35,
       "yawCycles": 1
     }

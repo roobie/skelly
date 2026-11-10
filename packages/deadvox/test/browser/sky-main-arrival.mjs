@@ -3,9 +3,43 @@ import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, posix, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { createStageServer } from './stageServer.mjs';
 
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
+const stairsStart = {
+  density: null,
+  id: 'sky_main_arrival_stairs_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'stair_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
 
 // The reference run measures the base's startup, so each base startup file must link against the base
 // modules it imports; a branch that removes an export the base imports would otherwise break the reference.
@@ -510,7 +544,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     });
     await server.listen();
     const address = server.httpServer.address();
-    await page.goto(`http://127.0.0.1:${address.port}/?site=stair_demo&time=12:00#{debug:true,seed:1,radius:32}`);
+    await page.goto(
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.sky-main-arrival.stairs', stairsStart),
+        hash: { debug: true, seed: 1, radius: 32 },
+      }),
+    );
     await page.waitForFunction(
       () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
       undefined,

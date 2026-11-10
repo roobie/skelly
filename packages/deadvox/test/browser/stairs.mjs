@@ -10,6 +10,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
@@ -33,6 +34,39 @@ const isLightingMode =
   mode === 'lighting-outdoor' ||
   mode === 'lighting-atlas';
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const noonStart = {
+  density: null,
+  id: 'stairs_noon_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'stair_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
 const timePhase = async (phase, action) => {
@@ -220,7 +254,11 @@ try {
     await page.goto(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${port}/?site=stair_demo&time=12:00${mode === 'camo' ? '&skyRoute=1' : ''}#{debug:true,seed:1,radius:32}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: inlineStartMod('fixture.stairs.noon', noonStart),
+          harness: mode === 'camo' ? { skyRoute: 1 } : {},
+          hash: { debug: true, seed: 1, radius: 32 },
+        }),
       ),
     );
     await page.waitForFunction(

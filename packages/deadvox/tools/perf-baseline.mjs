@@ -5,13 +5,20 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { build, preview } from 'vite';
 import { readHash, writeHash } from '../src/hashState.ts';
+import { gameUrl, inlineStartMod } from '../test/browser/gameUrl.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { traceCapture } from './perf-baseline-trace.mjs';
 
 const { chromium } = await import('playwright');
-const leadingSlash = /^\//;
 const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
+
+const routeUrl = (pageOrigin, route) =>
+  gameUrl(pageOrigin, {
+    startMod: inlineStartMod(`fixture.perf-baseline.${route.id}`, route.start),
+    harness: route.harness,
+    hash: route.hash,
+  });
 
 async function captureLook(page, directory, { route, mode, repeat }) {
   if (mode !== 'whole' || repeat !== 1) {
@@ -190,7 +197,7 @@ try {
     const tracePath = traceSession ? `${route.id}-${mode}-${repeat}.trace.json` : null;
     const trace = traceCapture(traceSession, resolve(out, tracePath ?? 'unused'), config.traceCategories);
     try {
-      await page.goto(new URL(route.path.replace(leadingSlash, ''), origin).href);
+      await page.goto(routeUrl(origin, route));
       await waitFor(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
         timeout: config.timeoutMs,
       });

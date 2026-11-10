@@ -1,10 +1,12 @@
-import { getBuildRevision } from '@skelly/engine/packs';
+import { getBuildRevision, type StartupContent } from '@skelly/engine/packs';
+import { startForSite } from '@skelly/engine/session';
 import type { Vec3 } from '@skelly/engine/world';
 import type { SkyRouteAttachment } from '@skelly/presentation/debug';
 import { forwardedActionHolds } from '@skelly/presentation/input';
 import type { Engine } from '@skelly/presentation/play';
 import { createSkyRoutePanel } from '@skelly/presentation/ui';
 import { pageHref } from '../pageUrl.ts';
+import { linkStartMod } from '../product/page.ts';
 import { collectSkyGeometry } from './skyRouteGeometry.ts';
 import {
   SKY_ROUTE,
@@ -15,9 +17,9 @@ import {
 } from './skyRouteMetrics.ts';
 import { observeSkyRoute, skyRendererIdentity } from './skyRouteObserver.ts';
 
-export function skyRouteUrl() {
-  const query = new URLSearchParams({ site: 'playtest', skyRoute: '1' });
-  query.set('time', '13:00');
+export function skyRouteUrl(content: StartupContent) {
+  const start = { ...startForSite(content, 'playtest', true), id: 'sky_route_start' };
+  const query = new URLSearchParams({ 'start-mod': linkStartMod('link.sky-route', start, '13:00'), skyRoute: '1' });
   return pageHref(location.href, query, { debug: true, seed: 1, radius: 48, at: [SKY_ROUTE.start, SKY_ROUTE.z, -90] });
 }
 function eligibleSkyFields(engine: Engine, metres: Vec3) {
@@ -40,7 +42,7 @@ export function attachSkyRoute({
   if (!(engine.renderer && engine.skylight)) {
     return;
   }
-  const panel = createSkyRoutePanel(skyRouteUrl());
+  const panel = createSkyRoutePanel(skyRouteUrl(engine.config.content));
   const holdRouteAction = forwardedActionHolds(keyboardInput);
   const routeMovementActions = ['movement.sprint', 'movement.forward', 'movement.back'];
   // The input owner's live context decides whether play (and so the route's forwarded movement) is allowed.

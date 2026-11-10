@@ -12,6 +12,7 @@ import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readHash, writeHash } from '../../src/hashState.ts';
 import { launchChromium } from './chromium.mjs';
+import { inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
 import { saveControllerServer } from './save-controller-fixture.mjs';
@@ -24,6 +25,42 @@ const { metricsStorageKey } = await import(pathToFileURL(`${root}/../presentatio
 const { server, address } = await saveControllerServer();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
 const url = browserStageUrl('save-controller-regressions', address);
+// weatheringTest has no scenario or layout row, so its run has no attempt policy.
+const WEATHERING_TEST_START = inlineStartMod('fixture.save-controller-regressions.rowless', {
+  allSkills: 10,
+  debugOnly: true,
+  density: null,
+  id: 'save_controller_regressions_rowless_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'weatheringTest',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+});
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
@@ -1011,7 +1048,7 @@ try {
     const rowless = await context.newPage();
     rowless.on('pageerror', (error) => pageErrors.push(error.message));
     const rowlessUrl = new URL(url);
-    rowlessUrl.searchParams.set('site', 'weatheringTest');
+    rowlessUrl.searchParams.set('start-mod', JSON.stringify(WEATHERING_TEST_START));
     const rowlessHash = { ...readHash(rowlessUrl.hash).hash, debug: true };
     rowlessUrl.hash = writeHash(rowlessHash);
     await rowless.addInitScript((key) => {

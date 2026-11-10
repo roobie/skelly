@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
@@ -18,6 +19,40 @@ import { createStageServer } from './stageServer.mjs';
 const [, , mode] = process.argv;
 assert.ok(mode === 'consumer' || mode === 'lifecycle', 'choose consumer or lifecycle');
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const houseStart = {
+  density: null,
+  id: 'reading_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const forestStart = { ...houseStart, id: 'reading_forest_start', site: 'forest' };
 const artifacts = resolve(process.env.READING_ARTIFACT_DIR ?? `test-results/reading-${mode}`);
 await mkdir(artifacts, { recursive: true });
 const vite = await createStageServer({
@@ -75,7 +110,11 @@ try {
   await page.goto(
     browserStageUrl(
       'reading',
-      `http://127.0.0.1:${port}/?site=testHouse&time=12:00&save-test=1#{seed:1,radius:16,post:false,sunshadow:false,torchshadow:false}`,
+      gameUrl(`http://127.0.0.1:${port}`, {
+        startMod: inlineStartMod('fixture.reading.house', houseStart),
+        harness: { 'save-test': 1 },
+        hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+      }),
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -1235,7 +1274,10 @@ try {
     await page.goto(
       browserStageUrl(
         'reading',
-        `http://127.0.0.1:${port}/?site=forest&time=12:00#{seed:1,radius:16,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: inlineStartMod('fixture.reading.forest', forestStart),
+          hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+        }),
       ),
       { waitUntil: 'domcontentloaded' },
     );

@@ -8,6 +8,9 @@ import { holdAction, pressAction } from './input-actions.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
+// Each flow drops the base address's start mod, which would win over this scenario's default start.
+const GAUNTLET_PLAY = 'skelly.deadvox.scenario.gauntlet.play';
+
 /** Turns on the scenario population fixture that `save-controller-fixture.mjs` injects. */
 const useRouteFixture = () => {
   globalThis.skellyRouteFixture = true;
@@ -21,8 +24,8 @@ const gauntletLoading = async (browser, baseUrl) => {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     const url = new URL(baseUrl);
-    url.searchParams.set('site', 'gauntlet');
-    url.searchParams.set('time', '12:00');
+    url.searchParams.delete('start-mod');
+    url.searchParams.set('mods', GAUNTLET_PLAY);
     url.hash = writeHash({ ...readHash(url.hash).hash, debug: true, save: true, actors: undefined });
     await page.goto(url.href);
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -84,7 +87,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await context.addInitScript(useRouteFixture);
     const page = await context.newPage();
     const url = new URL(baseUrl);
-    url.searchParams.set('site', 'gauntlet');
+    url.searchParams.delete('start-mod');
+    url.searchParams.set('mods', GAUNTLET_PLAY);
     url.hash = writeHash({ ...readHash(url.hash).hash, debug: true, save: true, actors: undefined });
     await page.goto(url.href);
     await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);

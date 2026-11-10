@@ -9,11 +9,60 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const sharedKit = [
+  { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+  { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+  { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+  { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+  { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+  { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+];
+const sharedRecipes = [
+  'torch',
+  'candle',
+  'repair_kit',
+  'repair_crowbar',
+  'sawn_plank',
+  'door_bar',
+  'make_rope',
+  'grind_kitchen_knife',
+  'hone_kitchen_knife',
+  'grind_kabar',
+  'hone_kabar',
+  'grind_machete',
+  'hone_machete',
+];
+// The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle.
+const houseNightMod = inlineStartMod('fixture.primary-action-pixel.house-night', {
+  density: null,
+  id: 'primary_action_pixel_house_night_start',
+  kit: sharedKit,
+  recipes: sharedRecipes,
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '23:30',
+  storeys: 1,
+  wounds: [],
+});
+const lakeNoonMod = inlineStartMod('fixture.primary-action-pixel.lake', {
+  density: null,
+  id: 'primary_action_pixel_lake_start',
+  kit: sharedKit,
+  recipes: sharedRecipes,
+  seed: 1,
+  site: 'lake_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+});
 const [, , group] = process.argv;
 assert.ok(['held', 'optic-zoom', 'optic-sights', 'lake'].includes(group), 'choose a pixel contract group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
@@ -471,9 +520,20 @@ const enterTestHouse = async (chromium, port) => {
     await page.goto(
       browserStageUrl(
         'primary-action-pixel',
-        // The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle. It starts on the path's
-        // open ground facing east, away from the showroom deck and its props, so the floor sample sees bare ground.
-        `http://127.0.0.1:${port}/?site=testHouse&time=23:30#{debug:true,seed:73,radius:32,at:[-4,-0.5,-90],post:false,sunshadow:false,torchshadow:false}`,
+        // The view starts on the path's open ground facing east, away from the showroom deck and its props, so the
+        // floor sample sees bare ground.
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNightMod,
+          hash: {
+            debug: true,
+            seed: 73,
+            radius: 32,
+            at: [-4, -0.5, -90],
+            post: false,
+            sunshadow: false,
+            torchshadow: false,
+          },
+        }),
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -924,12 +984,25 @@ const lakeSurfaceCheck = (chromium, port) =>
       );
       const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
       const [centreX, centreZ] = lakeLayout.terrain[0].centre;
-      const cam = `[${centreX},${lakeLayout.water[0].level + 2},${centreZ},0,89,0]`;
+      const cam = [centreX, lakeLayout.water[0].level + 2, centreZ, 0, 89, 0];
       await timePhase('lake-menu', async () => {
         await lake.goto(
           browserStageUrl(
             'primary-action-pixel',
-            `http://127.0.0.1:${port}/?site=lake_demo&time=12:00#{debug:true,seed:1,radius:16,cam:${cam},freeze:true,post:false,sunshadow:false,torchshadow:false,crackcheck:true}`,
+            gameUrl(`http://127.0.0.1:${port}`, {
+              startMod: lakeNoonMod,
+              hash: {
+                debug: true,
+                seed: 1,
+                radius: 16,
+                cam,
+                freeze: true,
+                post: false,
+                sunshadow: false,
+                torchshadow: false,
+                crackcheck: true,
+              },
+            }),
           ),
         );
         await lake.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

@@ -9,6 +9,7 @@ import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
 import { launchChromium } from '../test/browser/chromium.mjs';
+import { gameUrl, inlineStartMod } from '../test/browser/gameUrl.mjs';
 import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
@@ -17,6 +18,41 @@ import {
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
 import { createStageServer } from '../test/browser/stageServer.mjs';
+
+const stageHash = { debug: true, post: false, sunshadow: false, torchshadow: false };
+const houseStartMod = inlineStartMod('fixture.ui-browser-contract.house', {
+  density: null,
+  id: 'ui_browser_contract_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '10:00',
+  storeys: 1,
+  wounds: [],
+});
 
 const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
@@ -35,6 +71,7 @@ let vite;
 let browser;
 let browserCdp;
 let page;
+let stageOrigin;
 let stageUrl;
 let graphics;
 const cleanup = async (name, action) => {
@@ -110,10 +147,8 @@ try {
   const { port } = address;
   viteDiagnostics.state = 'listening';
   viteDiagnostics.port = port;
-  stageUrl = browserStageUrl(
-    'ui-browser-contract',
-    `http://127.0.0.1:${port}/#{debug:true,post:false,sunshadow:false,torchshadow:false}`,
-  );
+  stageOrigin = `http://127.0.0.1:${port}`;
+  stageUrl = browserStageUrl('ui-browser-contract', gameUrl(stageOrigin, { hash: stageHash }));
   discovery.phase = 'Vite ready';
   const viteResponse = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(30_000) });
   discovery.lastHttpStatus = { url: viteResponse.url, status: viteResponse.status };
@@ -1470,9 +1505,11 @@ try {
     [],
     'UI contract remains independent of WebGL rendering',
   );
-  const independentUrl = new URL(stageUrl);
-  independentUrl.searchParams.set('site', 'testHouse');
-  await page.goto(independentUrl.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  const independentUrl = browserStageUrl(
+    'ui-browser-contract',
+    gameUrl(stageOrigin, { startMod: houseStartMod, hash: stageHash }),
+  );
+  await page.goto(independentUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await waitFor(
     () => evaluate("document.querySelector('#go')?.getAttribute('aria-disabled') === 'false'"),
     'independent-world launch readiness',

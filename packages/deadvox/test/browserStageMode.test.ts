@@ -4,8 +4,8 @@ import { type BrowserStageMode, browserStageArgs, browserStageMode, browserStage
 // Any registered stage: the override selects each mode, so the rules are checked per mode rather than per stage.
 const stage = 'primary-action';
 // The game page's developer state is in the hash, which the render switch on the query must keep.
-const address = 'http://localhost/?site=testHouse#{seed:1}';
-const rendered = 'http://localhost/?site=testHouse&render=0#{seed:1}';
+const address = 'http://localhost/?mods=fixture#{seed:1}';
+const rendered = 'http://localhost/?mods=fixture&render=0#{seed:1}';
 const swiftShader = ['--use-gl=angle', '--use-angle=swiftshader'];
 
 describe('browser stage rendering mode', () => {
@@ -36,7 +36,7 @@ describe('browser stage rendering mode', () => {
   });
 
   it('a render-free stage leaves a bench URL rendering', () => {
-    const bench = 'http://localhost/?bench=1&site=forest#{seed:1}';
+    const bench = 'http://localhost/?bench=1&mods=fixture#{seed:1}';
     expect(browserStageUrl(stage, bench, 'render-free')).toBe(bench);
   });
 

@@ -717,7 +717,11 @@ const selectAt = (clientX: number, clientY: number) => {
     pointPanel.replaceChildren(position);
   } else {
     const link = document.createElement('a');
-    link.href = debugGameHref(globalThis.location.href, { site: config.site, seed }, { x, z });
+    link.href = debugGameHref(
+      globalThis.location.href,
+      { start: registry.starts.get(config.startId)!, seed },
+      { x, z },
+    );
     link.textContent = 'Open a fresh debug game here';
     link.target = '_blank';
     link.rel = 'noopener';

@@ -8,12 +8,73 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { modFileBytes } from '../modFile.ts';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_stanag_30.model.json').toString('utf8'));
+const noonStart = {
+  density: null,
+  id: 'full_auto_noon_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const rifleStart = {
+  ...noonStart,
+  id: 'full_auto_fixture_start',
+  debugOnly: true,
+  kit: [
+    ...noonStart.kit,
+    { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+    { id: 'firearm', item: 'rifle_assault', destination: { kind: 'hand', role: 'dominant' } },
+    {
+      id: 'fitted_magazine',
+      item: 'magazine_stanag_30',
+      cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
+      destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
+    },
+    {
+      id: 'spare_magazine',
+      item: 'magazine_stanag_30',
+      cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+    {
+      id: 'box',
+      item: 'cartridge_box_5_d_56x45',
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+  ],
+};
 const anchors = new Map([
   ['src/presentation/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
   [
@@ -43,38 +104,6 @@ const vite = await createStageServer({
       name: 'full-auto-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
-          const data = JSON.parse(code);
-          const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
-          data.starts.push({
-            ...start,
-            id: 'full_auto_fixture_start',
-            debugOnly: true,
-            kit: [
-              ...start.kit,
-              { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
-              { id: 'firearm', item: 'rifle_assault', destination: { kind: 'hand', role: 'dominant' } },
-              {
-                id: 'fitted_magazine',
-                item: 'magazine_stanag_30',
-                cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
-                destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
-              },
-              {
-                id: 'spare_magazine',
-                item: 'magazine_stanag_30',
-                cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
-                destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
-              },
-              {
-                id: 'box',
-                item: 'cartridge_box_5_d_56x45',
-                destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
-              },
-            ],
-          });
-          return JSON.stringify(data);
-        }
         if (id.endsWith('/src/presentation/play.ts')) {
           const marker = anchors.get('src/presentation/play.ts');
           requireAnchor(code, 'src/presentation/play.ts', marker);
@@ -197,7 +226,20 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&start=full_auto_fixture_start&time=12:00#{debug:true,seed:73,radius:64,at:[43.5,0,-90],post:false,sunshadow:false,torchshadow:false,mannequin:regional_map-right-lowered,mannequinWear:[jacket,jeans,rubber_boots,utility_vest,school_backpack]}`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.full-auto.rifle', rifleStart),
+        hash: {
+          debug: true,
+          seed: 73,
+          radius: 64,
+          at: [43.5, 0, -90],
+          post: false,
+          sunshadow: false,
+          torchshadow: false,
+          mannequin: 'regional_map-right-lowered',
+          mannequinWear: ['jacket', 'jeans', 'rubber_boots', 'utility_vest', 'school_backpack'],
+        },
+      }),
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -844,7 +886,10 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&time=12:00#{seed:73,radius:64,at:[43.5,0,-90],post:false,sunshadow:false,torchshadow:false}`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.full-auto.noon', noonStart),
+        hash: { seed: 73, radius: 64, at: [43.5, 0, -90], post: false, sunshadow: false, torchshadow: false },
+      }),
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

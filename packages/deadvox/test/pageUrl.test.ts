@@ -4,6 +4,7 @@ import perfBaseline from '../src/config/perf-baseline.json' with { type: 'json' 
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { newWorldHref, replayHref, tutorialHash } from '../src/product/page.ts';
+import { gameUrl, inlineStartMod } from './browser/gameUrl.mjs';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
 describe('page hash', () => {
@@ -45,8 +46,11 @@ describe('page query', () => {
 
   it('starts every configured performance-baseline route', () => {
     expect(perfBaseline.routes.length).toBeGreaterThan(0);
-    for (const { id, path } of perfBaseline.routes) {
-      const url = new URL(path, 'https://example.test/');
+    for (const route of perfBaseline.routes) {
+      const { id, start, hash } = route;
+      const startMod = inlineStartMod(`fixture.perf-baseline.${id}`, start);
+      const harness = 'harness' in route ? route.harness : {};
+      const url = new URL(gameUrl('https://example.test/', { startMod, harness, hash: hash as HashState }));
       expect(readPageUrl(url.search, url.hash).refused, id).toBeUndefined();
     }
   });
@@ -63,10 +67,14 @@ describe('page query', () => {
 });
 
 describe('page links', () => {
-  it('starts a new world with the hash seed, keeping the rest of the hash and dropping the start time', () => {
-    const next = new URL(newWorldHref('https://example.org/?mods=fixture&time=12:00#{debug:true}', { debug: true }, 4));
-    expect(next.searchParams.get('mods')).toBe('fixture');
-    expect(next.searchParams.has('time')).toBe(false);
+  it('starts a new world with the hash seed, keeping the query and the rest of the hash', () => {
+    const page = gameUrl('https://example.org/', {
+      startMod: 'fixture.start',
+      mods: ['fixture'],
+      hash: { debug: true },
+    });
+    const next = new URL(newWorldHref(page, { debug: true }, 4));
+    expect(next.search).toBe(new URL(page).search);
     expect(readHash(next.hash)).toEqual({ hash: { debug: true, seed: 4 } });
   });
 
@@ -78,7 +86,7 @@ describe('page links', () => {
 
   it('builds only links the game reads back without refusing them', () => {
     const page =
-      'https://example.org/deadvox/?mods=fixture&site=city&render=0#{debug:true,seed:3,radius:64,cam:[1,2,3,0,0,0]}';
+      'https://example.org/deadvox/?mods=fixture&start-mod=fixture.start&render=0#{debug:true,seed:3,radius:64,cam:[1,2,3,0,0,0]}';
     const { hash } = readPageUrl(new URL(page).search, new URL(page).hash);
     const enterPractice = tutorialUrl(page, 'fixture.practice', true, tutorialHash(hash));
     const links = {

@@ -3,11 +3,13 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the executable and source checkout for A/B tests
 import assert from 'node:assert/strict';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { modFileBytes } from '../modFile.ts';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
@@ -21,12 +23,78 @@ const groups = ['flow', 'replays'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-const authoredStarts = JSON.parse(
-  await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.test-house/starts.json'), 'utf8'),
-).starts;
-const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
-assert(houseStart, 'the product supplies an authored start for the existing house flow');
-const debugHouseStart = { id: 'primary_action_fixture_start' };
+const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));
+const houseNoonStart = {
+  density: null,
+  id: 'primary_action_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const houseNoonMod = inlineStartMod('fixture.primary-action.house', houseNoonStart);
+const debugHouseStart = {
+  ...houseNoonStart,
+  id: 'primary_action_fixture_start',
+  debugOnly: true,
+  kit: [
+    ...houseNoonStart.kit,
+    { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+    { id: 'firearm', item: 'pistol_service', destination: { kind: 'hand', role: 'dominant' } },
+    {
+      id: 'fitted_magazine',
+      item: 'magazine_pistol_9',
+      cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_9x19'),
+      destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
+    },
+    {
+      id: 'rounds',
+      item: 'cartridge_9x19',
+      count: 50,
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+  ],
+};
+const debugHouseMod = inlineStartMod('fixture.primary-action.debug-house', debugHouseStart);
+const lockTestNoonMod = inlineStartMod('fixture.primary-action.lock-test', {
+  ...houseNoonStart,
+  id: 'primary_action_lock_test_start',
+  site: 'lock_test',
+});
+const replayFixtureMod = inlineStartMod('fixture.primary-action.replay', {
+  id: 'replay_fixture_start',
+  site: 'replay_fixture',
+  startTimeGameTimeOfDay: '12:00',
+  kit: [{ id: 'stock', item: 'replay_fixture_stock', destination: { kind: 'hand', role: 'dominant' } }],
+  wounds: [],
+  skills: {},
+  recipes: [],
+});
 const startStateModule = '/@stage/@skelly/engine/internal/core/startState.ts';
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
 const firearmActionModule = '/@stage/@skelly/engine/internal/core/firearmAction.ts';
@@ -102,7 +170,17 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?site=replay_fixture&time=12:00#{debug:true,seed:73,radius:${cleanReplayRadiusM},post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: replayFixtureMod,
+          hash: {
+            debug: true,
+            seed: 73,
+            radius: cleanReplayRadiusM,
+            post: false,
+            sunshadow: false,
+            torchshadow: false,
+          },
+        }),
         renderOverride,
       ),
     );
@@ -452,7 +530,10 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:64,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -571,7 +652,10 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -699,7 +783,10 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -979,7 +1066,10 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -1378,7 +1468,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:64,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -1886,7 +1979,10 @@ try {
       await page.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?site=testHouse&start=${encodeURIComponent(debugHouseStart.id)}&time=12:00#{debug:true,seed:73,radius:64,post:false,sunshadow:false,torchshadow:false}`,
+          gameUrl(`http://127.0.0.1:${address.port}`, {
+            startMod: debugHouseMod,
+            hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
+          }),
           renderOverride,
         ),
       );
@@ -3878,7 +3974,10 @@ try {
       await lockedPage.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?site=lock_test&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
+          gameUrl(`http://127.0.0.1:${address.port}`, {
+            startMod: lockTestNoonMod,
+            hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+          }),
           renderOverride,
         ),
       );
@@ -4167,7 +4266,10 @@ try {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${address.port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );

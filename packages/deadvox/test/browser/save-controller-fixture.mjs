@@ -4,7 +4,42 @@
 import assert from 'node:assert/strict';
 import { resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { instrumentModelLoads, modelLoadAuditPlugin } from './model-load-audit.mjs';
+
+const TEST_HOUSE_START = inlineStartMod('fixture.save-controller.test-house', {
+  density: null,
+  id: 'save_controller_test_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '10:00',
+  storeys: 1,
+  wounds: [],
+});
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { createStageServer } = await import('./stageServer.mjs');
@@ -82,6 +117,10 @@ export const saveControllerServer = async () => {
   assert(address && typeof address !== 'string');
   return {
     server,
-    address: `http://127.0.0.1:${address.port}/?site=testHouse&save-test=1&save-backend=indexeddb#{seed:73,radius:32,actors:boxes,post:false,sunshadow:false,torchshadow:false}`,
+    address: gameUrl(`http://127.0.0.1:${address.port}`, {
+      startMod: TEST_HOUSE_START,
+      harness: { 'save-test': 1, 'save-backend': 'indexeddb' },
+      hash: { seed: 73, radius: 32, actors: 'boxes', post: false, sunshadow: false, torchshadow: false },
+    }),
   };
 };

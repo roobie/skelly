@@ -1,3 +1,11 @@
+local start(starts, id, time) = starts.starts[0] + {
+  id: id,
+  startTimeGameTimeOfDay: time,
+  defaultForSite:: null,
+};
+local playtest = import '../../mods/skelly.deadvox.scenario.playtest/starts.jsonnet';
+local gauntlet = import '../../mods/skelly.deadvox.scenario.gauntlet.start/starts.jsonnet';
+local stairs = import '../../mods/skelly.deadvox.scenario.stairs/starts.jsonnet';
 {
   viewport: { width: 1672, height: 832 },
   deviceScaleFactor: 1.5,
@@ -27,12 +35,15 @@
   routes: [
     {
       id: 'sky',
-      path: '/?site=playtest&skyRoute=1&time=13:00#{debug:true,seed:1,radius:48,at:[430,523,-90],cam:[430,21.5,523,-90,0,0]}',
+      start: start(playtest, 'perf_baseline_sky_start', '13:00'),
+      harness: { skyRoute: 1 },
+      hash: { debug: true, seed: 1, radius: 48, at: [430, 523, -90], cam: [430, 21.5, 523, -90, 0, 0] },
       driver: 'sky',
     },
     {
       id: 'gauntlet-default-start',
-      path: '/?site=gauntlet&time=19:30#{debug:true,seed:1,radius:96}',
+      start: start(gauntlet, 'perf_baseline_gauntlet_dusk_start', '19:30'),
+      hash: { debug: true, seed: 1, radius: 96 },
       driver: 'orbit',
       yawAmplitudeDegrees: 0,
       yawCycles: 1,
@@ -40,7 +51,8 @@
     },
     {
       id: 'gauntlet-horde',
-      path: '/?site=gauntlet&time=12:00#{debug:true,seed:73,radius:96}',
+      start: start(gauntlet, 'perf_baseline_gauntlet_noon_start', '12:00'),
+      hash: { debug: true, seed: 73, radius: 96 },
       driver: 'orbit',
       spawnCount: 40,
       liftMetres: 3,
@@ -50,7 +62,8 @@
     },
     {
       id: 'interior',
-      path: '/?site=stair_demo&time=12:00#{debug:true,seed:1,radius:32,cam:[56,21.5,57.5,-90,0,0]}',
+      start: start(stairs, 'perf_baseline_interior_start', '12:00'),
+      hash: { debug: true, seed: 1, radius: 32, cam: [56, 21.5, 57.5, -90, 0, 0] },
       driver: 'orbit',
       yawAmplitudeDegrees: 35,
       yawCycles: 1,

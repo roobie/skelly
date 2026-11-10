@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readHash } from '../../src/hashState.ts';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
@@ -14,6 +15,41 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 import { measureWeatheringMaterials } from './weatheringPixels.mjs';
 
+const WEATHERING_TEST_START = inlineStartMod('fixture.firefox-ui.weathering', {
+  allSkills: 10,
+  debugOnly: true,
+  density: null,
+  id: 'firefox_ui_weathering_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'weatheringTest',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+});
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const observation = {
@@ -587,7 +623,10 @@ try {
     await page.goto(
       browserStageUrl(
         'firefox-ui',
-        `http://127.0.0.1:${address.port}/?site=weatheringTest&time=12:00#{debug:true,seed:73,radius:64,post:false}`,
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: WEATHERING_TEST_START,
+          hash: { debug: true, seed: 73, radius: 64, post: false },
+        }),
         'pixel',
       ),
     );
