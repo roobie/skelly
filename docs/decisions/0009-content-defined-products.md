@@ -242,15 +242,14 @@ mechanisms still require scoped engine work.
 
 ## Refactor gate
 
-The runtime moves out of `packages/deadvox` into its own workspace package, and content
-splits into `skelly.*` mods in one refactor. The runtime package is `packages/engine`,
-`@skelly/engine`. The assembly/geometry library therefore gave
-up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
+The runtime is its own workspace package, `packages/engine`, `@skelly/engine`, outside
+`packages/deadvox`, and content lives in `skelly.*` mods. The assembly/geometry library
+therefore gave up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
 for that name are in its
 `packages/skelly-assets/tools/packages/construct/README.md`,
 "Name". The product package is `@skelly/deadvox` (`packages/deadvox/package.json`,
 `name`): every workspace package shares the `@skelly/` scope, so the product's name
-matches the runtime and presentation packages the refactor adds.
+matches the runtime and presentation packages.
 
 Runtime code (the `packages/engine` package and the workspace libraries it depends on)
 reaches nothing outside that set, not even for types: no file of deadvox, so no
@@ -316,10 +315,7 @@ corpse renderer, so presentation needs no product import. See
 `packages/deadvox/src/product/ragdoll.ts`, `ragdollConfig`.
 
 The framework refactor's own PR and the asset-pipeline move PRs are allowed under the
-#1532 freeze. The asset move targets `framework/refactor` and precedes framework
-extraction beyond the content-ownership split. Moving the pipelines first avoids
-extracting runtime around tool dependencies that would then be removed again.
-Open permitted PRs as drafts for CI; unrelated new PRs remain frozen until the
+#1532 freeze. Open permitted PRs as drafts for CI; unrelated new PRs remain frozen until the
 refactor lands, though other work can use an existing PR. The freeze prevents unrelated
 file moves during extraction, not CI for the extraction itself. One extraction avoids
 paying for a temporary internal-edge phase and its later removal. See
