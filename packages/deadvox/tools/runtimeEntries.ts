@@ -1,5 +1,5 @@
 // The entry-only check keeps product code on the runtime package's curated entries, off its test-only
-// subpath and out of its files; the reasons are in `docs/decisions/0009-content-defined-products.md`,
+// subpath and out of its files, and on the entries of runtime source still in deadvox; the reasons are in `docs/decisions/0009-content-defined-products.md`,
 // "Refactor gate".
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -20,6 +20,11 @@ export interface EntryPolicy {
   readonly uninstalled: readonly string[];
   /** The Vite project root, where a specifier with a leading slash starts. */
   readonly viteRoot: string;
+  /**
+   * Runtime source not yet in the runtime package: product files outside `dir` reach it only through the
+   * entry modules directly in `entries`.
+   */
+  readonly inPlace: { readonly dir: string; readonly entries: string };
 }
 
 export interface EntryViolation {
@@ -44,6 +49,7 @@ export const ENTRY_POLICY: EntryPolicy = {
   // Tiled's script runtime has no package resolution, and the site-launcher CI job runs without an install.
   uninstalled: ['packages/deadvox/maps/extensions', 'test/site-launcher.test.mjs'],
   viteRoot: 'packages/deadvox',
+  inPlace: { dir: 'packages/deadvox/src/game', entries: 'packages/deadvox/src/game/entries' },
 };
 
 interface RuntimePackage {
@@ -164,7 +170,14 @@ function violationOf(
       : 'imports a runtime subpath that is not an entry';
   }
   const target = targetOf(importer, specifier, policy.viteRoot);
-  if (target === undefined || !within(target, policy.runtime)) {
+  if (target === undefined) {
+    return undefined;
+  }
+  const { dir, entries } = policy.inPlace;
+  if (within(target, dir) && !within(importer, dir)) {
+    return posix.dirname(target) === entries ? undefined : 'imports an in-place runtime file that is not an entry';
+  }
+  if (!within(target, policy.runtime)) {
     return undefined;
   }
   const uninstalled = policy.uninstalled.some((path) => within(importer, path));
@@ -179,6 +192,8 @@ function violationOf(
 /**
  * Every import, type-only and dynamic ones included, by which a product file reaches the runtime package
  * other than through an entry by package name; a file that runs uninstalled may name an entry's file instead.
+ * Also every import by which a product file outside the in-place runtime source reaches it other than
+ * through one of its entries.
  */
 export function entryViolations(repoRoot: string, policy: EntryPolicy): EntryViolation[] {
   const runtime = runtimePackage(repoRoot, policy);
