@@ -14,7 +14,7 @@ read_if:
 
 # Deadvox lessons
 
-These are reusable constraints, not incident timelines. Code and tests own the mechanism; this file keeps the reasons that are easy to lose during a later change.
+These are reusable constraints, not incident timelines. Code and tests own the mechanism; this file keeps the reasons that are easy to lose during a later change. A lesson stays here when its code is in the engine or presentation package, because the game is where it was learned and observed; the packages' own rules are in `packages/engine/PROJECT.md` and `packages/presentation/PROJECT.md`.
 
 ## Input capture
 

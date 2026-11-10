@@ -12,7 +12,7 @@ read_if:
 
 # Deadvox troubleshooting
 
-Start with the closest boundary and reproduce the observed condition; do not infer a simulation result from a rendered frame or a save read. Reusable root-cause lessons are in [LESSONS.md](LESSONS.md).
+Start with the closest boundary and reproduce the observed condition; do not infer a simulation result from a rendered frame or a save read. Reusable root-cause lessons are in [LESSONS.md](LESSONS.md). Symptoms show in the game, so they are kept here even when the code is in the engine or presentation package; those packages' boundaries and import rules are in `packages/engine/PROJECT.md` and `packages/presentation/PROJECT.md`.
 
 ## Startup and save discovery
 
