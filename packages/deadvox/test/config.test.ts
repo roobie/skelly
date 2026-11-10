@@ -68,17 +68,8 @@ it('copies site-selected weathering into replay and resumed configurations', () 
   const layouts = new Map(BUNDLED_CONTENT.registry.layouts);
   const baseLayout = [...layouts.values()][0]!;
   layouts.set(config.site, { ...baseLayout, id: config.site, weatheringProfile: siteProfile.id });
-  applyWeatheringConfig(
-    config,
-    new URLSearchParams(),
-    {},
-    {
-      layouts,
-      weathering: profiles,
-    },
-  );
+  applyWeatheringConfig(config, {}, { layouts, weathering: profiles });
   expect(config.weatheringProfileId).toBe(siteProfile.id);
-  expect(config.weatheringDefaultProfileId).toBe(siteProfile.id);
   expect(config.weathering).toEqual(siteProfile);
   expect(config.weathering).not.toBe(siteProfile);
   const original = { ...siteProfile };

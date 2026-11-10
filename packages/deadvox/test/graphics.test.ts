@@ -1,11 +1,9 @@
 import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
-import { GRAPHICS_KNOBS, writeGraphicsParams } from '@skelly/engine/internal/core/graphics.ts';
 import {
   drugVignetteShown,
   GRAPHICS_KEYS,
   type GraphicsOptions,
-  readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
   validGraphicsSettings,
@@ -146,32 +144,13 @@ it('merges a graphics mod by row identity and requires graphics in a playable pa
   expect(requiredContentIssues(buildRegistry([]).registry).some(({ path }) => path === 'graphics')).toBe(true);
 });
 
-it('resolves URL over player over mod for every knob, including explicit false and defaults', () => {
+it('resolves player over mod for every knob, including explicit false', () => {
   for (const key of GRAPHICS_KEYS) {
     const option = tuning[key];
     const playerValue = 'options' in option ? false : option.min;
-    const urlValue = option.default;
     expect(resolveGraphics(tuning)[key]).toBe(option.default);
     expect(resolveGraphics(tuning, { [key]: playerValue })[key]).toBe(playerValue);
-    expect(resolveGraphics(tuning, { [key]: playerValue }, { [key]: urlValue })[key]).toBe(urlValue);
-    expect(resolveGraphics(tuning, { [key]: urlValue }, { [key]: playerValue })[key]).toBe(playerValue);
   }
-});
-
-it('derives URL bounds and explicit override round-trip from each content option', () => {
-  let overrides = {};
-  for (const key of GRAPHICS_KEYS) {
-    const option = tuning[key];
-    overrides = { ...overrides, [key]: 'options' in option ? false : option.default };
-    if ('min' in option) {
-      const params = new URLSearchParams({ [GRAPHICS_KNOBS[key].url]: String(option.min / 2) });
-      expect(readGraphicsParams(params, tuning)[key]).toBe(option.min);
-    }
-  }
-  const params = writeGraphicsParams(new URLSearchParams('seed=fixture'), tuning, overrides);
-  expect(params.get('seed')).toBe('fixture');
-  expect(readGraphicsParams(params, tuning)).toEqual(overrides);
-  expect(readGraphicsParams(new URLSearchParams('renderscale=NaN&bloomscale=&sunsmall=invalid'), tuning)).toEqual({});
 });
 
 it('validated setters reject disallowed values without mutating the player choices', () => {
@@ -184,7 +163,7 @@ it('validated setters reject disallowed values without mutating the player choic
   expect(() => setGraphicsSetting(locked, settings, 'fastCamo', false)).toThrow(RangeError);
 });
 
-it('applies all resolved knobs on startup and player changes, with URL priority gated by debug', () => {
+it('applies all resolved knobs on startup and player changes', () => {
   const targets = {
     mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn(), setDrugVignetteScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
@@ -198,8 +177,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
     },
   };
   writeGraphicsSettings(tuning, { renderScale: tuning.renderScale.min, fastCamo: false }, storage);
-  const params = writeGraphicsParams(new URLSearchParams(), tuning, { fastCamo: true });
-  const controls = new GraphicsControls(tuning, targets, { debug: false, params, storage });
+  const controls = new GraphicsControls(tuning, targets, { storage });
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.min, true);
   expect(targets.mood.setBloomScale).toHaveBeenLastCalledWith(tuning.bloomScale.default);
   expect(targets.mood.setDrugVignetteScale).toHaveBeenLastCalledWith(tuning.drugVignette.default);
@@ -213,11 +191,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   controls.clear('renderScale');
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default, false);
   expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
-  const debug = new GraphicsControls(tuning, targets, { debug: true, params, storage });
-  debug.set('fastCamo', false);
-  expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(true);
-  expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
-  expect(() => debug.set('bloomScale', tuning.bloomScale.max + 1)).toThrow(RangeError);
+  expect(() => controls.set('bloomScale', tuning.bloomScale.max + 1)).toThrow(RangeError);
   expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
 });
 

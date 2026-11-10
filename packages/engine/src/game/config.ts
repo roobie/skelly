@@ -53,14 +53,12 @@ export interface GameConfig {
    */
   site: SiteName;
   authoredDecals: boolean;
-  /** The city's tallest buildings, in storeys (`?storeys=N`). */
+  /** The city's tallest buildings, in storeys, from the start. */
   storeys: number;
-  /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
+  /** Fixed occupancy from the start; null selects the frozen seeded field. */
   density: number | null;
-  /** Profile id selected for this site, with debug URL selection applied. */
+  /** Site's authored weathering profile id, or the default profile's. */
   weatheringProfileId: string;
-  /** Site's authored weathering profile id, which is the URL's default. */
-  weatheringDefaultProfileId: string;
   /** Render-only weathering profile with optional debug URL edits applied. */
   weathering: WeatheringDef | undefined;
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
@@ -128,7 +126,6 @@ export const makeConfig = (
     storeys: selectedStart.storeys ?? 1,
     density: selectedStart.density ?? null,
     weatheringProfileId: profileId,
-    weatheringDefaultProfileId: profileId,
     weathering: profile ? { ...profile } : undefined,
     actors: 'detailed',
   };
@@ -179,8 +176,6 @@ const debugStartOf = ({ debug, at }: DeveloperState): DebugStart | undefined => 
   return { x: x!, z: z!, ...(yawDegrees === undefined ? {} : { yawDegrees }) };
 };
 
-const MAX_STOREYS = 20;
-
 /** A debug run is ephemeral, so it neither saves nor loads unless hash `save` also asks for it. */
 export const savingEnabledFromUrl = (hash: DeveloperState): boolean => hash.debug !== true || hash.save === true;
 
@@ -190,10 +185,7 @@ export const siteFromUrl = (
   fallback: SiteName,
   registry: Pick<Registry, 'layouts' | 'scenarios'>,
   debug = false,
-): Pick<GameConfig, 'site' | 'storeys' | 'density'> => {
-  const densityText = params.get('density');
-  const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
-  const storeys = Number(params.get('storeys') ?? 1);
+): Pick<GameConfig, 'site'> => {
   const requested = params.get('site');
   return {
     site:
@@ -201,27 +193,19 @@ export const siteFromUrl = (
       (requested !== null && (registry.layouts.has(requested) || registry.scenarios.has(requested)))
         ? requested
         : fallback,
-    storeys: Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1,
-    density: density !== null && Number.isFinite(density) && density >= 0 && density <= 1 ? density : null,
   };
 };
 
-/** The query still names the weathering profile; the hash carries the debug tuning. */
+/** The site's authored weathering profile, or the default, with the debug tuning the hash carries. */
 export const applyWeatheringConfig = (
   config: GameConfig,
-  query: URLSearchParams,
   hash: WeatheringTuning,
   registry: Pick<Registry, 'layouts' | 'weathering'> = config.content.registry,
 ): void => {
-  config.weatheringDefaultProfileId =
+  const siteProfileId =
     registry.layouts.get(config.site)?.weatheringProfile ?? claimedId(registry.weathering, 'defaultWeathering');
-  const weathering = resolveWeatheringUrl(
-    { profile: query.get('weatheringProfile'), tuning: hash },
-    registry.weathering,
-    config.weatheringDefaultProfileId,
-    config.debug,
-  );
-  config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
+  const weathering = resolveWeatheringUrl(hash, registry.weathering, siteProfileId, config.debug);
+  config.weatheringProfileId = weathering?.profileId ?? siteProfileId;
   config.weathering = weathering?.settings;
 };
 
@@ -238,8 +222,8 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams, hash: Dev
   config.startId = start.id;
   config.site = siteSelection.site;
   config.seed = hash.seed === undefined ? (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!) : hash.seed | 0;
-  config.storeys = params.has('storeys') ? siteSelection.storeys : (start.storeys ?? 1);
-  config.density = params.has('density') ? siteSelection.density : (start.density ?? null);
+  config.storeys = start.storeys ?? 1;
+  config.density = start.density ?? null;
   const requestedTime = params.get('time');
   config.start =
     requestedTime === null
@@ -270,7 +254,7 @@ export const configFromUrl = (
   applyStartConfig(config, query, hash);
   config.authoredDecals = hash.decals !== false;
   Object.assign(config, sweepFromUrl(query, hash.ragdollSweep, config, ragdollSweepViewer));
-  applyWeatheringConfig(config, query, hash);
+  applyWeatheringConfig(config, hash);
   const weatheringSplit = debugWeatheringSplit(hash, config.site);
   if (weatheringSplit !== undefined) {
     config.weatheringSplit = weatheringSplit;

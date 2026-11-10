@@ -1,12 +1,10 @@
 export {
   assertGraphicsValue,
   GRAPHICS_KEYS,
-  GRAPHICS_KNOBS,
   type GraphicsKey,
   type GraphicsOptions,
   type GraphicsSettings,
   type GraphicsValues,
-  readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
   validGraphicsSettings,

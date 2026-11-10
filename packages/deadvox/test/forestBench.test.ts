@@ -3,53 +3,28 @@ import { describe, expect, it } from 'vitest';
 import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextRunHash } from '../src/bench/run.ts';
-import { configFromUrl, content, siteFromUrl } from './fixtures/startupContent.ts';
-
-it('parses forest density strictly, including zero/one, without silently switching the requested site', () => {
-  for (const density of ['0', '0.25', '1']) {
-    expect(configFromUrl(new URLSearchParams(`site=forest&density=${density}`))).toMatchObject({
-      site: 'forest',
-      density: Number(density),
-    });
-  }
-  for (const density of ['', '-1', '2', 'NaN']) {
-    expect(siteFromUrl(new URLSearchParams(`site=forest&density=${density}`), 'testHouse')).toMatchObject({
-      site: 'forest',
-      density: null,
-    });
-  }
-});
+import { configFromUrl, content } from './fixtures/startupContent.ts';
 
 describe('forest benchmark workload identity', () => {
-  it('keeps forest site, density, seed, time and post on the second run and names the density in its label', () => {
-    const query = new URLSearchParams('site=forest&density=0.75&time=23:30');
+  it('keeps forest site, seed, time and post on the second run', () => {
+    const query = new URLSearchParams('site=forest&time=23:30');
     const hash = { seed: 7, post: true, plan: [0.5, 64, 0.5, 96] };
     const run = benchRunFromUrl(query, hash, { layouts: new Map(), scenarios: new Map() });
     const next = nextRunHash(hash, run.index, run.plan.length)!;
     expect(benchRunFromUrl(query, next, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
       site: 'forest',
-      density: 0.75,
       index: 1,
       time: '23:30',
       post: true,
       seed: 7,
     });
-    expect(configFromUrl(query, next)).toMatchObject({
-      site: 'forest',
-      density: 0.75,
-      seed: 7,
-    });
-    expect(benchSiteLabel(run)).toContain(String(run.density));
+    expect(configFromUrl(query, next)).toMatchObject({ site: 'forest', seed: 7 });
   });
 
   it('builds the forest config for the first run of a forest plan that names no site', () => {
     const run = benchRunFromUrl(new URLSearchParams(), { plan: [1, 64, 1, 96] }, content.registry);
     expect(run.site).toBe('forest');
-    expect(benchGameConfig(run, content)).toMatchObject({
-      site: run.site,
-      storeys: run.storeys,
-      density: run.density,
-    });
+    expect(benchGameConfig(run, content).site).toBe(run.site);
   });
 
   it('refuses a stored record of an unknown shape instead of resuming it', () => {
@@ -78,12 +53,13 @@ describe('forest benchmark workload identity', () => {
         scenarios: new Map(),
       },
     );
+    const config = benchGameConfig(run, content);
     const record: BenchRecord = {
       startedAt: 'first-look',
       quick: false,
-      site: benchSiteLabel(run),
+      site: benchSiteLabel(config),
       time: run.time ?? '12:00',
-      forest: forestWorkload(content.registry, 1, run.density),
+      forest: forestWorkload(content.registry, 1, config.density),
       runs: [],
     };
     const json = JSON.parse(JSON.stringify(record)) as BenchRecord;

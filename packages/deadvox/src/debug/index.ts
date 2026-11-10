@@ -17,7 +17,7 @@ import {
   playerTuning,
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
-import { WEATHERING_RANGES, type WeatheringUrlState, writeWeatheringParams } from '@skelly/engine/sky';
+import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
 import { raycast, type Vec3 } from '@skelly/engine/world';
 import {
   type DebugHooks,
@@ -1204,7 +1204,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           weathering: {
             state: {
               profileId: hooks.engine.config.weatheringProfileId,
-              defaultProfileId: hooks.engine.config.weatheringDefaultProfileId,
               settings: hooks.engine.config.weathering,
             },
             profiles: hooks.engine.registry.weathering,
@@ -1251,21 +1250,17 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     hotCheck: look.hotCheck,
     ...look.moodState,
   });
-  /** The page's query and hash with the live look written in: the weathering profile in the query, the rest in the hash. */
+  /** The page's query and hash with the live look written into the hash. */
   const lookAddress = (): { query: URLSearchParams; hash: HashState } => {
     const { query, hash } = pageUrl();
-    const weathering = look.weatheringState;
-    const profiles = hooks.engine.registry.weathering;
-    const next = new URLSearchParams(query);
-    const { profile } = writeWeatheringParams(weathering, profiles);
-    if (profile === undefined) {
-      next.delete('weatheringProfile');
-    } else {
-      next.set('weatheringProfile', profile);
-    }
     return {
-      query: next,
-      hash: writeLookParams(hash, lookState(), { look: lookDefaults, defaultFogginess, weathering, profiles }),
+      query,
+      hash: writeLookParams(hash, lookState(), {
+        look: lookDefaults,
+        defaultFogginess,
+        weathering: look.weatheringState,
+        profiles: hooks.engine.registry.weathering,
+      }),
     };
   };
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */

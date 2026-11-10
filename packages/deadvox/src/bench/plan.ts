@@ -145,8 +145,6 @@ export interface BenchRecord {
   /** Time of day (`&time=HH:MM`). */
   time: string;
   post?: boolean;
-  nightVision?: boolean;
-  flareSources?: readonly (readonly [number, number, number])[];
   /** Made-light and detailed-shambler population that shared the full-phase scene. */
   lightWorkload?: {
     active: number;

@@ -178,7 +178,7 @@ describe('content capabilities', () => {
     ]);
     expect(issues).toEqual([]);
     expect(worldGravity(registry)).toBe(player.gravityMetresPerSimSecondSquared);
-    const resolved = resolveWeatheringUrl({ profile: undefined, tuning: {} }, registry.weathering);
+    const resolved = resolveWeatheringUrl({}, registry.weathering);
     expect(resolved?.profileId).toBe('fixture_neutral_surface');
     expect(resolved?.settings.strength).toBe(weathering.strength);
   });

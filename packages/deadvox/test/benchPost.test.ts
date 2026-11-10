@@ -4,7 +4,6 @@ import type { RenderedEngine } from '@skelly/presentation/play';
 import { setHeightFogTuning } from '@skelly/presentation/render';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { benchFlareSourcesFromUrl } from '../src/bench/lightFixture.ts';
 import { applyBenchWeathering, benchDraw } from '../src/bench/post.ts';
 import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
@@ -32,18 +31,6 @@ describe('benchmark post-processing option', () => {
     expect(benchRunFromUrl(params('bench=1'), {}, world).post).toBe(false);
     expect(benchRunFromUrl(params('bench=1'), { post: false }, world).post).toBe(false);
     expect(benchRunFromUrl(params('bench=1'), { post: true }, world).post).toBe(true);
-    expect(benchRunFromUrl(params('bench=1'), {}, world).nightVision).toBe(false);
-    expect(benchRunFromUrl(params('bench=1&nightVision=1'), {}, world).nightVision).toBe(true);
-  });
-
-  it('reads query-authored sources and rejects invalid placements', () => {
-    const positions = [
-      [0, 0, -2],
-      [0.2, 0, -3],
-    ];
-    const query = params(`bench=1&flareSources=${JSON.stringify(positions)}`);
-    expect(benchRunFromUrl(query, {}, { layouts: new Map(), scenarios: new Map() }).flareSources).toEqual(positions);
-    expect(() => benchFlareSourcesFromUrl(params('flareSources=[[1,2]]'))).toThrow();
   });
 
   it('is read by both benchmark modes', () => {
@@ -69,7 +56,7 @@ describe('benchmark post-processing option', () => {
       mood: { restore: vi.fn(), setSky: vi.fn(), setNightVision: vi.fn() },
       shadows: { restore: vi.fn() },
     } as unknown as RenderedEngine;
-    benchDraw(engine, { post, nightVision: false, skyAngle: 23 });
+    benchDraw(engine, { post, skyAngle: 23 });
     expect(heightFogUniforms.uHeightFog.value.y).toBe(1 / fog.scaleMetres);
     expect(heightFogUniforms.uHeightFog.value.z).toBe(fog.baseMetres);
   });
@@ -98,7 +85,6 @@ describe('benchmark post-processing option', () => {
 
     benchDraw(engine, {
       post: true,
-      nightVision: false,
       skyAngle: 23,
       reportSceneRender: (stats) => {
         captured = stats;

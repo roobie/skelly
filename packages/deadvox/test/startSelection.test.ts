@@ -42,14 +42,15 @@ it('takes the default run from the admitted entry rather than a runtime scenario
   expect(makeConfig(8, 96, supplied).site).toBe(row.site);
 });
 
-it('projects generated-site starts and gives explicit URL values precedence', () => {
+it('projects generated-site starts and gives an explicit URL time and hash seed precedence', () => {
   const supplied = fixture();
   const row = startForSite(supplied, 'forest');
   const defaults = configFromUrl(new URLSearchParams('site=forest'), {}, supplied, ragdollSweepViewer);
   expect(defaults.startId).toBe(row.id);
   expect(defaults.seed).toBe(row.seed);
+  expect(defaults.storeys).toBe(row.storeys);
   const changed = configFromUrl(
-    new URLSearchParams(`start=${row.id}&storeys=4&density=0.75&time=11:30`),
+    new URLSearchParams(`start=${row.id}&time=11:30`),
     { seed: 44 },
     supplied,
     ragdollSweepViewer,
@@ -57,8 +58,6 @@ it('projects generated-site starts and gives explicit URL values precedence', ()
   expect(changed.startId).toBe(row.id);
   expect(changed.site).toBe(row.site);
   expect(changed.seed).toBe(44);
-  expect(changed.storeys).toBe(4);
-  expect(changed.density).toBe(0.75);
   expect(changed.start).toBe(11.5 * 60 * 60);
 });
 

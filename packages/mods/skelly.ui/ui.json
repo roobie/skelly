@@ -692,7 +692,6 @@
           "off": "Off",
           "on": "On",
           "showHud": "Show the HUD (hold {key} in play)",
-          "urlOverride": "URL override",
           "volume": "{category} volume"
         },
         "pointerButtonLabels": {

@@ -100,7 +100,6 @@ export const startShamblerBench = (
   let sceneTriangles = 0;
   const drawFrame = benchDraw(engine, {
     post: run.post,
-    nightVision: false,
     skyAngle: hourOfDay(startTime),
     reportSceneRender: (stats) => {
       sceneDraws = stats.calls;

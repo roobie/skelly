@@ -44,8 +44,6 @@ export interface EngineOptions {
   /** Skip all WebGL initialization while retaining simulation, collision and CPU mesh streaming. */
   render?: boolean;
   graphicsSource?: 'player' | 'mod';
-  /** The page query's graphics knobs, which a debug run with player graphics applies over the stored options. */
-  graphicsOverrides?: URLSearchParams;
 }
 
 export function createEngine(
@@ -64,7 +62,7 @@ export function createEngine(
   config: GameConfig,
   view: HTMLElement,
   stats?: StreamerStats,
-  { render = true, graphicsSource = 'player', graphicsOverrides = new URLSearchParams() }: EngineOptions = {},
+  { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
   const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
@@ -137,7 +135,7 @@ export function createEngine(
   const graphics = new GraphicsControls(
     graphicsTuning,
     { meshes, ...(mood ? { mood } : {}), ...(shadows ? { shadows } : {}) },
-    { source: graphicsSource, debug: config.debug, params: graphicsOverrides },
+    { source: graphicsSource },
   );
 
   const resize = () => {

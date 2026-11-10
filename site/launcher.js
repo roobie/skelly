@@ -42,12 +42,6 @@ const page = (state) => html`  <main>
                 ${siteOffered(state.deadvox, 'testHouse') ? html`<option value="testHouse">Test house (debug)</option><option value="weatheringTest">Debug weathering comparison</option>` : ''}
               </select>
             </label>
-            <label id="deadvox-storeys-field" ?hidden=${!visible('deadvox-storeys-field', state)}>Tallest city building (storeys)
-              <input name="storeys" data-url-param="storeys" type="number" min="1" max="20" step="1" value="1" required  data-state-key="storeys" .value=${state.deadvox.storeys} .disabled=${!enabled('storeys', state)}/>
-            </label>
-            <label id="deadvox-density-field" ?hidden=${!visible('deadvox-density-field', state)}>Forest fixed density (blank: seeded 0.2–0.75 field)
-              <input name="density" data-url-param="density" type="number" min="0" max="1" step="0.05" value=""  data-state-key="density" .value=${state.deadvox.density} .disabled=${!enabled('density', state)}/>
-            </label>
             <label id="deadvox-actors-field" ?hidden=${!visible('deadvox-actors-field', state)}>Zombie models
               <select name="actors" data-url-param="actors" data-state-key="actors" .value=${state.deadvox.actors} .disabled=${!enabled('actors', state)}>
                 <option value="">Detailed (default)</option>
@@ -171,8 +165,6 @@ const model = {
     time: '12:30',
     radius: '96',
     site: '',
-    storeys: '3',
-    density: '',
     actors: '',
     mods: [],
     debug: false,
@@ -202,8 +194,6 @@ const visibility = {
   'deadvox-time-field': (d) => d.bench !== 'report',
   'deadvox-radius-field': (d) => d.bench === '',
   'deadvox-site-field': (d) => d.bench !== 'report' && d.bench !== 'shamblers',
-  'deadvox-storeys-field': (d) => d.site === 'city' && d.bench !== 'report' && d.bench !== 'shamblers',
-  'deadvox-density-field': (d) => d.site === 'forest' && d.bench !== 'report' && d.bench !== 'shamblers',
   'deadvox-actors-field': (d) => d.bench === '',
   'deadvox-mods-field': (d) => d.bench === '',
   'deadvox-debug-field': (d) => d.bench === '',
@@ -223,8 +213,6 @@ const deadvoxControlVisibility = {
   time: 'deadvox-time-field',
   radius: 'deadvox-radius-field',
   site: 'deadvox-site-field',
-  storeys: 'deadvox-storeys-field',
-  density: 'deadvox-density-field',
   actors: 'deadvox-actors-field',
   mods: 'deadvox-mods-field',
   debug: 'deadvox-debug-field',
@@ -389,11 +377,9 @@ const makeDeadvox = (d) => {
   }
   if ((m === '' || m === '1') && d.site === 'city') {
     p.set('site', 'city');
-    setDefault(p, 'storeys', d.storeys, '1');
   }
   if (d.site === 'forest') {
     p.set('site', 'forest');
-    setDefault(p, 'density', d.density, '');
   }
   setPlayOnlySite(p, d);
   return u;
@@ -421,8 +407,6 @@ const validDeadvox = (d) => {
     (!enabled('seed', model) || inRange(d.seed, -2_147_483_648, 2_147_483_647)) &&
     (!enabled('time', model) || d.time !== '') &&
     (!enabled('radius', model) || inRange(d.radius, 32, 256)) &&
-    (!enabled('storeys', model) || inRange(d.storeys, 1, 20)) &&
-    (!enabled('density', model) || d.density === '' || inRange(d.density, 0, 1, false)) &&
     validWeatheringOverrides(d) &&
     (!enabled('plan', model) || Boolean(plan)) &&
     (!enabled('worldIndex', model) || inRange(d.worldIndex, 0, (plan?.length ?? 1) - 1)) &&
@@ -485,7 +469,6 @@ const presets = {
     time: '19:30',
     radius: '96',
     site: '',
-    storeys: '1',
     debug: false,
   },
   noon: {
@@ -494,7 +477,6 @@ const presets = {
     time: '12:00',
     radius: '96',
     site: '',
-    storeys: '1',
     debug: false,
   },
   night: {
@@ -503,7 +485,6 @@ const presets = {
     time: '01:00',
     radius: '96',
     site: '',
-    storeys: '1',
     debug: false,
   },
   city: {
@@ -512,7 +493,6 @@ const presets = {
     time: '19:30',
     radius: '96',
     site: 'city',
-    storeys: '5',
     debug: false,
   },
   gauntlet: {
@@ -521,7 +501,6 @@ const presets = {
     time: '19:30',
     radius: '96',
     site: 'gauntlet',
-    storeys: '1',
     debug: false,
   },
   debug: {
@@ -530,7 +509,6 @@ const presets = {
     time: '05:30',
     radius: '96',
     site: '',
-    storeys: '1',
     debug: true,
   },
   benchmark: {
@@ -539,7 +517,6 @@ const presets = {
     time: '12:00',
     radius: '96',
     site: '',
-    storeys: '1',
     debug: false,
   },
 };

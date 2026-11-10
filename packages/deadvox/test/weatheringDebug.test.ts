@@ -15,8 +15,8 @@ describe('debug weathering controls', () => {
   it('selects another authored profile and updates live mesh uniforms for edits', () => {
     const profiles = BUNDLED_CONTENT.registry.weathering;
     const defaultProfile = profiles.get(defaultWeatheringId)!;
-    const alternateProfile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
-    const authoredSnapshot = { ...alternateProfile };
+    const profile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
+    const authoredSnapshot = { ...profile };
     const applied: (WeatheringDef | undefined)[] = [];
     const meshes = {
       linearColorsOn: true,
@@ -32,29 +32,25 @@ describe('debug weathering controls', () => {
       weather: { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess },
       flashlight: { strength: 1 },
       weathering: {
-        state: {
-          profileId: defaultProfile.id,
-          defaultProfileId: defaultProfile.id,
-          settings: { ...defaultProfile },
-        },
+        state: { profileId: defaultProfile.id, settings: { ...defaultProfile } },
         profiles,
       },
     });
 
-    look.selectWeatheringProfile(alternateProfile.id);
-    expect(look.weatheringState?.settings).toEqual(alternateProfile);
-    expect(applied.at(-1)).toEqual(alternateProfile);
+    look.selectWeatheringProfile(profile.id);
+    expect(look.weatheringState?.settings).toEqual(profile);
+    expect(applied.at(-1)).toEqual(profile);
 
     const range = WEATHERING_RANGES.mossStrength;
     const nextAmount =
-      alternateProfile.mossStrength < range.max - range.step
-        ? alternateProfile.mossStrength + range.step
-        : alternateProfile.mossStrength - range.step;
+      profile.mossStrength < range.max - range.step
+        ? profile.mossStrength + range.step
+        : profile.mossStrength - range.step;
     look.setWeatheringNumber('mossStrength', nextAmount);
     look.setWeatheringColor('mossColor', '#a1b2c3');
     expect(look.weatheringState?.settings.mossStrength).toBe(nextAmount);
     expect(look.weatheringState?.settings.mossColor).toBe('#a1b2c3');
     expect(applied.at(-1)?.mossColor).toBe('#a1b2c3');
-    expect(alternateProfile).toEqual(authoredSnapshot);
+    expect(profile).toEqual(authoredSnapshot);
   });
 });

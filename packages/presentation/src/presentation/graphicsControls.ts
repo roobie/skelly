@@ -3,7 +3,6 @@ import {
   type GraphicsOptions,
   type GraphicsSettings,
   type GraphicsValues,
-  readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
 } from '@skelly/engine/look';
@@ -26,7 +25,6 @@ interface GraphicsTargets {
 export class GraphicsControls {
   private settings: GraphicsSettings;
   private readonly source: 'player' | 'mod';
-  readonly overrides: Readonly<GraphicsSettings>;
   readonly tuning: GraphicsOptions;
   private readonly targets: GraphicsTargets;
   private readonly storage: Pick<Storage, 'getItem' | 'setItem'> | undefined;
@@ -36,18 +34,15 @@ export class GraphicsControls {
     targets: GraphicsTargets,
     options: {
       source?: 'player' | 'mod';
-      debug: boolean;
-      params: URLSearchParams;
       storage?: Pick<Storage, 'getItem' | 'setItem'>;
-    },
+    } = {},
   ) {
-    const { source = 'player', debug, params, storage } = options;
+    const { source = 'player', storage } = options;
     this.tuning = tuning;
     this.source = source;
     this.targets = targets;
     this.storage = storage;
     this.settings = source === 'player' ? readGraphicsSettings(tuning, storage) : {};
-    this.overrides = Object.freeze(source === 'player' && debug ? readGraphicsParams(params, tuning) : {});
     this.apply();
   }
 
@@ -56,7 +51,7 @@ export class GraphicsControls {
   }
 
   get values(): GraphicsValues {
-    return resolveGraphics(this.tuning, this.settings, this.overrides);
+    return resolveGraphics(this.tuning, this.settings);
   }
 
   set<K extends GraphicsKey>(key: K, value: GraphicsValues[K]): void {
@@ -80,7 +75,7 @@ export class GraphicsControls {
     const { values } = this;
     this.targets.mood?.setRenderScale(
       values.renderScale,
-      this.source === 'mod' || this.overrides.renderScale !== undefined || this.settings.renderScale !== undefined,
+      this.source === 'mod' || this.settings.renderScale !== undefined,
     );
     this.targets.mood?.setBloomScale(values.bloomScale);
     this.targets.mood?.setDrugVignetteScale(values.drugVignette);

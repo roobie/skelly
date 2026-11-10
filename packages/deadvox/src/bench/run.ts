@@ -27,13 +27,13 @@ import {
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import type { StreamerStats } from '@skelly/engine/world';
-import { type Body, siteGenerationOf, type Vec3 } from '@skelly/engine/world';
+import { type Body, siteGenerationOf } from '@skelly/engine/world';
 import type { RenderedEngine } from '@skelly/presentation/play';
 import { applySky, flashlightDaylightScale, MobActorMeshes } from '@skelly/presentation/render';
 import type { HashState } from '../hashState.ts';
 import { pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
-import { benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
+import { createBenchLightFixture } from './lightFixture.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -46,7 +46,7 @@ import {
   type RunResult,
   saveRecord,
 } from './plan.ts';
-import { applyBenchWeathering, benchDraw, benchNightVisionFromUrl } from './post.ts';
+import { applyBenchWeathering, benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
@@ -57,18 +57,12 @@ export interface BenchRun {
   index: number;
   quick: boolean;
   seed: number;
-  /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
+  /** The stress-test city or another site instead of the test house (`&site=city`). */
   site: SiteName;
-  storeys: number;
-  density: number | null;
   /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
   time?: string;
   /** Select the independent full-post workload (hash `post`, bench/post.ts). */
   post: boolean;
-  /** Apply the goggles' registry-authored night-vision view (`&nightVision=1`, bench/post.ts). */
-  nightVision: boolean;
-  /** Camera-local source positions in metres; also selects play's content-default look. */
-  flareSources?: Vec3[] | undefined;
   /** Detailed shambler population to keep active through every phase; undefined rejects a malformed URL. */
   shamblers: number | undefined;
 }
@@ -103,8 +97,6 @@ export const benchRunFromUrl = (
     quick: hash.quick === true,
     seed: (hash.seed ?? 1) | 0,
     post: hash.post === true,
-    nightVision: benchNightVisionFromUrl(query),
-    flareSources: benchFlareSourcesFromUrl(query),
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
     ...siteFromUrl(
       query,
@@ -121,8 +113,7 @@ const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 export const benchGameConfig = (run: BenchRun, content: StartupContent): GameConfig => {
   const { blockSize, radiusM } = currentConfig(run);
   const config = makeConfig(run.seed, radiusM, content, blockSize);
-  const { site, storeys, density } = run;
-  Object.assign(config, { site, storeys, density });
+  config.site = run.site;
   applyBenchWeathering(config);
   return config;
 };
@@ -194,13 +185,13 @@ export const forestWorkload = (registry: Registry, seed: number, density: number
   };
 };
 
-export const benchSiteLabel = (run: BenchRun): string =>
+export const benchSiteLabel = (config: Pick<GameConfig, 'site' | 'storeys' | 'density'>): string =>
   ({
-    forest: run.density === null ? 'forest, seeded density field' : `forest, density ${run.density}`,
-    city: `city, up to ${run.storeys} storeys`,
+    forest: config.density === null ? 'forest, seeded density field' : `forest, density ${config.density}`,
+    city: `city, up to ${config.storeys} storeys`,
     gauntlet: 'gauntlet',
     testHouse: 'test house',
-  })[run.site] ?? `authored site ${run.site}`;
+  })[config.site] ?? `authored site ${config.site}`;
 
 export const startBench = (
   engine: RenderedEngine,
@@ -226,7 +217,7 @@ export const startBench = (
   if (run.time !== undefined) {
     applySky(engine.sky, skyAt(hour, dayCycle));
   }
-  const lightFixture = createBenchLightFixture(engine, startTime, run.flareSources);
+  const lightFixture = createBenchLightFixture(engine, startTime);
   window.addEventListener('pagehide', lightFixture.dispose, { once: true });
   const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
@@ -237,10 +228,7 @@ export const startBench = (
       sceneRender = counted;
     },
     post: run.post,
-    nightVision: run.nightVision,
     skyAngle: hour,
-    playLook: run.flareSources !== undefined,
-    lightPool: lightFixture.lightPool,
   });
   const draw = () => {
     lightFixture.update(camera, daylightScale);
@@ -252,12 +240,10 @@ export const startBench = (
       ? {
           startedAt: new Date().toISOString(),
           quick: run.quick,
-          site: benchSiteLabel(run),
-          ...(run.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, run.density) } : {}),
+          site: benchSiteLabel(config),
+          ...(config.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, config.density) } : {}),
           time: run.time ?? '12:00',
           ...(run.post ? { post: true } : {}),
-          nightVision: run.nightVision,
-          ...(run.flareSources === undefined ? {} : { flareSources: run.flareSources }),
           lightWorkload: {
             active: lightFixture.activeCount(),
             carried: lightFixture.carried,
@@ -590,7 +576,7 @@ export const startBench = (
       triangles.push(sceneRender.triangles);
     }
     hud.textContent = [
-      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius, ${benchSiteLabel(run)}`,
+      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius, ${benchSiteLabel(config)}`,
       `${phase} ${((now - phaseStart) / 1000).toFixed(1)} s`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,
       interrupted ? 'Tab was hidden: this run will be marked unreliable.' : 'Keep this tab visible.',

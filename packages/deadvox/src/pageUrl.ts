@@ -2,34 +2,18 @@
 // The homes and their reasons are in `docs/decisions/0006-url-mods-and-hash-state.md`, "Decision". Engine and
 // presentation never read the URL; the entry passes them what this reads.
 
-import { GRAPHICS_KNOBS } from '@skelly/engine/look';
 import { type HashState, readHash, writeHash } from './hashState.ts';
 
 /** The mod list and the switches that choose a harness. */
 const HARNESS_QUERY = ['mods', 'bench', 'render', 'skyRoute', 'save-backend', 'save-test', 'debug-error'];
 
 /**
- * World setup and player choices whose mod or option home does not exist yet, so the game still reads them from
- * the query; see `packages/deadvox/docs/url-mods.md`, "Where each parameter goes".
+ * World setup whose home is not decided yet, so the game still reads it from the query; see
+ * `packages/deadvox/docs/url-mods.md`, "Where each parameter goes".
  */
-const UNHOMED_QUERY = [
-  'site',
-  'storeys',
-  'density',
-  'time',
-  'start',
-  'tutorial',
-  'weatheringProfile',
-  ...Object.values(GRAPHICS_KNOBS).map(({ url }) => url),
-];
+const UNHOMED_QUERY = ['site', 'time', 'start', 'tutorial'];
 
-/**
- * Bench workload switches with no home decided yet, so the bench still reads them from the query; see
- * `packages/deadvox/docs/url-mods.md`, "Bench mode".
- */
-const UNDECIDED_BENCH_QUERY = ['nightVision', 'flareSources'];
-
-const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY, ...UNDECIDED_BENCH_QUERY]);
+const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY]);
 
 export interface PageUrl {
   readonly query: URLSearchParams;

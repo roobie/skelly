@@ -166,6 +166,6 @@ export const writeLookParams = (hash: HashState, state: LookUrlState, defaults: 
   set('hotcheck', true, !state.hotCheck);
   return {
     ...(next as HashState),
-    ...writeWeatheringParams(defaults.weathering, defaults.profiles ?? new Map()).tuning,
+    ...writeWeatheringParams(defaults.weathering, defaults.profiles ?? new Map()),
   };
 };

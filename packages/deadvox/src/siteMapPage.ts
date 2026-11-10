@@ -38,8 +38,15 @@ const params = new URLSearchParams(globalThis.location.search);
 const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
+const MAX_STOREYS = 20;
 const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
 Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'));
+// The map draws the world play passes in its own query; the game reads storeys and density only from its start.
+const storeys = Number(params.get('storeys') ?? 1);
+const densityText = params.get('density');
+const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
+config.storeys = Number.isInteger(storeys) && storeys >= 1 && storeys <= MAX_STOREYS ? storeys : 1;
+config.density = density !== null && Number.isFinite(density) && density >= 0 && density <= 1 ? density : null;
 config.debug = true;
 if (registry.scenarios.has(config.site)) {
   // A scenario city is reviewed as its default start places it.
@@ -716,11 +723,7 @@ const selectAt = (clientX: number, clientY: number) => {
     pointPanel.replaceChildren(position);
   } else {
     const link = document.createElement('a');
-    link.href = debugGameHref(
-      globalThis.location.href,
-      { site: config.site, seed, storeys: config.storeys, density: config.density },
-      { x, z },
-    );
+    link.href = debugGameHref(globalThis.location.href, { site: config.site, seed }, { x, z });
     link.textContent = 'Open a fresh debug game here';
     link.target = '_blank';
     link.rel = 'noopener';

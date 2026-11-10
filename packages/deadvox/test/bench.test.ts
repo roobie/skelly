@@ -123,7 +123,7 @@ describe('bench plan', () => {
 
   it('reloads the next run with its query and hash, bar the run index, and shows the report after the last', () => {
     const start = new URL(
-      '?bench=1&nightVision=1&flareSources=[[1,2,3]]#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}',
+      '?bench=1&time=23:30#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}',
       'https://example.test/deadvox/',
     );
     const written: string[] = [];
@@ -141,8 +141,7 @@ describe('bench plan', () => {
     });
     const first = benchPage(start.href);
     const run = benchRunFromUrl(first.query, first.hash, registry);
-    expect(run).toMatchObject({ site: 'forest', seed: 7, post: true, shamblers: 7, nightVision: true });
-    expect(run.flareSources).toEqual([[1, 2, 3]]);
+    expect(run).toMatchObject({ site: 'forest', seed: 7, post: true, shamblers: 7, time: '23:30' });
     loadNextRun(run.index, run.plan.length);
     expect(navigation).toEqual(['reload']);
     expect(written).toHaveLength(1);

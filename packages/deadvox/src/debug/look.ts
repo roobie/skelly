@@ -242,7 +242,7 @@ export class LookControls {
     this.weather.fogginess = clampFogginess(this.weather.fogginess + steps * FOGGINESS_STEP);
   }
 
-  /** Site profile values as currently edited; the URL writer omits values equal to the selected profile. */
+  /** Profile values as currently edited; the URL writer omits values equal to the selected profile. */
   get weatheringState(): WeatheringUrlState | undefined {
     return this.weatheringValue
       ? { ...this.weatheringValue, settings: { ...this.weatheringValue.settings } }
@@ -253,6 +253,7 @@ export class LookControls {
     return [...this.weatheringProfiles.values()];
   }
 
+  /** Applies another authored profile live; the address does not keep the choice, so a reload shows the site's. */
   selectWeatheringProfile(profileId: string): void {
     const profile = this.weatheringProfiles.get(profileId);
     if (!(profile && this.weatheringValue)) {

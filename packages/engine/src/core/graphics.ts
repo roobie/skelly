@@ -64,7 +64,6 @@ const ToggleOptionSchema = pipe(
 export const GRAPHICS_KNOBS = {
   renderScale: {
     kind: 'scale',
-    url: 'renderscale',
     schema: pipe(
       strictObject({ ...ScaleOptionSchema.entries, adaptive: AdaptiveScaleSchema }),
       check(
@@ -74,12 +73,12 @@ export const GRAPHICS_KNOBS = {
       ),
     ),
   },
-  bloomScale: { kind: 'scale', url: 'bloomscale', schema: ScaleOptionSchema },
-  drugVignette: { kind: 'scale', url: 'drugvignette', schema: ShareOptionSchema },
-  smallSunMap: { kind: 'toggle', url: 'sunsmall', schema: ToggleOptionSchema },
-  fastCamo: { kind: 'toggle', url: 'camofast', schema: ToggleOptionSchema },
-  coarseWeathering: { kind: 'toggle', url: 'weathercoarse', schema: ToggleOptionSchema },
-  cachedSurfaceNoise: { kind: 'toggle', url: 'surfacenoise', schema: ToggleOptionSchema },
+  bloomScale: { kind: 'scale', schema: ScaleOptionSchema },
+  drugVignette: { kind: 'scale', schema: ShareOptionSchema },
+  smallSunMap: { kind: 'toggle', schema: ToggleOptionSchema },
+  fastCamo: { kind: 'toggle', schema: ToggleOptionSchema },
+  coarseWeathering: { kind: 'toggle', schema: ToggleOptionSchema },
+  cachedSurfaceNoise: { kind: 'toggle', schema: ToggleOptionSchema },
 } as const;
 
 export type GraphicsKey = keyof typeof GRAPHICS_KNOBS;
@@ -133,59 +132,9 @@ export const setGraphicsSetting = <K extends GraphicsKey>(
   return { ...validGraphicsSettings(tuning, settings), [key]: value };
 };
 
-/** The single precedence boundary: URL override > player setting > mod default. */
-export const resolveGraphics = (
-  tuning: GraphicsOptions,
-  player: GraphicsSettings = {},
-  url: GraphicsSettings = {},
-): GraphicsValues =>
+/** The single precedence boundary: player setting > mod default. */
+export const resolveGraphics = (tuning: GraphicsOptions, player: GraphicsSettings = {}): GraphicsValues =>
   ({
     ...Object.fromEntries(GRAPHICS_KEYS.map((key) => [key, tuning[key].default])),
     ...validGraphicsSettings(tuning, player),
-    ...validGraphicsSettings(tuning, url),
   }) as GraphicsValues;
-
-const parseToggle = (text: string): boolean | undefined => {
-  if (text === '1') {
-    return true;
-  }
-  return text === '0' ? false : undefined;
-};
-
-export const readGraphicsParams = (params: URLSearchParams, tuning: GraphicsOptions): GraphicsSettings => {
-  const entries = GRAPHICS_KEYS.flatMap((key) => {
-    const text = params.get(GRAPHICS_KNOBS[key].url);
-    if (text === null || text.trim() === '') {
-      return [];
-    }
-    const option = tuning[key];
-    let value: unknown;
-    if ('options' in option) {
-      value = parseToggle(text);
-    } else {
-      const numeric = Number(text);
-      value = Number.isFinite(numeric) ? Math.max(option.min, Math.min(option.max, numeric)) : undefined;
-    }
-    return graphicsValueAllowed(tuning, key, value) ? [[key, value]] : [];
-  });
-  return Object.fromEntries(entries) as GraphicsSettings;
-};
-
-/** Explicit defaults and false values are overrides too; omitting them would change precedence. */
-export const writeGraphicsParams = (
-  params: URLSearchParams,
-  tuning: GraphicsOptions,
-  overrides: GraphicsSettings,
-): URLSearchParams => {
-  const next = new URLSearchParams(params);
-  const valid = validGraphicsSettings(tuning, overrides);
-  for (const key of GRAPHICS_KEYS) {
-    const name = GRAPHICS_KNOBS[key].url;
-    next.delete(name);
-    const value = valid[key];
-    if (value !== undefined) {
-      next.set(name, String(typeof value === 'boolean' ? Number(value) : value));
-    }
-  }
-  return next;
-};

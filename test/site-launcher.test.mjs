@@ -75,7 +75,6 @@ const intentionallyUnofferedDeadvoxParams = {
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
   voicePitch: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
   voicePitchLarge: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
-  weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',
   weatheringTint: 'A debug-panel weathering look slider, not a launch-time site option.',
   weatheringTintColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
   weatheringStreaks: 'A debug-panel weathering look slider, not a launch-time site option.',
@@ -316,7 +315,7 @@ describe('site launchers track the games’ URL parameters', () => {
     for (const play of [
       debugPlay,
       { ...defaults, site: 'city' },
-      { ...defaults, site: 'forest', density: '0.5' },
+      { ...defaults, site: 'forest' },
       worldBench,
       shamblerBench,
     ]) {

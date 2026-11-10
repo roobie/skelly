@@ -3,10 +3,8 @@ import type { WeatheringDef } from './schema.ts';
 import { WEATHERING_RANGES } from './weather.ts';
 
 export interface WeatheringUrlState {
-  /** Profile selected in the debug panel. */
+  /** The site's authored profile, or the default profile. */
   profileId: string;
-  /** Site-assigned profile, used as the URL's default. */
-  defaultProfileId: string;
   /** Authored values plus valid debug overrides. */
   settings: WeatheringDef;
 }
@@ -36,7 +34,7 @@ export type WeatheringTuning = { readonly [Param in (typeof NUMBER_FIELDS)[numbe
   readonly [Param in (typeof COLOR_FIELDS)[number][0]]?: string;
 };
 
-/** The hash keys of the debug weathering edits; the profile choice is not among them. */
+/** The hash keys of the debug weathering edits. */
 export const WEATHERING_TUNING_KEYS = [
   ...NUMBER_FIELDS.map(([param]) => param),
   ...COLOR_FIELDS.map(([param]) => param),
@@ -67,33 +65,31 @@ const applyColorOverrides = (tuning: WeatheringTuning, settings: WeatheringDef):
 
 /** Resolves the site profile, then applies only recognized, bounded debug edits. */
 export const resolveWeatheringUrl = (
-  { profile: requestedProfile, tuning }: { profile: string | null | undefined; tuning: WeatheringTuning },
+  tuning: WeatheringTuning,
   profiles: ReadonlyMap<string, WeatheringDef>,
-  defaultProfileId: string = claimedId(profiles, 'defaultWeathering'),
+  siteProfileId: string = claimedId(profiles, 'defaultWeathering'),
   debug = false,
 ): WeatheringUrlState | undefined => {
-  const siteProfile = profiles.get(defaultProfileId) ?? claimed(profiles, 'defaultWeathering');
-  if (!siteProfile) {
+  const profile = profiles.get(siteProfileId) ?? claimed(profiles, 'defaultWeathering');
+  if (!profile) {
     return undefined;
   }
-  const requested = debug ? (requestedProfile ?? defaultProfileId) : defaultProfileId;
-  const profile = profiles.get(requested) ?? siteProfile;
   const settings: WeatheringDef = { ...profile };
   if (debug) {
     applyNumberOverrides(tuning, settings);
     applyColorOverrides(tuning, settings);
   }
-  return { profileId: profile.id, defaultProfileId, settings };
+  return { profileId: profile.id, settings };
 };
 
-/** The chosen profile when it is not the site's, and only the edits that depart from that profile. */
+/** Only the edits that depart from the state's profile. */
 export const writeWeatheringParams = (
   state: WeatheringUrlState | undefined,
   profiles: ReadonlyMap<string, WeatheringDef>,
-): { profile: string | undefined; tuning: WeatheringTuning } => {
+): WeatheringTuning => {
   const baseline = state && profiles.get(state.profileId);
   if (!(state && baseline)) {
-    return { profile: undefined, tuning: {} };
+    return {};
   }
   const tuning: Record<string, number | string> = {};
   for (const [param, field] of NUMBER_FIELDS) {
@@ -106,8 +102,5 @@ export const writeWeatheringParams = (
       tuning[param] = state.settings[field];
     }
   }
-  return {
-    profile: state.profileId === state.defaultProfileId ? undefined : state.profileId,
-    tuning: tuning as WeatheringTuning,
-  };
+  return tuning as WeatheringTuning;
 };

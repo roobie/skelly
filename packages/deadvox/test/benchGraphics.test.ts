@@ -41,7 +41,7 @@ const tuning = {
   cachedSurfaceNoise: toggle,
 };
 
-it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
+it('benchmark engines use mod defaults despite saved graphics preferences', () => {
   const result = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
     { source: 'base/weathering.json', data: baseWeathering },
@@ -95,7 +95,6 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   };
   writeGraphicsSettings(tuning, { renderScale: scale.min, fastCamo: false }, storage);
   vi.stubGlobal('localStorage', storage);
-  vi.stubGlobal('location', { search: '?renderscale=0.2&camofast=0' });
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -129,12 +128,7 @@ it('post benchmark scale stays at the content default under GPU overload, includ
       mood,
       meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
     },
-    {
-      source: 'mod',
-      debug: true,
-      params: new URLSearchParams(),
-      storage: { getItem: () => null, setItem: vi.fn() },
-    },
+    { source: 'mod', storage: { getItem: () => null, setItem: vi.fn() } },
   );
   const overload = () => {
     for (let sample = 0; sample < tuning.renderScale.adaptive.sampleWindow; sample++) {

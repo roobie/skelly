@@ -41,19 +41,11 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'survival', title: 'Survival' },
   { id: 'shamblers', title: 'Zombies' },
   { id: 'time', title: 'Time' },
-  {
-    id: 'look',
-    title: 'Look',
-    notes: [
-      { label: 'Projected camouflage (debug URL override)', param: 'camofast=1' },
-      { label: 'Cached surface noise (debug URL override)', param: 'surfacenoise=1' },
-    ],
-  },
+  { id: 'look', title: 'Look' },
   {
     id: 'weathering',
     title: 'Weathering',
     notes: [
-      { label: 'Profile', param: 'weatheringProfile' },
       { label: 'Strength', param: 'weathering' },
       { label: 'Tint darkness', param: 'weatheringTint' },
       { label: 'Tint colour', param: 'weatheringTintColor' },
@@ -68,23 +60,10 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
       { label: 'Moss shelter bias', param: 'weatheringMossBias' },
       { label: 'Mix ceiling', param: 'weatheringMixCeiling' },
       { label: 'Weathering blend', param: 'weatheringBlend' },
-      { label: 'Coarser moss patches (debug URL override)', param: 'weathercoarse=1' },
     ],
   },
-  {
-    id: 'post',
-    title: 'Post-processing',
-    notes: [
-      { label: 'Scene scale (debug URL override)', param: 'renderscale' },
-      { label: 'Bloom-chain scale (debug URL override)', param: 'bloomscale' },
-      { label: 'Painkiller vignette (debug URL override)', param: 'drugvignette' },
-    ],
-  },
-  {
-    id: 'lighting',
-    title: 'Lighting',
-    notes: [{ label: 'Smaller sun map (debug URL override)', param: 'sunsmall=1' }],
-  },
+  { id: 'post', title: 'Post-processing' },
+  { id: 'lighting', title: 'Lighting' },
   { id: 'atmosphere', title: 'Atmosphere' },
   {
     id: 'diagnostics',

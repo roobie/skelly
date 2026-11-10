@@ -1,74 +1,14 @@
 import { requireDayCycle } from '@skelly/engine/content';
 import { claimed, HandlingQueue, Inventory, toggleLight } from '@skelly/engine/inventory';
 import { bindReach, Simulation, Survival } from '@skelly/engine/sim';
-import type { Vec3 } from '@skelly/engine/world';
 import type { RenderedEngine } from '@skelly/presentation/play';
 import { type HeldItems, LightPool, PileMeshes } from '@skelly/presentation/render';
-import { type PerspectiveCamera, Vector3 } from 'three';
+import type { PerspectiveCamera } from 'three';
 
 const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12 });
-const benchLightPool = (engine: Pick<RenderedEngine, 'registry' | 'scene'>): LightPool =>
-  new LightPool(engine.scene, claimed(engine.registry.senses, 'player')!.light.renderedFixtureLimit);
 const INNER_RING_COUNT = 4;
 
-export const benchFlareSourcesFromUrl = (params: URLSearchParams): Vec3[] | undefined => {
-  const value = params.get('flareSources');
-  if (value === null) {
-    return undefined;
-  }
-  const positions: unknown = JSON.parse(value);
-  if (
-    !(
-      Array.isArray(positions) &&
-      positions.every(
-        (pos) =>
-          Array.isArray(pos) && pos.length === 3 && pos.every((n) => typeof n === 'number' && Number.isFinite(n)),
-      )
-    )
-  ) {
-    throw new Error('flareSources must be an array of camera-local metre triples');
-  }
-  return positions as Vec3[];
-};
-
-const createFlareFixture = (engine: RenderedEngine, positions: readonly Vec3[]) => {
-  const light = engine.registry.items.get('torch')?.light;
-  if (!light) {
-    throw new Error('Missing benchmark torch content');
-  }
-  const lightPool = benchLightPool(engine);
-  if (positions.length > lightPool.size) {
-    lightPool.group.removeFromParent();
-    throw new Error(`flareSources must fit the point-light pool budget of ${lightPool.size}`);
-  }
-  const local = new Vector3();
-  return {
-    inventory: new Inventory(engine.registry),
-    carried: 0,
-    dropped: 0,
-    lightPool,
-    update: (camera: PerspectiveCamera, daylightScale: number) => {
-      camera.updateMatrixWorld();
-      for (const [index, slot] of lightPool.lights.entries()) {
-        const pos = positions[index];
-        slot.intensity = pos ? light.intensity * daylightScale : 0;
-        slot.color.set(light.color);
-        slot.distance = light.radius;
-        if (pos) {
-          slot.position.copy(local.fromArray(pos).applyMatrix4(camera.matrixWorld));
-        }
-      }
-    },
-    setSprinting: (_sprinting: boolean) => undefined,
-    activeCount: () => positions.length,
-    dispose: () => lightPool.group.removeFromParent(),
-  };
-};
-
-export const createBenchLightFixture = (engine: RenderedEngine, calendar: number, positions?: readonly Vec3[]) => {
-  if (positions) {
-    return createFlareFixture(engine, positions);
-  }
+export const createBenchLightFixture = (engine: RenderedEngine, calendar: number) => {
   const { config, registry, scene, spawn } = engine;
   const { blockSize } = config.scale;
   const inventory = new Inventory(registry);
@@ -129,7 +69,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
       throw new Error('Unexpected reading in light benchmark fixture');
     },
   });
-  const lightPool = benchLightPool(engine);
+  const lightPool = new LightPool(scene, claimed(registry.senses, 'player')!.light.renderedFixtureLimit);
   const piles = new PileMeshes(blockSize);
   piles.sync(inventory);
   scene.add(piles.group);

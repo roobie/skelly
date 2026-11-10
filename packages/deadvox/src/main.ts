@@ -197,7 +197,7 @@ if (bench === 'report') {
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
   const page = playPage();
-  const engineOptions = { render: !renderFree, graphicsOverrides: params };
+  const engineOptions = { render: !renderFree };
   if (pendingReplay) {
     try {
       const preliminary = await decodeInputReplay(pendingReplay, { contentLookup: () => true });
@@ -209,7 +209,7 @@ if (bench === 'report') {
       replayConfig.site = identity.site;
       replayConfig.storeys = identity.storeys;
       replayConfig.density = identity.density;
-      applyWeatheringConfig(replayConfig, params, hash);
+      applyWeatheringConfig(replayConfig, hash);
       const engine = createEngine(replayConfig, view, undefined, engineOptions);
       const decoded = await decodeInputReplay(pendingReplay, {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
@@ -309,7 +309,7 @@ if (bench === 'report') {
       resumed.site = savedWorld.site;
       resumed.storeys = savedWorld.storeys;
       resumed.density = savedWorld.density;
-      applyWeatheringConfig(resumed, params, hash);
+      applyWeatheringConfig(resumed, hash);
       config = resumed;
     }
     const engine = createEngine(config, view, undefined, engineOptions);

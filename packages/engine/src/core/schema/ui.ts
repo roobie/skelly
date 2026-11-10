@@ -97,7 +97,6 @@ const UiScreenTextSchema = strictObject({
     on: [],
     off: [],
     modDefault: [],
-    urlOverride: [],
     fullscreen: [],
     leaveFullscreen: [],
     browserShortcutsLabel: [],

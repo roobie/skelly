@@ -16,10 +16,10 @@ const valueText = (value: number | boolean, text: OptionsText): string => {
 const scaleControl = (
   key: GraphicsKey,
   option: GraphicsOptions['bloomScale'],
-  state: { value: number; overridden: boolean; change: (value: number | boolean) => void },
+  state: { value: number; change: (value: number | boolean) => void },
 ): TemplateResult => {
   const setFromPointer = (event: MouseEvent | PointerEvent): void => {
-    if (event.clientX === 0 || state.overridden) {
+    if (event.clientX === 0) {
       return;
     }
     const bounds = (event.currentTarget as HTMLInputElement).getBoundingClientRect();
@@ -34,7 +34,7 @@ const scaleControl = (
     max=${option.max}
     step=${option.max === option.min ? 1 : (option.max - option.min) / 100}
     .value=${String(state.value)}
-    ?disabled=${state.overridden || option.min === option.max}
+    ?disabled=${option.min === option.max}
     @input=${(event: Event) => state.change(Number((event.currentTarget as HTMLInputElement).value))}
     @pointerdown=${setFromPointer}
     @click=${setFromPointer}
@@ -46,7 +46,6 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
     const { values, player } = graphics;
     const controls = GRAPHICS_KEYS.map((key): TemplateResult => {
       const option = graphics.tuning[key];
-      const overridden = graphics.overrides[key] !== undefined;
       const change = (value: number | boolean): void => {
         graphics.set(key, value);
         draw();
@@ -60,10 +59,10 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
                 id="graphics-${key}"
                 type="checkbox"
                 .checked=${Boolean(values[key])}
-                ?disabled=${overridden || option.options.length === 1}
+                ?disabled=${option.options.length === 1}
                 @change=${(event: Event) => change((event.currentTarget as HTMLInputElement).checked)}
               />`
-              : scaleControl(key, option, { value: Number(values[key]), overridden, change })
+              : scaleControl(key, option, { value: Number(values[key]), change })
           }
           <output>${valueText(values[key], text)}</output>
           <button
@@ -74,7 +73,6 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
               draw();
             }}
           >${text.modDefault}</button>
-          ${overridden ? html`<span>${text.urlOverride}</span>` : ''}
         </div>
       `;
     });

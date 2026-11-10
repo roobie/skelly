@@ -53,7 +53,6 @@
     on: 'On',
     off: 'Off',
     modDefault: 'Mod default',
-    urlOverride: 'URL override',
     fullscreen: 'Fullscreen',
     leaveFullscreen: 'Leave fullscreen',
     browserShortcutsLabel: 'Browser shortcuts',

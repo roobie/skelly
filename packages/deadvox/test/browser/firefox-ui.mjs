@@ -685,9 +685,7 @@ try {
       weatheringPixels.maxWeatherablePixelChange > 0,
       `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
     );
-    const defaultProfileId = await page.evaluate(
-      () => globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
-    );
+    const defaultProfileId = await page.evaluate(() => globalThis.firefoxUiTest.engine.config.weatheringProfileId);
     assert.ok(
       Object.hasOwn(weatheringPixels.profileStrengths, defaultProfileId),
       'the default weathering profile is measured',
@@ -726,7 +724,7 @@ try {
     }
     const alternateProfileId = await page.evaluate(() =>
       [...globalThis.firefoxUiTest.engine.registry.weathering.keys()].find(
-        (id) => id !== globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
+        (id) => id !== globalThis.firefoxUiTest.engine.config.weatheringProfileId,
       ),
     );
     assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
@@ -747,7 +745,6 @@ try {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       return Number(input.value);
     });
-    assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), alternateProfileId);
     assert.equal(readHash(new URL(page.url()).hash).hash?.weathering, sliderNext);
     assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
     assert.equal(
@@ -787,7 +784,9 @@ try {
     if ((await reloadedHeader.getAttribute('aria-expanded')) !== 'true') {
       await reloadedHeader.click();
     }
-    assert.equal(await reloadedWeatheringGroup.locator('#weathering-profile').inputValue(), alternateProfileId);
+    // The address keeps the tuning but not the profile choice, which has no home.
+    assert.equal(await reloadedWeatheringGroup.locator('#weathering-profile').inputValue(), defaultProfileId);
+    assert.equal(Number(await reloadedWeatheringGroup.locator('#weathering-strength').inputValue()), sliderNext);
     assert.deepEqual(pageErrors, []);
   }
   process.stdout.write(

@@ -34,7 +34,6 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       mood.setRenderScale(scale);
       mood.frame = seed;
       perf.view.render();
-      url.searchParams.set('renderscale', String(scale));
       return { scale, url: url.pathname + url.search, png: renderer.domElement.toDataURL('image/png').split(',')[1] };
     });
     return { images, hash: location.hash, cam, position: perf.engine.camera.position.toArray() };

@@ -1,7 +1,5 @@
 import { BindingRegistry } from '@skelly/engine/input';
-import { GRAPHICS_KNOBS } from '@skelly/engine/internal/core/graphics.ts';
 import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
-import { GRAPHICS_KEYS } from '@skelly/engine/look';
 import type { Weather } from '@skelly/engine/sky';
 import type { DebugHooks } from '@skelly/presentation/debug';
 import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
@@ -156,15 +154,7 @@ describe('debug action dispatch', () => {
         (def.notes ?? []).flatMap((note) => (note.param ? [paramName(note.param)] : [])),
       ),
     ]);
-    expect([...catalogued].sort()).toEqual(
-      [
-        ...LOOK_KEYS,
-        'weatheringProfile',
-        ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url),
-        'cam',
-        'interactionray',
-      ].sort(),
-    );
+    expect([...catalogued].sort()).toEqual([...LOOK_KEYS, 'cam', 'interactionray'].sort());
   });
 });
 
