@@ -32,7 +32,7 @@
     },
     {
       id: 'gauntlet-default-start',
-      path: '/?site=gauntlet&time=19:30&storeys=1#{debug:true,seed:1,radius:96}',
+      path: '/?site=gauntlet&time=19:30#{debug:true,seed:1,radius:96}',
       driver: 'orbit',
       yawAmplitudeDegrees: 0,
       yawCycles: 1,

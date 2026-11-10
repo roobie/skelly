@@ -1,5 +1,6 @@
 import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { describe, expect, it } from 'vitest';
+import perfBaseline from '../src/config/perf-baseline.json' with { type: 'json' };
 import { type HashState, readHash, writeHash } from '../src/hashState.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { newWorldHref, replayHref, tutorialHash } from '../src/product/page.ts';
@@ -40,6 +41,14 @@ describe('page query', () => {
   it('names a query parameter the game entry does not take', () => {
     expect(readPageUrl('?mods=fixture&fixtureUnknown=1', '').refused).toBe('fixtureUnknown');
     expect(readPageUrl('?mods=fixture', '').refused).toBeUndefined();
+  });
+
+  it('starts every configured performance-baseline route', () => {
+    expect(perfBaseline.routes.length).toBeGreaterThan(0);
+    for (const { id, path } of perfBaseline.routes) {
+      const url = new URL(path, 'https://example.test/');
+      expect(readPageUrl(url.search, url.hash).refused, id).toBeUndefined();
+    }
   });
 
   it('refuses a bench run setting left in the query, as it does on the game page', () => {
