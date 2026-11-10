@@ -97,6 +97,22 @@ it('refuses a middle pack that redefines an earlier entry undeclared even when t
   expect(admitPacks([a, b, c]).issues).toEqual([]);
 });
 
+it('refuses one pack setting an entry id in two of its files, naming both files', () => {
+  const input = pack('fixture.twice');
+  input.manifest.files = [
+    { path: 'one.json', kind: 'content' },
+    { path: 'two.json', kind: 'content' },
+  ];
+  input.files = [
+    { source: 'one.json', data: { blocks: [{ id: 'fixture_shared' }] } },
+    { source: 'two.json', data: { blocks: [{ id: 'fixture_shared' }] } },
+  ];
+  const refused = admitPacks([input]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: input.source })]);
+  expect(refused.issues[0]!.message).toContain('one.json');
+  expect(refused.issues[0]!.message).toContain('two.json');
+});
+
 it('refuses a dependency cycle without admitting part of it', () => {
   const first = pack('fixture.first', ['fixture.second']);
   const second = pack('fixture.second', ['fixture.first']);

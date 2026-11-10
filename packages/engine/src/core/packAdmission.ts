@@ -213,11 +213,21 @@ const contentEntries = (data: unknown): string[] => {
   return entries;
 };
 
-const entrySetters = (packs: readonly PackInput[]): Map<string, PackInput[]> => {
+const entrySetters = (packs: readonly PackInput[], fail: Report): Map<string, PackInput[]> => {
   const setters = new Map<string, PackInput[]>();
   for (const pack of packs) {
-    for (const { data } of packSources(pack)) {
+    const seen = new Map<string, string>();
+    const contentFiles = pack.manifest.files.filter(({ kind }) => kind === 'content');
+    for (const { path, data } of packSources(pack).map((source, index) => ({
+      ...source,
+      path: contentFiles[index]!.path,
+    }))) {
       for (const entry of contentEntries(data)) {
+        const first = seen.get(entry);
+        if (first !== undefined && first !== path) {
+          fail(pack, 'files', `Pack ${pack.manifest.id}: entry ${entry} is set by both ${first} and ${path}; keep one`);
+        }
+        seen.set(entry, first ?? path);
         const history = setters.get(entry) ?? [];
         if (!history.includes(pack)) {
           history.push(pack);
@@ -234,7 +244,7 @@ const checkOverrides = (
   dependencies: ReadonlyMap<string, ReadonlySet<string>>,
   fail: Report,
 ): void => {
-  for (const [entry, history] of entrySetters(packs)) {
+  for (const [entry, history] of entrySetters(packs, fail)) {
     // The last setter answers for every earlier one. A middle setter answers only for a predecessor it depends on:
     // independent setters are a clash that a later pack settles by depending on and declaring both
     // (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
