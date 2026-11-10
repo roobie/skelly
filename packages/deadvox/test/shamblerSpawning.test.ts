@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
+import { bodyIsClear, placeShamblerRing, SHAMBLER_PROBE_BODY_METRES } from '../src/bench/shamblerPlacement.ts';
 import { actorFigure } from '../src/core/actorFigureFiles.ts';
 import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorState.ts';
 import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
@@ -140,8 +140,8 @@ describe('debug shambler spawning', () => {
     const smallBody: Body = {
       pos: position!,
       vel: [0, 0, 0],
-      halfWidth: 0.28 / SCALE.blockSize,
-      height: 1.7 / SCALE.blockSize,
+      halfWidth: SHAMBLER_PROBE_BODY_METRES.halfWidth / SCALE.blockSize,
+      height: SHAMBLER_PROBE_BODY_METRES.height / SCALE.blockSize,
       onGround: true,
     };
     const largeBody: Body = { ...smallBody, ...actorBodyDimensions(type, SCALE.blockSize) };

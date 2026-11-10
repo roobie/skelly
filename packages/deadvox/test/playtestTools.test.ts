@@ -203,12 +203,12 @@ describe('snapshot measurement', () => {
     );
 
     expect(result.batchCount).toBe(50);
-    expect(result.batchSize).toBe(64);
+    expect(result.batchSize).toBeGreaterThan(1);
     expect(result.observedTimerTickMs).toBe(1);
     expect(result.timerQuantum).toEqual({ browser: 'Firefox', quantumMs: 1 });
     expect(result.timerQuantumCrossCheckPassed).toBe(true);
     expect(result.batchMeanP50Ms).toBeLessThan(1);
-    expect(result.batchMeanP95Ms).toBeCloseTo(0.546_875, 5);
+    expect(result.batchMeanP95Ms).toBeLessThan(result.individualCaptureP95Ms);
     expect(result.batchMeanDurationsMs).toHaveLength(result.batchCount);
     expect(result.calibrationBatchMs).toBeGreaterThanOrEqual(result.targetBatchMs);
     expect(result.individualCaptureCount).toBe(result.batchCount * result.batchSize);

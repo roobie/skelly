@@ -401,15 +401,17 @@ describe('RestController start/resume/stop', () => {
     expect(messages.length).toBeGreaterThan(0);
   });
 
-  it('returns to 1x when the player stops resting after an interruption', () => {
+  it('drops to 1x on the step after damage, and stopping then clears the interruption and the action', () => {
     const { sim, rest } = makeRest();
-    rest.start('rest', REST_ANCHOR);
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
       tickReal(sim, 1 / 60);
     }
+    expect(sim.compression.c).toBeGreaterThan(1);
     sim.hurt(5, 'a debug key');
     tickReal(sim, 1 / 60);
     expect(sim.compression.interruption).toBeDefined();
+    expect(sim.compression.c).toBe(1);
     rest.stop();
     expect(sim.compression.interruption).toBeUndefined();
     expect(sim.compression.c).toBe(1);
@@ -720,19 +722,6 @@ describe('long-action interruptions', () => {
     expect(sim.compression.c).toBe(1);
     expect(hits).toHaveLength(1);
     expect(health - sim.body.health).toBeCloseTo(hits[0]!.amount, 9);
-  });
-
-  it('stops resting at most one step after you take damage', () => {
-    const { sim, rest } = makeRest();
-    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
-    for (let i = 0; i < 120; i++) {
-      tickReal(sim, 1 / 60);
-    }
-    expect(sim.compression.c).toBeGreaterThan(1);
-    sim.hurt(10, 'a fall');
-    tickReal(sim, 1 / 60);
-    expect(sim.compression.interruption).toBeTruthy();
-    expect(sim.compression.c).toBe(1);
   });
 
   it('wakes when a need turns critical', () => {

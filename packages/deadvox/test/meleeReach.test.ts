@@ -238,43 +238,46 @@ describe('player melee reach at shambler attack distance', () => {
     expect(system.snapshotState()).toEqual(before);
   });
 
-  it('reaches visible posed head and torso voxels for every weapon, seed, and attack distance', () => {
+  it('reaches visible posed head and torso voxels over every pair of weapon, seed, pose and attack distance', () => {
     const shamblerReach = registry.actors.get('shambler')!.attack!.reach;
     const attackDistances = [shamblerReach * 0.9, shamblerReach];
-    const scenarios = FIGURE_SEEDS.flatMap((seed) =>
-      poses.flatMap((pose) =>
-        attackDistances.map((distance) => {
-          const { actor } = makeSystem(seed, pose, distance);
-          return {
-            seed,
-            pose,
-            distance,
-            head: regionCentroid(actor, 'head'),
-            torso: visibleTorsoVoxel(actor),
-          };
-        }),
-      ),
+    // A covering array: every weapon meets every seed, and the pose and distance follow the weapon and seed indices
+    // so that every pair of any two factors occurs. Weapons and seeds must each outnumber the poses and distances.
+    expect(weapons.length).toBeGreaterThanOrEqual(poses.length);
+    expect(FIGURE_SEEDS.length).toBeGreaterThanOrEqual(poses.length * attackDistances.length);
+    const scenarios = weapons.flatMap((weapon, weaponIndex) =>
+      FIGURE_SEEDS.map((seed, seedIndex) => {
+        const pose = poses[(weaponIndex + seedIndex) % poses.length]!;
+        const distance = attackDistances[(weaponIndex + seedIndex) % attackDistances.length]!;
+        const { actor } = makeSystem(seed, pose, distance);
+        return {
+          weapon,
+          seed,
+          pose,
+          distance,
+          head: regionCentroid(actor, 'head'),
+          torso: visibleTorsoVoxel(actor),
+        };
+      }),
     );
     const fullyOccluded = scenarios
       .filter(({ torso }) => torso === undefined)
       .map(({ seed, pose, distance }) => `seed ${seed} ${pose.name} ${distance.toFixed(2)} m`);
     const hittable = scenarios.filter((scenario) => scenario.torso !== undefined);
-    const misses = weapons.flatMap((weapon) =>
-      hittable.flatMap(({ seed, pose, distance, head, torso }) =>
-        (['head', 'torso'] as const)
-          .filter(
-            (region) =>
-              !swingAt({
-                seed,
-                pose,
-                distance,
-                region,
-                target: region === 'head' ? head! : torso!,
-                weapon,
-              }),
-          )
-          .map((region) => `${weapon.name} ${region} ${distance.toFixed(2)} seed ${seed} ${pose.name}`),
-      ),
+    const misses = hittable.flatMap(({ weapon, seed, pose, distance, head, torso }) =>
+      (['head', 'torso'] as const)
+        .filter(
+          (region) =>
+            !swingAt({
+              seed,
+              pose,
+              distance,
+              region,
+              target: region === 'head' ? head! : torso!,
+              weapon,
+            }),
+        )
+        .map((region) => `${weapon.name} ${region} ${distance.toFixed(2)} seed ${seed} ${pose.name}`),
     );
     expect(fullyOccluded, 'torso voxels fully occluded from the player eye').toEqual([]);
     expect(misses, 'visible posed head/torso reach matrix; first failure identifies the case').toEqual([]);

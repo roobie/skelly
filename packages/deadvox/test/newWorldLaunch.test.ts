@@ -5,7 +5,7 @@ import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { type ActiveBrowserMod, currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
+import { type ActiveBrowserMod, currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { realTimestamp } from '../src/core/time.ts';
@@ -22,7 +22,7 @@ import {
 } from '../src/game/saveStorageProtocol.ts';
 import type { SaveLoadResult } from '../src/game/storageContract.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
-import { SaveController } from '../src/ui/saveController.ts';
+import { contentLookup, SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
@@ -135,8 +135,14 @@ it('refuses Continue and names the browser mod missing from a saved world', asyn
   expect(controller.isRestored).toBe(false);
   expect(document.getElementById('continue')!.hidden).toBe(true);
   const status = document.getElementById('save-status')!.textContent!;
+  const running = await currentSaveVersionIdentity();
+  const savedPackIds = saved.components.contentPacks
+    .map(({ id }) => id)
+    .filter((id) => !running.components.contentPacks.some((pack) => pack.id === id));
+  expect(savedPackIds).toHaveLength(1);
+  expect(savedPackIds[0]).not.toBe(browserMods[0]!.id);
   expect(status).toContain(browserMods[0]!.id);
-  expect(status).not.toContain('browser.fixture-mod');
+  expect(status).not.toContain(savedPackIds[0]);
   expect(status).not.toMatch(FULL_HASH);
 });
 
@@ -168,12 +174,20 @@ it('preserves an older simulation save without appending decoder diagnostics', a
   vi.spyOn(controller.storage, 'load').mockImplementation((namespace) =>
     Promise.resolve(namespace === saved.digest ? record : undefined),
   );
+  const decoderDiagnostic = await decodeSave(record.payload, {
+    version: running.components,
+    contentLookup: (kind, id, item) => contentLookup(saveFixtureRegistry, kind, id, item),
+  }).then(
+    () => undefined,
+    (error: unknown) => (error instanceof Error ? error.message : String(error)),
+  );
+  expect(decoderDiagnostic, 'the running decoder refuses the older save').toBeTruthy();
   await controller.prepare();
   await controller.validateContent(saveFixtureRegistry);
   const status = document.getElementById('save-status')!.textContent!;
   expect(status).toContain(saved.digest.slice(0, 12));
   expect(status).not.toMatch(FULL_HASH);
-  expect(status).not.toContain('Save version mismatch');
+  expect(status).not.toContain(decoderDiagnostic);
 });
 
 it('refuses a live record marked dead and starts a new world without replacement confirmation', async () => {

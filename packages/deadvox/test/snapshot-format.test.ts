@@ -7,6 +7,7 @@ import type { MeleeWeapon } from '../src/core/actorSystem.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
@@ -341,7 +342,7 @@ it('a door lock survives the save codec and fresh native entity owner, independe
   const loaded = createRuntime(decoded.snapshot);
   const restored = loaded.entities.byUid(door.uid)!;
   expect(restored.lock).toEqual({ id: 'test_shed', locked: true });
-  expect(loaded.entities.setOpen(restored, true)).toBe("It's locked");
+  expect(loaded.entities.setOpen(restored, true)).toBe(coreMessage(registry, 'locked'));
   expect(loaded.entities.setLocked(restored, false, ['test_shed'])).toBeUndefined();
   expect(loaded.entities.setOpen(restored, true)).toBeUndefined();
 });

@@ -144,13 +144,12 @@ describe('render ragdoll', () => {
   };
   // biome-ignore-end lint/suspicious/noMisplacedAssertion: shared invariant probe.
 
-  it.each([
-    { model: 'humanoid', cuts: [] },
-    { model: 'slim-humanoid', cuts: ['head'] },
-    { model: 'broad-humanoid', cuts: ['upperArm.L'] },
-    { model: 'legless-humanoid', cuts: ['thigh.L', 'thigh.R'] },
-  ])('$model settles above ground with $cuts absent', ({ model, cuts }) =>
-    assertRest({ figure: figureOf(model), cuts }),
+  // Each model of the rest sweep takes the next of its cut sets in turn, so the default run covers every model and
+  // cut set without the gated sweep's full product.
+  const sweepCuts = ragdollContent.sweep.cuts.slice(0, -1);
+  it.each(ragdollContent.sweep.models.map((model, index) => ({ model, cuts: sweepCuts[index % sweepCuts.length]! })))(
+    '$model settles above ground with $cuts absent',
+    ({ model, cuts }) => assertRest({ figure: figureOf(model), cuts }),
   );
 
   sweepGroup('ragdoll figure sweep', () => {

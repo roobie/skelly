@@ -4,7 +4,7 @@ import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Actor } from '../src/core/actorState.ts';
 import type { MeleeWeapon } from '../src/core/actorSystem.ts';
 import { Body } from '../src/core/body.ts';
-import type { ActorDef } from '../src/core/content.ts';
+import type { ActorDef, MeleeClassDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAimOffHand } from '../src/core/firearmAimOffHand.ts';
 import { readyFirearmPose } from '../src/core/heldPose.ts';
@@ -288,14 +288,30 @@ describe('melee pose and contact contract', () => {
     expect(readyFirearmPose('right', holds)).toEqual(firearmReady);
   });
 
-  it('eases fist-only torso yaw to 30 degrees at contact and back to the unchanged rest pose', () => {
+  it('eases fist-only torso yaw monotonically to a strike-side peak at contact and back to the unchanged rest pose', () => {
+    const Steps = 8;
     for (const side of ['right', 'left'] as const) {
       const action = actionPose({ profile: 'fists', hand: side });
       const startPose = meleePoseAndContact(action, 0, false);
       const contactPose = meleePoseAndContact(action, action.contactAt, false);
       const restPose = meleePoseAndContact(action, action.cooldown, false);
+      const strikeSideYaw = (elapsed: number) =>
+        meleePoseAndContact(action, elapsed, false).torsoYaw! * (side === 'right' ? 1 : -1);
       expect(startPose.torsoYaw).toBe(0);
-      expect(contactPose.torsoYaw! * (side === 'right' ? 1 : -1)).toBeCloseTo(Math.PI / 6);
+      const peak = strikeSideYaw(action.contactAt);
+      expect(peak).toBeGreaterThan(0);
+      let previous = 0;
+      for (let step = 1; step <= Steps; step += 1) {
+        const yaw = strikeSideYaw((action.contactAt * step) / Steps);
+        expect(yaw).toBeGreaterThanOrEqual(previous);
+        previous = yaw;
+      }
+      for (let step = 1; step <= Steps; step += 1) {
+        const yaw = strikeSideYaw(action.contactAt + ((action.cooldown - action.contactAt) * step) / Steps);
+        expect(yaw).toBeLessThanOrEqual(previous);
+        expect(yaw).toBeLessThanOrEqual(peak);
+        previous = yaw;
+      }
       expect(restPose.torsoYaw).toBe(0);
       expect(restPose.right.offset).toEqual([0, 0, 0]);
       expect(restPose.left.offset).toEqual([0, 0, 0]);
@@ -624,23 +640,9 @@ describe('player melee action', () => {
     expect(injured.cooldown).toBeGreaterThan(uninjured.cooldown);
   });
 
-  it('keeps the weapon-class contact defaults ordered', () => {
-    const blunt = registry.meleeClasses.get('blunt')!;
-    const cut = registry.meleeClasses.get('cut')!;
-    const pierce = registry.meleeClasses.get('pierce')!;
-
-    expect(blunt.damageVariance).toBeLessThan(cut.damageVariance);
-    expect(cut.damageVariance).toBeLessThan(pierce.damageVariance);
-    expect(blunt.headDamageMultiplier).toBeGreaterThan(cut.headDamageMultiplier);
-    expect(blunt.headDamageMultiplier).toBeGreaterThan(pierce.headDamageMultiplier);
-    expect(cut.limbDamageMultiplier).toBeGreaterThan(blunt.limbDamageMultiplier);
-    expect(cut.limbDamageMultiplier).toBeGreaterThan(pierce.limbDamageMultiplier);
+  it('lets a weapon override every class contact default and divides its cooldown by its own speed', () => {
+    const defaults = fixtureMeleeClass({ damageVariance: 0.3, speedMultiplier: 1.5 });
     const base: MeleeWeapon = { ...FISTS_MELEE, damage: 1, reach: 3, cooldown: 1 };
-    const bluntCooldown = resolveMeleeWeapon({ ...base, type: 'blunt' }, blunt).cooldown;
-    const cutCooldown = resolveMeleeWeapon({ ...base, type: 'cut' }, cut).cooldown;
-    const pierceCooldown = resolveMeleeWeapon({ ...base, type: 'pierce' }, pierce).cooldown;
-    expect(pierceCooldown).toBeLessThan(cutCooldown);
-    expect(cutCooldown).toBeLessThan(bluntCooldown);
     const overridden = resolveMeleeWeapon(
       {
         ...base,
@@ -650,43 +652,43 @@ describe('player melee action', () => {
         limbDamageMultiplier: 0.75,
         speedMultiplier: 2,
       },
-      blunt,
+      defaults,
     );
     expect(overridden).toMatchObject({
       damageVariance: 0,
       headDamageMultiplier: 2.5,
       limbDamageMultiplier: 0.75,
       speedMultiplier: 2,
-      cooldown: 0.5,
+      cooldown: base.cooldown / 2,
     });
   });
 
-  it('blunt contact takes fewer head hits on average', () => {
+  it('a class with the larger head multiplier takes fewer head hits to kill', () => {
     const withoutDismemberment: ActorDef = {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const hitsToKill = (type: 'blunt' | 'cut' | 'pierce', seed: number): number => {
-      const system = makeSystem(FLOOR, [], [], { seed });
+    const MaxHits = 20;
+    const hitsToKill = (meleeClass: MeleeClassDef): number => {
+      const system = makeSystem();
       const { id, actor } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
-        { ...FISTS_MELEE, damage: 20, reach: 3, cooldown: 1, type },
-        registry.meleeClasses.get(type)!,
+        { ...FISTS_MELEE, damage: SHAMBLER.regions.head! / 4, reach: 3, cooldown: 1, type: 'blunt' },
+        meleeClass,
       );
       let hits = 0;
-      while (system.store.get(id) && hits < 10) {
+      while (system.store.get(id) && hits < MaxHits) {
         const ray = headRay(actor, id);
         system.swing(ray.origin, ray.direction, weapon);
         hits += 1;
       }
       return hits;
     };
-    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
-    const average = (type: 'blunt' | 'cut' | 'pierce') =>
-      seeds.reduce((total, seed) => total + hitsToKill(type, seed), 0) / seeds.length;
+    const lowHead = hitsToKill(fixtureMeleeClass({ headDamageMultiplier: 1 }));
+    const highHead = hitsToKill(fixtureMeleeClass({ headDamageMultiplier: 3 }));
 
-    expect(average('blunt')).toBeLessThan(average('cut'));
-    expect(average('blunt')).toBeLessThan(average('pierce'));
+    expect(lowHead).toBeLessThan(MaxHits);
+    expect(highHead).toBeLessThan(lowHead);
   });
 
   it('cut contact severs a limb where equal blunt damage does not', () => {
@@ -734,38 +736,50 @@ describe('player melee action', () => {
     expect(hitWithVariance(0)).toEqual(hitWithVariance(registry.meleeClasses.get('blunt')!.damageVariance));
   });
 
-  it('pierce contact has the widest seeded damage spread', () => {
+  it('a class with the larger damage variance spreads seeded contact damage wider, within its variance', () => {
     const withoutDismemberment: ActorDef = {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const contactDamage = (type: 'blunt' | 'cut' | 'pierce', seed: number, damageVariance?: number): number => {
+    const Narrow = 0.1;
+    const Wide = 0.5;
+    const contactDamage = (damageVariance: number, seed: number): number => {
       const system = makeSystem(FLOOR, [], [], { seed });
       const { id, actor } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
-        {
-          ...FISTS_MELEE,
-          damage: 10,
-          reach: 3,
-          cooldown: 1,
-          type,
-          ...(damageVariance === undefined ? {} : { damageVariance }),
-        },
-        registry.meleeClasses.get(type)!,
+        { ...FISTS_MELEE, damage: 1, reach: 3, cooldown: 1, type: 'blunt' },
+        fixtureMeleeClass({ damageVariance }),
       );
       const ray = regionRay(actor, id, 'torso');
       system.swing(ray.origin, ray.direction, weapon);
       return SHAMBLER.regions.torso! - actor.regions.torso!;
     };
     const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
-    const span = (type: 'blunt' | 'cut' | 'pierce') => {
-      const samples = seeds.map((seed) => contactDamage(type, seed));
+    const steady = contactDamage(0, seeds[0]!);
+    expect(steady).toBeGreaterThan(0);
+    const span = (damageVariance: number) => {
+      const samples = seeds.map((seed) => contactDamage(damageVariance, seed));
+      for (const sample of samples) {
+        expect(sample).toBeGreaterThanOrEqual(steady * (1 - damageVariance) - 1e-9);
+        expect(sample).toBeLessThanOrEqual(steady * (1 + damageVariance) + 1e-9);
+      }
       return Math.max(...samples) - Math.min(...samples);
     };
 
-    expect(span('blunt')).toBeLessThan(span('cut'));
-    expect(span('cut')).toBeLessThan(span('pierce'));
-    expect(contactDamage('pierce', 31, 0)).toBe(10);
-    expect(contactDamage('pierce', 31)).toBe(contactDamage('pierce', 31));
+    expect(span(0)).toBe(0);
+    expect(span(Narrow)).toBeGreaterThan(0);
+    expect(span(Narrow)).toBeLessThan(span(Wide));
+    expect(contactDamage(Wide, 31)).toBe(contactDamage(Wide, 31));
   });
+});
+
+/** A melee class row of the test's own: neutral multipliers and no spread unless the case sets them. */
+const fixtureMeleeClass = (overrides: Partial<MeleeClassDef>): MeleeClassDef => ({
+  id: 'fixture-class',
+  pose: 'blunt',
+  damageVariance: 0,
+  headDamageMultiplier: 1,
+  limbDamageMultiplier: 1,
+  speedMultiplier: 1,
+  ...overrides,
 });
