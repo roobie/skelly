@@ -1,6 +1,12 @@
 import { BundleAdmission, type BundleStamp } from '../core/bundleAdmission.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
-import { admitPacks, type PackInput, type PackManifest, packStartIssues } from '../core/packAdmission.ts';
+import {
+  admitPacks,
+  comparePackKeys,
+  type PackInput,
+  type PackManifest,
+  packStartIssues,
+} from '../core/packAdmission.ts';
 import { logicalKey } from '../core/packFiles.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
 
@@ -20,7 +26,7 @@ export interface BundledPack {
 /** The product's shipped packs, ordered by root, from manifests keyed by `<root>/pack/manifest.json`. */
 export const bundledPacksFrom = (manifests: Readonly<Record<string, PackManifest>>): readonly BundledPack[] =>
   Object.entries(manifests)
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => comparePackKeys(left, right))
     .map(([path, manifest]) => ({ root: path.slice(0, -MANIFEST_SUFFIX.length), manifest }));
 
 /** The product's shipped packs and their content, read by the product; this module names no pack root. */

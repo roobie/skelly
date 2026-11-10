@@ -769,7 +769,7 @@ describe('authored layout acceptance', () => {
     );
   });
   it('rejects an unknown shambler type', () => {
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], type: 'missing' }] }, 'no zombie type');
+    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], type: 'missing' }] }, 'no actor type');
   });
   it('rejects a building whose rotated depth leaves the bounds', () => {
     const fixture = acceptedSiteFixture();

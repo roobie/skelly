@@ -481,19 +481,19 @@ describe('fixture save/load continuation', () => {
     const noRngWord = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     const [a, b, c] = noRngWord.world.actors.actors[0]!.actor.agent!.behaviorRng;
     noRngWord.world.actors.actors[0]!.actor.agent!.behaviorRng = [a, b, c] as never;
-    expect(() => runtimeFrom(noRngWord)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noRngWord)).toThrow('Invalid actor state');
 
     const noActorSoundRng = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noActorSoundRng.world.actors.actors[0]!.actor.agent!, 'soundRng');
-    expect(() => runtimeFrom(noActorSoundRng)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noActorSoundRng)).toThrow('Invalid actor state');
 
     const noIdleSoundTimer = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noIdleSoundTimer.world.actors.actors[0]!.actor.agent!, 'idleSoundTimer');
-    expect(() => runtimeFrom(noIdleSoundTimer)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noIdleSoundTimer)).toThrow('Invalid actor state');
 
     const noLastNoiseId = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noLastNoiseId.world.actors.actors[0]!.actor.agent!, 'lastVocalNoiseId');
-    expect(() => runtimeFrom(noLastNoiseId)).toThrow('Invalid zombie state');
+    expect(() => runtimeFrom(noLastNoiseId)).toThrow('Invalid actor state');
 
     const noVocalNoiseId = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noVocalNoiseId.character.playerAudio, 'vocalNoiseId');

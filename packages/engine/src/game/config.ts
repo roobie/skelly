@@ -62,7 +62,7 @@ export interface GameConfig {
   weathering: WeatheringDef | undefined;
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
   weatheringSplit?: number;
-  /** Zombies are drawn as full built figures (`packages/presentation/src/render/mobActors.ts`) by default; hash
+  /** Actors are drawn as full built figures (`packages/presentation/src/render/mobActors.ts`) by default; hash
    * `actors:boxes` draws ActorMeshes' six boxes instead. */
   actors: ActorRenderMode;
 }

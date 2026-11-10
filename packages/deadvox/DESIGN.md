@@ -387,6 +387,13 @@ amount of Sim time; a fixed Real-time ramp would let the world run too far after
 the player chose to stop. See `longActionLimits` in `packages/engine/src/core/compression.ts`
 and `RAMP_DOWN_SIM_SECONDS` in `packages/engine/src/game/frameDriver.ts`.
 
+A key pressed during that ramp-down ends it at once and then acts, because Sim
+time ends promptly after Stop and a key the player presses then must not be
+silently lost. A running action or a waiting Continue/Stop prompt still refuses
+keys. Input replay never ends the ramp: the recorded sample is authoritative, so
+one replay rule covers every key site. See `packages/engine/src/core/compression.ts`,
+`Compression.admitKey`, and `packages/engine/src/game/commandRouter.ts`, `keyAdmitted`.
+
 Only an emitted event stops a long action, except that bleeding also refuses
 compression for player actions. Nearby or aware shamblers do not make the game
 judge an area safe on the player's behalf: the player may choose to wait where

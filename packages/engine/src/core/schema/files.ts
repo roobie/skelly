@@ -99,7 +99,7 @@ const SECTION_DESCRIPTOR = {
             ),
           'every type but fused-mass, which strikes from its core, must define attack.grabBandMetres',
         ),
-        check((types) => types.every(actorRegionsMatchModel), 'zombie region keys must match the model'),
+        check((types) => types.every(actorRegionsMatchModel), 'actor region keys must match the model'),
         check((types) => types.every(actorAcidSpitMatchesAbility), 'acidSpit tunables must match the acidSpit ability'),
         check(
           (types) => types.every((actor) => (actor.model === 'acid') === (actor.acidBody !== undefined)),

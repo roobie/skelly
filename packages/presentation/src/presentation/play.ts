@@ -690,8 +690,9 @@ const autosaveTuning = (registry: Engine['registry']) => {
   return autosave;
 };
 
+/** A replay restores its own recorded world without a save, so it is the one restore practice admits. */
 const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): void => {
-  if (guided && (options.saveController || options.restore)) {
+  if (guided && (options.saveController || (options.restore && !options.replay))) {
     throw new Error('Practice cannot bind a save or restore a world');
   }
 };
@@ -1052,8 +1053,8 @@ const startPlayWith = (
     onBlock: (jolt) => view.block(jolt),
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
-    // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse, blood for every wound, and flesh chunks for a carve or a hard hit. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
+    // Presentation only: what the simulation decided (a part severed, an actor dead) drawn as debris and a
+    // corpse, blood for every wound, and flesh chunks for a carve or a hard hit. Only MobActorMeshes implements the actor-effect hooks; ActorMeshes leaves
     // them undefined.
     actorEffects: {
       onWound: (id, _actor, hit, damage) => {
@@ -2230,7 +2231,7 @@ const startPlayWith = (
     if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
       return;
     }
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || spectator.enabled || debugTools?.buildOn || !compression.admitKey()) {
       return;
     }
     if (router.refusePrimaryUseWhileHandling()) {
@@ -2241,7 +2242,7 @@ const startPlayWith = (
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
   inputTarget.addEventListener('mousedown', (e) => {
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || !debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitKey()) {
       return;
     }
     debugTools.click(e.button, eye(), lookDir());

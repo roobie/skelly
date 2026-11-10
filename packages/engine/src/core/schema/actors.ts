@@ -45,7 +45,7 @@ import {
   SimRate,
 } from './primitives.ts';
 
-// ---- zombies ----
+// ---- actors ----
 
 export type HumanoidHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
 
@@ -112,7 +112,7 @@ const AcidSpitSchema = pipe(
   }),
   check(({ rangeBand }) => rangeBand.nearMetres < rangeBand.farMetres, 'range band near edge must be inside far edge'),
   check((spit) => spit.windupSimSeconds < spit.cooldownSimSeconds, 'windup must be less than cooldown'),
-  check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
+  check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'actor move ids must be unique'),
 );
 
 /** How the acid model's body shows its acid (`packages/deadvox/docs/acid-zombie.md`, "Model"). Presentation only. */
@@ -157,7 +157,7 @@ const AgentSchema = strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,
     /**
-     * How far a zombie held up at a piece looks for a way past it (`packages/deadvox/DESIGN.md`, "Senses and AI"). It bashes the piece
+     * How far an actor held up at a piece looks for a way past it (`packages/deadvox/DESIGN.md`, "Senses and AI"). It bashes the piece
      * only when no way past gains ground toward its target within this reach.
      */
     wayAroundReachMetres: Positive,
@@ -334,10 +334,10 @@ export const ActorSchema = strictObject({
         moves: MeleeMovesSchema,
       }),
       check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
-      check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
+      check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'actor move ids must be unique'),
     ),
   ),
-  /** A melee hit with at least this impulse holds the zombie still and spoils its attack (docs/stagger.md);
+  /** A melee hit with at least this impulse holds the actor still and spoils its attack (docs/stagger.md);
    * absent means it never staggers. */
   stagger: optional(strictObject({ impulseThreshold: Positive, durationSimSeconds: PositiveSimSeconds })),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/fusedMassCarving.ts): the struck voxel

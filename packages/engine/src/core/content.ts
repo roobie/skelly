@@ -1335,7 +1335,7 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
   if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
-    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
+    found.push(['.spawn', `no actor type "${entry.spawn}"`]);
   }
   return found;
 };
@@ -2086,7 +2086,7 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
           'scenarios',
           scenario.id,
           `.eventRules[${index}].effects[${effectIndex}].actor`,
-          `no zombie type "${effect.actor}"`,
+          `no actor type "${effect.actor}"`,
         );
       }
     });

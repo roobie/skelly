@@ -35,7 +35,7 @@ export class ActorSpawner {
 
   restoreState(state: readonly string[]): void {
     if (new Set(state).size !== state.length || state.some((key) => typeof key !== 'string')) {
-      throw new Error('Invalid zombie spawn ledger');
+      throw new Error('Invalid actor spawn ledger');
     }
     this.spawned.clear();
     this.pending.clear();

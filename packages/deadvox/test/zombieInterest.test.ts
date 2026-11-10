@@ -348,7 +348,7 @@ describe('shambler interest', () => {
     expect(savedListener.agent!.lastAlertAt).toBe(firstCryAt);
     const invalid = structuredClone(snapshot);
     invalid.actors[0]!.actor.agent!.lastAlertAt = -1;
-    expect(() => new ActorSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid zombie state');
+    expect(() => new ActorSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid actor state');
   });
 
   it('round-trips a live hesitation and refusal lean through validated saves', () => {
@@ -368,6 +368,6 @@ describe('shambler interest', () => {
     expect(actor.agent!.leanTarget).toBeDefined();
     const snapshot = structuredClone(restore());
     snapshot.actors[0]!.actor.agent!.refusedAt = -1;
-    expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');
+    expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid actor state');
   });
 });
