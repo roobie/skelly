@@ -272,7 +272,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const updateFrame = () => {
     syncActor(view, camera);
     view.updateHeld(0, restingHands, flashlight);
-    view.prepareLighting({ sky: daylight, hour: 12, time: 0 });
+    view.prepareLighting({ sky: daylight, gameHour: 12, simSeconds: 0 });
     view.updateHeld(0, restingHands, flashlight);
   };
   updateFrame();
