@@ -77,7 +77,7 @@ import {
   discoveryForPlan,
   dominantSide,
   type EntityId,
-  FurnitureActionSelection,
+  ActionMenu,
   firearmBoreRay,
   firearmBoreTarget,
   firearmsCombatTuning,
@@ -817,7 +817,7 @@ const startPlayWith = (
   let interactionPressTarget: InteractionTarget | undefined;
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
-  const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
+  const furnitureActionSelection = new ActionMenu(actionText(registry).itemActions.openCan);
   const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>

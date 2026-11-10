@@ -133,8 +133,9 @@ export {
   simTimestamp,
   simToGameSeconds,
 } from './core/time.ts';
+export { ActionMenu } from './game/actionMenu.ts';
 export { firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
-export { FurnitureActionSelection, furnitureActionsFor } from './game/furnitureActions.ts';
+export { furnitureActionsFor } from './game/furnitureActions.ts';
 export { unarmedMeleeWeapon } from './game/melee.ts';
 export { createPlayerBody, type MoveIntent, physicsFor, playerTuning } from './game/player.ts';
 export { PlayerTickActions } from './game/playerTickActions.ts';
