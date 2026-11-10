@@ -108,9 +108,10 @@ it('a recipe role without a provider adds neither a skill gate nor an unlock req
   expect(character.knownRecipes.has(recipe.id)).toBe(true);
   expect(requirementStatus(recipe, snapshot, character).skills).toEqual([]);
   expect(planCraft(recipe, snapshot, character)).toHaveProperty('plan');
+  // Completion with no provider must award no practice to any loaded skill, so the map is unchanged.
+  const practiceBefore = structuredClone(character.snapshotState().practice);
   expectCompleteRecipe(inventory, character);
-  // The fixture stack's inventory skill may already hold a practice entry; the crafting role gets none.
-  expect(character.snapshotState().practice).not.toHaveProperty(fixtureCraftingSkill.id);
+  expect(character.snapshotState().practice).toEqual(practiceBefore);
 });
 
 it('recipe gates and unlocks follow a renamed provider, not the role spelling as an id', () => {
