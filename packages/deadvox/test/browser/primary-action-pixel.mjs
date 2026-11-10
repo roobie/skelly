@@ -422,8 +422,8 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
 };
 
 // Puts a helmet on and takes it off, reading the edge/centre ratio of the frames either side. The reads sit a few
-// frames apart because the daylit scene keeps changing as the world streams in, and they use the drawing buffer
-// because a page screenshot costs seconds on CI's software renderer.
+// frames apart because reads seconds apart can see a different daylit scene, and they use the drawing buffer because
+// a page screenshot costs seconds on CI's software renderer.
 const visorRatios = (page) =>
   page.evaluate(async () => {
     const r = globalThis.primaryActionTest;
