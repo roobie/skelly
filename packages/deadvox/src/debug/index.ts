@@ -1263,7 +1263,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       }),
     };
   };
-  /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
+  /**
+   * Keeps the address bar holding the look's hash state, all of it but the live-only weathering profile choice: replaces
+   * the entry, never adds one or reloads.
+   */
   function syncLookUrl(): void {
     const { query, hash } = lookAddress();
     replacePageUrl(query, hash);
