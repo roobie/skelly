@@ -66,6 +66,7 @@ import { createMoodOutputPass, setNightFlareUniforms } from './moodOutput.ts';
 import { type NightVisionFlare, NO_FLARE } from './nightVisionFlare.ts';
 import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from './opticLens.ts';
 import { ScreenScale } from './screenScale.ts';
+import { skyDomeUniforms } from './skyDome.ts';
 
 /** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
 const MSAA_SAMPLES = 4;
@@ -398,9 +399,10 @@ export class Mood {
     // the exposure from OutputPass's tone mapper, which would push a bright sky past the bloom
     // threshold and brighten it against the no-post frame. Scaled by 1 / exposure for this frame,
     // they come out as the sky's own colour. Without a tone mapper nothing applies exposure, so
-    // nothing is undone. All three scale alike, so geometry still fades into the background
-    // exactly at the far plane. The originals are put back afterwards (scene.background is the fog's
-    // own Color, see applySky), so the post-off path and the next frame see the unscaled sky.
+    // nothing is undone. All three, and a sky dome standing in for the background, scale alike, so
+    // geometry still fades into the background exactly at the far plane. The originals are put back
+    // afterwards (scene.background is the fog's own Color, see applySky), so the post-off path and
+    // the next frame see the unscaled sky.
     const scale = this.chainColorScale();
     const fogColor = this.scene.fog?.color;
     const mist = heightFogUniforms.uHeightFogColor.value;
@@ -408,6 +410,7 @@ export class Mood {
     const savedMist = mist.clone();
     fogColor?.multiplyScalar(scale);
     mist.multiplyScalar(scale);
+    skyDomeUniforms.uSkyColorScale.value = scale;
     try {
       if (opticFrame) {
         this.opticLens.prepare(this.renderer, this.scene, this.camera, opticFrame);
@@ -419,6 +422,7 @@ export class Mood {
         fogColor.copy(savedFog);
       }
       mist.copy(savedMist);
+      skyDomeUniforms.uSkyColorScale.value = 1;
     }
   }
 

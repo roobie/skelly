@@ -22,10 +22,11 @@ import {
 import {
   DOME_GLSL,
   domeMesh,
-  fogColorLinear,
+  domeOutputUniforms,
   placeDome,
   type SkyDome,
   type SkyDomeFrame,
+  setDomeFog,
   starWeightOf,
 } from './skyDome.ts';
 import { createScatterDome, type ScatterDome } from './skyScatter.ts';
@@ -46,8 +47,6 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform samplerCube uStopA;
   uniform samplerCube uStopB;
   uniform float uBlend;
-  uniform vec3 uFogColor;
-  uniform float uSkyVisibility;
   uniform vec3 uSunColor;
   uniform vec3 uSunDir;
   uniform vec3 uMoonColor;
@@ -61,9 +60,8 @@ const FRAGMENT_SHADER = /* glsl */ `
     col += domeSun( dir, uSunDir, uSunColor, uSunGlow );
     col += domeSun( dir, uMoonDir, uMoonColor, 0.3 );
     col += domeStars( dir, uStarWeight );
-    col = mix( col * uSkyVisibility, uFogColor, 1.0 - smoothstep( 0.0, 0.06, dir.y ) );
-    col = mix( uFogColor, col, smoothstep( -0.05, 0.0, dir.y ) );
-    gl_FragColor = vec4( col, 1.0 );
+    gl_FragColor = domeOutput( col, dir );
+    #include <colorspace_fragment>
   }
 `;
 
@@ -78,12 +76,9 @@ const cubeStop = (): WebGLCubeRenderTarget =>
 /** Bakes the stops, then serves the crossfading dome. */
 export const createPanoSkyDome = (renderer: WebGLRenderer, dayCycle: Parameters<typeof skyAt>[1]): SkyDome => {
   const bakeScene = new Scene();
-  const scatter: ScatterDome = createScatterDome(false);
-  const bakeMaterial = scatter.mesh.material as ShaderMaterial;
-  // Pure sky into the stops: visibility 1 and a black fog colour, so the patch's horizon band
-  // darkens only the strip the runtime dome replaces with the live fog anyway.
-  bakeMaterial.uniforms.uSkyVisibility!.value = 1;
-  bakeMaterial.uniforms.uFogColor!.value.setRGB(0, 0, 0);
+  // Pure sky into the stops, no fog fade: the runtime dome fades into the live fog once.
+  // Baked before any frame, outside Mood's chain draw, so the shared colour scale is still 1.
+  const scatter: ScatterDome = createScatterDome({ sunDisc: false, fogBlend: false });
   scatter.mesh.scale.setScalar(4);
   bakeScene.add(scatter.mesh);
   const stops: WebGLCubeRenderTarget[] = [];
@@ -96,15 +91,16 @@ export const createPanoSkyDome = (renderer: WebGLRenderer, dayCycle: Parameters<
   }
   scatter.dispose();
 
+  const output = domeOutputUniforms();
   const runtime = new ShaderMaterial({
     side: BackSide,
     depthWrite: false,
+    toneMapped: false,
     uniforms: {
+      ...output,
       uStopA: { value: stops[0]!.texture },
       uStopB: { value: stops[1]!.texture },
       uBlend: { value: 0 },
-      uFogColor: { value: new Color(0, 0, 0) },
-      uSkyVisibility: { value: 1 },
       uSunColor: { value: new Color(0, 0, 0) },
       uSunDir: { value: new Vector3(0, 1, 0) },
       uMoonColor: { value: new Color(0.65, 0.7, 0.8) },
@@ -127,8 +123,7 @@ export const createPanoSkyDome = (renderer: WebGLRenderer, dayCycle: Parameters<
       runtime.uniforms.uStopA!.value = stops[first]!.texture;
       runtime.uniforms.uStopB!.value = stops[(first + 1) % STOPS]!.texture;
       runtime.uniforms.uBlend!.value = position - Math.floor(position);
-      fogColorLinear(runtime.uniforms.uFogColor!.value as Color, sky, skyVisibility);
-      runtime.uniforms.uSkyVisibility!.value = skyVisibility;
+      setDomeFog(output, sky, skyVisibility);
       sunColor.setRGB(sky.lightColor[0], sky.lightColor[1], sky.lightColor[2], SRGBColorSpace);
       sunDir.set(...sky.sunDirection);
       moonDir.set(-sky.sunDirection[0], -sky.sunDirection[1], -sky.sunDirection[2]);

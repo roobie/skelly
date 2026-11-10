@@ -10,27 +10,37 @@ import { Color, type Mesh, type ShaderMaterial, Vector3 } from 'three';
 import { Sky } from 'three/addons/objects/Sky.js';
 import {
   DOME_GLSL,
+  type DomeOutputUniforms,
   domeMesh,
-  fogColorLinear,
+  domeOutputUniforms,
   placeDome,
   type SkyDome,
   type SkyDomeFrame,
+  setDomeFog,
   starWeightOf,
 } from './skyDome.ts';
 
 /** Dome uniforms the patch adds on top of the addon's own. */
-interface PatchUniforms {
-  uFogColor: { value: Color };
-  uSkyVisibility: { value: number };
+interface PatchUniforms extends DomeOutputUniforms {
   uExposure: { value: number };
   uMoonDir: { value: Vector3 };
   uMoonColor: { value: Color };
   uStarWeight: { value: number };
 }
 
+/** Replaces one line of the addon's shader, throwing if three changed it (like render/distanceFog.ts). */
+const patched = (shader: string, from: string, to: string): string => {
+  if (!shader.includes(from)) {
+    throw new Error(`skyScatter: "${from}" not found in three's Sky shader`);
+  }
+  return shader.replace(from, to);
+};
+
 /** The scatter dome without scene ownership, so the pano bake can drive it standalone. */
 export interface ScatterDome {
   readonly mesh: Mesh;
+  /** The shared dome-output uniforms, for fog and visibility. */
+  readonly output: DomeOutputUniforms;
   /** Sets sun, atmosphere and cloud uniforms from the keyed sky. */
   applyLook: (sky: SkyLook, time: number) => void;
   dispose: () => void;
@@ -38,51 +48,51 @@ export interface ScatterDome {
 
 const between = (low: number, high: number, weight: number): number => low + (high - low) * weight;
 
-export const createScatterDome = (withSunDisc: boolean): ScatterDome => {
+export const createScatterDome = ({ sunDisc, fogBlend }: { sunDisc: boolean; fogBlend: boolean }): ScatterDome => {
   const dome = new Sky();
   const material = dome.material as ShaderMaterial;
   dome.geometry.dispose();
+  // Drawn like the flat background it replaces (render/skyDome.ts).
+  material.toneMapped = false;
   // The patch: declare the extra uniforms, then compose the addon's `texColor` with the
-  // shared stars, moon, horizon fog fade and visibility before the output.
-  material.fragmentShader = material.fragmentShader
-    .replace(
-      'uniform float mieDirectionalG;',
-      `uniform float mieDirectionalG;
-      uniform vec3 uFogColor;
-      uniform float uSkyVisibility;
+  // shared stars, moon and dome output before the addon's own colour-space chunk.
+  const declared = patched(
+    material.fragmentShader,
+    'uniform float mieDirectionalG;',
+    `uniform float mieDirectionalG;
       uniform float uExposure;
       uniform vec3 uMoonDir;
       uniform vec3 uMoonColor;
       uniform float uStarWeight;
       ${DOME_GLSL}`,
-    )
-    .replace(
-      'gl_FragColor = vec4( texColor, 1.0 );',
-      `vec3 domeDir = normalize( vWorldPosition - cameraPosition );
+  );
+  material.fragmentShader = patched(
+    declared,
+    'gl_FragColor = vec4( texColor, 1.0 );',
+    `vec3 domeDir = normalize( vWorldPosition - cameraPosition );
       vec3 scatterOut = texColor * uExposure;
       scatterOut += domeStars( domeDir, uStarWeight );
       scatterOut += domeSun( domeDir, uMoonDir, uMoonColor, 0.35 );
-      scatterOut = mix( scatterOut * uSkyVisibility, uFogColor, 1.0 - smoothstep( 0.0, 0.06, domeDir.y ) );
-      scatterOut = mix( uFogColor, scatterOut, smoothstep( -0.05, 0.0, domeDir.y ) );
-      gl_FragColor = vec4( scatterOut, 1.0 );`,
-    );
+      gl_FragColor = domeOutput( scatterOut, domeDir );`,
+  );
   const uniforms = material.uniforms as unknown as Record<string, { value: unknown }>;
   const patch: PatchUniforms = {
-    uFogColor: { value: new Color(0, 0, 0) },
-    uSkyVisibility: { value: 1 },
+    ...domeOutputUniforms(),
     uExposure: { value: 0.35 },
     uMoonDir: { value: new Vector3(0, -1, 0) },
     uMoonColor: { value: new Color(0.7, 0.75, 0.85) },
     uStarWeight: { value: 0 },
   };
+  patch.uFogBlend.value = fogBlend ? 1 : 0;
   for (const [name, uniform] of Object.entries(patch)) {
     uniforms[name] = uniform;
   }
-  material.uniforms.showSunDisc!.value = withSunDisc ? 1 : 0;
+  material.uniforms.showSunDisc!.value = sunDisc ? 1 : 0;
   const mesh = domeMesh(material);
   const sunPosition = uniforms.sunPosition!.value as Vector3;
   return {
     mesh,
+    output: patch,
     applyLook(sky: SkyLook, time: number): void {
       sunPosition.set(...sky.sunDirection);
       // The lower the sun, the hazier and redder the air and the thicker the clouds.
@@ -105,16 +115,13 @@ export const createScatterDome = (withSunDisc: boolean): ScatterDome => {
 
 /** The scatter spike wired for the live scene. */
 export const createScatterSkyDome = (): SkyDome => {
-  const scatter = createScatterDome(true);
-  const material = scatter.mesh.material as ShaderMaterial;
-  const { applyLook } = scatter;
-  const { uniforms } = material;
+  const scatter = createScatterDome({ sunDisc: true, fogBlend: true });
+  const { uniforms } = scatter.mesh.material as ShaderMaterial;
   return {
     mesh: scatter.mesh,
     update({ sky, simSeconds, camera, skyVisibility }: SkyDomeFrame): void {
-      applyLook(sky, simSeconds);
-      fogColorLinear(uniforms.uFogColor!.value as Color, sky, skyVisibility);
-      uniforms.uSkyVisibility!.value = skyVisibility;
+      scatter.applyLook(sky, simSeconds);
+      setDomeFog(scatter.output, sky, skyVisibility);
       uniforms.uStarWeight!.value = starWeightOf(sky);
       (uniforms.uMoonDir!.value as Vector3).set(-sky.sunDirection[0], -sky.sunDirection[1], -sky.sunDirection[2]);
       placeDome(scatter.mesh, camera);

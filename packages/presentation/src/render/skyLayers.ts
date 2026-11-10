@@ -20,10 +20,11 @@ import {
 import {
   DOME_GLSL,
   domeMesh,
-  fogColorLinear,
+  domeOutputUniforms,
   placeDome,
   type SkyDome,
   type SkyDomeFrame,
+  setDomeFog,
   starWeightOf,
 } from './skyDome.ts';
 
@@ -122,8 +123,6 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform vec3 uZenith;
   uniform vec3 uMid;
   uniform vec3 uHorizon;
-  uniform vec3 uFogColor;
-  uniform float uSkyVisibility;
   uniform vec3 uSunColor;
   uniform vec3 uSunDir;
   uniform vec3 uMoonColor;
@@ -161,9 +160,8 @@ const FRAGMENT_SHADER = /* glsl */ `
     vec2 noise2 = texture2D( uCloudNoise[2], uv2 ).rg;
     float coverage2 = smoothstep( 0.45, 0.75, noise2.r + ( noise2.g - 0.5 ) * 0.35 );
     col = mix( col, litCloud, coverage2 * uOpacity[2] * horizonFade );
-    col = mix( col * uSkyVisibility, uFogColor, 1.0 - smoothstep( 0.0, 0.06, dir.y ) );
-    col = mix( uFogColor, col, smoothstep( -0.05, 0.0, dir.y ) );
-    gl_FragColor = vec4( col, 1.0 );
+    gl_FragColor = domeOutput( col, dir );
+    #include <colorspace_fragment>
   }
 `;
 
@@ -193,15 +191,16 @@ const gradientStops = (sky: {
 /** The layered spike: the dome's mesh joins the scene; dispose removes it. */
 export const createLayeredSkyDome = (): SkyDome => {
   const textures = [cloudTexture(1), cloudTexture(2)];
+  const output = domeOutputUniforms();
   const material = new ShaderMaterial({
     side: BackSide,
     depthWrite: false,
+    toneMapped: false,
     uniforms: {
+      ...output,
       uZenith: { value: new Color(0, 0, 0) },
       uMid: { value: new Color(0, 0, 0) },
       uHorizon: { value: new Color(0, 0, 0) },
-      uFogColor: { value: new Color(0, 0, 0) },
-      uSkyVisibility: { value: 1 },
       uSunColor: { value: new Color(0, 0, 0) },
       uSunDir: { value: new Vector3(0, 1, 0) },
       uMoonColor: { value: new Color(0.65, 0.7, 0.8) },
@@ -225,8 +224,7 @@ export const createLayeredSkyDome = (): SkyDome => {
     setSrgb(uniforms.uZenith!.value as Color, stops.zenith);
     setSrgb(uniforms.uMid!.value as Color, stops.mid);
     setSrgb(uniforms.uHorizon!.value as Color, stops.horizon);
-    fogColorLinear(uniforms.uFogColor!.value as Color, sky, skyVisibility);
-    uniforms.uSkyVisibility!.value = skyVisibility;
+    setDomeFog(output, sky, skyVisibility);
     (uniforms.uSunDir!.value as Vector3).set(...sky.sunDirection);
     (uniforms.uMoonDir!.value as Vector3).set(-sky.sunDirection[0], -sky.sunDirection[1], -sky.sunDirection[2]);
     setSrgb(uniforms.uSunColor!.value as Color, sky.lightColor);
