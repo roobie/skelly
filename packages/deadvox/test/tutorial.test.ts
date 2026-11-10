@@ -12,7 +12,7 @@ import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,
 } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
-import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -221,25 +221,40 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
-  it('keeps non-start mods when practice replaces the listed start packs', () => {
+  it('keeps non-start mods and reports each replaced start pack once', () => {
     const packs = [
       { id: 'scenario', defaultStart: 'fixture_start' },
       { id: 'other', defaultStart: 'fixture_other' },
       { id: 'beginner' },
     ];
+    for (const mods of [null, 'beginner', 'scenario,other,scenario,beginner,practice']) {
+      const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
+      const link = tutorialUrl(page, 'practice', packs);
+      const entered = new URL(link.href);
+      expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : 'beginner,practice');
+      const listed = mods?.split(',') ?? [];
+      expect(link.droppedPacks).toEqual(
+        packs.filter(({ defaultStart, id }) => defaultStart !== undefined && listed.includes(id)).map(({ id }) => id),
+      );
+    }
+  });
+
+  it('discards a warning handoff loaded at a different destination', () => {
+    const data = new Map<string, string>();
+    const stash = () => ({
+      getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => data.set(key, value),
+      removeItem: (key: string) => data.delete(key),
+    });
+    const link = tutorialUrl('https://example.org/deadvox/?mods=scenario', 'practice', [
+      { id: 'scenario', defaultStart: 'fixture_start' },
+    ]);
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
-      for (const mods of [null, 'beginner', 'scenario,other,scenario,beginner,practice']) {
-        warning.mockClear();
-        const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
-        const entered = new URL(tutorialUrl(page, 'practice', packs));
-        expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : 'beginner,practice');
-        const dropped = packs.filter(({ defaultStart, id }) => defaultStart !== undefined && mods?.includes(id));
-        expect(warning).toHaveBeenCalledTimes(dropped.length);
-        for (const { id } of dropped) {
-          expect(warning.mock.calls.flat().some((value) => String(value).includes(id))).toBe(true);
-        }
-      }
+      const href = stagePracticeLink(link, stash);
+      logPracticeWarnings('https://example.org/deadvox/', stash);
+      logPracticeWarnings(href, stash);
+      expect(warning).not.toHaveBeenCalled();
     } finally {
       warning.mockRestore();
     }
@@ -251,7 +266,7 @@ describe('practice objectives', () => {
         'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl#{debug:true}',
         'practice',
         [],
-      ),
+      ).href,
     );
     expect(entered.pathname).toBe('/deadvox/');
     expect([...entered.searchParams.keys()]).toEqual(['render', 'mods']);

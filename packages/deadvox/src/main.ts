@@ -29,7 +29,7 @@ import {
   startPlay,
   WorldLoading,
 } from '@skelly/presentation/play';
-import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import {
   applyUiTokens,
   chooseMods,
@@ -57,6 +57,7 @@ import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
+logPracticeWarnings(location.href, () => sessionStorage);
 const { query: params, hash, refused } = pageUrl();
 // A link or an edit that changes only the hash does not load the page again, and the game reads its hash once at
 // startup, so it reloads. The debug write-back replaces the address, which fires no `hashchange`.
@@ -277,14 +278,17 @@ if (bench === 'report') {
       practiceStart.addEventListener('click', (event) => {
         event.stopPropagation();
         location.assign(
-          tutorialUrl(
-            location.href,
-            practiceMod!,
-            [
-              ...productModIntake.content.availablePackInputs.map(({ manifest }) => manifest),
-              ...productModIntake.bundledMods.map(({ id, data }) => ({ id, defaultStart: data.defaultStart })),
-            ],
-            tutorialHash(hash),
+          stagePracticeLink(
+            tutorialUrl(
+              location.href,
+              practiceMod!,
+              [
+                ...productModIntake.content.availablePackInputs.map(({ manifest }) => manifest),
+                ...productModIntake.bundledMods.map(({ id, data }) => ({ id, defaultStart: data.defaultStart })),
+              ],
+              tutorialHash(hash),
+            ),
+            () => sessionStorage,
           ),
         );
       });

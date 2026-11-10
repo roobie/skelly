@@ -8,8 +8,8 @@ import {
 import { currentSaveVersionIdentity } from '@skelly/engine/save';
 import { configFromUrl, isPracticeStart } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
-import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
-import { describe, expect, it } from 'vitest';
+import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { describe, expect, it, vi } from 'vitest';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
@@ -184,8 +184,7 @@ describe('committed scenario mods', () => {
     expect(practiceRun([])).toBe(false);
   });
 
-  it('replaces another start pack in the practice link and warns about the dropped pack', async () => {
-    const { vi } = await import('vitest');
+  it('replaces another start pack and warns on the loaded practice page, not the departing page', () => {
     const practice = practiceModId(productModIntake, startupContent().registry);
     const other = scenarios.find(([id]) => id !== practice)?.[0];
     expect(practice).toBeDefined();
@@ -201,15 +200,27 @@ describe('committed scenario mods', () => {
     const page = `https://example.test/deadvox/?mods=${practice},${other}`;
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
-      const href = tutorialUrl(
+      const link = tutorialUrl(
         page,
         practice!,
         productModIntake.content.availablePackInputs.map(({ manifest }) => manifest),
       );
+      const data = new Map<string, string>();
+      const stash = () => ({
+        getItem: (key: string) => data.get(key) ?? null,
+        setItem: (key: string, value: string) => data.set(key, value),
+        removeItem: (key: string) => data.delete(key),
+      });
+      const href = stagePracticeLink(link, stash);
+      expect(warning).not.toHaveBeenCalled();
       expect(new URL(href).searchParams.get('mods')?.split(',')).not.toContain(other);
       expect(runOn(href)).toBe(true);
+      logPracticeWarnings(href, stash);
       expect(warning).toHaveBeenCalledTimes(1);
       expect(warning.mock.calls.flat().some((value) => String(value).includes(other!))).toBe(true);
+      warning.mockClear();
+      logPracticeWarnings(href, stash);
+      expect(warning).not.toHaveBeenCalled();
     } finally {
       warning.mockRestore();
     }
