@@ -9,7 +9,7 @@ read_if:
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
   - you add a feature's test prop to the showroom, or change range grading, staging, stock or catalogue admission
-  - you use or change the focus URL parameter
+  - you use or change the focus hash key
   - you decide whether a temporary repair preview belongs in the showroom
 ---
 
@@ -191,7 +191,7 @@ Item and vehicle looks still belong to a slot or their owning zone.
 
 ## Focus
 
-`?focus=<furniture>` starts a fresh session in front of a showroom prop of that type,
+The hash `focus` key (`#{focus:<furniture>}`) starts a fresh session in front of a showroom prop of that type,
 on the floor it stands on and facing it, so a look request can send BR straight to the
 thing to look at. A slot wins over the catalogue, because a slot is that feature's own
 staging. Unavailable focus must use the default spawn with a visible message rather than

@@ -310,7 +310,7 @@ export class LookControls {
     }
   }
 
-  /** The `?tone=` URL value of the current mode. */
+  /** The hash `tone` value of the current mode. */
   get toneKey(): string {
     return TONE_MODES[this.mode]!.key;
   }

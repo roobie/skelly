@@ -1997,7 +1997,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   color: var(--accent);
 }
 
-/* Dynamically inserted by src/debug; absent outside ?debug=1. */
+/* Dynamically inserted by src/debug; absent outside a debug run. */
 #debug-ui-root {
   position: fixed;
   inset: 0;

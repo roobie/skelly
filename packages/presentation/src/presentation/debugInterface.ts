@@ -50,7 +50,7 @@ export interface DebugHooks {
   readonly character: Character;
   readonly newGame: boolean;
   readonly sim: Simulation;
-  /** Debug tools may set the look direction (`?cam=` restore, debug/camUrl.ts). */
+  /** Debug tools may set the look direction (hash `cam` restore, debug/camUrl.ts). */
   readonly input: { yaw: number; pitch: number };
   readonly debugModifierHeld: () => boolean;
   /** The camera's current roll in radians (damage feedback; 0 otherwise). */

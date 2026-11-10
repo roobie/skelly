@@ -13,7 +13,7 @@ import {
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
 
-/** `key` is the `?tone=` URL value (see debug/lookUrl.ts) and `LookState.tone`. */
+/** `key` is the hash `tone` value (see debug/lookUrl.ts) and `LookState.tone`. */
 export const TONE_MODES: readonly { readonly key: string; readonly name: string; readonly mapping: ToneMapping }[] = [
   { key: 'none', name: 'None', mapping: NoToneMapping },
   { key: 'agx', name: 'AgX', mapping: AgXToneMapping },

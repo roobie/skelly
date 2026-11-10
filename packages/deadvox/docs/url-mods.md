@@ -54,17 +54,16 @@ The tutorial is a bundled mod with its own start row, and the game recognises a 
 
 ## Hash state
 
-The hash is one object in a relaxed JSON-like form: bare keys, bare word strings, numbers, booleans and arrays, as in `#{cam:[1.5,2,3,90,0],debug:true}`. Strict JSON would turn every quote into `%22` in the address bar. The page parses it once at startup. Its bounds:
+The hash is one object in a relaxed JSON-like form: bare keys, bare word strings, numbers, booleans and arrays, as in `#{debug:true,cam:[1.5,2,3,90,0,0]}`. Strict JSON would turn every quote into `%22` in the address bar. The page reads it once at startup through `src/pageUrl.ts`, `pageUrl`. Its keys and value types are checked against one schema, `src/hashState.ts`, `HASH_KEYS`, and an unknown key or a value of the wrong type stops startup with a visible error naming the key, as an unknown query parameter does. Its remaining bounds belong to slice 2:
 
 - A byte limit in trusted startup configuration under `src/config`, like the browser-mod intake limit, checked before parsing.
-- A fixed nesting depth, and keys and value types checked against one schema.
-- An unknown key or a value of the wrong type stops startup with a visible error naming the key, as an unknown query parameter does.
+- A fixed nesting depth.
 
-Keys are of two kinds. **Start keys** (seed, radius, actors, decals, debug and the bench run keys) apply at page load, and changing them reloads the page. **Live keys** (camera, look switches, weathering tuning, interaction ray) apply on a `hashchange` without reloading.
+Every hash key applies at page load, and any `hashchange` reloads the page; see `src/main.ts`. The game reads its hash once, so one reload path replaces a second path that would apply each key live.
 
-The page writes back the camera and every live key the debug panel changes, so a copied link still reproduces what the reporter saw. Write-back goes through `history.replaceState` with the throttling and change thresholds the camera already uses, so moving the camera or a slider never adds history entries. Write-back keeps every other key as given and writes keys in a fixed order, so links stay stable and diffable. Restoring the camera keeps the pitch clamp in `src/debug/camUrl.ts`, `parseCamParam`, and ignores roll.
+The debug panel writes back the camera and every look and weathering key it changes, so a copied link still reproduces what the reporter saw. Write-back goes through `src/pageUrl.ts`, `replacePageUrl`, which fires no `hashchange`, so writing back never reloads the page and never adds history entries. The camera writes keep the throttling and change thresholds in `src/debug/camUrl.ts`, `camWriteDue`. Write-back keeps every other key as given and writes keys in a fixed order, so links stay stable and diffable. Restoring the camera keeps the pitch clamp in `src/debug/camUrl.ts`, `parseCamParam`, and ignores roll.
 
-After death, New world keeps the query and the rest of the hash and changes only the hash seed. See `packages/presentation/src/ui/death.ts`.
+After death, New world keeps the query and the rest of the hash and changes only the hash seed. See `src/product/page.ts`, `newWorldHref`.
 
 ## Where each parameter goes
 
@@ -76,31 +75,31 @@ After death, New world keeps the query and the rest of the hash and changes only
 - the weathering profile override in `packages/engine/src/core/weatheringUrl.ts`, `resolveWeatheringUrl`, becomes a mod replacing a profile or the site's profile reference;
 - the tutorial site becomes the tutorial mod.
 
-**To the hash:** cam, at, seed, debug, radius, actors, decals, the look switches in `LOOK_PARAMS`, the weathering tuning fields in `WEATHERING_URL_PARAMS` other than the profile, interactionray, the voice-size probe's pitches, and the debug render knobs wobbleFlat, wobbleNoiseScale and weatheringSplit.
+**To the hash:** every developer key in `src/hashState.ts`, `HASH_KEYS`, among them the look switches in `src/debug/lookUrl.ts`, `LOOK_KEYS`, and the weathering tuning fields in `packages/engine/src/core/weatheringUrl.ts`, `WEATHERING_TUNING_KEYS`.
 
-**To player options:** handedness and the graphics settings in `packages/engine/src/core/graphics.ts`, `GRAPHICS_KNOBS`. Handedness is honoured only under debug in `packages/engine/src/game/config.ts`, `configFromUrl`; as a player option it applies in every game. A test that needs a graphics setting loads a demo mod that replaces the core graphics policy default; see `content.md`, "Graphics policy".
+**To player options:** the graphics settings in `packages/engine/src/core/graphics.ts`, `GRAPHICS_KNOBS`. Handedness is the player's choice when a new character is created, so no link sets it; see `packages/presentation/src/ui/saveController.ts`, `SaveController.launchNewWorld`. A test that needs a graphics setting loads a demo mod that replaces the core graphics policy default; see `content.md`, "Graphics policy".
 
 **Staying as harness query switches:** save-backend, save-test, render, bench, skyRoute and debug-error. They choose the harness, not the game.
 
 **Bench mode:** `bench` stays a harness switch and picks which bench runs; everything else the bench reads follows the same homes as the game.
 
 - Its world setup, the site with its storeys and density and the time of day, becomes demo mods that a bench link names through `?mods=`, including the default bench worlds that `src/bench/run.ts`, `benchRunFromUrl` and `src/bench/shamblers.ts`, `shamblerRunFromUrl` fall back to.
-- Its run settings, the plan, the run index, quick mode, the shambler counts and the post-processing switch, become hash start keys. The seed is the hash seed override.
+- Its run settings, the plan, the run index, quick mode, the shambler counts and the post-processing switch, become hash keys. The seed is the hash seed override.
 - A bench steps to its next run by rewriting the hash and reloading, keeping the query, so each run loads the same mods. See `src/bench/run.ts`, `nextUrl`.
 
 **Out of scope:** the site map and vehicle spike pages keep their own parameters.
 
-The game entry rejects any query parameter other than `mods`, `modpanel` and the harness switches with a visible startup error naming it.
+The game entry stops startup with a visible error naming any query parameter other than `mods`, the harness switches and the parameters whose home does not exist yet, and any hash it refuses; see `src/pageUrl.ts`, `UNHOMED_QUERY`, and `src/main.ts`. Each slice that gives a parameter its home removes it from that list, so a script a slice missed fails at startup.
 
 ## Browser scripts and CI
 
-Browser scripts stop concatenating query strings. One helper under `test/browser` builds a game URL from a mod list, a hash object and harness switches, so the format lives in one place. Each slice moves every browser script, CI workflow and playtest URL that uses a parameter it moves, so each slice lands green on its own. Among them are `.github/workflows/deadvox-browser.yml`, `tools/publish-playtest.mjs` and `test/site-launcher.test.mjs`. The rejection of unknown parameters lands last and then catches any script a slice missed.
+Browser scripts stop concatenating query strings. One helper under `test/browser` builds a game URL from a mod list, a hash object and harness switches, so the format lives in one place. Each slice moves every browser script, CI workflow and playtest URL that uses a parameter it moves, so each slice lands green on its own. Among them are `.github/workflows/deadvox-browser.yml`, `tools/publish-playtest.mjs` and `test/site-launcher.test.mjs`. The rejection of unknown parameters then catches any script a slice missed. A stage that needs a fixture switch sets a page global from an init script rather than a query parameter, since the game refuses any parameter it does not read.
 
 ## Slices
 
 The slices preserve each later slice's URLs while migrating one concern at a time. Their delivery must obey `docs/decisions/0009-content-defined-products.md`, "Refactor gate": use an existing PR or wait until the refactor is executed. Start state comes first so the flashlight demo proves the mod path before other setup moves onto it. Tests follow `AGENTS.md`, "Tests": extend an existing flow rather than adding a browser stage.
 
 1. **Start state and URL mod loading.** Build URL mod loading on the admitted new-game path in `packages/engine/src/core/startState.ts`, `applyStartState`: the remaining work is the demo source root, `?mods=` admitting demo mods and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
-2. **Hash state.** The parser, bounds and schema; the browser URL helper; the camera, look switches, weathering tuning, interaction ray, debug, radius and the other hash keys moved to the hash, with write-back of the camera and the panel's live keys. The bench run settings move to the hash, with the bench's `nextUrl` functions and the scripts that start a bench. Query selectors gated on debug read it from the hash. `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`, carries radius and actors in the hash instead of clearing it. `test/browser/gauntlet-flow.mjs` and `test/browser/save-storage.mjs` drop route-fixture and save-lock-holder, which nothing in the game reads.
-3. **World setup to mods.** Prepared debug inventory, wounds and skill levels belong in mod-owned start rows. Site, time, storeys, density, seed and the weathering profile leave the query for demo mods, with the playtest publisher and CI workflows that use them. The seed moves into the start row, with its hash override, and New world changes the hash seed. The bench's world setup becomes demo mods. The voice-size probe in `packages/engine/src/game/actorAudio.ts` gates on the started layout instead of the site parameter. The tutorial becomes a bundled mod: `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialRequested`, detects it from the loaded start row instead of `site=tutorial`, and `tutorialUrl` selects it through `?mods=`.
-4. **Player options and rejection.** Handedness and graphics leave the URL. Kept separate because it adds options UI, which slices 1 to 3 do not need. Rejection of unknown query parameters lands here, once every parameter this plan moves has left the query with the scripts that use it.
+2. **Hash state.** The game page reads its developer keys from the hash through `src/pageUrl.ts`, `pageUrl`, and the debug panel writes them back; the remaining work is the hash bounds in `docs/url-mods.md`, "Hash state", the browser URL helper, and the bench run settings moving to the hash with the bench's `nextUrl` functions and the scripts that start a bench.
+3. **World setup to mods.** Prepared debug inventory, wounds and skill levels belong in mod-owned start rows. Site, time, storeys, density and the weathering profile leave the query for demo mods, with the playtest publisher and CI workflows that use them. The seed moves into the start row, with its hash override, and New world changes the hash seed. The bench's world setup becomes demo mods. The voice-size probe in `packages/engine/src/game/actorAudio.ts` gates on the started layout instead of the site parameter. The tutorial becomes a bundled mod: `packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialRequested`, detects it from the loaded start row instead of `site=tutorial`, and `tutorialUrl` selects it through `?mods=`.
+4. **Player options.** Graphics leaves the URL. Kept separate because it adds options UI, which slices 1 to 3 do not need. Once every parameter this plan moves has left the query with the scripts that use it, `src/pageUrl.ts`, `UNHOMED_QUERY`, is empty and goes.

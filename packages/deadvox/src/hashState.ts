@@ -1,4 +1,4 @@
-// Developer state in the game page's hash: one object in a relaxed JSON form, as in `#{cam:[1.5,2,3,90,0],debug:true}`.
+// Developer state in the game page's hash: one object in a relaxed JSON form, as in `#{debug:true,cam:[1.5,2,3,90,0,0]}`.
 // Why it is relaxed JSON, written back in a fixed order: `docs/decisions/0006-url-mods-and-hash-state.md`,
 // "Reasons for the details". This file loads no package, so a consumer that runs without an install can load it.
 

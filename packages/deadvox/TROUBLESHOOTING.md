@@ -28,7 +28,7 @@ A frozen page can hold the lock, so the last committed generation is the recover
 
 ## Debug and rendering
 
-`?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/product/controls.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
+The hash `debug` key (`#{debug:true}`) is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/product/controls.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
 
 Gun-pose diagnostics use the player's normal readiness and anatomical solver, not
 a mannequin copy, so the inspected pose represents play. Detached flight must not
@@ -41,9 +41,9 @@ Use transient world-space primitives for spatial diagnostics rather than a one-o
 
 The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or the target F would pick, within reach. Its cross sits outside the hit: along the surface normal for blocks, or back along the ray for targets without a normal. See `src/debug/index.ts`, `drawInteractionRay`, and `packages/engine/src/game/handUse.ts`, `interactionTargetAt`.
 
-Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `packages/engine/src/core/weatheringUrl.ts`.
+Look and camera settings are copied from the URL hash, making a reported pose reproducible. Use `tools/render-probe.mjs` with a hash `cam` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `packages/engine/src/core/weatheringUrl.ts`.
 
-Compare beam spill at the same nighttime camera pose with `?torchspill=0` for the plain cone and `?torchspill=1` for the blended profile. Reload between comparisons because the shared shader is installed before materials compile. See `packages/presentation/src/render/playView.ts`, `createPlayView`.
+Compare beam spill at the same nighttime camera pose with the hash `torchspill:false` for the plain cone and `torchspill:true` for the blended profile. Editing the hash reloads the page, which the comparison needs because the shared shader is installed before materials compile. See `packages/presentation/src/render/playView.ts`, `createPlayView`.
 
 Software-rendered browser contracts should exercise logic without paying renderer startup cost. Use render-free mode for DOM/input/simulation assertions and pixel mode only for visual witnesses. A stage that checks a frame-applied effect must wait for that effect before asserting. See `test/browser/stage-mode.mjs`, `modes`, and `tools/ui-browser-contract.mjs`.
 

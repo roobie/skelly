@@ -1,4 +1,4 @@
-// The spawn menu (G, with ?debug=1): a development tool that makes any item in the
+// The spawn menu (G, with the hash `debug` key): a development tool that makes any item in the
 // content and drops it at your feet, for looking at models and trying things out
 // without hunting through the world's furniture.
 

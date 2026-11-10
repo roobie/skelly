@@ -1,5 +1,5 @@
 // Draws zombies as their built actor figures instead of ActorMeshes' six boxes — the default behind
-// `?actors=detailed` (GameConfig.actors; `?actors=boxes` selects the fallback; see `packages/engine/src/game/config.ts`).
+// the hash `actors` key (GameConfig.actors; `actors:boxes` selects the fallback; see `packages/engine/src/game/config.ts`).
 // Same shape as ActorMeshes
 // (group/sync/…, see ActorRenderer below) so play.ts can hold either behind one variable.
 //

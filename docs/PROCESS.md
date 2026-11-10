@@ -117,7 +117,7 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
 - **deadvox:** every look runs from a fixture start that prepares the test: a debug-only start
   in a test-house debug mod whose site spawns the maintainer beside the target, with the gear
   the check needs already in hand. The look link selects it
-  (`/?debug=1&start=<fixture start>&mods=<debug mod>`). Reason: a look spends the tester's time
+  (`/?start=<fixture start>&mods=<debug mod>#{debug:true}`). Reason: a look spends the tester's time
   on the check, not on setup. A start cannot hand over a loaded weapon until #1570, so a look
   that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
 - **deadvox debug, review and test starts give every skill its top level.** Each builds on
