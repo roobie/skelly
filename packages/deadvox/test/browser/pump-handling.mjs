@@ -6,7 +6,6 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
-import { PLAYER } from '../playerFixture.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
@@ -71,6 +70,8 @@ const vite = await createStageServer({
 });
 let browser;
 try {
+  // The fixture reaches the engine's test-only subpath, which only the stage server's resolution enables.
+  const { PLAYER } = await vite.ssrLoadModule('/test/playerFixture.ts');
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');

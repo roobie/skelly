@@ -282,7 +282,10 @@ test-only surface keeps product code on the curated entries without growing the 
 to serve tests. Two places enable the condition: the deadvox Vitest config, and the dev
 servers browser stages create. Browser stages are test runs too, so their fixtures and
 page code share the unit tests' test-only surface; all of them create their server in one
-place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. The
+place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. A stage's
+own Node process loads a fixture that reaches the subpath through that server, never by a
+plain import, so the stage server is the one owner that enables the condition for all
+stage code; see `packages/deadvox/test/browser/pump-handling.mjs`. The
 product dev server and the product build never enable it, so they cannot resolve the
 subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a
 product file that imports a non-entry subpath or reaches the package's files by path; see
