@@ -3,8 +3,9 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { CrouchProneInput, dispatchReplayStanceAction, type StanceReplayAction } from '../src/game/crouchProneInput.ts';
-import { BindingRegistry, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
+import { BindingRegistry, CrouchProneInput } from '@skelly/engine/input';
+import { dispatchReplayStanceAction, type StanceReplayAction } from '@skelly/engine/internal/game/crouchProneInput.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const holdMs = BUNDLED_CONTENT.registry.senses.get('player')!.crouchProneHoldRealSeconds * 1000;
 

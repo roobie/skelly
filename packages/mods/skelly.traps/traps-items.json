@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "category": "tool",
+      "description": "Steel jaws on a spring. It shuts on whatever steps in it.",
+      "id": "bear_trap",
+      "model": "bear_trap",
+      "name": "Bear trap",
+      "size": [5, 5],
+      "trap": {
+        "actorLegDamage": 60,
+        "disarmSimSeconds": 6,
+        "holdSimSeconds": 20,
+        "playerInjury": {
+          "damage": 25,
+          "kind": "pierce",
+          "region": "leftLeg"
+        },
+        "setSimSeconds": 4
+      },
+      "workInProgress": false
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.materials",
+    "skelly.natural-world",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "electronics-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-electronics.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_wire.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dead_desk_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/field_patch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuse.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/broken_clock.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/broken_toaster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/circuit_board.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_wire.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cracked_phone.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dead_desk_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/electrical_repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/field_patch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuse.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_bulb.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/table_fan.glb"
+    }
+  ],
+  "id": "skelly.electronics",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

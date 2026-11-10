@@ -1,0 +1,46 @@
+{
+  "items": [
+    {
+      "category": "tool",
+      "description": "A light screw jack from a car boot. It raises little, slowly.",
+      "id": "scissor_jack",
+      "model": "scissor_jack",
+      "name": "Scissor jack",
+      "size": [3, 2],
+      "tool": {
+        "qualities": {
+          "jacking": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A hydraulic jack with a short, strong ram.",
+      "id": "bottle_jack",
+      "model": "bottle_jack",
+      "name": "Bottle jack",
+      "size": [2, 3],
+      "tool": {
+        "qualities": {
+          "jacking": 2
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A wheeled floor crane with a hydraulic boom. It takes two hands and a lot of room.",
+      "id": "engine_hoist",
+      "model": "engine_hoist",
+      "name": "Engine hoist",
+      "size": [4, 6],
+      "tool": {
+        "qualities": {
+          "jacking": 3
+        }
+      },
+      "workInProgress": false
+    }
+  ]
+}

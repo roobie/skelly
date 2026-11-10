@@ -1,22 +1,29 @@
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { placedGroundLoot, placedSpawns } from '@skelly/engine/internal/core/templates.ts';
+import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { GauntletSite } from '../src/core/gauntlet.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
-import { placedGroundLoot, placedSpawns } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'gauntlet');
+const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
 
 describe('gauntlet crisis HQ threat and supplies', () => {
   it('is guarded mostly by soldiers and has loot piles lying in its rooms', () => {
     expect(gauntlets.length, 'the registry has a gauntlet scenario').toBeGreaterThan(0);
     for (const scenario of gauntlets) {
-      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+      const site = new ScenarioCitySite({
+        seed: 1,
+        registry,
+        scale,
+        scenario,
+        start: defaultStartOf(registry, scenario),
+      });
       const hq = site.placements.filter((placement) => placement.template.id.includes('crisis_hq'));
       expect(hq.length, `${scenario.id} places the HQ`).toBeGreaterThan(0);
       const markers = hq.flatMap(placedSpawns);
-      const soldiers = markers.filter(({ zombie }) => zombie === 'military_shambler').length;
+      const soldiers = markers.filter(({ actor }) => actor === 'military_shambler').length;
       expect(soldiers, `${scenario.id} HQ soldier markers`).toBeGreaterThan(markers.length - soldiers);
       expect(hq.flatMap(placedGroundLoot).length, `${scenario.id} HQ loot piles`).toBeGreaterThan(0);
     }
@@ -26,12 +33,18 @@ describe('gauntlet crisis HQ threat and supplies', () => {
 describe('gauntlet lab acid zombies', () => {
   it('holds as many acid zombies on each numbered lab storey as its depth, and none in the sewer or elsewhere', () => {
     for (const scenario of gauntlets) {
-      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+      const site = new ScenarioCitySite({
+        seed: 1,
+        registry,
+        scale,
+        scenario,
+        start: defaultStartOf(registry, scenario),
+      });
       // The scenario's storey anchors number the lab from the entry down, independently of any marker, so a
       // storey that lost all its acid zombies still appears with its expected count.
       const storeys = site.plan.composition?.storeys ?? [];
       expect(storeys.length, `${scenario.id} numbers more than one lab storey`).toBeGreaterThan(1);
-      const isAcid = ({ zombie }: { zombie: string }) => zombie === 'acid_zombie';
+      const isAcid = ({ actor }: { actor: string }) => actor === 'acid_zombie';
       const lab = site.placements.filter((placement) => placement.template.id === scenario.serviceTemplate);
       expect(lab.length, `${scenario.id} places the lab`).toBe(1);
       const labAcid = lab.flatMap(placedSpawns).filter(isAcid);

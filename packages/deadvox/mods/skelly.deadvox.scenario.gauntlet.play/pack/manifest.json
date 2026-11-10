@@ -1,0 +1,11 @@
+{
+  "defaultStart": "gauntlet",
+  "dependencies": ["skelly.deadvox.scenario.gauntlet.start"],
+  "files": [],
+  "id": "skelly.deadvox.scenario.gauntlet.play",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

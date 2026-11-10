@@ -16,11 +16,18 @@ jobs:
         working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
           path: tools/jsonnet/bin
           key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -30,38 +37,6 @@ jobs:
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
-      - run: npm run test:sweeps
-
-  gungen:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: packages/gun-authoring-tool
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
-        timeout-minutes: 3
-      - run: npm run test:sweeps
-
-  mobgen:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: packages/mobgen
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
-        timeout-minutes: 3
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       - run: npm run test:sweeps

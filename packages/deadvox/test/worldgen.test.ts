@@ -1,7 +1,6 @@
+import { generateChunk, terrainHeight, terrainHeightMetres } from '@skelly/engine/internal/core/worldgen.ts';
+import { CHUNK, generateColumn, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { generateChunk, generateColumn, terrainHeight, terrainHeightMetres } from '../src/core/worldgen.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 const blocks = { air: 0, grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };
@@ -53,7 +52,7 @@ describe('worldgen', () => {
       const h = terrainHeight(5, shape, half, x, z);
       expect([blocks.grass, blocks.sand]).toContain(at(x, h, z));
       expect(at(x, h + 1, z)).toBe(blocks.air);
-      expect(at(x, h - 6, z)).toBe(blocks.rock);
+      expect(at(x, h - Math.ceil(shape.dirtDepthMetres / half.blockSize) - 1, z)).toBe(blocks.rock);
     }
   });
 
@@ -65,10 +64,20 @@ describe('worldgen', () => {
     expect(top.get(2, 150 - 4 * CHUNK, 2)).toBe(9);
   });
 
-  it('stores chunks that are all one block as a single id', () => {
+  it('stores chunks wholly below or above the height range as a single id', () => {
     const column = generateColumn({ seed: 5, blocks, shape, scale: half }, 0, 0);
-    expect(column[0]?.uniformId).toBe(blocks.rock); // deep underground
-    expect(column.at(-1)?.uniformId).toBe(blocks.air); // sky
-    expect(column.filter((c) => c.uniformId === undefined).length).toBeLessThanOrEqual(2);
+    const s = half.blockSize;
+    const rockBelow = Math.floor(shape.minHeightMetres / s) - Math.ceil(shape.dirtDepthMetres / s);
+    const skyAbove = Math.ceil(shape.maxHeightMetres / s);
+    const below = column.filter((c) => (c.cy + 1) * CHUNK - 1 <= rockBelow);
+    const above = column.filter((c) => c.cy * CHUNK > skyAbove);
+    expect(below.length).toBeGreaterThan(0);
+    expect(above.length).toBeGreaterThan(0);
+    for (const chunk of below) {
+      expect(chunk.uniformId, `chunk ${chunk.cy}`).toBe(blocks.rock);
+    }
+    for (const chunk of above) {
+      expect(chunk.uniformId, `chunk ${chunk.cy}`).toBe(blocks.air);
+    }
   });
 });

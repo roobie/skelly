@@ -6,7 +6,7 @@ name: lint
 # Markdown-only changes skip it: Biome processes no Markdown, and the site test reads none.
 on:
   push:
-    branches: [main]
+    branches: [main, framework/refactor]
     paths-ignore: ['**/*.md']
   pull_request:
     paths-ignore: ['**/*.md']
@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -30,22 +32,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
           path: tools/jsonnet/bin
           key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       - run: npm ci
-      - run: npm ci --prefix packages/deadvox/tools/lit-check
+      - run: npm ci --prefix tools/lit-check
       - name: Install pinned go-jsonnet
         run: npm run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm run assets:setup
       - run: npm run knip
       # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
       # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.

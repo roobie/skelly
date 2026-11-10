@@ -1,16 +1,14 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { CONTACT_SKIN } from '@skelly/engine/internal/core/physics.ts';
+import type { ScenarioDiscovery } from '@skelly/engine/internal/core/scenarioDiscovery.ts';
+import { BlockEntities, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { CONTACT_SKIN } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ScenarioDiscovery } from '../src/core/scenarioDiscovery.ts';
-import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { type MoveIntent, PLAYER } from './playerFixture.ts';
 
@@ -41,6 +39,7 @@ const startSession = ({
 }) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     discovery,
     world: new World(),

@@ -1,27 +1,26 @@
+import type { ActorDef } from '@skelly/engine/content';
+import { hearVocalNoise } from '@skelly/engine/internal/core/agentPerception.ts';
+import { firearmAttachmentResponse } from '@skelly/engine/internal/core/firearmAttachments.ts';
+import { footstepEventForBlock, type PlayerGait } from '@skelly/engine/internal/core/footsteps.ts';
+import type { SimEvent, Timed } from '@skelly/engine/internal/core/sim.ts';
+import { simRate } from '@skelly/engine/internal/core/time.ts';
+import { firearmShotEmission, firearmShotSoundEvents } from '@skelly/engine/internal/game/audioPresentation.ts';
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import { startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
+import type { Item } from '@skelly/engine/inventory';
+import { firearmHandlingFor } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import { createSession, IDLE } from '@skelly/engine/session';
+import type { Actor } from '@skelly/engine/sim';
+import type { SoundEmission, SoundId } from '@skelly/engine/sound';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import type { Engine } from '@skelly/presentation/play';
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
-import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
-import type { Item } from '../src/core/items.ts';
-import { Rng } from '../src/core/random.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
-import type { SimEvent, Timed } from '../src/core/sim.ts';
-import type { SoundId } from '../src/core/soundEvents.ts';
-import type { SoundEmission } from '../src/core/soundPicker.ts';
-import { simRate } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import { hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
-import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
-import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import type { Engine } from '../src/game/engine.ts';
-import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
-import { startPlayerMelee } from '../src/game/melee.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import type { MoveIntent } from './playerFixture.ts';
@@ -30,11 +29,15 @@ const registry = baseRegistry();
 const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
-const shamblerFootstepEvents = new Set<SoundId | undefined>(
-  registry.blocks.map((block) => shamblerFootstepEventForBlock(block)),
+const actorFootstepEvents = new Set<SoundId | undefined>(
+  [...registry.actors.values()].flatMap((actor) =>
+    actor.footstepSound === undefined
+      ? []
+      : registry.blocks.map((block) => footstepEventForBlock(registry, block, actor.footstepSound!)),
+  ),
 );
 
-const blockBlow: ZombieDef['attack']['moves'][number] = {
+const blockBlow: NonNullable<ActorDef['attack']>['moves'][number] = {
   id: 'fixture-blow',
   motion: 'swing',
   weight: 1,
@@ -42,9 +45,9 @@ const blockBlow: ZombieDef['attack']['moves'][number] = {
   damageKind: 'blunt',
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
-const shamblerDef = registry.zombies.get('shambler')!;
-const blockAttacker: ZombieDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
-const meleeSkill = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)!;
+const shamblerDef = registry.actors.get('shambler')!;
+const blockAttacker: ActorDef = { ...shamblerDef, attack: { ...shamblerDef.attack!, moves: [blockBlow] } };
+const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 /**
  * Every roll is a full-block roll and each blocked point costs a fixed share of the starting stamina,
@@ -52,20 +55,31 @@ const playerBody = registry.body.get('player')!;
  */
 const blockContent = {
   ...registry,
+  combatPolicy: new Map(
+    [...registry.combatPolicy].map(([id, policy]) => [
+      id,
+      {
+        ...policy,
+        melee: {
+          ...policy.melee!,
+          blockChanceMinimum: 1,
+          staminaPerAbsorbedPoint: (0.6 * playerBody.needs.spawn.stamina) / blockBlow.damage,
+        },
+      },
+    ]),
+  ),
   skills: new Map([
     ...registry.skills,
     [
-      CORE_CONTENT_IDS.meleeCombat,
+      fixtureIds.meleeCombat,
       {
         ...meleeSkill,
         combat: {
           ...meleeSkill.combat,
           melee: {
             ...meleeSkill.combat!.melee!,
-            blockChanceMinimum: 1,
             blockChanceRange: 0,
             staminaCostFloor: 1,
-            staminaPerAbsorbedPoint: (0.6 * playerBody.needs.spawn.stamina) / blockBlow.damage,
           },
         },
       },
@@ -92,7 +106,7 @@ interface PlayedSound {
 }
 interface ScenarioState {
   intent: MoveIntent;
-  actor?: Zombie;
+  actor?: Actor;
   swingOrigin?: Vec3;
   doorPosition?: Vec3;
   furniturePosition?: Vec3;
@@ -161,6 +175,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     let session: ReturnType<typeof createSession>;
     session = createSession({
       registry: content,
+      actorFigureFiles: stackActorFigureFiles(content),
       world,
       isSolid: (_x, y) => y === 0,
       isOpaque: (_x, y) => y === 0,
@@ -267,7 +282,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const surfaces = new Map<string, string>();
     for (const block of registry.blocks) {
       if (block.solid) {
-        const event = footstepEventForBlock(block);
+        const event = footstepEventForBlock(registry, block, [...registry.senses.values()][0]!.footsteps.family);
         if (event && registry.sounds.has(event) && !surfaces.has(event)) {
           surfaces.set(event, block.id);
         }
@@ -479,7 +494,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'lift and place both scrape',
       played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
     );
-    const { maxSizeMetres, slide } = registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove;
+    const { maxSizeMetres, slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
     const oversized = [...registry.furniture.values()].find(
       (def) =>
         def.container &&
@@ -600,10 +615,10 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
 
   const exerciseFight = (scenario: NoiseScenario) => {
     const { session, world, state, played, advance } = scenario;
-    const shambler = registry.zombies.get('shambler')!;
+    const shambler = registry.actors.get('shambler')!;
     const player = session.body.pos;
-    const id = session.zombies.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
-    state.actor = session.zombieStore.get(id)!;
+    const id = session.actors.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+    state.actor = session.actorStore.get(id)!;
     const health = Object.values(state.actor.regions).reduce((sum, value) => sum + value, 0);
     state.intent = { ...IDLE, useDominant: true };
     advance(30);
@@ -642,20 +657,20 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     observe(
       scenario,
       'chasing shambler footsteps',
-      played.slice(from).some(({ sound }) => shamblerFootstepEvents.has(sound.event)),
+      played.slice(from).some(({ sound }) => actorFootstepEvents.has(sound.event)),
     );
   };
 
   const exerciseBlocks = (scenario: NoiseScenario) => {
     const { session, state, played, advance } = scenario;
     const player = session.body.pos;
-    const id = session.zombies.add(blockAttacker, [player[0], player[1], player[2] - 1], [0, 0, 1]);
-    state.actor = session.zombieStore.get(id)!;
+    const id = session.actors.add(blockAttacker, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+    state.actor = session.actorStore.get(id)!;
     state.blocking = true;
     const blockEvents = ['player_block_full', 'player_block_partial'];
     const blocked = () => blockEvents.every((event) => played.some(({ sound }) => sound.event === event));
     const twoBlowsFrames =
-      Math.ceil((blockAttacker.attack.windupSimSeconds + blockAttacker.attack.cooldownSimSeconds) * 2 * 60) + 120;
+      Math.ceil((blockAttacker.attack!.windupSimSeconds + blockAttacker.attack!.cooldownSimSeconds) * 2 * 60) + 120;
     for (let frame = 0; frame < twoBlowsFrames && !blocked(); frame++) {
       advance(1);
     }
@@ -764,6 +779,7 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   const scale = makeScale(0.5);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: (_x, y) => y === 0,
     isOpaque: (_x, y) => y === 0,
@@ -789,9 +805,15 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   session.sim.paused = false;
   const doorOrigin: Vec3 = [0, 1, 0];
   const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
-  const listenerId = session.zombies.add(registry.zombies.get('shambler')!, [8, 1, 0.5]);
-  const listener = session.zombieStore.get(listenerId)!;
-  expect(listener.mode).toBe('idle');
+  const listenerId = session.actors.add(
+    {
+      ...registry.actors.get('shambler')!,
+      agent: { ...registry.actors.get('shambler')!.agent!, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
+    },
+    [8, 1, 0.5],
+  );
+  const listener = session.actorStore.get(listenerId)!;
+  expect(listener.agent!.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
   session.queue.enqueueAction(DOOR_ACTION, 'Open roller door', handling, { entityUid: door.uid, closing: false });
   for (let frame = 0; frame < 120; frame++) {
@@ -802,10 +824,10 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   if (!noise) {
     throw new Error('Roller-door opening did not commit its noise stimulus');
   }
-  expect(listener.lastVocalNoiseId).toBe(noise.id);
-  expect(listener.mode).toBe('investigate');
-  expect(listener.investigationTier).toBe('near');
-  expect(listener.lastPerceived).toEqual(noise.pos);
+  expect(listener.agent!.lastVocalNoiseId).toBe(noise.id);
+  expect(listener.agent!.mode).toBe('investigate');
+  expect(listener.agent!.investigationTier).toBe('near');
+  expect(listener.agent!.lastPerceived).toEqual(noise.pos);
 });
 
 it('debug test noise reaches a shambler behind a wall and starts its hearing gaze', () => {
@@ -815,6 +837,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     y === 0 || ((Math.abs(x) === 2 || Math.abs(z) === 2) && y >= 1 && y <= 4);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid,
     isOpaque: isSolid,
@@ -846,13 +869,13 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     isOpaque: isSolid,
     groundAt: () => scale.blockSize,
   } as unknown as Engine;
-  expect(spawnUnawareShambler(debugEngine, session.body, session.zombies)).toBe(true);
-  const [id, zombie] = [...session.zombieStore.entries()][0]!;
+  expect(spawnUnawareShambler(debugEngine, session.body, session.actors)).toBe(true);
+  const [id, actor] = [...session.actorStore.entries()][0]!;
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(zombie.mode).not.toBe('chase');
-  expect(zombie.lastPerceived).toBeUndefined();
+  expect(actor.agent!.mode).not.toBe('chase');
+  expect(actor.agent!.lastPerceived).toBeUndefined();
   const events = session.sim.events.reader();
   expect(session.playPlayerSound('player_hurt_light', session.sim.time, { sourceLabel: 'debug test noise' })).toBe(
     true,
@@ -867,12 +890,13 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(zombie.mode).toBe('hesitate');
-  expect(zombie.investigationTier).toBe('near');
-  expect(zombie.lastPerceived).toEqual(noise.pos);
+  expect(actor.agent!.mode).toBe('hesitate');
+  expect(actor.agent!.investigationTier).toBe('near');
+  expect(actor.agent!.lastPerceived).toEqual(noise.pos);
 
   const renderer = new MobActorMeshes(scale.blockSize, 2, {
-    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
+    actors: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
+    actorFigureFiles: stackActorFigureFiles(registry),
   });
   try {
     const camera = new PerspectiveCamera(55, 1, 0.01, 50);
@@ -880,7 +904,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     camera.lookAt(2, 1, 0);
     camera.updateMatrixWorld(true);
     renderer.setCamera(camera);
-    renderer.sync(session.zombieStore, 1 / 20, 1, false, 1, session.sim.time);
+    renderer.sync(session.actorStore, 1 / 20, 1, false, 1, session.sim.time);
     const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(id)!;
     expect(state.lookAtState).not.toEqual([0, 0, 0, 1]);
   } finally {
@@ -893,6 +917,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   const world = new World();
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid: (_x, y) => y === 0,
     isOpaque: (_x, y) => y === 0,
@@ -916,27 +941,27 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
     },
   });
   session.sim.paused = false;
-  const shambler = registry.zombies.get('shambler');
+  const shambler = registry.actors.get('shambler');
   if (!shambler) {
     throw new Error('Missing shambler fixture');
   }
-  session.zombies.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
+  session.actors.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
   session.frame(0.5);
-  const members = () => [...session.zombieStore.entries()].filter(([, zombie]) => zombie.hordeId === 'noise-fixture');
+  const members = () =>
+    [...session.actorStore.entries()].filter(([, actor]) => actor.agent!.hordeId === 'noise-fixture');
   const meanX = () => {
     const group = members();
-    return group.reduce((total, [, zombie]) => total + zombie.body.pos[0] / group.length, 0);
+    return group.reduce((total, [, actor]) => total + actor.body.pos[0] / group.length, 0);
   };
   expect(members().length).toBeGreaterThan(0);
-  expect(members().every(([, zombie]) => zombie.tier === 'background')).toBe(true);
+  expect(members().every(([, actor]) => actor.tier === 'background')).toBe(true);
   const before = meanX();
   const shotgun = registry.sounds.get('shotgun_blast')!;
-  const shotgunRadius = shotgun.noise.radiusMetres * shambler.hearing;
+  const shotgunRadius = shotgun.noise.radiusMetres * shambler.agent!.hearing;
   const groupDistance = Math.max(
     ...members().map(
-      ([, zombie]) =>
-        Math.hypot(zombie.body.pos[0] - session.body.pos[0], zombie.body.pos[2] - session.body.pos[2]) *
-        scale.blockSize,
+      ([, actor]) =>
+        Math.hypot(actor.body.pos[0] - session.body.pos[0], actor.body.pos[2] - session.body.pos[2]) * scale.blockSize,
     ),
   );
   expect(groupDistance).toBeLessThan(shotgunRadius);
@@ -951,8 +976,8 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
     session.frame(1 / 60);
   }
 
-  const horde = session.zombies.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
-  expect(members().every(([, zombie]) => zombie.lastVocalNoiseId === noise.id)).toBe(true);
+  const horde = session.actors.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
+  expect(members().every(([, actor]) => actor.agent!.lastVocalNoiseId === noise.id)).toBe(true);
   expect(horde?.lastNoiseId).toBe(noise.id);
   expect(horde?.mode).toBe('noise');
   expect(horde?.target[0]).toBeLessThan(before);
@@ -963,6 +988,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
   const scale = makeScale(0.5);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: (_x, y) => y === 0,
     isOpaque: (_x, y) => y === 0,
@@ -985,7 +1011,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
       throw new Error('Unexpected reading in firearm hearing-range fixture');
     },
   });
-  const shambler = registry.zombies.get('shambler');
+  const shambler = registry.actors.get('shambler');
   const tuning = registry.senses.get('player');
   if (!(shambler && tuning)) {
     throw new Error('Missing shambler hearing fixture');
@@ -1045,10 +1071,10 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
     expect(noise.radiusMetres).toBe(registry.sounds.get(event)!.noise.radiusMetres * noiseRadiusScale);
     expect(noise.radiusMetres / unsuppressedBase).toBe(attachmentNoiseFactor);
 
-    const farReachMetres = noise.radiusMetres * shambler.hearing * shambler.hearingModel.farMultiplier;
+    const farReachMetres = noise.radiusMetres * shambler.agent!.hearing * shambler.agent!.hearingModel.farMultiplier;
     const hearAtDistance = (distanceMetres: number) =>
       hearVocalNoise({
-        zombie: shambler,
+        def: shambler,
         from: [noise.pos[0] + distanceMetres / scale.blockSize, noise.pos[1], noise.pos[2]],
         noise,
         time: session.sim.time,

@@ -1,22 +1,28 @@
 import process from 'node:process';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import type { Site } from '@skelly/engine/internal/core/site.ts';
+import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
+import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
+import {
+  BlockEntities,
+  CHUNK,
+  generateColumn,
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+  World,
+} from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
-import type { Site } from '../src/core/site.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
-import type { SkyBounds } from '../src/core/skylight.ts';
-import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '../src/core/skySnapshot.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';
 
 // biome-ignore lint/style/noProcessEnv: the build is timed only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
+const benchmarking = process.env.SKELLY_BENCH === '1';
 const BENCH_RUNS = 5;
 // A hang guard, about fifteen times the bench's measured run; the bench reports timings and asserts none.
 const BENCH_TIMEOUT_MS = 60_000;
@@ -98,7 +104,10 @@ const benchRange = { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK
 const largestAuthoredField = (): { site: Site; box: SkyBounds } => {
   const sites: Site[] = [
     ...[...registry.layouts.values()].map((layout) => new AuthoredSite(seed, registry, scale, layout)),
-    ...[...registry.scenarios.values()].map((scenario) => new GauntletSite({ seed, registry, scale, scenario })),
+    ...[...registry.scenarios.values()].map(
+      (scenario) =>
+        new ScenarioCitySite({ seed, registry, scale, scenario, start: defaultStartOf(registry, scenario) }),
+    ),
   ];
   const cells = ({ min, max }: SkyBounds) => max.reduce((product, value, axis) => product * (value - min[axis]!), 1);
   const candidates = sites.flatMap((owner) =>

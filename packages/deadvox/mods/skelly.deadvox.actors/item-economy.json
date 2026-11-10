@@ -1,0 +1,40 @@
+{
+  "itemEconomy": [
+    {
+      "id": "shambler_torso",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_head",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_left_arm",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_right_arm",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_left_leg",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "shambler_right_leg",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    }
+  ]
+}

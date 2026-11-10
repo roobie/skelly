@@ -1,20 +1,18 @@
-import { afterEach, expect, it, vi } from 'vitest';
-import type { EntitySpec } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { columnArrival } from '../src/game/columnArrival.ts';
-import { configFromUrl } from '../src/game/config.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
+import { CHUNK, Chunk, columnArrival, createWorldSetup, toChunk, type WorldSetup } from '@skelly/engine/world';
+import { ChunkMeshes } from '@skelly/presentation/render';
+import { contentLookup } from '@skelly/presentation/ui';
+import { expect, it, vi } from 'vitest';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
-
-afterEach(() => vi.unstubAllGlobals());
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { startedOn } from './fixtures/startupContent.ts';
 
 const content = startupContent();
 const { registry } = content;
@@ -42,14 +40,8 @@ const cx = toChunk(crate.pos[0]);
 const cz = toChunk(crate.pos[2]);
 
 const worldSetup = (): WorldSetup => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
-  const config = configFromUrl(new URLSearchParams('site=testHouse'), content);
-  const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  const config = configFromUrl(new URLSearchParams(), {}, startedOn(content, 'testHouse'), ragdollSweepViewer);
+  const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const chunk = new Chunk(cx, 0, cz);
   for (let z = 0; z < CHUNK; z++) {
     for (let x = 0; x < CHUNK; x++) {
@@ -63,6 +55,7 @@ const worldSetup = (): WorldSetup => {
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: source.world,
     entities: source.entities,
     isSolid: source.isSolid,

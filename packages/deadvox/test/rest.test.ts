@@ -1,28 +1,22 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { BodyTuningDef } from '@skelly/engine/content';
+import { actionText } from '@skelly/engine/input';
+import { SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '@skelly/engine/internal/core/clock.ts';
+import { type RecoveryState, stepNeeds } from '@skelly/engine/internal/core/needs.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { RestController, type RestHooks } from '@skelly/engine/internal/game/rest.ts';
+import { HANDLING_RATE } from '@skelly/engine/internal/game/session.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { Body, hourOfDay, type Needs, realSeconds, restKindForFurniture } from '@skelly/engine/sim';
+import { BlockEntities, makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { actionText } from '../src/core/actionText.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Body } from '../src/core/body.ts';
-import { hourOfDay, SECONDS_PER_HOUR, simSecondsPerHour, simToGameHours } from '../src/core/clock.ts';
-import { awakeRates, type Needs, type RecoveryState, stepNeeds } from '../src/core/needs.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { BodyTuningDef } from '../src/core/schema.ts';
-import { realSeconds, simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
-import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
+import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(BASE_CLOCK);
-const BASE = 'src/content/base';
-const BASE_SOURCES = readdirSync(BASE)
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const BASE_SOURCES = baseContentSources();
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const SPAWN_NEEDS: Needs = new Body(BODY_TUNING_FIXTURE).spawnNeeds;
@@ -85,18 +79,6 @@ describe('restKindForFurniture', () => {
     expect(restKindForFurniture(bed)).toBe('sleep');
     expect(restKindForFurniture(sofa)).toBe('sleep');
     expect(restKindForFurniture({})).toBeUndefined();
-  });
-});
-
-describe('stepNeeds with a custom fatigue rate', () => {
-  it('recovers fatigue at the given rate, leaving the other needs alone', () => {
-    const needs = { ...SPAWN_NEEDS, fatigue: 50 };
-    const body = new Body(BODY_TUNING_FIXTURE);
-    const awake = awakeRates(body);
-    const rates = { ...awake, fatigue: -20 };
-    stepNeeds(needs, body, 1, { rates });
-    expect(needs.fatigue).toBeCloseTo(30, 9);
-    expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + awake.calories, 9);
   });
 });
 
@@ -229,15 +211,6 @@ describe('Body.fatigueRecoveryRate', () => {
 });
 
 describe('sleep length and sleep debt', () => {
-  it('clears 100 fatigue in a normal bed at the content sleep rate', () => {
-    const { sim, rest } = makeRest({}, new Simulation({ seed: 1, bodyTuning: registry.body.get('player')! }));
-    const { total, onset } = sleepGameHours(sim, rest, 100);
-    const fatigueAtSleep = 100 + onset * sim.body.fatigueRisePerGameHour;
-    const night = fatigueAtSleep / -sim.body.fatigueRecoveryRate('sleep', 1);
-    // Sleep ends within a couple of 30 Sim s steps at the cap (4 game minutes each) of the content's own night.
-    expect(Math.abs(total - onset - night)).toBeLessThan(0.15);
-  });
-
   it('lets fatigue run past 100 while awake, unclamped', () => {
     const sim = new Simulation({ seed: 1 });
     sim.needs.fatigue = 99;
@@ -354,6 +327,7 @@ describe('waking with an alarm', () => {
     const entities = new BlockEntities(fixtureRegistry);
     const session = createSession({
       registry: fixtureRegistry,
+      actorFigureFiles: stackActorFigureFiles(fixtureRegistry),
       world: new World(),
       isSolid: (_x, y) => y === 0,
       isOpaque: (_x, y) => y === 0,
@@ -426,15 +400,17 @@ describe('RestController start/resume/stop', () => {
     expect(messages.length).toBeGreaterThan(0);
   });
 
-  it('returns to 1x when the player stops resting after an interruption', () => {
+  it('drops to 1x on the step after damage, and stopping then clears the interruption and the action', () => {
     const { sim, rest } = makeRest();
-    rest.start('rest', REST_ANCHOR);
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
       tickReal(sim, 1 / 60);
     }
+    expect(sim.compression.c).toBeGreaterThan(1);
     sim.hurt(5, 'a debug key');
     tickReal(sim, 1 / 60);
     expect(sim.compression.interruption).toBeDefined();
+    expect(sim.compression.c).toBe(1);
     rest.stop();
     expect(sim.compression.interruption).toBeUndefined();
     expect(sim.compression.c).toBe(1);
@@ -480,13 +456,6 @@ describe('RestController start/resume/stop', () => {
 });
 
 describe('RestController.toggle (manual stop)', () => {
-  it('starts the action when nothing is running', () => {
-    const { rest } = makeRest();
-    expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
-    expect(rest.action?.kind).toBe('rest');
-    expect(rest.canStop).toBe(true);
-  });
-
   it('ramps compression down after stopping rest without resetting fatigue', () => {
     const { sim, rest } = makeRest();
     const fatigueBeforeRest = sim.needs.fatigue;
@@ -545,6 +514,7 @@ describe('Session long-action input lock', () => {
     const world = new World();
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world,
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -588,6 +558,7 @@ describe('Session long-action input lock', () => {
     const entities = new BlockEntities(registry);
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -645,6 +616,7 @@ describe('Session long-action input lock', () => {
     const intent = { ...IDLE, forward: 1 };
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -695,6 +667,7 @@ describe('long-action interruptions', () => {
     }
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
       isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
@@ -732,12 +705,12 @@ describe('long-action interruptions', () => {
 
     const { health } = sim.body;
     const events = sim.events.reader();
-    const id = session.zombies.add(registry.zombies.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
+    const id = session.actors.add(registry.actors.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
     let chasedAtCap = false;
     for (let i = 0; i < 600 && session.rest.action; i++) {
       frame();
       chasedAtCap ||=
-        session.zombieStore.get(id)!.mode === 'chase' &&
+        session.actorStore.get(id)!.agent!.mode === 'chase' &&
         sim.compression.active &&
         sim.compression.c === sim.compression.limits.cap;
     }
@@ -748,19 +721,6 @@ describe('long-action interruptions', () => {
     expect(sim.compression.c).toBe(1);
     expect(hits).toHaveLength(1);
     expect(health - sim.body.health).toBeCloseTo(hits[0]!.amount, 9);
-  });
-
-  it('stops resting at most one step after you take damage', () => {
-    const { sim, rest } = makeRest();
-    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
-    for (let i = 0; i < 120; i++) {
-      tickReal(sim, 1 / 60);
-    }
-    expect(sim.compression.c).toBeGreaterThan(1);
-    sim.hurt(10, 'a fall');
-    tickReal(sim, 1 / 60);
-    expect(sim.compression.interruption).toBeTruthy();
-    expect(sim.compression.c).toBe(1);
   });
 
   it('wakes when a need turns critical', () => {

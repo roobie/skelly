@@ -1,4 +1,26 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared arm-chain assertions are called only by tests.
+
+import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '@skelly/engine/content';
+import { leanFrame } from '@skelly/engine/internal/core/lean.ts';
+import { meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { insideLensAperture } from '@skelly/engine/internal/core/opticView.ts';
+import { playerLookLean } from '@skelly/engine/internal/core/playerLookPose.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import {
+  meleePoseAndContact,
+  NEUTRAL_AIM,
+  opticViewSettings,
+  type PlayerStance,
+  playerAdsPose,
+  playerEyePosition,
+  readyMeleePose,
+} from '@skelly/engine/pose';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { ARM_NODE, type ArmRig } from '@skelly/presentation/internal/render/armRig.ts';
+import { renderMeleePose } from '@skelly/presentation/internal/render/meleePose.ts';
+import { FIGURE_PIVOT, firstPersonShoulder } from '@skelly/presentation/internal/render/playerFigure.ts';
+import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   BoxGeometry,
@@ -20,24 +42,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { leanFrame } from '../src/core/lean.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
-import { insideLensAperture, opticViewSettings } from '../src/core/opticView.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerEyePosition, playerLookLean } from '../src/core/playerLookPose.ts';
-import type { PlayerStance } from '../src/core/playerStance.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/core/schema.ts';
-import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { renderMeleePose } from '../src/render/meleePose.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { FIGURE_PIVOT, firstPersonShoulder, PlayerMeshes } from '../src/render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -427,7 +431,7 @@ describe('held light presentation', () => {
       version: 0,
       has: () => false,
       heldLook: () => ({ root: modelRoot.clone(), parts: [], slots: {} }),
-    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
     const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     held.update(new PerspectiveCamera());
     const { shown } = heldState(held) as { shown: Map<number, Group> };

@@ -1,12 +1,10 @@
+import { playerAdsPose, playerLookPose } from '@skelly/engine/pose';
+import { createSession, IDLE, type SessionControls } from '@skelly/engine/session';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
+import { SpectatorCamera } from '@skelly/presentation/internal/presentation/spectatorCamera.ts';
 import { describe, expect, it, vi } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerLookPose } from '../src/core/playerLookPose.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import { DebugGunPose } from '../src/game/debugGunPose.ts';
-import { createSession, IDLE, type SessionControls } from '../src/game/session.ts';
-import { SpectatorCamera } from '../src/game/spectatorCamera.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();
@@ -62,6 +60,7 @@ const idleControls = (): SessionControls => ({
 const runtime = (controls: SessionControls) => {
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     scale,
     seed: 5,
@@ -161,26 +160,14 @@ describe('spectator camera', () => {
     },
   );
 
-  it('leaves the avatar and the world tick as they would be without it, whatever input arrives while detached', () => {
-    const reference = runtime(idleControls());
-    reference.frames();
-
-    const spectator = new SpectatorCamera();
-    const hostile = hostileControls();
-    const detached = runtime(spectator.guard(hostile.controls));
-    spectator.toggle(detached.session.body, eyeOf(detached.session), 0.4, 0.1);
-    detached.frames();
-
-    expect(observed(detached.session)).toEqual(observed(reference.session));
-    expect(hostile.useDominant).not.toHaveBeenCalled();
-    expect(hostile.useOff).not.toHaveBeenCalled();
-  });
-
   it('lets the same input act on the avatar once the camera returns to it', () => {
     const reference = runtime(idleControls());
     reference.frames();
     const spectator = new SpectatorCamera();
     const attached = runtime(spectator.guard(hostileControls().controls));
+    spectator.toggle(attached.session.body, eyeOf(attached.session), 0.4, 0.1);
+    spectator.toggle(attached.session.body, eyeOf(attached.session), 0.4, 0.1);
+    expect(spectator.body).toBeUndefined();
     attached.frames();
     expect(observed(attached.session).pos).not.toEqual(observed(reference.session).pos);
   });

@@ -1,29 +1,28 @@
+import type { ActorDef } from '@skelly/engine/content';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
+import { worldMeleeBlocker, worldSoundBlocking } from '@skelly/engine/internal/core/collision.ts';
+import { fusedMassStrikeOrigin } from '@skelly/engine/internal/core/fusedMassFigure.ts';
+import { soundOcclusion } from '@skelly/engine/internal/core/soundOcclusion.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { actorPoseInputFor } from '@skelly/engine/pose';
+import { actorAttackReachMetres, PLAYER_CHEST_METRES } from '@skelly/engine/sim';
+import { BlockEntities, makeScale, type Vec3, World, worldOpaque, worldSolid } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { amalgamFigureForType, amalgamStrikeOrigin } from '../src/core/amalgamFigure.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
-import { soundOcclusion } from '../src/core/soundOcclusion.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { type MeleeWeapon, PLAYER_CHEST_METRES, zombieAttackReachMetres } from '../src/core/zombies.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
-const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
+const fixture = (reachMetres = 2.1, moves?: NonNullable<ActorDef['attack']>['moves']) => {
   const registry = baseRegistry();
   const fence = registry.blockIds.get('chain_link')!;
   registry.blocks[fence] = {
     ...registry.blocks[fence]!,
-    meleePass: { motions: ['thrust'], minimumZombieReachMetres: 2 },
+    meleePass: { motions: ['thrust'], minimumActorReachMetres: 2 },
   };
   const world = new World();
   const entities = new BlockEntities(registry);
@@ -44,7 +43,8 @@ const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
   }
   wire(fence);
   const hits: number[] = [];
-  const system = new ZombieSystem({
+  const figures = stackActorFigureFiles(registry);
+  const system = new ActorSystem({
     isSolid: solid,
     isOpaque: opaque,
     isSoundBlocking: soundBlocking,
@@ -62,25 +62,27 @@ const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
     physics: physicsFor(makeScale(0.5)),
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: (damage) => hits.push(damage),
+    actorFigureFiles: figures,
   });
   const type = {
-    ...registry.zombies.get('shambler')!,
+    ...registry.actors.get('shambler')!,
     attack: {
-      ...registry.zombies.get('shambler')!.attack,
+      ...registry.actors.get('shambler')!.attack!,
       reach: reachMetres,
       windupSimSeconds: simSeconds(0.2),
       moves: moves ?? [
-        { ...registry.zombies.get('shambler')!.attack.moves[0]!, id: 'fixture_thrust', motion: 'thrust' },
+        { ...registry.actors.get('shambler')!.attack!.moves[0]!, id: 'fixture_thrust', motion: 'thrust' },
       ],
     },
   };
   const id = system.add(type, [3.5, 1, 0.5], [-1, 0, 0]);
-  const zombie = system.store.get(id)!;
-  const head = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5)).head[0]!.voxelCentroid;
+  const actor = system.store.get(id)!;
+  const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: figures }))
+    .head[0]!.voxelCentroid;
   const origin: Vec3 = [0.5, head[1], 0.5];
   const delta = head.map((coordinate, axis) => coordinate - origin[axis]!) as Vec3;
   const direction = delta.map((coordinate) => coordinate / Math.hypot(...delta)) as Vec3;
-  return { registry, entities, opaque, soundBlocking, wire, hits, system, id, zombie, origin, direction };
+  return { registry, entities, opaque, soundBlocking, wire, hits, system, id, actor, origin, direction };
 };
 
 it('allows a player thrust through wire but rejects swing and wrestle regardless of damage kind', () => {
@@ -108,7 +110,7 @@ it("a player's punch does not pass wire", () => {
 it('keeps shots and their aim display blocked by wire even when thrusting melee can pass', () => {
   const { system, origin, direction, wire } = fixture();
   const weapon: MeleeWeapon = { ...FISTS_MELEE, motion: 'thrust', reach: 10, damage: 1, cooldown: 0, type: 'pierce' };
-  const shot = { origin, directions: [direction], damage: 1, rangeMetres: 10, impulse: 0 };
+  const shot = { damageKind: 'pierce', origin, directions: [direction], damage: 1, rangeMetres: 10, impulse: 0 };
   expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
   expect(system.firePellets(shot).hits).toBe(0);
   wire(0);
@@ -118,9 +120,9 @@ it('keeps shots and their aim display blocked by wire even when thrusting melee 
 
 it('requires enough content-defined zombie reach to start and land a thrust through wire', () => {
   for (const reach of [1.9, 2.1]) {
-    const { system, zombie, hits } = fixture(reach);
+    const { system, actor, hits } = fixture(reach);
     system.tick(1 / 60);
-    expect(zombie.attackWindup > 0).toBe(reach >= 2);
+    expect(actor.attackWindup > 0).toBe(reach >= 2);
     for (let tick = 0; tick < 20; tick++) {
       system.tick(1 / 60);
     }
@@ -129,12 +131,12 @@ it('requires enough content-defined zombie reach to start and land a thrust thro
 });
 
 it('chooses only motion-clear moves at contact when a zombie also has a blocked high-weight move', () => {
-  const template = baseRegistry().zombies.get('shambler')!.attack.moves[0]!;
+  const template = baseRegistry().actors.get('shambler')!.attack!.moves[0]!;
   const thrust = { ...template, id: 'fixture_thrust', motion: 'thrust' as const, damage: 1, weight: 1 };
   const wrestle = { ...template, id: 'fixture_wrestle', motion: 'wrestle' as const, damage: 5, weight: 1000 };
-  const { system, zombie, hits } = fixture(2.1, [wrestle, thrust]);
+  const { system, actor, hits } = fixture(2.1, [wrestle, thrust]);
   system.tick(1 / 60);
-  expect(zombie.attackWindup).toBeGreaterThan(0);
+  expect(actor.attackWindup).toBeGreaterThan(0);
   for (let tick = 0; tick < 20; tick++) {
     system.tick(1 / 60);
   }
@@ -143,35 +145,35 @@ it('chooses only motion-clear moves at contact when a zombie also has a blocked 
 });
 
 it('rechecks the blocker at zombie contact when a solid wall replaces the wire during windup', () => {
-  const { system, zombie, hits, wire, registry } = fixture();
+  const { system, actor, hits, wire, registry } = fixture();
   system.tick(1 / 60);
-  expect(zombie.attackWindup).toBeGreaterThan(0);
+  expect(actor.attackWindup).toBeGreaterThan(0);
   wire(registry.blockIds.get('stone')!);
   for (let tick = 0; tick < 20; tick++) {
     system.tick(1 / 60);
   }
-  expect(zombie.attackWindup).toBe(0);
+  expect(actor.attackWindup).toBe(0);
   expect(hits).toEqual([]);
 });
 
 it('blocks the shambler swing and piercing bite through wire even when their reach is sufficient', () => {
-  const { moves } = baseRegistry().zombies.get('shambler')!.attack;
+  const { moves } = baseRegistry().actors.get('shambler')!.attack!;
   expect(moves.length).toBeGreaterThan(0);
   for (const move of moves) {
-    const { system, zombie, hits, wire } = fixture(2.1, [move]);
+    const { system, actor, hits, wire } = fixture(2.1, [move]);
     system.tick(1 / 60);
-    expect(zombie.attackWindup).toBe(0);
+    expect(actor.attackWindup).toBe(0);
     for (let tick = 0; tick < 20; tick++) {
       system.tick(1 / 60);
     }
     expect(hits).toEqual([]);
     wire(0);
     system.tick(1 / 60);
-    expect(zombie.attackWindup).toBeGreaterThan(0);
+    expect(actor.attackWindup).toBeGreaterThan(0);
   }
 });
 
-it('admits the amalgam tentacle thrust only when its reach clears the wire threshold', () => {
+it('admits the fused-mass tentacle thrust only when its reach clears the wire threshold', () => {
   for (const admits of [false, true]) {
     const registry = baseRegistry();
     const world = new World();
@@ -180,7 +182,7 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
     const physical = (x: number, y: number, z: number) => y === 0 || movement(x, y, z);
     let playerPos: Vec3 = [0, 1, 8];
     const hits: number[] = [];
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       isSolid: physical,
       isOpaque: worldOpaque(world, registry, entities),
       meleeBlocker: worldMeleeBlocker(world, registry, { entities, physical }),
@@ -197,13 +199,15 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: (damage) => hits.push(damage),
+      actorFigureFiles: stackActorFigureFiles(registry),
     });
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const id = system.add(type, [0, 1, 0], [0, 0, 1]);
-    const zombie = system.store.get(id)!;
-    const reach = zombieAttackReachMetres(zombie);
-    const origin = amalgamStrikeOrigin(amalgamFigureForType(type, zombie.figureSeed), zombie.facing).map(
-      (value, axis) => value / 0.5 + zombie.body.pos[axis]!,
+    const actor = system.store.get(id)!;
+    const built = system.figureFor(type, actor.figureSeed);
+    const reach = actorAttackReachMetres(actor, built.body);
+    const origin = fusedMassStrikeOrigin(built.fusedMass!, actor.facing).map(
+      (value, axis) => value / 0.5 + actor.body.pos[axis]!,
     ) as Vec3;
     playerPos = [origin[0], origin[1] - PLAYER_CHEST_METRES / 0.5, origin[2] + (reach * 0.9) / 0.5];
     const fence = registry.blockIds.get('chain_link')!;
@@ -211,7 +215,7 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
       ...registry.blocks[fence]!,
       meleePass: {
         motions: ['thrust'],
-        minimumZombieReachMetres: reach + (admits ? -0.1 : 0.1),
+        minimumActorReachMetres: reach + (admits ? -0.1 : 0.1),
       },
     };
     const plane = Math.floor((origin[2] + playerPos[2]) / 2);
@@ -221,8 +225,8 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
       }
     }
     system.tick(1 / 60);
-    expect(zombie.attackWindup > 0).toBe(admits);
-    for (let tick = 0; tick <= Math.ceil(type.attack.windupSimSeconds * 60); tick++) {
+    expect(actor.attackWindup > 0).toBe(admits);
+    for (let tick = 0; tick <= Math.ceil(type.attack!.windupSimSeconds * 60); tick++) {
       system.tick(1 / 60);
     }
     expect(hits.length > 0).toBe(admits);

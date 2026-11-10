@@ -1,9 +1,9 @@
+import { rollLoot } from '@skelly/engine/internal/core/loot.ts';
+import type { FixedLootItemDef } from '@skelly/engine/internal/core/schema.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import { describe, expect, it } from 'vitest';
-import inventoryContent from '../src/content/base/inventory.json' with { type: 'json' };
-import { Inventory } from '../src/core/inventory.ts';
-import { rollLoot } from '../src/core/loot.ts';
-import { Rng } from '../src/core/random.ts';
-import type { FixedLootItemDef } from '../src/core/schema.ts';
+import inventoryContent from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
 import { buildFixtureRegistry, fixtureLootPoint } from './economyFixtures.ts';
 import { RESULT, STOCK, VESSEL } from './liquidCraftFixture.ts';
 import { liquidRecoveryData } from './liquidRecoveryFixture.ts';

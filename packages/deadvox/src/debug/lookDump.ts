@@ -1,10 +1,9 @@
 // Records the current look (tone mapping, exposure, colour decode, mood pass, fogginess, game time) with where
 // and on what build it was seen, as a JSON file the operator can keep next to a screenshot.
 
-import type { Vec3 } from '../core/coords.ts';
-import type { MoodState, ShadowState } from '../core/mood.ts';
-import type { DrawSubmission } from '../render/drawCounters.ts';
-import type { FrameSummary } from '../render/frameTimes.ts';
+import type { MoodState, ShadowState } from '@skelly/engine/look';
+import type { Vec3 } from '@skelly/engine/world';
+import type { DrawSubmission, FrameSummary } from '@skelly/presentation/render';
 import { camValue } from './camUrl.ts';
 
 export interface LookDumpInput {
@@ -87,15 +86,15 @@ export const lookDump = (input: LookDumpInput) => ({
     positionM: input.positionM.map((v) => round(v, 2)),
     yawRad: round(input.yawRad, 3),
     pitchRad: round(input.pitchRad, 3),
-    /** The `?cam=` value that returns to this view (camUrl.ts). */
+    /** The hash `cam` value that returns to this view (camUrl.ts). */
     cam: camValue({ position: input.positionM, yaw: input.yawRad, pitch: input.pitchRad, roll: input.rollRad }),
   },
 });
 
-/** `deadvox-look-YYYYMMDD-HHMMSS.json`, in the operator's local time. */
+/** `skelly-look-YYYYMMDD-HHMMSS.json`, in the operator's local time. */
 export const lookDumpFilename = (now: Date): string => {
   const two = (n: number) => String(n).padStart(2, '0');
   const date = `${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}`;
   const time = `${two(now.getHours())}${two(now.getMinutes())}${two(now.getSeconds())}`;
-  return `deadvox-look-${date}-${time}.json`;
+  return `skelly-look-${date}-${time}.json`;
 };

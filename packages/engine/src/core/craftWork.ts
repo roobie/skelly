@@ -1,0 +1,158 @@
+// Native craft effects and live admission. Item progress/inputs stay Inventory-owned.
+
+import { type Character, dominantSide, offSide } from './character.ts';
+import type { Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
+import { admissionRefusal } from './crafting.ts';
+import { planDisassembly, sameDisassemblyOutputs } from './disassembly.ts';
+import { type Inventory, validateWorkItem } from './inventory.ts';
+import type { Item } from './items.ts';
+import type { CraftActionHooks } from './longAction.ts';
+import type { ReachSnapshot } from './reach.ts';
+import { recipeSkillRequirements } from './recipeSkills.ts';
+import { craftingActivityTier } from './skillTraining.ts';
+import { gameSecondsToMinutes } from './time.ts';
+
+const inputsValid = (inventory: Inventory, item: Item): boolean => {
+  try {
+    validateWorkItem(inventory.registry, item);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const entityRepairRefusal = (
+  inventory: Inventory,
+  uid: number,
+  entityType: string | undefined,
+  amount: number,
+): string | undefined => {
+  const entity = inventory.entities.byUid(uid);
+  if (!entity || entity.type !== entityType || !inventory.entities.canRepair(entity, amount)) {
+    return coreMessage(inventory.registry, 'repairTargetGone');
+  }
+  return (
+    inventory.entities.useRefusal(entity) ??
+    (inventory.canReachEntity(entity) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'))
+  );
+};
+
+const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnapshot): string | undefined => {
+  const destination = item.work?.repairTarget;
+  if (destination === undefined) {
+    return undefined;
+  }
+  if (destination.kind === 'entity') {
+    const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
+    return entityRepairRefusal(inventory, destination.uid, recipe?.repair?.entity, item.work?.repairAmount ?? 0);
+  }
+  const target = inventory.itemByUid(destination.uid);
+  const { work } = item;
+  const { registry } = inventory;
+  if (work?.kind !== 'craft') {
+    return coreMessage(registry, 'repairTargetGone');
+  }
+  const recipe = registry.recipes.get(work.recipe);
+  if (!(recipe && target) || target.uid === item.uid || target.type !== recipe.result.item || target.count !== 1) {
+    return coreMessage(registry, 'repairTargetGone');
+  }
+  return reach.entries.some((entry) => entry.item === target)
+    ? undefined
+    : coreMessage(registry, 'repairTargetOutOfReach');
+};
+
+export const craftActionHooks = (
+  inventory: Inventory,
+  character: Character,
+  reach: () => ReachSnapshot,
+  { feet, calendar }: { feet: () => Vec3; calendar: () => number },
+): CraftActionHooks => ({
+  admit: (plan) => {
+    const snapshot = reach();
+    if (plan.kind === 'craft') {
+      const recipe = inventory.registry.recipes.get(plan.recipe);
+      return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
+    }
+    const current = planDisassembly(plan.source, snapshot, character, plan);
+    const sameTools =
+      current &&
+      Object.keys(current.toolLevels).length === Object.keys(plan.toolLevels).length &&
+      Object.entries(current.toolLevels).every(([quality, level]) => plan.toolLevels[quality] === level);
+    return current &&
+      current.source === plan.source &&
+      current.skillLevel === plan.skillLevel &&
+      current.duration === plan.duration &&
+      current.gather === plan.gather &&
+      sameTools &&
+      sameDisassemblyOutputs(current.outputs, plan.outputs) &&
+      JSON.stringify(current.liquids) === JSON.stringify(plan.liquids)
+      ? inventory.liquidReceiptRefusal(inventory.planLiquidReceipts(plan.liquids, plan))
+      : coreMessage(inventory.registry, 'yieldChanged');
+  },
+  begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,
+  owns: (uid) => inventory.itemByUid(uid)?.work !== undefined,
+  validate: (uid) => {
+    const item = inventory.itemByUid(uid);
+    const work = item?.work;
+    if (!(item && work)) {
+      return coreMessage(inventory.registry, 'gone');
+    }
+    if (!inputsValid(inventory, item)) {
+      return coreMessage(inventory.registry, 'craftInputsChanged');
+    }
+    if (inventory.hands[dominantSide(inventory.character)] !== item || inventory.hands[offSide(inventory.character)]) {
+      return coreMessage(inventory.registry, 'workNeedsBothHands');
+    }
+    const repairRefusal = repairTargetRefusal(inventory, item, reach());
+    if (repairRefusal) {
+      return repairRefusal;
+    }
+    return work.kind === 'craft'
+      ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)
+      : undefined;
+  },
+  advance: (uid, seconds) => {
+    const work = inventory.itemByUid(uid)!.work!;
+    work.elapsed = Math.min(work.duration, work.elapsed + seconds);
+    inventory.version += 1;
+    return work.elapsed === work.duration;
+  },
+  finish: (uid): string | undefined => {
+    const item = inventory.itemByUid(uid);
+    const work = item?.work;
+    if (!(item && work)) {
+      return undefined;
+    }
+    const refusal = repairTargetRefusal(inventory, item, reach());
+    if (refusal) {
+      inventory.releaseWork(item, false, feet());
+      return refusal;
+    }
+    const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
+    const practice = recipe
+      ? recipeSkillRequirements(inventory.registry, recipe).map(({ skill, level, provider }) => {
+          const offset = provider.training?.craftingTierOffset;
+          if (offset === undefined) {
+            throw new Error('Missing crafting practice tier offset');
+          }
+          return {
+            skill,
+            amount: gameSecondsToMinutes(recipe.timeGameMinutes),
+            tier: craftingActivityTier(level, offset),
+          };
+        })
+      : [];
+    inventory.releaseWork(item, true, feet(), calendar());
+    for (const entry of practice) {
+      character.awardPractice(entry.skill, entry.amount, entry.tier);
+    }
+    return undefined;
+  },
+  cancel: (uid) => {
+    const item = inventory.itemByUid(uid);
+    if (item) {
+      inventory.releaseWork(item, false, feet());
+    }
+  },
+});

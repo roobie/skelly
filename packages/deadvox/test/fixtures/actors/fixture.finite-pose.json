@@ -1,0 +1,25 @@
+{
+  "kind": "pose",
+  "loop": false,
+  "durationSimSeconds": 0.9,
+  "frames": [
+    {
+      "root": [0, 0, 0],
+      "rotations": {
+        "chest": [0, 0, 0, 1]
+      }
+    },
+    {
+      "root": [0, 0, 0],
+      "rotations": {
+        "chest": [0.25881904510252074, 0, 0, 0.9659258262890683]
+      }
+    },
+    {
+      "root": [0, 0, 0],
+      "rotations": {
+        "chest": [0.5, 0, 0, 0.8660254037844386]
+      }
+    }
+  ]
+}

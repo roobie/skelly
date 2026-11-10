@@ -1,13 +1,12 @@
+import { requireDayCycle } from '@skelly/engine/content';
+import { type IlluminationScene, readingLightRefusal } from '@skelly/engine/internal/core/illumination.ts';
+import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
+import { growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { playerTuning } from '@skelly/engine/sim';
+import { SkyFields } from '@skelly/engine/sky';
+import { BlockEntities, CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { requireDayCycle } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { type IlluminationScene, readingLightRefusal } from '../src/core/illumination.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
-import { growSky, SKY_SHELL, skyDependencyBounds } from '../src/core/skySnapshot.ts';
-import { playerTuning } from '../src/game/player.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { testHouseSite } from './testHouseSite.ts';
 

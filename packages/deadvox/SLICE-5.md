@@ -2,7 +2,7 @@
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
-  - you're integrating base appliances, door bashing or unattended simulation
+  - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest wave
 ---
 
@@ -11,10 +11,10 @@ read_if:
 **Status: the power network core is built; construction, fire and exposure,
 appliance controls and processes, and the integration proofs are open.** The wire
 graph, its cache invalidation, saved identity, closed-form away-time balance and
-refuelling exist; see `src/core/powerGraph.ts`, `PowerGraph`, and `src/core/power.ts`,
+refuelling exist; see `packages/engine/src/core/powerGraph.ts`, `PowerGraph`, and `packages/engine/src/core/power.ts`,
 `PowerNetwork`. The bear trap is built (`INTERACTIONS.md`, "Traps"). No player
 construction, placed-entity store, fire or smoke model, or appliance process exists in
-`src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
+`packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
 defending?**
 This plan separates settled intent from choices that must precede dependent work.
 The slice process is in `EPIC.md`, "How each slice runs".
@@ -45,7 +45,7 @@ terrain blocks use cells and entities allow finer placement.
 Construction is crafting that places blocks and block entities; taking it apart
 is disassembly. Existing reach, escrow, completion revalidation and single item
 ownership apply, rather than a parallel building inventory. See
-`INTERACTIONS.md`, "Crafting", and `src/core/crafting.ts`, `planCraft`.
+`INTERACTIONS.md`, "Crafting", and `packages/engine/src/core/crafting.ts`, `planCraft`.
 Appliances derive behaviour from components, not content identity. Player crafting
 and appliance-owned processes stay distinct: a process runs without occupying
 hands or requiring compression. See `INTERACTIONS.md`, "Appliances".
@@ -67,10 +67,10 @@ Bashing needs actor and obstacle strength, not an inference from movement or the
 brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
-`src/core/zombies.ts`, `ZombieSystem.updateObstacleContact`.
+`packages/engine/src/core/agent.ts`, `AgentController.updateObstacleContact`.
 Boarding already has directional opening semantics; player-built boarding must
 not silently turn an inside-openable leaf into an immovable wall. See
-`docs/aftermath.md`, "Door variants", and `src/core/blockEntities.ts`, `doorRefusal`.
+`docs/aftermath.md`, "Door variants", and `packages/engine/src/core/blockEntities.ts`, `doorRefusal`.
 
 ### Related issues and admission
 
@@ -129,7 +129,7 @@ unbuilt. Unanswered gates block only their dependent work.
 
 Power policy reasons live with the power implementation, not in a second set of
 Slice 5 cards, so allocation and catch-up cannot acquire conflicting authorities; see
-`src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
+`packages/engine/src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
 implementation selects; this plan retains only the cross-system obligations.
 
 ### Settled fire and exposure rules
@@ -223,8 +223,8 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    choices and each performance claim has an owning benchmark.
 2. **Power network core: built.** Topology, cache invalidation, saved identity,
    split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
-   solar by time of day exist; see `src/core/powerGraph.ts`, `PowerGraph`,
-   `src/core/power.ts`, `PowerNetwork`, and `test/power.test.ts`. Graph mechanics stay
+   solar by time of day exist; see `packages/engine/src/core/powerGraph.ts`, `PowerGraph`,
+   `packages/engine/src/core/power.ts`, `PowerNetwork`, and `test/power.test.ts`. Graph mechanics stay
    separate from wire presentation and appliance content. Topology edits settle
    old-network time before reassignment so energy cannot be created by rewiring.
 3. **Construction and persistent placement.** Extend crafting/disassembly to world
@@ -257,9 +257,9 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario wave and region integration.** #313's rules and their
-   one-shot state are in `DESIGN.md`, "Scenario events". The playtest scenario
-   adopts the wave from `src/content/base/holding-wave.libsonnet`, `rule`, with its
-   own arrival point. Cross the catch-up horizon with a working and
+   one-shot state are in `DESIGN.md`, "Scenario events". The wave lives in the playtest
+   scenario mod because the playtest adopts it, with its own arrival point; see
+   `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`, `rule`. Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the wave and recovery
    with charged attacks and stagger available; ordinary ambient attention remains
@@ -275,8 +275,8 @@ boundaries, authoritative fire/smoke/attention state, trap armed/restraint/injur
 state, charged-action and stagger timing, and event rules' authoritative one-shot
 state. Disarm progress is not resumable after interruption.
 Derived connected components, occupancy and rendered lighting are rebuilt from
-truth, not independently editable saved totals. Extend `src/core/blockEntities.ts`,
-`BlockEntityState`, and `src/core/saveState.ts`, `SaveSnapshot`, at their ownership
+truth, not independently editable saved totals. Extend `packages/engine/src/core/blockEntities.ts`,
+`BlockEntityState`, and `packages/engine/src/core/saveState.ts`, `SaveSnapshot`, at their ownership
 boundaries. Do not invent migration promises.
 
 Unloaded is not synonymous with outside the simulation horizon. Follow
@@ -291,8 +291,8 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
 - **Coupled power/process catch-up:** use a tiny generator, battery, solar and load
   fixture with a mid-run rate change and wire split. Compare partitioned ticking,
   one catch-up and save/resume through depletion. Include the chosen deficit policy.
-  `src/core/needs.ts`, `stepNeeds`, demonstrates boundary splitting;
-  `src/core/food.ts`, `spoilage`, does not establish refrigeration history. Failure
+  `packages/engine/src/core/needs.ts`, `stepNeeds`, demonstrates boundary splitting;
+  `packages/engine/src/core/food.ts`, `spoilage`, does not establish refrigeration history. Failure
   blocks appliance integration, not a relaxation of the deterministic contract.
 - **Fire cost and light invalidation:** burn a small material boundary beside a
   doorway and then a connected larger surface, with smoke and lamps visible.
@@ -308,15 +308,15 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
   canonical coarse rule back to BR rather than using stream timing as an input.
 - **Construction and breach occupancy:** place and remove a door beside a populated
   container and a moving actor. Check movement, picking, sight and light after each
-  operation and restore. See `src/core/blockEntities.ts`, `BlockEntities`, and
-  `src/core/prying.ts`, `pryPlan`. The smallest proof catches stale occupancy before
+  operation and restore. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities`, and
+  `packages/engine/src/core/prying.ts`, `pryPlan`. The smallest proof catches stale occupancy before
   a full building palette multiplies it.
 - **Lit-base crowd readability:** compare the same room with open, covered and
   breached windows at night and in daylight. Observe both rendered exposure and
-  zombie attention; neither can stand in for the other. See `src/core/lights.ts`,
-  `lightSenseSourceFor`, and `src/render/skylight.ts`, `Skylight`. Existing consumable
-  light depletion (`src/core/lights.ts`, `drainBurnLight`) and torch gas spending
-  (`src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
+  zombie attention; neither can stand in for the other. See `packages/engine/src/core/lights.ts`,
+  `lightSenseSourceFor`, and `packages/presentation/src/render/skylight.ts`, `Skylight`. Existing consumable
+  light depletion (`packages/engine/src/core/lights.ts`, `drainBurnLight`) and torch gas spending
+  (`packages/engine/src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
 
 ## Playtest questions and exit
 

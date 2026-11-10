@@ -1,21 +1,11 @@
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { disassemblyOutputs } from '@skelly/engine/internal/core/disassembly.ts';
+import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
+import { CraftCommands, HandlingQueue, type HandSide, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
+import { bindReach, Character, dominantSide, offSide, practiceForNextLevel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import {
-  Character,
-  dominantSide,
-  offSide,
-  practiceForNextLevel,
-  SKILL_LEVEL_LEGENDARY,
-} from '../src/core/character.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { disassemblyOutputs } from '../src/core/disassembly.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { options } from '../src/core/options.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -46,6 +36,7 @@ const [OTHER, LAST, TOOL] = ((stock) => [stock[0]![0], stock.at(-2)![0], stock.a
 const REPAIR = 'repair_crowbar';
 const make = (handedness?: HandSide) => {
   const character = new Character(registry, handedness ? { handedness } : {});
+  character.initializeProgression({}, [CRAFT, SECOND_CRAFT, REPAIR, 'door_bar']);
   const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
   const sim = new Simulation({ seed: 1 });

@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { BLOOM_CLIP_BY_TONE, MIN_BLOOM_CLIP } from '@skelly/engine/internal/core/mood.ts';
 import {
   AUTO_TONE,
-  BLOOM_CLIP_BY_TONE,
   bloomClipFor,
   bloomThreshold,
   clampBloomClip,
@@ -10,11 +9,11 @@ import {
   clampTorch,
   DEFAULT_TORCH,
   gradeParams,
-  MIN_BLOOM_CLIP,
   TORCH_STEP,
   targetColorScale,
-} from '../src/core/mood.ts';
-import { TONE_MODES } from '../src/render/look.ts';
+} from '@skelly/engine/look';
+import { TONE_MODES } from '@skelly/presentation/render';
+import { describe, expect, it } from 'vitest';
 import { displayed, inputForDisplay } from './toneCurves.ts';
 
 // The shaders (grade pass, height fog, bloom) and shader warm-up can't be unit-tested here: there is

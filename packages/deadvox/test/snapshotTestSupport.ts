@@ -1,26 +1,28 @@
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
-import type { MapEntityStore } from '../src/core/entities.ts';
-import { foodMillisecondsAt, projectFoodExposure } from '../src/core/food.ts';
+import type { BodyTuningDef, Registry } from '@skelly/engine/content';
+import { localIndex } from '@skelly/engine/internal/core/coords.ts';
+import type { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
+import { foodMillisecondsAt, projectFoodExposure } from '@skelly/engine/internal/core/food.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import type { snapshotSession } from '@skelly/engine/internal/core/saveState.ts';
+import type { PlayerInputSample } from '@skelly/engine/internal/game/session.ts';
+import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { SkyFields } from '@skelly/engine/sky';
 import {
-  encodeSave,
-  SAVE_SCHEMA_VERSION,
-  type SaveContentKind,
-  type SaveVersionComponents,
-} from '../src/core/saveFormat.ts';
-import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { BodyTuningDef } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { SkyFields } from '../src/core/skyField.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
-import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+  BlockEntities,
+  CHUNK,
+  Chunk,
+  generateColumn,
+  makeScale,
+  type Terrain,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+  World,
+  worldSolid,
+} from '@skelly/engine/world';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
@@ -45,7 +47,7 @@ export const fixtureSite = new SnapshotSite(seed, registry, scale);
 export const fixtureColumns: [number, number][] = [];
 for (let cz = toChunk(fixtureSite.bounds.z0); cz <= toChunk(fixtureSite.bounds.z1 - 1); cz++) {
   for (let cx = toChunk(fixtureSite.bounds.x0); cx <= toChunk(fixtureSite.bounds.x1 - 1); cx++) {
-    if (fixtureSite.furnitureIn(cx, cz).length > 0 || fixtureSite.zombiesIn(cx, cz).length > 0) {
+    if (fixtureSite.furnitureIn(cx, cz).length > 0 || fixtureSite.actorsIn(cx, cz).length > 0) {
       fixtureColumns.push([cx, cz]);
     }
   }
@@ -64,11 +66,11 @@ const fixtureTerrain: Terrain = {
   surface: fixtureSite.surface,
   stamp: (chunk) => fixtureSite.stamp(chunk),
 };
-const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.zombiesIn(cx, cz).length > 0);
-if (!foundZombieColumn) {
+const foundActorColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.actorsIn(cx, cz).length > 0);
+if (!foundActorColumn) {
   throw new Error('Snapshot fixture has no zombie column');
 }
-export const fixtureZombieColumn: [number, number] = foundZombieColumn;
+export const fixtureZombieColumn: [number, number] = foundActorColumn;
 const chunksByColumn = new Map<string, Chunk[]>();
 const fixtureChunksFor = (columns: readonly [number, number][]): Chunk[] =>
   columns.flatMap(([cx, cz]) => {
@@ -102,7 +104,7 @@ const cloneFixtureChunk = (source: Chunk): Chunk => {
 
 export type Runtime = ReturnType<typeof createRuntime>;
 
-// These stand in for the streamer (`src/game/streamer.ts`, `Streamer`), so a touched column's
+// These stand in for the streamer (`packages/engine/src/game/streamer.ts`, `Streamer`), so a touched column's
 // resident chunks are neither regenerated nor dropped.
 export const addFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
   for (const chunk of fixtureChunksFor([[cx, cz]])) {
@@ -121,7 +123,7 @@ export const removeFixtureColumn = (runtime: Runtime, cx: number, cz: number): v
   }
 };
 
-// The scenario factory builds the same session the game does (src/game/session.ts) and only
+// The scenario factory builds the same session the game does (`packages/engine/src/game/session.ts`) and only
 // supplies what the DOM would: controls, sound output, and the fixture world. Fresh and
 // restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
@@ -150,8 +152,10 @@ export function createRuntime(
     ) => PlayerInputSample;
     onOpaque?: () => void;
     registry?: Registry;
-    powerDevices?: import('../src/core/sitePower.ts').PlacedPowerDevice[];
-    skyBoxes?: readonly import('../src/core/skylight.ts').SkyBounds[];
+    /** Fixture type ids, each wearing the figures of the registered type it copies. */
+    fixtureFigures?: Readonly<Record<string, string>>;
+    powerDevices?: import('@skelly/engine/internal/core/sitePower.ts').PlacedPowerDevice[];
+    skyBoxes?: readonly import('@skelly/engine/internal/core/skylight.ts').SkyBounds[];
   } = {},
 ) {
   const { sampleAtPlayerTick } = options;
@@ -202,6 +206,7 @@ export function createRuntime(
   }
   const session = createSession({
     registry: contentRegistry,
+    actorFigureFiles: withFixtureFigures(stackActorFigureFiles(contentRegistry), options.fixtureFigures ?? {}),
     ...(options.powerDevices ? { powerDevices: options.powerDevices } : {}),
     ...(options.skyBoxes
       ? {
@@ -226,7 +231,7 @@ export function createRuntime(
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
     ready: options.ready ?? (() => true),
-    ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
+    ...(options.zombieReady ? { actorReady: options.zombieReady } : {}),
     controls: {
       active: () => options.active ?? Boolean(sampleAtPlayerTick),
       intent: options.intent ?? (() => view.intent),
@@ -256,7 +261,7 @@ export function createRuntime(
     ...(snapshot ? { restore: snapshot } : {}),
     ...(handedness ? { handedness } : {}),
   });
-  const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
+  const { sim, inventory, entities, actors, spawner, rest, survival, quickbar, playerAudio } = session;
   if (session.restoredLook) {
     Object.assign(view, session.restoredLook);
   }
@@ -295,9 +300,9 @@ export function createRuntime(
     if (container) {
       entities.markSearched(container);
     }
-    const first = zombies.store.entries().next().value as [number, unknown] | undefined;
-    if (first && (restFixture || zombies.store.size > 1)) {
-      zombies.store.remove(first[0]);
+    const first = actors.store.entries().next().value as [number, unknown] | undefined;
+    if (first && (restFixture || actors.store.size > 1)) {
+      actors.store.remove(first[0]);
     }
     world.setBlock(editCx * CHUNK + 1, editChunk.cy * CHUNK + 1, editCz * CHUNK + 1, blockId('planks'));
   }
@@ -325,7 +330,7 @@ export function createRuntime(
     entities,
     sharedEntities,
     handling: session.queue,
-    zombies,
+    zombies: actors,
     spawner,
     rest,
     survival,
@@ -349,7 +354,7 @@ export const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => {
 };
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
-const inspectItem = (item: import('../src/core/items.ts').Item, at: number): unknown => ({
+const inspectItem = (item: import('@skelly/engine/internal/core/items.ts').Item, at: number): unknown => ({
   uid: item.uid,
   type: item.type,
   count: item.count,
@@ -431,15 +436,15 @@ export const inspect = (runtime: Runtime): unknown => {
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       hordes: runtime.zombies.snapshotState().hordes,
-      entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const { type, behaviorRng, soundRng, renderPrevious: _renderPrevious, tier: _tier, ...fields } = zombie;
+      entries: [...runtime.zombies.store.entries()].map(([id, actor]) => {
+        const { type, agent: _agent, renderPrevious: _renderPrevious, tier: _tier, ...fields } = actor;
+        const { behaviorRng, soundRng, ...agentFields } = actor.agent!;
         return [
           id,
           {
             ...structuredClone(fields),
             type: type.id,
-            behaviorRng: behaviorRng.state(),
-            soundRng: soundRng.state(),
+            agent: { ...structuredClone(agentFields), behaviorRng: behaviorRng.state(), soundRng: soundRng.state() },
           },
         ];
       }),
@@ -497,53 +502,59 @@ export const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
 const IDLE_GROANER_DISTANCE = 20;
 export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
-  const firstZombie = runtime.zombies.store.entries().next().value as
-    | [number, import('../src/core/zombies.ts').Zombie]
+  const firstActor = runtime.zombies.store.entries().next().value as
+    | [number, import('@skelly/engine/internal/core/actorState.ts').Actor]
     | undefined;
-  if (!firstZombie) {
+  if (!firstActor) {
     throw new Error('Snapshot continuation requires a live shambler');
   }
   const playerNoise = runtime.emitPlayerSound('player_strain', runtime.sim.time);
   if (!(playerNoise && runtime.playerAudio.vocalNoise)) {
     throw new Error('Could not seed player vocal noise');
   }
-  const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
+  const groaner = runtime.zombies.add(registry.actors.get('shambler')!, [
     playerPos[0] + IDLE_GROANER_DISTANCE,
     playerPos[1],
     playerPos[2],
   ]);
   // Admit deliberately timed audio actors through restoration, never through live actor fields.
   const saved = structuredClone(capture(runtime));
-  const listener = saved.world.zombies.zombies.find(({ id }) => id === firstZombie[0])!.zombie;
+  const listener = saved.world.actors.actors.find(({ id }) => id === firstActor[0])!.actor;
   listener.body.pos = [playerPos[0] + 0.25, playerPos[1], playerPos[2]];
   listener.body.vel = [0, 0, 0];
   listener.body.onGround = true;
   listener.facing = [0, 0, 1];
-  listener.mode = 'idle';
-  listener.modeTimer = 100;
-  listener.idleSoundTimer = 100;
-  listener.lastVocalNoiseId = 0;
+  listener.agent!.mode = 'idle';
+  listener.chaseStance = false;
+  listener.agent!.modeTimer = 100;
+  listener.agent!.idleSoundTimer = 100;
+  listener.agent!.lastVocalNoiseId = 0;
   saved.character.playerAudio.vocalNoise!.expiresAt = runtime.sim.time + 0.25;
-  const idle = saved.world.zombies.zombies.find(({ id }) => id === groaner)!.zombie;
+  const idle = saved.world.actors.actors.find(({ id }) => id === groaner)!.actor;
   idle.body.onGround = true;
-  idle.mode = 'idle';
-  idle.modeTimer = 100;
-  idle.idleSoundTimer = 0.02;
-  idle.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
+  idle.agent!.mode = 'idle';
+  idle.chaseStance = false;
+  idle.agent!.modeTimer = 100;
+  idle.agent!.idleSoundTimer = 0.02;
+  idle.agent!.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
   return createRuntime(saved, runtime.restAnchorUid !== undefined, runtime.columns);
 };
 
 export const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: {
+    worldgen: 'worldgen-v2',
+    'bodyPlan.humanoid': 'humanoid-figure-v1',
+    'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+  },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };
 export const contentLookup = (
   kind: SaveContentKind,
   id: string,
-  item?: import('../src/core/items.ts').ItemState,
+  item?: import('@skelly/engine/internal/core/items.ts').ItemState,
 ): boolean => lookupSaveContent(registry, kind, id, item);
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

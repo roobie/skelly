@@ -1,18 +1,16 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { stepBodyHorizontal } from '../src/core/physics.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
+import { stepBodyHorizontal } from '@skelly/engine/internal/core/physics.ts';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { actorBodyDimensions } from '@skelly/engine/internal/core/spawnClearance.ts';
 import {
   type CompiledTemplate,
   cellsOf,
   compileTemplate,
-  footprint,
   placedBlockAt,
   placedPieces,
-  type Placement as WorldPlacement,
-} from '../src/core/templates.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { BLOCK_SIZE, footprint, type Placement as WorldPlacement } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 
@@ -397,7 +395,9 @@ describe('camp gate templates', () => {
   });
 
   it('keeps the placed north entrance passable through gate 2 and blocks bypasses around its closed leaf', () => {
-    const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+    const { layouts } = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
@@ -455,7 +455,9 @@ describe('camp gate templates', () => {
   });
 
   it('blocks each zombie body unless its existing collision size fits the east opening', () => {
-    const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+    const { layouts } = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
@@ -477,8 +479,8 @@ describe('camp gate templates', () => {
       }
       return y <= groundBlock;
     };
-    const zombies = [...registry.zombies.values()];
-    expect(zombies.length).toBeGreaterThan(0);
+    const actors = [...registry.actors.values()];
+    expect(actors.length).toBeGreaterThan(0);
 
     const crossesOpening = (dimensions: { halfWidth: number; halfDepth: number; height: number }): boolean => {
       const body = {
@@ -496,8 +498,8 @@ describe('camp gate templates', () => {
       return body.pos[0]! + body.halfWidth < wall.origin[0];
     };
 
-    for (const type of zombies) {
-      const dimensions = zombieBodyDimensions(type, BLOCK_SIZE);
+    for (const type of actors) {
+      const dimensions = actorBodyDimensions(type, BLOCK_SIZE);
       const halfDepth = dimensions.halfDepth ?? dimensions.halfWidth;
       const fits = dimensions.height <= opening.height && halfDepth * 2 <= laneWidth;
       expect(crossesOpening({ ...dimensions, halfDepth }), type.id).toBe(fits);
@@ -515,7 +517,9 @@ describe('camp gate templates', () => {
   });
 
   it('hides the finale from approach tracks and near ground except through the southern breach', () => {
-    const { layouts } = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+    const { layouts } = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = layouts.find(({ buildings }) => buildings.some(({ template }) => template === 'camp_gate'))!;
@@ -537,7 +541,7 @@ describe('camp gate templates', () => {
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
     const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
     for (const marker of markers) {
-      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
+      const body = actorBodyDimensions(registry.actors.get(marker.type)!, BLOCK_SIZE);
       const footY = marker.position[1] / BLOCK_SIZE;
       const bodyTargets: Point3[] = [0, 0.25, 0.5, 0.75, 1].map((fraction) => [
         marker.position[0] / BLOCK_SIZE,

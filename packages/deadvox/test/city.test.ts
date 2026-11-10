@@ -1,9 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { StressCity } from '@skelly/engine/internal/core/city.ts';
+import { compileTemplate, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { makeScale, sitePalette } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { StressCity } from '../src/core/city.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { sitePalette } from '../src/core/sitePalette.ts';
-import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
 
@@ -20,7 +19,7 @@ describe('the stress-test city', () => {
       2 * [...registry.cityBenchmarks.values()][0]!.reachMetres,
     );
     expect(city.plan.service).toBeUndefined();
-    expect(city.zombiesIn(0, 0)).toEqual([]);
+    expect(city.actorsIn(0, 0)).toEqual([]);
   });
 
   it('stacks owned storeys and their nonempty furniture without duplicating the foundation', () => {
@@ -36,26 +35,9 @@ describe('the stress-test city', () => {
   });
 
   it('is chosen from the URL', () => {
-    expect(siteFromUrl(new URLSearchParams(''), 'gauntlet')).toEqual({ site: 'gauntlet', storeys: 1, density: null });
-    expect(siteFromUrl(new URLSearchParams('site=city&storeys=6'), 'testHouse')).toEqual({
-      site: 'city',
-      storeys: 6,
-      density: null,
-    });
-    expect(siteFromUrl(new URLSearchParams('site=city&storeys=99'), 'gauntlet')).toEqual({
-      site: 'city',
-      storeys: 1,
-      density: null,
-    });
-    expect(siteFromUrl(new URLSearchParams('site=testHouse'), 'gauntlet')).toEqual({
-      site: 'testHouse',
-      storeys: 1,
-      density: null,
-    });
-    expect(siteFromUrl(new URLSearchParams('site=bogus'), 'gauntlet')).toEqual({
-      site: 'gauntlet',
-      storeys: 1,
-      density: null,
-    });
+    expect(siteFromUrl(new URLSearchParams(''), 'gauntlet')).toEqual({ site: 'gauntlet' });
+    expect(siteFromUrl(new URLSearchParams('site=city'), 'testHouse')).toEqual({ site: 'city' });
+    expect(siteFromUrl(new URLSearchParams('site=testHouse'), 'gauntlet')).toEqual({ site: 'testHouse' });
+    expect(siteFromUrl(new URLSearchParams('site=bogus'), 'gauntlet')).toEqual({ site: 'gauntlet' });
   });
 });

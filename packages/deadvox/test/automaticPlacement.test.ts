@@ -1,8 +1,7 @@
+import type { Registry } from '@skelly/engine/content';
+import { findSpot } from '@skelly/engine/internal/core/items.ts';
+import { footprint, Inventory, type Item, ItemFactory, PILE_GRID, type Target } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { Inventory, type Target } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { findSpot, footprint, type Item, ItemFactory } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const base = baseRegistry();
@@ -18,9 +17,7 @@ const fixture = (size: [number, number], threshold = 1) => {
           name: 'fixture',
           size,
           weight: 1,
-          economy: { usage: [], tiers: [] },
           workInProgress: false,
-          notLoot: true,
           category: 'misc',
         },
       ],

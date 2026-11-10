@@ -2,36 +2,40 @@
 import { webcrypto } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
+import { buildRegistry } from '@skelly/engine/content';
+import { ScenarioRun } from '@skelly/engine/internal/core/scenarioRun.ts';
+import {
+  type ActiveBrowserMod,
+  currentSaveVersionIdentity,
+  decodeSave,
+  encodeSave,
+  type SaveSnapshot,
+} from '@skelly/engine/save';
+import { Character, realTimestamp } from '@skelly/engine/sim';
 import { afterEach, expect, it, vi } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { type ActiveBrowserMod, currentSaveVersionIdentity, encodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { ScenarioRun } from '../src/core/scenarioRun.ts';
-import { realTimestamp } from '../src/core/time.ts';
 import { startupContent } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import type { SaveLoadResult } from '../src/game/saveStorage.ts';
 import {
   commitSavePayload,
   type RawSaveSlots,
   SaveCorruptionError,
+  type SaveLoadResult,
   type SaveSlotPair,
-} from '../src/game/saveStorageProtocol.ts';
-import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
-import { SaveController } from '../src/ui/saveController.ts';
-import { showWin } from '../src/ui/win.ts';
+} from '@skelly/engine/save';
+import { shouldConfirmPageLeave } from '@skelly/presentation/internal/ui/leaveConfirmation.ts';
+import { showWin } from '@skelly/presentation/internal/ui/win.ts';
+import { contentLookup, SaveController } from '@skelly/presentation/ui';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
-const { screenText } = saveFixtureRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+const { screenText } = saveFixtureRegistry.ui.get(fixtureIds.ui)!;
 const FULL_HASH = /[a-f0-9]{64}/;
 const BODY_MARKUP = /<body\b[^>]*>([\s\S]*)<\/body>/;
 const SCRIPT_MARKUP = /<script\b[^>]*>[\s\S]*?<\/script>/g;
 const fixtureSnapshot = capture(createRuntime());
-const markerKey = (namespace: string) => `deadvox.dead-world:${namespace}`;
+const markerKey = (namespace: string) => `skelly.dead-world:${namespace}`;
 const originalEnvironment = {
   secureContext: Object.getOwnPropertyDescriptor(globalThis, 'isSecureContext'),
   crypto: Object.getOwnPropertyDescriptor(globalThis, 'crypto'),
@@ -104,7 +108,7 @@ const title = (mods: readonly ActiveBrowserMod[] = []) => {
     throw new Error('Title fixture needs the actual body markup');
   }
   document.body.innerHTML = body.replace(SCRIPT_MARKUP, '');
-  return new SaveController(screenText, {}, [], mods);
+  return new SaveController(screenText, {}, { browserMods: mods });
 };
 
 const browserMods = [{ id: 'fixture-mod', version: '1', data: { items: [] } }];
@@ -129,14 +133,20 @@ it('refuses Continue and names the browser mod missing from a saved world', asyn
   vi.spyOn(controller.storage, 'load').mockImplementation((namespace) =>
     Promise.resolve(namespace === saved.digest ? record : undefined),
   );
-  sessionStorage.setItem('deadvox.continue-namespace', saved.digest);
+  sessionStorage.setItem('skelly.continue-namespace', saved.digest);
   await controller.prepare();
   await controller.validateContent(saveFixtureRegistry);
   expect(controller.isRestored).toBe(false);
   expect(document.getElementById('continue')!.hidden).toBe(true);
   const status = document.getElementById('save-status')!.textContent!;
+  const running = await currentSaveVersionIdentity();
+  const savedPackIds = saved.components.contentPacks
+    .map(({ id }) => id)
+    .filter((id) => !running.components.contentPacks.some((pack) => pack.id === id));
+  expect(savedPackIds).toHaveLength(1);
+  expect(savedPackIds[0]).not.toBe(browserMods[0]!.id);
   expect(status).toContain(browserMods[0]!.id);
-  expect(status).not.toContain('browser.fixture-mod');
+  expect(status).not.toContain(savedPackIds[0]);
   expect(status).not.toMatch(FULL_HASH);
 });
 
@@ -168,12 +178,20 @@ it('preserves an older simulation save without appending decoder diagnostics', a
   vi.spyOn(controller.storage, 'load').mockImplementation((namespace) =>
     Promise.resolve(namespace === saved.digest ? record : undefined),
   );
+  const decoderDiagnostic = await decodeSave(record.payload, {
+    version: running.components,
+    contentLookup: (kind, id, item) => contentLookup(saveFixtureRegistry, kind, id, item),
+  }).then(
+    () => undefined,
+    (error: unknown) => (error instanceof Error ? error.message : String(error)),
+  );
+  expect(decoderDiagnostic, 'the running decoder refuses the older save').toBeTruthy();
   await controller.prepare();
   await controller.validateContent(saveFixtureRegistry);
   const status = document.getElementById('save-status')!.textContent!;
   expect(status).toContain(saved.digest.slice(0, 12));
   expect(status).not.toMatch(FULL_HASH);
-  expect(status).not.toContain('Save version mismatch');
+  expect(status).not.toContain(decoderDiagnostic);
 });
 
 it('refuses a live record marked dead and starts a new world without replacement confirmation', async () => {
@@ -226,7 +244,7 @@ it('starts the page-leave window when a saved world finishes loading', async () 
   const controller = title();
   const identity = await currentSaveVersionIdentity();
   stubLiveRecord(controller, await recordFor('fixture-live-world', identity));
-  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  sessionStorage.setItem('skelly.continue-namespace', identity.digest);
   await controller.prepare();
 
   const loadedAtRealSeconds = 42;
@@ -319,7 +337,7 @@ it('protects a save whose pending ladder grab names no climbable instead of ente
     const snapshot = structuredClone(capture(runtime));
     snapshot.character.player.ladder = ladder;
     stubLiveRecord(controller, await recordOf(snapshot, identity));
-    sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+    sessionStorage.setItem('skelly.continue-namespace', identity.digest);
     await controller.prepare();
     const restored = await controller.validateContent(saveFixtureRegistry);
     return { restored: restored !== undefined, entered: controller.isEntered, canSave: controller.canSaveCurrentGame };
@@ -465,7 +483,7 @@ it('acknowledges only the won checkpoint and keeps a failed completion visible f
   const run = new ScenarioRun([...saveFixtureRegistry.scenarios.keys()][0]!, calendar);
   let snapshot = { ...fixtureSnapshot, character: { ...fixtureSnapshot.character, scenarioRun: run.snapshot() } };
   stubLiveRecord(controller, await recordOf(snapshot, identity));
-  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  sessionStorage.setItem('skelly.continue-namespace', identity.digest);
   await controller.prepare();
   await controller.validateContent(saveFixtureRegistry);
   controller.bindSession(
@@ -541,7 +559,7 @@ it('refuses a save made under a different clock ratio instead of crashing startu
   };
   const controller = title();
   stubLiveRecord(controller, await recordOf(retimed, identity));
-  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  sessionStorage.setItem('skelly.continue-namespace', identity.digest);
   await controller.prepare();
   expect(await controller.validateContent(saveFixtureRegistry)).toBeUndefined();
   expect(controller.isRestored).toBe(false);
@@ -558,7 +576,7 @@ it('continues a won record as terminal but refuses an ordinary dead record', asy
   const won = { ...fixtureSnapshot, character: { ...fixtureSnapshot.character, scenarioRun: run.snapshot() } };
   const controller = title();
   stubLiveRecord(controller, await recordOf(won, identity));
-  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  sessionStorage.setItem('skelly.continue-namespace', identity.digest);
   await controller.prepare();
   expect((await controller.validateContent(saveFixtureRegistry))!.character.scenarioRun).toEqual(run.snapshot());
   expect(controller.isEntered).toBe(true);
@@ -570,7 +588,7 @@ it('continues a won record as terminal but refuses an ordinary dead record', asy
   expect(dead.sim.dead).toBeDefined();
   const deadController = title();
   stubLiveRecord(deadController, await recordOf(capture(dead), identity));
-  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  sessionStorage.setItem('skelly.continue-namespace', identity.digest);
   await deadController.prepare();
   expect(await deadController.validateContent(saveFixtureRegistry)).toBeUndefined();
   expect(deadController.isEntered).toBe(false);
@@ -582,7 +600,7 @@ it('shows a save failure that escapes the write handler and still accepts the ne
   const identity = await currentSaveVersionIdentity();
   const controller = title();
   stubLiveRecord(controller, await recordFor('fixture-world', identity));
-  sessionStorage.setItem('deadvox.continue-namespace', identity.digest);
+  sessionStorage.setItem('skelly.continue-namespace', identity.digest);
   await controller.prepare();
   await controller.validateContent(saveFixtureRegistry);
   controller.bindSession(
@@ -687,7 +705,7 @@ it('lifts a refused restore for the tab once the player starts fresh and the fre
   const record = await recordFor('fixture-refused-world', identity);
   const controller = title();
   stubLiveRecord(controller, record);
-  sessionStorage.setItem(`deadvox.restore-refusal:${identity.digest}`, 'fixture refusal');
+  sessionStorage.setItem(`skelly.restore-refusal:${identity.digest}`, 'fixture refusal');
   const { events } = freshStartFixture(controller, { a: record.payload, b: null }, { a: null, b: null });
   await controller.prepare();
   expect(await controller.validateContent(saveFixtureRegistry)).toBeUndefined();

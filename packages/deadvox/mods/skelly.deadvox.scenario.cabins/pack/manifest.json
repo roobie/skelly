@@ -1,0 +1,37 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.buildings",
+    "skelly.deadvox.loot",
+    "skelly.deadvox.site-generation",
+    "skelly.deadvox.woods",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "layouts-cabins.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-cabins.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.cabins",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

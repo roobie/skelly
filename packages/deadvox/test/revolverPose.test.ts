@@ -1,22 +1,24 @@
-import { readFileSync } from 'node:fs';
+import type { ModelDef } from '@skelly/engine/content';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { type CylinderState, HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
+import { revolverChamberPoint } from '@skelly/engine/pose';
+import { ARM_NODE } from '@skelly/presentation/internal/render/armRig.ts';
+import {
+  actionPartPaths,
+  cloneHeldModel,
+  poseRevolverParts,
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import { heldModelFrame, indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary } from '@skelly/presentation/render';
 import { Box3, Matrix4, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import type { ModelDef } from '../src/core/content.ts';
-import type { CylinderState } from '../src/core/firearmState.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, SIDES } from '../src/core/inventory.ts';
-import { revolverChamberPoint } from '../src/core/revolverPose.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
-import { ARM_NODE } from '../src/render/armRig.ts';
-import { actionPartPaths, cloneHeldModel, poseRevolverParts } from '../src/render/firearmModel.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { heldModelFrame, indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { content } from './fixtures/startupContent.ts';
+import { modFileBytes } from './modFile.ts';
 
 const loadModel = (model: ModelDef) => {
-  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const bytes = modFileBytes(model.file);
   return new GLTFLoader()
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
     .then(indexModelMaterials);

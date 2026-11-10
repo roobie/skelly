@@ -1,0 +1,42 @@
+{
+  "dependencies": ["skelly.natural-world", "skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "readables.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-readables.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/notebook.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/folded_note.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/notebook.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/paper_sheet.glb"
+    }
+  ],
+  "id": "skelly.readables",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

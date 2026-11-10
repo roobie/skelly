@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
+
+import type { ModIntake } from '@skelly/engine/packs';
+import { ModStorage } from '@skelly/presentation/internal/presentation/modStorage.ts';
+import { chooseMods } from '@skelly/presentation/ui';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import { ModStorage } from '../src/game/modStorage.ts';
-import { chooseMods } from '../src/ui/modsPanel.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
-vi.mock('../src/game/browserMods.ts', () => ({
-  MAX_MOD_BYTES: 100,
-  evaluateMods: (mods: { source: string; enabled: boolean }[]) => ({
+// Admission is mocked below, so the panel reads only the byte bound.
+const intake = { maxModBytes: 100 } as ModIntake;
+vi.mock('@skelly/engine/internal/game/browserMods.ts', () => ({
+  evaluateMods: (_intake: ModIntake, mods: { source: string; enabled: boolean }[]) => ({
     content: {},
     issues: new Map(),
     canStart: true,
@@ -24,7 +27,7 @@ test('unavailable storage names the failure and starts with an empty mod set', a
   vi.spyOn(storage, 'load').mockRejectedValue(new Error('blocked'));
   const root = document.createElement('div');
   document.body.append(root);
-  const result = chooseMods(root, baseScreenText().mods, storage);
+  const result = chooseMods(root, baseScreenText().mods, intake, storage);
   await Promise.resolve();
   const alert = root.querySelector('[role=alert]');
   expect(alert).not.toBeNull();
@@ -37,7 +40,7 @@ test('unavailable storage names the failure and starts with an empty mod set', a
 
 const storeRaw = async (factory: IDBFactory, value: unknown) => {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
-    const request = factory.open('deadvox.browser-mods', 1);
+    const request = factory.open('skelly.browser-mods', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('selection');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -57,7 +60,7 @@ test('an invalid stored selection is refused with a discard control, and adding 
   const storage = new ModStorage(factory);
   const root = document.createElement('div');
   document.body.append(root);
-  const result = chooseMods(root, baseScreenText().mods, storage);
+  const result = chooseMods(root, baseScreenText().mods, intake, storage);
   await vi.waitFor(() => expect(root.querySelector('#mods-discard')).not.toBeNull());
   expect(root.querySelector('[role=alert]')!.textContent).not.toBe('');
   expect(root.querySelector<HTMLTextAreaElement>('textarea')!.disabled).toBe(true);
@@ -80,7 +83,7 @@ test('a failed save keeps the mods already stored and drops only the change that
   vi.spyOn(storage, 'save').mockRejectedValue(new Error('quota'));
   const root = document.createElement('div');
   document.body.append(root);
-  const result = chooseMods(root, baseScreenText().mods, storage);
+  const result = chooseMods(root, baseScreenText().mods, intake, storage);
   await vi.waitFor(() => expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(1));
   const textarea = root.querySelector<HTMLTextAreaElement>('textarea')!;
   textarea.value = '{"id":"second"}';

@@ -1,10 +1,11 @@
+import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
+import { compileAssembly } from '@skelly/engine/internal/core/templates.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { SitePower } from '@skelly/engine/world';
+import { LightPool } from '@skelly/presentation/render';
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { type PlacedPowerDevice, placedPowerDevices, SitePower } from '../src/core/sitePower.ts';
-import { compileAssembly } from '../src/core/templates.ts';
-import { LightPool } from '../src/render/lightPool.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import {

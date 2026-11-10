@@ -1,48 +1,46 @@
-import { Window } from 'happy-dom';
-import { Group } from 'three';
-import { afterAll, describe, expect, it, vi } from 'vitest';
-import { Body } from '../src/core/body.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { coreLabel, coreMessage } from '../src/core/coreText.ts';
-import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
-import { planCraft } from '../src/core/crafting.ts';
-import { firearmSlotIds } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { swapBattery } from '../src/core/lights.ts';
-import { countText, decimalText } from '../src/core/numberText.ts';
-import { toHands, wieldOrPocket } from '../src/core/options.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { fillText } from '../src/core/textTemplate.ts';
-import { ATTACHMENT_WORK_SKILL, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { BindingRegistry, inventoryTabForAction, type ReplayActionPayload } from '@skelly/engine/input';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import { toHands, wieldOrPocket } from '@skelly/engine/internal/core/options.ts';
 import {
-  BindingRegistry,
-  INPUT_BINDINGS,
-  inputBindings,
-  inventoryTabForAction,
-  KeyboardInput,
-} from '../src/game/inputBindings.ts';
-import { routeModalCommand } from '../src/game/modalCommand.ts';
-import { PlayerTickActions } from '../src/game/playerTickActions.ts';
-import { Quickbar } from '../src/game/quickbar.ts';
+  attachmentWorkSkill,
+  FirearmAttachmentHandling,
+} from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
+import { routeModalCommand } from '@skelly/engine/internal/game/modalCommand.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
-  type ReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
-import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatcher.ts';
-import { Survival } from '../src/game/survival.ts';
-import { ItemPictures } from '../src/render/itemPictures.ts';
-import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import { createScreenCommandDispatcher } from '@skelly/engine/internal/game/screenCommandDispatcher.ts';
+import {
+  firearmSlotIds,
+  HandlingQueue,
+  Inventory,
+  planCraft,
+  Quickbar,
+  type WorkOperation,
+  type WorkOption,
+} from '@skelly/engine/inventory';
+import { Body, bindReach, Character, PlayerTickActions, practiceForNextLevel, Survival } from '@skelly/engine/sim';
+import { coreLabel, countText, decimalText, fillText } from '@skelly/engine/text';
+import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
+import { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
+import { mountMenuPointer } from '@skelly/presentation/internal/ui/menuPointer.ts';
+import { Window } from 'happy-dom';
+import { Group } from 'three';
+import { afterAll, describe, expect, it, vi } from 'vitest';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
 
 /** Matches text filled from a content template, each placeholder replaced by its pattern. */
 const templatePattern = (template: string, placeholders: Readonly<Record<string, string>>): RegExp =>
@@ -80,7 +78,9 @@ Object.defineProperty(globalThis, 'dispatchEvent', {
 });
 // Happy DOM has no layout and omits this API; a moved cursor in these controls hits no drop zone.
 Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [] });
-const { InventoryScreen, targetForPackedFloorDrop } = await import('../src/ui/inventoryScreen.ts');
+const { InventoryScreen, targetForPackedFloorDrop } = await import(
+  '@skelly/presentation/internal/ui/inventoryScreen.ts'
+);
 
 afterAll(() => dom.happyDOM.abort());
 
@@ -160,6 +160,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     throwItem: () => undefined,
   };
   const hooks = {
+    bindings: inputBindings,
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1, clock: BASE_CLOCK }),
     feet: () => [0, 0, 0] as [number, number, number],
     nearby: () => [...inv.piles.values()],
@@ -237,12 +238,10 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
           {
             id: 'text_tile',
             workInProgress: false,
-            notLoot: false,
             name: 'Text tile',
             category: 'misc',
             weight: 1,
             size: [1, 1],
-            economy: { usage: [], tiers: [] },
           },
         ],
       },
@@ -280,7 +279,7 @@ it.each([
   const { screen, inv } = setup();
   const action = vi.spyOn(screen, 'onAction').mockReturnValue(true);
   const start = performance.now();
-  const threshold = inv.registry.inventory.get(CORE_CONTENT_IDS.player)!.keyHoldRealSeconds * 1000;
+  const threshold = inv.registry.inventory.get(fixtureIds.player)!.keyHoldRealSeconds * 1000;
   screen.onInputCommand({ action: tap, phase: 'down', at: start });
   screen.update(start + threshold / 2);
   expect(action).not.toHaveBeenCalled();
@@ -351,8 +350,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_floor_stack', {
       id: 'fixture_floor_stack',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture floor stack',
       category: 'material',
       weight: 1,
@@ -391,8 +388,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_floor_dragged', {
       id: 'fixture_floor_dragged',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture dragged item',
       category: 'material',
       weight: 1,
@@ -401,8 +396,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_floor_target', {
       id: 'fixture_floor_target',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture target item',
       category: 'material',
       weight: 1,
@@ -438,8 +431,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_inventory_alpha', {
       id: 'fixture_inventory_alpha',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: alphaName,
       category: 'medical',
       weight: 1,
@@ -448,8 +439,6 @@ describe('inventory screen Lit rendering', () => {
     items.set('fixture_inventory_beta', {
       id: 'fixture_inventory_beta',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: betaName,
       category: 'medical',
       weight: 1,
@@ -592,8 +581,6 @@ describe('inventory screen Lit rendering', () => {
       items.set(fixture.id, {
         id: fixture.id,
         workInProgress: false,
-        notLoot: false,
-        economy: { usage: [], tiers: [] },
         name: fixture.name,
         category: 'misc',
         weight: 1,
@@ -714,6 +701,24 @@ describe('inventory screen Lit rendering', () => {
         field.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
         return event;
       };
+      // A KeyQ code types "q"; named keys carry their code as their key.
+      const keyOf = (code: string) => (code.startsWith('Key') ? code.slice('Key'.length).toLowerCase() : code);
+      /** Presses an action's first bound chord outside the field. */
+      const pressBound = (action: string) => {
+        const { code } = inputBindings.chords(action)[0]!;
+        const event = new KeyboardEvent('keydown', { code, key: keyOf(code), bubbles: true, cancelable: true });
+        globalThis.dispatchEvent(event);
+        globalThis.dispatchEvent(new KeyboardEvent('keyup', { code, key: keyOf(code), bubbles: true }));
+        return event;
+      };
+      // The item-list actions' bound keys that type a character into the field.
+      const typedCodes = ['inventory.previous', 'inventory.next', 'inventory.hands'].flatMap((action) =>
+        inputBindings
+          .chords(action)
+          .filter(({ code, modifier }) => !modifier && keyOf(code).length === 1)
+          .map(({ code }) => code),
+      );
+      expect(typedCodes.length).toBeGreaterThan(0);
       expect(press('ArrowDown').defaultPrevented).toBe(true);
       expect(screen.selected).toBe(beans);
       expect(press('ArrowDown').defaultPrevented).toBe(true);
@@ -733,8 +738,7 @@ describe('inventory screen Lit rendering', () => {
       expect(press('Enter', 'Enter').defaultPrevented).toBe(true);
       expect(lastPayload()).toBe(beforeEnter);
       expect(document.activeElement).not.toBe(field);
-      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', key: 'Enter', bubbles: true }));
+      pressBound('inventory.best-pocket');
       expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: beans.uid });
       field.focus();
       expect(press('ArrowDown').defaultPrevented).toBe(true);
@@ -744,12 +748,8 @@ describe('inventory screen Lit rendering', () => {
       field.dispatchEvent(new Event('input', { bubbles: true }));
       expect(screen.selected).toBe(beans);
       const payloadBeforeTypingKey = lastPayload();
-      for (const [code, key] of [
-        ['KeyQ', 'q'],
-        ['KeyE', 'e'],
-        ['KeyW', 'w'],
-      ] as const) {
-        expect(press(code, key).defaultPrevented).toBe(false);
+      for (const code of typedCodes) {
+        expect(press(code, keyOf(code)).defaultPrevented, code).toBe(false);
         expect(lastPayload()).toBe(payloadBeforeTypingKey);
       }
       expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
@@ -760,28 +760,14 @@ describe('inventory screen Lit rendering', () => {
       field.dispatchEvent(new Event('input', { bubbles: true }));
       expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
 
-      const selectPrevious = new KeyboardEvent('keydown', {
-        code: 'KeyQ',
-        key: 'q',
-        bubbles: true,
-        cancelable: true,
-      });
-      globalThis.dispatchEvent(selectPrevious);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyQ', key: 'q', bubbles: true }));
-      expect(selectPrevious.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.previous').defaultPrevented).toBe(true);
       expect(screen.selected).not.toBe(beans);
-      const selectNext = new KeyboardEvent('keydown', { code: 'KeyE', key: 'e', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(selectNext);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', key: 'e', bubbles: true }));
-      expect(selectNext.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.next').defaultPrevented).toBe(true);
       expect(screen.selected).toBe(beans);
       field.value = query;
       field.dispatchEvent(new Event('input', { bubbles: true }));
 
-      const action = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(action);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
-      expect(action.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.hands').defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: beans.uid });
 
       const dimmed = [...root.querySelectorAll<HTMLElement>('.inv-item-unmatched')][0]!;
@@ -790,10 +776,7 @@ describe('inventory screen Lit rendering', () => {
       globalThis.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
       expect(screen.selected?.uid).toBe(dimmedUid);
 
-      const dimmedAction = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
-      globalThis.dispatchEvent(dimmedAction);
-      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
-      expect(dimmedAction.defaultPrevented).toBe(true);
+      expect(pressBound('inventory.hands').defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: dimmedUid });
       screen.onAction('inventory.clear-find');
       expect(field.value).toBe('');
@@ -982,6 +965,24 @@ describe('inventory screen Lit rendering', () => {
     expect(needs()).toContain('fatigue 130');
   });
 
+  it('lists skills by name whatever order they load in', () => {
+    const skill = { id: 'fixture_skill_first', name: '!Fixture sorts first' };
+    const content = baseRegistryWith([{ source: 'fixture-order', data: { skills: [skill] } }]);
+    const panelOrder = (stack: typeof content) => {
+      const { screen, root } = setup(stack);
+      screen.selectTab('skills');
+      return [...root.querySelectorAll<HTMLElement>('[data-skill]')].map(({ dataset }) => dataset.skill!);
+    };
+    const loaded = [...content.skills.keys()];
+    const shown = panelOrder(content);
+    expect(shown).not.toEqual(loaded);
+    expect(shown.map((id) => content.skills.get(id)!.name)).toEqual(
+      [...content.skills.values()].map(({ name }) => name).sort((left, right) => left.localeCompare(right)),
+    );
+    const reversed = { ...content, skills: new Map([...content.skills].reverse()) };
+    expect(panelOrder(reversed)).toEqual(shown);
+  });
+
   it('exposes authored skill effects on a focusable label and its tooltip', () => {
     const skill = { id: 'fixture_skill_detail', name: 'Fixture skill', detail: 'Fixture effect.' };
     const content = baseRegistryWith([{ source: 'fixture-detail', data: { skills: [skill] } }]);
@@ -1022,7 +1023,7 @@ describe('inventory screen Lit rendering', () => {
     character.awardPractice(skill.id, 2.5 * 0.46);
     screen.selectTab('skills');
 
-    const text = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.inventory;
+    const text = registry.ui.get(fixtureIds.ui)!.screenText.inventory;
     const practice = character.practice[skill.id]!;
     const next = practiceForNextLevel(registry, character.skills[skill.id]!);
     const expected = fillText(text.practice, { practice: decimalText(practice), next: countText(next) });
@@ -1058,9 +1059,7 @@ describe('inventory screen Lit rendering', () => {
             category: 'tool',
             weight: 1,
             size: [1, 1],
-            economy: { usage: [], tiers: [] },
             workInProgress: false,
-            notLoot: false,
             ...(role === 'receiver'
               ? {
                   light: {
@@ -1342,7 +1341,7 @@ describe('inventory screen Lit rendering', () => {
   it('names every firearm slot from its mount kind in content, never by its raw id', () => {
     const { screen, inv, root, beans } = setup();
     inv.consume(beans);
-    const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+    const { screenText } = registry.ui.get(fixtureIds.ui)!;
     const rowPattern = templatePattern(screenText.inventory.slot, { slot: '(.+)', item: '.*' });
     const firearms = [...registry.items.values()].filter(
       (def) => def.firearm && def.model && registry.models.get(def.model)?.gun?.attachmentSlots?.length,
@@ -1417,7 +1416,7 @@ describe('inventory screen Lit rendering', () => {
     if (effects?.kind !== 'suppressor' || effects.fitSkillLevel < 1) {
       throw new Error('Fixture suppressor needs a readable fit level above the minimum');
     }
-    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel - 1;
+    test.character.skills[attachmentWorkSkill(test.inv.registry)] = effects.fitSkillLevel - 1;
     test.screen.selected = firearm;
     test.screen.update();
 
@@ -1425,7 +1424,7 @@ describe('inventory screen Lit rendering', () => {
     expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
     expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(effects.fitRefusal);
 
-    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel;
+    test.character.skills[attachmentWorkSkill(test.inv.registry)] = effects.fitSkillLevel;
     test.screen.update();
     expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
     expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
@@ -1529,17 +1528,44 @@ describe('inventory screen Lit rendering', () => {
     }
   });
   it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
-    const { root, screen, inv, hooks, setWorkHandler } = setup();
+    const material = { workInProgress: false, category: 'material', weight: 1, size: [1, 1] };
+    const content = baseRegistryWith([
+      {
+        source: 'fixture-work',
+        data: {
+          recipeCategories: [{ id: 'fixture_work_category', label: 'Fixture work', order: 99 }],
+          items: [
+            { ...material, id: 'fixture_work_input', name: 'Work input' },
+            { ...material, id: 'fixture_work_result', name: 'Work result' },
+          ],
+          recipes: [
+            {
+              id: 'fixture_work',
+              category: 'fixture_work_category',
+              tags: [],
+              searchTerms: [],
+              result: { item: 'fixture_work_result', count: 1 },
+              timeGameMinutes: 1,
+              skills: {},
+              qualities: {},
+              components: [[{ item: 'fixture_work_input', count: 1 }]],
+            },
+          ],
+        },
+      },
+    ]);
+    const { root, screen, inv, hooks, setWorkHandler } = setup(content);
     expect(inv.move(inv.hands.right!, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    for (const [type, count] of [
-      ['stick', 1],
-      ['rag', 2],
-      ['wax', 1],
-      ['kitchen_knife', 1],
-    ] as const) {
-      inv.add(inv.create(type, count), { kind: 'pile', pos: [0, 0, 0] });
+    const recipe = content.recipes.get('fixture_work')!;
+    for (const [component] of recipe.components) {
+      if (!(component && 'item' in component)) {
+        throw new Error('Fixture recipe takes item components only');
+      }
+      inv.add(inv.create(component.item, component.count), { kind: 'pile', pos: [0, 0, 0] });
     }
-    const result = planCraft(registry.recipes.get('torch')!, hooks.reach(), new Character(registry));
+    const character = new Character(content);
+    character.initializeProgression({}, [recipe.id]);
+    const result = planCraft(recipe, hooks.reach(), character);
     if (!('plan' in result)) {
       throw new Error(result.missing.reason);
     }
@@ -1651,12 +1677,10 @@ describe('inventory screen Lit rendering', () => {
             {
               id: 'take_all_like',
               workInProgress: false,
-              notLoot: false,
               name: 'Like item',
               category: 'misc',
               weight: 1,
               size: [1, 1],
-              economy: { usage: [], tiers: [] },
             },
           ],
         },
@@ -1677,7 +1701,7 @@ describe('inventory screen Lit rendering', () => {
 
     const pocketed = like.filter((item) => t.inv.locate(item)?.kind === 'pocket');
     expect(pocketed).toHaveLength(half * 2);
-    const { inventory } = fixture.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+    const { inventory } = fixture.ui.get(fixtureIds.ui)!.screenText;
     expect(t.notices).toEqual([fillText(inventory.taking, { count: countText(pocketed.length), category: 'misc' })]);
   });
 

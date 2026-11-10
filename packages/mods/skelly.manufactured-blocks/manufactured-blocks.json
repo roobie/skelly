@@ -1,0 +1,315 @@
+{
+  "blocks": [
+    {
+      "color": "#3b3d40",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "asphalt",
+      "material": "masonry",
+      "name": "Asphalt",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#b9bcba",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "painted_asphalt",
+      "material": "masonry",
+      "name": "Painted asphalt",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#b5b3ad",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "concrete",
+      "material": "masonry",
+      "name": "Concrete",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#a0763f",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_wood"
+      },
+      "id": "planks",
+      "material": "timber",
+      "name": "Wooden planks",
+      "pattern": "planks",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#9c4f3a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "brick",
+      "material": "masonry",
+      "name": "Brick",
+      "pattern": "brick",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#d9d4c7",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "plaster",
+      "material": "masonry",
+      "name": "Plaster",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#cfd6da",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "tiles",
+      "material": "masonry",
+      "name": "Tiles",
+      "pattern": "tiles",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#5b6f9a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_leaves"
+      },
+      "id": "fabric",
+      "material": "textile",
+      "name": "Fabric",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#4a4b50",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "roof",
+      "material": "masonry",
+      "name": "Roofing",
+      "pattern": "shingles",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#6b4f4a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_leaves"
+      },
+      "id": "carpet",
+      "material": "textile",
+      "name": "Carpet",
+      "pattern": "noise",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#e6e2d8",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "window_frame",
+      "material": "timber",
+      "name": "Window frame",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#8f4b4b",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "siding_red",
+      "material": "timber",
+      "name": "Painted siding (faded red)",
+      "pattern": "siding",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#7a8d94",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "siding_blue",
+      "material": "timber",
+      "name": "Painted siding (faded blue-grey)",
+      "pattern": "siding",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#aab4b8",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "galvanized",
+      "material": "metal",
+      "name": "Galvanized sheet",
+      "pattern": "corrugated",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#5f6b58",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "cobblestone_mossy",
+      "material": "masonry",
+      "name": "Mossy cobblestone",
+      "pattern": "cobble",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#bcab8a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "dressed_stone",
+      "material": "masonry",
+      "name": "Dressed stone",
+      "pattern": "dressed",
+      "solid": true,
+      "weatherable": true
+    },
+    {
+      "color": "#c9a43a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "hazard_yellow",
+      "material": "metal",
+      "name": "Hazard paint",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#89979a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "fencePosts": {
+        "spacingBlocks": 6,
+        "widthBlocks": 0.12
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "chain_link",
+      "material": "metal",
+      "meleePass": {
+        "minimumActorReachMetres": 1,
+        "motions": ["thrust"]
+      },
+      "name": "Chain-link fence",
+      "opaque": false,
+      "solid": true,
+      "soundBlocking": false,
+      "weatherable": false,
+      "wireMesh": {
+        "cellsPerBlock": 4,
+        "wireFraction": 0.080000000000000002
+      }
+    },
+    {
+      "color": "#9b8d6a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "sandbag",
+      "material": "soil",
+      "name": "Sandbag",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#777b6a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
+      "footsteps": {
+        "player": "footstep_stone"
+      },
+      "id": "camo_woodland",
+      "material": "timber",
+      "name": "Weathered woodland camouflage",
+      "pattern": "camo",
+      "patternPalette": ["#53694d", "#78634d", "#9b8a6b", "#3b4039"],
+      "patternWashout": 0.41999999999999998,
+      "solid": true,
+      "weatherable": true
+    }
+  ]
+}

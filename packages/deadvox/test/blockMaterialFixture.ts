@@ -1,4 +1,5 @@
-import type { BlockMaterialDef } from '../src/core/schema.ts';
+import type { BlockMaterialDef } from '@skelly/engine/internal/core/schema.ts';
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
   id: 'fixture_material',
@@ -6,7 +7,7 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
   durability: 20,
   massKg: 10,
   span: 1,
-  resistance: { blunt: 0, cut: 0.5, pierce: 1, blast: 0, fragment: 0.25, breach: 0, crush: 0 },
+  resistance: { blunt: 0, cut: 0.5, pierce: 1, blast: 0, fragment: 0.25, breach: 0, crush: 0, acid: 0 },
   fallsTo,
   rubble: [],
   blowSound: 'fixture_blow',
@@ -16,6 +17,7 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
 
 /** Explicit fixture content, independent of base material tuning and identifiers. */
 export const blockMaterialFixture = (fallsTo: string) => ({
+  ...fixtureDamageContent(),
   blockMaterials: [fixtureBlockMaterial(fallsTo)],
   sounds: [
     {

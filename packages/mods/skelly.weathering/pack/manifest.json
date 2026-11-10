@@ -1,0 +1,14 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "weathering.json"
+    }
+  ],
+  "id": "skelly.weathering",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

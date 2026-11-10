@@ -1,21 +1,16 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { emptyDiscovery } from '@skelly/engine/internal/core/scenarioDiscovery.ts';
+import { ScenarioRun } from '@skelly/engine/internal/core/scenarioRun.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
-import { ScenarioRun } from '../src/core/scenarioRun.ts';
-import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { formatVersion } from './snapshotTestSupport.ts';
 
 const own = buildRegistry([
@@ -32,12 +27,11 @@ const own = buildRegistry([
           stack: 2,
           weight: 5,
           size: [1, 1],
-          economy: { usage: ['Residential'], tiers: ['Tier1'] },
           workInProgress: false,
-          notLoot: false,
           readable: { title: 'Fixture lead', text: 'Fixture destination' },
         },
       ],
+      itemEconomy: [{ id: 'fixture_paper', usage: ['Residential'], tiers: ['Tier1'], notLoot: false }],
       furniture: [
         {
           id: 'fixture_goal',
@@ -60,6 +54,7 @@ const registry = {
   ...BUNDLED_CONTENT.registry,
   furniture: new Map([...BUNDLED_CONTENT.registry.furniture, ...own.registry.furniture]),
   items: new Map([...BUNDLED_CONTENT.registry.items, ...own.registry.items]),
+  itemEconomy: new Map([...BUNDLED_CONTENT.registry.itemEconomy, ...own.registry.itemEconomy]),
 };
 const profile = [...registry.scenarios.values()][0]!;
 const objective: Vec3 = [8, 1, 6];
@@ -84,6 +79,7 @@ const fixture = (
   let intent = { ...IDLE };
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     objective: designated,
     discovery: {

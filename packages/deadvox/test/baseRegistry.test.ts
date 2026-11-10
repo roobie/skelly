@@ -1,7 +1,7 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
 import { expect, it } from 'vitest';
-import { buildBundledContent } from '../src/game/bundledContent.ts';
+import { buildBundledContent } from '../src/product/content.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 
 // The one deliberate full content build in the suite: the cache must hold what production builds. The
@@ -19,28 +19,26 @@ it(
   FULL_BUILD_TIMEOUT_MS,
 );
 
-it('isolates each startup content caller from another caller’s mutations', () => {
-  const original = startupContent();
-  const first = startupContent();
-  first.registry.blocks[0]!.name = 'fixture-mutated-startup-block';
-  first.registry.items.clear();
-  (first.origins as Map<string, unknown>).clear();
-  first.issues.push({ source: 'fixture', path: '', message: 'fixture mutation' });
-  expect(isDeepStrictEqual(startupContent(), original)).toBe(true);
-});
+// The baselines are deep clones taken before any mutation, not further calls of the factory under test, so
+// copies that share nested arrays or maps cannot hide a mutation by changing the baseline with it.
+it('deserializes a fresh copy for each startup content and base registry call', () => {
+  const earlierStartup = startupContent();
+  const pristineStartup = structuredClone(earlierStartup);
+  const startup = startupContent();
+  expect(startup.registry.blocks.length).toBeGreaterThan(0);
+  startup.registry.blocks[0]!.name = 'fixture-mutated-startup-block';
+  startup.registry.items.clear();
+  (startup.origins as Map<string, unknown>).clear();
+  startup.issues.push({ source: 'fixture', path: '', message: 'fixture mutation' });
+  deepStrictEqual(earlierStartup, pristineStartup);
+  deepStrictEqual(startupContent(), pristineStartup);
 
-it('isolates nested content mutations and map edits from other fixture callers', () => {
-  const first = baseRegistry();
-  const second = baseRegistry();
-  const original = structuredClone(second);
-  expect(first === second).toBe(false);
-  expect(first.blocks.length).toBeGreaterThan(0);
-  first.blocks[0]!.name = 'fixture-mutated-block';
-  first.blockIds.set('fixture-added-block', first.blocks.length);
-  first.items.clear();
-  expect(second.blocks[0]!.name).toBe(original.blocks[0]!.name);
-  expect(second.blockIds.has('fixture-added-block')).toBe(false);
-  expect(second.items.size).toBe(original.items.size);
-  deepStrictEqual(second, original);
-  deepStrictEqual(baseRegistry(), original);
+  const earlierRegistry = baseRegistry();
+  const pristineRegistry = structuredClone(earlierRegistry);
+  const registry = baseRegistry();
+  registry.blocks[0]!.name = 'fixture-mutated-block';
+  registry.blockIds.set('fixture-added-block', registry.blocks.length);
+  registry.items.clear();
+  deepStrictEqual(earlierRegistry, pristineRegistry);
+  deepStrictEqual(baseRegistry(), pristineRegistry);
 });

@@ -1,17 +1,13 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
+import { BLUEPRINTS } from '@skelly/engine/vehicles';
+import { CHUNK, type Chunk, CitySite, footprint, makeScale, terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Chunk } from '../src/core/chunk.ts';
-import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { footprint } from '../src/core/templates.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
-import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry, issues } = startupContent();
 
@@ -73,7 +69,14 @@ it('street car procedural variants', () => {
 it('keeps the street surface under every placed item standing on a street cell', () => {
   const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
-  const plan = buildCityPlan({ seed: 1, registry, grid, floor: 0, scenario });
+  const plan = buildCityPlan({
+    seed: 1,
+    registry,
+    grid,
+    floor: 0,
+    scenario,
+    start: defaultStartOf(registry, scenario),
+  });
   const scale = makeScale(0.5);
   const site = new CitySite(1, registry, scale, plan);
   const terrain = {

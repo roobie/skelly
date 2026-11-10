@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.deadvox.buildings"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "benchmark-city.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.benchmark-city",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

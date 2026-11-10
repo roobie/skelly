@@ -1,23 +1,14 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import { decodeSave } from '@skelly/engine/save';
+import { dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import { BlockEntities, type BlockEntity, makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
-import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundEmission } from '../src/core/soundPicker.ts';
-import { World } from '../src/core/world.ts';
-import type { PlayerSense } from '../src/core/zombies.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
-import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 /** A whole number of minimum blows, so the last of them brings the damage exactly to it. */
@@ -35,21 +26,20 @@ const fixtureDoor = (id: string, barredFrom?: 'front' | 'back') => ({
     ...(barredFrom ? { barredFrom } : {}),
   },
 });
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
+const base = baseContentSources();
 const { registry, issues } = buildFixtureRegistry([
   ...base,
   {
     source: 'breach-fixture',
     data: {
-      furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+      furnitureMaterials: [
+        { id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
+      ],
       furniture: [fixtureDoor('breach_door'), fixtureDoor('breach_boarded', 'front')],
     },
   },
 ]);
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FLOOR: SolidAt = (_x, y) => y === 0;
 
@@ -89,7 +79,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: sense,
     isSolid: solid,
     isOpaque: solid,
@@ -97,6 +87,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const leaf = entities.pieceTouching(ahead);
@@ -112,47 +103,6 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
   return { entities, door, reachedBehind };
 };
 
-/** One fists swing at the closed fixture leaf in front of the player, with the swing's impulse set to `strength`. */
-const strikeDoor = (strength: number) => {
-  const played: Readonly<SoundEmission>[] = [];
-  const session = createSession({
-    registry,
-    world: new World(),
-    isSolid: FLOOR,
-    isOpaque: () => false,
-    scale: SCALE,
-    seed: 5,
-    start: 43_200,
-    spawn: [5, 1, 2],
-    ready: () => false,
-    controls: {
-      active: () => true,
-      intent: () => IDLE,
-      yaw: () => 0,
-      pitch: () => 0,
-      walking: () => false,
-      descending: () => false,
-    },
-    audio: { play: (sound) => played.push(sound) },
-    notice: () => undefined,
-    onRead: () => undefined,
-  });
-  const { entities } = session.inventory;
-  const door = entities.add({ type: 'breach_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
-  const hands = { right: null, left: null };
-  const chest = session.chest();
-  session.playerCombat.beginMeleeSwing({
-    origin: chest,
-    direction: [0, 0, -1],
-    weapon: { ...FISTS_MELEE, impulse: strength },
-    profile: 'fists',
-    twoHanded: false,
-    hands,
-  });
-  session.playerCombat.tick(session.playerCombat.activeMeleeAction!.contactAt, hands);
-  return { door, played };
-};
-
 it('builds the breach fixture without issues and rejects any piece, door or not, without a positive breach', () => {
   expect(issues).toEqual([]);
   const { breach, ...leaf } = fixtureDoor('breach_rejected');
@@ -163,7 +113,14 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
       {
         source: 'breach-rejected',
         data: {
-          furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+          furnitureMaterials: [
+            {
+              id: 'breach_fixture',
+              blowSound: FIXTURE_BLOW_SOUND,
+              drops: { default: FIXTURE_BLOW_SOUND },
+              methods: [],
+            },
+          ],
           sounds: fixtureSounds(),
           furniture: [piece],
         },
@@ -240,14 +197,6 @@ it('holds a bashing shambler below the minimum behind the intact leaf and lets a
   const strong = chaseThroughDoor(MINIMUM, 60);
   expect(strong.door.broken).toBe(true);
   expect(strong.reachedBehind).toBe(true);
-});
-
-it("meets a player's strike with the same minimum-strength gate as a zombie's bash, and makes it heard", () => {
-  const below = strikeDoor(MINIMUM * 0.99);
-  expect(below.door.damage).toBeUndefined();
-  const at = strikeDoor(MINIMUM);
-  expect(at.door.damage).toBe(MINIMUM);
-  expect(at.played.find((sound) => sound.event === FIXTURE_BLOW_SOUND)?.emittedAsNoise).toBe(true);
 });
 
 it('keeps a damaged boarded leaf openable only from its unboarded side', () => {

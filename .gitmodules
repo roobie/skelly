@@ -1,0 +1,3 @@
+[submodule "packages/skelly-assets"]
+	path = packages/skelly-assets
+	url = https://github.com/roobie/skelly-assets.git

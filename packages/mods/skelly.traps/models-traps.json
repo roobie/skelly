@@ -1,0 +1,22 @@
+{
+  "models": [
+    {
+      "file": "assets/models/bear_trap.glb",
+      "id": "bear_trap",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bear_trap": {
+          "centreOfMass": [-0.024894459102902358, 0.0093271767810026232, -8.206330087597312e-19],
+          "massKg": 4.5,
+          "node": "bear_trap:bearTrap"
+        }
+      }
+    }
+  ]
+}

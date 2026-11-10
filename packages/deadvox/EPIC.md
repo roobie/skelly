@@ -37,7 +37,7 @@ described in [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES
   repair, skills and books.
 - The body model: wounds, bleeding, infection and fractures. Needs: hunger,
   thirst, fatigue, stamina, temperature.
-- Melee and firearms (from gungen), noise, and zombie senses (sight, hearing,
+- Melee and firearms (from the gun authoring tool), noise, and zombie senses (sight, hearing,
   smell).
 - Positional sound for every noise event, muffled by walls, plus zombie sounds
   and ambience driven by the simulation. See [Audio](DESIGN.md#audio).
@@ -266,6 +266,10 @@ The placeholders and rejected or deferred work below are open, including a bette
 hard-landing-specific sound, a distinct stuck-door cue and replacement mud/stone
 footsteps.
 
+A parked recording lives with its topic owner until a row plays it: blade
+recordings in `packages/mods/skelly.melee-classes/assets/audio`, door recordings
+in `packages/mods/skelly.structures/assets/audio`.
+
 - Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood need recordings.
 - Split item-drop sounds by pile surface; the wood clips play on every surface because piles expose no surface classification.
 - A short drop onto a hard floor needs a recording.
@@ -273,7 +277,7 @@ footsteps.
 - New sources for `footstep_mud` and `shambler_step_mud`; the existing variants are rejected.
 - More `footstep_leaves` variants. Do not use `footstep-leaves-02.ogg`; it sounds like linoleum.
 - New sources for `footstep_stone` and `shambler_step_stone`; keep the gravel-sounding clips for a future gravel surface.
-- More `door_open` variants; only `door-open-03.ogg` is accepted.
+- More `door_open` variants; only `door-open-03.ogg` is accepted. `door-open-01..02.ogg` and `door-close-01..03.ogg` are parked.
 - A distinct stuck-door sound; use `door_blocked_close-01.ogg` for both `door_close` and `door_blocked_close` until a separate cue is added.
 - Wire eating, drinking, and flashlight on/off sounds to their use actions; add
   sustained or periodic breathing when stamina is low.
@@ -317,7 +321,7 @@ Q and E remain reserved for later actions and have no world bindings.
 Fists are acceptable as they are; cross, hook and uppercut variants are possible
 polish. Per-weapon motion may override a damage-type profile. A surface-hit result
 could provide a wall-hit thud or recoil instead of counting as a miss.
-`src/render/playerFigure.ts` could follow first-person swings; third-person views
+`packages/presentation/src/render/playerFigure.ts` could follow first-person swings; third-person views
 do not animate.
 
 ## Cut list
@@ -338,7 +342,7 @@ qualities, the body model, saves, dark nights and sound. They are the game.
 
 1. **Plan:** a `SLICE-<number>.md` with its goal, playtest questions, scope, ordered
    milestones and a definition of done. Run or explicitly reuse the slice-start
-   consolidation surveys for deadvox, gungen and mobgen, following
+   consolidation surveys for each subproject, following
    [Continuous consolidation](../../docs/PROCESS.md#continuous-consolidation).
    Give open findings owners, decisions and calendar revisit dates; name which
    work is standalone and which folds into a milestone.

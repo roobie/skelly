@@ -1,36 +1,44 @@
+import { claimed } from '@skelly/engine/inventory';
+import type { SoundId } from '@skelly/engine/sound';
+import { playerHeartbeat } from '@skelly/engine/sound';
+import { GameAudio } from '@skelly/presentation/audio';
+import {
+  applyUiTokens,
+  buildHeartbeatSoundGuide,
+  buildSoundGuide,
+  renderHeartbeatSoundGuide,
+} from '@skelly/presentation/ui';
 import { html, render } from 'lit-html';
-import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
-import type { Manifest } from './core/assets.ts';
-import { CORE_CONTENT_IDS } from './core/contentIds.ts';
-import type { SoundId } from './core/soundEvents.ts';
-import { GameAudio } from './game/audio.ts';
-import { playerHeartbeat } from './game/audioPresentation.ts';
+import { bundledCredits } from './bundledCredits.ts';
+import { productAssets } from './product/assets.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
-import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
-import { applyUiTokens } from './ui/uiTokens.ts';
 
 const { registry, issues } = buildSoundsPageContent();
-// The page shares the game's style sheet, which is measured in these tokens.
-applyUiTokens(registry, document.documentElement);
 const heartbeatTuning = playerHeartbeat(registry);
 const heartbeatEvents = new Set<SoundId>(Object.values(heartbeatTuning.sounds));
+const { manifest: credits } = bundledCredits();
 const guide = buildSoundGuide(
   [...registry.sounds.values()].filter(({ id }) => !heartbeatEvents.has(id)),
-  assetManifest as Manifest,
+  credits,
+  registry.soundOrigins,
 );
-const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, assetManifest as Manifest);
+const heartbeat = buildHeartbeatSoundGuide(heartbeatTuning, registry.sounds, credits, registry.soundOrigins);
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');
+const report = (message: string) => {
+  errorRoot.textContent = message;
+};
+// The page shares the game's style sheet, which is measured in these tokens.
+applyUiTokens(registry, document.documentElement, { report, files: productAssets.cursors });
 
 const audio = new GameAudio({
   registry,
   blockSize: 1,
   isSolid: () => false,
-  tuning: registry.senses.get(CORE_CONTENT_IDS.player)!,
-  report: (message) => {
-    errorRoot.textContent = message;
-  },
+  tuning: claimed(registry.senses, 'player')!,
+  report,
+  files: productAssets.audio,
 });
 audio.updateListener([0, 0, 0], [0, 0, -1]);
 
@@ -69,10 +77,10 @@ const sheet = html`
         selection jitter and cooldown are bypassed.
       </p>
       <p class="sound-debug-note">
-        Listed in content order. No event is debug-only; repeatable <code>?debug=1</code> shortcuts are listed
+        Listed in content order. No event is debug-only; repeatable <code>#{debug:true}</code> shortcuts are listed
         where useful.
       </p>
-      <nav><a href="./">Back to game</a> · <a href="./?debug=1">Open game with debug help</a></nav>
+      <nav><a href="./">Back to game</a> · <a href="./#{debug:true}">Open game with debug help</a></nav>
     </div>
     <div class="sound-count">${guide.length + 1} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
   </header>

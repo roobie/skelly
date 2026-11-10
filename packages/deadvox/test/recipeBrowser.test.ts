@@ -1,7 +1,8 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { type RecipeBrowserQuery, recipeBrowser } from '@skelly/presentation/internal/ui/recipeBrowser.ts';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { gameMinutes } from '../src/core/time.ts';
-import { type RecipeBrowserQuery, recipeBrowser } from '../src/ui/recipeBrowser.ts';
 import { fixtureSources } from './economyFixtures.ts';
 
 const categories = () => [
@@ -46,11 +47,10 @@ const data = () => ({
         ? undefined
         : {
             timeGameMinutes: 1,
-            skill: 'fixture_skill',
+            skill: 'crafting',
             yields: [{ item: 'fixture_scrap', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
   })),
-  skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
   recipes: [
     recipe('fixture_bag', 'fixture_leaf', ['fixture_soft', 'fixture_portable'], ['stitch carry']),
     recipe('fixture_coat', 'fixture_root', ['fixture_soft']),

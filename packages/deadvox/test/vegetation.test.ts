@@ -1,27 +1,38 @@
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import { perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
+import { foliageRustle, initialRustleClock } from '@skelly/engine/internal/core/foliageRustle.ts';
+import { footstepEventForBlock } from '@skelly/engine/internal/core/footsteps.ts';
+import { PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
+import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
+import { soundOcclusion } from '@skelly/engine/internal/core/soundOcclusion.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import {
+  forestDensityAt,
+  leafLitterAt,
+  placeTree,
+  stampTrees,
+  TreeIndex,
+} from '@skelly/engine/internal/core/vegetation.ts';
+import { actorPoseInputFor } from '@skelly/engine/pose';
+import { createSession, IDLE } from '@skelly/engine/session';
+import {
+  BlockEntities,
+  Chunk,
+  Forest,
+  makeScale,
+  raycast,
+  siteGenerationOf,
+  sitePalette,
+  World,
+  worldOpaque,
+  worldSolid,
+} from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
-import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
-import { Forest } from '../src/core/forest.ts';
-import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { rectsOverlap } from '../src/core/site.ts';
-import { siteGenerationOf } from '../src/core/sitePalette.ts';
-import { soundOcclusion } from '../src/core/soundOcclusion.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
-import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import { perceivePlayer } from '../src/core/zombies.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { physicsFor } from './playerFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
@@ -38,7 +49,7 @@ const senseTuning = {
   wall: soundTuning,
   footsteps: registry.senses.get('player')!.footsteps,
   vocalNoiseLifetimeSimSeconds: registry.senses.get('player')!.vocalNoiseLifetimeSimSeconds,
-  shamblerVoice: registry.senses.get('player')!.shamblerVoice,
+  actorVoice: registry.senses.get('player')!.actorVoice,
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0,
@@ -69,6 +80,7 @@ const verticalBrushSession = (spawnY: number) => {
   }
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     entities,
     isSolid: worldSolid(world, registry, entities),
@@ -115,7 +127,7 @@ describe('passable but opaque vegetation', () => {
     const opaque = worldOpaque(world, registry, entities);
     const sense = () =>
       perceivePlayer({
-        zombie: registry.zombies.get('shambler')!,
+        def: registry.actors.get('shambler')!,
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: {
@@ -175,29 +187,32 @@ describe('passable but opaque vegetation', () => {
       eyeHeightMetres: 1.3,
     };
     const hits: number[] = [];
-    const system = new ZombieSystem({
+    const figures = stackActorFigureFiles(registry);
+    const system = new ActorSystem({
       isSolid: (x, y, z) => y === 0 || movement(x, y, z),
       isOpaque: opaque,
       blockSize: 0.5,
       physics: physicsFor(scale),
       tuning: senseTuning,
+      actorFigureFiles: figures,
       player: () => player,
       dayPhase: () => dayStateAtHour(12),
       hurtPlayer: () => undefined,
       onMeleeResult: (result) => hits.push(result.damage),
     });
     const playerCombat = new PlayerCombat(system);
-    const id = system.add(registry.zombies.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
+    const id = system.add(registry.actors.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
     system.tick(1 / 20);
-    const zombie = system.store.get(id)!;
-    expect(zombie.mode).not.toBe('chase');
+    const actor = system.store.get(id)!;
+    expect(actor.agent!.mode).not.toBe('chase');
     system.setFrozen(true);
-    const { center } = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5)).head.find(
-      (box) => box.bone === 'head',
-    )!;
+    const { center } = posedHumanoidRegionBoxes(
+      actorPoseInputFor(actor, id, { blockSize: 0.5, actorFigureFiles: figures }),
+    ).head.find((box) => box.bone === 'head')!;
     const origin: [number, number, number] = [center[0], center[1], 0.5];
     const direction: [number, number, number] = [0, 0, 1];
     const weapon = {
+      type: 'blunt',
       motion: 'swing' as const,
       damage: 1,
       reach: 6,
@@ -224,10 +239,15 @@ describe('passable but opaque vegetation', () => {
     expect(hits).toEqual([1]);
   });
 
-  it('rustles on entry and cooldown only while moving, with faster content cadence', () => {
+  it('rustles on entry and after its content cooldown only while moving, with the gait content event', () => {
+    const foliage = registry.blocks.findIndex((block) => block?.rustle !== undefined);
+    expect(foliage).toBeGreaterThan(0);
+    const { gentle, fast: fastEvent } = registry.blocks[foliage]!.rustle!;
+    const interval = (event: string) => registry.sounds.get(event)!.minIntervalSimSeconds;
+    expect(interval(gentle)).toBeGreaterThan(0);
     const world = new World();
-    world.setBlock(2, 2, 2, registry.blockIds.get('leaves')!);
-    world.setBlock(3, 2, 2, registry.blockIds.get('leaves')!);
+    world.setBlock(2, 2, 2, foliage);
+    world.setBlock(3, 2, 2, foliage);
     const body = {
       pos: [2.5, 2, 2.5] as [number, number, number],
       vel: [0, 0, 0] as [number, number, number],
@@ -237,17 +257,20 @@ describe('passable but opaque vegetation', () => {
     };
     const sample = { body, world, registry, gait: 'walking' as const, moving: true, time: 0 };
     const entry = foliageRustle(initialRustleClock(), sample);
-    expect(entry.sound?.event).toBe('foliage_rustle');
-    expect(foliageRustle(entry.clock, { ...sample, time: 0.2 }).sound).toBeUndefined();
-    expect(foliageRustle(entry.clock, { ...sample, time: 0.5, moving: false }).sound).toBeUndefined();
-    expect(foliageRustle(entry.clock, { ...sample, time: 0.5 }).sound?.event).toBe('foliage_rustle');
+    expect(entry.sound?.event).toBe(gentle);
+    expect(entry.clock.nextSimTimestamp).toBe(interval(gentle));
+    const due = interval(gentle);
+    expect(foliageRustle(entry.clock, { ...sample, time: due / 2 }).sound).toBeUndefined();
+    expect(foliageRustle(entry.clock, { ...sample, time: due, moving: false }).sound).toBeUndefined();
+    expect(foliageRustle(entry.clock, { ...sample, time: due }).sound?.event).toBe(gentle);
     body.pos[0] = 3.5;
-    const fast = foliageRustle(entry.clock, { ...sample, gait: 'sprinting', time: 0.3 });
-    expect(fast.sound?.event).toBe('foliage_rustle_fast');
-    expect(fast.clock.nextSimTimestamp - 0.3).toBeLessThan(entry.clock.nextSimTimestamp);
-    expect(foliageRustle(fast.clock, { ...sample, gait: 'sprinting', time: 0.5 }).sound?.event).toBe(
-      'foliage_rustle_fast',
-    );
+    const enteredAt = due / 2;
+    const fast = foliageRustle(entry.clock, { ...sample, gait: 'sprinting', time: enteredAt });
+    expect(fast.sound?.event).toBe(fastEvent);
+    expect(fast.clock.nextSimTimestamp).toBe(enteredAt + interval(fastEvent));
+    expect(
+      foliageRustle(fast.clock, { ...sample, gait: 'sprinting', time: fast.clock.nextSimTimestamp }).sound?.event,
+    ).toBe(fastEvent);
   });
 
   it('admits brushing sound and positioned hearing together during actual player movement even without output', () => {
@@ -263,6 +286,7 @@ describe('passable but opaque vegetation', () => {
     }
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world,
       entities,
       isSolid: worldSolid(world, registry, entities),
@@ -329,30 +353,19 @@ describe('passable but opaque vegetation', () => {
     }
   });
 
-  it('maps wood and foliage surfaces to their registered player and shambler sounds', () => {
-    const eventForAsset = (category: 'body' | 'world', asset: string) => {
-      const sound = [...registry.sounds.values()].find(
-        (definition) =>
-          definition.category === category &&
-          definition.variants.some((variant) => typeof variant === 'string' && variant.includes(asset)),
-      );
-      expect(sound, `${category} sound for ${asset}`).toBeDefined();
-      return sound!.id;
+  it('resolves every tree and litter surface to a registered player and shambler footstep sound', () => {
+    const { trees, leafLitter } = sitePalette(registry);
+    const families = {
+      player: [...registry.senses.values()][0]!.footsteps.family,
+      shambler: [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
     };
-    const playerWood = eventForAsset('body', 'footstep-wood-');
-    const playerFoliage = eventForAsset('body', 'footstep-leaves-');
-    const shamblerWood = eventForAsset('world', 'footstep-wood-');
-    const shamblerFoliage = eventForAsset('world', 'footstep-leaves-');
-
-    for (const name of ['tree_trunk', 'tree_branch']) {
-      const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(block)).toBe(playerWood);
-      expect(shamblerFootstepEventForBlock(block)).toBe(shamblerWood);
-    }
-    for (const name of ['leaves', 'leaf_litter']) {
-      const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(block)).toBe(playerFoliage);
-      expect(shamblerFootstepEventForBlock(block)).toBe(shamblerFoliage);
+    for (const id of [trees.trunk, trees.branch, trees.leaves, leafLitter]) {
+      const block = registry.blocks[id]!;
+      for (const [agent, family] of Object.entries(families)) {
+        const event = footstepEventForBlock(registry, block, family);
+        expect(event, `${agent} footstep on ${block.id}`).toBeDefined();
+        expect(registry.sounds.has(event!), `${agent} footstep sound ${event} on ${block.id}`).toBe(true);
+      }
     }
   });
 

@@ -1,0 +1,282 @@
+{
+  "models": [
+    {
+      "file": "assets/models/glass_shards.glb",
+      "id": "glass_shards",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/wood_offcut.glb",
+      "id": "wood_offcut",
+      "itemPresentation": {
+        "materials": ["wood", "wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/rubber_strip.glb",
+      "id": "rubber_strip",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/cloth_bundle.glb",
+      "id": "cloth_bundle",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/rag.glb",
+      "grip": {
+        "at": [-0.050000000000000003, 0.02, 0.039999999999999994],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "rag",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0.003253164556962024, 0.015202531645569624, -0.00024050632911392332],
+          "massKg": 0.050000000000000003,
+          "node": "material:foldedSheet"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/duct_tape.glb",
+      "grip": {
+        "at": [0.037000000000000005, 0.025000000000000001, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "duct_tape",
+      "itemPresentation": {
+        "materials": ["polymer", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0, 0.025000000000000005, 0],
+          "massKg": 0.14999999999999999,
+          "node": "material:ring"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/nails.glb",
+      "grip": {
+        "at": [0.037000000000000005, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "nails",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0.039666666666666663, 0, 0],
+          "massKg": 0.0050000000000000001,
+          "node": "material:turnedStock"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/scrap_metal.glb",
+      "grip": {
+        "at": [-0.059999999999999998, 0.01, -0.035000000000000003],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "scrap_metal",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0.0016990291262135922, 0.011181229773462783, 0.0010841423948220082],
+          "massKg": 0.5,
+          "node": "material:foldedSheet"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/stick.glb",
+      "grip": {
+        "at": [0.20000000000000001, 0, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "stick",
+      "itemPresentation": {
+        "materials": ["wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0.193, 9.0909090909090958e-5, 9.0909090909090958e-5],
+          "massKg": 0.20000000000000001,
+          "node": "material:turnedStock"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/wax.glb",
+      "grip": {
+        "at": [0, 0.014999999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "wax",
+      "itemPresentation": {
+        "materials": ["wax"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0, 0.013235294117647059, 0],
+          "massKg": 0.050000000000000003,
+          "node": "material:turnedStock"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/small_spring.glb",
+      "id": "small_spring",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "small_spring": {
+          "centreOfMass": [9.9667774086378753e-6, 0.019933554817275746, 0],
+          "massKg": 0.02,
+          "node": "small_spring:coil"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fastener_pack.glb",
+      "id": "fastener_pack",
+      "itemPresentation": {
+        "materials": ["paper", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fastener_pack": {
+          "centreOfMass": [-3.8775813400683397e-5, 0.019504234140543759, 0],
+          "massKg": 0.17999999999999999,
+          "node": "fastener_pack:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/tape_roll.glb",
+      "id": "tape_roll",
+      "itemPresentation": {
+        "materials": ["metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "electrical_tape": {
+          "centreOfMass": [0, 0.0099999999999999985, 0],
+          "massKg": 0.029999999999999999,
+          "node": "electrical_tape:ring"
+        }
+      }
+    },
+    {
+      "file": "assets/models/thread_spool.glb",
+      "id": "thread_spool",
+      "itemPresentation": {
+        "materials": ["paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "sewing_thread": {
+          "centreOfMass": [0, 0.025000000000000001, 0],
+          "massKg": 0.014999999999999999,
+          "node": "sewing_thread:spool"
+        }
+      }
+    },
+    {
+      "file": "assets/models/cord_coil.glb",
+      "id": "cord_coil",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "nylon_cord": {
+          "centreOfMass": [-0.00033333333333333332, 0.013333333333333334, 0.00016666666666666666],
+          "massKg": 0.059999999999999998,
+          "node": "nylon_cord:coil"
+        }
+      }
+    }
+  ]
+}

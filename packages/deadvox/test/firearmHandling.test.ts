@@ -1,50 +1,54 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { Registry } from '@skelly/engine/content';
+import { aimBasis } from '@skelly/engine/internal/core/aim.ts';
+import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
+import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
+import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import type { PelletShot } from '@skelly/engine/internal/core/pellets.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import {
+  FirearmMechanics,
+  type FirearmShotInput,
+  type FirearmTrajectory,
+} from '@skelly/engine/internal/game/firearmHandling.ts';
+import { FirearmTrigger } from '@skelly/engine/internal/game/firearmTrigger.ts';
+import {
+  actionCycleSeconds,
+  type FirearmShotEffect,
+  firearmHandlingFor,
+  HandlingQueue,
+  Inventory,
+  type Item,
+  pileScatterPlacements,
+  spentCaseItemId,
+} from '@skelly/engine/inventory';
+import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
+import { firearmBoreRay } from '@skelly/engine/sim';
+import type { SoundId } from '@skelly/engine/sound';
+import type { Vec3 } from '@skelly/engine/world';
+import { CaseEffects } from '@skelly/presentation/internal/render/caseEffects.ts';
+import {
+  actionPartPaths,
+  cloneHeldModel,
+  sampleActionStroke,
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { PileMeshes } from '@skelly/presentation/render';
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
-import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
-import type { InventoryState } from '../src/core/inventory.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import type { PelletShot } from '../src/core/pellets.ts';
-import { pileScatterPlacements } from '../src/core/scatterPile.ts';
-import type { SoundId } from '../src/core/soundEvents.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import {
-  FirearmMechanics,
-  type FirearmShotEffect,
-  type FirearmShotInput,
-  type FirearmTrajectory,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../src/game/firearmHandling.ts';
-import { FirearmTrigger } from '../src/game/firearmTrigger.ts';
-import { CaseEffects } from '../src/render/caseEffects.ts';
-import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
-import { prepareModel } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { modFileBytes } from './modFile.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
 
-const BASE = 'src/content/base';
-const base = readdirSync(BASE)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
+const base = baseContentSources();
 const registry = baseRegistry();
 const { registry: skillZeroRegistry } = buildRegistry([
   ...base,
@@ -63,6 +67,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
               singleShot: { variance: 1.2, recoilKickScale: 2, recoilRecoveryScale: 0.8 },
@@ -81,6 +86,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
               singleShot: { variance: 2.5, recoilKickScale: 12, recoilRecoveryScale: 0.2 },
@@ -99,6 +105,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
           },
         },
@@ -287,7 +294,7 @@ describe('rifle firearm handling', () => {
       pose: () => undefined,
       onEjection: () => undefined,
     });
-    const globalTuning = skillZeroRegistry.skills.get('firearms_combat')!.combat!.firearms!;
+    const globalTuning = skilledFirearmsTuning(skillZeroRegistry);
     const tuningFor = (uid: number) => ({
       ...globalTuning,
       skillZeroHandling: mechanics.skillZeroHandlingFor(uid),
@@ -315,7 +322,7 @@ describe('rifle firearm handling', () => {
       },
     });
     const { model } = firearmHandlingFor(rifle, registry);
-    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(registry);
     const common = {
       holds: registry.figures.get('player')!.holds,
       model,
@@ -345,7 +352,7 @@ describe('rifle firearm handling', () => {
 
   it('keeps the ready firearm bore aligned with the view before aim sway', () => {
     const model = registry.models.get('rifle_ak')!;
-    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(registry);
     const yaw = 0.3;
     const pitch = -0.2;
     const bore = firearmBoreRay({
@@ -405,7 +412,7 @@ describe('rifle firearm handling', () => {
       { content: fixtureBuild.registry, type: 'fixture_bore_rifle' },
     );
     const input = { ...shotInput(rifle, 1), ...view, aimFrame: { yaw: 0.04, pitch: -0.03 } };
-    const tuning = fixtureBuild.registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(fixtureBuild.registry);
     const bore = firearmBoreRay({
       holds: fixtureBuild.registry.figures.get('player')!.holds,
       model: firearmHandlingFor(rifle, fixtureBuild.registry).model,
@@ -532,7 +539,7 @@ describe('rifle firearm handling', () => {
     const experienced = publish(SKILL_LEVEL_MAX);
     const direction = novice.directions[0]!;
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
-    const tuning = fixtureRegistry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(fixtureRegistry);
     const bore = firearmBoreRay({
       holds: fixtureRegistry.figures.get('player')!.holds,
       model: firearmHandlingFor(fixtureItem, fixtureRegistry).model,
@@ -738,7 +745,7 @@ describe('rifle firearm handling', () => {
 
   it('admits and loads an unannotated held gun while its mechanics refuse without synthetic data', async () => {
     const fixture = buildRegistry([
-      base.find(({ source: file }) => file === 'sounds.json')!,
+      base.find(({ source: file }) => file === 'sounds-firearms.json')!,
       {
         source: 'no-calibre-fixture.json',
         data: {
@@ -761,6 +768,7 @@ describe('rifle firearm handling', () => {
                 dispersionRadians: 0.01,
                 pelletSpreadScale: 1,
                 shotSound: 'gunshot',
+                rackSound: 'gunshot',
                 handling: {},
               },
             },
@@ -771,7 +779,7 @@ describe('rifle firearm handling', () => {
     expect(fixture.issues).toEqual([]);
     const model = fixture.registry.models.get('unannotated_gun_model')!;
     expect(model.gun?.calibre).toBeUndefined();
-    const bytes = readFileSync(join(BASE, model.file));
+    const bytes = modFileBytes(model.file);
     const gltf = await new GLTFLoader().parseAsync(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       '',

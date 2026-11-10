@@ -1,18 +1,23 @@
+import { settleCell } from '@skelly/engine/internal/core/itemThrow.ts';
+import { type BrickOut, brickHas } from '@skelly/engine/internal/core/solidBricks.ts';
+import { spawnOverlappingSolidBlock } from '@skelly/engine/internal/core/spawnClearance.ts';
+import { VehicleOccupancy } from '@skelly/engine/internal/core/vehicleProjection.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
+import {
+  BlockEntities,
+  bodyOverlapsTerrain,
+  makeScale,
+  type Vec3,
+  World,
+  worldBricks,
+  worldSolid,
+} from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { settleCell } from '../src/core/itemThrow.ts';
-import { bodyOverlapsTerrain } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { type BrickOut, brickHas, worldBricks } from '../src/core/solidBricks.ts';
-import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
-import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
-import { World } from '../src/core/world.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -94,6 +99,7 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   }
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     isSolid: (_x, y, _z) => y === 0,
     isOpaque: () => false,
@@ -150,7 +156,7 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   const aimed: Vec3 = [cell[0] + Math.floor(crate.size[0] / 2), cell[1], cell[2] + Math.floor(crate.size[2] / 2)];
 
   expect(session.furniturePlacement(aimed)).toEqual({
-    refusal: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.noRoom,
+    refusal: registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages.noRoom,
   });
   expect(inventory.landing(cell)).toBeUndefined();
 
@@ -223,7 +229,7 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
   expect(sight.isSolid(...cell)).toBe(false);
 });
 
-it('leaves a player body standing in exported vehicle space with no collision box', () => {
+it('leaves a player body clear in an empty cell of vehicle space beside a solid part cell', () => {
   const inventory = new Inventory(registry);
   const id = inventory.registerVehicle({
     blueprint: 'hatchback',
@@ -246,17 +252,36 @@ it('leaves a player body standing in exported vehicle space with no collision bo
     vehicles: inventory.vehicles,
     blockSize: scale.blockSize,
   });
+  const occupied = new Set(allCells.map((cell) => cell.join(',')));
+  const bodyAt = ([x, y, z]: Readonly<Vec3>) => createPlayerBody(scale, x + 0.5, y, z + 0.5);
   const [minX, minY, minZ] = min;
   const [maxX, maxY, maxZ] = max;
-  const clear = [] as Vec3[];
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let z = minZ; z <= maxZ; z += 1) {
-      for (let x = minX; x <= maxX; x += 1) {
-        if (!bodyOverlapsTerrain(createPlayerBody(scale, x + 0.5, y, z + 0.5), solid)) {
-          clear.push([x, y, z]);
+  // The cells just outside a body's footprint, one per horizontal direction, at its feet, with the one-cell step toward each.
+  const besideFootprint = (cell: Readonly<Vec3>): { part: Vec3; step: Vec3 }[] => {
+    const { pos, halfWidth } = bodyAt(cell);
+    const [x, y, z] = cell;
+    const lo = (axis: 0 | 2) => Math.floor(pos[axis] - halfWidth) - 1;
+    const hi = (axis: 0 | 2) => Math.ceil(pos[axis] + halfWidth);
+    return [
+      { part: [lo(0), y, z], step: [x - 1, y, z] },
+      { part: [hi(0), y, z], step: [x + 1, y, z] },
+      { part: [x, y, lo(2)], step: [x, y, z - 1] },
+      { part: [x, y, hi(2)], step: [x, y, z + 1] },
+    ];
+  };
+  let found: { clear: Vec3; part: Vec3; step: Vec3 } | undefined;
+  for (let y = minY; y <= maxY && !found; y += 1) {
+    for (let z = minZ; z <= maxZ && !found; z += 1) {
+      for (let x = minX; x <= maxX && !found; x += 1) {
+        const clear: Vec3 = [x, y, z];
+        const beside = besideFootprint(clear).find(({ part }) => occupied.has(part.join(',')));
+        if (beside && !occupied.has(clear.join(',')) && !bodyOverlapsTerrain(bodyAt(clear), solid)) {
+          found = { clear, ...beside };
         }
       }
     }
   }
-  expect(clear.length).toBeGreaterThan(0);
+  expect(found, 'an empty cell in vehicle space with room for a player beside a part').toBeDefined();
+  expect(solid(...found!.part)).toBe(true);
+  expect(bodyOverlapsTerrain(bodyAt(found!.step), solid)).toBe(true);
 });

@@ -1,0 +1,52 @@
+{
+  "itemEconomy": [
+    {
+      "id": "gauntlet_public_memo",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_public_directions",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_maintenance_memo",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_cellar_note",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_lab_entry_card",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_lab_administration_card",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_lab_research_card",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "gauntlet_lab_special_notes",
+      "notLoot": true,
+      "tiers": [],
+      "usage": []
+    }
+  ]
+}

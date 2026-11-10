@@ -1,7 +1,6 @@
-import type { Body } from '../core/physics.ts';
-import type { Scale } from '../core/scale.ts';
-import type { PlayerDef } from '../core/schema.ts';
-import type { MoveIntent } from '../game/player.ts';
+import type { PlayerDef } from '@skelly/engine/content';
+import type { MoveIntent } from '@skelly/engine/sim';
+import type { Body, Scale } from '@skelly/engine/world';
 
 export interface NoclipStep {
   body: Body;

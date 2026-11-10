@@ -1,22 +1,23 @@
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { pickInteractionTarget } from '@skelly/engine/internal/core/interactionPick.ts';
+import { useOption } from '@skelly/engine/internal/core/options.ts';
+import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable } from '@skelly/engine/internal/core/readable.ts';
+import { HandlingQueue, Inventory, type ReadRequest } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
+import { coreLabel } from '@skelly/engine/text';
+import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { coreLabel, coreMessage } from '../src/core/coreText.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { useOption } from '../src/core/options.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable, type ReadRequest } from '../src/core/readable.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { createSession, IDLE } from '../src/game/session.ts';
-import { Survival } from '../src/game/survival.ts';
-import { computeMenuState } from '../src/ui/menuState.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { Survival } from '@skelly/engine/sim';
+import { computeMenuState } from '@skelly/presentation/internal/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { fixtureBodySounds } from './fixtures/bodySounds.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';
 import { PLAYER } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -44,10 +45,8 @@ const admit = (value: Readable) =>
           },
         ],
         body: [{ ...BODY_TUNING_FIXTURE, id: 'player' }],
-        sounds: Object.values(BODY_TUNING_FIXTURE.heartbeat.sounds).map(
-          (id) => BUNDLED_CONTENT.registry.sounds.get(id)!,
-        ),
-        compression: [{ id: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
+        sounds: fixtureBodySounds(BODY_TUNING_FIXTURE),
+        compression: [{ id: 'player', capability: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
         player: [PLAYER],
       },
@@ -172,13 +171,14 @@ describe('authored readable text', () => {
     const session = createSession({
       registry: {
         ...registry,
-        zombies: BUNDLED_CONTENT.registry.zombies,
+        actors: BUNDLED_CONTENT.registry.actors,
         figures: BUNDLED_CONTENT.registry.figures,
         models: BUNDLED_CONTENT.registry.models,
         siteGeneration: BUNDLED_CONTENT.registry.siteGeneration,
         dayCycle: BUNDLED_CONTENT.registry.dayCycle,
         ui: BUNDLED_CONTENT.registry.ui,
       },
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

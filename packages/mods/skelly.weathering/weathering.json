@@ -1,0 +1,22 @@
+{
+  "weathering": [
+    {
+      "capability": "defaultWeathering",
+      "id": "proper",
+      "mixCeiling": 1,
+      "mossBias": 0.5,
+      "mossColor": "#dde7d7",
+      "mossStrength": 0.20000000000000001,
+      "mossThreshold": 0.68000000000000005,
+      "streakColor": "#ddddcf",
+      "streakLengthMetres": 2.3799999999999999,
+      "streakStrength": 0.22,
+      "strength": 0,
+      "tintColor": "#ddd7d7",
+      "tintDarkness": 0,
+      "variationScaleMetres": 12,
+      "variationStrength": 0.84999999999999998,
+      "weatheringBlend": 0
+    }
+  ]
+}

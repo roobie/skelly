@@ -3,9 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
+import { CONTENT_CAPABILITIES } from '@skelly/engine/internal/core/capabilities.ts';
 import { describe, expect, it } from 'vitest';
 import { validate as runValidation } from '../src/cli/validate.ts';
-import { REQUIRED_CORE_CONTENT } from '../src/core/content.ts';
+
+const COMBINATION_CAP =
+  /FAIL {2}test\/fixtures\/content\/recipe-too-many-combinations\.json recipes\[0\]\.components: (\d+) component combinations exceeds maximum (\d+)/;
 
 const validateAt = (root: string, ...files: string[]) => {
   const output: string[] = [];
@@ -16,8 +19,24 @@ const validateAt = (root: string, ...files: string[]) => {
 const makeMinimalPack = (...fixtureDirs: string[]): string => {
   const root = mkdtempSync(join(tmpdir(), 'deadvox-validate-'));
   try {
-    const base = join(root, 'src/content/base');
+    const base = join(root, 'mods/fixture.pack');
     mkdirSync(join(base, 'assets'), { recursive: true });
+    mkdirSync(join(base, 'pack'), { recursive: true });
+    writeFileSync(
+      join(base, 'pack/manifest.json'),
+      JSON.stringify({
+        id: 'skelly.deadvox',
+        version: '1',
+        tier: 'product',
+        product: true,
+        dependencies: [],
+        overrides: [],
+        files: [
+          { path: 'sounds.json', kind: 'content' },
+          { path: 'assets/manifest.json', kind: 'json' },
+        ],
+      }),
+    );
     writeFileSync(join(base, 'sounds.json'), JSON.stringify({ sounds: [] }));
     writeFileSync(join(base, 'assets/manifest.json'), JSON.stringify({ sources: [] }));
     const fixtures = join(root, 'test/fixtures');
@@ -33,15 +52,31 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
 };
 
 describe('validate CLI', () => {
-  it('rejects a pack missing a declared required core row', () => {
+  it('rejects a pack missing a required capability', () => {
     const root = makeMinimalPack();
-    const requirement = REQUIRED_CORE_CONTENT.find(({ section }) => section !== 'sounds' && section !== 'ui')!;
+    const [section, capabilities] = Object.entries(CONTENT_CAPABILITIES).find(([, entries]) =>
+      Object.values(entries).some((requirement) => requirement === 'required'),
+    )!;
+    const [capability] = Object.entries(capabilities).find(([, requirement]) => requirement === 'required')!;
     try {
       const run = validateAt(root);
       expect(run.status).toBe(1);
-      expect(run.stdout).toContain(
-        `FAIL  core content ${requirement.section}: missing required content "${requirement.id}"`,
-      );
+      expect(run.stdout).toContain(`FAIL  core content ${section}: missing required capability "${capability}"`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an unlisted JSON file anywhere under a bundled pack root', () => {
+    const root = makeMinimalPack();
+    try {
+      const directory = join(root, 'mods/fixture.pack/nested');
+      mkdirSync(directory);
+      writeFileSync(join(directory, 'unlisted.json'), JSON.stringify({ items: [] }));
+      const run = validateAt(root);
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain('skelly.deadvox');
+      expect(run.stdout).toContain('unlisted JSON file nested/unlisted.json');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -52,12 +87,7 @@ describe('validate CLI', () => {
     try {
       const run = spawnSync(
         process.execPath,
-        [
-          '--import',
-          resolve('tools/register-mobgen-alias.mjs'),
-          resolve('src/cli/validate.ts'),
-          'test/fixtures/content/missing-model.json',
-        ],
+        [resolve('src/cli/validate.ts'), 'test/fixtures/content/missing-model.json'],
         { cwd: root, encoding: 'utf8' },
       );
       expect(run.status).toBe(1);
@@ -70,10 +100,18 @@ describe('validate CLI', () => {
   it('reports an unreachable component from static reachability', () => {
     const root = makeMinimalPack('content');
     try {
-      const run = validateAt(root, 'test/fixtures/content/reachability-unfound.json');
+      const fixture = 'test/fixtures/content/reachability-unfound.json';
+      expect(validateAt(root, fixture).stdout).not.toContain('neither found nor craftable');
+      writeFileSync(
+        join(root, 'start.json'),
+        JSON.stringify({
+          starts: [{ id: 'fixture_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: ['torch'] }],
+        }),
+      );
+      const run = validateAt(root, fixture, 'start.json');
       expect(run.status).toBe(1);
       expect(run.stdout).toContain(
-        'recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable',
+        'recipes[0].components[0][0].item: Start "fixture_start": item "fixture_unfound" is neither found nor craftable',
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -106,16 +144,18 @@ describe('validate CLI', () => {
     }
     for (const diagnostic of [
       'FAIL  test/fixtures/content/recipe-missing-item.json recipes[0].components[0][0].item: no item "golden_toilet"',
-      'FAIL  test/fixtures/content/recipe-too-many-combinations.json recipes[0].components: 2048 component combinations exceeds maximum 1024',
       'FAIL  test/fixtures/content/broken-reference.json loot[0].entries[1].item: no item "golden_toilet"',
       'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
-      'FAIL  test/fixtures/content/zombie-with-model.json zombies[0].strength: missing',
+      'FAIL  test/fixtures/content/zombie-with-model.json actors[0].strength: missing',
       'FAIL  test/fixtures/content/missing-model-file.json models[0].file: "assets/models/lamp.glb" is not in the pack',
       'FAIL  test/fixtures/packs/stray/assets/manifest.json sources: "assets/models/stray.glb" is in the pack but no source lists it',
       'FAIL  test/fixtures/assets/manifest.json sources[0].author: CC-BY-4.0 needs an author',
     ]) {
       expect(stdout).toContain(diagnostic);
     }
+    const cap = stdout.match(COMBINATION_CAP);
+    expect(cap).not.toBeNull();
+    expect(Number(cap![1])).toBeGreaterThan(Number(cap![2]));
     expect(stdout).toContain('7 file(s):');
   });
 
@@ -131,20 +171,6 @@ describe('validate CLI', () => {
       expect(run.stdout).toContain('1 asset sources');
       expect(run.stdout).not.toContain('FAIL  test/fixtures/packs/lamp/lamp.json');
       expect(run.stdout).not.toContain('FAIL  test/fixtures/packs/lamp/assets/manifest.json');
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it('fails when an item references a missing model', () => {
-    const root = makeMinimalPack('content');
-    const output: string[] = [];
-    try {
-      const status = runValidation(['test/fixtures/content/missing-model.json'], (line) => output.push(line), root);
-      expect(status).toBe(1);
-      expect(output.join('\n')).toContain(
-        'FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"',
-      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

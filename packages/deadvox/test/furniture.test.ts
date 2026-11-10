@@ -1,26 +1,33 @@
-import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
-import { BlockEntities, doorPanel, panelFor, poseKey, searchTime } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
-import { furnitureMoveStamina } from '../src/core/furnitureMove.ts';
-import { pickFurniture } from '../src/core/furniturePick.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { handlingWeights, Inventory } from '../src/core/inventory.ts';
-import { couldFit, ItemFactory, weightOf } from '../src/core/items.ts';
-import type { Body } from '../src/core/physics.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { doorPanel } from '@skelly/engine/internal/core/blockEntities.ts';
+import type { TemplateDef } from '@skelly/engine/internal/core/content.ts';
+import { furnitureMoveStamina } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { couldFit } from '@skelly/engine/internal/core/items.ts';
 import {
   cellsOf,
   compileTemplate,
-  type Facing,
   placedPieces,
   stampPlacement,
   type Turn,
-} from '../src/core/templates.ts';
-import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
+import { HandlingQueue, Inventory, ItemFactory, weightOf } from '@skelly/engine/inventory';
+import { reachTuning } from '@skelly/engine/sim';
+import {
+  BLOCK_SIZE,
+  BlockEntities,
+  type Body,
+  Chunk,
+  type Facing,
+  panelFor,
+  poseKey,
+  searchTime,
+} from '@skelly/engine/world';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
+import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';
 
@@ -128,7 +135,7 @@ describe('furniture', () => {
     const expected =
       def.container!.pockets[0]!.handlingSimSeconds +
       inv.pocketHandling(hoodie, 0) +
-      2 * handlingWeights(registry).perCell * cells;
+      2 * handlingWeights(registry).perCellSimSeconds * cells;
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 

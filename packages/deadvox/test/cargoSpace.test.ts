@@ -1,5 +1,10 @@
-import type { ModelBox } from '@skelly/thing-core/schema';
-import { describe, expect, it } from 'vitest';
+import {
+  buildRegistry,
+  type ContentSource,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  type VehicleFittingDef,
+} from '@skelly/engine/content';
 import {
   type CargoSpaceDef,
   cargoFitting,
@@ -8,22 +13,18 @@ import {
   fitIssue,
   placementRegion,
   snapBox,
-} from '../src/core/cargoSpace.ts';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { ItemFactory, type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
-import type { VehicleFittingDef } from '../src/core/schema.ts';
-import {
-  legalAddonPlacements,
-  loadVehicleBlueprint,
-  type PlacedFitting,
-  placeFitting,
-} from '../src/core/vehicleBlueprint.ts';
-import type { VehicleInstance } from '../src/core/vehicleInstances.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+} from '@skelly/engine/internal/core/cargoSpace.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { legalAddonPlacements, placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import type { VehicleInstance } from '@skelly/engine/internal/core/vehicleInstances.ts';
+import { ItemFactory, type ItemState } from '@skelly/engine/inventory';
+import type { ModelBox } from '@skelly/thing-core/schema';
+import { describe, expect, it } from 'vitest';
+import { baseSources } from '../src/product/content.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 // The vehicle content and the cell size it is measured in, not the whole base: see `test/vehicleExport.test.ts`.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 const MOD = 'mods/cargo-fixture.json';
 const OFF_FREE_FLOOR = /free floor/;
@@ -33,7 +34,7 @@ const NO_LOAD_FLOOR = /load floor/;
 
 const base = buildRegistry(fixtureSources);
 const { registry } = base;
-const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+const cell = registry.inventory.get(fixtureIds.player)!.cellMetres;
 const openMetres = registry.items.get('cargo_space')!.vehicle!.addon!.openClearanceCells! * cell;
 const addon = { requires: 'load_floor' as const, openClearanceCells: openMetres / cell };
 

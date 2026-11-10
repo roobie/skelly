@@ -8,12 +8,61 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const sharedKit = [
+  { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+  { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+  { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+  { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+  { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+  { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+];
+const sharedRecipes = [
+  'torch',
+  'candle',
+  'repair_kit',
+  'repair_crowbar',
+  'sawn_plank',
+  'door_bar',
+  'make_rope',
+  'grind_kitchen_knife',
+  'hone_kitchen_knife',
+  'grind_kabar',
+  'hone_kabar',
+  'grind_machete',
+  'hone_machete',
+];
+// The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle.
+const houseNightMod = inlineStartMod('fixture.primary-action-pixel.house-night', {
+  density: null,
+  id: 'primary_action_pixel_house_night_start',
+  kit: sharedKit,
+  recipes: sharedRecipes,
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '23:30',
+  storeys: 1,
+  wounds: [],
+});
+const lakeNoonMod = inlineStartMod('fixture.primary-action-pixel.lake', {
+  density: null,
+  id: 'primary_action_pixel_lake_start',
+  kit: sharedKit,
+  recipes: sharedRecipes,
+  seed: 1,
+  site: 'lake_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+});
 const [, , group] = process.argv;
 assert.ok(['held', 'optic-zoom', 'optic-sights', 'lake'].includes(group), 'choose a pixel contract group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
@@ -79,7 +128,7 @@ const heldCompassCardChange = (page) =>
     const r = globalThis.primaryActionTest;
     const { sim } = r.session;
     sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
-    r.input.pitch = 0;
+    r.input.controls.pitch = 0;
     r.setHand(r.dominant, r.inventory.create('compass'));
     const { held } = r.view;
     const { scene, camera } = r.engine;
@@ -150,7 +199,7 @@ const heldCompassCardChange = (page) =>
 const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
-  r.input.pitch = 0;
+  r.input.controls.pitch = 0;
   const { sim } = r.session;
   sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
   if (withGear) {
@@ -471,9 +520,20 @@ const enterTestHouse = async (chromium, port) => {
     await page.goto(
       browserStageUrl(
         'primary-action-pixel',
-        // The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle. It starts on the path's
-        // open ground facing east, away from the showroom deck and its props, so the floor sample sees bare ground.
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=23:30&at=-4,-0.5,-90&post=0&sunshadow=0&torchshadow=0`,
+        // The view starts on the path's open ground facing east, away from the showroom deck and its props, so the
+        // floor sample sees bare ground.
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNightMod,
+          hash: {
+            debug: true,
+            seed: 73,
+            radius: 32,
+            at: [-4, -0.5, -90],
+            post: false,
+            sunshadow: false,
+            torchshadow: false,
+          },
+        }),
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -492,7 +552,7 @@ const heldItemChecks = async (chromium, port) => {
   const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.pitch = -0.55;
+      r.input.controls.pitch = -0.55;
       const item = r.inventory.create('glowstick');
       if (!r.inventory.add(item, { kind: 'pile', pos: r.feet() })) {
         throw new Error('Could not place dropped-glowstick pixel fixture');
@@ -600,7 +660,7 @@ const heldItemChecks = async (chromium, port) => {
           };
         });
       }
-      r.input.pitch = -1.3;
+      r.input.controls.pitch = -1.3;
       return r.frames;
     });
     await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, frame);
@@ -610,7 +670,7 @@ const heldItemChecks = async (chromium, port) => {
     assert.ok(own.body > 0, 'looking down draws the canonical world legs');
     const externalFrame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.pitch = 0;
+      r.input.controls.pitch = 0;
       r.thirdPerson.toggle();
       return r.frames;
     });
@@ -624,7 +684,7 @@ const heldItemChecks = async (chromium, port) => {
         throw new Error(result.reason);
       }
       r.thirdPerson.toggle();
-      r.input.pitch = -0.55;
+      r.input.controls.pitch = -0.55;
     }, uid);
   });
   await timePhase('held-compass-pixel-assertion', async () => {
@@ -651,7 +711,7 @@ const heldItemChecks = async (chromium, port) => {
 const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { inventory, session } = r;
-  r.input.pitch = 0;
+  r.input.controls.pitch = 0;
   const rifle = inventory.create('rifle_assault');
   r.setHand(r.dominant, rifle);
   const scope = inventory.create('optic_fixed_prism_4x');
@@ -920,16 +980,29 @@ const lakeSurfaceCheck = (chromium, port) =>
       await lake.addInitScript(fakePointerLock);
       // Start over the basin centre, so the small startup ring is the lake.
       const { layouts } = JSON.parse(
-        await readFile(resolve(projectRoot, 'src/content/base/layouts-water.json'), 'utf8'),
+        await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'),
       );
       const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
       const [centreX, centreZ] = lakeLayout.terrain[0].centre;
-      const cam = `${centreX},${lakeLayout.water[0].level + 2},${centreZ},0,89,0`;
+      const cam = [centreX, lakeLayout.water[0].level + 2, centreZ, 0, 89, 0];
       await timePhase('lake-menu', async () => {
         await lake.goto(
           browserStageUrl(
             'primary-action-pixel',
-            `http://127.0.0.1:${port}/?debug=1&seed=1&site=lake_demo&radius=16&time=12:00&freeze=1&crackcheck=1&post=0&sunshadow=0&torchshadow=0&cam=${cam}`,
+            gameUrl(`http://127.0.0.1:${port}`, {
+              startMod: lakeNoonMod,
+              hash: {
+                debug: true,
+                seed: 1,
+                radius: 16,
+                cam,
+                freeze: true,
+                post: false,
+                sunshadow: false,
+                torchshadow: false,
+                crackcheck: true,
+              },
+            }),
           ),
         );
         await lake.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -954,7 +1027,7 @@ const lakeSurfaceCheck = (chromium, port) =>
           new Promise((done) => {
             body.pos = [x / s, (eyeAt - eye) / s, z / s];
             body.vel = [0, 0, 0];
-            r.input.pitch = pitch;
+            r.input.controls.pitch = pitch;
             const { held } = r.view;
             const { render } = held;
             let renders = 0;
@@ -1004,7 +1077,7 @@ const lakeSurfaceCheck = (chromium, port) =>
     }
   });
 
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'error',

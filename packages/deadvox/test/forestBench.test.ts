@@ -1,65 +1,95 @@
+import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
+import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
+import { bundledModIdsFromUrl, type StartupContent, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
+import { requireStart } from '@skelly/engine/session';
+import { siteGenerationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { type BenchRecord, loadRecord, saveRecord } from '../src/bench/plan.ts';
+import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
-import { siteGenerationOf } from '../src/core/sitePalette.ts';
-import { configFromUrl, content, siteFromUrl } from './fixtures/startupContent.ts';
+import {
+  BENCH_WORKLOADS,
+  benchGameConfig,
+  benchHref,
+  benchRunFromUrl,
+  benchSiteLabel,
+  benchStartConfig,
+  forestWorkload,
+  nextRunHash,
+  timeOfDayText,
+} from '../src/bench/run.ts';
+import { readPageUrl } from '../src/pageUrl.ts';
+import { productModIntake } from '../src/product/mods.ts';
+import { configFromUrl, content } from './fixtures/startupContent.ts';
 
-it('parses forest density strictly, including zero/one, without silently switching the requested site', () => {
-  for (const density of ['0', '0.25', '1']) {
-    expect(configFromUrl(new URLSearchParams(`site=forest&density=${density}`))).toMatchObject({
-      site: 'forest',
-      density: Number(density),
-    });
-  }
-  for (const density of ['', '-1', '2', 'NaN']) {
-    expect(siteFromUrl(new URLSearchParams(`site=forest&density=${density}`), 'testHouse')).toMatchObject({
-      site: 'forest',
-      density: null,
-    });
-  }
+const FOREST_START: StartDef = {
+  id: 'fixture_bench_forest_start',
+  site: 'forest',
+  seed: 31,
+  storeys: 2,
+  density: 0.25,
+  startTimeGameTimeOfDay: gameTimeOfDay(23.5 * 3600),
+  kit: [],
+  wounds: [],
+  skills: {},
+  recipes: [],
+};
+
+/** Content as a `start-mod` link that supplies `start` admits it. */
+const startedAt = (start: StartDef): StartupContent => ({
+  ...content,
+  startModStart: start.id,
+  registry: { ...content.registry, starts: new Map([...content.registry.starts, [start.id, start]]) },
 });
 
 describe('forest benchmark workload identity', () => {
-  it('keeps forest site, density, seed, time and post on the second run instead of reverting to the test house', () => {
-    const run = benchRunFromUrl(
-      new URLSearchParams('site=forest&density=0.75&seed=7&time=23:30&post=1&plan=0.5:64,0.5:96'),
-      { layouts: new Map(), scenarios: new Map() },
-    );
-    const next = new URLSearchParams(nextUrl(run, 7));
-    expect(benchRunFromUrl(next, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
-      site: 'forest',
-      density: 0.75,
-      index: 1,
-      time: '23:30',
-      post: true,
-    });
-    expect(next.get('seed')).toBe('7');
-    expect(configFromUrl(next)).toMatchObject({ site: 'forest', density: 0.75, seed: 7 });
-    expect(benchSiteLabel(run)).toBe('forest, density 0.75');
-    const field = benchRunFromUrl(new URLSearchParams('site=forest&plan=0.5:64,0.5:96'), {
-      layouts: new Map(),
-      scenarios: new Map(),
-    });
-    const nextField = new URLSearchParams(nextUrl(field, 1));
-    expect(nextField.has('density')).toBe(false);
-    expect(benchRunFromUrl(nextField, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
-      site: 'forest',
-      density: null,
-      index: 1,
-    });
+  it('builds every run of a plan at the start mod row, with the seed and post from the hash', () => {
+    const started = startedAt(FOREST_START);
+    const hash = { seed: 7, post: true, plan: [0.5, 64, 1, 96] };
+    const run = benchRunFromUrl(hash);
+    const next = benchRunFromUrl(nextRunHash(hash, run.index, run.plan.length)!);
+    expect(next).toMatchObject({ index: 1, post: true, seed: 7 });
+    for (const each of [run, next]) {
+      expect(benchGameConfig(each, started)).toMatchObject({
+        startId: FOREST_START.id,
+        site: FOREST_START.site,
+        storeys: FOREST_START.storeys,
+        density: FOREST_START.density,
+        start: FOREST_START.startTimeGameTimeOfDay,
+        seed: 7,
+      });
+    }
+    expect(benchGameConfig(next, started).scale.blockSize).toBe(1);
+    expect(timeOfDayText(benchGameConfig(run, started).start)).toBe('23:30');
   });
 
-  it('builds the forest config for the first run of a forest plan that names no site', () => {
-    const params = new URLSearchParams('plan=1:64,1:96');
-    const run = benchRunFromUrl(params, content.registry);
-    expect(run.site).toBe('forest');
-    expect(benchGameConfig(run, params, content)).toMatchObject({
-      site: run.site,
-      storeys: run.storeys,
-      density: run.density,
-    });
+  it('builds a link without a start mod at the product default start, as the game does', () => {
+    const product = requireStart(content, content.defaultStart);
+    const config = benchStartConfig(content, 1, 64);
+    const played = configFromUrl(new URLSearchParams(), { seed: 1 });
+    expect(config).toMatchObject({ startId: product.id, site: played.site, start: played.start });
+    expect(config).toMatchObject({ storeys: played.storeys, density: played.density });
   });
+
+  it.each(Object.keys(BENCH_WORKLOADS) as (keyof typeof BENCH_WORKLOADS)[])(
+    'runs the %s benchmark link on its own workload',
+    (name) => {
+      const read = readPageUrl(benchHref(content, name), '');
+      expect(read.refused).toBeUndefined();
+      expect(read.query.get('bench')).toBe(BENCH_WORKLOADS[name].bench);
+      const selection = selectBundledMods(
+        productModIntake,
+        bundledModIdsFromUrl(read.query),
+        [],
+        startModFromUrl(read.query),
+      );
+      expect(selection.issues).toEqual([]);
+      const config = benchStartConfig(selection.content, 1, 64);
+      expect({ site: config.site, time: timeOfDayText(config.start) }).toEqual({
+        site: BENCH_WORKLOADS[name].site,
+        time: BENCH_WORKLOADS[name].startTimeGameTimeOfDay,
+      });
+    },
+  );
 
   it('refuses a stored record of an unknown shape instead of resuming it', () => {
     const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
@@ -78,17 +108,15 @@ describe('forest benchmark workload identity', () => {
     }
   });
 
-  it('retains the seeded field, shape mix, extent, opacity and full camera routes in both result export formats', () => {
-    const run = benchRunFromUrl(new URLSearchParams('site=forest&post=1'), {
-      layouts: new Map(),
-      scenarios: new Map(),
-    });
+  it('retains the seeded forest workload, with camera routes inside its extent at every plan radius, in both result export formats', () => {
+    const run = benchRunFromUrl({ post: true });
+    const config = benchGameConfig(run, startedAt({ ...FOREST_START, density: null }));
     const record: BenchRecord = {
       startedAt: 'first-look',
       quick: false,
-      site: benchSiteLabel(run),
-      time: run.time ?? '12:00',
-      forest: forestWorkload(content.registry, 1, run.density),
+      site: benchSiteLabel(config),
+      time: timeOfDayText(config.start),
+      forest: forestWorkload(content.registry, 1, config.density),
       runs: [],
     };
     const json = JSON.parse(JSON.stringify(record)) as BenchRecord;
@@ -104,9 +132,9 @@ describe('forest benchmark workload identity', () => {
     });
     const route = json.forest!.routes;
     const distance = route.jogSeconds * route.jogMetresPerSecond + route.sprintSeconds * route.sprintMetresPerSecond;
-    expect(distance + 96).toBeLessThan(json.forest!.extentMetres / 2);
-    expect(markdownReport(json)).toContain('Forest workload:');
-    expect(markdownReport(json)).toContain('"density":null');
+    const radius = Math.max(...DEFAULT_PLAN.map(({ radiusM }) => radiusM));
+    expect(distance + radius).toBeLessThan(json.forest!.extentMetres / 2);
+    expect(markdownReport(json)).toContain(JSON.stringify(json.forest));
     // Production save/load between pages must preserve exactly the JSON export's workload.
     const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
     let stored = '';

@@ -5,9 +5,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
-import { tutorialRequested } from '../packages/deadvox/src/game/tutorialUrl.ts';
-import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
+import { readHash, writeHash } from '../packages/deadvox/src/hashState.ts';
+import { readPageUrl } from '../packages/deadvox/src/pageUrl.ts';
+import {
+  gitEnvironment,
+  playHref,
+  playtestRound,
+  publishPlaytest,
+} from '../packages/deadvox/tools/publish-playtest.mjs';
+import { bundledModCatalogueIssues } from '../packages/engine/src/modCatalogue.ts';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -28,11 +34,9 @@ const UMBRELLA_PLAYTEST_MARKUP_PATTERN = /playtestBrief|playtest-title|\bid=["']
 const LINKS_CARD_PATTERN = /<section class="card" aria-labelledby="links-title">([\s\S]*?)<\/section>/;
 const ENGLISH_DOCUMENT_LANGUAGE_PATTERN = /<html lang="en">/;
 const DEADVOX_FORM_PATTERN = /<form\b[^>]*id="deadvox-form"[^>]*>([\s\S]*?)<\/form>/;
-const PAGES_ASSEMBLY_LOOP_PATTERN = /for P in ([^;]+); do/;
-const WHITESPACE_PATTERN = /\s+/;
 const HREF_PATTERN = /\bhref="([^"]+)"/;
 const LAYOUT_FILE_PATTERN = /^layouts.*\.json$/;
-const DEADVOX_CONTENT = 'packages/deadvox/src/content/base';
+const DEADVOX_MODS = 'packages/deadvox/mods';
 const RESOURCE_URL_PATTERNS = [
   /\b(?:href|src)\s*=\s*["']([^"']+)["']/g,
   /url\(\s*["']?([^"')\s]+)["']?\s*\)/g,
@@ -43,6 +47,11 @@ const RESOURCE_URL_PATTERNS = [
 const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|tutorial-action|\{\{PLAY_URL\}\}/;
 const TEXT_ASSET_PATTERN = /\.(?:html|css|js)$/;
 const ROBOTS_DISALLOW_PATTERN = /Disallow: \/\s*$/;
+const HASH_KEY_TABLE_PATTERN = /const HASH_KEYS = \{([\s\S]*?)\n\}/;
+const HASH_KEY_PATTERN = /^\s+(\w+): '/gm;
+const HASH_READ_PATTERN = /\bhash\??\.(\w+)/g;
+const DEVELOPER_STATE_PATTERN = /export type DeveloperState = [^{]*\{([\s\S]*?)\n\};/;
+const DEVELOPER_STATE_KEY_PATTERN = /^\s+readonly (\w+)\?:/gm;
 const resourceUrlsIn = (source) =>
   RESOURCE_URL_PATTERNS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1]));
 const filesUnder = (directory) =>
@@ -52,22 +61,69 @@ const filesUnder = (directory) =>
   });
 
 const authoredLayoutIds = () =>
-  readdirSync(join(ROOT, DEADVOX_CONTENT))
-    .filter((name) => LAYOUT_FILE_PATTERN.test(name))
-    .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    readdirSync(join(ROOT, DEADVOX_MODS, mod))
+      .filter((name) => LAYOUT_FILE_PATTERN.test(name))
+      .flatMap((name) => JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`)).layouts.map((layout) => layout.id)),
+  );
+const modJson = (name) =>
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    existsSync(join(ROOT, DEADVOX_MODS, mod, name)) ? [JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`))] : [],
+  );
+// The game plays a practice run from a start whose site carries practice; see
+// `packages/engine/src/game/startSelection.ts`, `isPracticeStart`.
+const practiceSites = () =>
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    readdirSync(join(ROOT, DEADVOX_MODS, mod))
+      .filter((name) => name.endsWith('.json'))
+      .flatMap((name) => JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`)).layouts ?? [])
+      .filter((layout) => layout.practice)
+      .map((layout) => layout.id),
+  );
+// A committed scenario the game picks through `mods` is an opt-in pack whose default start is an authored start row;
+// its site, or undefined when the pack is not one.
+const scenarioSite = (id) => {
+  const { optIn, defaultStart } = JSON.parse(read(`${DEADVOX_MODS}/${id}/pack/manifest.json`));
+  const row = modJson('starts.json')
+    .flatMap(({ starts }) => starts)
+    .find((start) => start.id === defaultStart);
+  return optIn === true ? row?.site : undefined;
+};
+// The site and time of the one start row a link's inline start mod supplies, or undefined when it has none. It
+// throws, failing the calling test, unless the mod has exactly one row and that row is no second default for its site.
+const linkStart = (url) => {
+  const text = url.searchParams.get('start-mod');
+  if (text === null) {
+    return;
+  }
+  const { starts } = JSON.parse(text);
+  if (starts.length !== 1 || 'defaultForSite' in starts[0]) {
+    throw new Error(`a launcher start mod needs exactly one non-default start row: ${text}`);
+  }
+  return { site: starts[0].site, time: starts[0].startTimeGameTimeOfDay };
+};
+// The site of the scenario a link picks through `mods`: its last id, whose default start the game runs.
+const modsScenarioSite = (url) => {
+  const id = url.searchParams.get('mods')?.split(',').at(-1);
+  return id && existsSync(join(ROOT, DEADVOX_MODS, id, 'pack/manifest.json')) ? scenarioSite(id) : undefined;
+};
+const gauntletScenarioIds = () =>
+  JSON.parse(read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json')).scenarios.map(
+    (scenario) => scenario.id,
+  );
 
 const intentionallyUnofferedDeadvoxParams = {
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
-  repairLook: 'A debug-only showroom repair inspection, not a launcher gameplay option.',
-  optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
-  save: 'A debug-run opt-in to saving, meaningful only with debug=1; not a launcher gameplay option.',
+  save: 'A debug-run opt-in to saving, meaningful only with debug; not a launcher gameplay option.',
+  post: 'A debug-panel look switch that also selects the full-post bench workload, not a launcher option.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
-  weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',
+  voicePitch: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
+  voicePitchLarge: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
   weatheringTint: 'A debug-panel weathering look slider, not a launch-time site option.',
   weatheringTintColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
   weatheringStreaks: 'A debug-panel weathering look slider, not a launch-time site option.',
@@ -81,38 +137,63 @@ const intentionallyUnofferedDeadvoxParams = {
   weatheringMixCeiling: 'A debug-panel weathering look slider, not a launch-time site option.',
   weatheringBlend: 'A debug-panel weathering look slider, not a launch-time site option.',
 };
-const intentionallyUnofferedGungenParams = {
-  camera:
-    'Opaque serialized OrbitControls position/target; the viewer generates and consumes it for shareable camera state.',
-  facets:
-    'Facet count of revolved solids (3-128; default 6, 24 for close-ups). A display detail with no model to choose, so the launcher has nothing to offer; no gun design has a revolved solid yet.',
-  pose: 'A fixed, view-only pump action-open presentation; not an editable design parameter.',
-  template: 'The launcher uses its default template without a picker.',
-  fixture: 'The launcher uses its default fixture without a picker.',
-  design: 'The launcher uses its default design without a picker.',
-  colors: 'The launcher does not offer a color-mode picker.',
-  ammo: 'The launcher does not offer an ammunition-model picker.',
-  ammoCase: 'The launcher does not offer a case-finish picker.',
-  mag: 'The launcher does not offer a detached-magazine picker.',
+
+// Every key the game page's hash accepts, from the hash reader's own table.
+const hashKeys = () => {
+  const table = read('packages/deadvox/src/hashState.ts').match(HASH_KEY_TABLE_PATTERN)?.[1];
+  if (!table) {
+    throw new Error('the hash key table is declared');
+  }
+  return new Set([...table.matchAll(HASH_KEY_PATTERN)].map((match) => match[1]));
 };
 
+/** The game page reads this query parameter rather than refusing the link. */
+const gameReadsQuery = (name) => readPageUrl(`?${new URLSearchParams({ [name]: '1' })}`, '').refused !== name;
+
+/**
+ * The parameters the readers take from a query the game page reads, and the hash keys they read, each sorted. A
+ * shared reader may also serve another page's query.
+ */
 const paramsReadBy = (sources) => {
-  const found = new Set();
+  const query = new Set();
+  const hash = new Set();
   for (const source of sources) {
     const text = read(source);
     for (const match of text.matchAll(
       /(?:\b(?:params|query|initialQuery)|new URLSearchParams\([^)]*\))\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
     )) {
-      found.add(match[1]);
+      query.add(match[1]);
+    }
+    for (const match of text.matchAll(HASH_READ_PATTERN)) {
+      hash.add(match[1]);
+    }
+    // The developer state the engine takes from the hash, whether it is read by name or destructured.
+    const developerState = text.match(DEVELOPER_STATE_PATTERN)?.[1] ?? '';
+    for (const match of developerState.matchAll(DEVELOPER_STATE_KEY_PATTERN)) {
+      hash.add(match[1]);
     }
     if (source.endsWith('core/weatheringUrl.ts')) {
       for (const match of text.matchAll(/^\s*\['(weathering[^']*)',\s*'[^']+'\],?$/gm)) {
-        found.add(match[1]);
+        hash.add(match[1]);
       }
     }
   }
-  return [...found].sort();
+  const keys = hashKeys();
+  return {
+    query: [...query].filter(gameReadsQuery).sort(),
+    hash: [...hash].filter((key) => keys.has(key)).sort(),
+  };
 };
+
+const DEADVOX_READERS = [
+  'packages/deadvox/src/main.ts',
+  'packages/engine/src/game/bundledMods.ts',
+  'packages/engine/src/game/config.ts',
+  'packages/engine/src/game/ragdollConfig.ts',
+  'packages/engine/src/core/weatheringUrl.ts',
+  'packages/deadvox/src/bench/run.ts',
+  'packages/deadvox/src/bench/shamblers.ts',
+];
 
 const paramsOfferedBy = (formId) => {
   const form = page.match(new RegExp(`<form\\b[^>]*id="${formId}"[^>]*>([\\s\\S]*?)<\\/form>`))?.[1];
@@ -143,6 +224,10 @@ const extractDeclaration = (name) => {
   if (start < 0) {
     throw new Error(`${name} is declared in the launcher`);
   }
+  const statementEnd = page.indexOf(';', start);
+  if (statementEnd < page.indexOf('{', start)) {
+    return page.slice(start, statementEnd + 1);
+  }
   let depth = 0;
   for (let i = page.indexOf('{', start); i < page.length; i += 1) {
     if (page[i] === '{') {
@@ -158,11 +243,42 @@ const extractDeclaration = (name) => {
 };
 
 const makeDeadvoxForTest = () => {
-  const source = ['defaultTime', 'setDefault', 'siteOffered', 'setPlayOnlySite', 'addDebugParams', 'makeDeadvox']
+  const source = [
+    'visibility',
+    'visible',
+    'deadvoxControlVisibility',
+    'enabled',
+    'siteOffered',
+    'DEFAULT_SITE',
+    'TUTORIAL_MOD',
+    'GAUNTLET_MOD',
+    'START_KIT',
+    'SITE_STARTS',
+    'launcherStartMod',
+    'parsePlan',
+    'startSite',
+    'defaultTime',
+    'setStart',
+    'setDefault',
+    'BARE_HASH_TEXT',
+    'hashScalar',
+    'hashText',
+    'setHashNumber',
+    'atNumbers',
+    'playHash',
+    'benchHash',
+    'addDebugParams',
+    'makeDeadvox',
+  ]
     .map(extractDeclaration)
     .join('\n');
   return new Function('location', `${source}\nreturn makeDeadvox;`)({ href: 'https://example.test/site/' });
 };
+
+const defaultTimeForTest = () =>
+  new Function(
+    `${['siteOffered', 'DEFAULT_SITE', 'SITE_STARTS', 'parsePlan', 'startSite', 'defaultTime'].map(extractDeclaration).join('\n')}\nreturn defaultTime;`,
+  )();
 
 // Evaluates the launcher's site predicate and input handler, so the tests observe the same
 // clearing rule the page runs rather than re-describing it.
@@ -236,20 +352,107 @@ describe('playtest language and catalog', () => {
 
 describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
-    const supported = paramsReadBy([
-      'packages/deadvox/src/main.ts',
-      'packages/deadvox/src/game/config.ts',
-      'packages/deadvox/src/render/ragdollConfig.ts',
-      'packages/deadvox/src/core/weatheringUrl.ts',
-      'packages/deadvox/src/bench/run.ts',
-      'packages/deadvox/src/bench/shamblers.ts',
-      'packages/deadvox/src/debug/debugLoadout.ts',
-    ]);
+    const reads = paramsReadBy(DEADVOX_READERS);
+    const supported = [...new Set([...reads.query, ...reads.hash])].sort();
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {
       assert.ok(supported.includes(name), `${name} has a documented omission reason`);
     }
     assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
+  });
+
+  it('composes each play and bench parameter in the home the game reads it from, in the game hash form', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const reads = paramsReadBy(DEADVOX_READERS);
+    const start = { site: 'testHouse', time: '08:00' };
+    const debugFields = {
+      debug: true,
+      seed: '7',
+      radius: '64',
+      actors: 'boxes',
+      mods: ['fixture.mod'],
+      at: '1.5,-2,90',
+      focus: 'fixture prop',
+      wobbleFlat: '0.5',
+      weathering: '1',
+      weatheringVariation: '0.25',
+      weatheringSplit: '-3',
+    };
+    const debugPlay = { ...defaults, ...debugFields, ...start };
+    const worldBench = { ...defaults, bench: '1', seed: '7', plan: '1:64,0.5:96', worldIndex: '1', quick: true };
+    const shamblerBench = { ...defaults, bench: 'shamblers', seed: '7', n: '10,25', shamblerIndex: '1' };
+    const homes = { query: new Set(), hash: new Set() };
+    for (const play of [
+      debugPlay,
+      { ...defaults, site: 'city' },
+      { ...defaults, site: 'forest' },
+      worldBench,
+      shamblerBench,
+    ]) {
+      const url = makeDeadvox(play);
+      assert.equal(readPageUrl(url.search, url.hash).refused, undefined, `the game reads every parameter of ${url}`);
+      const parsed = readHash(url.hash);
+      assert.ok('hash' in parsed, `the game reads the composed hash ${url.hash}`);
+      assert.equal(
+        decodeURIComponent(url.hash.slice(1)),
+        writeHash(parsed.hash),
+        'the hash is in the form the game writes back',
+      );
+      for (const key of url.searchParams.keys()) {
+        homes.query.add(key);
+      }
+      for (const key of Object.keys(parsed.hash)) {
+        homes.hash.add(key);
+      }
+    }
+    assert.ok(homes.hash.size > 0, 'the composed links carry hash state');
+    assert.deepEqual(
+      [...homes.hash].filter((key) => !reads.hash.includes(key)),
+      [],
+      'hash keys are read from the hash',
+    );
+    for (const field of Object.keys(debugFields)) {
+      assert.ok(homes.query.has(field) || homes.hash.has(field), `the debug play link carries ${field}`);
+    }
+    assert.deepEqual(linkStart(makeDeadvox(debugPlay)), start, 'the debug play link starts at its site and time');
+  });
+
+  it('carries every bench run setting it is given in the link hash', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const links = {
+      world: [
+        { ...defaults, bench: '1', seed: '7', plan: '1:64,0.5:96', worldIndex: '1', quick: true },
+        ['seed', 'plan', 'i', 'quick', 'shamblers'],
+      ],
+      shambler: [
+        { ...defaults, bench: 'shamblers', seed: '7', n: '10,25', shamblerIndex: '1' },
+        ['seed', 'i', 'shamblers'],
+      ],
+    };
+    for (const [name, [bench, fields]] of Object.entries(links)) {
+      const parsed = readHash(makeDeadvox(bench).hash);
+      assert.ok('hash' in parsed, `the game reads the ${name} bench hash`);
+      assert.deepEqual(
+        Object.keys(parsed.hash).sort(),
+        [...fields].sort(),
+        `the ${name} bench link carries its fields`,
+      );
+    }
+  });
+
+  it('writes a hash string as the game writes it, so it reads back through the address bar', () => {
+    const hashText = new Function(
+      `${['BARE_HASH_TEXT', 'hashScalar', 'hashText'].map(extractDeclaration).join('\n')}\nreturn hashText;`,
+    )();
+    for (const focus of ['a b,c', 'a"b', 'a\\b', 'a\nb', '100%', '%41']) {
+      const written = hashText({ focus });
+      assert.equal(written, writeHash({ focus }), `the launcher writes ${JSON.stringify(focus)} as the game does`);
+      const url = new URL('https://example.test/');
+      url.hash = written;
+      assert.deepEqual(readHash(url.hash), { hash: { focus } }, `${JSON.stringify(focus)} reads back`);
+    }
   });
 
   it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {
@@ -262,7 +465,7 @@ describe('site launchers track the games’ URL parameters', () => {
       assert.match(page, new RegExp(`name="${parameter}" data-url-param="${parameter}"`));
     }
 
-    const gameMax = read('packages/deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
+    const gameMax = read('packages/engine/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
     const launcherMax = page.match(LAUNCHER_WEATHERING_MAX_PATTERN);
     assert.ok(gameMax, 'game weathering ceiling is declared');
     assert.ok(launcherMax, 'static launcher weathering ceiling is declared');
@@ -296,20 +499,61 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.equal(model.deadvox.site, 'city', 'a bench that offers the city keeps it');
   });
 
-  it('composes the gauntlet site for play and never in a benchmark', () => {
+  it('starts each link at the chosen site and time through one launcher start row', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
-    const gauntlet = { ...defaults, ...launcherPresetsForTest().gauntlet };
-    const scenarioIds = JSON.parse(read('packages/deadvox/src/content/base/scenarios.json')).scenarios.map(
-      (scenario) => scenario.id,
-    );
-    const play = makeDeadvox(gauntlet);
-    const site = play.searchParams.get('site');
-    assert.ok(scenarioIds.includes(site), `the gauntlet preset composes a scenario site (${site})`);
-    for (const bench of ['1', 'shamblers', 'report']) {
-      const url = makeDeadvox({ ...gauntlet, bench });
-      assert.equal(url.searchParams.has('site'), false, `bench ${bench} does not carry a gauntlet site`);
+    const choices = [
+      { bench: '', site: '', time: '01:00' },
+      { bench: '', site: 'city', time: '19:30' },
+      { bench: '', site: 'forest', time: '08:00' },
+      { bench: '', site: 'gauntlet', time: '19:30' },
+      { bench: '', site: 'testHouse', time: '05:30', debug: true },
+      { bench: '', site: 'weatheringTest', time: '12:00', debug: true },
+      { bench: '1', site: '', time: '12:00' },
+      { bench: '1', site: 'city', time: '23:30' },
+      { bench: '1', site: 'forest', time: '06:15' },
+      { bench: 'shamblers', site: '', time: '21:15' },
+    ];
+    for (const choice of choices) {
+      const url = makeDeadvox({ ...defaults, ...choice });
+      assert.equal(readPageUrl(url.search, url.hash).refused, undefined, `the game reads every parameter of ${url}`);
+      const start = linkStart(url);
+      assert.ok(start, `${url} carries a start mod`);
+      assert.equal(start.time, choice.time, `${url} starts at the chosen time`);
+      if (choice.site !== '') {
+        assert.equal(start.site, choice.site, `${url} starts at the chosen site`);
+      }
     }
+    const shambler = linkStart(makeDeadvox({ ...defaults, bench: 'shamblers', site: 'city', time: '21:15' }));
+    assert.equal(shambler.site, 'forest', 'the shambler benchmark runs in the forest whatever site was chosen');
+  });
+
+  it('runs each benchmark on its own workload when no site or time is chosen', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaultTime = defaultTimeForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const workloads = [
+      [{ bench: '1' }, 'testHouse', '12:00'],
+      [{ bench: '1', plan: '1:64,0.5:96' }, 'forest', '12:00'],
+      [{ bench: 'shamblers' }, 'forest', '23:30'],
+    ];
+    for (const [choice, site, time] of workloads) {
+      const d = { ...defaults, ...choice };
+      const url = makeDeadvox({ ...d, time: defaultTime(d) });
+      assert.equal(readPageUrl(url.search, url.hash).refused, undefined, `the game reads every parameter of ${url}`);
+      assert.deepEqual(linkStart(url), { site, time }, `${url} keeps its workload`);
+    }
+  });
+
+  it('plays the gauntlet scenario at its own time through mods, and the default site through no start at all', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const preset = launcherPresetsForTest().gauntlet;
+    const gauntlet = makeDeadvox({ ...defaults, ...preset });
+    assert.equal(linkStart(gauntlet), undefined, 'the gauntlet preset carries no start mod');
+    assert.ok(gauntletScenarioIds().includes(modsScenarioSite(gauntlet)), 'the gauntlet preset picks a gauntlet site');
+    const plain = makeDeadvox({ ...defaults, time: preset.time });
+    assert.equal(plain.search, '', 'the default site at its own time leaves the start to the game');
   });
 
   it('links exactly the ticked bundled mods and omits mods when none is ticked', () => {
@@ -344,12 +588,21 @@ describe('site launchers track the games’ URL parameters', () => {
       numericDetail: { mods: [{ ...row('a'), detail: 7 }] },
       missingPresentation: { mods: [{ id: 'a' }] },
       notAList: { mods: row('a') },
+      folderIds: { mods: [row('a')], folderMods: ['b'] },
+      folderIdClash: { mods: [row('a')], folderMods: ['a'] },
+      folderIdNotText: { mods: [row('a')], folderMods: [7] },
+      folderIdsNotAList: { mods: [row('a')], folderMods: 'b' },
     };
     await Promise.all(
       Object.entries(catalogues).map(async ([name, catalogue]) => {
         const gameAdmits = bundledModCatalogueIssues(catalogue).length === 0;
         const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
-        assert.deepEqual(shown, gameAdmits ? catalogue.mods : [], `${name}: launcher agrees with the game schema`);
+        const folderRows = () => (catalogue.folderMods ?? []).map((id) => ({ id, label: id, detail: id }));
+        assert.deepEqual(
+          shown,
+          gameAdmits ? [...catalogue.mods, ...folderRows()] : [],
+          `${name}: launcher agrees with the game schema`,
+        );
       }),
     );
     assert.equal(bundledModCatalogueIssues(catalogues.valid).length, 0, 'the valid fixture passes the schema');
@@ -358,47 +611,61 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.deepEqual(failed, [], 'a failed fetch hides the control');
   });
 
+  // The site job runs without an install, so the build side (an opt-in pack reaching `folderMods`) is tested in
+  // `packages/deadvox/test/readBundledPacks.test.ts`, where packages resolve.
+  it('offers a catalogue folder mod by id and links it when picked', async () => {
+    const catalogue = {
+      ...JSON.parse(read('packages/deadvox/src/config/bundled-mods.json')),
+      folderMods: ['fixture.debug'],
+    };
+    const loadBundledMods = new Function(`${extractDeclaration('loadBundledMods')}\nreturn loadBundledMods;`)();
+    const shown = await loadBundledMods(async () => ({ ok: true, json: async () => catalogue }), 'x');
+    assert.ok(
+      shown.some(({ id }) => id === 'fixture.debug'),
+      'the folder mod is offered by its id',
+    );
+
+    const makeDeadvox = makeDeadvoxForTest();
+    const model = launcherModelForTest();
+    onInputForTest(model)({
+      currentTarget: { id: 'deadvox-form' },
+      target: { dataset: { modId: 'fixture.debug' }, type: 'checkbox', checked: true },
+    });
+    assert.equal(makeDeadvox(model.deadvox).searchParams.get('mods'), 'fixture.debug', 'picking it requests its id');
+  });
+
   it('composes a practice tutorial URL the game accepts from the launcher', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const offered = siteOfferedForTest();
     const defaults = launcherModelForTest().deadvox;
-    assert.equal(
-      tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams),
-      true,
-      'play composes a URL the game accepts as practice',
-    );
+    const practice = practiceSites();
+    const tutorial = makeDeadvox({ ...defaults, site: 'tutorial' });
+    assert.equal(readPageUrl(tutorial.search, tutorial.hash).refused, undefined, 'the game reads the tutorial link');
+    assert.equal(linkStart(tutorial), undefined, 'the tutorial keeps its own start');
+    assert.ok(practice.includes(modsScenarioSite(tutorial)), 'play composes a URL the game plays as practice');
     assert.equal(offered(defaults, 'tutorial'), true, 'play offers the practice tutorial');
     for (const bench of ['1', 'shamblers', 'report']) {
       assert.equal(offered({ ...defaults, bench }, 'tutorial'), false, `bench ${bench} hides the practice tutorial`);
+      const url = makeDeadvox({ ...defaults, site: 'tutorial', bench });
       assert.equal(
-        tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams),
+        practice.includes(linkStart(url)?.site ?? modsScenarioSite(url)),
         false,
         `bench ${bench} does not compose a practice URL`,
       );
     }
   });
-
-  it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
-    const supported = paramsReadBy(['packages/gun-authoring-tool/src/viewer/main.ts']);
-    for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
-      assert.ok(supported.includes(name), `${name} is intentionally omitted: ${reason}`);
-    }
-    assert.deepEqual(
-      coverageFailures(
-        'gungen parameter',
-        supported,
-        paramsOfferedBy('gungen-form'),
-        new Set(Object.keys(intentionallyUnofferedGungenParams)),
-      ),
-      [],
-    );
-  });
 });
 
 describe('site launcher playtest entry', () => {
-  it('keeps the Round 1 play link and routes Round 2 to the gauntlet', () => {
-    assert.equal(playtestRound(1).playQuery, 'site=playtest');
-    assert.equal(playtestRound(2).playQuery, 'site=gauntlet');
+  it('plays each round from a committed scenario mod, Round 2 from the gauntlet', () => {
+    for (const round of [1, 2]) {
+      const { scenario } = playtestRound(round);
+      assert.ok(scenarioSite(scenario), `Round ${round} picks ${scenario}, an opt-in pack naming an authored start`);
+    }
+    const scenarioIds = JSON.parse(
+      read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json'),
+    ).scenarios.map((scenario) => scenario.id);
+    assert.ok(scenarioIds.includes(scenarioSite(playtestRound(2).scenario)), 'Round 2 starts in the gauntlet');
   });
 
   it('keeps the Round 1 and Round 2 links in a separate links card', () => {
@@ -409,16 +676,6 @@ describe('site launcher playtest entry', () => {
     assert.ok(linksCard[1].includes('href="deadvox/playtest/round1/"'));
     assert.ok(linksCard[1].includes(`href="${playtestRound(2).url}"`));
     assert.match(page, DEADVOX_FORM_PATTERN);
-  });
-
-  it('links each authoring tool to a page the Pages workflow assembles', () => {
-    const workflow = read('.github/workflows/pages.yml');
-    const assembled = workflow.match(PAGES_ASSEMBLY_LOOP_PATTERN)?.[1].split(WHITESPACE_PATTERN) ?? [];
-    for (const tool of ['gun-authoring-tool', 'thing-authoring-tool', 'vehicle-authoring-tool']) {
-      assert.ok(page.includes(`href="${tool}/"`), `the launcher links ${tool}`);
-      assert.ok(assembled.includes(`packages/${tool}`), `${tool} is assembled into the site`);
-      assert.ok(existsSync(join(ROOT, 'packages', tool, 'index.html')), `${tool} has a page to deploy`);
-    }
   });
 
   it('renders consent terms before play and withholds the play link on catalog failure', () => {
@@ -502,22 +759,28 @@ describe('site launcher playtest entry', () => {
       const script = readFileSync(join(output, 'round1.js'), 'utf8');
       const href = script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(href, 'the assembled page has a play link');
-      assert.equal(href, `${config.playPath}?site=playtest`, 'play stays relative to the round domain');
+      assert.equal(href, playHref(config, config.scenario), 'play stays relative to the round domain');
       const tutorialHref = script.match(TUTORIAL_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(tutorialHref, 'the assembled page has a tutorial link');
       const tutorial = new URL(tutorialHref, config.url);
-      assert.equal(tutorial.searchParams.get('tutorial'), '1', 'the tutorial action requests practice');
-      tutorial.searchParams.delete('tutorial');
+      assert.ok(
+        practiceSites().includes(scenarioSite(tutorial.searchParams.get('mods'))),
+        'the tutorial action picks a practice scenario',
+      );
       const play = new URL(href, config.url);
-      assert.equal(tutorial.href, play.href, 'practice uses the same frozen game URL');
+      assert.equal(tutorial.pathname, play.pathname, 'practice uses the same frozen game');
       const beginnerHref = script.match(BEGINNER_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(beginnerHref, 'the assembled page has a beginner-mode link');
       assert.ok(script.indexOf('class="playtest-action"') < script.indexOf('class="beginner-action"'));
       const beginner = new URL(beginnerHref, config.url);
-      assert.equal(beginner.searchParams.get('mods'), 'beginner', 'beginner selects its bundled mod');
-      beginner.searchParams.delete('mods');
+      assert.equal(
+        beginner.searchParams.get('mods'),
+        `${config.scenario},skelly.deadvox.beginner`,
+        'beginner adds its bundled mod to the round scenario',
+      );
+      beginner.searchParams.set('mods', config.scenario);
       assert.equal(beginner.href, play.href, 'beginner mode uses the same frozen game URL');
-      assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');
+      assert.ok(authoredLayoutIds().includes(scenarioSite(config.scenario)), 'play starts at an authored site');
       assert.equal(play.searchParams.has('debug'), false);
       assert.ok(html.includes(`<link rel="canonical" href="${config.url}"`));
       assert.ok(html.includes(`<meta property="og:url" content="${config.url}"`));
@@ -542,7 +805,7 @@ describe('site launcher playtest entry', () => {
       const round2 = publishPlaytest({ round: 2, gameSha, dryRun: true, root });
       const round2Script = readFileSync(join(round2.output, 'round2.js'), 'utf8');
       const round2Href = round2Script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
-      assert.equal(round2Href, `${playtestRound(2).playPath}?${playtestRound(2).playQuery}`);
+      assert.equal(round2Href, playHref(playtestRound(2), playtestRound(2).scenario));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

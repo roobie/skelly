@@ -6,16 +6,79 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import { modFileBytes } from '../modFile.ts';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const magazineModel = JSON.parse(modFileBytes('gungen/magazine_stanag_30.model.json').toString('utf8'));
+const noonStart = {
+  density: null,
+  id: 'full_auto_noon_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const rifleStart = {
+  ...noonStart,
+  id: 'full_auto_fixture_start',
+  debugOnly: true,
+  kit: [
+    ...noonStart.kit,
+    { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+    { id: 'firearm', item: 'rifle_assault', destination: { kind: 'hand', role: 'dominant' } },
+    {
+      id: 'fitted_magazine',
+      item: 'magazine_stanag_30',
+      cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
+      destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
+    },
+    {
+      id: 'spare_magazine',
+      item: 'magazine_stanag_30',
+      cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+    {
+      id: 'box',
+      item: 'cartridge_box_5_d_56x45',
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+  ],
+};
 const anchors = new Map([
-  ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
+  ['src/presentation/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
   [
-    'src/game/audio.ts',
+    'src/presentation/audio.ts',
     '    this.stealOldestVoice(event, sound.voiceCap, context);\n    const source = context.createBufferSource();',
   ],
 ]);
@@ -28,9 +91,10 @@ const requireAnchor = (code, file, marker) => {
 // Vite reports transform failures asynchronously. Validate before starting it or a browser,
 // so an API change cannot masquerade as a later cold-audio wait timeout.
 for (const [file, marker] of anchors) {
-  requireAnchor(readFileSync(resolve(root, file), 'utf8'), file, marker);
+  // The anchored files are presentation sources, named relative to that package.
+  requireAnchor(readFileSync(resolve(root, '../presentation', file), 'utf8'), file, marker);
 }
-const vite = await createServer({
+const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',
@@ -40,17 +104,17 @@ const vite = await createServer({
       name: 'full-auto-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/game/play.ts')) {
-          const marker = anchors.get('src/game/play.ts');
-          requireAnchor(code, 'src/game/play.ts', marker);
+        if (id.endsWith('/src/presentation/play.ts')) {
+          const marker = anchors.get('src/presentation/play.ts');
+          requireAnchor(code, 'src/presentation/play.ts', marker);
           return code.replace(
             marker,
             `  Object.assign(globalThis, { fullAutoRuntime: { config, sim, input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore(), reportReader: () => sim.events.reader() } });\n${marker}`,
           );
         }
-        if (id.endsWith('/src/game/audio.ts')) {
-          const marker = anchors.get('src/game/audio.ts');
-          requireAnchor(code, 'src/game/audio.ts', marker);
+        if (id.endsWith('/src/presentation/audio.ts')) {
+          const marker = anchors.get('src/presentation/audio.ts');
+          requireAnchor(code, 'src/presentation/audio.ts', marker);
           return code.replace(
             marker,
             '    this.stealOldestVoice(event, sound.voiceCap, context);\n    globalThis.fullAutoProbe.sourceEvent = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.sourceEvent = undefined;',
@@ -162,12 +226,25 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=regional_map-right-lowered&mannequinWear=jacket,jeans,rubber_boots,utility_vest,school_backpack&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.full-auto.rifle', rifleStart),
+        hash: {
+          debug: true,
+          seed: 73,
+          radius: 64,
+          at: [43.5, 0, -90],
+          post: false,
+          sunshadow: false,
+          torchshadow: false,
+          mannequin: 'regional_map-right-lowered',
+          mannequinWear: ['jacket', 'jeans', 'rubber_boots', 'utility_vest', 'school_backpack'],
+        },
+      }),
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   const debugGateCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.titleF1DefaultPrevented = false;
@@ -195,10 +272,12 @@ try {
   );
   // Read committed reports before returning from fire so native starts must still share their shot's frame.
   await page.evaluate(async () => {
-    const moduleUrl = '/src/game/firearmHandling.ts';
+    const moduleUrl = '/@stage/@skelly/engine/internal/game/firearmHandling.ts';
     const { FirearmMechanics } = await import(moduleUrl);
     if (typeof FirearmMechanics?.prototype?.fire !== 'function') {
-      throw new Error('Full-auto observer needs src/game/firearmHandling.ts FirearmMechanics.prototype.fire');
+      throw new Error(
+        'Full-auto observer needs packages/engine/src/game/firearmHandling.ts FirearmMechanics.prototype.fire',
+      );
     }
     const { fire } = FirearmMechanics.prototype;
     FirearmMechanics.prototype.fire = function (input) {
@@ -216,7 +295,7 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.evaluate(() => {
-    globalThis.fullAutoRuntime.input.pitch = (-20 * Math.PI) / 180;
+    globalThis.fullAutoRuntime.input.controls.pitch = (-20 * Math.PI) / 180;
   });
   await page.waitForFunction(
     () =>
@@ -285,7 +364,7 @@ try {
     );
     await page.waitForFunction(
       ({ optionKey, optionSelector, nextVisibility }) =>
-        JSON.parse(localStorage.getItem('deadvox.hud-options'))[optionKey] === nextVisibility &&
+        JSON.parse(localStorage.getItem('skelly.hud-options'))[optionKey] === nextVisibility &&
         document.querySelector(optionSelector).hidden === !nextVisibility,
       { optionKey: key, optionSelector: selector, nextVisibility: visible },
     );
@@ -470,7 +549,7 @@ try {
   });
   const tuning = await page.evaluate(async () => {
     const { inventory } = globalThis.fullAutoRuntime;
-    const moduleUrl = '/src/game/firearmHandling.ts';
+    const moduleUrl = '/@stage/@skelly/engine/inventory';
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
     const rifle = inventory.hands.right;
     const data = firearmHandlingFor(rifle, inventory.registry);
@@ -532,7 +611,7 @@ try {
 
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
-    // ?loadout=ar holds the AR with a full magazine fitted; work the charging handle as a player would.
+    // The selected start holds a full fitted magazine; charge it as a player would.
     const rifle = inventory.hands.right;
     if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
       throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
@@ -635,7 +714,7 @@ try {
         state.frame.yaw,
         state.frame.pitch,
       ].every(Number.isFinite),
-      pitch: input.pitch,
+      pitch: input.controls.pitch,
     };
   });
   assert.ok(recoilState.finite, 'the skill-zero burst keeps aim state finite');
@@ -807,7 +886,10 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.full-auto.noon', noonStart),
+        hash: { seed: 73, radius: 64, at: [43.5, 0, -90], post: false, sunshadow: false, torchshadow: false },
+      }),
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

@@ -1,6 +1,6 @@
+import { ChunkMeshes } from '@skelly/presentation/render';
 import { LinearFilter, RepeatWrapping, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { expect, it } from 'vitest';
-import { ChunkMeshes } from '../src/render/chunks.ts';
 import { startupContent } from './baseRegistry.ts';
 
 it('selects cached noise only when enabled and reuses the lattice across shader recompiles', () => {
@@ -13,11 +13,11 @@ it('selects cached noise only when enabled and reuses the lattice across shader 
   };
   const uniform = compile();
   expect(uniform.value).toBeNull();
-  expect(material.defines?.DEADVOX_TEXTURE_NOISE).toBeUndefined();
+  expect(material.defines?.SKELLY_TEXTURE_NOISE).toBeUndefined();
   meshes.setCachedSurfaceNoise(true);
   const texture = uniform.value;
   expect(texture).not.toBeNull();
-  expect(material.defines?.DEADVOX_TEXTURE_NOISE).toBe(1);
+  expect(material.defines?.SKELLY_TEXTURE_NOISE).toBe(1);
   expect(compile()).toBe(uniform);
   expect(texture.wrapS).toBe(RepeatWrapping);
   expect(texture.wrapT).toBe(RepeatWrapping);
@@ -29,7 +29,7 @@ it('selects cached noise only when enabled and reuses the lattice across shader 
   meshes.setCachedSurfaceNoise(true);
   expect(material.version).toBe(version);
   meshes.setCachedSurfaceNoise(false);
-  expect(material.defines?.DEADVOX_TEXTURE_NOISE).toBeUndefined();
+  expect(material.defines?.SKELLY_TEXTURE_NOISE).toBeUndefined();
   meshes.setCachedSurfaceNoise(true);
   expect(compile().value).toBe(texture);
 });

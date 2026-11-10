@@ -1,29 +1,29 @@
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
-import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
-import { ARM_SEGMENTS, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
-import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
-import { catalogue } from '../packages/thing-authoring-tool/src/catalogue.ts';
-import { loadThingRecipe } from '../packages/thing-authoring-tool/src/exports.ts';
-import { modelMassKg } from '../packages/thing-core/src/mass.ts';
-import { assertExportSynced, assertRecipeCredits, assertVoxelized, exportDifference } from './model-export-sync.mjs';
+import { ARM_SEGMENTS, buildRegistry, LEG_SEGMENTS, ModelSchema } from '@skelly/engine/content';
+import { typeWeightGrams } from '@skelly/engine/inventory';
+import { namedNodes } from '@skelly/presentation/render';
+import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
+import { modelMassKg } from '../packages/skelly-assets/tools/packages/thing-core/src/mass.ts';
+import { readRecipes } from '../packages/skelly-assets/tools/recipes.mjs';
+import {
+  assertCutOver,
+  assertPinnedRow,
+  assertVoxelized,
+  PACKAGE_ROOT,
+  pinnedFiles,
+  readCutOver,
+} from './model-export-sync.mjs';
 
 const deadvoxRequire = createRequire(new URL('../packages/deadvox/package.json', import.meta.url));
 const { GLTFLoader } = await import(deadvoxRequire.resolve('three/addons/loaders/GLTFLoader.js'));
 const { Box3, Vector3 } = deadvoxRequire('three');
 const { safeParse } = deadvoxRequire('valibot');
-const base = new URL('../packages/deadvox/src/content/base/', import.meta.url).pathname;
-const recipe = loadThingRecipe();
-const exported = recipe.map((row) => ({ id: row.id, source: row.source, voxel: row.voxel, ...row.generate() }));
-const { registry, issues } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
-);
+// The thing tool's cut-over: per kind, the pinned rows its bundled packs consume from the external root.
+const CUT_OVER = readCutOver('things');
+const exported = CUT_OVER.rows.map((use) => ({ ...use, id: use.row.id, ...pinnedFiles(use) }));
+const { registry, issues } = buildRegistry(readStackContentSources(PACKAGE_ROOT, 'skelly.deadvox'));
 /** Each part a figure row names: its model, the anchors the row names on it and, for a limb, its rig's parts. */
 const figureParts = [...registry.figures.values()].flatMap((figure) => [
   {
@@ -61,76 +61,66 @@ const figureModels = new Set([
     )
     .filter((model) => !itemModels.has(model)),
 ]);
+const itemsDrawing = (model) => [...registry.items.values()].filter((item) => item.model === model);
+const loadGlb = async (glb) => await new GLTFLoader().parseAsync(Uint8Array.from(glb).buffer, '');
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
-  it('validates and reproduces every recipe model without orphaned records', () => {
-    const ids = new Set(recipe.map(({ id }) => id));
-    for (const out of exported) {
-      const parsed = safeParse(ModelSchema, out.modelEntry);
-      assert.ok(parsed.success, `${out.id}: ${JSON.stringify(parsed.issues)}`);
-      assertExportSynced(out, base, 'things');
-    }
-    assert.equal(
-      exportDifference(
-        JSON.parse(readFileSync(join(base, 'things/index.json'), 'utf8')),
-        exported.map(({ modelEntry }) => modelEntry),
-      ),
-      null,
-      'the registration index derives from the recipe',
-    );
-    for (const file of readdirSync(join(base, 'things')).filter((entry) => entry !== 'index.json')) {
-      assert.ok(
-        file.endsWith('.model.json') && ids.has(file.slice(0, -'.model.json'.length)),
-        `${file}: orphaned thing export`,
-      );
+  // biome-ignore lint/style/noDoneCallback: Node's TestContext prints the per-pack listing, not a done callback.
+  it('consumes only pinned thing rows, from the external root', (t) => {
+    assertCutOver(CUT_OVER, t);
+  });
+  it('matches each consumed thing row to its pinned manifest row', async () => {
+    await Promise.all(exported.map(async (out) => assertPinnedRow({ ...out, loaded: await loadGlb(out.glb) })));
+  });
+  it('validates and registers every consumed thing entry', () => {
+    for (const { id, modelEntry } of exported) {
+      const parsed = safeParse(ModelSchema, modelEntry);
+      assert.ok(parsed.success, `${id}: ${JSON.stringify(parsed.issues)}`);
+      assert.ok(registry.models.get(id), `${id}: not registered`);
     }
   });
   it('loads authored handling and anchors without consumer overrides', () => {
     const authored = exported.filter(({ modelEntry }) => modelEntry.grip || modelEntry.anchors);
-    assert.ok(authored.length > 0, 'the recipe must exercise authored datums');
+    assert.ok(authored.length > 0, 'the consumed rows must exercise authored datums');
     for (const { modelEntry } of authored) {
       const loaded = registry.models.get(modelEntry.id);
       assert.ok(loaded, `${modelEntry.id}: missing consumer model`);
       for (const field of ['grip', 'hold', 'rest', 'roll', 'anchors']) {
         if (modelEntry[field] !== undefined) {
-          assert.equal(
-            exportDifference(loaded[field], modelEntry[field]),
-            null,
-            `${modelEntry.id}: consumer overrides exported ${field}`,
-          );
+          assert.deepEqual(loaded[field], modelEntry[field], `${modelEntry.id}: consumer overrides exported ${field}`);
         }
       }
     }
   });
-  it('voxelizes every recipe model on its row class', () => {
-    exported.forEach(assertVoxelized);
-  });
-  it('credits every consumed thing export', () => {
-    assertRecipeCredits(recipe, JSON.parse(readFileSync(join(base, 'assets/manifest.json'), 'utf8')));
+  it('voxelizes every consumed thing model on its recipe row class', () => {
+    const classes = new Map(
+      readRecipes().flatMap(({ packId, value }) => value.map(({ id, voxel }) => [`${packId}/${id}`, voxel])),
+    );
+    for (const { id, glb, row } of exported) {
+      assertVoxelized({ id, glb, voxel: classes.get(`${row.pack}/${id}`) });
+    }
   });
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
-    for (const row of recipe) {
-      if (figureModels.has(row.id)) {
+    for (const { id, modelEntry } of exported) {
+      const items = itemsDrawing(id);
+      if (figureModels.has(id)) {
         // A model drawn only on a figure belongs to its figure row or to the item worn; no item holds it.
-        assert.equal(registry.items.has(row.source), false);
-        assert.ok(registry.models.get(row.id));
+        assert.deepEqual(items, [], `${id}: a figure model held by an item`);
+        assert.ok(registry.models.get(id));
         continue;
       }
-      const item = registry.items.get(row.source);
-      assert.ok(item, `${row.source}: missing consumer`);
-      assert.equal(item.model, row.id);
-      const model = registry.models.get(row.id);
+      const model = registry.models.get(id);
       assert.ok(model);
-      if (model.parts === undefined) {
-        assert.equal(typeof item.weight, 'number');
-        assert.equal(typeWeightGrams(registry, item.id), item.weight);
-      } else {
-        assert.equal(item.weight, undefined);
-        const toolItem = catalogue.items.find(({ id }) => id === row.source);
-        assert.ok(toolItem);
-        const authoredMass = toolItem.parts.reduce((sum, part) => sum + part.massKg, 0);
-        assert.equal(exportDifference(modelMassKg(model), authoredMass), null, row.id);
+      for (const item of items) {
+        if (model.parts === undefined) {
+          assert.equal(typeof item.weight, 'number');
+          assert.equal(typeWeightGrams(registry, item.id), item.weight);
+        } else {
+          assert.equal(item.weight, undefined, `${item.id}: a second mass source`);
+          // Part order may differ, so the sums may differ in the last bit.
+          assert.ok(Math.abs(modelMassKg(model) - modelMassKg(modelEntry)) <= 1e-12, id);
+        }
       }
     }
   });
@@ -150,7 +140,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     assert.ok(registry.figures.size > 0, 'the base content must author a figure');
     for (const part of figureParts) {
       const out = exported.find(({ id }) => id === part.model);
-      assert.ok(out, `${part.model}: no recipe export`);
+      assert.ok(out, `${part.model}: no consumed export`);
       for (const [joint, anchor] of Object.entries(part.joints)) {
         assert.ok(out.modelEntry.anchors?.[anchor], `${part.model}: ${joint} names missing anchor ${anchor}`);
       }
@@ -161,9 +151,8 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   });
   it('loads every part node through the Deadvox GLTF association', async () => {
     await Promise.all(
-      exported.map(async ({ modelEntry }) => {
-        const bytes = readFileSync(join(base, modelEntry.file));
-        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+      exported.map(async ({ modelEntry, glb }) => {
+        const loaded = await loadGlb(glb);
         let hasMesh = false;
         loaded.scene.traverse((node) => {
           hasMesh ||= node.isMesh === true;
@@ -192,9 +181,8 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
       'the slice must export a flame anchor',
     );
     await Promise.all(
-      lit.map(async ({ modelEntry }) => {
-        const bytes = readFileSync(join(base, modelEntry.file));
-        const loaded = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+      lit.map(async ({ modelEntry, glb }) => {
+        const loaded = await loadGlb(glb);
         const names = new Set();
         loaded.scene.traverse((node) => {
           for (const material of node.isMesh ? [node.material].flat() : []) {
@@ -217,14 +205,12 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   });
   it('reports the sum of authored parts as the multi-part item weight', () => {
     // A model drawn only on a figure is multi-part too, but no item holds it, so it has no weight to report.
-    const multi = recipe.filter(
-      (row) => !figureModels.has(row.id) && catalogue.items.find(({ id }) => id === row.source).parts.length > 1,
-    );
+    const multi = exported
+      .flatMap(({ id }) => itemsDrawing(id).map((item) => ({ item, model: registry.models.get(id) })))
+      .filter(({ model }) => !figureModels.has(model.id) && Object.keys(model.parts ?? {}).length > 1);
     assert.ok(multi.length > 0, 'the slice must exercise a multi-part item');
-    for (const row of multi) {
-      const model = registry.models.get(row.id);
-      assert.ok(model?.parts);
-      assert.equal(typeWeightGrams(registry, row.source), modelMassKg(model) * 1000);
+    for (const { item, model } of multi) {
+      assert.equal(typeWeightGrams(registry, item.id), modelMassKg(model) * 1000, item.id);
     }
   });
 });

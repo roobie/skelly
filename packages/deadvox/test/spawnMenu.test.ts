@@ -1,10 +1,12 @@
+import { BindingRegistry } from '@skelly/engine/input';
+import type { DebugHooks } from '@skelly/presentation/debug';
+import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
 import { NoToneMapping } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
-import type { DebugHooks } from '../src/game/debugInterface.ts';
-import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
@@ -58,7 +60,6 @@ describe('spawnMenuViewModel', () => {
               id: 'fixture_work',
               name: 'Work in progress',
               workInProgress: true,
-              notLoot: true,
               category: 'tool',
               weight: 0,
               size: [2, 2],
@@ -102,9 +103,11 @@ describe('spawnMenuViewModel', () => {
   it('leaves the search field empty when the G keydown opens the spawn menu', () => {
     const field = { value: 'g', focus: vi.fn(), blur: vi.fn() };
     const root = { hidden: true, querySelector: () => field } as unknown as HTMLElement;
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
     const menu = new SpawnMenu(
       registry,
       () => 'spawned',
+      bindings,
       () => undefined,
     );
     menu.setRoot(root);
@@ -116,6 +119,7 @@ describe('spawnMenuViewModel', () => {
     };
     const hooks = {
       sim,
+      keyboard: { registry: bindings },
       reviewMap: { isOpen: () => false, toggle: () => undefined },
       compress: () => undefined,
       spectatorCamera: { enabled: () => false, toggle: () => undefined, teleport: () => undefined },
@@ -125,7 +129,7 @@ describe('spawnMenuViewModel', () => {
     } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
-      zombieTypes: [],
+      actorTypes: [],
       look: new LookControls(
         { toneMapping: NoToneMapping, toneMappingExposure: 1 },
         {
@@ -152,7 +156,7 @@ describe('spawnMenuViewModel', () => {
       spawnUnawareShambler: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
-      spawnZombie: () => undefined,
+      spawnActor: () => undefined,
       isAimEnabled: () => true,
       toggleAim: () => undefined,
       isFrozen: () => false,
@@ -175,9 +179,10 @@ describe('spawnMenuViewModel', () => {
     const field = { value: '', focus: vi.fn(), blur: vi.fn() };
     const root = { hidden: true, querySelector: () => field, querySelectorAll: () => [] } as unknown as HTMLElement;
     const spawn = vi.fn((id: string) => `${id} spawned`);
-    const menu = new SpawnMenu(registry, spawn, () => undefined);
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    const menu = new SpawnMenu(registry, spawn, bindings, () => undefined);
     menu.setRoot(root);
-    const keyboard = new KeyboardInput(new BindingRegistry());
+    const keyboard = new KeyboardInput(bindings);
     keyboard.context = () => ({ context: menu.isOpen ? 'spawn' : 'play', debug: true });
     const commands: string[] = [];
     keyboard.command = ({ action, phase }) => {
@@ -208,7 +213,7 @@ describe('spawnMenuViewModel', () => {
     const field = { value: '', focus: vi.fn(), blur: vi.fn() };
     const root = { hidden: true, querySelector: () => field, querySelectorAll: () => [] } as unknown as HTMLElement;
     const spawn = vi.fn((id: string) => `${id} spawned`);
-    const menu = new SpawnMenu(registry, spawn, () => undefined);
+    const menu = new SpawnMenu(registry, spawn, new BindingRegistry(INPUT_BINDINGS), () => undefined);
     menu.setRoot(root);
     menu.open();
     expect(menu.viewModel.selectedIndex).toBe(0);

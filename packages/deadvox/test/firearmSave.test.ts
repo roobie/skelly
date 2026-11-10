@@ -1,29 +1,26 @@
-import { expect, it } from 'vitest';
-import { type AimStep, assertAimState } from '../src/core/aim.ts';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import type { Item } from '../src/core/items.ts';
-import { pelletShot } from '../src/core/pellets.ts';
-import { reachTuning } from '../src/core/reach.ts';
+import { type AimStep, assertAimState } from '@skelly/engine/internal/core/aim.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { pelletShot } from '@skelly/engine/internal/core/pellets.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { adjustLookPitch, LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
+import type { Item } from '@skelly/engine/inventory';
+import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '@skelly/engine/inventory';
 import {
   decodeSave,
   encodeSave,
-  SAVE_SCHEMA_VERSION,
   type SaveContentKind,
+  type SaveSnapshot,
   type SaveVersionComponents,
-} from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import {
-  type FirearmShotEffect,
-  type FirearmShotInput,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../src/game/firearmHandling.ts';
-import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+} from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { reachTuning } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
+import { expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
 import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
@@ -32,7 +29,11 @@ const registry = baseRegistry();
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: {
+    worldgen: 'worldgen-v2',
+    'bodyPlan.humanoid': 'humanoid-figure-v1',
+    'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+  },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);
@@ -50,6 +51,7 @@ const session = (
 ) =>
   createSession({
     registry: options.registry ?? registry,
+    actorFigureFiles: stackActorFigureFiles(options.registry ?? registry),
     world: new World(),
     isSolid: (_x, y) => y < 0,
     isOpaque: () => false,
@@ -288,11 +290,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
 
 it('keeps headless session recoil valid when held fire has no view-pitch control', () => {
   const headless = session([], undefined, { pitch: LOOK_PITCH_LIMIT }, { firing: true, adjustPitch: false });
-  const followup = firearmsSkillEffects(
-    0,
-    registry.skills.get('firearms_combat')!.combat!.firearms!,
-    'automaticFollowup',
-  );
+  const followup = firearmsSkillEffects(0, skilledFirearmsTuning(registry), 'automaticFollowup');
   for (let shot = 0; shot < 80; shot++) {
     headless.aim.recordShot(shot, 0.035, followup.recoilKickScale);
     headless.frame(1 / 60);
@@ -714,8 +712,8 @@ it('rejects an unknown item type in a pending firearm landing', async () => {
 
 it('hides a committed pile item during its arc and lands at its current model position', async () => {
   const { Group } = await import('three');
-  const { ItemThrows } = await import('../src/render/itemThrows.ts');
-  const { PileMeshes } = await import('../src/render/piles.ts');
+  const { ItemThrows } = await import('@skelly/presentation/internal/render/itemThrows.ts');
+  const { PileMeshes } = await import('@skelly/presentation/internal/render/piles.ts');
   const runtime = session([]);
   const rifle = sessionRifle(runtime);
   const target = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
@@ -731,7 +729,7 @@ it('hides a committed pile item during its arc and lands at its current model po
     version: 0,
     has: () => ready,
     groundLook: () => new Group(),
-  } as unknown as import('../src/render/models.ts').ModelLibrary;
+  } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
   const throws = new ItemThrows(registry, models, 0.5);
   const piles = new PileMeshes(0.5, models);
   const startedAtSimSeconds = runtime.sim.time;

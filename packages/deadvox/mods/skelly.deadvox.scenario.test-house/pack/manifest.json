@@ -1,0 +1,46 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.containers",
+    "skelly.deadvox.labs.underground",
+    "skelly.deadvox.site-generation",
+    "skelly.electric-power",
+    "skelly.electronics",
+    "skelly.firearms",
+    "skelly.fuel",
+    "skelly.ground-vehicles",
+    "skelly.hand-tools",
+    "skelly.household-electrical",
+    "skelly.light-sources",
+    "skelly.manuals",
+    "skelly.manufactured-blocks",
+    "skelly.materials",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.readables",
+    "skelly.structures",
+    "skelly.wearables",
+    "skelly.weathering"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "layouts-test-house.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-test-house.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.test-house",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

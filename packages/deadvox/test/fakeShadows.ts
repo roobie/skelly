@@ -1,4 +1,4 @@
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../src/core/mood.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '@skelly/engine/look';
 
 /** The state half of `Shadows`, which needs a WebGL renderer for the rest. */
 export class FakeShadows {

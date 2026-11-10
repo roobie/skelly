@@ -1,6 +1,6 @@
-import type { Registry } from '../core/content.ts';
-import type { Body } from '../core/physics.ts';
-import type { ZombieSystem } from '../core/zombies.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { ActorSystem } from '@skelly/engine/sim';
+import type { Body } from '@skelly/engine/world';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 import { placeShamblerRing } from './shamblerPlacement.ts';
@@ -12,7 +12,7 @@ export const spawnShamblerRing = ({
   player,
   engine,
   registry,
-  zombies,
+  actors,
   tier = 'active',
 }: {
   count: number;
@@ -20,10 +20,10 @@ export const spawnShamblerRing = ({
   player: Body;
   engine: ShamblerPlacementWorld;
   registry: Registry;
-  zombies: ZombieSystem;
+  actors: ActorSystem;
   tier?: 'active' | 'background';
 }): void => {
-  const type = registry.zombies.get('shambler');
+  const type = registry.actors.get('shambler');
   if (!type) {
     throw new Error('Cannot run shambler benchmark: shambler content is missing.');
   }
@@ -31,11 +31,15 @@ export const spawnShamblerRing = ({
     const positions = placeShamblerRing({ count, seed, player, engine });
     for (const position of positions) {
       const direction: [number, number, number] = [player.pos[0] - position[0], 0, player.pos[2] - position[2]];
-      const id = zombies.add(type, position, direction);
-      zombies.store.get(id)!.body.onGround = true;
+      const id = actors.add(type, position, direction);
+      actors.store.get(id)!.body.onGround = true;
     }
-    zombies.tickActive(1 / 20);
-    if ([...zombies.store.entries()].some(([, zombie]) => zombie.tier === 'active' && zombie.mode !== 'chase')) {
+    actors.tickActive(1 / 20);
+    if (
+      [...actors.store.entries()].some(
+        ([, actor]) => actor.tier === 'active' && actor.agent !== undefined && actor.agent.mode !== 'chase',
+      )
+    ) {
       throw new Error('Cannot start shambler benchmark: not every active shambler can see the player.');
     }
     return;
@@ -54,7 +58,7 @@ export const spawnShamblerRing = ({
     const x = player.pos[0] + (Math.cos(angle) * radius) / blockSize;
     const z = player.pos[2] + (Math.sin(angle) * radius) / blockSize;
     const center: [number, number, number] = [x, engine.groundAt(x * blockSize, z * blockSize) / blockSize, z];
-    zombies.addHorde(`bench-${seed}-${index}`, type, center, members);
+    actors.addHorde(`bench-${seed}-${index}`, type, center, members);
   }
-  zombies.tickBackground(0.5, 0);
+  actors.tickBackground(0.5, 0);
 };

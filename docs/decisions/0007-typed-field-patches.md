@@ -15,7 +15,7 @@ tags: [deadvox, adr, mods, content, schema, validation]
 ## Context
 
 A later pack replaces an earlier definition whole, by id, and the registry remembers one
-winning file per entry. See `packages/deadvox/src/core/content.ts`, `merge` and `contentOrigins`.
+winning file per entry. See `packages/engine/src/core/content.ts`, `merge` and `contentOrigins`.
 A mod that needs one field of a base entry changed must restate the entry, or build it from
 the base sources in Jsonnet, which still compiles to a whole entry.
 
@@ -116,17 +116,18 @@ can check before applying and explain afterwards.
 ## Implementation ownership
 
 The engine owns the patch merge: addressing, the refusal category, derive resolution and
-per-address origins. Design-check it against this ADR and `packages/deadvox/src/core/content.ts`
+per-address origins. Design-check it against this ADR and `packages/engine/src/core/content.ts`
 before implementation. It retains priority over queued engine work within the PR gate in
 `docs/decisions/0009-content-defined-products.md`, "Refactor gate"; that priority does not permit
 opening a PR during the freeze. Tool editing waits for the merge, while read-only inspection
 can proceed through the shared API. See `docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
 
-The engine feature must deliver or explicitly depend on conflict enforcement and the
-pack-dependency admission of #637; see
-`packages/deadvox/docs/pack-split.md`, "Refactor workstreams". Documented conflict rules are not
-loader enforcement: the design must verify those prerequisites so patch admission
-cannot silently accept an undeclared override. The separate literal set-target rule
+Patch admission must retain the bundled loader's dependency and entry-conflict boundary
+and extend enforcement to typed addresses, rather than assuming that entry checks prove
+field-patch safety. See `packages/engine/src/core/packAdmission.ts`, `admitPacks`.
+The common manifest and bundled admission do not implement folder fetchers or remote
+intake; those retain their separate prerequisites in
+`docs/decisions/0008-mod-authoring-tool.md`, "Build plan". The separate literal set-target rule
 belongs to `docs/decisions/0004-content-language.md`, "Mod rules", and its runtime work
 in #313, not to patch application. Nothing needs migrating before v1.0 beta (#1023).
 
@@ -148,7 +149,7 @@ breaks the mods that touched the renamed value. That is free before v1.0 beta (#
 The player cannot settle a clash without a compatibility mod that does.
 
 Save identity records the ordered pack list, which fixes the patched result; see
-`packages/deadvox/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. The pack-list identity is the rule until #1395 moves
+`packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. The pack-list identity is the rule until #1395 moves
 identity to the evaluated content, as
 `packages/deadvox/docs/decisions/0008-deterministic-world.md`, "Decision" rules.
 

@@ -1,7 +1,9 @@
+import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame, planRealFrame, RAMP_DOWN_SIM_SECONDS } from '@skelly/engine/internal/game/frameDriver.ts';
+import { observeRealFrame } from '@skelly/engine/session';
+import { realSeconds, realTimestamp } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Compression, longActionLimits } from '../src/core/compression.ts';
-import { realSeconds, realTimestamp, simSeconds } from '../src/core/time.ts';
-import { advanceLiveFrame, observeRealFrame, planRealFrame, RAMP_DOWN_SIM_SECONDS } from '../src/game/frameDriver.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 
 describe('outer frame time planning', () => {

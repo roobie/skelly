@@ -1,11 +1,10 @@
+import { spentCaseScatter } from '@skelly/engine/internal/core/scatterPile.ts';
+import type { FirearmShotEffect } from '@skelly/engine/inventory';
+import { Inventory, SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
+import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '@skelly/presentation/internal/render/caseEffects.ts';
+import { type ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from '../src/core/scatterPile.ts';
-import type { FirearmShotEffect } from '../src/game/firearmHandling.ts';
-import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';

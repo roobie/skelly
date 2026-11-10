@@ -39,7 +39,7 @@ cell. Stairs and excavation use the same authority rather than a privileged post
 Reserved cells are owned air that body proofs may rely on; other owned air only
 excavates. An ownership layer must agree with the literal blocks and with every delegated
 child's footprint so a mark cannot promise space that a child fills. See
-`packages/deadvox/src/core/templateOwnership.ts`, `compileOwnership`.
+`packages/engine/src/core/templateOwnership.ts`, `compileOwnership`.
 
 Reserve walking volume, support and connector mouths before attaching rooms or clutter.
 Role palettes separate structural meaning from material choice: interior flooring must
@@ -54,15 +54,15 @@ revalidation; field patches follow `docs/decisions/0007-typed-field-patches.md`,
 
 Extend the existing template compiler and city plan rather than creating another stamping
 engine. Compiled ownership and provenance travel with the geometry so diagnostics can
-explain both claimed solids and reserved voids. See `packages/deadvox/src/core/templates.ts`,
-`compileTemplate` and `stampPlacement`, and `packages/deadvox/src/core/cityPlan.ts`, `buildCityPlan`.
+explain both claimed solids and reserved voids. See `packages/engine/src/core/templates.ts`,
+`compileTemplate` and `stampPlacement`, and `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`.
 
 ## City storey boundaries
 
 A stair wedge and its reserved air own the opening through the next floor. The room and
 floor pieces leave that strip unclaimed; they cannot repaint the stair or its headroom.
 Sharing literal storey pieces keeps repeated facades consistent without turning floor
-count into a geometry generator. See `packages/deadvox/src/content/base/gauntlet-city-kits.libsonnet`,
+count into a geometry generator. See `tools/jsonnet/lib/gauntlet-city-kits.libsonnet`,
 `lowerSlots`, `lowerFloorClaims` and `middleFloorClaims`.
 
 Furnishing choices preserve the circulation contract but can still add obstacles and
@@ -76,13 +76,13 @@ which it leaves unclaimed, so equipment in a bay cannot change the level's suppo
 routes or borrow space from a connector. An opening's clearance should enclose the
 walking body, not adjacent equipment: declaring an unnecessarily deep opening would turn
 a valid bay into a circulation conflict. See
-`packages/deadvox/src/content/base/gauntlet-lab-level.libsonnet`, `claims`.
+`packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`, `claims`.
 
 A descent shaft owns its ladder column, body clearance and opening through the upper
 floor. The receiving level leaves the shaft volume unclaimed; the departing level leaves
 its floor opening unclaimed. Furnishing beside the column still needs a final climb
 certificate: exclusive ownership prevents overlapping writes, not a body obstruction in
-an adjacent cell. See `packages/deadvox/src/content/base/gauntlet-lab-descents.libsonnet`,
+an adjacent cell. See `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-descents.libsonnet`,
 `shaft`, and `packages/deadvox/test/scenarioCertificate.test.ts`,
 "rejects a shaft-neighbor obstruction in the final furnished production lab".
 
@@ -91,15 +91,15 @@ rooms, equipment bays and openings stay one design rather than substitutable kit
 Equipment bays belong to their room, while descent shafts and stairs belong to the
 connectors between levels. Closed descent lids support both side cells of the opening,
 so crossing an upper room cannot silently become a drop route. Opening the lid
-deliberately admits the climb. See `packages/deadvox/src/content/base/gauntlet-lab-level.libsonnet`,
-`build`, and `packages/deadvox/src/content/base/gauntlet-lab.libsonnet`, `mapAssemblies`.
+deliberately admits the climb. See `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-level.libsonnet`,
+`build`, and `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab.libsonnet`, `mapAssemblies`.
 
 The service facade and underground campus share one owned assembly rather than a second
 copy of the lab geometry. Portal anchors address finished furniture positions, not source
 palette characters, because markers belong to individual pieces. The final city-site
 witness walks closed descent lids, opens them, descends and returns through ordinary
-session commands. See `packages/deadvox/src/content/base/gauntlet-service.libsonnet`,
-`mapAssemblies`, `packages/deadvox/src/core/scenarioPortal.ts`, `portalPieces`, and
+session commands. See `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-service.libsonnet`,
+`mapAssemblies`, `packages/engine/src/core/scenarioPortal.ts`, `portalPieces`, and
 `packages/deadvox/test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
 ## Consequences

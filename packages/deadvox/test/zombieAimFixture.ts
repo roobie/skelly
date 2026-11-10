@@ -1,13 +1,13 @@
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarget.ts';
-import { makeScale } from '../src/core/scale.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { CrosshairTarget } from '@skelly/engine/internal/core/crosshairTarget.ts';
+import { crosshairTarget } from '@skelly/engine/sim';
+import { BlockEntities, makeScale, type Vec3 } from '@skelly/engine/world';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 /** Reaches past the far wall, so the fixture never depends on the shipped shot range. */
 export const FIXTURE_RANGE_BLOCKS = 120;
@@ -38,12 +38,13 @@ export const farWallTarget = (origin: Vec3, direction: Vec3, blockSize: number):
 
 export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Vec3, blockSize: number) => {
   const scale = makeScale(blockSize);
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     isSolid: () => false,
     isOpaque: () => false,
     blockSize,
     physics: physicsFor(scale),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     player: () => ({
       pos: origin,
       facing: direction,
@@ -60,7 +61,7 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     origin[1] + direction[1] * 8 - 2,
     origin[2] + direction[2] * 8,
   ];
-  system.add(registry.zombies.get('shambler')!, targetPosition, [-direction[0], 0, -direction[2]]);
+  system.add(registry.actors.get('shambler')!, targetPosition, [-direction[0], 0, -direction[2]]);
   const target = system.aimAt(origin, direction, FISTS_MELEE);
   if (!target) {
     throw new Error('The camera ray did not intersect the fixture shambler');

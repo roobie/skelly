@@ -1,0 +1,146 @@
+{
+  "dependencies": ["skelly.inventory", "skelly.hand-tools"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "packaged-foods-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-packaged-foods.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canned_beans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canned_soup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chocolate_bar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crackers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/empty_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/empty_soda_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/juice_carton.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/opened_beans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/opened_soda.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/opened_soup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soda.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soda_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/water_bottle.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canned_beans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canned_soup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chocolate_bar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crackers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/empty_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/empty_soda_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/juice_carton.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/opened_beans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/opened_soda.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/opened_soup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soda.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soda_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/water_bottle.glb"
+    }
+  ],
+  "id": "skelly.packaged-foods",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

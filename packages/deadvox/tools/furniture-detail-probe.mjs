@@ -2,11 +2,11 @@
 // biome-ignore-all lint/suspicious/noConsole: CLI evidence goes to stdout
 import { readdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from '../test/browser/chromium.mjs';
+import { createStageServer } from '../test/browser/stageServer.mjs';
 
 const [out, ...rest] = process.argv.slice(2);
 const compare = rest[0] === '--compare';
@@ -19,12 +19,35 @@ const threeFile = createRequire(import.meta.url)
   .resolve('three')
   .replace(/three\.cjs$/, 'three.module.js');
 const threeUrl = `/@fs${threeFile}`;
-// Every base content file may hold detailed fixtures; the page function is serialised, so the list is made here.
-const contentDir = fileURLToPath(new URL('../src/content/base/', import.meta.url));
-const contentFiles = (await readdir(contentDir)).filter((file) => file.endsWith('.json')).sort();
-const server = await createServer({
+// Every mod's content file may hold detailed fixtures or what they select; the page function is serialised, so the
+// list is made here.
+const modRoots = ['../mods/', '../../mods/'].map((root) => fileURLToPath(new URL(root, import.meta.url)));
+const contentFiles = (
+  await Promise.all(
+    modRoots.map(async (root) =>
+      (
+        await Promise.all(
+          (
+            await readdir(root, { withFileTypes: true })
+          )
+            .filter((entry) => entry.isDirectory())
+            .map(async ({ name }) =>
+              (
+                await readdir(join(root, name))
+              )
+                .filter((file) => file.endsWith('.json'))
+                .map((file) => `/@fs${join(root, name, file)}`),
+            ),
+        )
+      ).flat(),
+    ),
+  )
+)
+  .flat()
+  .sort();
+const server = await createStageServer({
   root: fileURLToPath(new URL('../', import.meta.url)),
-  server: { host: '127.0.0.1', port: 0, open: false, fs: { allow: [dirname(threeFile)] } },
+  server: { host: '127.0.0.1', port: 0, open: false, fs: { allow: [dirname(threeFile), ...modRoots] } },
 });
 let browser;
 try {
@@ -50,13 +73,13 @@ try {
   const cost = await page.evaluate(
     async ({ threeModule, contentNames, ids, withPlain }) => {
       const Three = await import(new URL(threeModule, location.href).href);
-      const { buildRegistry } = await import(new URL('/src/core/content.ts', location.href).href);
-      const { BlockEntities } = await import(new URL('/src/core/blockEntities.ts', location.href).href);
-      const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
+      const { buildRegistry } = await import(new URL('/@stage/@skelly/engine/content', location.href).href);
+      const { BlockEntities } = await import(new URL('/@stage/@skelly/engine/world', location.href).href);
+      const { FurnitureMeshes } = await import(
+        new URL('/@stage/@skelly/presentation/internal/render/furniture.ts', location.href).href
+      );
       const files = await Promise.all(
-        contentNames.map(
-          async (file) => (await import(new URL(`/src/content/base/${file}`, location.href).href)).default,
-        ),
+        contentNames.map(async (file) => (await import(new URL(file, location.href).href)).default),
       );
       const gather = (key) => files.flatMap((file) => file[key] ?? []);
       // Rows run away from the camera, so the short pieces stand in front where tall ones cannot hide them.
@@ -86,6 +109,7 @@ try {
           data: {
             sounds: gather('sounds'),
             furnitureMaterials: gather('furnitureMaterials'),
+            powerDevices: gather('powerDevices'),
             furniture: [...plain, ...definitions],
           },
         },

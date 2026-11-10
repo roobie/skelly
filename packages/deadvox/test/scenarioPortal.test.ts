@@ -1,29 +1,30 @@
-import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildCityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { doorPlan } from '../src/core/options.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf, servicePlacement } from '@skelly/engine/internal/core/cityPlan.ts';
+import { compileTemplate, placedPieces, type stampPlacement } from '@skelly/engine/internal/core/templates.ts';
+import { doorPlan } from '@skelly/engine/inventory';
 import {
-  compileTemplate,
+  BlockEntities,
+  CHUNK,
+  CitySite,
   type Facing,
+  generateColumn,
+  makeScale,
   type Placement,
-  placedPieces,
   placedPoint,
-  type stampPlacement,
-} from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+  World,
+  worldSolid,
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const yawOutward: Record<Facing, number> = { n: 0, e: -Math.PI / 2, s: Math.PI, w: Math.PI / 2 };
@@ -88,6 +89,7 @@ describe('owned hatch/ladder portal fixtures', () => {
     const isSolid = worldSolid(world, registry, entities);
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       scenario: profile,
       world,
       entities,

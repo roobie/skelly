@@ -1,4 +1,4 @@
-import { access, readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from 'vite';
@@ -10,6 +10,7 @@ import {
   fingerprintAfterHotChange,
   fingerprintSimulationSourceMap,
   fingerprintSimulationSources,
+  labelledPath,
   SIMULATION_ENTRIES,
   SIMULATION_EXCLUSIONS,
   type SimulationModuleGraphHost,
@@ -24,7 +25,7 @@ function hostFor(sources: Sources): SimulationModuleGraphHost {
     resolve(specifier, importer) {
       let base = isAbsolute(specifier) ? specifier : resolve(dirname(importer ?? root), specifier);
       if (specifier === '@skelly/thing-core/schema') {
-        base = resolve(root, '../thing-core/src/schema.ts');
+        base = resolve(root, '../skelly-assets/tools/packages/thing-core/src/schema.ts');
       }
       for (const candidate of [base, `${base}.ts`, `${base}.tsx`, `${base}.js`]) {
         if (sources.has(candidate)) {
@@ -54,29 +55,48 @@ const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 
-// These files are not runtime roots: buildRevision is a test/build diagnostic helper,
-// while debugInterface contains only erased TypeScript contracts.
+// Core and game files outside simulation identity, each with its reason: test, build or type-only
+// files, and presentation, live-input or debug files that only the excluded browser shell reaches.
+// Unlike an exclusion, a rule here only records the file: a later runtime import brings it back
+// into identity, so a simulation use added later cannot hide behind it.
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
-  'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
-  'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
-  'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
-  'src/core/scenarioRoute.ts':
+  'engine/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
+  'engine/core/actorSense.ts': 'Erased player-sense contracts; perception and motion remain in the runtime graph.',
+  'engine/core/bones.ts': 'Erased skeleton type contracts; posing and dismemberment remain in the runtime graph.',
+  'engine/core/massProperties.ts':
+    'Voxel mass and bounds of built bodies for ragdolls and severed parts; no simulation module imports it.',
+  'engine/core/actorClips.ts': 'Baked clip composer that no runtime module imports; its tests read it over a fixture.',
+  'engine/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
+  'engine/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
+  'engine/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',
+  'engine/core/scenarioRoute.ts':
     'Test-only route-proof support; cityLots.ts imports only its types, and its value user scenarioCertificate.ts is test-only.',
-  'src/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
-  'src/core/firearmAimOffHand.ts':
+  'engine/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
+  'engine/core/firearmAimOffHand.ts':
     'Presentation-only hand-role projection; it does not alter simulation or save identity.',
-  'src/core/firearmAimPose.ts':
+  'engine/core/firearmAimPose.ts':
     'Presentation-only hand-pose projection; it does not alter simulation or save identity.',
-  'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
-  'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
-  'src/game/mapSliceInput.ts':
-    'Review-map page input helper; only the map page imports it, so it never reaches simulation or save identity.',
-  'src/game/renderMode.ts':
-    'Presentation-only development render selection; does not alter simulation or save identity.',
-  'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
-  'src/core/schedulerIds.ts':
+  'engine/core/percentile.ts': 'Timing summary for the debug frame readout and the benchmark, not game runtime.',
+  'engine/core/playerState.ts': 'Type-only contract; the imported interface erases from runtime code.',
+  'engine/game/debugNoclipStep.ts': 'Type-only contract; the imported interface erases from runtime code.',
+  'engine/game/mesherProtocol.ts': 'Type-only mesher messages; the imported types erase from runtime code.',
+  'engine/game/storageContract.ts':
+    'Type-only save and mod storage contracts; the imported types erase from runtime code.',
+  'engine/core/soundOcclusion.ts':
+    'Presentation-only filtering, reached only from the WebAudio adapter, which no simulation entry reaches.',
+  'engine/game/hearing.ts':
+    'Heard-sound record and occlusion, reached only from the WebAudio adapter, which no simulation entry reaches.',
+  'engine/game/bindingRegistry.ts':
+    'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
+  'engine/game/voiceCaps.ts':
+    'Playback voice caps, reached only from the WebAudio adapter, which no simulation entry reaches.',
+  'engine/core/schedulerIds.ts':
     'Reached only through the excluded save controller; test/saveSchedulerIds.test.ts keeps it equal to the fingerprinted registrations, so it cannot change without them.',
-  'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
+  'engine/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
+  'engine/core/interactionAffordance.ts':
+    'Presentation projection of the interaction highlight; replay applies recorded payloads, not the highlight.',
+  'engine/core/stageMarks.ts':
+    'Tutorial and playtest-observer stage values; core/site.ts imports only the type, so nothing simulated reads them.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -96,9 +116,6 @@ const actualSimulationHost = (): Promise<SimulationModuleGraphHost> => {
     const viteResolve = config.createResolver();
     return {
       resolve(specifier, importer) {
-        if (specifier.startsWith('@mobgen/')) {
-          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-        }
         return Promise.resolve(viteResolve(specifier, importer));
       },
       readFile(path) {
@@ -127,8 +144,8 @@ async function mutateSimulationSource(
   before = '',
   after = '\n// Test-owned fingerprint mutation.\n',
 ) {
-  const target = resolve(projectRoot, path);
-  const sourcePath = relative(projectRoot, target).split(sep).join('/');
+  const target = labelledPath(projectRoot, path);
+  const sourcePath = path;
   const graph = await actualSimulationGraph();
   const original = graph.sources.get(sourcePath) ?? (await host.readFile(target));
   if (!original.includes(before)) {
@@ -151,13 +168,13 @@ describe('simulation source fingerprint', () => {
     const host = await actualSimulationHost();
     const proof = await collectSimulationSourceGraph(ADMISSION_ENTRIES, projectRoot, host);
     const simulation = await actualSimulationGraph();
-    for (const path of ['src/core/content.ts', 'src/core/bundleAdmission.ts', 'src/core/schema.ts']) {
+    for (const path of ['engine/core/content.ts', 'engine/core/bundleAdmission.ts', 'engine/core/schema.ts']) {
       expect(proof.sources.has(path)).toBe(true);
       expect(simulation.sources.has(path)).toBe(true);
     }
     const before = fingerprintSimulationSourceMap(proof.sources);
     const changed = new Map(proof.sources);
-    const path = 'src/core/bundleAdmission.ts';
+    const path = 'engine/core/bundleAdmission.ts';
     changed.set(path, `${changed.get(path)!}\n// Fixture admission policy mutation.\n`);
     expect(fingerprintSimulationSourceMap(changed)).not.toBe(before);
     const mutation = await mutateSimulationSource(host, path);
@@ -167,12 +184,13 @@ describe('simulation source fingerprint', () => {
 
   it('keeps excluded runtime edges and presentation libraries out of the actual Vite-resolved graph', async () => {
     const graph = await actualSimulationGraph();
-    expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
-    expect(graph.sources.has('src/game/engine.ts')).toBe(false);
-    expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
+    expect(graph.sources.has('presentation/worker/mesh.worker.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/engine.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/playtestObserver.ts')).toBe(false);
     const paths = [...graph.sources.keys()];
-    expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
-    expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('presentation/ui/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('presentation/render/'))).toBe(false);
+    expect(paths.filter((path) => path.startsWith('presentation/presentation/'))).toEqual([]);
     expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(graph.sources.size).toBeGreaterThan(0);
@@ -186,35 +204,35 @@ describe('simulation source fingerprint', () => {
   it('excludes WebAudio implementation but fingerprints sound admission, seeded selection and saves', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    const cap = await mutateSimulationSource(host, 'src/game/audio.ts');
+    const cap = await mutateSimulationSource(host, 'presentation/presentation/audio.ts');
     expect(cap.value).toBe(original);
     expect(cap.included).toBe(false);
-    const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
+    const picker = await mutateSimulationSource(host, 'engine/core/soundPicker.ts', '`sound:', '`changed:');
     expect(picker.included).toBe(true);
     expect(picker.value).not.toBe(original);
     const admission = await mutateSimulationSource(
       host,
-      'src/game/session.ts',
+      'engine/game/session.ts',
       'const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);',
       'const emittedAsNoise = false;',
     );
     expect(admission.included).toBe(true);
     expect(admission.value).not.toBe(original);
     const graph = await actualSimulationGraph();
-    expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
-    expect(graph.sources.has('src/core/saveFormat.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/saveState.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/saveFormat.ts')).toBe(true);
   });
 
   it('ignores HUD/paper wording but fingerprints the gameplay interaction reach', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts');
+    const hud = await mutateSimulationSource(host, 'presentation/ui/playHud.ts');
     expect(hud.included).toBe(false);
     expect(hud.value).toBe(original);
-    const paper = await mutateSimulationSource(host, 'src/ui/reading.ts');
+    const paper = await mutateSimulationSource(host, 'presentation/ui/reading.ts');
     expect(paper.included).toBe(false);
     expect(paper.value).toBe(original);
-    const reach = await mutateSimulationSource(host, 'src/game/play.ts');
+    const reach = await mutateSimulationSource(host, 'engine/game/commandRouter.ts');
     expect(reach.included).toBe(true);
     expect(reach.value).not.toBe(original);
   });
@@ -222,10 +240,10 @@ describe('simulation source fingerprint', () => {
   it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {
     const host = await actualSimulationHost();
     const before = await actualSimulationFingerprint();
-    const voice = await mutateSimulationSource(host, 'src/game/shamblerAudio.ts');
+    const voice = await mutateSimulationSource(host, 'engine/game/actorAudio.ts');
     expect(voice.included).toBe(false);
     expect(voice.value).toBe(before);
-    const changed = await mutateSimulationSource(host, 'src/game/audioPresentation.ts');
+    const changed = await mutateSimulationSource(host, 'engine/game/audioPresentation.ts');
     expect(changed.included).toBe(false);
     expect(changed.value).toBe(before);
   });
@@ -234,56 +252,56 @@ describe('simulation source fingerprint', () => {
     const host = await actualSimulationHost();
     const graph = await actualSimulationGraph();
     const original = fingerprintSimulationSourceMap(graph.sources);
-    expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
+    expect(graph.sources.has('engine/game/primaryAction.ts')).toBe(true);
     expect(graph.sources.has('src/debug/axisGizmo.ts')).toBe(false);
-    expect(graph.sources.has('src/game/firearmHandling.ts')).toBe(true);
-    expect(graph.sources.has('src/game/debugTargetRay.ts')).toBe(false);
-    expect(graph.sources.has('src/render/caseEffects.ts')).toBe(false);
-    expect(graph.sources.has('src/game/controls.ts')).toBe(false);
-    expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
-    expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
+    expect(graph.sources.has('engine/game/firearmHandling.ts')).toBe(true);
+    expect(graph.sources.has('presentation/presentation/debugTargetRay.ts')).toBe(false);
+    expect(graph.sources.has('presentation/render/caseEffects.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/controls.ts')).toBe(false);
+    expect(graph.sources.has('presentation/render/meleePose.ts')).toBe(false);
+    expect(graph.sources.has('presentation/ui/primaryActionHint.ts')).toBe(false);
 
     const debugPresentation = await mutateSimulationSource(host, 'src/debug/axisGizmo.ts');
     expect(debugPresentation.included).toBe(false);
     expect(debugPresentation.value).toBe(original);
 
-    const debugTarget = await mutateSimulationSource(host, 'src/game/debugTargetRay.ts');
+    const debugTarget = await mutateSimulationSource(host, 'presentation/presentation/debugTargetRay.ts');
     expect(debugTarget.included).toBe(false);
     expect(debugTarget.value).toBe(original);
 
-    const hint = await mutateSimulationSource(host, 'src/ui/primaryActionHint.ts');
+    const hint = await mutateSimulationSource(host, 'presentation/ui/primaryActionHint.ts');
     expect(hint.included).toBe(false);
     expect(hint.value).toBe(original);
 
-    const helpCopy = await mutateSimulationSource(host, 'src/game/controls.ts');
+    const helpCopy = await mutateSimulationSource(host, 'presentation/presentation/controls.ts');
     expect(helpCopy.included).toBe(false);
     expect(helpCopy.value).toBe(original);
 
-    const offHandRenderPolicy = await mutateSimulationSource(host, 'src/render/meleePose.ts');
+    const offHandRenderPolicy = await mutateSimulationSource(host, 'presentation/render/meleePose.ts');
     expect(offHandRenderPolicy.included).toBe(false);
     expect(offHandRenderPolicy.value).toBe(original);
 
-    const casePresentation = await mutateSimulationSource(host, 'src/render/caseEffects.ts');
+    const casePresentation = await mutateSimulationSource(host, 'presentation/render/caseEffects.ts');
     expect(casePresentation.included).toBe(false);
     expect(casePresentation.value).toBe(original);
 
-    const firearmDrawing = await mutateSimulationSource(host, 'src/render/firearmModel.ts');
+    const firearmDrawing = await mutateSimulationSource(host, 'presentation/render/firearmModel.ts');
     expect(firearmDrawing.included).toBe(false);
     expect(firearmDrawing.value).toBe(original);
     const sharedFirearmTiming = await mutateSimulationSource(
       host,
-      'src/core/firearmAction.ts',
+      'engine/core/firearmAction.ts',
       '1 / action.roundsPerSimMinute',
       '2 / action.roundsPerSimMinute',
     );
     expect(sharedFirearmTiming.included).toBe(true);
     expect(sharedFirearmTiming.value).not.toBe(original);
-    const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts');
+    const firearmHandling = await mutateSimulationSource(host, 'engine/game/firearmHandling.ts');
     expect(firearmHandling.included).toBe(true);
     expect(firearmHandling.value).not.toBe(original);
     const cadence = await mutateSimulationSource(
       host,
-      'src/game/firearmTrigger.ts',
+      'engine/game/firearmTrigger.ts',
       'const interval = 1 / weapon.roundsPerSimSecond;',
       'const interval = 2 / weapon.roundsPerSimSecond;',
     );
@@ -292,7 +310,7 @@ describe('simulation source fingerprint', () => {
 
     const handPolicy = await mutateSimulationSource(
       host,
-      'src/game/primaryAction.ts',
+      'engine/game/primaryAction.ts',
       'hand: HandSide = dominantSide(inventory.character)',
       'hand: HandSide = offSide(inventory.character)',
     );
@@ -301,7 +319,7 @@ describe('simulation source fingerprint', () => {
 
     const capability = await mutateSimulationSource(
       host,
-      'src/game/primaryAction.ts',
+      'engine/game/primaryAction.ts',
       "{ kind: 'light', supports:",
       "{ kind: 'melee', supports:",
     );
@@ -311,11 +329,17 @@ describe('simulation source fingerprint', () => {
 
   it('classifies every core and game source module', async () => {
     const graph = await actualSimulationGraph();
-    expect(SIMULATION_EXCLUSIONS).toContain('src/core/assets.ts');
-    expect(NON_RUNTIME_SOURCE_RULES).not.toHaveProperty('src/core/assets.ts');
-    const modules = [...(await sourceFilesUnder('src/core')), ...(await sourceFilesUnder('src/game'))];
+    expect(SIMULATION_EXCLUSIONS).toContain('engine/core/assets.ts');
+    expect(NON_RUNTIME_SOURCE_RULES).not.toHaveProperty('engine/core/assets.ts');
+    // Engine files are labelled `'engine/'` in the manifest, as SIMULATION_ENTRIES names them.
+    const engineSource = relative(projectRoot, dirname(labelledPath(projectRoot, 'engine/core')));
+    const engineFiles = [
+      ...(await sourceFilesUnder(join(engineSource, 'core'))),
+      ...(await sourceFilesUnder(join(engineSource, 'game'))),
+    ];
+    const modules = engineFiles.map((path) => `engine/${relative(engineSource, path).split(sep).join('/')}`);
     const scopedExclusions = SIMULATION_EXCLUSIONS.filter(
-      (rule) => rule.startsWith('src/core/') || rule.startsWith('src/game/'),
+      (rule) => rule.startsWith('engine/core/') || rule.startsWith('engine/game/'),
     );
     // Core/game rules must name individual files; a directory-wide exception would mask newly added modules.
     expect(scopedExclusions.every((rule) => rule.endsWith('.ts'))).toBe(true);
@@ -327,20 +351,20 @@ describe('simulation source fingerprint', () => {
       (path) => !(graph.sources.has(path) || excluded(path) || Object.hasOwn(NON_RUNTIME_SOURCE_RULES, path)),
     );
     expect(unclassified, `Unclassified runtime source modules: ${unclassified.join(', ')}`).toEqual([]);
-    expect(graph.sources.has('src/core/authoredTerrain.mjs')).toBe(true);
-    expect(graph.sources.has('src/core/authoredTerrain.d.mts')).toBe(false);
+    expect(graph.sources.has('engine/core/authoredTerrain.mjs')).toBe(true);
+    expect(graph.sources.has('engine/core/authoredTerrain.d.mts')).toBe(false);
     // A vehicle piece's solid blocks come from its fitted parts, so that geometry decides collision.
-    expect(graph.sources.has('src/vehicles/solid.ts')).toBe(true);
+    expect(graph.sources.has('engine/vehicles/solid.ts')).toBe(true);
   });
 
   it('classifies the isolated feasibility graph separately from production and rejects WASM until explicitly owned', async () => {
     const host = await actualSimulationHost();
     const graph = await collectSimulationSourceGraph(FEASIBILITY_ENTRIES, projectRoot, host);
-    const modules = await sourceFilesUnder('src/vehicles/feasibility');
-    const erasedContracts = 'src/vehicles/feasibility/contract.ts';
+    const modules = await sourceFilesUnder('src/feasibility');
+    const erasedContracts = 'src/feasibility/contract.ts';
     expect(modules.filter((path) => !graph.sources.has(path) && path !== erasedContracts)).toEqual([]);
-    expect(graph.sources.has('src/config/vehicleFeasibility.json')).toBe(true);
-    expect(graph.sources.has('src/vehicles/feasibility/movingBody.ts')).toBe(true);
+    expect(graph.sources.has('src/feasibility/vehicleFeasibility.json')).toBe(true);
+    expect(graph.sources.has('src/feasibility/movingBody.ts')).toBe(true);
     const entry = `${root}/src/core/sim.ts`;
     const wasm = `${root}/src/core/candidate.wasm`;
     await expect(
@@ -357,50 +381,36 @@ describe('simulation source fingerprint', () => {
     ).rejects.toThrow(UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR);
   });
 
-  it('ignores ragdoll tuning but fingerprints simulation body content', async () => {
+  it('ignores ragdoll tuning', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    await Promise.all(
-      [
-        ['../mobgen/src/mob/ragdoll.json', 'gravity'],
-        ['../mobgen/src/mob/acidTemplate.json', 'bodyMassKg'],
-      ].map(async ([path, key]) => {
-        const target = resolve(projectRoot, path!);
-        const content = JSON.parse(await host.readFile(target));
-        const changed = JSON.stringify({ ...content, [key!]: content[key!] + 1 });
-        const graph = await collectSimulationSourceGraph(
-          SIMULATION_ENTRIES,
-          projectRoot,
-          {
-            ...host,
-            readFile: (file) => (file === target ? Promise.resolve(changed) : host.readFile(file)),
-          },
-          { exclude: SIMULATION_EXCLUSIONS },
-        );
-        const fingerprint = fingerprintSimulationSourceMap(graph.sources);
-        if (key === 'gravity') {
-          expect(fingerprint).toBe(original);
-          expect(graph.sources.has('mobgen/mob/ragdoll.json')).toBe(false);
-        } else {
-          expect(fingerprint).not.toBe(original);
-        }
-      }),
+    const target = resolve(projectRoot, 'src/config/ragdoll.json');
+    const content = JSON.parse(await host.readFile(target));
+    const changed = JSON.stringify({ ...content, gravity: content.gravity + 1 });
+    const graph = await collectSimulationSourceGraph(
+      SIMULATION_ENTRIES,
+      projectRoot,
+      {
+        ...host,
+        readFile: (file) => (file === target ? Promise.resolve(changed) : host.readFile(file)),
+      },
+      { exclude: SIMULATION_EXCLUSIONS },
     );
+    expect(fingerprintSimulationSourceMap(graph.sources)).toBe(original);
+    expect(graph.sources.has('src/config/ragdoll.json')).toBe(false);
   });
 
-  it('fingerprints pure mobgen modules imported by the simulation', async () => {
+  it('fingerprints pure figure modules imported by the simulation', async () => {
     const graph = await actualSimulationGraph();
-    expect(graph.sources.has('mobgen/mob/shamblerFigure.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/core/pose.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/amalgamTemplate.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/amalgam.ts')).toBe(true);
-    await expect(access(resolve(projectRoot, '../mobgen/src/mob/amalgamTemplate.ts'))).resolves.toBeUndefined();
+    expect(graph.sources.has('engine/core/pose.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/boneTree.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/fusedMassFigure.ts')).toBe(true);
+    expect(graph.sources.has('engine/core/fusedMassCarving.ts')).toBe(true);
   });
 
   it('fingerprints shared model-schema changes imported by the simulation', async () => {
     const entry = `${root}/src/core/sim.ts`;
-    const schema = resolve(root, '../thing-core/src/schema.ts');
+    const schema = resolve(root, '../skelly-assets/tools/packages/thing-core/src/schema.ts');
     const sources = new Map([
       [entry, "import { validate } from '@skelly/thing-core/schema'; export { validate };"],
       [schema, 'export const validate = () => true;'],
@@ -435,21 +445,20 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
-  it.each([
-    '../config/intake.json',
-    '../../../mobgen/src/mob/materials.json',
-    '../../../thing-core/src/materials.json',
-  ])('fingerprints declarative JSON dependency %s without parsing it as a module', async (specifier) => {
-    const entry = resolve(root, entries[0]!);
-    const dependency = resolve(entry, '..', specifier);
-    const sources = new Map([
-      [entry, `import config from '${specifier}'; export const cap = config.cap;`],
-      [dependency, '{"cap": 100}'],
-    ]);
-    const before = await hash(sources, ...entries);
-    sources.set(dependency, '{"cap": 200}');
-    expect(await hash(sources, ...entries)).not.toBe(before);
-  });
+  it.each(['../config/intake.json', '../../../skelly-assets/tools/packages/thing-core/src/materials.json'])(
+    'fingerprints declarative JSON dependency %s without parsing it as a module',
+    async (specifier) => {
+      const entry = resolve(root, entries[0]!);
+      const dependency = resolve(entry, '..', specifier);
+      const sources = new Map([
+        [entry, `import config from '${specifier}'; export const cap = config.cap;`],
+        [dependency, '{"cap": 100}'],
+      ]);
+      const before = await hash(sources, ...entries);
+      sources.set(dependency, '{"cap": 200}');
+      expect(await hash(sources, ...entries)).not.toBe(before);
+    },
+  );
 
   it('recomputes the identity for create, update, and delete hot changes', async () => {
     const results = await Promise.all(

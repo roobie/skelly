@@ -1,16 +1,14 @@
+import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { createColumnSupply } from '@skelly/engine/internal/core/columnSupply.ts';
+import { commitRuin, planRuin, ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { CHUNK, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
+import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
-import type { EntitySpec } from '../src/core/blockEntities.ts';
-import { CanonicalTerrain } from '../src/core/canonicalTerrain.ts';
-import { createColumnSupply } from '../src/core/columnSupply.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { commitRuin, planRuin, ruinFurniture } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../src/core/site.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureLootPoint } from './economyFixtures.ts';
@@ -43,9 +41,7 @@ const registryFixture = () => {
     category: 'material',
     size: [1, 1],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   registry.furniture.set(shelf.type, {
     id: shelf.type,
@@ -76,7 +72,7 @@ const fixture = () => {
     furnitureIn: (cx, cz) => spawns.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
     lootPointsIn: (cx, cz) => (toChunk(ground.destination[0]) === cx && cz === 0 ? [ground] : []),
     supplySourcesIn: (area) => footprints.in(area),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   return { registry, inventory, consumed, owner, source };
 };

@@ -1,9 +1,8 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import { BlockEntities, type Facing } from '@skelly/engine/world';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { FurnitureDef } from '../src/core/schema.ts';
-import type { Facing } from '../src/core/templates.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 const definitions = [

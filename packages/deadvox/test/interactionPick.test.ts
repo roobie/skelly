@@ -1,18 +1,13 @@
+import { PILE_DISPLAY_KIND } from '@skelly/engine/content';
+import { pickInteractionTarget } from '@skelly/engine/internal/core/interactionPick.ts';
+import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
+import { interactionAffordance } from '@skelly/engine/sim';
+import { type SolidAt, type Vec3, World, worldOpaque, worldSolid } from '@skelly/engine/world';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
+import { markInteractionTarget } from '@skelly/presentation/internal/render/interactionMarker.ts';
+import { type ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { interactionAffordance } from '../src/core/interactionAffordance.ts';
-import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
-import { World } from '../src/core/world.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { markInteractionTarget } from '../src/render/interactionMarker.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -155,7 +150,8 @@ describe('F interaction target selection', () => {
       furniture,
       piles,
       blockSize: 0.5,
-      definition: (entity: import('../src/core/blockEntities.ts').BlockEntity) => inventory.entities.defOf(entity),
+      definition: (entity: import('@skelly/engine/internal/core/blockEntities.ts').BlockEntity) =>
+        inventory.entities.defOf(entity),
       body: () => undefined,
     };
     piles.sync(inventory);

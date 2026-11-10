@@ -1,7 +1,7 @@
-import type { BlockEntity } from '../../src/core/blockEntities.ts';
-import { doorPlan } from '../../src/core/options.ts';
-import { DOOR_ACTION } from '../../src/game/doorAction.ts';
-import type { Session } from '../../src/game/session.ts';
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import { doorPlan } from '@skelly/engine/inventory';
+import type { Session } from '@skelly/engine/session';
+import type { BlockEntity } from '@skelly/engine/world';
 
 export const descentLid = (session: Session, ladder: BlockEntity, upper: number): BlockEntity => {
   const lid = [...session.entities.all].find(

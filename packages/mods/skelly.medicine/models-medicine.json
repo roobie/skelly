@@ -1,0 +1,113 @@
+{
+  "models": [
+    {
+      "file": "assets/models/bandage.glb",
+      "grip": {
+        "at": [0, 0.025000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "bandage",
+      "itemPresentation": {
+        "materials": ["cloth", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0.0013775510204081627, 0.031530612244897949, 0],
+          "massKg": 0.02,
+          "node": "body:woundRoll"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/antiseptic.glb",
+      "grip": {
+        "at": [0, 0.044999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "antiseptic",
+      "itemPresentation": {
+        "materials": ["paper", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/antibiotics.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "antibiotics",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/painkillers.glb",
+      "grip": {
+        "at": [0, 0.025000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "painkillers",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/codeine.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "codeine",
+      "itemPresentation": {
+        "materials": ["paper", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/morphine.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "morphine",
+      "itemPresentation": {
+        "materials": ["glass", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    }
+  ]
+}

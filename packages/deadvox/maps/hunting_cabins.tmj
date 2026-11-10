@@ -4,6 +4,7 @@
   "width": 128, "height": 128, "tilewidth": 1, "tileheight": 1, "infinite": false,
   "nextlayerid": 6, "nextobjectid": 12, "tilesets": [],
   "properties": [
+    {"name": "attempt_policy", "type": "string", "value": "{\"countPaused\":false,\"countHidden\":false,\"compressionThreshold\":1,\"persistIntervalRealMs\":5000,\"persistOnInterruption\":true,\"limits\":{\"history\":512,\"pockets\":128,\"marks\":128},\"resumeStored\":true,\"persist\":true,\"exportFormat\":\"metrics\"}"},
     {"name": "loot_context", "type": "string", "value": "{\"usage\":[\"Residential\"],\"tier\":\"Tier1\"}"},
     {"name": "id", "type": "string", "value": "hunting_cabins"},
     {"name": "ground", "type": "float", "value": 21}
@@ -56,10 +57,10 @@
           "properties": [{"name": "bearing", "type": "float", "value": 180}]},
         {"id": 7, "name": "Western treeline shambler", "type": "shambler", "point": true,
           "x": 34, "y": 90, "width": 0, "height": 0, "rotation": 0, "visible": true,
-          "properties": [{"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"}]},
+          "properties": [{"name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler"}]},
         {"id": 8, "name": "Eastern treeline shambler", "type": "shambler", "point": true,
           "x": 97, "y": 91, "width": 0, "height": 0, "rotation": 0, "visible": true,
-          "properties": [{"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"}]}
+          "properties": [{"name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler"}]}
       ]
     },
     {

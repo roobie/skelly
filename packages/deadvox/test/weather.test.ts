@@ -1,6 +1,6 @@
+import type { WeatherTuning } from '@skelly/engine/internal/core/weather.ts';
+import { clampFogginess, skyAt as skyAtCycle, skyInWeather as skyInWeatherTuned } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
-import { skyAt as skyAtCycle } from '../src/core/sky.ts';
-import { clampFogginess, skyInWeather as skyInWeatherTuned, type WeatherTuning } from '../src/core/weather.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);

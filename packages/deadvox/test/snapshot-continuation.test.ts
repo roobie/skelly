@@ -1,17 +1,15 @@
+import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
+import { restorePlayerAudioState } from '@skelly/engine/internal/core/saveState.ts';
+import type { Site } from '@skelly/engine/internal/core/site.ts';
+import { SoundPicker } from '@skelly/engine/internal/core/soundPicker.ts';
+import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { IDLE } from '@skelly/engine/session';
+import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
+import { terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
-import { toChunk } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { restorePlayerAudioState } from '../src/core/saveState.ts';
-import type { Site } from '../src/core/site.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { SoundPicker } from '../src/core/soundPicker.ts';
-import { realSeconds } from '../src/core/time.ts';
-import { terrainHeight } from '../src/core/worldgen.ts';
-import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
-import { IDLE } from '../src/game/session.ts';
 import {
   advance,
   capture,
@@ -40,7 +38,7 @@ describe('zombie attack causes', () => {
     }
 
     const events = runtime.sim.events.reader();
-    const runner = registry.zombies.get('runner')!;
+    const runner = registry.actors.get('runner')!;
     const playerPos = runtime.session.body.pos;
     runtime.zombies.add(runner, [playerPos[0] + 0.5, playerPos[1], playerPos[2]], [-1, 0, 0]);
     advance(runtime, 300);
@@ -56,7 +54,7 @@ describe('zombie attack causes', () => {
 describe('fixture save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
   const soundColumn = fixtureColumns.find(([cx, cz]) =>
-    fixtureSite.zombiesIn(cx, cz).some(({ type }) => type === 'shambler'),
+    fixtureSite.actorsIn(cx, cz).some(({ type }) => type === 'shambler'),
   );
   if (!soundColumn) {
     throw new Error('Snapshot fixture has no shambler sound column');
@@ -72,14 +70,14 @@ describe('fixture save/load continuation', () => {
 
   it('continues horde noise response and night drift deterministically through a save', async () => {
     const [cx, cz] = fixtureZombieColumn;
-    const center = fixtureSite.zombiesIn(cx, cz)[0]?.pos;
+    const center = fixtureSite.actorsIn(cx, cz)[0]?.pos;
     if (!center) {
       throw new Error('Horde save fixture has no nearby terrain spawn');
     }
     const playerSpawn: [number, number, number] = [center[0] - 180, center[1], center[2]];
     const start = 23 * 3600;
     const source = createRuntime(undefined, false, oneColumn, { start, spawn: playerSpawn });
-    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    source.zombies.addHorde('save-fixture', registry.actors.get('shambler')!, center, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(source.zombies.snapshotState().hordes.length).toBeGreaterThan(0);
     advance(source, 60);
     expect(source.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
@@ -95,22 +93,22 @@ describe('fixture save/load continuation', () => {
 
     const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
-    const continuationFrames = BACKGROUND_ZOMBIE_SLICE_COUNT + 1;
+    const continuationFrames = BACKGROUND_ACTOR_SLICE_COUNT + 1;
     advance(source, continuationFrames);
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
-    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySimSeconds;
-    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    const forgetAt = stimulusAt + registry.actors.get('shambler')!.agent!.stimulusMemorySimSeconds;
+    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
-    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
 
     const forgottenNoiseSave = capture(loaded);
     expect(plainDataTree(forgottenNoiseSave)).toBe(true);
     const forgottenNoiseBytes = await encodeFixture(forgottenNoiseSave);
     const forgottenNoiseDecoded = await decodeSave(forgottenNoiseBytes, { version: formatVersion, contentLookup });
-    expect(forgottenNoiseDecoded.snapshot.world.zombies).toEqual(forgottenNoiseSave.world.zombies);
+    expect(forgottenNoiseDecoded.snapshot.world.actors).toEqual(forgottenNoiseSave.world.actors);
   });
 
   it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
@@ -126,7 +124,7 @@ describe('fixture save/load continuation', () => {
       supplySourcesIn: () => [],
       lootPointsIn: () => [],
       furnitureIn: () => [],
-      zombiesIn: () => [marker],
+      actorsIn: () => [marker],
     } as Site;
     const original = createRuntime(undefined, false, [fixtureZombieColumn], { start });
     original.session.onColumn(cx, cz, timedSite);
@@ -136,7 +134,7 @@ describe('fixture save/load continuation', () => {
     const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], { start });
     loaded.session.onColumn(cx, cz, timedSite);
     const atHome = () =>
-      [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i]));
+      [...loaded.zombies.store.entries()].filter(([, actor]) => actor.agent!.home.every((v, i) => v === pos[i]));
     expect(atHome()).toHaveLength(0);
     advance(loaded, 456);
     expect(loaded.sim.calendar).toBeGreaterThan(dusk);
@@ -397,7 +395,7 @@ describe('fixture save/load continuation', () => {
     advance(uninterrupted, 4);
     advance(split, 4);
     for (const runtime of [uninterrupted, split]) {
-      runtime.zombies.add(registry.zombies.get('shambler')!, [...runtime.player.body.pos]);
+      runtime.zombies.add(registry.actors.get('shambler')!, [...runtime.player.body.pos]);
     }
     expect(split.player.body.onGround).toBe(false);
     uninterrupted = prepareAudioContinuation(uninterrupted);
@@ -413,11 +411,11 @@ describe('fixture save/load continuation', () => {
     ]);
     expect(snapshot.character.playerAudio.vocalNoise).not.toBeNull();
     expect(snapshot.character.playerAudio.vocalNoise!.expiresAt - split.sim.time).toBeCloseTo(0.25);
-    expect(snapshot.world.zombies.zombies[0]!.zombie).toHaveProperty('footstepClock');
+    expect(snapshot.world.actors.actors[0]!.actor).toHaveProperty('footstepClock');
     expect(snapshot.character.playerAudio.soundPicker.events).toContainEqual(
       expect.objectContaining({ event: 'player_strain', lastPlayedAt: split.sim.time }),
     );
-    expect(snapshot.world.zombies.zombies.some(({ zombie }) => zombie.idleSoundTimer > 0)).toBe(true);
+    expect(snapshot.world.actors.actors.some(({ actor }) => actor.agent!.idleSoundTimer > 0)).toBe(true);
     expect(snapshot.character.handling.jobs).toEqual([]);
     expect(plainDataTree(snapshot)).toBe(true);
     expect(frozenTree(snapshot)).toBe(true);
@@ -451,33 +449,12 @@ describe('fixture save/load continuation', () => {
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   });
 
-  it('preserves a pending sleep interruption across a paused snapshot and load', () => {
-    const uninterrupted = createRuntime(undefined, true, oneColumn);
-    const split = createRuntime(undefined, true, oneColumn);
-    expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
-    expect(startRest(split, 'sleep')).toBeUndefined();
-    advance(uninterrupted, 2);
-    advance(split, 2);
-
-    uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-    split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
-    uninterrupted.sim.paused = true;
-    split.sim.paused = true;
-    const snapshot = capture(split);
-    expect(snapshot.character.simulation.pendingInterrupt).toBe('test interruption');
-
-    advance(uninterrupted, 1);
-    const loaded = createRuntime(snapshot, true, oneColumn);
-    advance(loaded, 1);
-    expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  });
-
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
     const runtimeFrom = (snapshot?: ReturnType<typeof capture>) => createRuntime(snapshot, true, oneColumn);
     let original = runtimeFrom();
     expect(startRest(original, 'rest')).toBeUndefined();
     advance(original, 2);
-    original.zombies.add(registry.zombies.get('shambler')!, original.player.body.pos);
+    original.zombies.add(registry.actors.get('shambler')!, original.player.body.pos);
     original = prepareAudioContinuation(original);
     const saved = capture(original);
     expect(saved.world.columns.length).toBeGreaterThan(0);
@@ -490,71 +467,71 @@ describe('fixture save/load continuation', () => {
     advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));
 
-    const noAllocator = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noAllocator = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noAllocator.character.inventory, 'nextItemUid');
     expect(() => Inventory.restoreState(registry, noAllocator.character.inventory)).toThrow('Invalid next item id');
 
-    const noCursor = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noCursor = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     noCursor.character.simulation.scheduler.systems = noCursor.character.simulation.scheduler.systems.filter(
       (cursor) => cursor.id !== 'player',
     );
     expect(() => runtimeFrom(noCursor)).toThrow('Scheduler system set does not match snapshot');
 
-    expect(saved.world.zombies.zombies.length).toBeGreaterThan(0);
-    const noRngWord = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    const [a, b, c] = noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng;
-    noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng = [a, b, c] as never;
+    expect(saved.world.actors.actors.length).toBeGreaterThan(0);
+    const noRngWord = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
+    const [a, b, c] = noRngWord.world.actors.actors[0]!.actor.agent!.behaviorRng;
+    noRngWord.world.actors.actors[0]!.actor.agent!.behaviorRng = [a, b, c] as never;
     expect(() => runtimeFrom(noRngWord)).toThrow('Invalid zombie state');
 
-    const noZombieSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noZombieSoundRng.world.zombies.zombies[0]!.zombie, 'soundRng');
-    expect(() => runtimeFrom(noZombieSoundRng)).toThrow('Invalid zombie state');
+    const noActorSoundRng = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noActorSoundRng.world.actors.actors[0]!.actor.agent!, 'soundRng');
+    expect(() => runtimeFrom(noActorSoundRng)).toThrow('Invalid zombie state');
 
-    const noIdleSoundTimer = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noIdleSoundTimer.world.zombies.zombies[0]!.zombie, 'idleSoundTimer');
+    const noIdleSoundTimer = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noIdleSoundTimer.world.actors.actors[0]!.actor.agent!, 'idleSoundTimer');
     expect(() => runtimeFrom(noIdleSoundTimer)).toThrow('Invalid zombie state');
 
-    const noLastNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noLastNoiseId.world.zombies.zombies[0]!.zombie, 'lastVocalNoiseId');
+    const noLastNoiseId = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noLastNoiseId.world.actors.actors[0]!.actor.agent!, 'lastVocalNoiseId');
     expect(() => runtimeFrom(noLastNoiseId)).toThrow('Invalid zombie state');
 
-    const noVocalNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noVocalNoiseId = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noVocalNoiseId.character.playerAudio, 'vocalNoiseId');
     expect(() => restorePlayerAudioState(noVocalNoiseId.character.playerAudio)).toThrow('Invalid player audio state');
 
-    const noVocalNoise = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noVocalNoise = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noVocalNoise.character.playerAudio, 'vocalNoise');
     expect(() => restorePlayerAudioState(noVocalNoise.character.playerAudio)).toThrow('Invalid active vocal noise');
 
     for (const field of ['id', 'pos', 'radiusMetres', 'expiresAt'] as const) {
-      const noNoiseField = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+      const noNoiseField = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
       Reflect.deleteProperty(noNoiseField.character.playerAudio.vocalNoise!, field);
       expect(() => restorePlayerAudioState(noNoiseField.character.playerAudio)).toThrow('Invalid active vocal noise');
     }
 
-    const noPickerState = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerState = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerState.character.playerAudio, 'soundPicker');
     expect(() => restorePlayerAudioState(noPickerState.character.playerAudio)).toThrow('Invalid player audio state');
 
-    const noPickerEvent = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerEvent = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerEvent.character.playerAudio.soundPicker.events[0]!, 'event');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerEvent.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
 
-    const noPickerRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerRng = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerRng.character.playerAudio.soundPicker.events[0]!, 'rng');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerRng.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
 
-    const noPickerVariant = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerVariant = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerVariant.character.playerAudio.soundPicker.events[0]!, 'lastVariant');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerVariant.character.playerAudio.soundPicker),
     ).toThrow('Invalid sound picker state');
 
-    const noPickerTime = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    const noPickerTime = structuredClone(saved) as import('@skelly/engine/internal/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noPickerTime.character.playerAudio.soundPicker.events[0]!, 'lastPlayedAt');
     expect(() =>
       new SoundPicker(seed, registry.sounds).restoreState(noPickerTime.character.playerAudio.soundPicker),

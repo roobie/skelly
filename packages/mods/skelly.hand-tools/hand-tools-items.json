@@ -1,0 +1,393 @@
+{
+  "items": [
+    {
+      "category": "tool",
+      "description": "A magnetic compass with a turning card.",
+      "heldDisplay": "compass",
+      "id": "compass",
+      "model": "compass",
+      "name": "Compass",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "Pries open doors and crates. Also a weapon.",
+      "id": "crowbar",
+      "model": "crowbar",
+      "name": "Crowbar",
+      "size": [2, 6],
+      "tool": {
+        "qualities": {
+          "hammering": 1,
+          "prying": 3
+        }
+      },
+      "weapon": {
+        "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 8
+          },
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 1.1000000000000001,
+          "damage": 14,
+          "hitLayerSound": "melee_hit_metal",
+          "hitSound": "melee_hit",
+          "impulse": 8,
+          "motion": "swing",
+          "reach": 0.59999999999999998,
+          "stamina": 8,
+          "swingSound": "melee_swing_heavy",
+          "type": "blunt",
+          "wearPerHit": 0.014999999999999999,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "hammer",
+      "model": "hammer",
+      "name": "Hammer",
+      "size": [2, 4],
+      "tool": {
+        "qualities": {
+          "hammering": 2
+        }
+      },
+      "weapon": {
+        "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 5
+          },
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 0.80000000000000004,
+          "damage": 10,
+          "hitLayerSound": "melee_hit_metal",
+          "hitSound": "melee_hit",
+          "impulse": 6,
+          "motion": "swing",
+          "reach": 0.40000000000000002,
+          "stamina": 5,
+          "swingSound": "melee_swing",
+          "type": "blunt",
+          "wearPerHit": 0.012,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "Breaks a locked door open in a few loud blows. Also a heavy weapon.",
+      "id": "sledgehammer",
+      "model": "sledgehammer",
+      "name": "Sledgehammer",
+      "size": [2, 7],
+      "tool": {
+        "qualities": {
+          "hammering": 3
+        }
+      },
+      "twoHanded": true,
+      "weapon": {
+        "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 16
+          },
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 1.6000000000000001,
+          "damage": 24,
+          "hitLayerSound": "melee_hit_metal",
+          "hitSound": "melee_hit",
+          "impulse": 14,
+          "motion": "swing",
+          "reach": 0.69999999999999996,
+          "stamina": 16,
+          "swingSound": "melee_swing_heavy",
+          "type": "blunt",
+          "wearPerHit": 0.01,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "kitchen_knife",
+      "model": "kitchen_knife",
+      "name": "Kitchen knife",
+      "size": [1, 4],
+      "tool": {
+        "qualities": {
+          "cutting": 2,
+          "opening": 1
+        }
+      },
+      "weapon": {
+        "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 3
+          },
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 0.5,
+          "damage": 8,
+          "hitSound": "melee_hit",
+          "impulse": 3.5,
+          "motion": "swing",
+          "reach": 0.25,
+          "stamina": 3,
+          "swingSound": "melee_swing_light",
+          "type": "cut",
+          "wearPerHit": 0.025000000000000001,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "can_opener",
+      "model": "can_opener",
+      "name": "Can opener",
+      "size": [1, 1],
+      "tool": {
+        "qualities": {
+          "opening": 5
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "A small stone for honing a blade by hand.",
+      "id": "whetstone",
+      "model": "whetstone",
+      "name": "Whetstone",
+      "size": [1, 2],
+      "tool": {
+        "qualities": {
+          "sharpening": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "disassembly": {
+        "skill": "mechanics",
+        "timeGameMinutes": 8,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "scrap_metal",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "rubber_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "wire_strippers",
+      "model": "wire_strippers",
+      "name": "Wire strippers",
+      "size": [1, 2],
+      "tool": {
+        "qualities": {
+          "cutting": 1,
+          "screwing": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "adjustable_pliers",
+      "model": "adjustable_pliers",
+      "name": "Adjustable pliers",
+      "salvage": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        },
+        {
+          "count": 1,
+          "item": "rubber_strip"
+        }
+      ],
+      "salvageTimeGameMinutes": 5,
+      "size": [1, 2],
+      "tool": {
+        "qualities": {
+          "cutting": 1,
+          "wrenching": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 6,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "sewing_thread",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "fastener_pack",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "sewing_kit",
+      "model": "sewing_kit",
+      "name": "Sewing kit",
+      "size": [2, 1],
+      "tool": {
+        "qualities": {
+          "sewing": 1
+        }
+      },
+      "weight": 220,
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "Thread, patches and needles for mending clothing.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 8,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "sewing_thread",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "cloth_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "sewing_repair_kit",
+      "model": "sewing_repair_kit",
+      "name": "Clothing repair kit",
+      "size": [2, 2],
+      "tool": {
+        "qualities": {
+          "repairing": 1,
+          "sewing": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "screwdriver",
+      "model": "screwdriver",
+      "name": "Screwdriver",
+      "salvage": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        }
+      ],
+      "salvageTimeGameMinutes": 5,
+      "size": [1, 2],
+      "tool": {
+        "qualities": {
+          "screwing": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "id": "wrench",
+      "model": "wrench",
+      "name": "Adjustable wrench",
+      "salvage": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        }
+      ],
+      "salvageTimeGameMinutes": 5,
+      "size": [1, 3],
+      "tool": {
+        "qualities": {
+          "wrenching": 1
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "tool",
+      "description": "Metal patches, tape and rags for a makeshift repair.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 15,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "scrap_metal",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "duct_tape",
+            "rounding": "floor"
+          },
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "rag",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "repair_kit",
+      "model": "repair_kit",
+      "name": "Repair kit",
+      "size": [2, 2],
+      "tool": {
+        "qualities": {
+          "repairing": 1
+        }
+      },
+      "workInProgress": false
+    }
+  ]
+}

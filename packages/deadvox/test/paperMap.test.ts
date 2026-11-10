@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import type { ItemDef } from '@skelly/engine/content';
+import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { paperMapAt } from '@skelly/engine/internal/core/paperMap.ts';
+import { WORLD_REGION_METRES } from '@skelly/engine/internal/core/worldRegion.ts';
+import { Inventory, ItemFactory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { paperMapBounds } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import type { ItemDef } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { ItemFactory, restoreItem, snapshotItem } from '../src/core/items.ts';
-import { paperMapAt, paperMapBounds } from '../src/core/paperMap.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import {
   capture,
@@ -25,9 +26,7 @@ const sheet: ItemDef = {
   category: 'book',
   weight: 1,
   size: [1, 1],
-  economy: { usage: [], tiers: [] },
   workInProgress: false,
-  notLoot: true,
   paperMap: true,
 };
 const bag: ItemDef = {

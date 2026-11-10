@@ -1,35 +1,43 @@
 import { deepStrictEqual } from 'node:assert/strict';
-import { describe, expect, it, vi } from 'vitest';
-import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import type { Chunk } from '../src/core/chunk.ts';
-import { perimeterRouteIssues } from '../src/core/cityLots.ts';
-import { buildCityPlan, type CityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { climbCertificate } from '../src/core/climbCertificate.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { perimeterRouteIssues } from '@skelly/engine/internal/core/cityLots.ts';
+import { buildCityPlan, type CityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { climbCertificate } from '@skelly/engine/internal/core/climbCertificate.ts';
 import {
   type CertificatePhase,
   scenarioCertificate,
+  scenarioCityCertificate,
   scenarioLotResourceCertificate,
-} from '../src/core/scenarioCertificate.ts';
-import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
-import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
+  scenarioStartCertificate,
+} from '@skelly/engine/internal/core/scenarioCertificate.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { undergroundPortIssues } from '@skelly/engine/internal/core/scenarioPortal.ts';
+import { ScenarioRouteSpace } from '@skelly/engine/internal/core/scenarioRoute.ts';
 import {
   compileAssembly,
   compileTemplate,
-  footprint,
-  type Placement,
   placedBlockAt,
   placedPieces,
+} from '@skelly/engine/internal/core/templates.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
+import {
+  CHUNK,
+  type Chunk,
+  CitySite,
+  footprint,
+  makeScale,
+  type Placement,
   placedPoint,
-} from '../src/core/templates.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+} from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
+import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
 import { sweepGroup } from './sweeps.ts';
 
@@ -44,7 +52,8 @@ const UNDERGROUND_OVERLAP = /overlaps the city/;
 const ROUTED_PHASES: CertificatePhase[] = ['floors', 'ladders', 'stairs'];
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
-const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
+const start = defaultStartOf(registry, profile);
+const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile, start });
 const compiled = compileAssembly(registry, registry.mapAssemblies.get(profile.serviceTemplate)!, {
   seed: 9,
   siteId: `scenario:${profile.id}:service`,
@@ -120,6 +129,25 @@ class ObstructedSite extends CitySite {
   }
 }
 
+describe('city certificate without a selected start', () => {
+  const cityOnly = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
+
+  it("proves the city's own promises and refuses every playable-run certificate at the missing start", () => {
+    expect(cityOnly.composition?.start).toBeUndefined();
+    expect(cityOnly.composition?.leads.length).toBeGreaterThan(0);
+    const site = siteOf(cityOnly);
+    expect(scenarioCityCertificate(site).issues).toEqual([]);
+    for (const certify of [scenarioCertificate, scenarioStartCertificate, scenarioLotResourceCertificate]) {
+      expect(certify(site).issues.map(([path]) => path)).toEqual(['.composition.start']);
+    }
+  });
+
+  it('still reports an obstructed approach from the street corner to the portal', () => {
+    const result = scenarioCityCertificate(new ObstructedSite(cityOnly.portal!.upper, cityOnly));
+    expect(result.issues.map(([path]) => path)).toContain('.portal.upper');
+  });
+});
+
 describe('final composed body-route certificate', () => {
   it('prepares furniture columns only on the first route probe into a chunk', () => {
     const space = new ScenarioRouteSpace(siteOf(base));
@@ -170,7 +198,9 @@ describe('final composed body-route certificate', () => {
       obstruct(chunk, this.plan.portal!.lower);
     });
     try {
-      const { issues } = scenarioCertificate(new GauntletSite({ seed: 9, registry, scale, scenario: profile }));
+      const { issues } = scenarioCertificate(
+        new ScenarioCitySite({ seed: 9, registry, scale, scenario: profile, start }),
+      );
       expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
     } finally {
       stamp.mockRestore();
@@ -539,7 +569,14 @@ describe('final composed body-route certificate', () => {
     const underground = [sewer!, { ...sewer!, id: `${sewer!.id}_copy` }];
     const city = { ...profile.city, underground };
     expect(() =>
-      buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, city), scenario: { ...profile, city } }),
+      buildCityPlan({
+        seed: 9,
+        registry,
+        floor: 64,
+        grid: cityGridOf(registry, city),
+        scenario: { ...profile, city },
+        start,
+      }),
     ).toThrow(UNDERGROUND_OVERLAP);
   });
 
@@ -564,7 +601,14 @@ describe('final composed body-route certificate', () => {
     ];
     const city = { ...profile.city, underground: [{ ...element!, position }] };
     expect(() =>
-      buildCityPlan({ seed: 9, registry, floor: 64, grid: cityGridOf(registry, city), scenario: { ...profile, city } }),
+      buildCityPlan({
+        seed: 9,
+        registry,
+        floor: 64,
+        grid: cityGridOf(registry, city),
+        scenario: { ...profile, city },
+        start,
+      }),
     ).toThrow(UNDERGROUND_OVERLAP);
   });
 
@@ -646,7 +690,7 @@ const stampProbeCells = [
 
 it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
   const first = siteOf();
-  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
+  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile, start }));
   expect(stampProbeCells.length).toBeGreaterThan(1);
   const service = first.plan.service!.template;
   expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);

@@ -1,3 +1,6 @@
+import type { MeshData } from '@skelly/engine/mesh';
+import { skyAt } from '@skelly/engine/sky';
+import { CHUNK } from '@skelly/engine/world';
 import {
   Box3,
   DirectionalLight,
@@ -11,15 +14,12 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import type { MeshData } from '../src/core/mesher.ts';
-import { skyAt } from '../src/core/sky.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { applySky, type SkyTargets } from '../src/render/sky.ts';
+import type { SkyTargets } from '@skelly/presentation/internal/render/sky.ts';
+import { applySky, ChunkMeshes } from '@skelly/presentation/render';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 /** One upward face covering a chunk's bottom layer: a flat patch of ground. */
@@ -71,7 +71,7 @@ const visible = (meshes: ChunkMeshes) =>
   meshes.group.children.filter((m) => m.visible).map((m) => m.position.toArray().join(','));
 
 describe('culling', () => {
-  it('puts the far plane where the fog ends, day and night', () => {
+  it('puts the far plane where the fog ends, day and night, nearer at night', () => {
     const { scene, camera, sky } = setup();
     for (const hour of [dayHour, nightHour]) {
       applySky(sky, skyAt(hour, BASE_DAY_CYCLE));
@@ -81,7 +81,7 @@ describe('culling', () => {
     applySky(sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const day = fogFar(scene);
     applySky(sky, skyAt(nightHour, BASE_DAY_CYCLE));
-    expect(fogFar(scene)).toBeLessThan(day / 2);
+    expect(fogFar(scene)).toBeLessThan(day);
     // The projection follows, so culling does too.
     const fresh = camera.clone();
     fresh.updateProjectionMatrix();

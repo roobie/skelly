@@ -1,5 +1,5 @@
+import type { Placement, VoxelProvenance } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Placement, VoxelProvenance } from '../src/core/templates.ts';
 import { kitSlice } from '../src/debug/kitOverlay.ts';
 
 it('projects every slice cell without inventing ownership or replacing compiler provenance', () => {

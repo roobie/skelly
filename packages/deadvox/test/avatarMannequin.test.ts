@@ -1,10 +1,12 @@
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import {
+  AvatarMannequin,
+  createAvatarMannequin,
+  type MannequinRequest,
+} from '@skelly/presentation/internal/render/avatarMannequin.ts';
+import { type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import { Group, Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { AvatarMannequin, createAvatarMannequin } from '../src/render/avatarMannequin.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -12,12 +14,12 @@ import { createPlayerBody } from './playerFixture.ts';
 const registry = baseRegistry();
 const figure = registry.figures.get('player')!;
 const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
-const mannequinFor = (debug: boolean, search: string) => {
+const mannequinFor = (debug: boolean, request: MannequinRequest) => {
   const scene = new Scene();
   const mannequin = createAvatarMannequin(
     scene,
     { debug, blockSize: 0.5, figure, modelDefs: registry.models, models, registry },
-    search,
+    request,
   );
   return { scene, mannequin };
 };
@@ -28,7 +30,7 @@ afterEach(() => {
 
 describe('debug avatar mannequin', () => {
   it('offers every stance the figure poses, standing still and walking, and draws each', () => {
-    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=');
+    const { mannequin } = mannequinFor(true, { mannequin: '' });
     const stances = ['standing', ...Object.keys(figure.stancePoses).filter((key) => key !== 'blendRealSeconds')];
     for (const stance of stances) {
       for (const moving of [false, true]) {
@@ -57,7 +59,7 @@ describe('debug avatar mannequin', () => {
       'en-garde-canned-beans-left',
       'en-garde-crowbar-right-canned-beans-left',
     ]) {
-      const { mannequin } = mannequinFor(true, `?debug=1&mannequin=${name}`);
+      const { mannequin } = mannequinFor(true, { mannequin: name });
       const { pose } = mannequin!;
       expect(pose.name).toBe(name);
       const rest = new AvatarMannequin(
@@ -84,7 +86,7 @@ describe('debug avatar mannequin', () => {
   });
 
   it('uses the player firearm-aim owner to mount the mannequin free hand at the firearm support point', () => {
-    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=aim-firearm');
+    const { mannequin } = mannequinFor(true, { mannequin: 'aim-firearm' });
     expect(mannequin!.pose.name).toBe('aim-firearm');
     mannequin!.sync([0, 0, 0], 0, 0);
     mannequin!.group.updateMatrixWorld(true);
@@ -99,7 +101,9 @@ describe('debug avatar mannequin', () => {
 
   it('raises an active off-hand item through the third-person aim owner', () => {
     const firearm = [...registry.items.values()].find((item) => item.firearm && !item.twoHanded)!;
-    const light = [...registry.items.values()].find((item) => item.light && !item.twoHanded && !item.firearm)!;
+    const light = [...registry.items.values()].find(
+      (item) => item.light && !item.twoHanded && !item.firearm && !item.wearable && !item.lightMount,
+    )!;
     const gripHeight = (on: boolean): number => {
       const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
       meshes.sync({
@@ -132,7 +136,7 @@ describe('debug avatar mannequin', () => {
   });
 
   it('steps through the offered poses and wraps round', () => {
-    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=');
+    const { mannequin } = mannequinFor(true, { mannequin: '' });
     const first = mannequin!.pose;
     mannequin!.step(-1);
     expect(mannequin!.pose).toBe(mannequin!.poses.at(-1));
@@ -141,7 +145,7 @@ describe('debug avatar mannequin', () => {
   });
 
   it('relocates to stand near the player wherever the player has gone', () => {
-    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=');
+    const { mannequin } = mannequinFor(true, { mannequin: '' });
     const distance = (from: readonly number[], to: readonly number[]) =>
       Math.hypot(from[0]! - to[0]!, from[2]! - to[2]!);
     const { aheadMetres, asideMetres } = figure.mannequinPlacement;
@@ -172,7 +176,7 @@ describe('debug avatar mannequin', () => {
     const fixtureRegistry = { ...registry, items: new Map([...registry.items, [garment.id, garment]]) };
     const fixtureModels = {
       ...models,
-      partLook: (look: import('../src/render/itemLook.ts').ItemLook) =>
+      partLook: (look: import('@skelly/presentation/internal/render/itemLook.ts').ItemLook) =>
         look.model === 'fixture_worn' ? new Group() : models.partLook(look),
     } as ModelLibrary;
     const mannequin = createAvatarMannequin(
@@ -185,7 +189,7 @@ describe('debug avatar mannequin', () => {
         models: fixtureModels,
         registry: fixtureRegistry,
       },
-      `?mannequin=&mannequinWear=${garment.id}`,
+      { mannequin: '', mannequinWear: [garment.id] },
     )!;
     mannequin.sync([0, 0, 0], 0, 1);
     const attachment = mannequin.group.getObjectByName('worn-torso');
@@ -195,11 +199,11 @@ describe('debug avatar mannequin', () => {
     expect(mannequin.group.getObjectByName('worn-torso')).toBe(attachment);
   });
 
-  it('is absent without debug, and without the query', () => {
-    const withoutDebug = mannequinFor(false, '?mannequin=prone');
+  it('is absent without debug, and without the request', () => {
+    const withoutDebug = mannequinFor(false, { mannequin: 'prone' });
     expect(withoutDebug.mannequin).toBeUndefined();
     expect(withoutDebug.scene.children).toHaveLength(0);
-    expect(mannequinFor(true, '?debug=1').mannequin).toBeUndefined();
+    expect(mannequinFor(true, {}).mannequin).toBeUndefined();
   });
 
   it('leaves the page alone when inactive, on the default browser path', () => {
@@ -210,11 +214,9 @@ describe('debug avatar mannequin', () => {
       body: { append },
       addEventListener,
     });
-    vi.stubGlobal('location', { search: '?mannequin=prone' });
     const scene = new Scene();
     const inactive = { blockSize: 0.5, figure, modelDefs: registry.models, models, registry };
-    expect(createAvatarMannequin(scene, { ...inactive, debug: false })).toBeUndefined();
-    vi.stubGlobal('location', { search: '?debug=1' });
+    expect(createAvatarMannequin(scene, { ...inactive, debug: false }, { mannequin: 'prone' })).toBeUndefined();
     expect(createAvatarMannequin(scene, { ...inactive, debug: true })).toBeUndefined();
     expect(append).not.toHaveBeenCalled();
     expect(addEventListener).not.toHaveBeenCalled();

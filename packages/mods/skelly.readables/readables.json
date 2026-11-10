@@ -1,0 +1,75 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#99794c",
+      "id": "sample_sign",
+      "massKg": 12,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Placeholder sign",
+      "readable": {
+        "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION",
+        "title": "Placeholder — a wooden sign"
+      },
+      "shape": [
+        {
+          "position": [0, 1, 0.40000000000000002],
+          "size": [2, 2, 0.20000000000000001]
+        },
+        {
+          "position": [0.20000000000000001, 0, 0.40000000000000002],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        },
+        {
+          "position": [1.6000000000000001, 0, 0.40000000000000002],
+          "size": [0.20000000000000001, 1, 0.20000000000000001]
+        }
+      ],
+      "size": [2, 3, 1],
+      "solidFill": 0.01
+    }
+  ],
+  "items": [
+    {
+      "category": "note",
+      "description": "A clearly marked prototype reading sample, not playtest lore.",
+      "id": "sample_note",
+      "model": "paper_sheet",
+      "name": "Placeholder note",
+      "readable": {
+        "text": "PLACEHOLDER TEXT — NOT PLAYTEST LORE\n\nThis paper demonstrates reading an authored note. The evacuation message, Dad's cabin directions and hunter's logbook will be written separately.\n\nYou can put the paper away with Esc or Tab. The world keeps moving while you read.",
+        "title": "Placeholder — a folded note"
+      },
+      "size": [1, 1],
+      "weight": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "note",
+      "id": "regional_map",
+      "model": "paper_sheet",
+      "name": "Regional map",
+      "paperMap": true,
+      "size": [1, 1],
+      "weight": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "book",
+      "description": "Water-stained. Someone underlined things.",
+      "id": "paperback",
+      "model": "notebook",
+      "name": "Paperback novel",
+      "size": [2, 2],
+      "weight": 300,
+      "workInProgress": false
+    }
+  ]
+}

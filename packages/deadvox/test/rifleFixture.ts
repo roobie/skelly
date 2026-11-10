@@ -1,13 +1,12 @@
 // A rifle readied the way a player does it: cartridges loaded into a magazine one by one, the magazine fitted
 // with hold R, the charging handle worked with a double press. Tests that need a chambered rifle start here.
-import { dominantSide } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { HandlingQueue } from '../src/core/handling.ts';
-import type { HandSide, Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
-import type { FirearmMechanics } from '../src/game/firearmHandling.ts';
-import { MagazineHandling } from '../src/game/magazineHandling.ts';
+
+import type { Registry } from '@skelly/engine/content';
+import { magazineSpec, magazineWellCalibre } from '@skelly/engine/internal/core/magazine.ts';
+import type { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
+import type { HandlingQueue, HandSide, Inventory, Item } from '@skelly/engine/inventory';
+import { dominantSide } from '@skelly/engine/sim';
 
 export interface ChargedRifle {
   readonly rifle: Item;

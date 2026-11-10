@@ -1,0 +1,33 @@
+{
+  "templates": [
+    {
+      "id": "workshop_roof_ladder",
+      "layers": [
+        ["=", "="],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"],
+        ["H", "H"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "palette": {
+        "=": "concrete",
+        "H": {
+          "facing": "w",
+          "furniture": "ladder"
+        }
+      },
+      "size": [1, 12, 2]
+    }
+  ]
+}

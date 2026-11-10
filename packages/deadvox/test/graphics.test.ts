@@ -1,22 +1,23 @@
-import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
-import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
+import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import {
+  drugVignetteShown,
   GRAPHICS_KEYS,
-  GRAPHICS_KNOBS,
   type GraphicsOptions,
-  readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
   validGraphicsSettings,
-  writeGraphicsParams,
-} from '../src/core/graphics.ts';
-import { drugVignetteShown } from '../src/core/mood.ts';
-import { GraphicsControls } from '../src/game/graphicsControls.ts';
-import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
-import { Gore } from '../src/render/gore.ts';
-import { Mood } from '../src/render/mood.ts';
+} from '@skelly/engine/look';
+import { GraphicsControls } from '@skelly/presentation/internal/presentation/graphicsControls.ts';
+import {
+  readGraphicsSettings,
+  writeGraphicsSettings,
+} from '@skelly/presentation/internal/presentation/graphicsSettings.ts';
+import { Gore } from '@skelly/presentation/internal/render/gore.ts';
+import { Mood } from '@skelly/presentation/render';
+import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
+import { describe, expect, it, vi } from 'vitest';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
@@ -43,7 +44,8 @@ const source = (options: GraphicsOptions) => ({
   data: {
     graphics: [
       {
-        id: CORE_CONTENT_IDS.coreGraphics,
+        id: fixtureIds.graphics,
+        capability: 'graphics',
         ...fixtureGraphics,
         readyRadiusM: 16,
         streamHysteresisM: 16,
@@ -78,7 +80,7 @@ it.each(['dropletCap', 'splatCap', 'dropletSpawnsPerFrame'] as const)(
     const candidate = source(tuning);
     candidate.data.graphics[0]!.gore[capacity] = 0;
     expect(validateContent(candidate)).toEqual([]);
-    const row = buildRegistry([candidate]).registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+    const row = buildRegistry([candidate]).registry.graphics.get(fixtureIds.graphics)!;
     const gore = new Gore(1, WORLD_GRAVITY, row.gore);
     try {
       gore.spray({ point: [0.5, 0.05, 0.5], direction: [0, -1, 0], impulse: 4 }, 100);
@@ -137,37 +139,18 @@ it('validates graphics ranges, defaults and allowed toggle choices before admitt
 it('merges a graphics mod by row identity and requires graphics in a playable pack', () => {
   const override = { ...tuning, renderScale: { ...tuning.renderScale, default: 0.4 } };
   const { registry } = buildRegistry([source(tuning), { ...source(override), source: 'mod.json' }]);
-  expect(registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.renderScale.default).toBe(0.4);
+  expect(registry.graphics.get(fixtureIds.graphics)?.renderScale.default).toBe(0.4);
   expect(requiredContentIssues(registry).some(({ path }) => path === 'graphics')).toBe(false);
   expect(requiredContentIssues(buildRegistry([]).registry).some(({ path }) => path === 'graphics')).toBe(true);
 });
 
-it('resolves URL over player over mod for every knob, including explicit false and defaults', () => {
+it('resolves player over mod for every knob, including explicit false', () => {
   for (const key of GRAPHICS_KEYS) {
     const option = tuning[key];
     const playerValue = 'options' in option ? false : option.min;
-    const urlValue = option.default;
     expect(resolveGraphics(tuning)[key]).toBe(option.default);
     expect(resolveGraphics(tuning, { [key]: playerValue })[key]).toBe(playerValue);
-    expect(resolveGraphics(tuning, { [key]: playerValue }, { [key]: urlValue })[key]).toBe(urlValue);
-    expect(resolveGraphics(tuning, { [key]: urlValue }, { [key]: playerValue })[key]).toBe(playerValue);
   }
-});
-
-it('derives URL bounds and explicit override round-trip from each content option', () => {
-  let overrides = {};
-  for (const key of GRAPHICS_KEYS) {
-    const option = tuning[key];
-    overrides = { ...overrides, [key]: 'options' in option ? false : option.default };
-    if ('min' in option) {
-      const params = new URLSearchParams({ [GRAPHICS_KNOBS[key].url]: String(option.min / 2) });
-      expect(readGraphicsParams(params, tuning)[key]).toBe(option.min);
-    }
-  }
-  const params = writeGraphicsParams(new URLSearchParams('seed=fixture'), tuning, overrides);
-  expect(params.get('seed')).toBe('fixture');
-  expect(readGraphicsParams(params, tuning)).toEqual(overrides);
-  expect(readGraphicsParams(new URLSearchParams('renderscale=NaN&bloomscale=&sunsmall=invalid'), tuning)).toEqual({});
 });
 
 it('validated setters reject disallowed values without mutating the player choices', () => {
@@ -180,7 +163,7 @@ it('validated setters reject disallowed values without mutating the player choic
   expect(() => setGraphicsSetting(locked, settings, 'fastCamo', false)).toThrow(RangeError);
 });
 
-it('applies all resolved knobs on startup and player changes, with URL priority gated by debug', () => {
+it('applies all resolved knobs on startup and player changes', () => {
   const targets = {
     mood: { setRenderScale: vi.fn(), setBloomScale: vi.fn(), setDrugVignetteScale: vi.fn() },
     shadows: { setSmallSunMap: vi.fn() },
@@ -194,8 +177,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
     },
   };
   writeGraphicsSettings(tuning, { renderScale: tuning.renderScale.min, fastCamo: false }, storage);
-  const params = writeGraphicsParams(new URLSearchParams(), tuning, { fastCamo: true });
-  const controls = new GraphicsControls(tuning, targets, { debug: false, params, storage });
+  const controls = new GraphicsControls(tuning, targets, { storage });
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.min, true);
   expect(targets.mood.setBloomScale).toHaveBeenLastCalledWith(tuning.bloomScale.default);
   expect(targets.mood.setDrugVignetteScale).toHaveBeenLastCalledWith(tuning.drugVignette.default);
@@ -209,11 +191,7 @@ it('applies all resolved knobs on startup and player changes, with URL priority 
   controls.clear('renderScale');
   expect(targets.mood.setRenderScale).toHaveBeenLastCalledWith(tuning.renderScale.default, false);
   expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
-  const debug = new GraphicsControls(tuning, targets, { debug: true, params, storage });
-  debug.set('fastCamo', false);
-  expect(targets.meshes.setFastCamo).toHaveBeenLastCalledWith(true);
-  expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
-  expect(() => debug.set('bloomScale', tuning.bloomScale.max + 1)).toThrow(RangeError);
+  expect(() => controls.set('bloomScale', tuning.bloomScale.max + 1)).toThrow(RangeError);
   expect(readGraphicsSettings(tuning, storage)).toEqual({ fastCamo: false });
 });
 

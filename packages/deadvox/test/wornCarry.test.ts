@@ -1,17 +1,14 @@
 // Carry and armour worn on the torso (`DESIGN.md`, "Worn items seen"), drawn from their exported models on the real
 // figure: each item shows while worn, taking one off leaves the rest, and the whole kit clears the body and itself.
+
+import type { ItemDef, WearSlot } from '@skelly/engine/content';
+import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '@skelly/engine/inventory';
+import { makeScale } from '@skelly/engine/world';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import type { PlayerFigurePose } from '@skelly/presentation/internal/render/playerFigure.ts';
+import { type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import { Box3, Mesh, type Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { ItemDef } from '../src/core/content.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { Inventory, wornSlotOf } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { WearSlot } from '../src/core/schema.ts';
-import { itemLook } from '../src/render/itemLook.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';

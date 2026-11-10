@@ -1,13 +1,12 @@
+import { feetInAcidPuddle } from '@skelly/engine/internal/core/acidPuddle.ts';
+import { type Body, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { feetInAcidPuddle } from '../src/core/acidPuddle.ts';
-import type { Body } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { startupContent } from './baseRegistry.ts';
 
 describe('acid puddle supporting surface', () => {
   it('includes feet just inside the content radius and excludes feet just outside it', () => {
     const { blockSize } = makeScale(0.5);
-    const type = startupContent().registry.zombies.get('acid_zombie')!;
+    const type = startupContent().registry.actors.get('acid_zombie')!;
     const radius = type.acidSpit!.puddle.radiusMetres / blockSize;
     const puddle = {
       id: 0,

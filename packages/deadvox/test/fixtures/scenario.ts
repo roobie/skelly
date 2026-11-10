@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs';
-import type { ContentSource } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
-import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
-import { gameHours } from '../../src/core/time.ts';
+import { buildRegistry, type ContentSource, type Registry } from '@skelly/engine/content';
+import type { StartPlacementDef } from '@skelly/engine/internal/core/scenarioStart.ts';
+import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
+import type { MapPoolDef, ScenarioDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
 import {
+  FIXTURE_BLOW_SOUND,
   FIXTURE_MATERIAL,
   fixtureBreach,
   fixtureEconomy,
@@ -12,11 +14,15 @@ import {
   fixtureMaterials,
   fixtureSounds,
 } from '../economyFixtures.ts';
+import { fixtureActorFigures } from './actorFigures.ts';
+import { bodySoundIds } from './bodySounds.ts';
+import { fixtureIds } from './capabilityIds.ts';
+import { fixtureDamageContent } from './damageKinds.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
-  kind: 'gauntlet',
+  kind: 'assembledCity',
   outbreakAgeGameHours: gameHours(24),
   decalLimit: 16,
   body: 'fixture_body',
@@ -45,6 +51,30 @@ export const fixtureScenario = (): ScenarioDef => ({
     rows: 2,
     pool: 'fixture_pool',
   },
+});
+
+/** The placement of the one start a scenario's site defaults to, so a test builds the playable run that start selects. */
+export const defaultStartOf = (registry: Pick<Registry, 'starts'>, scenario: ScenarioDef): StartPlacementDef => {
+  const rows = [...registry.starts.values()].filter((row) => row.defaultForSite && row.site === scenario.id);
+  const placement = rows.length === 1 ? rows[0]!.placement : undefined;
+  if (!placement) {
+    throw new Error(`Scenario "${scenario.id}" needs one default start with a placement`);
+  }
+  return placement;
+};
+
+export const fixtureStartRow = (
+  placement: StartPlacementDef | null = fixtureStart(),
+  { id = 'fixture_start_row', site = 'fixture_scenario' } = {},
+): StartDef => ({
+  id,
+  site,
+  defaultForSite: true,
+  ...(placement ? { placement } : {}),
+  kit: [],
+  wounds: [],
+  skills: {},
+  recipes: [],
 });
 
 export const fixturePool = (
@@ -97,13 +127,78 @@ const fixtureStartTemplate = (): TemplateDef => {
   return template;
 };
 
-export const fixtureStart = (): NonNullable<ScenarioDef['composition']>['start'] => ({
+export const fixtureStart = (): StartPlacementDef => ({
   template: 'fixture_start',
   cell: [0, 0],
   spawn: [2, 7, 2],
   minimumOpenDescents: 1,
   descents: [{ kind: 'ladder', ladder: [4, 1, 3], upper: [6.5, 7, 4], lower: [3, 1, 4] }],
 });
+
+export const composedFixture = (starts: StartDef[] = []) => {
+  const profile = fixtureScenario();
+  profile.city.street = 8;
+  const service = fixtureService();
+  service.size[1] = 12;
+  service.layers = service.layers.slice(0, service.size[1]);
+  service.palette.C = { furniture: 'fixture_crate' };
+  service.layers[1]![2] = '..C.....==';
+  profile.composition = {
+    fixedLoot: [
+      {
+        at: [2, 1, 2],
+        lootUsage: ['Medical'],
+        items: [
+          { item: 'fixture_token', count: 3 },
+          { item: 'fixture_token', placement: 'surface' },
+        ],
+      },
+    ],
+    leads: [{ template: 'fixture_note_a' }, { template: 'fixture_note_b' }],
+    landmarks: ['fixture_landmark_a', 'fixture_landmark_b'],
+    incidentalTemplates: ['fixture_small_house'],
+    objective: [2, 1, 2],
+    objectiveFace: [2, 1, 4],
+    retreat: [2, 7, 2],
+    resources: [{ at: [2, 1, 2], standing: [2, 1, 4] }],
+    storeys: [{ id: 'lower', standing: [2, 1, 4] }],
+    stairs: [],
+    seals: [],
+    descents: [{ ladder: [4, 1, 3], lower: [3, 1, 4], upper: [3, 7, 4] }],
+  };
+  const sources = fixtureScenarioSources(profile, service);
+  sources.push({
+    source: 'composition-fixture.json',
+    data: {
+      furniture: [
+        {
+          id: 'fixture_note',
+          name: 'Fixture note',
+          size: [1, 1, 1],
+          color: '#ffffff',
+          massKg: 1,
+          solid: false,
+          readable: { title: 'Fixture lead', text: 'An independent fixture lead.' },
+          breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
+        },
+      ],
+      templates: ['fixture_note_a', 'fixture_note_b', 'fixture_landmark_a', 'fixture_landmark_b'].map((id) => ({
+        id,
+        lootContext: fixtureLootContext(),
+        size: [1, 2, 1],
+        palette: { '=': 'fixture_solid', N: { furniture: 'fixture_note' } },
+        layers: [['='], ['N']],
+      })),
+      starts,
+    },
+  } satisfies ContentSource);
+  const built = buildRegistry(sources);
+  if (built.issues.length > 0) {
+    throw new Error(JSON.stringify(built.issues));
+  }
+  return { profile, registry: built.registry };
+};
 
 export const fixtureScenarioSources = (
   scenario = fixtureScenario(),
@@ -112,28 +207,56 @@ export const fixtureScenarioSources = (
 ): ContentSource[] => {
   const {
     body: [body],
-  } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
-  // The base body's heartbeat names base sound events, so they come along with it.
-  const heartbeatSounds = new Set(Object.values(body.heartbeat.sounds));
-  const bodySounds = (
-    JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as { id: string }[]
-  ).filter(({ id }) => heartbeatSounds.has(id));
+  } = JSON.parse(readFileSync('../mods/skelly.body/body.json', 'utf8'));
+  const { actors } = JSON.parse(readFileSync('mods/skelly.deadvox.actors/enemies.json', 'utf8'));
+  const {
+    footstepSound: _footstepSound,
+    loot: _loot,
+    ...actorSource
+  } = actors.find((entry: { capability?: string[] }) => entry.capability?.includes('settlementHorde'));
+  const actor = { ...actorSource, id: 'fixture_settlement_actor' };
+  actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+  const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
+  const bodySounds = [
+    'mods/skelly.deadvox.actors/actors-sounds.json',
+    '../mods/skelly.body/body-sounds.json',
+    '../mods/skelly.body/body-synth-sounds.json',
+  ].flatMap((file) =>
+    (JSON.parse(readFileSync(file, 'utf8')).sounds as { id: string }[]).filter(({ id }) => selectedSounds.has(id)),
+  );
   const {
     compression: [compression],
-  } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));
+  } = JSON.parse(readFileSync('../mods/skelly.inventory/compression.json', 'utf8'));
   const {
     siteGeneration: [baseSite],
-  } = JSON.parse(readFileSync('src/content/base/site-generation.json', 'utf8'));
+  } = JSON.parse(readFileSync('mods/skelly.deadvox.site-generation/site-generation.json', 'utf8'));
   return [
     {
       source: 'scenario-fixture.json',
       data: {
+        damageKinds: fixtureDamageContent().damageKinds,
+        actors: [actor],
+        actorFigures: fixtureActorFigures(actor),
         furnitureMaterials: fixtureMaterials(),
         blockMaterials: [fixtureBlockMaterial('fixture_solid')],
         sounds: [...fixtureSounds(), ...bodySounds],
         blocks: [
-          { id: 'fixture_solid', material: FIXTURE_MATERIAL, name: 'Fixture solid', solid: true, color: '#808080' },
-          { id: 'asphalt', material: FIXTURE_MATERIAL, name: 'Fixture asphalt', solid: true, color: '#404040' },
+          {
+            id: 'fixture_solid',
+            material: FIXTURE_MATERIAL,
+            name: 'Fixture solid',
+            solid: true,
+            color: '#808080',
+            drops: { default: FIXTURE_BLOW_SOUND },
+          },
+          {
+            id: 'asphalt',
+            material: FIXTURE_MATERIAL,
+            name: 'Fixture asphalt',
+            solid: true,
+            color: '#404040',
+            drops: { default: FIXTURE_BLOW_SOUND },
+          },
           {
             id: 'fixture_water',
             material: FIXTURE_MATERIAL,
@@ -146,8 +269,9 @@ export const fixtureScenarioSources = (
         ],
         siteGeneration: [
           {
-            id: CORE_CONTENT_IDS.authoredSite,
-            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
+            id: fixtureIds.authoredSite,
+            capability: 'authoredSite',
+            activeActorRadiusMetres: baseSite.activeActorRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,
@@ -215,25 +339,35 @@ export const fixtureScenarioSources = (
         ],
         items: [
           {
+            id: 'fixture_dismember_tool',
+            workInProgress: false,
+            name: 'Fixture blade',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            tool: { qualities: { [actor.downed.dismember.quality]: actor.downed.dismember.level } },
+          },
+          {
             id: 'fixture_token',
             workInProgress: false,
-            notLoot: false,
             name: 'Fixture token',
             category: 'material',
             weight: 1,
             size: [1, 1],
-            economy: fixtureEconomy(),
           },
           {
             id: 'fixture_event_token',
             workInProgress: false,
-            notLoot: false,
             name: 'Fixture event token',
             category: 'material',
             weight: 1,
             size: [1, 1],
-            economy: { usage: ['Military'], tiers: ['Tier2'] },
           },
+        ],
+        itemEconomy: [
+          { id: 'fixture_dismember_tool', ...fixtureEconomy(), notLoot: true },
+          { id: 'fixture_token', ...fixtureEconomy(), notLoot: false },
+          { id: 'fixture_event_token', usage: ['Military'], tiers: ['Tier2'], notLoot: false },
         ],
         loot: [{ id: 'fixture_loot', rolls: [1, 2], entries: [{ weight: 1, item: 'fixture_token' }] }],
         templates: [

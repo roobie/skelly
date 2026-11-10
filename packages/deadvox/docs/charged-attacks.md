@@ -8,17 +8,17 @@ read_if:
 
 # Charged attacks
 
-Slice 5 admits charged attacks so committing to a strike has a place in defence (`SLICE-5.md`, "Related issues and admission"). Stagger rewards commitment (`docs/stagger.md`, "Stagger rewards commitment"). Charging is how a player commits with any weapon, while a heavy, slow weapon commits on its ordinary swing. The charge's cost and its interruptions keep stagger a reward rather than a habit. See `src/core/playerCombat.ts`, `PlayerCombat`, `holdCharge`.
+Slice 5 admits charged attacks so committing to a strike has a place in defence (`SLICE-5.md`, "Related issues and admission"). Stagger rewards commitment (`docs/stagger.md`, "Stagger rewards commitment"). Charging is how a player commits with any weapon, while a heavy, slow weapon commits on its ordinary swing. The charge's cost and its interruptions keep stagger a reward rather than a habit. See `packages/engine/src/core/playerCombat.ts`, `PlayerCombat`, `holdCharge`.
 
 ## The rules
 
 **A tap stays the ordinary strike.** Only holding the attack past the wind-up charges, so existing play and every weapon's ordinary tuning are unchanged, and player breach keeps its ordinary strikes (`SLICE-5.md`, "Settled breach rules — decision items #273 and #800"). Charging uses the same control as the strike because it is the same strike committed to, not a second attack to learn.
 
-**The swing holds at the pulled-back pose.** The charge builds only while the swing waits there, and release resumes the swing's own timing, so the strike reaches contact as late after release as an ordinary swing does after its pull. The held pose is what tells the player, and anything watching, that a heavy strike is coming. See `src/core/meleePose.ts`, `meleePullEnd`.
+**The swing holds at the pulled-back pose.** The charge builds only while the swing waits there, and release resumes the swing's own timing, so the strike reaches contact as late after release as an ordinary swing does after its pull. The held pose is what tells the player, and anything watching, that a heavy strike is coming. See `packages/engine/src/core/meleePose.ts`, `meleePullEnd`.
 
-**The build-up, its cap and its cost are the weapon's content.** Weapons differ in how they reward commitment, and modders tune them per weapon in the `melee` block. The cap means holding longer stops paying. A charge scales impulse as well as damage, because force is what staggers; validation requires every melee weapon to carry an impulse, so a charge always has one to scale. See `src/core/schema.ts`, `MeleeChargeSchema`, and `src/content/base/items-tools.libsonnet`, `melee`.
+**The build-up, its cap and its cost are the weapon's content.** Weapons differ in how they reward commitment, and modders tune them per weapon in the `melee` block. The cap means holding longer stops paying. A charge scales impulse as well as damage, because force is what staggers; validation requires every melee weapon to carry an impulse, so a charge always has one to scale. See `packages/engine/src/core/schema/items.ts`, `MeleeChargeSchema`, and `tools/jsonnet/lib/melee-weapon.libsonnet`, `melee`.
 
-**Stamina is paid on release, and a short purse caps the strike.** A charge that is dropped costs nothing beyond the swing it started from. A release the player cannot fully pay for still strikes, only at the level paid: refusing the release would throw away an attack the player committed to. See `src/core/playerCombat.ts`, `releaseCharge`, and `src/game/session.ts`, `createSession`.
+**Stamina is paid on release, and a short purse caps the strike.** A charge that is dropped costs nothing beyond the swing it started from. A release the player cannot fully pay for still strikes, only at the level paid: refusing the release would throw away an attack the player committed to. See `packages/engine/src/core/playerCombat.ts`, `releaseCharge`, and `packages/engine/src/game/session.ts`, `createSession`.
 
 **Holding is not recovery.** The wait before the next swing is frozen while the charge is held. Otherwise a long hold would pay off the cooldown and the release would be followed at once by a free swing.
 
@@ -26,9 +26,9 @@ Slice 5 admits charged attacks so committing to a strike has a place in defence 
 
 **Only the dominant hand's weapon charges.** The hold control is the dominant hand's use; off-hand and fist alternation keep their ordinary swings, and a weapon without `charge` content never charges.
 
-**An interruption drops the charge without a strike.** A hit taken, a change of held items, an off-hand use, a hands action such as handling, throwing or a ladder grip, and losing control all drop it. Releasing on interruption would turn every interruption into a free hit and make the charge safer than a tap. See `src/core/playerCombat.ts`, `cancelCharge`, and `src/game/session.ts`, `createSession`.
+**An interruption drops the charge without a strike.** A hit taken, a change of held items, an off-hand use, a hands action such as handling, throwing or a ladder grip, and losing control all drop it. Releasing on interruption would turn every interruption into a free hit and make the charge safer than a tap. See `packages/engine/src/core/playerCombat.ts`, `cancelCharge`, and `packages/engine/src/game/session.ts`, `createSession`.
 
-**A save mid-charge restores the same charge.** The held time is part of the melee action's snapshot, so loading neither drops the commitment nor releases it as a free strike. See `src/core/saveFormat.ts`.
+**A save mid-charge restores the same charge.** The held time is part of the melee action's snapshot, so loading neither drops the commitment nor releases it as a free strike. See `packages/engine/src/core/saveFormat.ts`.
 
 ## Open questions
 

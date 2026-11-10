@@ -1,11 +1,19 @@
+import { BindingRegistry } from '@skelly/engine/input';
+import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
+import { type Engine, type PlayPage, startPlay } from '@skelly/presentation/play';
+import type { SaveController } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import type { Engine } from '../src/game/engine.ts';
-import { startPlay } from '../src/game/play.ts';
-import type { SaveController } from '../src/ui/saveController.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { ragdollConfig } from '../src/product/ragdoll.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-it('rejects a save-bound practice session before accessing any runtime or save owner', () => {
+it('rejects a save-bound content-selected guide before runtime actions or save access', async () => {
+  const { guidance } = [...baseRegistry().layouts.values()].find((layout) => layout.guidance)!;
   const engine = new Proxy({} as Engine, {
-    get: () => {
+    get: (_target, key) => {
+      if (key === 'site') {
+        return { guidance };
+      }
       throw new Error('Runtime accessed before save-isolation admission');
     },
   });
@@ -14,7 +22,15 @@ it('rejects a save-bound practice session before accessing any runtime or save o
       throw new Error('Save accessed before save-isolation admission');
     },
   });
-  expect(() => startPlay(engine, undefined, { tutorial: true, saveController })).toThrow(
-    'Practice cannot bind a save or restore a world',
-  );
+  const none = { packs: [], urls: {} };
+  const assets = { audio: none, models: none, cursors: none, figures: none };
+  const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
+  const unusedPage = new Proxy({} as PlayPage, {
+    get: () => {
+      throw new Error('Page accessed before save-isolation admission');
+    },
+  });
+  await expect(
+    startPlay(engine, undefined, { assets, page: unusedPage, keyboard, ragdoll: ragdollConfig, saveController }),
+  ).rejects.toThrow('Practice cannot bind a save or restore a world');
 });

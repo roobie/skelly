@@ -2,7 +2,7 @@
 // different looks (tone mapping, exposure, block colour space, mood pass, fog) can be compared by
 // eye against the game's default look (the `look` content section), which play has already applied.
 
-import type { WebGLRenderer } from 'three';
+import type { WeatheringDef } from '@skelly/engine/content';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -19,16 +19,25 @@ import {
   nextShadowDistance,
   type ShadowState,
   TORCH_STEP,
-} from '../core/mood.ts';
-import type { WeatheringDef } from '../core/schema.ts';
-import { clampFogginess, WEATHERING_RANGES, type Weather } from '../core/weather.ts';
-import { isWeatheringColor, type WeatheringUrlState } from '../core/weatheringUrl.ts';
-import { autoToneUniforms } from '../render/autoTone.ts';
-import type { ChunkMeshes } from '../render/chunks.ts';
-import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';
-import { applyLook, TONE_MODES } from '../render/look.ts';
-import type { Mood } from '../render/mood.ts';
-import type { Shadows } from '../render/shadows.ts';
+} from '@skelly/engine/look';
+import {
+  clampFogginess,
+  isWeatheringColor,
+  WEATHERING_RANGES,
+  type Weather,
+  type WeatheringUrlState,
+} from '@skelly/engine/sky';
+import {
+  applyLook,
+  autoToneUniforms,
+  type ChunkMeshes,
+  hotCheckOn,
+  type Mood,
+  type Shadows,
+  setHotCheck,
+  TONE_MODES,
+} from '@skelly/presentation/render';
+import type { WebGLRenderer } from 'three';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;
@@ -233,7 +242,7 @@ export class LookControls {
     this.weather.fogginess = clampFogginess(this.weather.fogginess + steps * FOGGINESS_STEP);
   }
 
-  /** Site profile values as currently edited; the URL writer omits values equal to the selected profile. */
+  /** Profile values as currently edited; the URL writer omits values equal to the selected profile. */
   get weatheringState(): WeatheringUrlState | undefined {
     return this.weatheringValue
       ? { ...this.weatheringValue, settings: { ...this.weatheringValue.settings } }
@@ -244,6 +253,7 @@ export class LookControls {
     return [...this.weatheringProfiles.values()];
   }
 
+  /** Applies another authored profile live; the address does not keep the choice, so a reload shows the site's. */
   selectWeatheringProfile(profileId: string): void {
     const profile = this.weatheringProfiles.get(profileId);
     if (!(profile && this.weatheringValue)) {
@@ -301,7 +311,7 @@ export class LookControls {
     }
   }
 
-  /** The `?tone=` URL value of the current mode. */
+  /** The hash `tone` value of the current mode. */
   get toneKey(): string {
     return TONE_MODES[this.mode]!.key;
   }

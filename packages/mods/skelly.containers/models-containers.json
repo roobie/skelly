@@ -1,0 +1,59 @@
+{
+  "models": [
+    {
+      "file": "assets/models/lamp_oil_bottle.glb",
+      "id": "lamp_oil_bottle",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "paper", "fuel"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel-fill"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/jerry_can.glb",
+      "grip": {
+        "at": [0.040000000000000001, 0.46000000000000002, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "jerry_can",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jerry_can": {
+          "centreOfMass": [-0.00027423897337937455, 0.21481420419758526, 9.4139543996277537e-5],
+          "massKg": 4,
+          "node": "jerry_can:compound"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

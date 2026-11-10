@@ -1,15 +1,18 @@
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { guidanceFixture } from './fixtures/guidance.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { Survival } from '../src/game/survival.ts';
-import { Tutorial, type TutorialObservation } from '../src/game/tutorial.ts';
-import { tutorialRequested, tutorialUrl } from '../src/game/tutorialUrl.ts';
+import { Survival } from '@skelly/engine/sim';
+import {
+  GuidedSteps as Tutorial,
+  type GuidanceObservation as TutorialObservation,
+} from '@skelly/presentation/internal/presentation/guidedSteps.ts';
+import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -24,9 +27,10 @@ const observation = (): TutorialObservation => ({
   litType: undefined,
   paused: false,
 });
-const lightKit = BUNDLED_CONTENT.registry.layouts.get('tutorial')!.practice!.light;
+const lightDefinition = [...BUNDLED_CONTENT.registry.items.values()].find((item) => item.light?.power)!;
+const lightKit = { light: lightDefinition.id, battery: lightDefinition.light!.power!.battery };
 const fixture = () => {
-  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, lightKit);
+  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, guidanceFixture(lightKit.light));
   const state = observation();
   const observe = () => tutorial.observe(state);
   return { tutorial, state, observe };
@@ -78,17 +82,16 @@ describe('practice objectives', () => {
     state.position = [11, 1, 11];
     observe();
     expect(tutorial.stage).toBe('pause');
-    expect(tutorial.canStartLight).toBe(false);
+    expect(tutorial.canChoose('light-choice')).toBe(false);
     state.paused = true;
     observe();
     expect(tutorial.stage).toBe('finish');
-    expect(tutorial.canStartLight).toBe(true);
-    tutorial.chooseWeapons();
+    expect(tutorial.canChoose('light-choice')).toBe(true);
+    tutorial.choose('weapons');
     expect(tutorial.stage).toBe('revolver');
-    tutorial.startLight();
+    tutorial.choose('light-choice');
     observe();
     expect(tutorial.stage).toBe('revolver');
-    expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
   });
 
   it('completes the light module on a lit light, a finished battery swap and the light on again', () => {
@@ -127,8 +130,8 @@ describe('practice objectives', () => {
     swap();
     queue.tick(queue.remaining);
     expect(tutorial.stage).toBe('finish');
-    tutorial.startLight();
-    expect(tutorial.canStartLight).toBe(false);
+    tutorial.choose('light-choice');
+    expect(tutorial.canChoose('light-choice')).toBe(false);
     state.litType = undefined;
     observe();
     expect(tutorial.stage).toBe('light-on');
@@ -147,14 +150,38 @@ describe('practice objectives', () => {
     state.litType = lightKit.light;
     observe();
     expect(tutorial.stage).toBe('finish');
-    tutorial.chooseWeapons();
+    tutorial.choose('weapons');
     expect(tutorial.stage).toBe('revolver');
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {
-    const { tutorial, state, observe } = fixture();
+    const { registry } = BUNDLED_CONTENT;
+    const definitions = [...registry.items.values()];
+    const wearable = definitions.find((def) => def.wearable && def.container?.pockets.length)!;
+    const fitsPocket = (type: string): boolean => {
+      const scratch = new Inventory(registry);
+      const owner = scratch.create(wearable.id);
+      return (
+        scratch.add(owner, { kind: 'worn' }) && scratch.add(scratch.create(type), { kind: 'pocket', owner, pocket: 0 })
+      );
+    };
+    const consumable = (category: string) =>
+      definitions.find(
+        (def) => def.category === category && def.food && !def.unpack && !def.vessel && fitsPocket(def.id),
+      )!.id;
+    const food = consumable('food');
+    const drink = consumable('drink');
+    const guidance = guidanceFixture(lightKit.light);
+    const consumedItems: Record<string, string> = { eaten: food, drunk: drink };
+    guidance.rules = guidance.rules.map((rule) => {
+      const item = consumedItems[rule.id];
+      return item ? { ...rule, when: { kind: 'consumed' as const, item } } : rule;
+    });
+    const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, guidance);
+    const state = observation();
+    const observe = () => tutorial.observe(state);
     tutorial.opened('canned_beans');
-    const inventory = new Inventory(BUNDLED_CONTENT.registry);
+    const inventory = new Inventory(registry);
     const queue = new HandlingQueue(inventory);
     const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
       reach: bindReach({ inventory, position: state.position, blockSize: 1, clock: BASE_CLOCK }),
@@ -164,20 +191,20 @@ describe('practice objectives', () => {
       read: vi.fn(),
       consumed: (type) => tutorial.consumed(type),
     });
-    const jeans = inventory.create('jeans');
-    expect(inventory.add(jeans, { kind: 'worn' })).toBe(true);
-    for (const type of ['beans', 'beans']) {
+    const worn = inventory.create(wearable.id);
+    expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
+    for (const type of [food, food]) {
       const item = inventory.create(type);
-      expect(inventory.add(item, { kind: 'pocket', owner: jeans, pocket: 0 })).toBe(true);
+      expect(inventory.add(item, { kind: 'pocket', owner: worn, pocket: 0 })).toBe(true);
       expect(survival.useFromQuickbar(item)).toBeUndefined();
-      state.wielded = Object.values(inventory.hands).some((held) => held?.type === 'beans');
+      state.wielded = Object.values(inventory.hands).some((held) => held?.type === food);
       observe();
       expect(tutorial.stage).toBe('move');
       queue.tick(queue.remaining);
       expect(inventory.itemByUid(item.uid)).toBeUndefined();
     }
     expect(Object.values(inventory.hands).every((item) => item === undefined)).toBe(true);
-    const water = inventory.create('water_bottle');
+    const water = inventory.create(drink);
     expect(inventory.add(water, { kind: 'hand', side: 'right' })).toBe(true);
     expect(survival.useFromQuickbar(water)).toBeUndefined();
     queue.tick(queue.remaining);
@@ -194,30 +221,23 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
-  it('returns practice to its selected site and beginner mode', () => {
-    for (const [site, mode] of [
-      ['playtest', null],
-      ['gauntlet', 'beginner'],
-    ]) {
-      const returned = new URL(
-        tutorialUrl(`https://example.org/deadvox/?site=${site}&tutorial=1${mode ? `&mods=${mode}` : ''}`, false),
-      );
-      expect(returned.searchParams.get('site')).toBe(site);
-      expect(returned.searchParams.get('mods')).toBe(mode);
-      expect(returned.searchParams.has('tutorial')).toBe(false);
+  it('links practice after the page mods', () => {
+    for (const mods of [null, 'scenario', 'scenario,beginner']) {
+      const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
+      const entered = new URL(tutorialUrl(page, 'practice'));
+      expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : `${mods},practice`);
     }
   });
 
-  it('also isolates direct authored-site links and clears continuation and debug parameters on exit', () => {
-    expect(tutorialRequested(new URLSearchParams('site=tutorial'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('tutorial=1'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('site=gauntlet'))).toBe(false);
-    const start = new URL(
-      tutorialUrl('https://example.org/deadvox/?tutorial=1&debug=1&save-backend=indexeddb#continue', false),
+  it('links practice without the page start mod, storage, continuation or debug parameters', () => {
+    const entered = new URL(
+      tutorialUrl(
+        'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl#{debug:true}',
+        'practice',
+      ),
     );
-    expect(start.pathname).toBe('/deadvox/');
-    expect(start.searchParams.get('save-backend')).toBe('indexeddb');
-    expect([...start.searchParams.keys()]).toEqual(['save-backend']);
-    expect(start.hash).toBe('');
+    expect(entered.pathname).toBe('/deadvox/');
+    expect([...entered.searchParams.keys()]).toEqual(['render', 'mods']);
+    expect(entered.hash).toBe('');
   });
 });

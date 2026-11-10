@@ -1,0 +1,74 @@
+{
+  "dependencies": ["skelly.materials", "skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "medicine-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-medicine.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antibiotics.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antiseptic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bandage.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/codeine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/morphine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/painkillers.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antibiotics.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antiseptic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bandage.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/codeine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/morphine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/painkillers.glb"
+    }
+  ],
+  "id": "skelly.medicine",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

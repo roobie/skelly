@@ -1,15 +1,17 @@
 import process from 'node:process';
 import { gunzipSync } from 'node:zlib';
-import { afterEach, expect, it, vi } from 'vitest';
-import { DEFAULT_MAX_PAYLOAD_BYTES, decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { columnArrival } from '../src/game/columnArrival.ts';
-import { configFromUrl } from '../src/game/config.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { DEFAULT_MAX_PAYLOAD_BYTES, SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
+import { columnArrival, createWorldSetup, type WorldSetup } from '@skelly/engine/world';
+import { ChunkMeshes } from '@skelly/presentation/render';
+import { contentLookup } from '@skelly/presentation/ui';
+import { expect, it } from 'vitest';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { startedOn } from './fixtures/startupContent.ts';
 
 // Save size and save time are held to these bounds against explored area (`DESIGN.md`, "Edits persist").
 // A failing bound is not fixed by raising a constant: the round that crosses it raises a BR card that
@@ -30,9 +32,7 @@ const BENCH_TIMEOUT_MS = 60_000;
 const TARGET_SIDE = Math.ceil(Math.sqrt(TARGET_EXPLORED_COLUMNS));
 
 // biome-ignore lint/style/noProcessEnv: timings are asserted only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
-
-afterEach(() => vi.unstubAllGlobals());
+const benchmarking = process.env.SKELLY_BENCH === '1';
 
 const content = startupContent();
 const { registry } = content;
@@ -44,19 +44,14 @@ const version = {
 };
 
 const worldSetup = (): WorldSetup => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
-  const config = configFromUrl(new URLSearchParams('site=city'), content);
-  return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  const config = configFromUrl(new URLSearchParams(), {}, startedOn(content, 'city'), ragdollSweepViewer);
+  return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
 };
 
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: source.world,
     entities: source.entities,
     isSolid: source.isSolid,

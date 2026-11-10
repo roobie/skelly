@@ -1,32 +1,30 @@
-// The shambler mode of the shared ?bench= harness. It loads the forest, runs the
-// real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
+// The shambler mode of the shared ?bench= harness. It loads the run's start world, runs the
+// real fixed-step ActorSystem and player physics, and records frame/tick/render costs.
 
-import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
-import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { dayPhaseAt } from '../core/dayPhase.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { worldGravity } from '../core/gravity.ts';
-import { lookDefaultsOf } from '../core/lookDefaults.ts';
-import { type Body, stepBody } from '../core/physics.ts';
-import { reachTuning } from '../core/reach.ts';
-import { Simulation } from '../core/sim.ts';
-import { siteGenerationOf } from '../core/sitePalette.ts';
-import { skyAt } from '../core/sky.ts';
+import { type ActorFigureFiles, requireDayCycle } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
+import { type ActorRenderMode, actorRendererFromUrl, PHYSICS_RATE } from '@skelly/engine/session';
 import {
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  BACKGROUND_ZOMBIE_SLICE_RATE,
-  ZombieSystem,
-} from '../core/zombies.ts';
-import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
-import type { RenderedEngine } from '../game/engine.ts';
-import { physicsFor, playerTuning } from '../game/player.ts';
-import { PHYSICS_RATE } from '../game/session.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
-import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
-import { applySky } from '../render/sky.ts';
-import { ZombieMeshes } from '../render/zombies.ts';
+  ACTIVE_ACTOR_RATE,
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+  dayPhaseAt,
+  hourOfDay,
+  physicsFor,
+  playerTuning,
+  reachTuning,
+  Simulation,
+  worldGravity,
+} from '@skelly/engine/sim';
+import { skyAt } from '@skelly/engine/sky';
+import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
+import type { RenderedEngine } from '@skelly/presentation/play';
+import { ActorMeshes, type ActorRenderer, applySky, MobActorMeshes } from '@skelly/presentation/render';
+import type { HashState } from '../hashState.ts';
+import { ragdollConfig } from '../product/ragdoll.ts';
 import {
   ACTIVE_SHAMBLER_TARGET,
   type BenchRecord,
@@ -37,66 +35,65 @@ import {
   type ShamblerRunResult,
   saveRecord,
 } from './plan.ts';
-import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
+import { benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
-import { environment } from './run.ts';
+import { benchSiteLabel, environment, loadNextRun, timeOfDayText } from './run.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
 
-const ACTIVE_FRAMES_PER_TICK = PHYSICS_RATE / ZOMBIE_RATE;
-const BACKGROUND_FRAMES_PER_SLICE = PHYSICS_RATE / BACKGROUND_ZOMBIE_SLICE_RATE;
+const ACTIVE_FRAMES_PER_TICK = PHYSICS_RATE / ACTIVE_ACTOR_RATE;
+const BACKGROUND_FRAMES_PER_SLICE = PHYSICS_RATE / BACKGROUND_ACTOR_SLICE_RATE;
 
 export interface ShamblerBenchRun {
   counts: number[];
   index: number;
   seed: number;
-  time: string;
-  actors: ActorRenderer;
-  /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
+  actors: ActorRenderMode;
+  /** Draw through the mood pass with the default look (hash `post`, bench/post.ts). */
   post: boolean;
 }
 
-export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | undefined => {
-  const counts = parseShamblerCounts(params.get('n') ?? DEFAULT_SHAMBLER_COUNTS.join(','));
-  const index = Number(params.get('i') ?? 0);
-  const seed = parseShamblerSeed(params.get('seed') ?? '1');
-  const time = params.get('time') ?? '23:30';
-  if (
-    !(counts && Number.isInteger(index)) ||
-    index < 0 ||
-    index >= counts.length ||
-    seed === undefined ||
-    parseTimeOfDay(time) === undefined
-  ) {
+/**
+ * The shambler bench's run: its counts, run index and seed from the hash. Its world and time of day are the run's
+ * start (`run.ts`, `benchStartConfig`).
+ */
+export const shamblerRunFromUrl = (hash: HashState): ShamblerBenchRun | undefined => {
+  const counts = parseShamblerCounts(hash.shamblers ?? DEFAULT_SHAMBLER_COUNTS);
+  const index = hash.i ?? 0;
+  const seed = parseShamblerSeed(String(hash.seed ?? 1));
+  if (!(counts && Number.isInteger(index)) || index < 0 || index >= counts.length || seed === undefined) {
     return undefined;
   }
-  return { counts, index, seed, time, actors: actorRendererFromUrl(params), post: benchPostFromUrl(params) };
-};
-
-const nextUrl = (run: ShamblerBenchRun): string => {
-  if (run.index + 1 >= run.counts.length) {
-    return '?bench=report';
-  }
-  return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}&actors=${run.actors}${postUrlPart(run.post)}`;
+  return {
+    counts,
+    index,
+    seed,
+    actors: actorRendererFromUrl(hash.actors),
+    post: hash.post === true,
+  };
 };
 
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
 
-export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun): void => {
+export const startShamblerBench = (
+  engine: RenderedEngine,
+  run: ShamblerBenchRun,
+  actorFigureFiles: ActorFigureFiles,
+): void => {
   const { camera, scene, streamer, config } = engine;
   const Player = playerTuning(engine.registry);
   const hud = document.getElementById('hud')!;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
-  const startTime = parseTimeOfDay(run.time)!;
+  const startTime = config.start;
+  const time = timeOfDayText(startTime);
   const dayCycle = requireDayCycle(engine.registry);
   applySky(engine.sky, skyAt(hourOfDay(startTime), dayCycle));
   let sceneDraws = 0;
   let sceneTriangles = 0;
   const drawFrame = benchDraw(engine, {
     post: run.post,
-    nightVision: false,
     skyAngle: hourOfDay(startTime),
     reportSceneRender: (stats) => {
       sceneDraws = stats.calls;
@@ -114,8 +111,8 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       ? {
           startedAt: new Date().toISOString(),
           quick: false,
-          site: 'forest',
-          time: run.time,
+          site: benchSiteLabel(config),
+          time,
           ...(run.post ? { post: true } : {}),
           env: environment(engine),
           runs: [],
@@ -133,28 +130,29 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
   const backgroundCount = count - activeCount;
   let playerBody!: Body;
-  let zombies!: ZombieSystem;
-  let zombieMeshes!: ZombieRenderer;
+  let actors!: ActorSystem;
+  let actorMeshes!: ActorRenderer;
   let simTime = 0;
-  let lastZombieStepTime = 0;
+  let lastActorStepTime = 0;
   let lastBackgroundStepTime = 0;
   const prepare = (): void => {
     playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({
       seed: run.seed,
       registry: engine.registry,
-      bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
-      compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+      bodyTuning: claimed(engine.registry.body, 'player')!,
+      compressionCaps: claimed(engine.registry.compression, 'player')!.caps,
       clock: { ratio: dayCycle.clockRatio, start: startTime },
     });
     simulation.godMode = true;
-    zombies = new ZombieSystem({
-      activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
+    actors = new ActorSystem({
+      activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
+      actorFigureFiles,
       seed: run.seed,
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
       blockSize: s,
-      tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
+      tuning: claimed(engine.registry.senses, 'player')!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
       physics: physicsFor(scale, Player),
       player: () => ({
@@ -162,7 +160,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         body: playerBody,
         facing: playerFacing(camera.rotation.y),
         movement: 'still',
-        // A visible flashlight lets the entire 8–20 m ring remain aware at 23:30.
+        // A visible flashlight lets the entire 8–20 m ring remain aware at night.
         lit: true,
         lightSeenFrom: 40,
         eyeHeightMetres: Player.eye,
@@ -176,7 +174,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       player: playerBody,
       engine,
       registry: engine.registry,
-      zombies,
+      actors,
       tier: 'active',
     });
     if (backgroundCount > 0) {
@@ -186,22 +184,24 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
         player: playerBody,
         engine,
         registry: engine.registry,
-        zombies,
+        actors,
         tier: 'background',
       });
     }
     const graphics = graphicsTuningOf(engine.registry);
-    zombieMeshes =
+    actorMeshes =
       run.actors === 'detailed'
         ? new MobActorMeshes(s, count, {
-            zombies: engine.registry.zombies,
+            ragdoll: ragdollConfig,
+            actors: engine.registry.actors,
+            actorFigureFiles,
             look: lookDefaultsOf(engine.registry).mobActors,
             maxCorpses: graphics.mobActors.maxCorpses,
             handlingReachMetres: reachTuning(engine.registry).reachMetres,
             gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
           })
-        : new ZombieMeshes(s, count);
-    scene.add(zombieMeshes.group);
+        : new ActorMeshes(s, count);
+    scene.add(actorMeshes.group);
   };
 
   const duration = { warmup: 3, measure: 15 };
@@ -215,7 +215,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   let physicsFrame = 0;
   let interrupted = false;
   const frames: number[] = [];
-  const zombieTick: number[] = [];
+  const actorTick: number[] = [];
   const backgroundTick: number[] = [];
   const renderSubmit: number[] = [];
   const actorSync: number[] = [];
@@ -240,7 +240,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       seed: run.seed,
       actors: run.actors,
       frame: frameStats(frames),
-      zombieTick: sampleStats(zombieTick),
+      actorTick: sampleStats(actorTick),
       backgroundTick: sampleStats(backgroundTick),
       renderSubmit: sampleStats(renderSubmit),
       actorSync: sampleStats(actorSync),
@@ -255,7 +255,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       hud.textContent = 'Could not save shambler results to site storage; the benchmark stopped.';
       return;
     }
-    location.replace(nextUrl(run));
+    loadNextRun(run.index, run.counts.length);
   };
 
   const load = (now: number): boolean => {
@@ -277,7 +277,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       return true;
     }
     if (now - loadStarted > 120_000) {
-      hud.textContent = `Forest did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
+      hud.textContent = `The world did not finish loading (${holesAtSpawn} holes remain); benchmark stopped.`;
       completed = true;
       return false;
     }
@@ -291,19 +291,19 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       simTime += 1 / PHYSICS_RATE;
       if (physicsFrame % ACTIVE_FRAMES_PER_TICK === 0) {
         const tickStart = performance.now();
-        zombies.tickActive(1 / ZOMBIE_RATE, simTime);
-        lastZombieStepTime = simTime;
+        actors.tickActive(1 / ACTIVE_ACTOR_RATE, simTime);
+        lastActorStepTime = simTime;
         if (measuring) {
-          zombieTick.push(performance.now() - tickStart);
+          actorTick.push(performance.now() - tickStart);
         }
       }
       if (physicsFrame % BACKGROUND_FRAMES_PER_SLICE === 0) {
         const tickStart = performance.now();
-        zombies.tickBackground(
-          1 / BACKGROUND_ZOMBIE_RATE,
+        actors.tickBackground(
+          1 / BACKGROUND_ACTOR_RATE,
           simTime,
-          (physicsFrame / BACKGROUND_FRAMES_PER_SLICE) % BACKGROUND_ZOMBIE_SLICE_COUNT,
-          BACKGROUND_ZOMBIE_SLICE_COUNT,
+          (physicsFrame / BACKGROUND_FRAMES_PER_SLICE) % BACKGROUND_ACTOR_SLICE_COUNT,
+          BACKGROUND_ACTOR_SLICE_COUNT,
         );
         lastBackgroundStepTime = simTime;
         if (measuring) {
@@ -314,7 +314,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       playerBody.vel[2] = 0;
       stepBody(playerBody, 1 / PHYSICS_RATE, engine.isSolid, {
         ...physicsFor(scale, Player),
-        obstacles: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
+        obstacles: [...actors.store.entries()].map(([, actor]) => actor.body),
       });
       physicsFrame += 1;
       accumulator -= 1 / PHYSICS_RATE;
@@ -332,7 +332,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       phase = 'measure';
       phaseStart = now;
       frames.length = 0;
-      zombieTick.length = 0;
+      actorTick.length = 0;
       backgroundTick.length = 0;
       renderSubmit.length = 0;
       holes.length = 0;
@@ -358,11 +358,11 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
 
   const showHud = (elapsed: number): void => {
     hud.textContent = [
-      `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count} (${activeCount} active, ${backgroundCount} background), seed=${run.seed}, ${run.time}, actors=${run.actors}`,
+      `Shambler benchmark ${run.index + 1}/${run.counts.length}: N=${count} (${activeCount} active, ${backgroundCount} background), seed=${run.seed}, ${benchSiteLabel(config)}, ${time}, actors=${run.actors}`,
       phase === 'load'
-        ? `loading forest (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
+        ? `loading world (${streamer.unmeshedColumns(engine.spawn.pos[0] / s, engine.spawn.pos[2] / s, config.radiusChunks)} holes)`
         : `${phase} ${Math.min(elapsed, phase === 'warmup' ? duration.warmup : duration.measure).toFixed(1)} s`,
-      `zombies ${zombies?.store.size ?? 0}, player god mode on, ${interrupted ? 'tab hidden: unreliable' : 'keep tab visible'}`,
+      `zombies ${actors?.store.size ?? 0}, player god mode on, ${interrupted ? 'tab hidden: unreliable' : 'keep tab visible'}`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,
     ].join('\n');
   };
@@ -371,10 +371,10 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     const measuring = phase === 'measure';
     updateCamera(elapsed, measuring);
     if (playerBody) {
-      const clock = syncClock(simTime + accumulator, lastZombieStepTime, lastBackgroundStepTime);
-      zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
+      const clock = syncClock(simTime + accumulator, lastActorStepTime, lastBackgroundStepTime);
+      actorMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
       const syncStart = performance.now();
-      zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
+      actorMeshes.sync(actors.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
       if (measuring) {
         actorSync.push(performance.now() - syncStart);
         holes.push(streamer.unmeshedColumns(playerBody.pos[0], playerBody.pos[2], within));

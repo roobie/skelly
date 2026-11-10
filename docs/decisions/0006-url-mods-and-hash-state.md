@@ -2,9 +2,11 @@
 read_if:
   - you're deciding whether a URL parameter belongs in a mod, the hash, player options or the query
   - you're asking why a demo, bench world or tutorial is a mod rather than a URL preset
+  - you're asking why a link names its start with one `start-mod` parameter
   - you're asking why developer view state stays out of save identity
   - you distinguish bundled URL selectors from remote mod intake or tool handoff
   - you connect a product entry pack to scenario-owned starts
+  - you change ownership of normal starts or debug kit composition
 tags: [deadvox, adr, mods, url, debug, testing]
 ---
 
@@ -12,22 +14,24 @@ tags: [deadvox, adr, mods, url, debug, testing]
 
 ## Context
 
-The game entry reads a long list of query parameters that mix four concerns: preparing a world, preparing the player, changing what the developer sees, and driving test harnesses. Each preset is TypeScript that reads its own parameter, so a new demo needs code, and none of it is content a mod could provide. See `packages/deadvox/src/game/config.ts`, `configFromUrl`. The bench reads its own run parameters and world setup on the same entry; see `packages/deadvox/src/bench/run.ts`, `benchRunFromUrl`.
-
-Mods can already replace definitions and are recorded in save identity, but a mod cannot state how a new game starts, and the starting kit is code; see `packages/deadvox/src/game/loadout.ts`, `startingLoadout`.
+World preparation, player setup, developer view state and test harness control need distinct owners so a new demo does not require another private runtime preset. Normal player setup is admitted start content; see `packages/engine/src/core/startState.ts`, `applyStartState`. Debug kits use a normal start plus the spawn menu or a mod-owned row; see `docs/decisions/0009-content-defined-products.md`, "Starts and mixing". The query-to-hash migration on PR #1539 must use those same ownership boundaries. The bench reads its run settings through the same page reader and homes; see `packages/deadvox/src/bench/run.ts`, `benchRunFromUrl`.
 
 The project owes no backwards compatibility; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
 
 ## Decision
 
-Everything that sets up a world or a player comes from mods, and the URL only names which extra mods to load. Ad hoc developer state lives in one object in the URL hash. Player choices live in player options. The query keeps only the mod list and harness switches. Each home answers one question:
+Everything that sets up a world or a player comes from mods, and the URL only names which mods to load. Ad hoc developer state lives in one object in the URL hash. Player choices live in player options. The query keeps only the mod list, the start mod and harness switches. Each home answers one question:
 
-- **Query:** what content this page loads, and which harness drives it. Changing it means a different world, so it needs a reload.
+- **Query:** what content this page loads, where its run starts, and which harness drives it. Changing it means a different world, so it needs a reload.
 - **Mods:** what the world and the player start as. Content, so it validates, hashes into save identity and can be authored without code.
 - **Hash:** what the developer is looking at and poking. Never part of save identity.
 - **Player options:** how the player prefers to play and render. Persisted per browser, never in a shared link.
 
 Every caller follows the same homes, the bench and the tutorial included, so no harness keeps a private URL format that a later change has to work around. A prepared game then has one way to start, whether it is a demo, a bench world or the tutorial.
+
+A link names its start with one query parameter, `start-mod`, whose value is a mod id or inline mod data that supplies exactly one start row; see `packages/engine/src/game/bundledMods.ts`, `startModFromUrl`. The inline form lets a test or link that needs its own starting point and gear keep that start config beside itself, instead of setting one parameter per field or depending on a row authored elsewhere. One parameter takes both forms, so a link cannot name its start two ways. Committed scenarios, the tutorial among them, are real mods a link picks through `?mods=`, as it picks any other mod. The run starts from the start mod's row, else the default start of the last admitted pack that names one, so a scenario picked through `?mods=` wins, else the product default; see `packages/engine/src/game/startSelection.ts`, `runStartId`.
+
+Settings without a home are not supported. One that is needed comes back as a mod, not a query parameter, so the query does not keep a second, untested path for state that content or the hash should own. Each parameter's home is in `packages/deadvox/docs/url-mods.md`, "Where each parameter goes".
 
 The product entry pack declares its stack and selects its default scenario and start. Start rows belong to scenarios, which may offer several starts; see `docs/decisions/0009-content-defined-products.md`, "Starts and mixing". Pack dependency admission, not URL parsing, owns the composition rules.
 
@@ -48,6 +52,6 @@ The design plan and its slices are in `packages/deadvox/docs/url-mods.md`.
 
 A demo is a content file and a link, with no new code, and the same file serves a CI script, a playtest, a bench run and a bug report. Demo worlds get their own save identity, so they never overwrite a normal world. Developer view state can change without touching content identity.
 
-The start section is a new content contract that every future spawn feature must go through, and kit placement errors surface only at new-game time, not at validation. Shared links lose player options by design: a link that needs a graphics setting must name a mod.
+Every spawn feature must use the start content contract. Admission rejects unresolved references and invalid parent pockets or slots; ordinary inventory placement still owns physical fit at new-game time. Shared links lose player options by design: a link that needs a graphics setting must name a mod.
 
-The bench loses its private URL format: a bench link names demo mods and a hash like any other link, and a bench world is authored as content rather than read from a parameter.
+The bench loses its private URL format: a bench link names its mods, its start mod and a hash like any other link, and a bench world is authored as content rather than read from a parameter.

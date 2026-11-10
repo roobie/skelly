@@ -1,15 +1,21 @@
-import { buildingBounds } from './core/authoredTerrain.mjs';
-import type { Chunk } from './core/chunk.ts';
-import { blockColors } from './core/content.ts';
-import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
-import { BLOCK_SIZE, WORLD_BOTTOM_M } from './core/scale.ts';
-import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
-import { generateColumn, worldGroundAt } from './core/worldgen.ts';
-import { buildBundledContent } from './game/bundledContent.ts';
-import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
-import { inputBindings, keyboardInput } from './game/inputBindings.ts';
-import { MAP_SLICE_ACTIONS, mapSliceKeys } from './game/mapSliceInput.ts';
-import { siteForReviewMap } from './game/worldSetup.ts';
+import { blockColors } from '@skelly/engine/content';
+import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
+import { buildingBounds } from '@skelly/engine/terrain';
+import {
+  BLOCK_SIZE,
+  CHUNK,
+  type Chunk,
+  compassBearing,
+  generateColumn,
+  siteForReviewMap,
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  toLocal,
+  WORLD_BOTTOM_M,
+  worldGroundAt,
+} from '@skelly/engine/world';
+import { MAP_SLICE_ACTIONS, mapSliceKeys } from '@skelly/presentation/input';
 import {
   hillshade,
   marchingSquares,
@@ -18,8 +24,11 @@ import {
   siteMapRasterToWorld,
   siteMapWorldToRaster,
   topSolidAtOrBelow,
-} from './render/siteMap.ts';
+} from '@skelly/presentation/siteMap';
+import { buildBundledContent } from './product/content.ts';
+import { inputBindings, keyboardInput } from './product/input.ts';
 import { debugGameHref } from './siteMapGameLink.ts';
+import { mapWorldShape } from './siteMapWorld.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
@@ -31,8 +40,12 @@ const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
 const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
-Object.assign(config, siteFromUrl(params, 'playtest', registry));
+Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'), mapWorldShape(params));
 config.debug = true;
+if (registry.scenarios.has(config.site)) {
+  // A scenario city is reviewed as its default start places it.
+  config.startId = startForSite(content, config.site, true).id;
+}
 const layout = registry.layouts.get(config.site);
 const site = siteForReviewMap(config, registry);
 const selectedView = (params.get('view') === 'satellite' ? 'satellite' : 'topographic') as SiteMapView;
@@ -117,12 +130,12 @@ if (overlay) {
   document.body.classList.add('map-overlay');
   document.querySelector<HTMLElement>('#map-label')!.textContent = `${config.site.toUpperCase()} · REVIEW MAP`;
   const requestClose = () =>
-    globalThis.parent.postMessage({ type: 'deadvox-review-map-close' }, globalThis.location.origin);
+    globalThis.parent.postMessage({ type: 'skelly-review-map-close' }, globalThis.location.origin);
   const forwardKey = (event: KeyEventLike, phase: 'down' | 'up') => {
     event.preventDefault();
     globalThis.parent.postMessage(
       {
-        type: 'deadvox-review-map-key',
+        type: 'skelly-review-map-key',
         phase,
         code: event.code,
         shiftKey: event.shiftKey,
@@ -706,7 +719,7 @@ const selectAt = (clientX: number, clientY: number) => {
     const link = document.createElement('a');
     link.href = debugGameHref(
       globalThis.location.href,
-      { site: config.site, seed, storeys: config.storeys, density: config.density },
+      { start: registry.starts.get(config.startId)!, seed },
       { x, z },
     );
     link.textContent = 'Open a fresh debug game here';

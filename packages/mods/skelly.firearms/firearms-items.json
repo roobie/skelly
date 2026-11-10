@@ -1,0 +1,365 @@
+{
+  "items": [
+    {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 0.40000000000000002
+          }
+        ],
+        "rigid": true
+      },
+      "description": "A steel ammunition can with a hinged lid.",
+      "id": "ammo_can",
+      "model": "ammo_can",
+      "name": "Ammo can",
+      "size": [3, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A fired 5.56×45 case.",
+      "id": "spent_case_5_d_56x45",
+      "model": "case_5_d_56x45",
+      "name": "Spent 5.56×45 case",
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 6,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A fired 7.62×39 case.",
+      "id": "spent_case_7_d_62x39",
+      "model": "case_7_d_62x39",
+      "name": "Spent 7.62×39 case",
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 6,
+      "workInProgress": false
+    },
+    {
+      "ammo": {
+        "calibre": "12-gauge-00-buck",
+        "damage": 20,
+        "damageKind": "pierce",
+        "diameterMm": 8.3800000000000008,
+        "impulse": 0.34999999999999998,
+        "loadSimSeconds": 0.80000000000000004,
+        "loadSound": "magazine_round_insert",
+        "pellets": 9,
+        "rangeMetres": 50,
+        "spreadDegrees": 2,
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
+      },
+      "category": "ammo",
+      "description": "Nine-pellet 00 buckshot.",
+      "id": "shell_12_gauge_00_buck",
+      "model": "round_12_h_gauge_h_00_h_buck",
+      "name": "12 gauge 00 buckshot shell",
+      "size": [1, 1],
+      "stack": 25,
+      "weight": 40,
+      "workInProgress": false
+    },
+    {
+      "category": "ammo",
+      "description": "Sealed cardboard box of twenty 00-buck shells.",
+      "id": "shotshell_box",
+      "model": "shotshell_box",
+      "name": "Sealed shotshell box (20)",
+      "size": [2, 2],
+      "unpack": {
+        "count": 20,
+        "item": "shell_12_gauge_00_buck",
+        "simSeconds": 1.2
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A fired shotshell hull.",
+      "id": "spent_case_12_h_gauge_h_00_h_buck",
+      "model": "case_12_h_gauge_h_00_h_buck",
+      "name": "Spent 12 gauge hull",
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "light",
+      "description": "A flashlight strapped to a bracket. Taped under the barrel of a long gun, its beam follows the barrel.",
+      "disassembly": {
+        "skill": "mechanics",
+        "timeGameMinutes": 7,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "scrap_metal",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "electrical_tape",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "taped_flashlight_mount",
+      "light": {
+        "beam": {
+          "angleDegrees": 60,
+          "decay": 1,
+          "penumbra": 0.59999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
+        },
+        "color": "#fff1d8",
+        "intensity": 5,
+        "power": {
+          "battery": "aa_battery",
+          "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
+          "swapSimSeconds": 2
+        },
+        "radius": 20,
+        "seenFrom": 40
+      },
+      "lightMount": {
+        "kind": "strap"
+      },
+      "model": "taped_flashlight_mount",
+      "name": "Taped-on flashlight mount",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "weapon",
+      "description": "A rough grip made from a wood offcut and rubber.",
+      "disassembly": {
+        "skill": "mechanics",
+        "timeGameMinutes": 7,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "wood_offcut",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "rubber_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "scrap_foregrip",
+      "model": "scrap_foregrip",
+      "name": "Scrap foregrip",
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "weapon",
+      "description": "A heavy scavenged tube with crude end collars.",
+      "disassembly": {
+        "skill": "mechanics",
+        "timeGameMinutes": 8,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "scrap_metal",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "firearmAttachmentEffects": {
+        "fitRefusal": "I can't fit this suppressor yet",
+        "fitSkillLevel": 4,
+        "kind": "suppressor",
+        "recoilReduction": 0.050000000000000003,
+        "wearPerShot": 0.02
+      },
+      "id": "improvised_suppressor",
+      "model": "improvised_suppressor",
+      "name": "Improvised suppressor",
+      "size": [2, 2],
+      "weight": 600,
+      "workInProgress": false
+    }
+  ],
+  "recipes": [
+    {
+      "category": "attachments",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "rope"
+          },
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_weapon_sling",
+      "qualities": {
+        "cutting": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "weapon_sling"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 2
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 4
+    },
+    {
+      "category": "attachments",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "steel_pipe"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rubber_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "electrical_tape"
+          }
+        ]
+      ],
+      "id": "make_improvised_suppressor",
+      "qualities": {
+        "screwing": 1,
+        "wrenching": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "improvised_suppressor"
+      },
+      "searchTerms": [],
+      "skills": {
+        "mechanics": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 35,
+      "workstation": "workbench"
+    },
+    {
+      "category": "attachments",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "flashlight"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "electrical_tape"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "consumeFitted": true,
+      "id": "make_taped_flashlight_mount",
+      "qualities": {
+        "screwing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "taped_flashlight_mount"
+      },
+      "searchTerms": [],
+      "skills": {
+        "mechanics": 0
+      },
+      "tags": ["electrical", "metal"],
+      "timeGameMinutes": 18,
+      "workstation": "workbench"
+    },
+    {
+      "category": "attachments",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "wood_offcut"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rubber_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_scrap_foregrip",
+      "qualities": {
+        "hammering": 1,
+        "sawing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "scrap_foregrip"
+      },
+      "searchTerms": [],
+      "skills": {
+        "mechanics": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 15,
+      "workstation": "workbench"
+    }
+  ]
+}

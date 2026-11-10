@@ -33,7 +33,11 @@ const closeWith = async (records: object[]): Promise<void> => {
   await audit.close();
 };
 
-const modelAbort = { event: 'asset-error', model: 'machete', url: '/src/content/base/assets/models/machete.glb' };
+const modelAbort = {
+  event: 'asset-error',
+  model: 'machete',
+  url: '/mods/fixture.pack/assets/models/machete.glb',
+};
 
 describe('model load audit', () => {
   afterEach(() => vi.restoreAllMocks());

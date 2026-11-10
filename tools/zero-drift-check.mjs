@@ -1,6 +1,6 @@
 // biome-ignore-all lint/correctness/noNodejsModules: This command-line checker runs only under Node.js.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -30,13 +30,11 @@ const RUN_USER_PATH = /\/run\/user\/\d+[A-Za-z0-9_./$-]*/g;
 const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
-const SUBPROJECTS = new Set(['gungen']);
 
-// Packages sit one level deeper, as `packages/<name>`, so a project root is two segments there.
+// A subproject is a package, `packages/<name>`, so its root is the path's first two segments.
 function projectOf(path) {
   const [first, second] = path.split('/');
-  const name = first === 'packages' && second ? `packages/${second}` : first;
-  return name.startsWith('packages/') || SUBPROJECTS.has(name) ? name : undefined;
+  return first === 'packages' && second ? `packages/${second}` : undefined;
 }
 const LINE_CITATION = /(?<![\w/@.-])(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;
@@ -75,6 +73,58 @@ const QUOTE_ESCAPE = /\\(["\\])/g;
 
 const exec = (command, args, options = {}) => execFileSync(command, args, { cwd: ROOT, encoding: 'utf8', ...options });
 
+const GITLINK = /^160000 ([0-9a-f]+) \d\t(.+)$/;
+
+// A hook exports the pushing repository's GIT_DIR, which would otherwise redirect commands meant for a submodule.
+function unboundGit(dir, args, options = {}) {
+  // biome-ignore lint/style/noProcessEnv: the child keeps caller settings except Git's local repository bindings.
+  const env = { ...process.env };
+  for (const name of execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' }).split('\n')) {
+    delete env[name];
+  }
+  return execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', env, maxBuffer: 1 << 28, ...options });
+}
+
+export function pinnedSubmodules(root = ROOT) {
+  const pinned = new Map();
+  for (const line of unboundGit(root, ['ls-files', '--stage', '-z']).split('\0')) {
+    const match = line.match(GITLINK);
+    if (!match) {
+      continue;
+    }
+    const [, commit, path] = match;
+    const dir = resolve(root, path);
+    let files;
+    try {
+      // An uninitialized submodule directory would otherwise resolve to the superproject.
+      if (resolve(unboundGit(dir, ['rev-parse', '--show-toplevel'], { stdio: 'pipe' }).trim()) !== dir) {
+        throw new Error('not a checkout');
+      }
+      files = new Set(
+        unboundGit(dir, ['ls-tree', '-r', '-z', '--name-only', commit], { stdio: 'pipe' }).split('\0').filter(Boolean),
+      );
+    } catch (cause) {
+      throw new Error(
+        `zero-drift: cannot read submodule ${path} at its pinned commit ${commit}; run git submodule update --init ${path}`,
+        { cause },
+      );
+    }
+    pinned.set(path, {
+      files,
+      read: (file) => unboundGit(dir, ['cat-file', 'blob', `${commit}:${file}`]),
+    });
+  }
+  return pinned;
+}
+
+function pinnedEntry(rel, tree) {
+  for (const [path, submodule] of tree.pinned) {
+    if (rel.startsWith(`${path}/`)) {
+      return { submodule, file: rel.slice(path.length + 1) };
+    }
+  }
+}
+
 export function parsePythonReadIf(output) {
   const docs = new Map();
   let current;
@@ -97,7 +147,9 @@ const MARKDOWN_OPTIONS = {
 };
 
 function parseMarkdown(source) {
-  return fromMarkdown(source, MARKDOWN_OPTIONS);
+  const markdown = fromMarkdown(source, MARKDOWN_OPTIONS);
+  restoreMarkdownPositions(markdown, source);
+  return markdown;
 }
 
 function walkMarkdown(node, visit) {
@@ -125,6 +177,58 @@ function renderedText(node) {
     return '\n';
   }
   return (node.children ?? []).map(renderedText).join('');
+}
+
+function position(start, end) {
+  return { start: { offset: start }, end: { offset: end } };
+}
+
+function recoveredPosition(child, { nextLink, cursor, end, source }) {
+  const start = child.type === 'text' ? cursor : source.indexOf(renderedText(child), cursor);
+  let finish = start + renderedText(child).length;
+  if (child.type === 'text') {
+    finish = nextLink ? source.indexOf(renderedText(nextLink), cursor) : end;
+  }
+  return start < cursor || start > end || finish < cursor || finish > end ? undefined : position(start, finish);
+}
+
+function restoreRunPosition(run, start, end) {
+  for (const child of run) {
+    child.position = position(start, end);
+  }
+}
+
+function restoreMissingPositionRun(children, first, parent, source) {
+  const endIndex = children.findIndex((child, index) => index > first && child.position);
+  const run = children.slice(first, endIndex === -1 ? undefined : endIndex);
+  const { position: previousPosition } = children[first - 1] ?? {};
+  const end = children[endIndex]?.position?.start.offset ?? parent.position?.end.offset;
+  let cursor = previousPosition?.end.offset ?? parent.position?.start.offset;
+  if (cursor === undefined || end === undefined) {
+    return;
+  }
+  for (const [index, child] of run.entries()) {
+    const nextLink = run.slice(index + 1).find((sibling) => sibling.type === 'link');
+    const recovered = recoveredPosition(child, { nextLink, cursor, end, source });
+    if (!recovered) {
+      restoreRunPosition(run.slice(index), cursor, end);
+      return;
+    }
+    child.position = recovered;
+    cursor = recovered.end.offset;
+  }
+}
+
+function restoreMarkdownPositions(node, source) {
+  const children = node.children ?? [];
+  for (const [index, child] of children.entries()) {
+    if (!child.position && (index === 0 || children[index - 1].position)) {
+      restoreMissingPositionRun(children, index, node, source);
+    }
+    if (child.position) {
+      restoreMarkdownPositions(child, source);
+    }
+  }
 }
 
 function markdownText(node, { skipBlockquotes = false, skipInlineCode = false } = {}) {
@@ -615,6 +719,12 @@ function resolvedCandidates(docPath, value, root) {
 
 function pathExists(candidate, value, tree) {
   const rel = relative(tree.root, candidate).split(sep).join('/');
+  const pinned = pinnedEntry(rel, tree);
+  if (pinned) {
+    const { files } = pinned.submodule;
+    const dir = pinned.file.replace(TRAILING_SLASH, '');
+    return files.has(pinned.file) || (value.endsWith('/') && [...files].some((file) => file.startsWith(`${dir}/`)));
+  }
   if (tree.tracked.has(rel)) {
     return true;
   }
@@ -695,7 +805,8 @@ function checkSymbols({ path, visible, markdown, tree, failures }) {
 
 function sourceFor(target, tree) {
   if (!tree.sources.has(target)) {
-    tree.sources.set(target, readFileSync(target, 'utf8'));
+    const pinned = pinnedEntry(relative(tree.root, target).split(sep).join('/'), tree);
+    tree.sources.set(target, pinned ? pinned.submodule.read(pinned.file) : readFileSync(target, 'utf8'));
   }
   return tree.sources.get(target);
 }
@@ -985,7 +1096,7 @@ const CITATION_PATTERNS = [
 ];
 
 function policyExempt(path) {
-  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path) || path.startsWith('packages/mobgen/reference/');
+  return POLICY_EXEMPT.has(path) || PACKAGE_LOCK.test(path);
 }
 
 function checkCitations(path, text, markdown, failures) {
@@ -1082,15 +1193,13 @@ export function checkDocument({
   root = ROOT,
   tracked,
   ignored = new Set(),
+  pinned = new Map(),
   pythonReadIf = new Map(),
   sources = new Map(),
   anchors = new Map(),
   parsedMarkdown = new Map(),
 }) {
   const failures = new Map();
-  if (path.startsWith('packages/mobgen/reference/')) {
-    return [];
-  }
   if (!tracked) {
     throw new Error('tracked file set is required for path checks');
   }
@@ -1110,7 +1219,7 @@ export function checkDocument({
       checkReadIfParity(path, reasons, pythonReadIf, failures);
     }
   }
-  const tree = { root, tracked, ignored, sources, anchors, markdown: parsedMarkdown };
+  const tree = { root, tracked, ignored, pinned, sources, anchors, markdown: parsedMarkdown };
   const visible = markdown ? markdownText(markdown) : joinedCues(text);
   checkLineNumbers(path, markdown ? markdownSourceText(text, markdown) : text, failures);
   checkPaths({ path, visible, markdown, tree, failures });
@@ -1118,14 +1227,15 @@ export function checkDocument({
   return [...failures.values()];
 }
 
-function trackedTextFiles() {
-  return exec('git', ['ls-files', '-z'])
-    .split('\0')
-    .filter(Boolean)
-    .filter((path) => {
-      const bytes = readFileSync(resolve(ROOT, path));
-      return !bytes.subarray(0, 8192).includes(0);
-    });
+export function trackedTextFiles(paths = exec('git', ['ls-files', '-z']).split('\0').filter(Boolean), root = ROOT) {
+  return paths.filter((path) => {
+    const absolute = resolve(root, path);
+    if (!statSync(absolute).isFile()) {
+      return false;
+    }
+    const bytes = readFileSync(absolute);
+    return !bytes.subarray(0, 8192).includes(0);
+  });
 }
 
 function ignoredPaths(candidates) {
@@ -1145,6 +1255,7 @@ function ignoredPaths(candidates) {
 
 function observedFailures(paths) {
   const tracked = new Set(exec('git', ['ls-files', '-z']).split('\0').filter(Boolean));
+  const pinned = pinnedSubmodules();
   const docTexts = new Map(paths.map((path) => [path, readFileSync(resolve(ROOT, path), 'utf8')]));
   const sources = new Map([...docTexts].map(([path, text]) => [resolve(ROOT, path), text]));
   const parsedMarkdown = new Map(
@@ -1162,7 +1273,12 @@ function observedFailures(paths) {
       ),
     );
   });
-  const ignored = ignoredPaths(candidates);
+  // Git refuses ignore queries for paths inside a submodule, and the pinned tree answers those paths anyway.
+  const ignored = ignoredPaths(
+    candidates.map((docCandidates) =>
+      docCandidates.filter((item) => !pinnedEntry(item.split(sep).join('/'), { pinned })),
+    ),
+  );
   const pythonReadIf = parsePythonReadIf(exec('python3', ['tools/read_if.py']));
   const failures = new Map();
   const mergeFailure = (failure) => {
@@ -1176,6 +1292,7 @@ function observedFailures(paths) {
       text,
       tracked,
       ignored,
+      pinned,
       pythonReadIf,
       sources,
       anchors,

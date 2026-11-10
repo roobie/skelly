@@ -1,9 +1,9 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { scenarioPlanIssues } from '@skelly/engine/internal/core/cityPlan.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { compileAssembly, kitSlotChoices } from '@skelly/engine/internal/core/templates.ts';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { compileAssembly, kitSlotChoices } from '../src/core/templates.ts';
 import { overlayContent, startupContent } from './baseRegistry.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
 

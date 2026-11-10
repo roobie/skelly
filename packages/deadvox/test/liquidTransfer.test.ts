@@ -1,8 +1,7 @@
+import { planLiquidReceive, planLiquidTransfer } from '@skelly/engine/internal/core/liquids.ts';
+import type { LiquidContents } from '@skelly/engine/internal/core/schema.ts';
+import { assertSavedLiquidContents, Inventory, type Item, type ItemState } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { planLiquidTransfer } from '../src/core/liquids.ts';
-import type { LiquidContents } from '../src/core/schema.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 
@@ -15,7 +14,7 @@ const vessel = (
   id: string,
   capacityMicrolitres: number,
   initialContents: LiquidContents,
-  accepts = ['fixture_oil'],
+  accepts: 'any' | string[] = ['fixture_oil'],
 ) => ({
   id,
   name: id,
@@ -43,6 +42,7 @@ const fixture = () => {
           vessel('fixture_water_source', 9, filled(5, 'fixture_water'), ['fixture_water']),
           vessel('fixture_water_receiver', 6, { kind: 'empty' }, ['fixture_water']),
           vessel('fixture_mixed_acceptance', 6, filled(2, 'fixture_water'), ['fixture_oil', 'fixture_water']),
+          vessel('fixture_any', 6, { kind: 'empty' }, 'any'),
         ],
       },
     },
@@ -61,6 +61,61 @@ const admit = (inventory: Inventory, type: string, side?: 'left' | 'right') => {
 };
 const volume = (item: Item) => (item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0);
 const balances = (source: Item, receiver: Item) => [source.liquidContents, receiver.liquidContents];
+
+describe('any-liquid vessel', () => {
+  it('receives each loaded liquid while a listed vessel still refuses an unlisted one', () => {
+    const inventory = fixture();
+    const liquids = [...inventory.registry.liquids.keys()];
+    expect(liquids.length).toBeGreaterThan(1);
+    for (const liquid of liquids) {
+      const plan = planLiquidReceive(inventory.registry, admit(inventory, 'fixture_any'), liquid, 1);
+      expect(plan).toMatchObject({ ok: true, accepted: 1 });
+    }
+    expect(planLiquidReceive(inventory.registry, admit(inventory, 'fixture_receiver'), 'fixture_water', 1)).toEqual({
+      ok: false,
+      reason: 'incompatible-liquid',
+    });
+  });
+
+  it('refuses a liquid the stack does not load', () => {
+    const inventory = fixture();
+    expect(planLiquidReceive(inventory.registry, admit(inventory, 'fixture_any'), 'fixture_absent', 1)).toEqual({
+      ok: false,
+      reason: 'incompatible-liquid',
+    });
+  });
+
+  it('pours in and back out, and keeps one kind at a time', () => {
+    const inventory = fixture();
+    const can = admit(inventory, 'fixture_any');
+    const oil = admit(inventory, 'fixture_small_source');
+    expect(inventory.transferLiquid(oil.uid, can.uid).ok).toBe(true);
+    expect(can.liquidContents).toEqual(filled(3));
+    const water = admit(inventory, 'fixture_water_source');
+    expect(planLiquidTransfer(inventory.registry, water, can)).toEqual({ ok: false, reason: 'incompatible-liquid' });
+    expect(inventory.transferLiquid(can.uid, oil.uid).ok).toBe(true);
+    expect(can.liquidContents).toEqual({ kind: 'empty' });
+    expect(planLiquidTransfer(inventory.registry, water, can)).toMatchObject({ ok: true });
+  });
+
+  it('restores saved contents of any loaded liquid and refuses one the stack does not load', () => {
+    const { registry } = fixture();
+    const state = (liquid: string) =>
+      ({ type: 'fixture_any', count: 1, liquidContents: filled(1, liquid) }) as unknown as ItemState;
+    expect(() => assertSavedLiquidContents(registry, state('fixture_water'))).not.toThrow();
+    expect(() => assertSavedLiquidContents(registry, state('fixture_absent'))).toThrow();
+  });
+
+  it('validates its initial liquid against the loaded liquids', () => {
+    const liquids = [{ id: 'fixture_oil', name: 'Fixture oil', densityGramsPerMillilitre: 1 }];
+    const build = (liquid: string) =>
+      buildFixtureRegistry([
+        { source: 'fixture-any.json', data: { liquids, items: [vessel('fixture_any', 6, filled(1, liquid), 'any')] } },
+      ]).issues.map(({ path }) => path);
+    expect(build('fixture_oil')).toEqual([]);
+    expect(build('fixture_absent').some((path) => path.endsWith('.vessel.initialContents'))).toBe(true);
+  });
+});
 
 describe('liquid transfer', () => {
   it.each([

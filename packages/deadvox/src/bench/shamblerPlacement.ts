@@ -1,9 +1,6 @@
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
-import type { Scale } from '../core/scale.ts';
-import { createPlayerBody, playerTuning } from '../game/player.ts';
+import type { Registry } from '@skelly/engine/content';
+import { createPlayerBody, playerTuning } from '@skelly/engine/sim';
+import { type Body, bodyOverlapsBlock, raycast, type Scale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 
 export interface ShamblerPlacementWorld {
   registry: Registry;
@@ -40,6 +37,9 @@ const rayIsClear = (from: Body, to: Body, isSolid: SolidAt, blockSize: number): 
   return raycast(origin, unit, distance, isSolid) === undefined;
 };
 
+/** The default body, in metres, that placement probes for clearance when a caller gives none. */
+export const SHAMBLER_PROBE_BODY_METRES = { halfWidth: 0.28, height: 1.7 } as const;
+
 const placementBody = (
   engine: ShamblerPlacementWorld,
   x: number,
@@ -55,11 +55,11 @@ const placementBody = (
     [x / blockSize, engine.groundAt(x, z) / blockSize, z / blockSize],
     playerTuning(engine.registry),
   );
-  body.halfWidth = bodyDimensions?.halfWidth ?? 0.28 / blockSize;
+  body.halfWidth = bodyDimensions?.halfWidth ?? SHAMBLER_PROBE_BODY_METRES.halfWidth / blockSize;
   if (bodyDimensions?.halfDepth !== undefined) {
     body.halfDepth = bodyDimensions.halfDepth;
   }
-  body.height = bodyDimensions?.height ?? 1.7 / blockSize;
+  body.height = bodyDimensions?.height ?? SHAMBLER_PROBE_BODY_METRES.height / blockSize;
   body.onGround = true;
   return body;
 };

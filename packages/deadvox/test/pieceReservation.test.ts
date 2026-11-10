@@ -1,21 +1,14 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import { decodeSave } from '@skelly/engine/save';
+import { BlockEntities } from '@skelly/engine/world';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { DOOR_ACTION } from '../src/game/doorAction.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } from './snapshotTestSupport.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
 const door = (id: string) => ({
@@ -43,7 +36,14 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'reservation-fixture',
     data: {
-      furnitureMaterials: [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: [methodId] }],
+      furnitureMaterials: [
+        {
+          id: FIXTURE_MATERIAL,
+          blowSound: FIXTURE_BLOW_SOUND,
+          drops: { default: FIXTURE_BLOW_SOUND },
+          methods: [methodId],
+        },
+      ],
       furniture: [
         door('fixture_door'),
         {

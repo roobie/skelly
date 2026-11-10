@@ -1,8 +1,10 @@
+import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import type { DayCycle, DayPhase } from '@skelly/engine/internal/core/dayPhase.ts';
+import type { DayCycleDef } from '@skelly/engine/internal/core/schema.ts';
+import { sunDirection as sunDirectionAtCycle } from '@skelly/engine/internal/core/sky.ts';
+import { dayPhaseAt } from '@skelly/engine/sim';
+import { skyAt as skyAtCycle } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { DayCycleDef } from '../src/core/schema.ts';
-import { skyAt as skyAtCycle, sunDirection as sunDirectionAtCycle } from '../src/core/sky.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number, cycle: DayCycleDef = BASE_DAY_CYCLE) => skyAtCycle(hour, cycle);

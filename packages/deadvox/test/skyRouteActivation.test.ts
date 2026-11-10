@@ -1,16 +1,18 @@
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { observeRealFrame } from '@skelly/engine/session';
+import { realTimestamp } from '@skelly/engine/sim';
+import type { SkyResult } from '@skelly/engine/sky';
+import type { Engine } from '@skelly/presentation/play';
+import type { Skylight } from '@skelly/presentation/render';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { SkySnapshot } from '../src/core/skySnapshot.ts';
-import type { SkyResult } from '../src/core/skyTransport.ts';
-import { realTimestamp } from '../src/core/time.ts';
-import { attachSkyRoute } from '../src/debug/skyRoute.ts';
+import { attachSkyRoute, skyRouteUrl } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
-import type { Engine } from '../src/game/engine.ts';
-import { observeRealFrame } from '../src/game/frameDriver.ts';
-import type { Skylight } from '../src/render/skylight.ts';
+import { readPageUrl } from '../src/pageUrl.ts';
+import { content } from './fixtures/startupContent.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));
 const inputFixture = vi.hoisted(() => ({ context: 'play', issued: [] as string[] }));
-vi.mock('../src/ui/skyRoutePanel.ts', () => ({
+vi.mock('@skelly/presentation/internal/ui/skyRoutePanel.ts', () => ({
   createSkyRoutePanel: () => ({
     progress: () => undefined,
     started: () => undefined,
@@ -19,11 +21,13 @@ vi.mock('../src/ui/skyRoutePanel.ts', () => ({
     },
   }),
 }));
-vi.mock('../src/game/inputBindings.ts', () => ({
-  keyboardInput: {
-    context: () => ({ context: inputFixture.context, debug: false }),
-    registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
-  },
+const keyboard = {
+  context: () => ({ context: inputFixture.context, debug: false }),
+  registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
+};
+// The input entry loads the rest of this module too, so only the forwarded holds are replaced.
+vi.mock('@skelly/presentation/internal/presentation/inputBindings.ts', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   forwardedActionHolds: () => (action: string) => {
     inputFixture.issued.push(action);
     return () => undefined;
@@ -37,6 +41,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+it('launches the route through a link the game reads back without refusing it', () => {
+  vi.stubGlobal('location', { href: 'https://example.invalid/deadvox/?mods=fixture#{radius:64}' });
+  const url = new URL(skyRouteUrl(content));
+  const read = readPageUrl(url.search, url.hash);
+  expect(read.refused).toBeUndefined();
+  expect(read.query.get('skyRoute')).toBe('1');
+  expect(read.hash).toMatchObject({ debug: true });
+  const { starts } = JSON.parse(read.query.get('start-mod')!);
+  expect(starts).toEqual([expect.objectContaining({ site: 'playtest', startTimeGameTimeOfDay: '13:00' })]);
+  expect(starts[0]).not.toHaveProperty('defaultForSite');
+});
+
 it('route activation excludes inactive rendered work without clearing startup jobs or censoring evidence', () => {
   let clockRealMs = 0;
   let active = false;
@@ -44,10 +60,11 @@ it('route activation excludes inactive rendered work without clearing startup jo
   vi.spyOn(performance, 'now').mockImplementation(() => clockRealMs);
   vi.spyOn(console, 'info').mockImplementation(() => undefined);
   vi.stubGlobal('location', {
-    href: 'https://example.invalid/?debug=1&skyRoute=1',
+    href: 'https://example.invalid/?skyRoute=1#{debug:true}',
     origin: 'https://example.invalid',
     pathname: '/',
-    search: '?debug=1&skyRoute=1',
+    search: '?skyRoute=1',
+    hash: '#{debug:true}',
   });
   vi.stubGlobal('devicePixelRatio', 1);
   vi.stubGlobal('navigator', { userAgent: 'owned-renderer-port' });
@@ -106,7 +123,7 @@ it('route activation excludes inactive rendered work without clearing startup jo
       info: { render },
       properties: { get: () => Object.fromEntries([['__webglTexture', textureHandle]]) },
     },
-    config: { site: 'playtest', seed: 1, radiusM: 48, scale: { blockSize: 1, maxCy: 0 } },
+    config: { content, site: 'playtest', seed: 1, radiusM: 48, scale: { blockSize: 1, maxCy: 0 } },
     camera: { position: { toArray: () => [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     entities: { all: [], isSolid: () => false },
     world: { getBlock: () => 0 },
@@ -124,6 +141,7 @@ it('route activation excludes inactive rendered work without clearing startup jo
     session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     debug,
     active: () => active,
+    keyboard,
   } as unknown as Parameters<typeof attachSkyRoute>[0]);
   if (!route) {
     throw new Error('Owned ports did not attach the route');
@@ -192,10 +210,11 @@ it('waits for the input owner to permit play before starting the route', () => {
   let active = false;
   const noop = () => undefined;
   vi.stubGlobal('location', {
-    href: 'https://example.invalid/?debug=1&skyRoute=1',
+    href: 'https://example.invalid/?skyRoute=1#{debug:true}',
     origin: 'https://example.invalid',
     pathname: '/',
-    search: '?debug=1&skyRoute=1',
+    search: '?skyRoute=1',
+    hash: '#{debug:true}',
   });
   vi.stubGlobal('devicePixelRatio', 1);
   vi.stubGlobal('navigator', { userAgent: 'owned-renderer-port' });
@@ -225,7 +244,7 @@ it('waits for the input owner to permit play before starting the route', () => {
     skylight: sky,
     streamer: { onSkyService: undefined, requestSky: () => true },
     renderer: { getContext: () => gl, info: { render: { frame: 0 } }, properties: { get: () => ({}) } },
-    config: { site: 'playtest', seed: 1, radiusM: 48, scale: { blockSize: 1, maxCy: 0 } },
+    config: { content, site: 'playtest', seed: 1, radiusM: 48, scale: { blockSize: 1, maxCy: 0 } },
     camera: { position: { toArray: () => [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     entities: { all: [] },
   };
@@ -234,6 +253,7 @@ it('waits for the input owner to permit play before starting the route', () => {
     session: { body: { pos: [SKY_ROUTE.start, 0, SKY_ROUTE.z] } },
     debug,
     active: () => active,
+    keyboard,
   } as unknown as Parameters<typeof attachSkyRoute>[0]);
   if (!route) {
     throw new Error('Owned ports did not attach the route');

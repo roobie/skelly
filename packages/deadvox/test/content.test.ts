@@ -1,66 +1,67 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import {
+  BLOCK_PATTERNS,
+  blockColors,
+  buildRegistry as buildContentRegistry,
+  CONTENT_SECTION_KEYS,
+  ModelSchema,
+  requiredContentIssues,
+} from '@skelly/engine/content';
+import { BindingRegistry } from '@skelly/engine/input';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { corpseLootPoint, lootTypeIssue } from '@skelly/engine/internal/core/loot.ts';
+import { militaryLootItems } from '@skelly/engine/internal/core/magazine.ts';
+import { blockPatterns, blockWeatherability } from '@skelly/engine/internal/core/meshInput.ts';
+import { checkReachability } from '@skelly/engine/internal/core/reachability.ts';
+import {
+  type ContentFile,
+  ContentFileSchema,
+  DayCycleSchema,
+  type TemplateDef,
+} from '@skelly/engine/internal/core/schema.ts';
+import { ordinarySpawnWeights } from '@skelly/engine/internal/core/settlementSpawns.ts';
+import { furnitureOf, lootPointsOf } from '@skelly/engine/internal/core/site.ts';
+import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { parseTimeOfDay } from '@skelly/engine/sim';
+import { WEATHERING_RANGES } from '@skelly/engine/sky';
+import { isBodyDoor, type Placement, sitePalette } from '@skelly/engine/world';
+import { camoShaderConfig } from '@skelly/presentation/internal/render/surfacePatterns.ts';
+import { ChunkMeshes } from '@skelly/presentation/render';
 import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
+import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { controlIssues } from '../src/cli/controlIssues.ts';
-import rawBaseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
-import { isBodyDoor } from '../src/core/blockEntities.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import {
-  blockColors,
-  buildRegistry as buildContentRegistry,
-  requiredContentIssues,
-  validateContent,
-} from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
-import { militaryLootItems } from '../src/core/magazine.ts';
-import { blockPatterns, blockWeatherability } from '../src/core/meshInput.ts';
-import { opticViewSettings } from '../src/core/opticView.ts';
-import { checkReachability } from '../src/core/reachability.ts';
-import {
-  BLOCK_PATTERNS,
-  CONTENT_SECTION_KEYS,
-  type ContentFile,
-  ContentFileSchema,
-  DayCycleSchema,
-  ModelSchema,
-  type TemplateDef,
-} from '../src/core/schema.ts';
-import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
-import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
-import { sitePalette } from '../src/core/sitePalette.ts';
-import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
-import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, type Placement } from '../src/core/templates.ts';
-import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
-import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
-import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
+  buildFixtureRegistry as buildRegistry,
+  FIXTURE_MATERIAL,
+  fixtureBreach,
+  fixtureItemEconomy,
+} from './economyFixtures.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
+import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 
-const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
 const INPUT_GESTURE =
   /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
 const LMB_ALIAS = /\bLMB\b/i;
 const RMB_ALIAS = /\bRMB\b/i;
 const NO_FIRING_HOLD_KIND = /neither a grip part nor a stock part/;
-const base = readdirSync(BASE)
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const base = baseContentSources();
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 
 describe('content-owned item and world policies', () => {
   it('refuses zombie abilities without a runtime mechanism', () => {
-    const zombie = [...baseRegistry.zombies.values()][0]!;
+    const actor = [...baseRegistry.actors.values()][0]!;
     for (const ability of [
       'leap',
       'scream',
@@ -71,71 +72,66 @@ describe('content-owned item and world policies', () => {
       'regenerate',
       'burrow',
     ]) {
-      expect(safeParse(ContentFileSchema, { zombies: [{ ...zombie, abilities: [ability] }] }).success).toBe(false);
+      expect(safeParse(ContentFileSchema, { actors: [{ ...actor, abilities: [ability] }] }).success).toBe(false);
     }
   });
 
   it('requires explicit item policies, region drops and world liveness', () => {
     const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);
-    for (const field of ['workInProgress', 'notLoot']) {
-      const missing = { ...item };
-      delete missing[field];
-      expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
-    }
-    const zombie = { ...[...baseRegistry.zombies.values()][0]! } as Record<string, unknown>;
-    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(true);
-    zombie.severedItems = undefined;
-    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(false);
+    const { workInProgress: _workInProgress, ...missing } = item;
+    expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
+    const actor = { ...[...baseRegistry.actors.values()][0]! } as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(true);
+    actor.severedItems = undefined;
+    expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(false);
     const world = { ...[...baseRegistry.siteGeneration.values()][0]! } as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(true);
-    world.activeZombieRadiusMetres = undefined;
+    world.activeActorRadiusMetres = undefined;
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(false);
   });
 
   it('requires a positive finite takeoff speed on each zombie type', () => {
-    const zombie = [...baseRegistry.zombies.values()][0]!;
-    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(true);
+    const actor = [...baseRegistry.actors.values()][0]!;
+    expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(true);
     for (const jumpMetresPerSimSecond of [undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(safeParse(ContentFileSchema, { zombies: [{ ...zombie, jumpMetresPerSimSecond }] }).success).toBe(false);
+      expect(safeParse(ContentFileSchema, { actors: [{ ...actor, jumpMetresPerSimSecond }] }).success).toBe(false);
     }
   });
 
   it('validates severed-item references and complete region policy', () => {
-    const zombie = { ...structuredClone(baseRegistry.zombies.get('shambler')!), loot: undefined };
-    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
-    const region = Object.keys(zombie.regions)[0]!;
+    const actor = { ...structuredClone(baseRegistry.actors.get('shambler')!), loot: undefined };
+    actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((key) => [key, null]));
+    const region = Object.keys(actor.regions)[0]!;
     const support = {
       source: 'support.json',
       data: {
-        sounds: [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!),
+        sounds: [...new Set(Object.values(actor.sounds))].map((id) => baseRegistry.sounds.get(id)!),
         items: [
           {
             id: 'fixture_blade',
             workInProgress: false,
-            notLoot: false,
-            economy: { usage: [], tiers: [] },
             name: 'Blade',
             category: 'tool',
             weight: 1,
             size: [1, 1],
-            tool: { qualities: { [zombie.downed!.dismember.quality]: 1 } },
+            tool: { qualities: { [actor.downed!.dismember.quality]: 1 } },
           },
         ],
       },
     };
-    zombie.severedItems[region] = 'fixture_missing_part';
-    const brokenReference = buildRegistry([support, { source: 'parts.json', data: { zombies: [zombie] } }]);
+    actor.severedItems[region] = 'fixture_missing_part';
+    const brokenReference = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
     expect(brokenReference.issues).toContainEqual({
       source: 'parts.json',
-      path: `zombies[0].severedItems.${region}`,
+      path: `actors[0].severedItems.${region}`,
       message: 'no item "fixture_missing_part"',
     });
-    delete zombie.severedItems[region];
-    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { zombies: [zombie] } }]);
+    delete actor.severedItems[region];
+    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
     expect(missingRegion.issues).toContainEqual({
       source: 'parts.json',
-      path: 'zombies[0].severedItems',
+      path: 'actors[0].severedItems',
       message: 'severed item keys must match region keys',
     });
   });
@@ -154,9 +150,8 @@ describe('content-owned item and world policies', () => {
 const baseSounds = {
   source: 'sounds.json',
   data: {
-    sounds: base
-      .filter(({ source }) => source.startsWith('sounds'))
-      .flatMap(({ data }) => (data as { sounds: unknown[] }).sounds),
+    soundFamilies: [...baseRegistry.soundFamilies.values()],
+    sounds: [...baseRegistry.sounds.values()],
   },
 };
 const reachableLootItems = (root: string | undefined): { table: string; item: string }[] => {
@@ -178,18 +173,18 @@ const reachableLootItems = (root: string | undefined): { table: string; item: st
   }
   return found;
 };
-const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
-  const zombieFile = base.find((file) => file.source === 'zombies.json')!;
-  const data = structuredClone(zombieFile.data) as {
-    zombies: { id: string; regions: Record<string, number> }[];
+const invalidActorRegionIssues = (actorId: string, regionId: string, change: 'remove' | 'add') => {
+  const actorFile = base.find((file) => file.source === 'enemies.json')!;
+  const data = structuredClone(actorFile.data) as {
+    actors: { id: string; regions: Record<string, number> }[];
   };
-  const { regions } = data.zombies.find(({ id }) => id === zombieId)!;
+  const { regions } = data.actors.find(({ id }) => id === actorId)!;
   if (change === 'remove') {
     delete regions[regionId];
   } else {
     regions[regionId] = 1;
   }
-  return validateContent({ source: zombieFile.source, data });
+  return validateContent({ source: actorFile.source, data });
 };
 
 it('rejects inventory names that collide within a category and footprint', () => {
@@ -224,7 +219,7 @@ it('rejects inventory names that collide within a category and footprint', () =>
 });
 
 it('validates weathering profile bounds without pinning authored tuning', () => {
-  const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const profile = baseRegistry.weathering.get(defaultWeatheringId)!;
   const validate = (candidate: typeof profile) =>
     validateContent({ source: 'weathering.json', data: { weathering: [candidate] } });
   expect(validate(profile)).toEqual([]);
@@ -370,20 +365,20 @@ describe('content', () => {
       ],
     };
     const compiled = compileTemplate(baseRegistry, fixture);
-    const smallZombieTemplate = compileTemplate(baseRegistry, {
+    const smallActorTemplate = compileTemplate(baseRegistry, {
       ...fixture,
       palette: { ...fixture.palette, z: { spawn: 'shambler' } },
     });
 
-    expect(templateSpawnClearanceIssues(baseRegistry, smallZombieTemplate)).toEqual([]);
+    expect(templateSpawnClearanceIssues(baseRegistry, smallActorTemplate)).toEqual([]);
     expect(templateSpawnClearanceIssues(baseRegistry, compiled).map(([path]) => path)).toEqual(['.spawns[0]']);
   });
 
   it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
-    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    const soldier = baseRegistry.actors.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
       compileTemplate(baseRegistry, template)
-        .spawns.filter(({ zombie }) => zombie === soldier.id)
+        .spawns.filter(({ actor }) => actor === soldier.id)
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
@@ -398,21 +393,21 @@ describe('content', () => {
       true,
     );
 
-    const shambler = baseRegistry.zombies.get('shambler')!;
+    const shambler = baseRegistry.actors.get('shambler')!;
     const sharedShamblerData = Object.fromEntries(
-      Object.entries(shambler).filter(([key]) => !['id', 'name', 'cause', 'loot'].includes(key)),
+      Object.entries(shambler).filter(([key]) => !['id', 'name', 'cause', 'loot', 'capability'].includes(key)),
     );
     expect(soldier).toMatchObject({ ...sharedShamblerData, authoredOnly: true });
     expect(soldier.loot).not.toBe(shambler.loot);
   });
 
   it('excludes authored-only kinds from ordinary settlement spawn weights', () => {
-    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    const soldier = baseRegistry.actors.get('military_shambler')!;
     expect(ordinarySpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
   it('gives every zombie kind only kit items its corpse can drop', () => {
-    const dead = [...baseRegistry.zombies.values()].flatMap((kind) => {
+    const dead = [...baseRegistry.actors.values()].flatMap((kind) => {
       const { context } = corpseLootPoint(kind.loot ?? '', 0, [0, 0, 0]);
       return reachableLootItems(kind.loot)
         .filter(({ item }) => lootTypeIssue(baseRegistry, item, context) !== undefined)
@@ -446,11 +441,12 @@ describe('content', () => {
   });
 
   it('keeps input instructions out of item descriptions', () => {
+    const inputBindings = new BindingRegistry(INPUT_BINDINGS);
     const bindingLabels = [
       ...INPUT_BINDINGS.flatMap((binding) =>
         binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
       ),
-      ...Object.values(baseRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.pointerButtonLabels),
+      ...Object.values(baseRegistry.ui.get(fixtureIds.ui)!.screenText.pointerButtonLabels),
     ];
     const controlPatterns = [...new Set(bindingLabels)].map((label) => {
       const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
@@ -489,7 +485,7 @@ describe('content', () => {
       ['leftArmm', 'add'],
     ] as const) {
       expect(
-        invalidZombieRegionIssues('shambler', regionId, change).some(
+        invalidActorRegionIssues('shambler', regionId, change).some(
           ({ message }) => message === 'zombie region keys must match the model',
         ),
       ).toBe(true);
@@ -497,30 +493,30 @@ describe('content', () => {
   });
 
   it('requires unique ids within zombie attack move lists', () => {
-    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
-    const data = structuredClone(zombieFile.data) as {
-      zombies: { id: string; attack: { moves: { id: string }[] } }[];
+    const actorFile = base.find(({ source }) => source === 'enemies.json')!;
+    const data = structuredClone(actorFile.data) as {
+      actors: { id: string; attack: { moves: { id: string }[] } }[];
     };
     const {
       attack: { moves },
-    } = data.zombies.find(({ attack }) => attack.moves.length > 1)!;
+    } = data.actors.find(({ attack }) => attack.moves.length > 1)!;
     moves[1]!.id = moves[0]!.id;
 
     expect(
-      validateContent({ source: zombieFile.source, data }).some(
+      validateContent({ source: actorFile.source, data }).some(
         ({ message }) => message === 'zombie move ids must be unique',
       ),
     ).toBe(true);
   });
 
   it('rejects an acidSpit ability without tunables and tunables without the ability', () => {
-    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const actorFile = base.find(({ source }) => source === 'enemies.json')!;
     const issuesFor = (edit: (acid: { abilities: string[]; acidSpit?: unknown }) => void) => {
-      const data = structuredClone(zombieFile.data) as {
-        zombies: { id: string; abilities: string[]; acidSpit?: unknown }[];
+      const data = structuredClone(actorFile.data) as {
+        actors: { id: string; abilities: string[]; acidSpit?: unknown }[];
       };
-      edit(data.zombies.find(({ id }) => id === 'acid_zombie')!);
-      return validateContent({ source: zombieFile.source, data }).map(({ message }) => message);
+      edit(data.actors.find(({ id }) => id === 'acid_zombie')!);
+      return validateContent({ source: actorFile.source, data }).map(({ message }) => message);
     };
     const mismatch = 'acidSpit tunables must match the acidSpit ability';
 
@@ -538,16 +534,16 @@ describe('content', () => {
   });
 
   it('keeps runner attack damage within the shambler damage ceilings', () => {
-    const shambler = baseRegistry.zombies.get('shambler')!;
-    const runner = baseRegistry.zombies.get('runner')!;
-    const highestShamblerDamage = Math.max(...shambler.attack.moves.map(({ damage }) => damage));
-    const weightedDamage = (moves: typeof shambler.attack.moves) =>
+    const shambler = baseRegistry.actors.get('shambler')!;
+    const runner = baseRegistry.actors.get('runner')!;
+    const highestShamblerDamage = Math.max(...shambler.attack!.moves.map(({ damage }) => damage));
+    const weightedDamage = (moves: NonNullable<typeof shambler.attack>['moves']) =>
       moves.reduce((total, { damage, weight }) => total + damage * weight, 0) /
       moves.reduce((total, { weight }) => total + weight, 0);
 
-    expect(runner.attack.moves.length).toBeGreaterThan(0);
-    expect(Math.max(...runner.attack.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
-    expect(weightedDamage(runner.attack.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack.moves));
+    expect(runner.attack!.moves.length).toBeGreaterThan(0);
+    expect(Math.max(...runner.attack!.moves.map(({ damage }) => damage))).toBeLessThanOrEqual(highestShamblerDamage);
+    expect(weightedDamage(runner.attack!.moves)).toBeLessThanOrEqual(weightedDamage(shambler.attack!.moves));
   });
 
   it('rejects negative and unknown bleeding region factors', () => {
@@ -577,6 +573,7 @@ describe('content', () => {
     const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
     const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
     const { issues } = buildRegistry([
+      baseSounds,
       {
         source: 'heartbeat-fixture.json',
         data: {
@@ -584,6 +581,7 @@ describe('content', () => {
           body: events.map((event, index) => ({
             ...body,
             id: `heartbeat_fixture_${index}`,
+            capability: undefined,
             heartbeat: { ...body.heartbeat, sounds: { slow: event, fast: single.id } },
           })),
         },
@@ -618,42 +616,50 @@ describe('content', () => {
       ['member.leftArmm', 'add'],
     ] as const) {
       expect(
-        invalidZombieRegionIssues('amalgam', regionId, change).some(
+        invalidActorRegionIssues('amalgam', regionId, change).some(
           ({ message }) => message === 'zombie region keys must match the model',
         ),
       ).toBe(true);
     }
   });
 
-  it('keeps the thermal optic out of loot, fitting and ADS', () => {
-    expect(
-      [...baseRegistry.loot.values()].some((table) =>
-        table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
-      ),
-    ).toBe(false);
-    const thermal = baseRegistry.items.get('optic_digital_thermal')!;
-    expect(thermal.economy).toEqual({ usage: [], tiers: [] });
-    expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
-  });
-
   it('rejects a non-positive firearms skill-zero handling value', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
+    const source = base.find((file) => file.source === 'combat-policy.json')!;
     const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: { skillZeroHandling?: { singleShot?: { variance?: number } } } } }[];
+      combatPolicy: { firearms: { skillZeroHandling: { singleShot: { variance: number } } } }[];
     };
-    data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!.skillZeroHandling!.singleShot!.variance =
-      0;
+    data.combatPolicy[0]!.firearms.skillZeroHandling.singleShot.variance = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
     expect(
       issues.some(
         ({ source: issueSource, path }) =>
-          issueSource === source.source && path.endsWith('.combat.firearms.skillZeroHandling.singleShot.variance'),
+          issueSource === source.source && path.endsWith('.firearms.skillZeroHandling.singleShot.variance'),
       ),
     ).toBe(true);
   });
 
+  it('rejects skill effect ranges that exceed one when composed with product policy', () => {
+    const policy = structuredClone([...baseRegistry.combatPolicy.values()].find((row) => row.capability === 'player')!);
+    const skill = structuredClone(
+      [...baseRegistry.skills.values()].find((row) => row.capability === 'firearmsCombat')!,
+    );
+    policy.id = 'fixture_combat_policy';
+    skill.id = 'fixture_firearms_skill';
+    // Unrelated content would turn rejection into a whole-stack file-removal cascade.
+    const sources = [{ source: 'fixture-combat.json', data: { combatPolicy: [policy], skills: [skill] } }];
+    expect(buildContentRegistry(sources).issues).toEqual([]);
+
+    policy.firearms!.readyMovementMinimum = 1;
+    skill.combat!.firearms!.readyMovementRange = 1;
+    expect(buildContentRegistry(sources).issues).toContainEqual({
+      source: 'fixture-combat.json',
+      path: 'skills[0].combat.firearms',
+      message: 'effect range exceeds one with combat policy baseline',
+    });
+  });
+
   it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
+    const source = base.find((file) => file.source === 'firearms-skills.json')!;
     const data = structuredClone(source.data) as {
       skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
     };
@@ -666,36 +672,29 @@ describe('content', () => {
   });
 
   it('rejects invalid OU wobble tuning', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
+    const source = base.find((file) => file.source === 'combat-policy.json')!;
     const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+      combatPolicy: { firearms: Record<string, unknown> }[];
     };
-    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    const { firearms } = data.combatPolicy[0]!;
     firearms.wobbleNoiseReversionRatePerSimSecond = 0;
     firearms.wobbleNoiseSigmaRadiansPerSqrtSecond = -0.01;
     firearms.wobbleNoiseSmoothingSimSeconds = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
 
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(
-      true,
-    );
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(
-      true,
-    );
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
-  it('rejects firearms tuning without case ejection or shot trace range', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
-    const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
-    };
-    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
-    Reflect.deleteProperty(firearms, 'caseEjection');
-    Reflect.deleteProperty(firearms, 'shotTraceRangeBlocks');
+  it('rejects ranged mechanism tuning without case ejection or shot trace range', () => {
+    const source = base.find((file) => file.source === 'ranged-tuning.json')!;
+    const data = structuredClone(source.data) as { rangedTuning: Record<string, unknown>[] };
+    Reflect.deleteProperty(data.rangedTuning[0]!, 'caseEjection');
+    Reflect.deleteProperty(data.rangedTuning[0]!, 'shotTraceRangeBlocks');
     const { issues } = buildRegistry([{ source: source.source, data }]);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.caseEjection'))).toBe(true);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.caseEjection'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.shotTraceRangeBlocks'))).toBe(true);
   });
 
   it('rejects ammunition spread or firearm choke scale that is not authored', () => {
@@ -734,7 +733,6 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_suppressor',
-          economy: { usage: [], tiers: [] },
           name: 'Fixture suppressor',
           category: 'misc',
           weight: 1,
@@ -768,9 +766,10 @@ describe('content', () => {
     const at = (root: unknown, keys: string[]): unknown =>
       keys.reduce<unknown>((node, key) => (node as Raw | undefined)?.[key], root);
     // A dropped field is reported at its own path, except a food's rot fields, which are checked together on `.food`.
+    // Rarest first, so a commoner field's drop cannot take the only item holding it.
     const drops: { field: string; reportedAt?: string }[] = [
-      { field: 'food.consumeSimSeconds' },
       { field: 'food.poisonHealth', reportedAt: '.food' },
+      { field: 'food.consumeSimSeconds' },
       { field: 'analgesic.takeSimSeconds' },
       { field: 'light.power.swapSimSeconds' },
       { field: 'unpack.simSeconds' },
@@ -860,6 +859,10 @@ describe('content', () => {
         dispersionRadians: 0.01,
         pelletSpreadScale: 1,
         shotSound: 'gunshot',
+        rackSound: 'gunshot',
+        rackForwardSound: 'gunshot',
+        roundInsertSound: 'gunshot',
+        caseDropSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
       },
@@ -878,8 +881,6 @@ describe('content', () => {
     const item = {
       id: 'fixture_firearm',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture firearm',
       category: 'weapon',
       weight: 1,
@@ -901,7 +902,6 @@ describe('content', () => {
       items: [
         {
           id: 'fixture_gun',
-          economy: { usage: [], tiers: [] },
           name: 'Fixture gun',
           category: 'weapon',
           weight: 1,
@@ -912,12 +912,12 @@ describe('content', () => {
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
           },
         },
         {
           id: 'fixture_suppressor',
-          economy: { usage: [], tiers: [] },
           name: 'Fixture suppressor',
           category: 'misc',
           weight: 1,
@@ -982,14 +982,14 @@ describe('content', () => {
               id: 'fixture_recipe',
               result: { item: 'rag', count: 1 },
               timeGameMinutes: 1,
-              skills: Object.fromEntries([['fixture_skill', level]]),
+              skills: Object.fromEntries([['crafting', level]]),
               qualities: {},
               components: [],
             },
           ],
         },
       });
-      expect(issues.map(({ path }) => path)).toContain('recipes[0].skills.fixture_skill');
+      expect(issues.map(({ path }) => path)).toContain('recipes[0].skills.crafting');
     },
   );
 
@@ -1006,7 +1006,7 @@ describe('content', () => {
             size: [1, 1],
             disassembly: {
               timeGameMinutes: 1,
-              skill: 'fixture_skill',
+              skill: 'crafting',
               yields: [
                 {
                   item: 'rag',
@@ -1135,28 +1135,23 @@ describe('content', () => {
   it('rejects a disassembly yield of its own input while accepting a distinct output', () => {
     const source = 'self-yield-fixture.json';
     const data: ContentFile = {
-      skills: [{ id: 'fixture_reclaiming', name: 'Fixture reclaiming' }],
       items: [
         {
           id: 'fixture_input',
           workInProgress: false,
-          notLoot: false,
-          economy: { usage: [], tiers: [] },
           name: 'Input part',
           category: 'tool',
           weight: 1,
           size: [1, 1],
           disassembly: {
             timeGameMinutes: gameMinutes(1),
-            skill: 'fixture_reclaiming',
+            skill: 'crafting',
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
         },
         {
           id: 'fixture_output',
           workInProgress: false,
-          notLoot: false,
-          economy: { usage: [], tiers: [] },
           name: 'Output part',
           category: 'tool',
           weight: 1,
@@ -1183,7 +1178,6 @@ describe('content', () => {
       {
         source,
         data: {
-          skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
           items: [
             { id: 'fixture_output', name: 'Output', category: 'material', weight: 1, size: [1, 1] },
             {
@@ -1195,7 +1189,7 @@ describe('content', () => {
               tool: { qualities: { shaping: 1 } },
               disassembly: {
                 timeGameMinutes: 1,
-                skill: 'fixture_skill',
+                skill: 'crafting',
                 yields: [
                   {
                     item: 'fixture_output',
@@ -1225,8 +1219,6 @@ describe('content', () => {
         {
           id: 'book_reference_fixture',
           workInProgress: false,
-          notLoot: false,
-          economy: { usage: [], tiers: [] },
           name: 'Fixture manual',
           category: 'book',
           weight: 1,
@@ -1278,7 +1270,9 @@ describe('content', () => {
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
     // Valid admission on both sides isolates the container-shape contract.
     const { lootContext } = data.templates![0]!;
-    data.items![0]!.economy = { usage: lootContext.usage, tiers: [lootContext.tier] };
+    data.itemEconomy = [
+      { id: data.items![0]!.id, usage: lootContext.usage, tiers: [lootContext.tier], notLoot: false },
+    ];
     const rejected = buildRegistry([{ source, data }]);
     expect
       .soft(rejected.issues)
@@ -1380,36 +1374,32 @@ describe('content', () => {
   });
 
   it('validates the shambler search-duration range', () => {
-    const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
-    const data = structuredClone(zombiePack.data) as {
-      zombies: Array<{ hearingModel: { searchSimSeconds: { min: number; max: number } } }>;
+    const actorPack = base.find(({ source }) => source === 'enemies.json')!;
+    const data = structuredClone(actorPack.data) as {
+      actors: Array<{ agent: { hearingModel: { searchSimSeconds: { min: number; max: number } } } }>;
     };
-    data.zombies[0]!.hearingModel.searchSimSeconds = { min: 51, max: 50 };
-    const issues = validateContent({ source: zombiePack.source, data });
+    data.actors[0]!.agent.hearingModel.searchSimSeconds = { min: 51, max: 50 };
+    const issues = validateContent({ source: actorPack.source, data });
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('reports a missing inventory-management skill as required core content', () => {
+  it('accepts an omitted inventory-management skill provider', () => {
     const withoutSkill = {
       ...baseRegistry,
-      skills: new Map([...baseRegistry.skills].filter(([id]) => id !== CORE_CONTENT_IDS.inventoryManagement)),
+      skills: new Map([...baseRegistry.skills].filter(([id]) => id !== fixtureIds.inventoryManagement)),
     };
-    expect(requiredContentIssues(withoutSkill)).toContainEqual({
-      source: 'core content',
-      path: 'skills',
-      message: `missing required content "${CORE_CONTENT_IDS.inventoryManagement}"`,
-    });
+    expect(requiredContentIssues(withoutSkill)).toEqual([]);
   });
 
   it('reports a missing fists melee class as a load error', () => {
     const withoutFists = {
       ...baseRegistry,
-      meleeClasses: new Map([...baseRegistry.meleeClasses].filter(([id]) => id !== CORE_CONTENT_IDS.fistsMeleeClass)),
+      meleeClasses: new Map([...baseRegistry.meleeClasses].filter(([id]) => id !== fixtureIds.unarmed)),
     };
     expect(requiredContentIssues(withoutFists)).toContainEqual({
       source: 'core content',
       path: 'meleeClasses',
-      message: `missing required content "${CORE_CONTENT_IDS.fistsMeleeClass}"`,
+      message: 'missing required capability "unarmed"',
     });
   });
 
@@ -1494,64 +1484,6 @@ describe('content', () => {
     });
   });
 
-  it('reports a missing test range as a load error', () => {
-    const withoutRange = { ...baseRegistry, handlingRange: new Map() };
-    expect(requiredContentIssues(withoutRange)).toContainEqual({
-      source: 'core content',
-      path: 'handlingRange',
-      message: `missing required content "${CORE_CONTENT_IDS.testRange}"`,
-    });
-  });
-
-  describe('handling range layout', () => {
-    interface RangeData {
-      handlingRange: { width: number; firingLine?: unknown; targets: { lateral: number }[] }[];
-    }
-    const rangePack = () => {
-      const pack = base.find(({ source }) => source === 'range.json')!;
-      return { source: pack.source, data: structuredClone(pack.data) as RangeData };
-    };
-
-    it('requires every layout field, since the code holds no defaults', () => {
-      const pack = rangePack();
-      pack.data.handlingRange[0]!.firingLine = undefined;
-      expect(validateContent(pack).length).toBeGreaterThan(0);
-    });
-
-    it('rejects targets level with each other, since the nearer one hides the farther', () => {
-      const pack = rangePack();
-      const [first, second] = pack.data.handlingRange[0]!.targets;
-      second!.lateral = first!.lateral;
-      expect(buildRegistry([pack]).issues.map(({ message }) => message)).toContainEqual(
-        expect.stringContaining('hidden from the firing line'),
-      );
-    });
-
-    it('rejects a target outside the lane rather than clamping it', () => {
-      const pack = rangePack();
-      const layout = pack.data.handlingRange[0]!;
-      layout.targets[0]!.lateral = layout.width;
-      expect(buildRegistry([pack]).issues.map(({ message }) => message)).toContainEqual(
-        expect.stringContaining('inside the lane width'),
-      );
-    });
-  });
-
-  it('reports a missing sound event even when another is defined', () => {
-    const retainedId = SOUND_EVENT_IDS.at(-1)!;
-    const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);
-    expect(missingId).toBeDefined();
-    const registry = {
-      ...baseRegistry,
-      sounds: new Map([[retainedId, baseRegistry.sounds.get(retainedId)!]]),
-    };
-    expect(requiredContentIssues(registry)).toContainEqual({
-      source: 'core content',
-      path: 'sounds',
-      message: `missing required sound event "${missingId}"`,
-    });
-  });
-
   // Keep this registry minimal; building the full base pack here made the suite hit its timeout.
   it('lets a later file override a block without changing its runtime id', () => {
     const original = {
@@ -1598,17 +1530,13 @@ describe('content', () => {
     const missingCone = {
       source: 'missing-cone.json',
       data: {
-        zombies: [
+        actors: [
           {
             id: 'missing_cone',
             name: 'Missing cone',
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
-            sight: 20,
-            nightSight: 10,
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: {
               reach: 1,
               cooldownSimSeconds: 1.5,
@@ -1625,28 +1553,24 @@ describe('content', () => {
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
+            agent: { sight: 20, nightSight: 10, hearing: 1, hearingRange: { walk: 3, jog: 8, sprint: 15 } },
           },
         ],
       },
     };
-    expect(validateContent(missingCone).map((issue) => issue.path)).toContain('zombies[0].sightCone');
+    expect(validateContent(missingCone).map((issue) => issue.path)).toContain('actors[0].agent.sightCone');
   });
 
   it('requires stepLength on every zombie type', () => {
     const missingStepLength = {
       source: 'missing-step-length.json',
       data: {
-        zombies: [
+        actors: [
           {
             id: 'missing_step_length',
             name: 'Missing step length',
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
-            sight: 20,
-            nightSight: 10,
-            sightCone: 60,
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
             attack: {
               reach: 1,
               cooldownSimSeconds: 1.5,
@@ -1663,44 +1587,51 @@ describe('content', () => {
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
+            agent: {
+              sight: 20,
+              nightSight: 10,
+              sightCone: 60,
+              hearing: 1,
+              hearingRange: { walk: 3, jog: 8, sprint: 15 },
+            },
           },
         ],
       },
     };
-    expect(validateContent(missingStepLength).map((issue) => issue.path)).toContain('zombies[0].stepLength');
+    expect(validateContent(missingStepLength).map((issue) => issue.path)).toContain('actors[0].stepLength');
   });
 
   it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
-    const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+    const actorFile = base.find((file) => file.source === 'enemies.json')!;
     interface Authored {
       model: string;
       figureSeeds?: number[] | undefined;
     }
-    const issuesAfter = (model: string, change: (zombie: Authored) => void): string[] => {
-      const data = structuredClone(zombieFile.data) as { zombies: Authored[] };
-      change(data.zombies.find((zombie) => zombie.model === model)!);
-      return validateContent({ source: zombieFile.source, data }).map((issue) => issue.path);
+    const issuesAfter = (model: string, change: (actor: Authored) => void): string[] => {
+      const data = structuredClone(actorFile.data) as { actors: Authored[] };
+      change(data.actors.find((actor) => actor.model === model)!);
+      return validateContent({ source: actorFile.source, data }).map((issue) => issue.path);
     };
-    const seeded = (zombie: Authored) => zombie.figureSeeds!;
+    const seeded = (actor: Authored) => actor.figureSeeds!;
 
     expect(
-      issuesAfter('shambler', (zombie) => {
-        zombie.figureSeeds = undefined;
+      issuesAfter('humanoid', (actor) => {
+        actor.figureSeeds = undefined;
       }),
-    ).toContain('zombies');
+    ).toContain('actors');
     expect(
-      issuesAfter('shambler', (zombie) => {
-        zombie.figureSeeds = [];
-      }),
-    ).not.toEqual([]);
-    expect(
-      issuesAfter('shambler', (zombie) => {
-        zombie.figureSeeds = [seeded(zombie)[0]!, seeded(zombie)[0]!];
+      issuesAfter('humanoid', (actor) => {
+        actor.figureSeeds = [];
       }),
     ).not.toEqual([]);
     expect(
-      issuesAfter('amalgam', (zombie) => {
-        zombie.figureSeeds = [1];
+      issuesAfter('humanoid', (actor) => {
+        actor.figureSeeds = [seeded(actor)[0]!, seeded(actor)[0]!];
+      }),
+    ).not.toEqual([]);
+    expect(
+      issuesAfter('fused-mass', (actor) => {
+        actor.figureSeeds = [1];
       }),
     ).not.toEqual([]);
   });
@@ -1912,7 +1843,7 @@ describe('content references', () => {
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
         { id: 'nails', name: 'Nails', category: 'material', weight: 1, size: [1, 1] },
       ],
-      skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+      skills: [{ id: 'crafting', capability: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
     },
   };
 
@@ -1927,7 +1858,7 @@ describe('content references', () => {
         tool: { qualities: Object.fromEntries([['custom_shaping', 1]]) },
         disassembly: {
           timeGameMinutes: 1,
-          skill: 'fixture_skill',
+          skill: 'crafting',
           yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
         },
       },
@@ -1958,7 +1889,7 @@ describe('content references', () => {
         searchTerms: [],
         result: { item: 'fixture_tool', count: 1 },
         timeGameMinutes: 2,
-        skills: Object.fromEntries([['fixture_skill', 0]]),
+        skills: Object.fromEntries([['crafting', 0]]),
         qualities: Object.fromEntries([
           ['custom_shaping', 1],
           ['fixture_sawing', 1],
@@ -1972,51 +1903,52 @@ describe('content references', () => {
     ],
   };
 
-  // Skill tuning checks read only the recipe file's own skills.
-  const recipeFile = () => base.find(({ source }) => source === 'recipes.json')!;
+  // Skill tuning checks read only the given file's own skills.
+  const craftingFile = () => base.find(({ source }) => source === 'crafting.json')!;
+  const progressionFile = () => base.find(({ source }) => source === 'progression.json')!;
 
   it('rejects craftable content when the single crafting tier offset is missing', () => {
-    const recipes = structuredClone(recipeFile().data) as {
+    const crafting = structuredClone(craftingFile().data) as {
       skills: { id: string; name: string; training?: unknown }[];
     };
-    recipes.skills = recipes.skills.map(({ training, ...skill }) =>
+    crafting.skills = crafting.skills.map(({ training, ...skill }) =>
       skill.id === 'crafting' ? skill : { ...skill, ...(training === undefined ? {} : { training }) },
     );
-    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    const { issues } = buildRegistry([{ source: 'crafting.json', data: crafting }]);
     expect(
       issues.some(
-        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+        (issue) => issue.source === 'crafting.json' && issue.message.includes('missing required skill tuning'),
       ),
     ).toBe(true);
   });
 
   it('rejects the Inventory Management skill without its handling tuning block', () => {
-    const recipes = structuredClone(recipeFile().data) as {
+    const progression = structuredClone(progressionFile().data) as {
       skills: { id: string; inventory?: unknown }[];
     };
-    recipes.skills = recipes.skills.map(({ inventory, ...skill }) =>
+    progression.skills = progression.skills.map(({ inventory, ...skill }) =>
       skill.id === 'inventory_management' ? skill : { ...skill, ...(inventory === undefined ? {} : { inventory }) },
     );
-    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    const { issues } = buildRegistry([{ source: 'progression.json', data: progression }]);
     expect(
       issues.some(
-        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+        (issue) => issue.source === 'progression.json' && issue.message.includes('missing required skill tuning'),
       ),
     ).toBe(true);
   });
 
   it('rejects a handling tuning block that leaves out a weight', () => {
-    const recipes = structuredClone(recipeFile().data) as {
+    const progression = structuredClone(progressionFile().data) as {
       skills: { id: string; inventory?: Record<string, number> }[];
     };
-    const tuning = recipes.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
+    const tuning = progression.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
     for (const key of Object.keys(tuning).filter((name) => name !== 'handlingFactorFloor')) {
-      const partial = structuredClone(recipes);
+      const partial = structuredClone(progression);
       const { [key]: _omitted, ...rest } = partial.skills.find(({ id }) => id === 'inventory_management')!.inventory!;
       partial.skills.find(({ id }) => id === 'inventory_management')!.inventory = rest;
-      const { issues } = buildRegistry([{ source: 'recipes.json', data: partial }]);
+      const { issues } = buildRegistry([{ source: 'progression.json', data: partial }]);
       expect(
-        issues.some((issue) => issue.source === 'recipes.json'),
+        issues.some((issue) => issue.source === 'progression.json'),
         key,
       ).toBe(true);
     }
@@ -2027,29 +1959,29 @@ describe('content references', () => {
     expect(baseActivity?.practice).toBeDefined();
     expect(baseActivity?.tier).toBeUndefined();
 
-    const recipes = structuredClone(recipeFile().data) as {
+    const progression = structuredClone(progressionFile().data) as {
       skills: { id: string; training?: { activities?: Record<string, { tier?: number }> } }[];
     };
-    recipes.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
-    const { issues } = buildRegistry([{ source: 'recipes.json', data: recipes }]);
+    progression.skills.find(({ id }) => id === 'inventory_management')!.training!.activities!.handling!.tier = 1;
+    const { issues } = buildRegistry([{ source: 'progression.json', data: progression }]);
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
   it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
-    const combat = baseRegistry.skills.get(CORE_CONTENT_IDS.firearmsCombat)!;
+    const combat = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
     const tuning = combat.combat!.firearms!;
-    const precision = { ...baseRegistry.skills.get(tuning.longGunSteadinessSkill)!, id: 'fixture_precision' };
-    const firearms = {
-      ...combat,
-      combat: { ...combat.combat, firearms: { ...tuning, longGunSteadinessSkill: precision.id } },
+    const precision = {
+      ...[...baseRegistry.skills.values()].find((skill) => skill.capability === tuning.longGunSteadinessRole)!,
+      id: 'fixture_precision',
     };
+    const firearms = combat;
     const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
     expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
     const { steadiness: _steadiness, ...unconfigured } = precision;
     expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
       expect.objectContaining({
         source: 'fixture-steadiness',
-        path: expect.stringContaining('longGunSteadinessSkill'),
+        path: expect.stringContaining('skills'),
       }),
     ]);
     const { activities: _activities, ...training } = precision.training!;
@@ -2089,12 +2021,19 @@ describe('content references', () => {
             size: [1, 1],
             disassembly: {
               timeGameMinutes: 1,
-              skill: 'fixture_crafting',
+              skill: 'crafting',
               yields: [{ item: 'fixture_fabric', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
             },
           },
         ],
-        skills: [{ id: 'fixture_crafting', name: 'Fixture crafting', training: { craftingTierOffset: 1 } }],
+        skills: [
+          {
+            id: 'fixture_crafting',
+            capability: 'crafting',
+            name: 'Fixture crafting',
+            training: { craftingTierOffset: 1 },
+          },
+        ],
         recipeCategories: [{ id: 'fixture_materials', label: 'Fixture materials', order: 1 }],
         recipes: [
           {
@@ -2104,7 +2043,7 @@ describe('content references', () => {
             searchTerms: [],
             result: { item: 'fixture_strip', count: 2 },
             timeGameMinutes: 1,
-            skills: Object.fromEntries([['fixture_crafting', 0]]),
+            skills: Object.fromEntries([['crafting', 0]]),
             qualities: {},
             components: [
               [
@@ -2145,7 +2084,7 @@ describe('content references', () => {
               ? {
                   disassembly: {
                     timeGameMinutes: 1,
-                    skill: 'fixture_crafting',
+                    skill: 'crafting',
                     yields: yields.map((output) => ({ ...output, fractions: [0.5, 1], rounding: 'floor' })),
                   },
                 }
@@ -2154,7 +2093,9 @@ describe('content references', () => {
             ...(recovery === 'unpack' ? { unpack: { ...yields[0]!, simSeconds: 1 } } : {}),
           },
         ],
-        skills: [{ id: 'fixture_crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+        skills: [
+          { id: 'fixture_crafting', capability: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } },
+        ],
         recipeCategories: [{ id: 'fixture_materials', label: 'Materials', order: 1 }],
         recipes: [
           {
@@ -2225,17 +2166,14 @@ describe('content references', () => {
     ]);
   });
 
-  it('checks result, skill, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
+  it('checks result, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
     const data = {
       ...recipePack,
       recipes: [
         {
           ...recipePack.recipes[0]!,
           result: { item: 'missing_result', count: 1 },
-          skills: Object.fromEntries([
-            ['fixture_skill', 0],
-            ['missing_skill', 1],
-          ]),
+          skills: { crafting: 0 },
           qualities: Object.fromEntries([
             ['custom_shaping', 1],
             ['missing_quality', 1],
@@ -2247,7 +2185,6 @@ describe('content references', () => {
     const { registry, issues } = buildRegistry([recipeDependencies, { source: 'bad-recipe-mod.json', data }]);
     expect(issues.map(({ path, message }) => [path, message])).toEqual([
       ['recipes[0].result.item', 'no item "missing_result"'],
-      ['recipes[0].skills.missing_skill', 'no skill "missing_skill"'],
       ['recipes[0].qualities.missing_quality', 'no tool quality "missing_quality"'],
       ['recipes[0].workstation', 'no workstation "fixture_plain_bench"'],
     ]);
@@ -2260,7 +2197,7 @@ describe('content references', () => {
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
   const baseContent = (source: string) => base.find((file) => file.source === source)!.data as ContentFile;
-  const zombieSounds = {
+  const actorSounds = {
     idle: 'shambler_idle',
     alert: 'shambler_alert',
     attack: 'shambler_attack',
@@ -2270,8 +2207,8 @@ describe('content references', () => {
     source: 'reference-dependencies.json',
     data: {
       items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
-      skills: baseContent('recipes.json').skills!.map(({ startingRecipes: _, ...skill }) => skill),
-      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
+      skills: base.flatMap(({ data }) => (data as ContentFile).skills ?? []),
+      sounds: baseContent('actors-sounds.json').sounds!.filter(({ id }) => Object.values(actorSounds).includes(id)),
     },
   };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
@@ -2413,29 +2350,11 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('requires door and search action noise to select sound events with hearing noise', () => {
-    const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
+  it('requires search action noise to select a sound event with hearing noise', () => {
+    const doorOpen = (base.find(({ source }) => source === 'structures-sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
     const quietDoorOpen = { ...doorOpen, noise: { ...doorOpen.noise, enabled: false } };
-    const quietDoor = {
-      source: 'quiet-door.json',
-      data: {
-        furniture: [
-          {
-            id: 'fixture_quiet_door',
-            name: 'Fixture door',
-            size: [1, 1, 1],
-            color: '#333333',
-            door: {
-              methods: {},
-              handlingSimSeconds: 0.4,
-              openNoise: { sound: 'door_open' },
-            },
-          },
-        ],
-      },
-    };
     const quietPile = {
       source: 'quiet-pile.json',
       data: {
@@ -2450,16 +2369,7 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([
-      { source: 'door-sound.json', data: { sounds: [quietDoorOpen] } },
-      quietDoor,
-      quietPile,
-    ]);
-    expect(issues).toContainEqual({
-      source: 'quiet-door.json',
-      path: 'furniture[0].door.openNoise.sound',
-      message: 'opening sound must emit hearing noise',
-    });
+    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietPile]);
     expect(issues).toContainEqual({
       source: 'quiet-pile.json',
       path: 'furniture[0].searchNoise.sound',
@@ -2511,7 +2421,6 @@ describe('content references', () => {
           items: [
             {
               id: item,
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture rifle',
               category: 'weapon',
               size: [1, 1],
@@ -2520,7 +2429,6 @@ describe('content references', () => {
             },
             {
               id: cartridge,
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture cartridge',
               category: 'material',
               weight: 1,
@@ -2528,6 +2436,7 @@ describe('content references', () => {
               ammo,
             },
           ],
+          itemEconomy: [item, cartridge].map((id) => ({ id, usage: ['Military'], tiers: ['Tier2'], notLoot: false })),
         },
       },
       {
@@ -2573,13 +2482,12 @@ describe('content references', () => {
               size: [1, 1],
               disassembly: {
                 timeGameMinutes: gameMinutes(1),
-                skill: 'fixture_crafting',
+                skill: 'crafting',
                 yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
               },
             },
             {
               id: 'fixture_ammo_case',
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Case',
               category: 'material',
               weight: 1,
@@ -2588,7 +2496,6 @@ describe('content references', () => {
             },
             {
               id: 'fixture_box',
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Box',
               category: 'material',
               weight: 1,
@@ -2596,11 +2503,20 @@ describe('content references', () => {
               unpack: { item: cartridge, count: 1, simSeconds: 1 },
               disassembly: {
                 timeGameMinutes: gameMinutes(1),
-                skill: 'fixture_crafting',
+                skill: 'crafting',
                 yields: [{ item: 'fixture_rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
               },
             },
             { id: 'fixture_rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+          ],
+          itemEconomy: [
+            ...['fixture_ammo_case', 'fixture_box'].map((id) => ({
+              id,
+              usage: ['Military'],
+              tiers: ['Tier2'],
+              notLoot: false,
+            })),
+            ...fixtureItemEconomy('fixture_scrap', 'fixture_parts', 'fixture_rag'),
           ],
           recipes: [
             {
@@ -2630,7 +2546,6 @@ describe('content references', () => {
       category: 'material',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Residential'], tiers: ['Tier1'] },
       salvageTimeGameMinutes: 1,
       salvage: [{ item: 'fixture_shared', count: 1 }],
     };
@@ -2640,10 +2555,9 @@ describe('content references', () => {
       category: 'material',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Residential', 'Military'], tiers: ['Tier1'] },
       disassembly: {
         timeGameMinutes: 1,
-        skill: 'fixture_skill',
+        skill: 'crafting',
         yields: [{ item: scrap.id, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
       },
     };
@@ -2652,7 +2566,10 @@ describe('content references', () => {
         source: 'shared-fixture',
         data: {
           items: [scrap, shared],
-          skills: [{ id: 'fixture_skill', name: 'Fixture' }],
+          itemEconomy: [
+            { id: scrap.id, usage: ['Residential'], tiers: ['Tier1'], notLoot: false },
+            { id: shared.id, usage: ['Residential', 'Military'], tiers: ['Tier1'], notLoot: false },
+          ],
           recipes: [
             {
               id: 'fixture_recipe',
@@ -2690,14 +2607,14 @@ describe('content references', () => {
     ]);
   });
 
-  it('rejects a starting recipe that names no recipe instead of dropping it', () => {
+  it('rejects initial recipe policy on a skill instead of silently retaining it', () => {
     const { issues } = buildRegistry([
       {
         source: 'starting-recipe-fixture',
         data: { skills: [{ id: 'fixture_skill', name: 'Fixture', startingRecipes: ['fixture_missing'] }] },
       },
     ]);
-    expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes[0]']);
+    expect(issues.map(({ path }) => path)).toEqual(['skills[0].startingRecipes']);
   });
 
   it('allows tables to hold candidates without becoming a second geography authority', () => {
@@ -2715,12 +2632,16 @@ describe('content references', () => {
       palette: { C: { furniture: furniture.id, loot: lootId } },
       layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => 'C'.repeat(width))),
     };
-    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
-    zombie.id = 'fixture_military_looter';
-    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
-    zombie.loot = lootId;
-    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
-    const { quality, level } = zombie.downed!.dismember;
+    const actor = structuredClone(baseRegistry.actors.get('shambler')!);
+    actor.id = 'fixture_military_looter';
+    actor.footstepSound = undefined;
+    actor.capability = undefined;
+    actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+    actor.loot = lootId;
+    const sounds = [...new Set([...Object.values(actor.sounds), ...Object.values(furniture.moveSounds!)])].map(
+      (id) => baseRegistry.sounds.get(id)!,
+    );
+    const { quality, level } = actor.downed!.dismember;
     const result = buildRegistry([
       {
         source,
@@ -2728,7 +2649,6 @@ describe('content references', () => {
           items: [
             {
               id: 'fixture_military_item',
-              economy: { usage: ['Military'], tiers: ['Tier2'] },
               name: 'Fixture item',
               category: 'material',
               weight: 1,
@@ -2743,10 +2663,12 @@ describe('content references', () => {
               tool: { qualities: { [quality]: level } },
             },
           ],
+          itemEconomy: [{ id: 'fixture_military_item', usage: ['Military'], tiers: ['Tier2'], notLoot: false }],
           loot: [{ id: lootId, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
           furniture: [furniture],
           templates: [template],
-          zombies: [zombie],
+          actors: [actor],
+          actorFigures: fixtureActorFigures(actor),
           sounds,
         },
       },
@@ -2766,7 +2688,7 @@ describe('content references', () => {
     expect(military.filter((id) => !found.has(id))).toEqual([]);
   });
 
-  it('checks furniture, prying-skill, zombie and light references', () => {
+  it('checks furniture, zombie and light references', () => {
     const mod = {
       source: 'mod.json',
       data: {
@@ -2785,7 +2707,7 @@ describe('content references', () => {
                   quality: 'prying',
                   level: 1,
                   strikeSound: 'lock_pry',
-                  skill: 'missing_skill',
+                  skill: 'mechanics',
                   timeSimSeconds: 2,
                   fastestTimeSimSeconds: 1,
                   strikeIntervalSimSeconds: 1,
@@ -2794,19 +2716,19 @@ describe('content references', () => {
             },
           },
         ],
-        zombies: [
+        actorFigures: fixtureActorFigures({ id: 'clerk', figureSeeds: [1] }),
+        actors: [
           {
             id: 'clerk',
             name: 'Clerk',
             cause: 'a clerk',
-            model: 'shambler',
+            model: 'humanoid',
             figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
             jumpMetresPerSimSecond: 3,
             strength: 1,
-            idleSound: baseRegistry.zombies.get('shambler')!.idleSound,
-            sounds: zombieSounds,
+            sounds: actorSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             severedImpulseScale: 1,
             severedSpurt: {
@@ -2817,52 +2739,9 @@ describe('content references', () => {
               partVelocityShare: 0,
             },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: {
-              ...baseRegistry.zombies.get('shambler')!.speed,
-              wanderMetresPerSimSecond: 0.8,
-              chaseMetresPerSimSecond: 2.5,
-              backgroundStepMetres: 1,
-            },
             stepLength: 0.6,
-            wander: {
-              obstacleWanderChance: 0.25,
-              obstacleWanderDistanceMetres: 10,
-              wayAroundReachMetres: 1.5,
-              wayAroundMinGainFraction: 0.25,
-              idleSimSeconds: { min: 3, max: 10 },
-              strollSimSeconds: { min: 3, max: 12 },
-              leashMetres: 12,
-              lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
-              bodyLookArcDegrees: 150,
-              headLookArcDegrees: 100,
-              bodyTurnDegreesPerSimSecond: 90,
-              headTurnDegreesPerSimSecond: 120,
-              movementAccelerationMetresPerSimSecondSquared: 4,
-            },
-            sight: 20,
-            nightSight: 10,
-            stimulusMemorySimSeconds: 1,
-            sightCone: 60,
             eyeHeightMetres: 1.3,
             earHeightMetres: 1.3,
-            hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
-            hearing: 1,
-            hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            hearingModel: {
-              farMultiplier: 2,
-              bearingErrorRadians: 0.61,
-              investigationDistanceMetres: 8,
-              loudNoiseRadiusMetres: 10,
-              hesitationSimSeconds: { min: 1, max: 1 },
-              refusalSuspicionSimSeconds: 2,
-              refusalLean: 0.75,
-              alertCooldownSimSeconds: 10,
-              chainRadiusMetres: 4,
-              chainChance: 0.5,
-              searchSimSeconds: { min: 40, max: 50 },
-              searchRadiusMetres: 4,
-              searchStrollSimSeconds: { min: 1, max: 3 },
-            },
             chaseMotion: {
               swayDegrees: 25,
               swayIntervalSimSeconds: { min: 0.7, max: 1.1 },
@@ -2897,6 +2776,54 @@ describe('content references', () => {
             },
             abilities: [],
             loot: 'till',
+            speed: {
+              ...baseRegistry.actors.get('shambler')!.speed,
+              wanderMetresPerSimSecond: 0.8,
+              chaseMetresPerSimSecond: 2.5,
+            },
+            motion: {
+              bodyTurnDegreesPerSimSecond: 90,
+              headTurnDegreesPerSimSecond: 120,
+              movementAccelerationMetresPerSimSecondSquared: 4,
+            },
+            agent: {
+              idleSound: baseRegistry.actors.get('shambler')!.agent!.idleSound,
+              sight: 20,
+              nightSight: 10,
+              stimulusMemorySimSeconds: 1,
+              sightCone: 60,
+              hordeSpacing: { innerMetres: 0.35, stepMetres: 0.38 },
+              hearing: 1,
+              hearingRange: { walk: 3, jog: 8, sprint: 15 },
+              hearingModel: {
+                farMultiplier: 2,
+                bearingErrorRadians: 0.61,
+                investigationDistanceMetres: 8,
+                loudNoiseRadiusMetres: 10,
+                hesitationSimSeconds: { min: 1, max: 1 },
+                refusalSuspicionSimSeconds: 2,
+                refusalLean: 0.75,
+                alertCooldownSimSeconds: 10,
+                chainRadiusMetres: 4,
+                chainChance: 0.5,
+                searchSimSeconds: { min: 40, max: 50 },
+                searchRadiusMetres: 4,
+                searchStrollSimSeconds: { min: 1, max: 3 },
+              },
+              wander: {
+                obstacleWanderChance: 0.25,
+                obstacleWanderDistanceMetres: 10,
+                wayAroundReachMetres: 1.5,
+                wayAroundMinGainFraction: 0.25,
+                idleSimSeconds: { min: 3, max: 10 },
+                strollSimSeconds: { min: 3, max: 12 },
+                leashMetres: 12,
+                lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
+                bodyLookArcDegrees: 150,
+                headLookArcDegrees: 100,
+              },
+              speed: { backgroundStepMetres: 1 },
+            },
           },
         ],
         items: [
@@ -2918,38 +2845,37 @@ describe('content references', () => {
       },
     };
     expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
-      'furniture[1].door.methods.pry.skill',
+      'actors[0].downed.dismember.quality',
+      'actors[0].loot',
       'furniture[1].door.methods.pry.strikeSound',
       'furniture[1].material',
       'items[0].light.power.battery',
-      'zombies[0].downed.dismember.quality',
-      'zombies[0].loot',
     ]);
   });
 });
 
-const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
+const templateActorFile = base.find(({ source }) => source === 'enemies.json')!;
 const templateShambler = {
   severedItems: Object.fromEntries(
-    Object.keys(baseRegistry.zombies.get('shambler')!.regions).map((region) => [region, null]),
+    Object.keys(baseRegistry.actors.get('shambler')!.regions).map((region) => [region, null]),
   ),
   ...Object.fromEntries(
     Object.entries(
       structuredClone(
-        (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
+        (templateActorFile.data as { actors: { id: string }[] }).actors.find(({ id }) => id === 'shambler')!,
       ),
-    ).filter(([key]) => key !== 'loot' && key !== 'severedItems'),
+    ).filter(([key]) => !['loot', 'severedItems', 'footstepSound', 'capability'].includes(key)),
   ),
 };
 const templateShamblerSoundIds = new Set(
   Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
 );
 const templateSoundDefinitions = (
-  base.find(({ source }) => source === 'sounds.json')!.data as {
+  base.find(({ source }) => source === 'actors-sounds.json')!.data as {
     sounds: { id: string }[];
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
-const templateDismember = baseRegistry.zombies.get('shambler')!.downed!.dismember;
+const templateDismember = baseRegistry.actors.get('shambler')!.downed!.dismember;
 const templateBase = [
   {
     source: 'template-blocks.json',
@@ -2983,16 +2909,31 @@ const templateBase = [
   ...(templateSoundDefinitions.length > 0
     ? [{ source: 'template-sounds.json', data: { sounds: templateSoundDefinitions } }]
     : []),
-  { source: 'template-zombies.json', data: { zombies: [templateShambler] } },
+  {
+    source: 'template-enemies.json',
+    data: {
+      actors: [templateShambler],
+      actorFigures: fixtureActorFigures(baseRegistry.actors.get('shambler')!),
+    },
+  },
 ];
 
 describe('zombie voice references', () => {
   const voiceSound = { ...templateSoundDefinitions[0]!, id: 'fixture_voice' };
   const voiced = (sounds: Record<string, string>) =>
     buildRegistry([
-      ...templateBase.filter(({ source }) => source !== 'template-zombies.json'),
+      ...templateBase.filter(({ source }) => source !== 'template-enemies.json'),
       { source: 'voice-sound.json', data: { sounds: [voiceSound] } },
-      { source: 'voice-zombie.json', data: { zombies: [{ ...templateShambler, id: 'fixture_voiced', sounds }] } },
+      {
+        source: 'voice-zombie.json',
+        data: {
+          actors: [{ ...templateShambler, id: 'fixture_voiced', sounds }],
+          actorFigures: fixtureActorFigures({
+            ...baseRegistry.actors.get('shambler')!,
+            id: 'fixture_voiced',
+          }),
+        },
+      },
     ]).issues.map(({ path, message }) => `${path}: ${message}`);
   const voices = (attack: string) => ({
     idle: 'fixture_voice',
@@ -3007,7 +2948,7 @@ describe('zombie voice references', () => {
 
   it('rejects a zombie voice that names no sound', () => {
     expect(voiced(voices('fixture_missing_voice'))).toEqual([
-      'zombies[0].sounds.attack: no sound event "fixture_missing_voice"',
+      'actors[0].sounds.attack: no sound event "fixture_missing_voice"',
     ]);
   });
 });
@@ -3294,8 +3235,6 @@ describe('content', () => {
     const items = ['watch', 'map'].map((heldDisplay, index) => ({
       id: `unrendered_display_${index}`,
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Unrendered display',
       category: 'material',
       weight: 1,
@@ -3319,7 +3258,7 @@ describe('content', () => {
   it('feeds registry camo overrides into the compiled chunk shader uniforms', () => {
     expect(() => camoShaderConfig([])).not.toThrow();
     const camo = baseRegistry.blocks.find(({ pattern }) => pattern === 'camo')!;
-    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
+    const baseBlocks = base.find(({ source }) => source === 'manufactured-blocks.json')!;
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
       baseBlocks,
@@ -3355,7 +3294,7 @@ describe('content', () => {
     const noPalette = { ...withoutPalette, id: 'test_camo_no_palette' };
     const { patternWashout: _washout, ...withoutWashout } = camo;
     const noWashout = { ...withoutWashout, id: 'test_camo_no_washout' };
-    const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
+    const baseBlocks = base.find(({ source }) => source === 'manufactured-blocks.json')!;
     const issues = buildRegistry([
       baseBlocks,
       base.find(({ source }) => source === 'block-materials.json')!,
@@ -3417,7 +3356,7 @@ describe('content', () => {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
       },
       { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
-    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
+    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}`, capability: undefined }));
     // Only the models the figure row names: building the full base pack here made the test hit its timeout.
     const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
     const models = base.flatMap(
@@ -3463,9 +3402,7 @@ describe('content', () => {
       { ...model, id: 'fixture_seat', hands: { ...hands, seat: [-hands.seat[0], hands.seat[1], hands.seat[2]] } },
       { ...model, id: 'fixture_palm', hands: { ...hands, firing: { ...hands.firing, fingers: hands.firing.palm } } },
     ];
-    const items = [
-      { ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands', notLoot: true },
-    ];
+    const items = [{ ...gun, id: 'fixture_no_hands_gun', name: 'Fixture gun', model: 'fixture_no_hands' }];
     // Map and site sections cost most of a full build and no hands check reads them, so the build leaves them out.
     // Keys then miss the doors those sections hold; the baseline build without the fixtures reports the same misses.
     const worldSections = new Set([
@@ -3551,7 +3488,7 @@ describe('content', () => {
     }
   });
 
-  it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {
+  it('gives a long gun the pistol-grip hold when its export has a grip part and the stock-wrist hold when it has a stock and no grip', () => {
     const longGuns = [...baseRegistry.models.values()]
       .filter((model) => model.hands?.butt)
       .map((model) => ({
@@ -3580,7 +3517,7 @@ describe('content', () => {
     // Camo also needs shader settings, which the camo tests above cover.
     const authored = BLOCK_PATTERNS.filter((pattern) => pattern !== 'camo');
     const { registry, issues } = buildRegistry([
-      base.find(({ source }) => source === 'blocks.json')!,
+      base.find(({ source }) => source === 'manufactured-blocks.json')!,
       base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {

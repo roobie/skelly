@@ -1,6 +1,6 @@
+import { SKY_LOSS } from '@skelly/engine/internal/core/skylight.ts';
+import { buildSkyResult, skyIndex } from '@skelly/engine/sky';
 import { expect, it } from 'vitest';
-import { SKY_LOSS, skyIndex } from '../src/core/skylight.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 
 it('a sealed roof prevents diffuse sky while a real hole admits it only along air paths', () => {

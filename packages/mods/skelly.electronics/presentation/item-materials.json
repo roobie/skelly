@@ -1,0 +1,821 @@
+{
+  "assets/models/amplifier_head.glb": {
+    "materials": [
+      "polymer-black",
+      "cloth-canvas",
+      "alu-bare",
+      "plastic-clear-red",
+      "steel-stainless",
+      "leather-brown",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/amplifier.glb": {
+    "materials": [
+      "plastic-green",
+      "alu-bare",
+      "plastic-black",
+      "steel-stainless",
+      "plastic-blue",
+      "steel-grey",
+      "paint-cream"
+    ]
+  },
+  "assets/models/antenna.glb": { "materials": ["brass", "copper"] },
+  "assets/models/backup_drive.glb": {
+    "materials": ["plastic-charcoal", "paper-white", "paint-police-blue", "alu-bare", "lcd-green", "plastic-black"]
+  },
+  "assets/models/battery_charging_box.glb": {
+    "materials": [
+      "wood-pine",
+      "steel-grey",
+      "plastic-black",
+      "plastic-white",
+      "plastic-red",
+      "glass-lens-green",
+      "copper"
+    ]
+  },
+  "assets/models/broken_clock.glb": { "materials": [null, null, null, null] },
+  "assets/models/broken_force_field_generator.glb": {
+    "materials": [
+      "foil-alu",
+      "plastic-charcoal",
+      "plastic-white",
+      "plastic-matte-black",
+      "crystal-glow-violet",
+      "steel-bright",
+      "bark"
+    ]
+  },
+  "assets/models/broken_toaster.glb": { "materials": [null, null, null] },
+  "assets/models/camera.glb": {
+    "materials": ["alu-bare", "plastic-charcoal", "glass-grey", "plastic-frosted", "steel-stainless", "screen-black"]
+  },
+  "assets/models/cash_register.glb": {
+    "materials": [
+      "plastic-charcoal",
+      "plastic-black",
+      "plastic-grey",
+      "steel-stainless",
+      "plastic-white",
+      "plastic-red",
+      "paper-white",
+      "glass-lens-green"
+    ]
+  },
+  "assets/models/cell_phone.glb": {
+    "materials": ["plastic-charcoal", "alu-bare", "lcd-green", "plastic-grey", "steel-stainless"]
+  },
+  "assets/models/circuit_board.glb": { "materials": [null, null, null, null] },
+  "assets/models/coffeemaker.glb": {
+    "materials": [
+      "plastic-black",
+      "plastic-clear",
+      "steel-grey",
+      "plastic-charcoal",
+      "glass-clear",
+      "wood-walnut",
+      "plastic-red"
+    ]
+  },
+  "assets/models/copper_wire.glb": { "materials": ["plastic-black", "copper"] },
+  "assets/models/cracked_phone.glb": { "materials": [null, null, null] },
+  "assets/models/crude_heating_element.glb": { "materials": ["steel-grey"] },
+  "assets/models/crystal_channeling_cluster.glb": {
+    "materials": ["steel-grey", "crystal-glow-violet", "steel-bright", "bronze", "metal-silver"]
+  },
+  "assets/models/crystal_eye_test_scanner.glb": {
+    "materials": [
+      "steel-grey",
+      "enamel-white",
+      "plastic-charcoal",
+      "rubber-black",
+      "crystal-glow-violet",
+      "lcd-green",
+      "glass-clear",
+      "syrup-green",
+      "plastic-matte-black",
+      "foil-alu",
+      "cloth-navy",
+      "hook-loop-grey"
+    ]
+  },
+  "assets/models/crystal_focusing_ring.glb": { "materials": ["steel-grey", "crystal-glow-blue", "brass-dull"] },
+  "assets/models/crystal_wrist_computer.glb": {
+    "materials": ["jade-green", "crystal-glow-blue", "metal-gold", "plastic-charcoal"]
+  },
+  "assets/models/curling_iron.glb": {
+    "materials": ["plastic-black", "ceramic-white", "steel-stainless", "plastic-red"]
+  },
+  "assets/models/dead_desk_lamp.glb": { "materials": ["steel-grey", "paint-charcoal", "paint-terracotta"] },
+  "assets/models/dehydrator.glb": { "materials": ["plastic-white", "plastic-charcoal", "plastic-amber"] },
+  "assets/models/desk_fan.glb": {
+    "materials": ["plastic-white", "plastic-grey", "plastic-blue", "plastic-clear-blue", "steel-stainless"]
+  },
+  "assets/models/directional_antenna.glb": { "materials": ["wood-pine", "copper", "plastic-black"] },
+  "assets/models/display_freezer.glb": {
+    "materials": [
+      "plastic-grey",
+      "paint-white",
+      "alu-bare",
+      "glass-clear",
+      "paperboard-tan",
+      "plastic-blue",
+      "paint-cream"
+    ]
+  },
+  "assets/models/display_fridge.glb": {
+    "materials": [
+      "steel-galvanised",
+      "plastic-black",
+      "alu-bare",
+      "glass-clear",
+      "steel-grey",
+      "paint-cream",
+      "paint-terracotta",
+      "plastic-green"
+    ]
+  },
+  "assets/models/double_glass_fridge.glb": {
+    "materials": [
+      "paint-charcoal",
+      "plastic-black",
+      "plastic-red",
+      "alu-bare",
+      "glass-clear",
+      "steel-grey",
+      "plastic-green",
+      "fuel-amber"
+    ]
+  },
+  "assets/models/eink_tablet_pc.glb": { "materials": ["alu-bare", "plastic-charcoal", "paper-white", "plastic-grey"] },
+  "assets/models/electric_carving_knife.glb": {
+    "materials": ["plastic-white", "plastic-charcoal", "steel-stainless", "steel-grey", "brass"]
+  },
+  "assets/models/electric_hair_trimmer.glb": {
+    "materials": ["plastic-black", "rubber-black", "alu-bare", "steel-stainless", "plastic-charcoal", "plastic-green"]
+  },
+  "assets/models/electric_shears.glb": {
+    "materials": ["plastic-blue", "rubber-black", "plastic-white", "steel-grey", "steel-bright", "plastic-black"]
+  },
+  "assets/models/electrical_repair_kit.glb": { "materials": [null, null, null, null] },
+  "assets/models/electrolysis_kit.glb": {
+    "materials": ["plastic-black", "copper", "steel-stainless", "brass", "plastic-red"]
+  },
+  "assets/models/electronic_lock_probe.glb": {
+    "materials": [
+      "polymer-od-green",
+      "rubber-black",
+      "lcd-green",
+      "circuit-green",
+      "plastic-red",
+      "plastic-black",
+      "plastic-grey",
+      "steel-stainless",
+      "brass"
+    ]
+  },
+  "assets/models/electronic_scrap.glb": {
+    "materials": [
+      "paperboard-tan",
+      "paint-oxblood",
+      "steel-stainless",
+      "plastic-blue",
+      "alu-bare",
+      "paint-crane-yellow",
+      "plastic-black"
+    ]
+  },
+  "assets/models/electrophoresis_tray.glb": {
+    "materials": [
+      "plastic-clear",
+      "plastic-frosted",
+      "jelly-pale",
+      "plastic-clear-blue",
+      "plastic-red",
+      "plastic-black"
+    ]
+  },
+  "assets/models/emf_detector.glb": {
+    "materials": [
+      "plastic-yellow",
+      "rubber-black",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-black",
+      "plastic-red",
+      "plastic-green",
+      "plastic-orange"
+    ]
+  },
+  "assets/models/extension_cable.glb": { "materials": ["plastic-orange", "brass", "plastic-black"] },
+  "assets/models/field_patch.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/field_power_pack.glb": {
+    "materials": [
+      "polymer-od-green",
+      "rubber-black",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-red",
+      "alu-bare",
+      "plastic-black"
+    ]
+  },
+  "assets/models/field_recorder.glb": {
+    "materials": [
+      "plastic-white",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-green",
+      "plastic-red",
+      "plastic-black",
+      "paper-white",
+      "glass-clear"
+    ]
+  },
+  "assets/models/food_processor.glb": {
+    "materials": ["plastic-white", "plastic-charcoal", "plastic-clear", "steel-stainless"]
+  },
+  "assets/models/force_field_generator.glb": {
+    "materials": [
+      "foil-alu",
+      "plastic-charcoal",
+      "plastic-white",
+      "plastic-matte-black",
+      "crystal-glow-violet",
+      "steel-bright"
+    ]
+  },
+  "assets/models/fuse.glb": { "materials": ["glass-grey", "steel-grey"] },
+  "assets/models/gas_charger.glb": {
+    "materials": ["plastic-black", "plastic-charcoal", "alu-bare", "brass", "plastic-red", "plastic-green"]
+  },
+  "assets/models/geiger_counter.glb": {
+    "materials": [
+      "plastic-yellow",
+      "plastic-black",
+      "paint-cream",
+      "paint-red",
+      "plastic-charcoal",
+      "alu-bare",
+      "mesh-black"
+    ]
+  },
+  "assets/models/glass_bulb.glb": { "materials": [null, null, null] },
+  "assets/models/glass_freezer.glb": {
+    "materials": [
+      "paint-white",
+      "plastic-black",
+      "plastic-blue",
+      "paint-charcoal",
+      "glass-clear",
+      "steel-grey",
+      "paperboard-tan",
+      "plastic-white"
+    ]
+  },
+  "assets/models/glass_fridge.glb": {
+    "materials": [
+      "paint-charcoal",
+      "plastic-black",
+      "plastic-red",
+      "alu-bare",
+      "glass-clear",
+      "steel-grey",
+      "plastic-green",
+      "fuel-amber"
+    ]
+  },
+  "assets/models/glass_lens.glb": { "materials": [null, null] },
+  "assets/models/hair_dryer.glb": {
+    "materials": ["plastic-gloss-white", "plastic-charcoal", "plastic-pink", "plastic-black"]
+  },
+  "assets/models/hand_crank_charger.glb": {
+    "materials": [
+      "plastic-orange",
+      "rubber-black",
+      "plastic-black",
+      "alu-bare",
+      "plastic-blue",
+      "steel-stainless",
+      "plastic-grey",
+      "plastic-green",
+      "paint-charcoal"
+    ]
+  },
+  "assets/models/headphones.glb": { "materials": ["plastic-charcoal", "leather-black", "steel-stainless"] },
+  "assets/models/heating_element.glb": { "materials": ["steel-stainless", "steel", "brass", "ceramic-white"] },
+  "assets/models/heavy_duty_fridge.glb": {
+    "materials": ["steel-grey", "rubber-black", "steel-stainless", "plastic-black", "plastic-clear-red"]
+  },
+  "assets/models/hotplate.glb": {
+    "materials": [
+      "rubber-black",
+      "alu-bare",
+      "enamel-white",
+      "steel-stainless",
+      "iron-cast",
+      "ceramic-white",
+      "plastic-black",
+      "paint-white",
+      "plastic-clear-red"
+    ]
+  },
+  "assets/models/household_dishwasher.glb": {
+    "materials": ["steel-grey", "plastic-black", "steel-stainless", "lcd-green", "plastic-charcoal"]
+  },
+  "assets/models/household_fridge.glb": {
+    "materials": ["rubber-black", "steel-grey", "plastic-black", "steel-stainless"]
+  },
+  "assets/models/household_washing_machine.glb": {
+    "materials": ["enamel-white", "rubber-black", "plastic-charcoal", "plastic-grey", "steel-stainless", "lcd-green"]
+  },
+  "assets/models/household_water_heater.glb": {
+    "materials": ["enamel-white", "plastic-grey", "copper", "brass", "plastic-red", "paper-white"]
+  },
+  "assets/models/induction_hotplate.glb": {
+    "materials": ["plastic-grey", "rubber-black", "screen-black", "plastic-white", "plastic-black", "lcd-green"]
+  },
+  "assets/models/jumper_cable.glb": { "materials": ["plastic-black", "plastic-red", "copper"] },
+  "assets/models/laptop.glb": {
+    "materials": ["alu-bare", "plastic-charcoal", "plastic-black", "plastic-grey", "screen-black"]
+  },
+  "assets/models/large_lcd_screen.glb": {
+    "materials": ["steel-grey", "plastic-black", "plastic-charcoal", "circuit-green"]
+  },
+  "assets/models/large_space_heater.glb": {
+    "materials": ["paint-cream", "coal-black", "plastic-charcoal", "plastic-black", "plastic-orange", "steel-bright"]
+  },
+  "assets/models/large_water_heater.glb": {
+    "materials": ["enamel-white", "plastic-grey", "copper", "brass", "plastic-red", "paper-white"]
+  },
+  "assets/models/magnetron.glb": {
+    "materials": [
+      "steel-galvanised",
+      "brass",
+      "steel-grey",
+      "paint-charcoal",
+      "alu-bare",
+      "ceramic-white",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/makeshift_sealer.glb": {
+    "materials": [
+      "wood-pine",
+      "alu-bare",
+      "paint-charcoal",
+      "plastic-black",
+      "silicone-black",
+      "plastic-blue",
+      "rubber-black",
+      "plastic-clear",
+      "steel-stainless",
+      "plastic-red",
+      "tape-grey"
+    ]
+  },
+  "assets/models/melting_point_apparatus.glb": {
+    "materials": [
+      "plastic-grey",
+      "steel-stainless",
+      "lcd-green",
+      "plastic-black",
+      "plastic-red",
+      "paint-charcoal",
+      "glass-clear"
+    ]
+  },
+  "assets/models/memory_card.glb": { "materials": ["plastic-black", "plastic-blue", "plastic-white", "foil-gold"] },
+  "assets/models/methanol_fuel_cell.glb": {
+    "materials": [
+      "alu-bare",
+      "plastic-charcoal",
+      "plastic-black",
+      "plastic-white",
+      "plastic-blue",
+      "plastic-frosted",
+      "lcd-green",
+      "plastic-red"
+    ]
+  },
+  "assets/models/micro_motor.glb": {
+    "materials": ["steel-bright", "plastic-white", "steel-stainless", "brass-polished", "steel-grey"]
+  },
+  "assets/models/microcentrifuge.glb": {
+    "materials": ["plastic-white", "lcd-green", "plastic-grey", "plastic-red", "plastic-charcoal", "plastic-clear"]
+  },
+  "assets/models/microwave.glb": {
+    "materials": [
+      "rubber-black",
+      "paint-white",
+      "plastic-black",
+      "screen-black",
+      "plastic-grey",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-white"
+    ]
+  },
+  "assets/models/mild_steel_wire.glb": { "materials": ["steel-grey"] },
+  "assets/models/milky_crystal_focus.glb": { "materials": ["steel-grey", "pearl", "gem-clear"] },
+  "assets/models/minifridge.glb": {
+    "materials": ["rubber-black", "paint-charcoal", "plastic-black", "plastic-grey", "steel-stainless", "steel-grey"]
+  },
+  "assets/models/mixer.glb": {
+    "materials": [
+      "steel-parkerized",
+      "plastic-charcoal",
+      "plastic-black",
+      "plastic-grey",
+      "lcd-green",
+      "plastic-red",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/modified_radio.glb": {
+    "materials": [
+      "plastic-charcoal",
+      "alu-bare",
+      "plastic-black",
+      "paper-white",
+      "plastic-red",
+      "steel-stainless",
+      "circuit-green",
+      "copper",
+      "tape-grey",
+      "plastic-yellow"
+    ]
+  },
+  "assets/models/mp3_player.glb": {
+    "materials": ["alu-bare", "plastic-white", "plastic-black", "screen-black", "plastic-grey", "plastic-charcoal"]
+  },
+  "assets/models/multi_cooker.glb": {
+    "materials": ["plastic-black", "steel-stainless", "plastic-grey", "steel-grey", "screen-black"]
+  },
+  "assets/models/multimeter.glb": {
+    "materials": [
+      "plastic-yellow",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-black",
+      "plastic-grey",
+      "plastic-red",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/noise_emitter.glb": {
+    "materials": [
+      "plastic-grey",
+      "plastic-black",
+      "plastic-matte-black",
+      "plastic-charcoal",
+      "alu-bare",
+      "circuit-green",
+      "plastic-blue",
+      "plastic-red",
+      "plastic-orange",
+      "tape-grey",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/oven_cabinet.glb": {
+    "materials": ["rubber-black", "paint-white", "paint-charcoal", "steel-galvanised", "plastic-red", "plastic-blue"]
+  },
+  "assets/models/oven_controls.glb": {
+    "materials": [
+      "steel-grey",
+      "glass-grey",
+      "lcd-green",
+      "circuit-green",
+      "plastic-black",
+      "plastic-red",
+      "plastic-blue",
+      "plastic-yellow"
+    ]
+  },
+  "assets/models/oven_door.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless", "steel-grey"] },
+  "assets/models/oven_stovetop.glb": {
+    "materials": ["enamel-white", "steel-stainless", "paint-charcoal", "ceramic-white", "plastic-red", "plastic-blue"]
+  },
+  "assets/models/oven.glb": {
+    "materials": [
+      "rubber-black",
+      "paint-white",
+      "paint-charcoal",
+      "glass-grey",
+      "steel-stainless",
+      "glass-lens-green",
+      "plastic-black"
+    ]
+  },
+  "assets/models/panoramic_night_vision_goggles.glb": {
+    "materials": ["plastic-matte-black", "plastic-charcoal", "glass-lens-green", "rubber-black", "alu-anodized-black"]
+  },
+  "assets/models/ph_meter.glb": {
+    "materials": [
+      "plastic-white",
+      "lcd-green",
+      "plastic-black",
+      "plastic-grey",
+      "plastic-red",
+      "plastic-charcoal",
+      "steel-stainless",
+      "glass-clear",
+      "water",
+      "plastic-frosted",
+      "plastic-blue"
+    ]
+  },
+  "assets/models/piezo_igniter.glb": { "materials": ["plastic-red", "plastic-black", "alu-bare", "steel-bright"] },
+  "assets/models/portable_hard_drive.glb": {
+    "materials": ["rubber-black", "alu-bare", "plastic-clear-blue", "plastic-charcoal"]
+  },
+  "assets/models/power_supply.glb": {
+    "materials": ["alu-bare", "plastic-black", "steel-bright", "plastic-red", "paper-white", "plastic-yellow"]
+  },
+  "assets/models/powered_night_vision_monocular.glb": {
+    "materials": [
+      "plastic-charcoal",
+      "plastic-matte-black",
+      "screen-black",
+      "vinyl-black",
+      "lcd-green",
+      "steel-parkerized"
+    ]
+  },
+  "assets/models/powered_thermal_night_vision_goggles.glb": {
+    "materials": [
+      "plastic-charcoal",
+      "screen-black",
+      "vinyl-black",
+      "lcd-green",
+      "plastic-matte-black",
+      "steel-parkerized"
+    ]
+  },
+  "assets/models/processor.glb": {
+    "materials": ["circuit-green", "plastic-gloss-white", "steel-stainless", "foil-gold", "plastic-black", "alu-bare"]
+  },
+  "assets/models/professional_camera.glb": {
+    "materials": ["polymer-black", "rubber-black", "steel-stainless", "plastic-charcoal", "glass-grey", "screen-black"]
+  },
+  "assets/models/prototype_data_card.glb": { "materials": ["plastic-clear", "plastic-black", "foil-gold"] },
+  "assets/models/psionic_transporter_beacon.glb": {
+    "materials": [
+      "steel-grey",
+      "plastic-charcoal",
+      "crystal-glow-blue",
+      "glass-clear",
+      "jelly-teal",
+      "plastic-matte-black",
+      "chitin-black"
+    ]
+  },
+  "assets/models/psionic_transporter_remote.glb": {
+    "materials": [
+      "steel-grey",
+      "plastic-charcoal",
+      "plastic-matte-black",
+      "screen-black",
+      "glass-clear",
+      "jelly-teal",
+      "rubber-black",
+      "crystal-glow-blue"
+    ]
+  },
+  "assets/models/pyrometer.glb": {
+    "materials": [
+      "rubber-yellow",
+      "plastic-charcoal",
+      "plastic-black",
+      "lcd-green",
+      "plastic-red",
+      "plastic-grey",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/radio_repeater_module.glb": {
+    "materials": [
+      "alu-bare",
+      "alu-anodized-black",
+      "steel-stainless",
+      "gem-green",
+      "gem-red",
+      "paper-white",
+      "brass-polished",
+      "rubber-black"
+    ]
+  },
+  "assets/models/radio_trigger_module.glb": {
+    "materials": [
+      "steel-grey",
+      "steel-bright",
+      "plastic-white",
+      "steel-blued",
+      "plastic-red",
+      "circuit-green",
+      "plastic-black"
+    ]
+  },
+  "assets/models/radio.glb": {
+    "materials": ["plastic-charcoal", "alu-bare", "plastic-black", "paper-white", "plastic-red", "steel-stainless"]
+  },
+  "assets/models/ram_stick.glb": { "materials": ["circuit-green", "foil-gold", "paper-white", "plastic-black"] },
+  "assets/models/receiver.glb": {
+    "materials": [
+      "alu-bare",
+      "steel-stainless",
+      "brass-polished",
+      "rubber-black",
+      "gem-green",
+      "paper-white",
+      "plastic-black"
+    ]
+  },
+  "assets/models/resonance_meter.glb": {
+    "materials": [
+      "plastic-white",
+      "paint-cream",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-red",
+      "plastic-black",
+      "nylon-black",
+      "mesh-white"
+    ]
+  },
+  "assets/models/rotary_evaporator.glb": {
+    "materials": [
+      "plastic-grey",
+      "plastic-charcoal",
+      "lcd-green",
+      "steel-stainless",
+      "water",
+      "plastic-black",
+      "glass-clear",
+      "syrup-orange",
+      "plastic-frosted"
+    ]
+  },
+  "assets/models/rugged_usb_drive.glb": {
+    "materials": ["steel-stainless", "steel-grey", "rubber-black", "steel-bright"]
+  },
+  "assets/models/shaved_ice_maker.glb": {
+    "materials": ["plastic-red", "plastic-white", "paint-charcoal", "plastic-clear", "chalk-white"]
+  },
+  "assets/models/small_lcd_screen.glb": {
+    "materials": [
+      "alu-bare",
+      "plastic-black",
+      "screen-black",
+      "foil-gold",
+      "circuit-green",
+      "plastic-matte-black",
+      "plastic-white"
+    ]
+  },
+  "assets/models/small_space_heater.glb": {
+    "materials": ["enamel-white", "paint-charcoal", "plastic-black", "steel-stainless", "plastic-red", "steel-grey"]
+  },
+  "assets/models/speaker_cable.glb": { "materials": ["plastic-red", "plastic-black", "plastic-white", "brass"] },
+  "assets/models/spectrophotometer.glb": {
+    "materials": [
+      "plastic-white",
+      "plastic-grey",
+      "plastic-charcoal",
+      "screen-black",
+      "plastic-clear",
+      "syrup-orange",
+      "plastic-green"
+    ]
+  },
+  "assets/models/stationary_water_purifier.glb": {
+    "materials": ["paint-white", "steel-stainless", "plastic-blue", "glass-lens-green", "glass-lens-amber"]
+  },
+  "assets/models/super_noise_emitter.glb": {
+    "materials": [
+      "steel-grey",
+      "plastic-black",
+      "plastic-charcoal",
+      "plastic-matte-black",
+      "circuit-green",
+      "plastic-blue",
+      "alu-bare",
+      "alu-anodized-black",
+      "plastic-red",
+      "steel-stainless"
+    ]
+  },
+  "assets/models/supercomputer_platter.glb": { "materials": ["foil-gold", "steel-stainless", "copper"] },
+  "assets/models/table_fan.glb": { "materials": [null, null, null] },
+  "assets/models/teleport_pad.glb": {
+    "materials": ["alu-bare", "plastic-charcoal", "copper", "crystal-glow-blue", "screen-black"]
+  },
+  "assets/models/teleporter.glb": {
+    "materials": ["plastic-matte-black", "alu-bare", "crystal-glow-blue", "plastic-red", "copper"]
+  },
+  "assets/models/television.glb": {
+    "materials": ["plastic-black", "plastic-charcoal", "screen-black", "metal-silver", "plastic-red"]
+  },
+  "assets/models/thermostat.glb": {
+    "materials": [
+      "steel-grey",
+      "ceramic-white",
+      "brass-polished",
+      "metal-silver",
+      "plastic-black",
+      "copper",
+      "coal-black"
+    ]
+  },
+  "assets/models/toaster.glb": { "materials": ["plastic-black", "steel-stainless", "paint-charcoal", "plastic-red"] },
+  "assets/models/transponder.glb": {
+    "materials": [
+      "metal-silver",
+      "circuit-green",
+      "steel-galvanised",
+      "plastic-matte-black",
+      "plastic-blue",
+      "brass-polished",
+      "plastic-red"
+    ]
+  },
+  "assets/models/two_way_radio.glb": {
+    "materials": [
+      "plastic-black",
+      "alu-bare",
+      "plastic-charcoal",
+      "lcd-green",
+      "rubber-black",
+      "alu-anodized-black",
+      "plastic-red"
+    ]
+  },
+  "assets/models/upright_freezer.glb": { "materials": ["rubber-black", "paint-white", "plastic-grey"] },
+  "assets/models/usb_drive.glb": { "materials": ["plastic-blue", "plastic-black", "steel-stainless"] },
+  "assets/models/vacuum_sealer.glb": {
+    "materials": ["steel-stainless", "plastic-black", "screen-black", "plastic-white", "plastic-red", "plastic-grey"]
+  },
+  "assets/models/vehicle_remote_control.glb": {
+    "materials": [
+      "plastic-grey",
+      "plastic-charcoal",
+      "plastic-hivis",
+      "plastic-black",
+      "screen-black",
+      "steel-bright",
+      "rubber-black",
+      "plastic-white",
+      "plastic-green"
+    ]
+  },
+  "assets/models/voltmeter.glb": {
+    "materials": ["plastic-grey", "plastic-black", "paint-white", "plastic-red", "steel-stainless"]
+  },
+  "assets/models/vortex_mixer.glb": {
+    "materials": [
+      "enamel-white",
+      "rubber-black",
+      "plastic-charcoal",
+      "steel-grey",
+      "plastic-black",
+      "paint-white",
+      "plastic-red"
+    ]
+  },
+  "assets/models/water_purifier.glb": {
+    "materials": [
+      "plastic-grey",
+      "plastic-charcoal",
+      "lcd-green",
+      "plastic-green",
+      "plastic-clear-blue",
+      "paper-white",
+      "plastic-frosted"
+    ]
+  },
+  "assets/models/weather_station.glb": {
+    "materials": [
+      "alu-bare",
+      "plastic-black",
+      "plastic-grey",
+      "paint-cream",
+      "plastic-charcoal",
+      "plastic-white",
+      "paint-red",
+      "mesh-black",
+      "lcd-green",
+      "steel-grey"
+    ]
+  },
+  "assets/models/wind_up_alarm_clock.glb": {
+    "materials": ["paint-red", "steel-stainless", "paint-cream", "glass-clear", "plastic-black"]
+  },
+  "assets/models/xlr_cable.glb": {
+    "materials": ["rubber-black", "hook-loop-grey", "plastic-black", "steel-stainless", "plastic-charcoal"]
+  },
+  "assets/models/xlr_microphone.glb": { "materials": ["alu-anodized-black", "steel-stainless", "steel-grey", "brass"] }
+}

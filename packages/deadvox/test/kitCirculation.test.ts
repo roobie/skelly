@@ -1,8 +1,8 @@
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { templateStandingRoute } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileAssembly, compileMapPiece, kitSlotChoices } from '@skelly/engine/internal/core/templates.ts';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import type { ContentFile } from '../src/core/schema.ts';
-import { templateStandingRoute } from '../src/core/templateSpatial.ts';
-import { compileAssembly, compileMapPiece, kitSlotChoices } from '../src/core/templates.ts';
 import { overlayContent, startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

@@ -1,0 +1,34 @@
+{
+  "dependencies": ["skelly.fuel", "skelly.inventory", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "flame-tools-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-flame-tools.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/blowtorch.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/blowtorch.glb"
+    }
+  ],
+  "id": "skelly.flame-tools",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

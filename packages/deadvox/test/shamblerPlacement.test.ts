@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { bodyIsClear, findShamblerBenchPlayer, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
+import {
+  bodyIsClear,
+  findShamblerBenchPlayer,
+  placeShamblerRing,
+  SHAMBLER_PROBE_BODY_METRES,
+} from '../src/bench/shamblerPlacement.ts';
 import { createHeadlessShamblerWorld } from '../src/bench/shamblerWorld.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -13,7 +18,7 @@ describe('shared shambler benchmark placement', () => {
     const ring = { minRadiusMetres: 8, maxRadiusMetres: 20 };
     const positions = placeShamblerRing({ count: 10, seed: 1, player, engine, ...ring });
     const s = engine.config.scale.blockSize;
-    const halfWidth = 0.28 / s;
+    const halfWidth = SHAMBLER_PROBE_BODY_METRES.halfWidth / s;
 
     expect(positions).toHaveLength(10);
     expect(engine.loadedColumns).toBeGreaterThan(0);
@@ -22,7 +27,7 @@ describe('shared shambler benchmark placement', () => {
       const position = positions[i]!;
       const body = createPlayerBody(engine.config.scale, ...position);
       body.halfWidth = halfWidth;
-      body.height = 1.7 / s;
+      body.height = SHAMBLER_PROBE_BODY_METRES.height / s;
       body.onGround = true;
       expect(bodyIsClear(body, engine.isSolid)).toBe(true);
       const distance = Math.hypot((position[0] - player.pos[0]) * s, (position[2] - player.pos[2]) * s);

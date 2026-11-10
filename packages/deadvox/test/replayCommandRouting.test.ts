@@ -9,7 +9,7 @@ const CRAFT_CONTROLS_PATTERN = /controls:\s*\{([\s\S]*?)\n\s*\},/;
 
 describe('screen command routing', () => {
   it('keeps inventory and crafting state-changing callbacks on the replay dispatcher', () => {
-    const inventoryHooks = source('../src/ui/inventoryScreen.ts').match(SCREEN_HOOKS_PATTERN)?.[1];
+    const inventoryHooks = source('../../presentation/src/ui/inventoryScreen.ts').match(SCREEN_HOOKS_PATTERN)?.[1];
     if (!inventoryHooks) {
       throw new Error('InventoryScreen must declare its callback contract');
     }
@@ -42,7 +42,7 @@ describe('screen command routing', () => {
       [],
     );
 
-    const craftControls = source('../src/ui/craftController.ts').match(CRAFT_CONTROLS_PATTERN)?.[1];
+    const craftControls = source('../../presentation/src/ui/craftController.ts').match(CRAFT_CONTROLS_PATTERN)?.[1];
     if (!craftControls) {
       throw new Error('Craft panel must declare its callback contract');
     }

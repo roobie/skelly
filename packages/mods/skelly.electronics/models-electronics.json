@@ -1,0 +1,180 @@
+{
+  "models": [
+    {
+      "file": "assets/models/circuit_board.glb",
+      "id": "circuit_board",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/glass_lens.glb",
+      "id": "glass_lens",
+      "itemPresentation": {
+        "materials": ["glass", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/broken_toaster.glb",
+      "id": "broken_toaster",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/table_fan.glb",
+      "id": "table_fan",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/cracked_phone.glb",
+      "id": "cracked_phone",
+      "itemPresentation": {
+        "materials": ["polymer", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/broken_clock.glb",
+      "id": "broken_clock",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "paper", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/electrical_repair_kit.glb",
+      "id": "electrical_repair_kit",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/glass_bulb.glb",
+      "id": "glass_bulb",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/field_patch.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, -0.009999999999999995],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "field_patch",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [-0.00040540540540539953, 0.005000000000000001, -0.00036036036036036161],
+          "massKg": 0.12,
+          "node": "material:foldedSheet"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/dead_desk_lamp.glb",
+      "id": "dead_desk_lamp",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "arm": {
+          "centreOfMass": [0.0011904761904761915, 0.074523809523809534, -9.3916817963600226e-18],
+          "massKg": 0.25,
+          "node": "arm:arm"
+        },
+        "base": {
+          "centreOfMass": [0, 0.0050000000000000001, 0],
+          "massKg": 0.5,
+          "node": "base:base"
+        },
+        "shade": {
+          "centreOfMass": [0.068333333333333329, 0.062, -8.1643119943156864e-18],
+          "massKg": 0.14999999999999999,
+          "node": "shade:shade"
+        }
+      }
+    },
+    {
+      "file": "assets/models/copper_wire.glb",
+      "id": "copper_wire",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "copper_wire": {
+          "centreOfMass": [0, 0.033354354354354354, 0],
+          "massKg": 0.080000000000000002,
+          "node": "copper_wire:spool"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fuse.glb",
+      "id": "fuse",
+      "itemPresentation": {
+        "materials": ["glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fuse": {
+          "centreOfMass": [0, 0.0099999999999999985, 0],
+          "massKg": 0.01,
+          "node": "fuse:fuse"
+        }
+      }
+    }
+  ]
+}

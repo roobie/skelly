@@ -1,0 +1,200 @@
+{
+  "assets/models/acetaminophen.glb": { "materials": ["plastic-white", "plastic-red", "plastic-yellow"] },
+  "assets/models/adhesive_bandages.glb": {
+    "materials": ["paper-white", "plastic-blue", "paint-red", "paperboard-tan", "cloth-white"]
+  },
+  "assets/models/alcohol_wipes.glb": { "materials": ["paper-white", "plastic-blue", "plastic-black", "foil-alu"] },
+  "assets/models/anaesthetic_cream.glb": { "materials": ["plastic-white", "plastic-red"] },
+  "assets/models/anesthetic_kit.glb": {
+    "materials": ["plastic-white", "plastic-amber", "paper-white", "plastic-yellow", "plastic-blue"]
+  },
+  "assets/models/antibiotics.glb": { "materials": ["plastic-white", "plastic-blue"] },
+  "assets/models/antifungal.glb": { "materials": ["paper-white", "plastic-green"] },
+  "assets/models/antihistamine.glb": { "materials": ["alu-bare", "plastic-clear-red"] },
+  "assets/models/antiparasitic.glb": { "materials": ["plastic-white", "plastic-green", "paint-olive"] },
+  "assets/models/antiseptic_cotton_balls.glb": {
+    "materials": ["plastic-bag", "plastic-blue", "cloth-bright-white", "cloth-cream"]
+  },
+  "assets/models/antiseptic_powder.glb": {
+    "materials": ["plastic-yellow", "paper-white", "plastic-white", "plastic-black"]
+  },
+  "assets/models/antiseptic_rag.glb": { "materials": ["cloth-rag", "cloth-saffron"] },
+  "assets/models/antiseptic.glb": { "materials": ["paperboard-brown", "plastic-red", "plastic-white"] },
+  "assets/models/bandage.glb": { "materials": ["plastic-white", "paperboard-tan"] },
+  "assets/models/blood_draw_kit.glb": {
+    "materials": ["paper-white", "plastic-blue", "plastic-frosted", "glass-clear", "plastic-red", "plastic-green"]
+  },
+  "assets/models/bone_syringe.glb": { "materials": ["bone", "flesh-membrane", "plant-purple", "lacquer-red"] },
+  "assets/models/broad_spectrum_antibiotic.glb": {
+    "materials": ["alu-bare", "plastic-blue", "plastic-red", "plastic-yellow"]
+  },
+  "assets/models/caffeine_gum.glb": { "materials": ["plastic-black", "plastic-yellow", "alu-bare"] },
+  "assets/models/caffeine_pills.glb": { "materials": ["plastic-white", "plastic-yellow", "plastic-black"] },
+  "assets/models/calcium_tablets.glb": { "materials": ["plastic-white", "paint-police-blue"] },
+  "assets/models/cannabis_oil.glb": { "materials": ["glass-clear", "fuel-amber", "plastic-black"] },
+  "assets/models/cannabis_shatter.glb": { "materials": ["paper-white", "fuel-amber"] },
+  "assets/models/cannabis_wax.glb": { "materials": ["glass-clear", "plastic-yellow", "plastic-black"] },
+  "assets/models/cannabis.glb": {
+    "materials": ["plastic-bag", "plastic-red", "plant-dried", "leaf-green", "paperboard-tan"]
+  },
+  "assets/models/chewing_tobacco.glb": { "materials": ["plastic-black", "steel-grey", "plastic-green"] },
+  "assets/models/chlorpromazine.glb": { "materials": ["alu-bare", "paint-charcoal", "paint-terracotta"] },
+  "assets/models/cigar.glb": { "materials": ["leather-brown", "paint-red"] },
+  "assets/models/cigarette.glb": { "materials": ["paper-white", "plastic-red", "plastic-black", "alu-bare"] },
+  "assets/models/cocaine.glb": { "materials": ["glass-clear", "plastic-red", "plastic-white"] },
+  "assets/models/codeine.glb": { "materials": ["paperboard-brown", "plastic-blue", "plastic-white"] },
+  "assets/models/condom.glb": { "materials": ["foil-gold", "brass"] },
+  "assets/models/contact_lenses.glb": { "materials": ["plastic-white", "plastic-blue", "plastic-green"] },
+  "assets/models/cotton_ball.glb": { "materials": ["fleece-pale"] },
+  "assets/models/cough_syrup.glb": { "materials": ["fuel-amber", "plastic-white", "plastic-blue"] },
+  "assets/models/crack.glb": { "materials": ["glass-clear", "wax-ivory", "plastic-red"] },
+  "assets/models/crystal_dust_vial.glb": { "materials": ["gem-pink", "glass-clear", "cork"] },
+  "assets/models/crystal_tonic_vial.glb": {
+    "materials": ["glass-clear", "water", "gem-clear", "plastic-white", "rubber-black", "foil-alu"]
+  },
+  "assets/models/curved_needle.glb": { "materials": ["steel-stainless"] },
+  "assets/models/dental_tools.glb": {
+    "materials": [
+      "cloth-navy",
+      "plastic-black",
+      "cloth-black",
+      "steel-stainless",
+      "steel-bright",
+      "steel-grey",
+      "steel-mirror"
+    ]
+  },
+  "assets/models/dentures.glb": { "materials": ["plastic-pink", "plastic-gloss-white"] },
+  "assets/models/disposable_vape.glb": {
+    "materials": ["alu-anodized-black", "plastic-black", "steel-stainless", "plastic-clear-red"]
+  },
+  "assets/models/examination_gloves.glb": { "materials": ["plastic-frosted"] },
+  "assets/models/eyedrops.glb": { "materials": ["plastic-white", "paint-police-blue"] },
+  "assets/models/fast_acting_sedative.glb": { "materials": ["plastic-amber", "paper-white", "plastic-white"] },
+  "assets/models/first_aid_box.glb": { "materials": ["plastic-red", "plastic-grey", "paint-white", "plastic-white"] },
+  "assets/models/flu_shot.glb": {
+    "materials": ["paper-white", "glass-clear", "wax-ivory", "rubber-black", "plastic-white", "plastic-yellow"]
+  },
+  "assets/models/fluoxetine.glb": { "materials": ["plastic-white", "paint-cream", "plastic-green"] },
+  "assets/models/handrolled_cig.glb": { "materials": ["paper-white", "leather-brown"] },
+  "assets/models/heartburn_syrup.glb": { "materials": ["paint-terracotta", "paper-white"] },
+  "assets/models/heatpack.glb": { "materials": ["plastic-white", "plastic-red", "plastic-orange"] },
+  "assets/models/hemostatic_powder.glb": { "materials": ["paint-olive", "paper-white", "plastic-red"] },
+  "assets/models/heroin.glb": { "materials": ["wax-ivory", "paperboard-tan", "paint-red"] },
+  "assets/models/homeopathic_pills.glb": { "materials": ["glass-clear", "wax-ivory", "paper-white", "plastic-blue"] },
+  "assets/models/hydrogen_peroxide.glb": { "materials": ["paperboard-brown", "plastic-white", "paper-white"] },
+  "assets/models/ibuprofen.glb": { "materials": ["plastic-white", "plastic-blue", "paint-police-blue"] },
+  "assets/models/inhaler.glb": { "materials": ["plastic-blue", "plastic-grey", "alu-bare"] },
+  "assets/models/injectable_iron.glb": {
+    "materials": ["glass-clear", "fuel-amber", "paper-white", "alu-bare", "plastic-red"]
+  },
+  "assets/models/jet_injector.glb": {
+    "materials": ["ceramic-white", "steel-stainless", "plastic-charcoal", "plastic-amber", "paint-red"]
+  },
+  "assets/models/joint.glb": { "materials": ["paper-white", "paperboard-tan"] },
+  "assets/models/liquid_bandage_spray.glb": { "materials": ["plastic-white", "plastic-blue", "plastic-grey"] },
+  "assets/models/lsd.glb": { "materials": ["glass-clear", "plastic-red", "plastic-clear-red"] },
+  "assets/models/makeshift_antiseptic.glb": { "materials": ["glass-clear", "wood-birch", "tape-grey"] },
+  "assets/models/makeshift_bandage.glb": { "materials": ["cloth-rag", "cloth-rag-shadow"] },
+  "assets/models/medical_gauze.glb": { "materials": ["paper-white", "cloth-bright-white", "plastic-blue"] },
+  "assets/models/melatonin_tablet.glb": { "materials": ["paint-police-blue", "plastic-white", "paper-white"] },
+  "assets/models/menstrual_pad.glb": { "materials": ["cloth-bright-white", "petal-pink"] },
+  "assets/models/meth.glb": { "materials": ["plastic-clear", "plastic-blue", "plastic-frosted"] },
+  "assets/models/metoprolol.glb": { "materials": ["alu-bare", "plastic-red", "plastic-white"] },
+  "assets/models/morphine.glb": { "materials": ["glass-grey", "plastic-blue", "plastic-white"] },
+  "assets/models/mugwort_oil.glb": { "materials": ["plastic-amber", "plastic-black", "rubber-black", "tape-grey"] },
+  "assets/models/multivitamin.glb": { "materials": ["plastic-white", "paint-terracotta"] },
+  "assets/models/naproxen.glb": { "materials": ["plastic-white", "plastic-green"] },
+  "assets/models/narrow_spectrum_antibiotic.glb": { "materials": ["alu-bare", "plastic-green", "chalk-white"] },
+  "assets/models/nicotine_gum.glb": { "materials": ["alu-bare", "plastic-green", "plastic-white"] },
+  "assets/models/nicotine_pouch.glb": { "materials": ["plastic-white", "plastic-blue"] },
+  "assets/models/night_cough_syrup.glb": { "materials": ["plastic-green", "plastic-white", "paint-police-blue"] },
+  "assets/models/oxycodone.glb": { "materials": ["plastic-amber", "plastic-white", "paper-white"] },
+  "assets/models/oxygen_concentrator.glb": {
+    "materials": ["plastic-white", "plastic-grey", "glass-clear", "plastic-green", "rubber-black"]
+  },
+  "assets/models/oxygen_tank.glb": {
+    "materials": [
+      "alu-bare",
+      "paint-green",
+      "brass",
+      "plastic-white",
+      "plastic-green",
+      "plastic-frosted",
+      "latex-pale",
+      "plastic-clear"
+    ]
+  },
+  "assets/models/painkillers.glb": { "materials": ["plastic-white", "plastic-red"] },
+  "assets/models/petri_dish.glb": { "materials": ["glass-clear", "plastic-frosted"] },
+  "assets/models/pillbox.glb": {
+    "materials": [
+      "plastic-frosted",
+      "plastic-red",
+      "plastic-orange",
+      "plastic-yellow",
+      "plastic-green",
+      "plastic-blue",
+      "plastic-pink",
+      "plastic-white"
+    ]
+  },
+  "assets/models/police_first_aid_pack.glb": { "materials": ["plastic-black", "paper-white", "paint-red"] },
+  "assets/models/poppy_cough_syrup.glb": { "materials": ["paint-oxblood", "glass-clear", "cork", "tape-grey"] },
+  "assets/models/poppy_painkiller.glb": { "materials": ["glass-clear", "paperboard-brown", "cork", "tape-grey"] },
+  "assets/models/poppy_sleeping_tablets.glb": { "materials": ["steel-grey", "steel-stainless", "paper-white"] },
+  "assets/models/potassium_iodide_tablets.glb": { "materials": ["alu-bare", "paint-red", "plastic-white"] },
+  "assets/models/prescription_sedative.glb": { "materials": ["fuel-amber", "plastic-blue", "paper-white"] },
+  "assets/models/prescription_stimulant.glb": { "materials": ["fuel-amber", "plastic-white", "paper-white"] },
+  "assets/models/prophylactic_antivenom.glb": {
+    "materials": ["plastic-amber", "alu-bare", "plastic-green", "paper-white"]
+  },
+  "assets/models/prussian_blue.glb": {
+    "materials": ["paint-police-blue", "paper-white", "plastic-yellow", "plastic-black"]
+  },
+  "assets/models/red_capsule.glb": { "materials": ["plastic-clear-red", "plastic-white"] },
+  "assets/models/refined_crystal_powder_phial.glb": { "materials": ["gem-pink", "glass-clear", "lacquer-black"] },
+  "assets/models/rolling_tobacco.glb": {
+    "materials": ["paint-charcoal", "paint-oxblood", "paper-white", "paperboard-brown"]
+  },
+  "assets/models/rune_banded_steel_syringe.glb": {
+    "materials": ["steel-stainless", "syrup-green", "rubber-black", "brass-polished", "lacquer-red"]
+  },
+  "assets/models/saline.glb": {
+    "materials": ["plastic-clear", "paper-white", "plastic-white", "plastic-blue", "plastic-red"]
+  },
+  "assets/models/scalpel.glb": { "materials": ["steel-stainless", "steel-mirror", "steel-grey"] },
+  "assets/models/sealed_radiation_badge.glb": { "materials": ["foil-alu", "plastic-yellow", "plastic-black"] },
+  "assets/models/skunk_neutralizer.glb": {
+    "materials": ["plastic-frosted", "plastic-white", "plastic-black", "plastic-blue", "tape-grey"]
+  },
+  "assets/models/sleeping_pills.glb": { "materials": ["paint-police-blue", "paper-white", "plastic-yellow"] },
+  "assets/models/small_blue_potion.glb": { "materials": ["glass-clear", "crystal-glow-blue", "cork", "lacquer-red"] },
+  "assets/models/small_oxygen_tank.glb": {
+    "materials": [
+      "alu-bare",
+      "paint-green",
+      "brass",
+      "plastic-white",
+      "plastic-green",
+      "plastic-frosted",
+      "latex-pale",
+      "plastic-clear"
+    ]
+  },
+  "assets/models/steroid_eyedrops.glb": { "materials": ["enamel-white", "paper-white", "plastic-pink"] },
+  "assets/models/syringe.glb": {
+    "materials": ["plastic-clear", "rubber-black", "plastic-white", "plastic-blue", "plastic-orange"]
+  },
+  "assets/models/thermometer.glb": { "materials": ["plastic-white", "glass-clear", "plastic-red", "plastic-black"] },
+  "assets/models/thyme_oil.glb": { "materials": ["plastic-clear-blue", "plastic-black", "paper-white"] },
+  "assets/models/tramadol.glb": { "materials": ["plastic-amber", "plastic-blue", "paper-white"] },
+  "assets/models/trauma_kit_pouch.glb": {
+    "materials": ["cloth-canvas", "paint-charcoal", "plastic-red", "cloth-cotton", "paint-red", "cord-olive"]
+  },
+  "assets/models/trauma_shears.glb": { "materials": ["plastic-blue", "steel-stainless", "steel-grey"] },
+  "assets/models/used_heat_pack.glb": { "materials": ["plastic-grey", "paint-oxblood"] },
+  "assets/models/vitamin_c_fragment.glb": { "materials": ["enamel-white"] },
+  "assets/models/vitamin_c.glb": { "materials": ["plastic-white", "paint-terracotta", "plastic-yellow"] },
+  "assets/models/wintergreen_ointment.glb": { "materials": ["enamel-white", "paper-white", "plastic-green"] }
+}

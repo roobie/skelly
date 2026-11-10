@@ -1,29 +1,29 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
-import { pickFurniture } from '../src/core/furniturePick.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
-import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { type FurnitureMover, movableRefusal, placement } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
+import { cellsOf, pieceSize } from '@skelly/engine/internal/core/templates.ts';
+import { Inventory } from '@skelly/engine/inventory';
 import {
-  capture,
-  contentLookup,
-  createRuntime,
-  encodeFixture,
-  formatVersion,
-  registry,
-} from './snapshotTestSupport.ts';
+  type BlockEntity,
+  footprint,
+  makeScale,
+  toChunk,
+  type Vec3,
+  World,
+  worldOpaque,
+  worldSolid,
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { baseContentSources } from './baseContentFiles.ts';
+import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
+import { registry } from './snapshotTestSupport.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const messages = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
 const { blockSize } = makeScale(0.5);
 const coverDef = registry.furniture.get('rug')!;
 const hatchDef = [...registry.furniture.values()].find((def) => def.door?.hatch)!;
@@ -57,10 +57,10 @@ const carry = (inventory: Inventory, type: string): BlockEntity => {
   return piece;
 };
 
-type Spec = ReturnType<GauntletSite['furnitureIn']>[number]['spec'];
+type Spec = ReturnType<ScenarioCitySite['furnitureIn']>[number]['spec'];
 
 /** Every piece the generator furnishes inside the placements' footprints, once each. */
-const specsOf = (city: GauntletSite, placements: GauntletSite['plan']['placements']): Spec[] => {
+const specsOf = (city: ScenarioCitySite, placements: ScenarioCitySite['plan']['placements']): Spec[] => {
   const specs = new Map<string, Spec>();
   for (const area of placements) {
     const [x0, , z0] = area.origin;
@@ -97,12 +97,6 @@ const lies = (top: Spec, hatch: Spec): boolean => {
 const aimedAtHatch: Vec3 = [11, hatchPos[1] + 1, 10];
 
 describe('a cover over a hatch', () => {
-  it('may be put down on a shut hatch', () => {
-    const { inventory, mover } = scene();
-    carry(inventory, coverDef.id);
-    expect(placement(mover, aimedAtHatch)).toEqual({ pos: expect.any(Array) });
-  });
-
   it('is refused for a solid piece, and for a flat piece that is not a cover', () => {
     const flat = [...registry.furniture.values()].find(
       (def) => def.solid === false && !def.cover && !def.door && !def.climbable && !def.mount && def.size[1] === 1,
@@ -132,8 +126,13 @@ describe('a cover over a hatch', () => {
       throw new Error(result.refusal);
     }
     inventory.entities.place(cover, result.pos);
+    const solid = worldSolid(new World(), registry, inventory.entities);
+    const opaque = worldOpaque(new World(), registry, inventory.entities);
     for (const cell of cellsOf(cover.size)) {
-      expect(inventory.entities.isSolid(...cellOf(cover.pos, cell))).toBe(false);
+      const at = cellOf(cover.pos, cell);
+      expect(inventory.entities.at(...at)).toBe(cover);
+      expect(solid(...at)).toBe(false);
+      expect(opaque(...at)).toBe(false);
     }
   });
 
@@ -198,34 +197,18 @@ describe('a cover over a hatch', () => {
     expect(inventory.entities.setOpen(hatch, true)).toBeUndefined();
     expect(hatch.open).toBe(true);
   });
-
-  it('stays where it was put down through a save and load', async () => {
-    const runtime = createRuntime();
-    const cover = runtime.inventory.furnish({
-      type: coverDef.id,
-      pos: [3, 1, 3],
-      size: coverDef.size,
-      facing: 'n',
-    })!;
-    runtime.entities.lift(cover);
-    const putDown: Vec3 = [3 + coverDef.size[0], 1, 3];
-    runtime.entities.place(cover, putDown);
-
-    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot);
-    const covers = [...loaded.entities.all].filter((entity) => entity.type === coverDef.id);
-    expect(covers).toHaveLength(1);
-    expect(covers[0]).toMatchObject({ pos: putDown, carried: false });
-    expect(loaded.inventory.furnish({ type: coverDef.id, pos: [3, 1, 3], size: coverDef.size, facing: 'n' })).toBe(
-      undefined,
-    );
-  });
 });
 
 sweepGroup('the secret house', () => {
   it('has one cover lying over every cell of its hatch, which can be lifted', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({
+      seed: 73,
+      registry,
+      scale: makeScale(0.5),
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     const [house] = city.plan.placements.filter(({ template }) => template.id === 'gauntlet_city_cellar_secret');
     const all = specsOf(city, [house!]);
     const hatches = all.filter((spec) => registry.furniture.get(spec.type)?.door?.hatch);
@@ -295,8 +278,6 @@ describe('the content check for covers', () => {
   });
 });
 
-const BASE = 'src/content/base';
-
 interface Slotted {
   id: string;
   choices?: { ref: { id: string } }[];
@@ -320,15 +301,21 @@ const onlyTarpYards = (data: { mapAssemblies?: { slots: Slotted[] }[] }) => ({
 sweepGroup('tarps', () => {
   it('never lie over a hatch and keep clear of doors and ladders', () => {
     const built = buildRegistry(
-      readdirSync(BASE)
-        .filter((file) => file.endsWith('.json'))
-        .sort()
-        .map((file) => ({ source: file, data: onlyTarpYards(JSON.parse(readFileSync(join(BASE, file), 'utf8'))) })),
+      baseContentSources().map(({ source, data }) => ({
+        source,
+        data: onlyTarpYards(data as Parameters<typeof onlyTarpYards>[0]),
+      })),
     );
     expect(built.issues).toEqual([]);
     const tarpYards = built.registry;
     const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new GauntletSite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({
+      seed: 73,
+      registry: tarpYards,
+      scale: makeScale(0.5),
+      scenario,
+      start: defaultStartOf(tarpYards, scenario),
+    });
     const all = specsOf(city, city.plan.placements);
     const tarps = all.filter((spec) => spec.type === 'tarp');
     expect(tarps.length).toBeGreaterThan(0);

@@ -1,15 +1,14 @@
+import type { Registry } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import type { SurvivalHooks } from '@skelly/engine/internal/game/survival.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
+import { HandlingQueue, Inventory, type Item, toggleLight, typeWeightGrams } from '@skelly/engine/inventory';
+import { bindReach, Survival } from '@skelly/engine/sim';
+import { coreLabel } from '@skelly/engine/text';
 import { describe, expect, it, vi } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { coreLabel, coreMessage } from '../src/core/coreText.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { type Item, typeWeightGrams } from '../src/core/items.ts';
-import { chargeOf, toggleLight } from '../src/core/lights.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -26,8 +25,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_opened_can_contents', {
     id: 'fixture_opened_can_contents',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture can contents',
     category: 'food',
     weight: 1,
@@ -37,8 +34,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_sealed_can', {
     id: 'fixture_sealed_can',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture sealed can',
     category: 'food',
     weight: 1,
@@ -53,8 +48,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_can_tool', {
     id: 'fixture_can_tool',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture can tool',
     category: 'tool',
     weight: 1,
@@ -64,8 +57,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_tool_belt', {
     id: 'fixture_tool_belt',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture tool belt',
     category: 'clothing',
     weight: 1,

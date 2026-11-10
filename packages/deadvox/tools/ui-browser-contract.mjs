@@ -4,11 +4,12 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative CDP contract assertions
 
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
-import { createServer } from 'vite';
 import { launchChromium } from '../test/browser/chromium.mjs';
+import { gameUrl, inlineStartMod } from '../test/browser/gameUrl.mjs';
 import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
@@ -16,9 +17,49 @@ import {
   pressWithDrawnCursor,
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { createStageServer } from '../test/browser/stageServer.mjs';
+
+const stageHash = { debug: true, post: false, sunshadow: false, torchshadow: false };
+const houseStartMod = inlineStartMod('fixture.ui-browser-contract.house', {
+  density: null,
+  id: 'ui_browser_contract_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '10:00',
+  storeys: 1,
+  wounds: [],
+});
 
 const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
+/** The dev server reaches the shared mods root only by absolute path. */
+const sharedModUrl = (path) => `/@fs${resolve(cwd, '../mods', path)}`;
+// The game's style sheet as a plain file URL, for a probe document that links it.
+const styleSheetUrl = `/@fs${resolve(cwd, '../presentation/src/ui/style.css')}`;
 const renderMode = browserStageMode('ui-browser-contract');
 const launchExtraArgs = ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'];
 const launchArgs = browserStageArgs('ui-browser-contract', launchExtraArgs);
@@ -30,6 +71,7 @@ let vite;
 let browser;
 let browserCdp;
 let page;
+let stageOrigin;
 let stageUrl;
 let graphics;
 const cleanup = async (name, action) => {
@@ -51,7 +93,7 @@ const waitFor = async (test, message, timeout = 30_000) => {
 };
 
 try {
-  vite = await createServer({
+  vite = await createStageServer({
     root: cwd,
     logLevel: 'error',
     server: { host: '127.0.0.1', port: 0 },
@@ -63,17 +105,17 @@ try {
           const [file] = id.split('?');
           const observations = [
             [
-              '/src/game/play.ts',
+              '/src/presentation/play.ts',
               '  const onForwardPress = (e: MouseEvent) => {',
               '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
             [
-              '/src/game/play.ts',
+              '/engine/src/game/simulationStepper.ts',
               '      advanceLiveFrame',
               '      if (!sim.paused) globalThis.__uiContractSimulationResumes += 1;\n',
             ],
             [
-              '/src/core/handling.ts',
+              '/engine/src/core/handling.ts',
               '    return { ok: true, job };',
               '    globalThis.__uiContractQueuedMoves.push(structuredClone(job));\n',
             ],
@@ -105,10 +147,8 @@ try {
   const { port } = address;
   viteDiagnostics.state = 'listening';
   viteDiagnostics.port = port;
-  stageUrl = browserStageUrl(
-    'ui-browser-contract',
-    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
-  );
+  stageOrigin = `http://127.0.0.1:${port}`;
+  stageUrl = browserStageUrl('ui-browser-contract', gameUrl(stageOrigin, { hash: stageHash }));
   discovery.phase = 'Vite ready';
   const viteResponse = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(30_000) });
   discovery.lastHttpStatus = { url: viteResponse.url, status: viteResponse.status };
@@ -195,7 +235,8 @@ try {
     'accepted-launch readiness',
   );
   discovery.phase = 'UI assertions';
-  const keyBindings = await evaluate(`import('/src/game/inputBindings.ts').then(({ inputBindings, NATIVE_INPUTS }) => ({
+  const keyBindings =
+    await evaluate(`Promise.all([import('/src/product/input.ts'), import('/@stage/@skelly/engine/input')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
   }))`);
@@ -229,10 +270,11 @@ try {
   await assertSaveNote('title');
   assert.equal(
     await evaluate(`(async () => {
-      const { controlsCardRows } = await import('/src/game/controls.ts');
+      const { controlsCardRows } = await import('/@stage/@skelly/presentation/internal/presentation/controls.ts');
+      const { inputBindings } = await import('/src/product/input.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
-      const rows = controlsCardRows(undefined, true);
+      const rows = controlsCardRows(inputBindings, true);
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
       const cardEl = document.querySelector('#overlay .card');
       const card = cardEl.getBoundingClientRect();
@@ -347,12 +389,14 @@ try {
   // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
   // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
   const uiTokens = await evaluate(`(async () => {
-    const { buildRegistry } = await import('/src/core/content.ts');
-    const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
-    const { default: baseUi } = await import('/src/content/base/ui.json');
+    const { buildRegistry } = await import('/@stage/@skelly/engine/content');
+    const { applyUiTokens } = await import('/@stage/@skelly/presentation/ui');
+    const { productAssets } = await import('/src/product/assets.ts');
+    const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
+    const { default: baseCursor } = await import('${sharedModUrl('skelly.ui/cursor.json')}');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
-    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
+    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="${styleSheetUrl}"><button class="inv-option">Probe</button>';
     const loaded = new Promise((done) => frame.addEventListener('load', done, { once: true }));
     document.body.append(frame);
     await loaded;
@@ -361,10 +405,11 @@ try {
       const sound = { id: 'player_nope', description: 'fixture refusal', variants: ['assets/audio/nope.ogg'], gain: 0.5, pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0.75, category: 'body', noise: { enabled: false, radiusMetres: 1 } };
       const { registry, issues } = buildRegistry([
         { source: 'ui-probe-sounds.json', data: { sounds: [sound] } },
+        { source: '../../../mods/skelly.ui/cursor.json', data: baseCursor },
         { source: 'ui-probe.json', data: { ui: [{ ...baseUi.ui.find((row) => row.id === 'core'), refusalSound: sound.id, ...tuning }] } },
       ]);
       if (issues.length) throw new Error('Invalid UI probe fixture: ' + JSON.stringify(issues));
-      applyUiTokens(registry, frame.contentDocument.documentElement);
+      applyUiTokens(registry, frame.contentDocument.documentElement, { report: (message) => { throw new Error(message); }, files: productAssets.cursors });
       const style = frame.contentWindow.getComputedStyle(probe);
       return { padding: Number.parseFloat(style.paddingLeft), fontSize: Number.parseFloat(style.fontSize) };
     };
@@ -432,12 +477,12 @@ try {
   );
   await action('debug.panel-toggle');
   const requestedCalendar = await evaluate(`(async () => {
-    const { nextTimeOfDay, parseTimeOfDay } = await import('/src/core/clock.ts');
+    const { nextTimeOfDay, parseTimeOfDay } = await import('/@stage/@skelly/engine/sim');
     const sim = window.uiContractRuntime.sim;
     const expected = nextTimeOfDay(sim.calendar, parseTimeOfDay('08:00'));
     document.querySelector('#debug-time').value = '08:00';
     document.querySelector('#set-debug-time').click();
-    document.querySelector('#reveal-zombies').click();
+    document.querySelector('#reveal-actors').click();
     return expected;
   })()`);
   await waitFor(
@@ -446,11 +491,11 @@ try {
   );
   await waitFor(
     () =>
-      evaluate(`import('/src/core/clock.ts').then(({ formatClock }) =>
+      evaluate(`import('/@stage/@skelly/engine/sim').then(({ formatClock }) =>
       document.querySelector('#debug-readout').textContent.includes(formatClock(window.uiContractRuntime.sim.calendar)))`),
     'debug readout follows the owner clock',
   );
-  assert.equal(await evaluate("document.querySelector('#reveal-zombies').getAttribute('aria-pressed')"), 'true');
+  assert.equal(await evaluate("document.querySelector('#reveal-actors').getAttribute('aria-pressed')"), 'true');
   const snapshotBefore = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
   await evaluate(`(() => {
     const hooks = window.uiContractDebug.hooks;
@@ -515,7 +560,7 @@ try {
   assert.ok(exportedMetrics.worldId.length > 0 && exportedMetrics.characterId.length > 0);
   assert.equal(
     await evaluate('window.__metricsFilename'),
-    `deadvox-attempt-${exportedMetrics.characterId}.json`,
+    `skelly-attempt-${exportedMetrics.characterId}.json`,
     'attempt download is named for its character',
   );
   await action('debug.panel-toggle');
@@ -526,9 +571,10 @@ try {
   })()`);
   const emptyQuickbarReady = () =>
     evaluate(`(async () => {
-      const { quickbarViewModel } = await import('/src/ui/hud.ts');
+      const { quickbarViewModel } = await import('/@stage/@skelly/presentation/internal/ui/hud.ts');
+      const { inputBindings } = await import('/src/product/input.ts');
       const { quickbar, inventory } = window.uiContractRuntime;
-      const expected = quickbarViewModel(quickbar, inventory).slots;
+      const expected = quickbarViewModel(quickbar, inventory, inputBindings).slots;
       const slots = [...document.querySelectorAll('#quickbar .qb-slot')];
       return expected.length > 0 && expected.every((slot) => !slot.filled) &&
         slots.length === expected.length && slots.every((slot, index) =>
@@ -632,12 +678,12 @@ try {
   const savedWorldVolume = Number(await evaluate("document.querySelector('#audio-volume-world').value"));
   assert.notEqual(savedWorldVolume, initialWorldVolume, 'menu click changes the world volume slider');
   assert.equal(
-    await evaluate("JSON.parse(localStorage.getItem('deadvox.audio.settings')).world"),
+    await evaluate("JSON.parse(localStorage.getItem('skelly.audio.settings')).world"),
     savedWorldVolume,
     'world volume is persisted to localStorage',
   );
   const restoredVolumes = await evaluate(`Promise.all([
-    import('/src/game/audio.ts'), import('/src/game/bundledContent.ts')
+    import('/@stage/@skelly/presentation/audio'), import('/src/product/content.ts')
   ]).then(([{ GameAudio }, { buildBundledContent }]) => {
     const { ui, body } = buildBundledContent().registry;
     return new GameAudio({
@@ -646,6 +692,7 @@ try {
       blockSize: 1,
       isSolid: () => false,
       report: () => {},
+      files: { packs: [], urls: {} },
     }).settings;
   })`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
@@ -658,7 +705,7 @@ try {
     'locked menu click changes the graphics preference',
   );
   const restoredGraphics = await evaluate(`Promise.all([
-    import('/src/game/graphicsSettings.ts'), import('/src/content/base/graphics.json')
+    import('/@stage/@skelly/presentation/internal/presentation/graphicsSettings.ts'), import('${sharedModUrl('skelly.graphics/graphics.json')}')
   ]).then(([{ readGraphicsSettings }, { default: content }]) => readGraphicsSettings(content.graphics[0]))`);
   assert.equal(restoredGraphics.fastCamo, !initialCamo, 'fresh graphics settings read the persisted machine choice');
   await clickAt('[data-graphics-key="fastCamo"] button');
@@ -668,7 +715,7 @@ try {
     'clearing the preference restores the mod default',
   );
   assert.equal(
-    await evaluate("Object.hasOwn(JSON.parse(localStorage.getItem('deadvox.graphics-settings')), 'fastCamo')"),
+    await evaluate("Object.hasOwn(JSON.parse(localStorage.getItem('skelly.graphics-settings')), 'fastCamo')"),
     false,
     'clear removes the explicit setting rather than persisting the resolved default',
   );
@@ -756,7 +803,7 @@ try {
     };
   })()`);
   assert.equal(arrowTip.hand, false, 'main-menu cursor uses the standard arrow');
-  assert.match(arrowTip.mask, /cursor\.png/, 'cursor sprite is used as a silhouette mask');
+  assert.match(arrowTip.mask, /url\(/, 'cursor sprite has a mask image');
   assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
   assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
   assert.equal(arrowTip.rootBlend, 'difference', 'cursor root uses difference blending');
@@ -847,7 +894,7 @@ try {
   );
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
   const spawnActionLabel = async () =>
-    evaluate(`import('/src/game/inputBindings.ts').then(({ inputBindings }) => {
+    evaluate(`import('/src/product/input.ts').then(({ inputBindings }) => {
     const label = document.querySelector('[data-debug-action="debug.spawn-shamblers"]').textContent;
     return label.includes(inputBindings.label('debug.spawn-shamblers')) &&
       label.includes(document.querySelector('.debug-shambler-count output').textContent);
@@ -858,7 +905,7 @@ try {
   );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
-  assert.equal(await evaluate("localStorage.getItem('deadvox.shambler-spawn-count')"), '2');
+  assert.equal(await evaluate("localStorage.getItem('skelly.shambler-spawn-count')"), '2');
   assert.equal(await spawnActionLabel(), true, 'spawn label follows the changed count and effective binding');
   await action('debug.panel-toggle');
   assert.equal(
@@ -920,7 +967,7 @@ try {
   await action('debug.spawn-menu-toggle');
   const spawnFilter = await evaluate(`(() => {
     const { registry } = window.uiContractRuntime.inventory;
-    const entries = [...registry.items.values()];
+    const entries = [...registry.items.values()].filter((entry) => !entry.workInProgress);
     const words = [...new Set(entries.flatMap((entry) => entry.name.toLowerCase().split(/\\s+/)))];
     for (const word of words) {
       const matches = entries.filter((entry) =>
@@ -1458,9 +1505,11 @@ try {
     [],
     'UI contract remains independent of WebGL rendering',
   );
-  const independentUrl = new URL(stageUrl);
-  independentUrl.searchParams.set('site', 'testHouse');
-  await page.goto(independentUrl.href, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  const independentUrl = browserStageUrl(
+    'ui-browser-contract',
+    gameUrl(stageOrigin, { startMod: houseStartMod, hash: stageHash }),
+  );
+  await page.goto(independentUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await waitFor(
     () => evaluate("document.querySelector('#go')?.getAttribute('aria-disabled') === 'false'"),
     'independent-world launch readiness',
@@ -1475,7 +1524,7 @@ try {
   assert.equal(sandboxMetrics.seed, await evaluate('window.uiContractRuntime.sim.seed'));
   assert.equal(
     await evaluate('window.__metricsFilename'),
-    `deadvox-metrics-seed-${sandboxMetrics.seed}.json`,
+    `skelly-metrics-seed-${sandboxMetrics.seed}.json`,
     'independent-world metrics download identifies its seed',
   );
   process.stdout.write(

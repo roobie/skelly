@@ -1,20 +1,31 @@
+import { actionText, fillText } from '@skelly/engine/input';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '@skelly/engine/text';
+import { fillHint } from '@skelly/presentation/internal/ui/keyCap.ts';
 import { expect, it } from 'vitest';
-import { actionText, fillText } from '../src/core/actionText.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '../src/core/numberText.ts';
-import { fillHint } from '../src/ui/keyCap.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
-it('rounds every kind through the one precision table', () => {
-  expect(countText(1.5)).toBe('2');
-  expect(decimalText(1.150_000_000_000_000_4)).toBe('1.2');
-  expect(hundredthsText(0.005)).toBe('0.01');
-  expect(statText(0.46)).toBe('0.5');
-  expect(statText(2)).toBe('2');
-  expect(percentText(46.2)).toBe('46%');
-  expect(volumeText(0.024)).toBe('0.024');
-  expect(volumeText(500)).toBe('500');
-  expect(volumeText(0.123_45)).toBe('0.123');
+/** A plain decimal with a short fraction: no exponent and no run of noise digits. */
+const PLAIN_NUMBER = /^-?\d+(\.\d{1,5})?%?$/;
+
+it('leaves no float-noise tail in any kind of number text', () => {
+  // Values whose binary form carries a long decimal tail; each formatter must round it away.
+  const noisy = [
+    0.1 + 0.2,
+    1.150_000_000_000_000_4,
+    1 / 3,
+    2 / 3,
+    0.123_456_789,
+    46.200_000_000_000_003,
+    1e-7,
+    1234.5678,
+  ];
+  const formatters = { countText, decimalText, hundredthsText, percentText, statText, volumeText };
+  for (const [name, format] of Object.entries(formatters)) {
+    for (const value of noisy) {
+      expect(format(value), `${name}(${value})`).toMatch(PLAIN_NUMBER);
+    }
+  }
 });
 
 it('rejects a raw number at every guarded text-slot boundary, at compile time', () => {

@@ -18,10 +18,10 @@ costs more to build but avoids making either authoring path a later retrofit.
 Its home is a new workspace package, planned at `packages/mod-authoring-tool`, consuming
 a deliberate SkellyEngine authoring API. This keeps authoring separate from play and geometry
 tools without a later package extraction. The runtime must not import the tool; the tool must
-not reach into arbitrary game internals or import other authoring tools, gungen or the
-geometry engine. Existing boundaries still apply under `things/WORK.md`, "Decisions";
+not reach into arbitrary game internals or import the other authoring tools or the
+construct geometry library. Existing boundaries apply under `things/WORK.md`, "Decisions";
 the schema's transitive neutral thing-core contract is not a direct geometry-tool import.
-Thing and gun tools still own geometry and model export; this tool links their outputs.
+The thing and gun authoring tools own geometry and model export; this tool links their outputs.
 
 The tool writes Jsonnet, following `docs/jsonnet.md`, "Jsonnet authoring", rather than
 inventing a project language or maintaining separate repository and browser authoring
@@ -34,7 +34,7 @@ Browser evaluation is a dependency of editing, not permission to save unevaluabl
 The shared loader owns merge history, winning origins, conflicts and validation. The
 tool consumes a loader-side report that retains shadowed definitions, rather than
 reimplementing the merge and risking different verdicts. The existing merge owner is
-`packages/deadvox/src/core/content.ts`, `merge`; the authoring report is planned work.
+`packages/engine/src/core/content.ts`, `merge`; the authoring report is planned work.
 Retention optimizations must preserve that single authority.
 
 Editing waits for typed field patches and per-field origins under
@@ -57,7 +57,7 @@ GitHub URL distribution is canonical. Archive intake is deferred; a later archiv
 fetcher uses this manifest rather than defining another format.
 
 Licence and provenance accompany supplied assets, rather than treating a local or remote
-file as automatically redistributable; see `packages/deadvox/src/core/assets.ts`,
+file as automatically redistributable; see `packages/engine/src/core/assets.ts`,
 `validateManifest`. Admission, atomic persistence and resource cleanup must cover binaries
 as well as definitions. Intake limits and other tunables belong in content, never code
 constants, under `PILLARS.md`, "Content forward compatibility". Trusted admission limits
@@ -113,7 +113,7 @@ start flow.
    first tool slice exercises both run modes and the single merge authority. Show only
    data an adapter can actually access; another origin's browser store is not implicitly
    readable. This slice has no editing dependency on field patches. Guard the API-only
-   import direction through `packages/engine/test/engineImportBoundary.test.ts`,
+   import direction with an import-boundary test like `packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
 2. **Engine field-patch merge.** Design-check and build the merge, schema marking
    and per-field origins governed by ADR 0007. This is independently scheduled within
@@ -129,7 +129,7 @@ start flow.
 4. **New-entry and patch editor.** Depends on slice 1 for the workspace/API, slice 2
    for patch semantics and per-field origins, and slice 3 to evaluate saved Jsonnet in
    the browser. Derive structural forms from
-   `packages/deadvox/src/core/schema.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
+   `packages/engine/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
    second schema; add presentation metadata at that owner. The first editing workflow
    saves Jsonnet and uses the engine's patch semantics and per-field origins.
 5. **Validation parity.** Depends on slice 1 for the hosted/local file adapters, not

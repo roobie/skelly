@@ -1,55 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { browserStageArgs, browserStageMode, browserStageUrl } from './browser/stage-mode.mjs';
+import { type BrowserStageMode, browserStageArgs, browserStageMode, browserStageUrl } from './browser/stage-mode.mjs';
+
+// Any registered stage: the override selects each mode, so the rules are checked per mode rather than per stage.
+const stage = 'primary-action';
+// The game page's developer state is in the hash, which the render switch on the query must keep.
+const address = 'http://localhost/?mods=fixture#{seed:1}';
+const rendered = 'http://localhost/?mods=fixture&render=0#{seed:1}';
+const swiftShader = ['--use-gl=angle', '--use-angle=swiftshader'];
 
 describe('browser stage rendering mode', () => {
-  it('selects render-free mode and matching Chromium flags for logic stages', () => {
-    expect(browserStageMode('primary-action')).toBe('render-free');
-    expect(browserStageMode('pump-handling')).toBe('render-free');
-    expect(browserStageMode('ui-browser-contract')).toBe('render-free');
-    expect(browserStageArgs('ui-browser-contract')).toContain('--disable-gpu');
-    expect(browserStageArgs('ui-browser-contract')).not.toContain('--use-gl=swiftshader');
-    expect(browserStageUrl('ui-browser-contract', 'http://localhost/?seed=1')).toBe(
-      'http://localhost/?seed=1&render=0',
-    );
-    expect(browserStageArgs('primary-action')).toContain('--disable-gpu');
-    expect(browserStageArgs('primary-action')).not.toContain('--use-gl=swiftshader');
-    expect(browserStageUrl('primary-action', 'http://localhost/?seed=1')).toBe('http://localhost/?seed=1&render=0');
+  it('render-free mode disables the GPU and opts the URL out of rendering', () => {
+    const args = browserStageArgs(stage, [], 'render-free');
+    expect(args).toContain('--disable-gpu');
+    for (const flag of [...swiftShader, '--enable-unsafe-swiftshader']) {
+      expect(args).not.toContain(flag);
+    }
+    expect(browserStageUrl(stage, address, 'render-free')).toBe(rendered);
   });
 
-  it('keeps pixel stages on SwiftShader and removes a render-free URL override', () => {
-    expect(browserStageMode('primary-action-pixel')).toBe('pixel');
-    expect(browserStageArgs('primary-action-pixel')).toContain('--use-gl=angle');
-    expect(browserStageArgs('primary-action-pixel')).toContain('--use-angle=swiftshader');
-    expect(browserStageUrl('primary-action-pixel', 'http://localhost/?seed=1&render=0')).toBe(
-      'http://localhost/?seed=1',
-    );
-    expect(browserStageMode('stairs-camo')).toBe('pixel');
-    expect(browserStageMode('save-storage-opfs-continue')).toBe('pixel');
-    expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-gl=angle');
-    expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-angle=swiftshader');
-    expect(browserStageMode('save-storage-indexeddb-continue')).toBe('pixel');
-    expect(browserStageArgs('save-storage-indexeddb-continue')).toContain('--use-gl=angle');
-    expect(browserStageArgs('save-storage-indexeddb-continue')).toContain('--use-angle=swiftshader');
-    expect(browserStageUrl('save-storage-opfs-continue', 'http://localhost/?seed=1&render=0')).toBe(
-      'http://localhost/?seed=1',
-    );
-    expect(browserStageUrl('save-storage-indexeddb-continue', 'http://localhost/?seed=1&render=0')).toBe(
-      'http://localhost/?seed=1',
-    );
-    expect(browserStageArgs('stairs-camo')).toContain('--use-gl=angle');
-    expect(browserStageArgs('stairs-camo')).toContain('--use-angle=swiftshader');
-    for (const stage of [
-      'stairs-lighting-cellar',
-      'stairs-lighting-residents',
-      'stairs-lighting-outdoor',
-      'stairs-lighting-atlas',
-    ]) {
-      expect(browserStageMode(stage)).toBe('pixel');
-      expect(browserStageArgs(stage)).toContain('--use-gl=angle');
-      expect(browserStageArgs(stage)).toContain('--use-angle=swiftshader');
-      expect(browserStageArgs(stage)).toContain('--enable-unsafe-swiftshader');
-      expect(browserStageUrl(stage, 'http://localhost/?seed=1&render=0')).toBe('http://localhost/?seed=1');
+  it('pixel mode renders on SwiftShader and removes a render-free URL override', () => {
+    const args = browserStageArgs(stage, [], 'pixel');
+    expect(args).toEqual(expect.arrayContaining([...swiftShader, '--enable-unsafe-swiftshader']));
+    expect(args).not.toContain('--disable-gpu');
+    expect(browserStageUrl(stage, rendered, 'pixel')).toBe(address);
+  });
+
+  it('a pixel stage with an explicit --use-gl keeps the caller GL backend instead of SwiftShader ANGLE', () => {
+    const explicit = '--use-gl=egl';
+    const args = browserStageArgs(stage, [explicit], 'pixel');
+    expect(args).toContain(explicit);
+    expect(args).toContain('--enable-unsafe-swiftshader');
+    for (const flag of swiftShader) {
+      expect(args).not.toContain(flag);
     }
+  });
+
+  it('a render-free stage leaves a bench URL rendering', () => {
+    const bench = 'http://localhost/?bench=1&mods=fixture#{seed:1}';
+    expect(browserStageUrl(stage, bench, 'render-free')).toBe(bench);
+  });
+
+  it('a stage without an override launches and opens by its own mode', () => {
+    const mode: BrowserStageMode = browserStageMode(stage);
+    expect(browserStageArgs(stage)).toEqual(browserStageArgs(stage, [], mode));
+    expect(browserStageUrl(stage, address)).toBe(browserStageUrl(stage, address, mode));
   });
 
   it('rejects inherited property names as unknown stages', () => {

@@ -1,0 +1,42 @@
+{
+  "name": "@skelly/presentation",
+  "private": true,
+  "license": "EUPL-1.2",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./audio": "./src/audio.ts",
+    "./debug": "./src/debug.ts",
+    "./input": "./src/input.ts",
+    "./play": "./src/play.ts",
+    "./render": "./src/render.ts",
+    "./siteMap": "./src/siteMap.ts",
+    "./tutorialUrl": "./src/tutorialUrl.ts",
+    "./ui": "./src/ui.ts",
+    "./style.css": "./src/ui/style.css",
+    "./sounds.css": "./src/ui/sounds.css",
+    "./internal/*": {
+      "skelly-test": "./src/*"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-deterministic-compat": "^0.20.0",
+    "@skelly/engine": "*",
+    "@skelly/thing-core": "*",
+    "lit-html": "^3.3.3",
+    "three": "^0.186.0",
+    "valibot": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "@types/three": "^0.186.0",
+    "fake-indexeddb": "6.2.4",
+    "happy-dom": "20.14.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

@@ -1,13 +1,15 @@
+import type { NightVision } from '@skelly/engine/content';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { realSeconds } from '@skelly/engine/sim';
+import type { SolidAt } from '@skelly/engine/world';
+import {
+  type FlareSource,
+  flareSources,
+  nightVisionFlare,
+} from '@skelly/presentation/internal/render/nightVisionFlare.ts';
+import { HeldItems, LightPool } from '@skelly/presentation/render';
 import { PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import type { NightVision } from '../src/core/schema.ts';
-import { realSeconds } from '../src/core/time.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { LightPool } from '../src/render/lightPool.ts';
-import { type FlareSource, flareSources, nightVisionFlare } from '../src/render/nightVisionFlare.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 

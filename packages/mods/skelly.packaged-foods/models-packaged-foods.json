@@ -1,0 +1,287 @@
+{
+  "models": [
+    {
+      "file": "assets/models/canned_beans.glb",
+      "grip": {
+        "at": [0, 0.055, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "canned_beans",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/canned_soup.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "canned_soup",
+      "itemPresentation": {
+        "materials": ["metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/crackers.glb",
+      "grip": {
+        "at": [0, 0.10000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "crackers",
+      "itemPresentation": {
+        "materials": ["paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.10306451612903228, 0],
+          "massKg": 0.25,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/chocolate_bar.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "chocolate_bar",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.0049999999999999992, 0],
+          "massKg": 0.10000000000000001,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/soda_can.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "soda_can",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/empty_soda_can.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "empty_soda_can",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/water_bottle.glb",
+      "grip": {
+        "at": [0, 0.12, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "water_bottle",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.10430711610486891, 0],
+          "massKg": 1.05,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/juice_carton.glb",
+      "grip": {
+        "at": [0, 0.095000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "juice_carton",
+      "itemPresentation": {
+        "materials": ["paper", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.10200000000000001, 0],
+          "massKg": 1.05,
+          "node": "package:carton"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/opened_beans.glb",
+      "grip": {
+        "at": [0, 0.055, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "opened_beans",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/opened_soup.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "opened_soup",
+      "itemPresentation": {
+        "materials": ["metal", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/empty_can.glb",
+      "grip": {
+        "at": [0, 0.055, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "empty_can",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/opened_soda.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "opened_soda",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/beans.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "beans",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/soup.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "soup",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/soda.glb",
+      "grip": {
+        "at": [0, 0.059999999999999998, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "soda",
+      "itemPresentation": {
+        "materials": ["glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "roll": 0
+    }
+  ]
+}

@@ -1,15 +1,20 @@
+import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { CONTACT_SKIN } from '@skelly/engine/internal/core/physics.ts';
+import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { templateSpatialIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate, type Turn } from '@skelly/engine/internal/core/templates.ts';
+import {
+  CHUNK,
+  generateColumn,
+  makeScale,
+  placedPoint,
+  stepBody,
+  terrainShapeOf,
+  type Vec3,
+  World,
+} from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
 

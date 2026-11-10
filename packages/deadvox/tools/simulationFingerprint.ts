@@ -2,9 +2,9 @@
 import { createHash } from 'node:crypto';
 // biome-ignore lint/correctness/noNodejsModules: This build-time utility runs in Vite's Node.js process.
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { canonicalJson } from '@skelly/engine/save';
 import { init, parse } from 'es-module-lexer';
 import { transformWithOxc } from 'vite';
-import { canonicalJson } from '../src/core/canonicalJson.ts';
 
 export interface SimulationModuleGraphHost {
   resolve: (specifier: string, importer?: string) => Promise<string | undefined>;
@@ -40,131 +40,119 @@ export async function fingerprintAfterHotChange(
 }
 
 // Isolated experiment identity: not game/save identity and never covered by the debug exclusion.
-export const FEASIBILITY_ENTRIES = [
-  'src/vehicles/feasibility/runner.ts',
-  'src/vehicles/feasibility/driving.ts',
-] as const;
+export const FEASIBILITY_ENTRIES = ['src/feasibility/runner.ts', 'src/feasibility/driving.ts'] as const;
 
 export const SIMULATION_ENTRIES = [
-  'src/core/sim.ts',
+  'engine/core/sim.ts',
   // Independently constructed appliance owners also determine saved simulation results.
-  'src/core/batteryChargers.ts',
-  'src/core/worldgen.ts',
-  'src/core/saveState.ts',
-  'src/core/saveFormat.ts',
-  'src/core/vehicleWork.ts',
-  'src/core/storage.ts',
-  'src/core/soundPicker.ts',
-  'src/game/player.ts',
-  'src/game/rest.ts',
-  'src/game/survival.ts',
-  'src/game/streamer.ts',
-  'src/game/config.ts',
-  // Worlds receive admitted content, so startup admission is no longer reachable from world setup.
-  'src/game/browserMods.ts',
-  'src/game/bundledMods.ts',
-  'src/game/play.ts',
-  'src/game/quickbar.ts',
-  'src/game/session.ts',
-  'src/game/worldSetup.ts',
+  'engine/core/batteryChargers.ts',
+  'engine/core/worldgen.ts',
+  'engine/core/saveState.ts',
+  'engine/core/saveFormat.ts',
+  // Fingerprint new-game initialization independently of startup caller wiring.
+  'engine/core/startState.ts',
+  'engine/core/vehicleWork.ts',
+  'engine/core/storage.ts',
+  'engine/core/soundPicker.ts',
+  'engine/game/player.ts',
+  'engine/game/rest.ts',
+  'engine/game/survival.ts',
+  'engine/game/streamer.ts',
+  'engine/game/config.ts',
+  // Worlds receive admitted content, so startup admission is no longer reachable from world setup. The product's
+  // sources and tunables it is given are content, outside this fingerprint.
+  'engine/game/browserMods.ts',
+  'engine/game/bundledMods.ts',
+  'engine/game/commandRouter.ts',
+  // Startup wiring that play.ts hands to the session and streamer, fingerprinted independently of that caller.
+  'engine/game/layoutVehicles.ts',
+  'engine/game/columnArrival.ts',
+  'engine/game/quickbar.ts',
+  'engine/game/session.ts',
+  'engine/game/simulationStepper.ts',
+  'engine/game/worldSetup.ts',
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
-  // Includes playView's owned meshes/camera/draw/disposal and playFrames' RAF wiring.
-  // play.ts retains timestamp-to-dt policy, input sampling, actions and simulation advancement.
-  'src/render',
+  // Includes playView's owned meshes/camera/draw/disposal.
+  'presentation/render',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
-  'src/core/sideButton.ts',
+  'engine/core/sideButton.ts',
   // Credits and asset-manifest validation at startup change neither simulation nor save state.
-  'src/core/assets.ts',
-  'src/core/sky.ts',
-  'src/core/mood.ts',
+  'engine/core/assets.ts',
+  'engine/core/sky.ts',
+  'engine/core/mood.ts',
   // The default look is rendered presentation read by the view and debug panel; it changes neither simulation nor saves.
-  'src/core/lookDefaults.ts',
+  'engine/core/lookDefaults.ts',
   // Render budgets select presentation work, not simulation or saved state.
-  'src/core/graphicsTuning.ts',
+  'engine/core/graphicsTuning.ts',
   // Camera field of view and optic lens projection affect rendered presentation, not simulation or saves.
-  'src/core/opticView.ts',
+  'engine/core/opticView.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
-  'src/core/weather.ts',
-  'src/core/mesher.ts',
-  'src/core/wireMesh.ts',
-  'src/core/fencePosts.ts',
+  'engine/core/weather.ts',
+  'engine/core/mesher.ts',
+  'engine/core/wireMesh.ts',
+  'engine/core/fencePosts.ts',
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
-  'src/core/meshInput.ts',
-  'src/core/occlusion.ts',
+  'engine/core/meshInput.ts',
+  'engine/core/occlusion.ts',
+  // Which columns are drawn yet: presentation only.
+  'engine/core/columnReveal.ts',
   // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
-  'src/core/skylight.ts',
-  'src/core/skySnapshot.ts',
-  'src/core/skyTransport.ts',
-  'src/core/shell.ts',
-  'src/core/pileLayout.ts',
-  // Paper-map terrain sampling is disposable presentation; it changes neither simulation nor saves.
-  'src/core/paperMapRender.ts',
+  'engine/core/skylight.ts',
+  'engine/core/skySnapshot.ts',
+  'engine/core/skyTransport.ts',
+  'engine/core/shell.ts',
+  'engine/core/pileLayout.ts',
   // Its public-cartography types describe printable features, not simulation or saved state.
-  'src/core/publicCartography.ts',
-  // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
-  'src/game/audio.ts',
-  'src/game/audioPresentation.ts',
-  // Machine graphics preferences affect rendering only and must not invalidate simulation saves.
-  'src/game/graphicsSettings.ts',
-  'src/game/graphicsControls.ts',
-  'src/game/shamblerAudio.ts',
-  'src/game/damageFeedback.ts',
-  // The pain cue's pulse runs on frame time; felt pain itself stays fingerprinted in core/pain.ts.
-  'src/game/painCue.ts',
-  'src/game/engine.ts',
-  // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
-  'src/game/debugTargetRay.ts',
-  'src/game/saveStorage.ts',
-  // Browser selection persistence is transport; admission and pack identity are fingerprinted separately.
-  'src/game/modStorage.ts',
-  'src/game/saveStorageErrors.ts',
-  'src/game/saveStorageRecord.ts',
-  'src/game/saveStorageProtocol.ts',
-  'src/game/controls.ts',
-  'src/game/playtestTools.ts',
-  'src/game/playtestObserver.ts',
-  'src/worker/save.worker.ts',
-  'src/ui/audioOptions.ts',
-  'src/ui/graphicsOptions.ts',
-  'src/ui/credits.ts',
-  'src/ui/death.ts',
-  'src/ui/win.ts',
+  'engine/core/publicCartography.ts',
+  'engine/game/audioPresentation.ts',
+  'engine/game/actorAudio.ts',
+  // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
+  'engine/game/ragdollConfig.ts',
+  'engine/game/saveStorageErrors.ts',
+  'engine/game/saveStorageRecord.ts',
+  'engine/game/saveStorageProtocol.ts',
+  'presentation/worker/save.worker.ts',
+  'presentation/ui/audioOptions.ts',
+  'presentation/ui/graphicsOptions.ts',
+  'presentation/ui/credits.ts',
+  'presentation/ui/death.ts',
+  'presentation/ui/win.ts',
   // Blocking player-facing error presentation; its state and exports do not affect simulation or saves.
-  'src/ui/errorReport.ts',
-  'src/ui/gameCursor.ts',
-  'src/ui/hud.ts',
-  'src/ui/hudOptions.ts',
-  'src/ui/keyCap.ts',
+  'presentation/ui/errorReport.ts',
+  'presentation/ui/gameCursor.ts',
+  'presentation/ui/hud.ts',
+  'presentation/ui/hudOptions.ts',
+  'presentation/ui/keyCap.ts',
   // Page-leave warning timing is lifecycle presentation, not simulation or saved state.
-  'src/ui/leaveConfirmation.ts',
-  // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
-  'src/ui/playHud.ts',
-  'src/ui/tutorial.ts',
+  'presentation/ui/leaveConfirmation.ts',
+  // Read-only HUD/status/prompt projection; target selection and recorded commands stay fingerprinted.
+  'presentation/ui/playHud.ts',
+  'presentation/ui/guidedSteps.ts',
   // Read-only debug readout formatting and byte-count estimates.
-  'src/ui/playReadout.ts',
-  'src/ui/inventoryScreen.ts',
+  'presentation/ui/playReadout.ts',
+  'presentation/ui/inventoryScreen.ts',
   // Read-only appliance projection; command admission and effects stay in session and core.
-  'src/ui/chargerPanel.ts',
+  'presentation/ui/chargerPanel.ts',
   // Read-only vehicle service projection; work admission and transfer stay in core/vehicleWork and session.
-  'src/ui/vehicleInspection.ts',
+  'presentation/ui/vehicleInspection.ts',
   // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
   // remain fingerprinted through session -> core/craftCommands and core/longAction.
-  'src/ui/craftController.ts',
-  'src/ui/craftReadout.ts',
-  'src/ui/crafting.ts',
-  'src/ui/menuPointer.ts',
-  'src/ui/menuState.ts',
-  // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
-  'src/ui/primaryActionHint.ts',
+  'presentation/ui/craftController.ts',
+  'presentation/ui/craftReadout.ts',
+  'presentation/ui/crafting.ts',
+  'presentation/ui/menuPointer.ts',
+  'presentation/ui/menuState.ts',
+  // Unsupported-item hint copy is presentation only; capability policy stays in packages/engine/src/game/primaryAction.ts.
+  'presentation/ui/primaryActionHint.ts',
   // Paper text/focus/scroll/dismissal is presentation; readable admission/effects stay in core/game.
-  'src/ui/reading.ts',
-  'src/ui/rest.ts',
-  'src/ui/saveController.ts',
+  'presentation/ui/reading.ts',
+  'presentation/ui/rest.ts',
+  'presentation/ui/saveController.ts',
   // Loading-mask drawing and browser errors are startup presentation, not simulation state.
-  'src/ui/worldLoading.ts',
+  'presentation/ui/worldLoading.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
@@ -191,13 +179,7 @@ const PRESENTATION_ASSET_EXTENSIONS = new Set([
   '.woff2',
 ]);
 const MODULE_QUERY_PATTERN = /[?#].*$/;
-const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
-const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
-const CONTENT_GLOB_PATTERNS = new Set([
-  '../content/base/*.json',
-  '../content/base/assets/audio/**/*.ogg',
-  '../config/bundled/*.json',
-]);
+const GLOB_REFERENCE = /\bimport\.meta\.glob\b/;
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
@@ -214,12 +196,8 @@ function comparePaths(left: string, right: string): number {
 }
 
 function assertSupportedDependencyDiscovery(path: string, source: string): void {
-  const globReferences = [...source.matchAll(GLOB_REFERENCE)];
-  const globCalls = [...source.matchAll(GLOB_CALL)];
-  if (globReferences.length !== globCalls.length) {
-    throw new Error(`Unsupported import.meta.glob form in simulation source ${path}`);
-  }
-  if (globCalls.some((call) => !(call[2] && CONTENT_GLOB_PATTERNS.has(call[2])))) {
+  // The product globs its mod roots and passes the maps in, so a simulation source never globs.
+  if (GLOB_REFERENCE.test(source)) {
     throw new Error(`Unclassified import.meta.glob dependency in simulation source ${path}`);
   }
   if (REQUIRE_CALL.test(source)) {
@@ -230,15 +208,8 @@ function assertSupportedDependencyDiscovery(path: string, source: string): void 
   if (importMetaUrlReferences.length !== workerUrls.length) {
     throw new Error(`Unclassified import.meta.url dependency in simulation source ${path}`);
   }
-  const normalizedPath = path.replaceAll('\\', '/');
-  if (
-    workerUrls.some(
-      (call) => normalizedPath.endsWith('/src/game/streamer.ts') && call[2] !== '../worker/mesh.worker.ts',
-    )
-  ) {
-    throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
-  }
-  if (workerUrls.length > 0 && !normalizedPath.endsWith('/src/game/streamer.ts')) {
+  // The streamer takes its mesher port from presentation, so no simulation source starts a worker.
+  if (workerUrls.length > 0) {
     throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
   }
 }
@@ -278,11 +249,34 @@ function sourcePath(id: string): string | undefined {
   return resolve(clean);
 }
 
+// The runtime and presentation packages' source, named `'engine/'` and `'presentation/'` in the fingerprint
+// manifest and in entries and exclusions.
+const ENGINE_PREFIX = 'engine/';
+const PRESENTATION_PREFIX = 'presentation/';
+const engineSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../engine/src');
+const presentationSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../presentation/src');
+
+/**
+ * The file an entry or exclusion names: `'engine/'` and `'presentation/'` paths are in those packages, others in
+ * this project.
+ */
+export function labelledPath(projectRoot: string, label: string): string {
+  if (label.startsWith(ENGINE_PREFIX)) {
+    return resolve(engineSourceRoot(projectRoot), label.slice(ENGINE_PREFIX.length));
+  }
+  return label.startsWith(PRESENTATION_PREFIX)
+    ? resolve(presentationSourceRoot(projectRoot), label.slice(PRESENTATION_PREFIX.length))
+    : resolve(projectRoot, label);
+}
+
 function sourceRelativePath(projectRoot: string, sourceRoot: string, file: string): string | undefined {
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
-    { root: resolve(projectRoot, '../mobgen/src'), prefix: 'mobgen/' },
-    { root: resolve(projectRoot, '../thing-core/src'), prefix: 'thing-core/' },
+    { root: engineSourceRoot(projectRoot), prefix: ENGINE_PREFIX },
+    { root: presentationSourceRoot(projectRoot), prefix: PRESENTATION_PREFIX },
+    { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
+    { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
+    { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
   ];
   for (const { root, prefix } of roots) {
@@ -355,13 +349,13 @@ async function resolveTrackableModule(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, sibling mobgen/src/, sibling thing-core/src/, and node_modules: ${resolvedId}`,
+      `Runtime dependency ${specifier} resolves outside src/, the engine's and presentation's src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;
   }
-  if (relativePath.startsWith('src/content/base/')) {
+  if (relativePath.startsWith('mods/') || relativePath.startsWith('shared-mods/')) {
     return;
   }
   const extension = extname(relativePath).toLowerCase();
@@ -370,7 +364,7 @@ async function resolveTrackableModule(
   }
   if (
     extension === '.json' &&
-    ['src/config/', 'mobgen/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+    ['src/config/', 'src/feasibility/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
   ) {
     return { file, relativePath };
   }
@@ -425,7 +419,7 @@ export async function collectSimulationSourceGraph(
   };
 
   const sortedEntries = [...entries].sort();
-  await Promise.all(sortedEntries.map((entry) => visit(resolve(projectRoot, entry))));
+  await Promise.all(sortedEntries.map((entry) => visit(labelledPath(projectRoot, entry))));
   const sortedExcludedImports = [...excludedImports.values()].sort((left, right) =>
     comparePaths(`${left.importer} -> ${left.excluded}`, `${right.importer} -> ${right.excluded}`),
   );

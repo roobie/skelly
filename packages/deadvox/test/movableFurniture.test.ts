@@ -1,4 +1,21 @@
 import {
+  type FurnitureMover,
+  liftFurniture,
+  placeFurniture,
+  placement,
+  tipCarried,
+  turnCarried,
+} from '@skelly/engine/internal/core/furnitureMove.ts';
+import { LadderHold } from '@skelly/engine/internal/core/ladders.ts';
+import { type Pose, rotatedSize, turnPose } from '@skelly/engine/internal/core/orientation.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { reachTuning } from '@skelly/engine/sim';
+import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '@skelly/engine/world';
+import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
+import { HeldItems } from '@skelly/presentation/render';
+import {
   Box3,
   DirectionalLight,
   Group,
@@ -10,25 +27,7 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import {
-  type FurnitureMover,
-  liftFurniture,
-  placeFurniture,
-  placement,
-  tipCarried,
-  turnCarried,
-} from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { LadderHold } from '../src/core/ladders.ts';
-import { type Pose, rotatedSize, rotationOf, turnPose } from '../src/core/orientation.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { CarriedPiece } from '../src/render/carriedPiece.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { HeldItems } from '../src/render/hands.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
   capture,
   contentLookup,
@@ -44,7 +43,7 @@ const origin: Vec3 = [3, 1, 3];
 const spec = { type: crate.id, pos: origin, size: crate.size, facing: 'n' as const };
 const moved: Vec3 = [3 + crate.size[0], 1, 3];
 
-const messages = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
 
 /** A player well clear of the fixture, on a flat floor, with stamina to spare. */
 const mover = (inventory: Inventory): FurnitureMover => ({

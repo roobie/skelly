@@ -1,48 +1,39 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { Mesh } from 'three';
-import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
-import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
-import { parseTimeOfDay } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { toChunk } from '../src/core/coords.ts';
-import { isLongGun } from '../src/core/firearmFitting.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { lootPointStream, rollLoot } from '../src/core/loot.ts';
-import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
-import { doorOptions } from '../src/core/options.ts';
-import { Rng } from '../src/core/random.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
-import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
+import { readFileSync } from 'node:fs';
+import { buildRegistry } from '@skelly/engine/content';
+import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { lootPointStream, rollLoot } from '@skelly/engine/internal/core/loot.ts';
+import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { planFlight, STAIR_BODY_HALF_WIDTH } from '@skelly/engine/internal/core/stairFlight.ts';
+import {
+  templateReachableStandingPositions,
+  templateSpatialIssues,
+} from '@skelly/engine/internal/core/templateSpatial.ts';
 import {
   type CompiledTemplate,
   compileTemplate,
-  footprint,
   placedBlockAt,
   placedPieces,
-  placedPoint,
   placedSpawns,
-} from '../src/core/templates.ts';
-import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
-import { CATALOGUE } from '../src/vehicles/catalogue.ts';
-import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
-import { wheel } from '../src/vehicles/rangeRover.ts';
-import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { doorOptions, Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import type { buildingBounds } from '@skelly/engine/terrain';
+import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
+import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import { vehicleInstanceOf, vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
+import { Mesh } from 'three';
+import { describe, expect, it } from 'vitest';
+import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
 
-const sources = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
+const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
-  JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);
@@ -53,9 +44,7 @@ interface OverridePlacement {
   buildingIndex: number;
   override: FixedOverride;
 }
-type Point = [number, number];
 type Bounds = ReturnType<typeof buildingBounds>;
-const FOB_WALL_RUN_TEMPLATES = new Set(['camp_wall_run', 'camp_wall_run_crouch_hole']);
 
 const compactFixture = (): SiteLayoutDef => ({
   ...layout,
@@ -67,27 +56,6 @@ const placedOverrides = (fixture: SiteLayoutDef): OverridePlacement[] =>
   fixture.buildings.flatMap((building, buildingIndex) =>
     (building.fixedLoot ?? []).map((override) => ({ building, buildingIndex, override })),
   );
-
-const fixedCount = (placements: OverridePlacement[], template: string, item: string): number =>
-  placements
-    .filter(({ building }) => building.template === template)
-    .flatMap(({ override }) => override.items)
-    .filter((fixed) => fixed.item === item)
-    .reduce((sum, fixed) => sum + (fixed.count ?? 1), 0);
-
-const overrideFor = (placements: OverridePlacement[], template: string, item: string) =>
-  placements.find(
-    ({ building, override }) => building.template === template && override.items.some((fixed) => fixed.item === item),
-  );
-
-const furnitureAt = ({ building, override }: OverridePlacement): string | undefined => {
-  const template = result.registry.templates.get(building.template);
-  return (
-    template &&
-    compileTemplate(result.registry, template).pieces.find((piece) => piece.pos.join(',') === override.at.join(','))
-      ?.furniture
-  );
-};
 
 type LootTable = NonNullable<ReturnType<typeof result.registry.loot.get>>;
 
@@ -168,104 +136,6 @@ const possibleLootItems = (tableId: string): Set<string> => {
   return items;
 };
 
-const hasInteriorPlankCourse = (rows: readonly string[], width: number): boolean =>
-  rows.slice(1, -1).some((row) => [...row.slice(1, width - 1)].includes('p'));
-
-const expectHqFloorCourseEdges = (template: Pick<TemplateDef, 'layers' | 'size'>): void => {
-  let courseCount = 0;
-  for (const [y, rows] of template.layers.entries()) {
-    if (!hasInteriorPlankCourse(rows, template.size[0]!)) {
-      continue;
-    }
-    courseCount += 1;
-    expect(rows[0], `HQ course ${y} front edge`).toBe('#'.repeat(template.size[0]));
-    expect(rows.at(-1), `HQ course ${y} back edge`).toBe('#'.repeat(template.size[0]));
-    for (const row of rows.slice(1, -1)) {
-      expect(row[0], `HQ course ${y} side edge`).toBe('#');
-      expect(row.at(-1), `HQ course ${y} side edge`).toBe('#');
-    }
-  }
-  expect(courseCount).toBeGreaterThan(0);
-};
-
-const expectHqMaterialsAndFloorEdges = (): void => {
-  const hq = result.registry.templates.get('camp_hq')!;
-  const shell = hq.palette['#'];
-  if (typeof shell !== 'string') {
-    throw new Error('the HQ shell palette entry must select a block');
-  }
-  const shellBlock = result.registry.blocks[result.registry.blockIds.get(shell)!];
-  expect(shellBlock?.pattern).toBe('camo');
-  expectHqFloorCourseEdges(hq);
-};
-
-const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
-  const hqBuilding = layout.buildings.find(({ template }) => template === 'camp_hq')!;
-  const armouryBuilding = layout.buildings.find(({ template }) => template === 'camp_armoury')!;
-  const hqDefinition = result.registry.templates.get(hqBuilding.template)!;
-  const hqBounds = buildingBounds(hqBuilding, hqDefinition.size);
-  const armouryBounds = buildingBounds(armouryBuilding, compiledArmoury.size);
-  expect(hqBounds.z1).toBe(armouryBounds.z0);
-  expect(Math.min(hqBounds.x1, armouryBounds.x1)).toBeGreaterThan(Math.max(hqBounds.x0, armouryBounds.x0));
-  const fenceRects = layout.buildings
-    .filter(({ template }) => FOB_WALL_RUN_TEMPLATES.has(template))
-    .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
-  expect(fenceRects.length).toBeGreaterThan(0);
-  const fenceBounds = {
-    x0: Math.min(...fenceRects.map(({ x0 }) => x0)),
-    z0: Math.min(...fenceRects.map(({ z0 }) => z0)),
-    x1: Math.max(...fenceRects.map(({ x1 }) => x1)),
-    z1: Math.max(...fenceRects.map(({ z1 }) => z1)),
-  };
-  const { entrance } = hqDefinition.access!;
-  const entranceWorld: [number, number] = [
-    hqBuilding.position[0] + entrance[0] * 0.5,
-    hqBuilding.position[2] + entrance[2] * 0.5,
-  ];
-  expect(entranceWorld[0]).toBeGreaterThan(fenceBounds.x0);
-  expect(entranceWorld[0]).toBeLessThan(fenceBounds.x1);
-  expect(entranceWorld[1]).toBeGreaterThan(fenceBounds.z0);
-  expect(entranceWorld[1]).toBeLessThan(fenceBounds.z1);
-
-  const compiledHq = compileTemplate(result.registry, hqDefinition);
-  expectHqMaterialsAndFloorEdges();
-  expect(compiledHq.pieces.some((piece) => piece.loot === 'military_armoury')).toBe(false);
-  expect(hqDefinition.access?.storeys.length).toBeGreaterThanOrEqual(3);
-  expect(templateSpatialIssues(result.registry, compiledHq)).toEqual([]);
-  const hqReachable = templateReachableStandingPositions(result.registry, compiledHq);
-  for (const floor of hqDefinition.access!.storeys) {
-    expect(
-      hqReachable.some(([, feet]) => feet === floor.floor),
-      `${floor.id} floor is reachable on foot`,
-    ).toBe(true);
-  }
-  const hqGround = hqDefinition.access!.storeys.find(({ id }) => id === hqDefinition.access!.ground)!;
-  expect(
-    hqReachable.some(
-      ([x, feet, z]) =>
-        feet === hqGround.floor && (x <= 1 || x >= compiledHq.size[0] - 1 || z <= 1 || z >= compiledHq.size[2] - 1),
-    ),
-  ).toBe(true);
-
-  const hqDoors = compiledHq.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
-  expect(hqDoors.every((piece) => piece.pos[2] + piece.size[2] < compiledHq.size[2])).toBe(true);
-  const sharedWallSolid = (template: CompiledTemplate, x: number, y: number, z: number): boolean => {
-    const index = x + template.size[0] * (z + template.size[2] * y);
-    return result.registry.blocks[template.blocks[index]!]?.solid === true;
-  };
-  const hqXOffset = Math.round((hqBuilding.position[0] - armouryBuilding.position[0]) / scale.blockSize);
-  const sharedXStart = Math.max(0, -hqXOffset);
-  const sharedXEnd = Math.min(compiledHq.size[0], compiledArmoury.size[0] - hqXOffset);
-  expect(sharedXEnd).toBeGreaterThan(sharedXStart);
-  for (let hqX = sharedXStart; hqX < sharedXEnd; hqX++) {
-    const armouryX = hqX + hqXOffset;
-    for (let y = 1; y < Math.min(compiledHq.size[1], compiledArmoury.size[1]); y++) {
-      expect(sharedWallSolid(compiledHq, hqX, y, compiledHq.size[2] - 1)).toBe(true);
-      expect(sharedWallSolid(compiledArmoury, armouryX, y, 0)).toBe(true);
-    }
-  }
-};
-
 const withTestEntrance = (template: CompiledTemplate, target: readonly [number, number, number]): CompiledTemplate => {
   if (template.access) {
     return template;
@@ -291,83 +161,6 @@ const withTestEntrance = (template: CompiledTemplate, target: readonly [number, 
     ...template,
     access: { ground: 'ground', entrance, storeys: [{ id: 'ground', floor: target[1] }], stairs: [] },
   };
-};
-
-const partitionRowBefore = (template: CompiledTemplate, targetZ: number): number => {
-  const [sx, , sz] = template.size;
-  const blockedAt = (x: number, z: number): boolean => {
-    const block = template.blocks[x + sx * (z + sz)];
-    if (result.registry.blocks[block!]?.solid) {
-      return true;
-    }
-    return template.pieces.some((piece) => {
-      const def = result.registry.furniture.get(piece.furniture)!;
-      return (
-        !def.door &&
-        def.solid !== false &&
-        x >= piece.pos[0] &&
-        x < piece.pos[0] + piece.size[0] &&
-        piece.pos[1] <= 1 &&
-        piece.pos[1] + piece.size[1] > 1 &&
-        z >= piece.pos[2] &&
-        z < piece.pos[2] + piece.size[2]
-      );
-    });
-  };
-  const rows = Array.from({ length: Math.min(targetZ, sz) - 1 }, (_, index) => index + 1);
-  const partitions = rows.filter((z) => {
-    const cells = Array.from({ length: sx }, (_, x) => blockedAt(x, z));
-    let opening = 0;
-    let widestOpening = 0;
-    for (const blocked of cells) {
-      opening = blocked ? 0 : opening + 1;
-      widestOpening = Math.max(widestOpening, opening);
-    }
-    return cells.filter(Boolean).length > sx / 2 && widestOpening >= 2;
-  });
-  const partition = Math.max(...partitions);
-  if (!Number.isFinite(partition)) {
-    throw new Error(`${template.id} fixed loot has no room partition before z=${targetZ}`);
-  }
-  return partition;
-};
-
-const insideTemplate = (template: CompiledTemplate, x: number, y: number, z: number): boolean => {
-  const [sx, sy, sz] = template.size;
-  return x >= 0 && x < sx && y >= 0 && y < sy && z >= 0 && z < sz;
-};
-
-const solidPieceAt = (template: CompiledTemplate, x: number, y: number, z: number): boolean =>
-  template.pieces.some((piece) => {
-    const def = result.registry.furniture.get(piece.furniture)!;
-    return (
-      def.solid !== false &&
-      x >= piece.pos[0] &&
-      x < piece.pos[0] + piece.size[0] &&
-      y >= piece.pos[1] &&
-      y < piece.pos[1] + piece.size[1] &&
-      z >= piece.pos[2] &&
-      z < piece.pos[2] + piece.size[2]
-    );
-  });
-
-const solidCellAt = (template: CompiledTemplate, x: number, y: number, z: number): boolean => {
-  const [sx, , sz] = template.size;
-  const block = template.blocks[x + sx * (z + sz * y)]!;
-  return result.registry.blocks[block]?.solid === true || solidPieceAt(template, x, y, z);
-};
-
-const bodyClearOfSolids = (template: CompiledTemplate, [x, feet, z]: readonly [number, number, number]): boolean => {
-  for (let y = Math.floor(feet); y < Math.ceil(feet + STAIR_BODY_HEIGHT); y += 1) {
-    for (let bz = Math.floor(z - STAIR_BODY_HALF_WIDTH); bz < Math.ceil(z + STAIR_BODY_HALF_WIDTH); bz += 1) {
-      for (let bx = Math.floor(x - STAIR_BODY_HALF_WIDTH); bx < Math.ceil(x + STAIR_BODY_HALF_WIDTH); bx += 1) {
-        if (!insideTemplate(template, bx, y, bz) || solidCellAt(template, bx, y, bz)) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
 };
 
 const stairOpeningCells = (placement: AuthoredSite['placements'][number]): Set<string> => {
@@ -415,61 +208,6 @@ const expectGroundedPlacement = (site: AuthoredSite, placement: AuthoredSite['pl
   expect(foundationCells, `${placement.template.id} has ground-layer support`).toBeGreaterThan(0);
 };
 
-const solidTopAboveWalk = (
-  placement: AuthoredSite['placements'][number],
-  x: number,
-  z: number,
-  walkY: number,
-): number | undefined => {
-  const [, originY] = placement.origin;
-  const [, height] = placement.template.size;
-  const blocksTop = Array.from({ length: height }, (_, localY) => originY + localY)
-    .filter((y) => y > walkY)
-    .reduce((highest, y) => {
-      const block = placedBlockAt(placement, [x, y, z]);
-      return block !== undefined && result.registry.blocks[block]?.solid ? Math.max(highest, y + 1) : highest;
-    }, Number.NEGATIVE_INFINITY);
-  const piecesTop = placedPieces(placement)
-    .filter((piece) => {
-      const furniture = result.registry.furniture.get(piece.furniture)!;
-      return (
-        !furniture.door &&
-        furniture.solid !== false &&
-        x >= piece.pos[0] &&
-        x < piece.pos[0] + piece.size[0] &&
-        z >= piece.pos[2] &&
-        z < piece.pos[2] + piece.size[2] &&
-        piece.pos[1] + piece.size[1] > walkY
-      );
-    })
-    .reduce((highest, piece) => Math.max(highest, piece.pos[1] + piece.size[1]), Number.NEGATIVE_INFINITY);
-  const top = Math.max(blocksTop, piecesTop);
-  return Number.isFinite(top) ? top : undefined;
-};
-
-const expectWallClearance = (
-  site: AuthoredSite,
-  placement: AuthoredSite['placements'][number],
-  jumpReachMeters: number,
-): void => {
-  const [x0, , z0] = placement.origin;
-  const [width, depth] = footprint(placement);
-  let checkedColumns = 0;
-  for (let x = x0; x < x0 + width; x++) {
-    for (let z = z0; z < z0 + depth; z++) {
-      const walkY = site.surface.height(x, z, layout.ground / scale.blockSize);
-      const topY = solidTopAboveWalk(placement, x, z, walkY);
-      if (topY === undefined) {
-        continue;
-      }
-      checkedColumns += 1;
-      const clearance = (topY - (walkY + 1)) * scale.blockSize;
-      expect(clearance, `${placement.template.id} at ${x},${z}`).toBeGreaterThan(jumpReachMeters);
-    }
-  }
-  expect(checkedColumns, `${placement.template.id} has solid barrier columns`).toBeGreaterThan(0);
-};
-
 const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
   const columns = new Map<string, [number, number]>();
   for (const placement of site.placements) {
@@ -489,31 +227,6 @@ const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number
 };
 
 type DoorCell = [number, number, number];
-type DoorPiece = ReturnType<typeof placedPieces>[number];
-
-const doorSideCells = (door: DoorPiece): DoorCell[][] => {
-  const [x, y, z] = door.pos;
-  const [width, height, depth] = door.size;
-  const yOffsets = Array.from({ length: height }, (_, yOffset) => yOffset);
-  if (door.facing === 'n' || door.facing === 's') {
-    return [-1, 1].map((direction) =>
-      yOffsets.flatMap((yOffset) =>
-        Array.from(
-          { length: width },
-          (_, xOffset) => [x + xOffset, y + yOffset, z + (direction < 0 ? -1 : depth)] as DoorCell,
-        ),
-      ),
-    );
-  }
-  return [-1, 1].map((direction) =>
-    yOffsets.flatMap((yOffset) =>
-      Array.from(
-        { length: depth },
-        (_, zOffset) => [x + (direction < 0 ? -1 : width), y + yOffset, z + zOffset] as DoorCell,
-      ),
-    ),
-  );
-};
 
 const solidInPlacements = (placements: AuthoredSite['placements'], cell: DoorCell): boolean =>
   placements.some((placement) => {
@@ -535,158 +248,6 @@ const solidInPlacements = (placements: AuthoredSite['placements'], cell: DoorCel
       );
     });
   });
-
-const blockedDoorCells = (door: DoorPiece, placements: AuthoredSite['placements']): DoorCell[] =>
-  doorSideCells(door)
-    .flat()
-    .filter((cell) => solidInPlacements(placements, cell));
-
-interface DoorSweepPose {
-  center: readonly [number, number];
-  lengthAxis: readonly [number, number];
-  thicknessAxis: readonly [number, number];
-  halfLength: number;
-  halfThickness: number;
-}
-
-const rotateDoorVector = ([x, z]: readonly [number, number], angle: number): [number, number] => [
-  Math.cos(angle) * x + Math.sin(angle) * z,
-  -Math.sin(angle) * x + Math.cos(angle) * z,
-];
-
-interface DoorSweepShape {
-  hinge: readonly [number, number];
-  length: number;
-  thickness: number;
-  alongX: boolean;
-  angle: number;
-}
-
-const doorSweepPose = ({ hinge, length, thickness, alongX, angle }: DoorSweepShape): DoorSweepPose => {
-  const lengthAxis = rotateDoorVector(alongX ? [1, 0] : [0, 1], angle);
-  const thicknessAxis = rotateDoorVector(alongX ? [0, 1] : [1, 0], angle);
-  const offset = rotateDoorVector(alongX ? [length / 2, 0] : [0, length / 2], angle);
-  return {
-    center: [hinge[0] + offset[0], hinge[1] + offset[1]],
-    lengthAxis,
-    thicknessAxis,
-    halfLength: length / 2,
-    halfThickness: thickness / 2,
-  };
-};
-
-const doorPanelFor = (door: DoorPiece) =>
-  doorPanel(
-    {
-      uid: 1,
-      type: door.furniture,
-      origin: door.pos,
-      pos: door.pos,
-      size: door.size,
-      facing: door.facing,
-      carried: false,
-      searched: false,
-      open: true,
-    } satisfies BlockEntity,
-    BLOCK_SIZE,
-  );
-
-const doorPanelOverlapsCell = (pose: DoorSweepPose, cellX: number, cellZ: number): boolean => {
-  const dx = cellX + 0.5 - pose.center[0];
-  const dz = cellZ + 0.5 - pose.center[1];
-  const [axisX, axisZ] = pose.lengthAxis;
-  const [sideX, sideZ] = pose.thicknessAxis;
-  const epsilon = 1e-9;
-  return (
-    Math.abs(dx) < 0.5 + pose.halfLength * Math.abs(axisX) + pose.halfThickness * Math.abs(sideX) - epsilon &&
-    Math.abs(dz) < 0.5 + pose.halfLength * Math.abs(axisZ) + pose.halfThickness * Math.abs(sideZ) - epsilon &&
-    Math.abs(dx * axisX + dz * axisZ) < pose.halfLength + 0.5 * (Math.abs(axisX) + Math.abs(axisZ)) - epsilon &&
-    Math.abs(dx * sideX + dz * sideZ) < pose.halfThickness + 0.5 * (Math.abs(sideX) + Math.abs(sideZ)) - epsilon
-  );
-};
-
-const doorSweepBounds = (pose: DoorSweepPose) => {
-  const [axisX, axisZ] = pose.lengthAxis;
-  const [sideX, sideZ] = pose.thicknessAxis;
-  const extentX = pose.halfLength * Math.abs(axisX) + pose.halfThickness * Math.abs(sideX);
-  const extentZ = pose.halfLength * Math.abs(axisZ) + pose.halfThickness * Math.abs(sideZ);
-  return {
-    minX: Math.floor(pose.center[0] - extentX - 0.5),
-    maxX: Math.ceil(pose.center[0] + extentX + 0.5),
-    minZ: Math.floor(pose.center[1] - extentZ - 0.5),
-    maxZ: Math.ceil(pose.center[1] + extentZ + 0.5),
-  };
-};
-
-interface DoorSweepGrid {
-  pose: DoorSweepPose;
-  y: number;
-  height: number;
-  cells: Set<string>;
-}
-
-const addDoorSweepCells = ({ pose, y, height, cells }: DoorSweepGrid): void => {
-  const bounds = doorSweepBounds(pose);
-  for (let cellX = bounds.minX; cellX < bounds.maxX; cellX += 1) {
-    for (let cellZ = bounds.minZ; cellZ < bounds.maxZ; cellZ += 1) {
-      if (!doorPanelOverlapsCell(pose, cellX, cellZ)) {
-        continue;
-      }
-      for (let cellY = y; cellY < y + height; cellY += 1) {
-        cells.add(`${cellX},${cellY},${cellZ}`);
-      }
-    }
-  }
-};
-
-const doorSwingCells = (door: DoorPiece): DoorCell[] => {
-  const [x, y, z] = door.pos;
-  const [width, height, depth] = door.size;
-  const alongX = door.facing === 'n' || door.facing === 's';
-  const panel = doorPanelFor(door);
-  const length = alongX ? width : depth;
-  const thickness = panel.size[alongX ? 2 : 0] / BLOCK_SIZE;
-  const hinge: readonly [number, number] = alongX ? [x, z + depth / 2] : [x + width / 2, z];
-  const steps = Math.ceil(Math.abs(panel.rotationY) / (Math.PI / 720));
-  const cells = new Set<string>();
-
-  for (let step = 0; step <= steps; step += 1) {
-    addDoorSweepCells({
-      pose: doorSweepPose({ hinge, length, thickness, alongX, angle: (panel.rotationY * step) / steps }),
-      y,
-      height,
-      cells,
-    });
-  }
-
-  return [...cells].map((cell) => cell.split(',').map(Number) as DoorCell);
-};
-
-const furnitureInPlacements = (placements: AuthoredSite['placements'], cell: DoorCell): boolean =>
-  placements.some((placement) =>
-    placedPieces(placement).some((piece) => {
-      const def = result.registry.furniture.get(piece.furniture)!;
-      return (
-        !def.door &&
-        cell[0] >= piece.pos[0] &&
-        cell[0] < piece.pos[0] + piece.size[0] &&
-        cell[1] >= piece.pos[1] &&
-        cell[1] < piece.pos[1] + piece.size[1] &&
-        cell[2] >= piece.pos[2] &&
-        cell[2] < piece.pos[2] + piece.size[2]
-      );
-    }),
-  );
-
-const blockedDoorSwingCells = (door: DoorPiece, placements: AuthoredSite['placements']): DoorCell[] => {
-  const [x, , z] = door.pos;
-  const [width, , depth] = door.size;
-  const alongX = door.facing === 'n' || door.facing === 's';
-  return doorSwingCells(door).filter((cell) => {
-    const inDoorWall = alongX ? cell[2] >= z && cell[2] < z + depth : cell[0] >= x && cell[0] < x + width;
-    return !inDoorWall && (solidInPlacements(placements, cell) || furnitureInPlacements(placements, cell));
-  });
-};
 
 const furnishInOrder = (site: AuthoredSite, columns: [number, number][]): Inventory => {
   const inventory = new Inventory(result.registry);
@@ -782,91 +343,6 @@ const seededFillerCounts = (
 const gapToBounds = (x: number, z: number, rect: Bounds): number =>
   Math.hypot(Math.max(rect.x0 - x, 0, x - rect.x1), Math.max(rect.z0 - z, 0, z - rect.z1));
 
-const samplePolyline = (points: readonly Point[], spacing: number): Point[] =>
-  points.slice(0, -1).flatMap((from, segment) => {
-    const to = points[segment + 1]!;
-    const steps = Math.ceil(Math.hypot(to[0] - from[0], to[1] - from[1]) / spacing);
-    const firstStep = segment === 0 ? 0 : 1;
-    return Array.from({ length: steps - firstStep + 1 }, (_, index) => {
-      const t = (firstStep + index) / steps;
-      return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
-    });
-  });
-
-const northGateRoad = (): SiteLayoutDef['tracks'][number] | undefined => {
-  const outer = layout.buildings.find(({ template }) => template === 'camp_gate');
-  if (!outer) {
-    return undefined;
-  }
-  const bounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
-  const centre: Point = [(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2];
-  return layout.tracks.find(
-    (track) =>
-      track.surface === 'dirt' &&
-      track.width >= bounds.x1 - bounds.x0 &&
-      polylineDistance(centre, track.points) <= track.width / 2,
-  );
-};
-
-const farthestEndpoint = (points: readonly Point[], origin: Point): Point =>
-  points.reduce((farther, point) =>
-    Math.hypot(point[0] - origin[0], point[1] - origin[1]) > Math.hypot(farther[0] - origin[0], farther[1] - origin[1])
-      ? point
-      : farther,
-  );
-
-const sampleRoute = (
-  site: AuthoredSite,
-  fixture: SiteLayoutDef,
-  rects: Bounds[],
-): { samples: Point[]; minBuildingClearance: number; maxHeightStep: number; allOnTrackSurface: boolean } => {
-  const track = fixture.tracks[0]!;
-  const samples: Point[] = [];
-  let previousHeight: number | undefined;
-  let minBuildingClearance = Number.POSITIVE_INFINITY;
-  let maxHeightStep = 0;
-  let allOnTrackSurface = true;
-  for (let segment = 0; segment < track.points.length - 1; segment += 1) {
-    const from = track.points[segment]!;
-    const to = track.points[segment + 1]!;
-    const steps = Math.ceil(Math.hypot(to[0] - from[0], to[1] - from[1]) / 0.25);
-    for (let step = segment === 0 ? 0 : 1; step <= steps; step += 1) {
-      const t = step / steps;
-      const x = from[0] + (to[0] - from[0]) * t;
-      const z = from[1] + (to[1] - from[1]) * t;
-      samples.push([x, z]);
-      for (const rect of rects) {
-        minBuildingClearance = Math.min(minBuildingClearance, gapToBounds(x, z, rect));
-      }
-      const cellX = Math.floor(x / scale.blockSize);
-      const cellZ = Math.floor(z / scale.blockSize);
-      const height = site.surface.height(cellX, cellZ, fixture.ground / scale.blockSize);
-      if (previousHeight !== undefined) {
-        maxHeightStep = Math.max(maxHeightStep, Math.abs(height - previousHeight));
-      }
-      previousHeight = height;
-      allOnTrackSurface &&= site.surface.top(cellX, cellZ) === result.registry.blockIds.get(track.surface ?? 'dirt');
-    }
-  }
-  return { samples, minBuildingClearance, maxHeightStep, allOnTrackSurface };
-};
-
-const nearestAreaDistance = (
-  fixture: SiteLayoutDef,
-  rects: Bounds[],
-  samples: Point[],
-  templates: readonly string[],
-): { count: number; distance: number } => {
-  const areaRects = fixture.buildings
-    .map((building, index) => ({ building, rect: rects[index]! }))
-    .filter(({ building }) => templates.includes(building.template))
-    .map(({ rect }) => rect);
-  return {
-    count: areaRects.length,
-    distance: Math.min(...areaRects.flatMap((rect) => samples.map(([x, z]) => gapToBounds(x, z, rect)))),
-  };
-};
-
 describe('authored fixed loot', () => {
   it('grounds every authored building on solid terrain', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
@@ -876,155 +352,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps FOB wall and gate solid columns above jump reach', () => {
-    const site = new AuthoredSite(73, result.registry, scale, layout);
-    const jumpReachMeters = PLAYER.jump ** 2 / (2 * physicsFor(scale).gravity * scale.blockSize);
-    const wallPlacements = site.placements.filter(({ template }) =>
-      ['camp_wall_run', 'camp_wall_run_crouch_hole', 'camp_gate', 'camp_gate_damaged', 'camp_gate_return'].includes(
-        template.id,
-      ),
-    );
-    expect(wallPlacements.length).toBeGreaterThan(0);
-    for (const placement of wallPlacements) {
-      expectWallClearance(site, placement, jumpReachMeters);
-    }
-  });
-
-  it('routes through the north double gate while keeping the south wall breach open', () => {
-    const campSite = new AuthoredSite(73, result.registry, scale, layout);
-    const wallRects = layout.buildings
-      .filter(({ template }) => FOB_WALL_RUN_TEMPLATES.has(template))
-      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
-    expect(wallRects.length).toBeGreaterThan(0);
-    const northEdge = Math.min(...wallRects.map(({ z0 }) => z0));
-    const southEdge = Math.max(...wallRects.map(({ z1 }) => z1));
-    const southRuns = wallRects.filter(({ z1 }) => z1 === southEdge).sort((a, b) => a.x0 - b.x0);
-    const southGaps = southRuns.slice(1).flatMap((run, index) => {
-      const prior = southRuns[index]!;
-      return run.x0 > prior.x1 ? [[prior.x1, run.x0] as const] : [];
-    });
-    expect(southGaps.length).toBeGreaterThan(0);
-    const [breachStart, breachEnd] = southGaps.sort((a, b) => b[1] - b[0] - (a[1] - a[0]))[0]!;
-    const southWallStart = Math.min(...wallRects.filter(({ z1 }) => z1 === southEdge).map(({ z0 }) => z0));
-    const gateObjects = layout.buildings.filter(({ template }) =>
-      ['camp_gate', 'camp_gate_damaged'].includes(template),
-    );
-    const outer = gateObjects.find(({ template }) => template === 'camp_gate');
-    const inner = gateObjects.find(({ template }) => template === 'camp_gate_damaged');
-    if (!(outer && inner)) {
-      throw new Error('the camp needs north outer gate 1 and damaged inner gate 2');
-    }
-    const outerBounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
-    const innerBounds = buildingBounds(inner, result.registry.templates.get(inner.template)!.size);
-    expect(outerBounds.z0).toBe(northEdge);
-    expect([innerBounds.x0, innerBounds.x1]).toEqual([outerBounds.x0, outerBounds.x1]);
-    expect(innerBounds.z0).toBeGreaterThan(outerBounds.z1);
-    expect(
-      gateObjects.every(
-        (building) => buildingBounds(building, result.registry.templates.get(building.template)!.size).z1 < southEdge,
-      ),
-    ).toBe(true);
-    const gateWidth = outerBounds.x1 - outerBounds.x0;
-    const road = layout.tracks.find(
-      (track) =>
-        track.surface === 'dirt' &&
-        track.width >= gateWidth &&
-        [outerBounds, innerBounds].every(
-          (bounds) =>
-            polylineDistance([(bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2], track.points) <=
-            track.width / 2,
-        ),
-    );
-    expect(road).toBeDefined();
-    const routeX = (breachStart + breachEnd) / 2;
-    const southWallZ = southEdge - (wallRects[0]!.z1 - wallRects[0]!.z0) / 2;
-    expect(layout.tracks.some((track) => polylineDistance([routeX, southWallZ], track.points) <= track.width / 2)).toBe(
-      true,
-    );
-    expect(
-      gateObjects.every((building) => {
-        const bounds = buildingBounds(building, result.registry.templates.get(building.template)!.size);
-        return bounds.z1 <= southWallStart || bounds.z0 >= southEdge;
-      }),
-    ).toBe(true);
-
-    const routeXNorth = (outerBounds.x0 + outerBounds.x1) / 2;
-    const routeSamples = Math.ceil((innerBounds.z1 - outerBounds.z0 + 2) / 0.5);
-    const routeHeights = Array.from({ length: routeSamples + 1 }, (_, index) =>
-      campSite.surface.height(routeXNorth, outerBounds.z0 - 1 + index * 0.5, layout.ground / scale.blockSize),
-    );
-    expect(routeHeights.every((height, index) => index === 0 || Math.abs(height - routeHeights[index - 1]!) <= 1)).toBe(
-      true,
-    );
-
-    for (const building of gateObjects) {
-      const gate = compileTemplate(result.registry, result.registry.templates.get(building.template)!);
-      const door = gate.pieces.find((piece) => result.registry.furniture.get(piece.furniture)?.door);
-      expect(door).toBeDefined();
-      expect(door && result.registry.furniture.get(door.furniture)?.door).toBeDefined();
-      const [doorX, doorY] = door!.pos;
-      const [doorWidth, doorHeight] = door!.size;
-      for (let y = doorY; y < doorY + doorHeight; y++) {
-        for (let x = doorX; x < doorX + doorWidth; x++) {
-          const block = gate.blocks[x + gate.size[0] * (1 + gate.size[2] * y)]!;
-          expect(result.registry.blocks[block]?.solid).toBe(false);
-        }
-      }
-    }
-  });
-
-  it('keeps the full-width camp road clear of structures', () => {
-    const road = northGateRoad();
-    if (road === undefined) {
-      throw new Error('the north gate needs a full-width dirt road');
-    }
-    const buildings = layout.buildings
-      .filter(({ template }) => !['camp_gate', 'camp_gate_damaged', 'camp_gate_return'].includes(template))
-      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
-    const minimumClearance = Math.min(
-      ...samplePolyline(road.points, 0.25).flatMap(([x, z]) => buildings.map((bounds) => gapToBounds(x, z, bounds))),
-    );
-    expect(minimumClearance).toBeGreaterThanOrEqual(road.width / 2);
-  });
-
-  it('joins the full-width camp road to the narrower medical trail', () => {
-    const road = northGateRoad();
-    const outer = layout.buildings.find(({ template }) => template === 'camp_gate');
-    if (road === undefined || outer === undefined) {
-      throw new Error('the north gate needs its full-width road');
-    }
-    const gateBounds = buildingBounds(outer, result.registry.templates.get(outer.template)!.size);
-    const gateCentre: Point = [(gateBounds.x0 + gateBounds.x1) / 2, (gateBounds.z0 + gateBounds.z1) / 2];
-    const medicalEnd = farthestEndpoint([road.points[0]!, road.points.at(-1)!], gateCentre);
-    const trail = layout.tracks.find(
-      (track) =>
-        track.width < road.width &&
-        track.surface === road.surface &&
-        polylineDistance(medicalEnd, track.points) <= (road.width + track.width) / 2,
-    );
-    expect(trail).toBeDefined();
-
-    const nearestBuildingGap = Math.min(
-      ...layout.buildings.map((building) =>
-        gapToBounds(
-          medicalEnd[0],
-          medicalEnd[1],
-          buildingBounds(building, result.registry.templates.get(building.template)!.size),
-        ),
-      ),
-    );
-    expect(nearestBuildingGap - road.width / 2).toBeLessThanOrEqual(road.width);
-    const medicalHall = layout.buildings.find(({ template }) => template === 'medical_hall');
-    if (medicalHall === undefined) {
-      throw new Error('the medical compound needs its hall placement');
-    }
-    const medicalBounds = buildingBounds(medicalHall, result.registry.templates.get(medicalHall.template)!.size);
-    expect(gapToBounds(medicalEnd[0], medicalEnd[1], medicalBounds)).toBeLessThan(
-      gapToBounds(medicalEnd[0], medicalEnd[1], gateBounds),
-    );
-  });
-
-  it('delivers fixed loot without replacing seed filler and is chunk-order independent', () => {
+  it('delivers fixed loot beside seed filler, leaves placed firearms unloaded, and is chunk-order independent', () => {
     expect(result.issues).toEqual([]);
     const fixture = compactFixture();
     const site = new AuthoredSite(73, result.registry, scale, fixture);
@@ -1033,13 +361,6 @@ describe('authored fixed loot', () => {
     const reverse = furnishInOrder(site, [...columns].reverse());
     const overrides = placedOverrides(fixture);
     expect(overrides.length).toBeGreaterThan(0);
-    const crowbar = overrides.flatMap(({ override }) => override.items).find(({ item }) => item === 'crowbar');
-    expect(crowbar?.condition).toBeGreaterThan(0);
-    expect(crowbar?.condition).toBeLessThan(1);
-    expect(result.registry.items.get('shotshell_box')?.unpack).toMatchObject({
-      item: 'shell_12_gauge_00_buck',
-      count: 20,
-    });
     const fixedCounts = overrides.flatMap((override) => fixedItemCounts(site, forward, override));
     expect(fixedCounts.length).toBeGreaterThan(0);
     for (const fixed of fixedCounts) {
@@ -1053,11 +374,18 @@ describe('authored fixed loot', () => {
     const placedItems = [...forward.entities.all].flatMap((entity) =>
       (entity.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item)),
     );
-    const rifles = placedItems.filter(({ type }) => ['rifle_assault', 'rifle_ak'].includes(type));
-    expect(rifles.length).toBeGreaterThan(0);
-    expect(rifles.every((rifle) => rifle.firearm?.chamber === 'empty' && rifle.slots?.magazine === undefined)).toBe(
-      true,
-    );
+    const firearms = placedItems.filter(({ type }) => result.registry.items.get(type)?.firearm !== undefined);
+    expect(firearms.length).toBeGreaterThan(0);
+    for (const { type, firearm, slots } of firearms) {
+      const rounds = [
+        ...(firearm?.tube ?? []),
+        ...(firearm?.roundType ? [firearm.roundType] : []),
+        ...(firearm?.cylinder?.chambers.filter(({ state }) => state === 'round') ?? []),
+      ];
+      expect(firearm?.chamber, type).not.toBe('round');
+      expect(rounds, type).toEqual([]);
+      expect(slots?.magazine, type).toBeUndefined();
+    }
     const magazines = placedItems.filter(({ type }) => magazineSpec(result.registry, type) !== undefined);
     expect(magazines.length).toBeGreaterThan(0);
     expect(magazines.every((magazine) => (magazine.cartridges ?? []).length === 0)).toBe(true);
@@ -1085,50 +413,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('gives the starting house a revolver and its ammo box in separate containers', () => {
-    const house = placedOverrides(layout).filter(({ building }) => building.template === 'playtest_house');
-    const anchorsHolding = (match: (item: string) => boolean): Set<string> =>
-      new Set(
-        house
-          .filter(({ override }) => override.items.some(({ item }) => match(item)))
-          .map(({ override }) => override.at.join(',')),
-      );
-    const revolvers = anchorsHolding((item) => item === 'revolver_357');
-    const boxes = anchorsHolding((item) => result.registry.items.get(item)?.unpack?.item === 'cartridge_357_h_magnum');
-    expect(revolvers.size).toBeGreaterThan(0);
-    expect(boxes.size).toBeGreaterThan(0);
-    expect([...revolvers].filter((anchor) => boxes.has(anchor))).toEqual([]);
-  });
-
-  it('furnishes the long gun in Dad’s cabin with a sling, so it can go on the shoulder', () => {
-    const site = new AuthoredSite(73, result.registry, scale, layout);
-    const cabin = placedOverrides(layout).filter(({ building }) => building.template === 'playtest_dads_cabin');
-    const placement = site.placements[cabin[0]!.buildingIndex]!;
-    const [width, depth] = footprint(placement);
-    const columns: [number, number][] = [];
-    for (let cx = toChunk(placement.origin[0]); cx <= toChunk(placement.origin[0] + width - 1); cx += 1) {
-      for (let cz = toChunk(placement.origin[2]); cz <= toChunk(placement.origin[2] + depth - 1); cz += 1) {
-        columns.push([cx, cz]);
-      }
-    }
-    const inventory = furnishInOrder(site, columns);
-    const placed = placedPieces(placement);
-    const anchored = cabin.flatMap(({ override }) => {
-      const index = placement.template.pieces.findIndex((piece) => piece.pos.join(',') === override.at.join(','));
-      const entity = inventory.entities.at(...placed[index]!.pos);
-      if (entity) {
-        inventory.entities.markSearched(entity);
-      }
-      return (entity?.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item));
-    });
-    const guns = anchored.filter((item) => isLongGun(result.registry.items.get(item.type)));
-    expect(guns.length).toBeGreaterThan(0);
-    for (const gun of guns) {
-      expect(inventory.plan(gun, { kind: 'worn' }).ok).toBe(true);
-    }
-  });
-
-  it('covers light mounting hardware and guarantees the quiet input at the noisy scrap pile', () => {
+  it('covers the light-mount and suppressor recipe components from workshop fixed loot and the scrap pile', () => {
     const overrides = placedOverrides(layout);
     const garageTemplates = ['workshop_hall', 'workshop_office', 'workshop_parts_store'];
     const garageTemplateIds = [...garageTemplates, 'workshop_yard'];
@@ -1182,7 +467,6 @@ describe('authored fixed loot', () => {
           (ingredient) => 'item' in ingredient && (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count,
         ),
     );
-    expect(missingGroups).toHaveLength(1);
     const garageRandomTables = garageTemplateIds.flatMap((templateId) =>
       compileTemplate(result.registry, result.registry.templates.get(templateId)!).pieces.flatMap((piece) =>
         piece.loot ? [piece.loot] : [],
@@ -1191,7 +475,6 @@ describe('authored fixed loot', () => {
     expect(garageRandomTables.length).toBeGreaterThan(0);
     const garageRandomItems = new Set(garageRandomTables.flatMap((tableId) => [...possibleLootItems(tableId)]));
     expect(garageRandomItems.size).toBeGreaterThan(0);
-    expect(missingGroups[0]!.some((input) => 'item' in input && garageRandomItems.has(input.item))).toBe(false);
     expect(garageRandomItems.has(mountRecipe!.result.item)).toBe(false);
     expect(garageRandomItems.has(suppressorRecipe!.result.item)).toBe(false);
 
@@ -1204,71 +487,11 @@ describe('authored fixed loot', () => {
         building.template === 'workshop_yard' && override.at.join(',') === scrapPile!.pos.join(','),
     );
     const pileItems = pileOverride?.override.items ?? [];
-    expect(missingGroups[0]!.some((input) => 'item' in input && itemCount(pileItems, input.item) >= input.count)).toBe(
-      true,
-    );
-    const searchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
-    expect(searchNoise).toBeDefined();
-    expect(result.registry.sounds.get(searchNoise!.sound)?.noise.enabled).toBe(true);
-    const radio = overrides
-      .filter(({ building }) => building.template === 'workshop_hall')
-      .flatMap(({ override }) => override.items)
-      .find(({ item }) => item === 'portable_radio');
-    expect(radio?.condition).toBe(0);
-  });
-
-  it('locks the armoury, keeps fixed guns empty, and separates its loose rounds', () => {
-    const overrides = placedOverrides(layout);
-    const officerKey = overrideFor(overrides, 'medical_hall', 'camp_armoury_key');
-    expect(officerKey).toBeDefined();
-    expect(furnitureAt(officerKey!)).toBe('dead_officer_body');
-    for (const rifle of ['rifle_assault', 'rifle_ak']) {
-      expect(fixedCount(overrides, 'camp_armoury', rifle)).toBeGreaterThan(0);
+    // Each suppressor input the garage does not fix is guaranteed only at the scrap pile, never by a random table.
+    for (const group of missingGroups) {
+      expect(group.some((input) => 'item' in input && itemCount(pileItems, input.item) >= input.count)).toBe(true);
+      expect(group.some((input) => 'item' in input && garageRandomItems.has(input.item))).toBe(false);
     }
-    for (const magazine of ['magazine_stanag_30', 'magazine_akm_30']) {
-      expect(fixedCount(overrides, 'camp_armoury', magazine)).toBeGreaterThan(0);
-    }
-    const armouryLoot = overrides.filter(({ building }) => building.template === 'camp_armoury');
-    const rifleLoot = armouryLoot.find(({ override }) =>
-      override.items.some(({ item }) => magazineWellCalibre(result.registry, item) !== undefined),
-    );
-    const ammunition = armouryLoot.find(({ override }) =>
-      override.items.some(({ item }) => result.registry.items.get(item)?.ammo !== undefined),
-    );
-    const magazines = armouryLoot.find(({ override }) =>
-      override.items.some(({ item }) => magazineSpec(result.registry, item) !== undefined),
-    );
-    expect(rifleLoot).toBeDefined();
-    expect(ammunition).toBeDefined();
-    expect(magazines).toBeDefined();
-    expect(ammunition).not.toBe(rifleLoot);
-    expect(ammunition).not.toBe(magazines);
-    expect(furnitureAt(ammunition!)).toBe('ammo_crate');
-    const sparse = result.registry.loot.get('military_armoury')!;
-    const nothingWeight = sparse.entries.find(({ nothing }) => nothing)?.weight ?? 0;
-    const itemWeight = sparse.entries
-      .filter(({ item }) => item !== undefined)
-      .reduce((sum, entry) => sum + entry.weight, 0);
-    expect(nothingWeight).toBeGreaterThanOrEqual(itemWeight);
-
-    const inventory = new Inventory(result.registry);
-    for (const rifle of ['rifle_assault', 'rifle_ak']) {
-      expect(inventory.create(rifle)).toMatchObject({ firearm: { chamber: 'empty' }, slots: {} });
-    }
-    for (const magazine of ['magazine_stanag_30', 'magazine_akm_30']) {
-      expect(inventory.create(magazine).cartridges ?? []).toEqual([]);
-    }
-    const armoury = result.registry.templates.get('camp_armoury')!;
-    const compiledArmoury = compileTemplate(result.registry, armoury);
-    const door = compiledArmoury.pieces.find((piece) => piece.furniture === 'container_door');
-    expect(door?.lock).toEqual({ id: 'camp_armoury', locked: true });
-    expect(result.registry.furniture.get('container_door')?.door?.methods.pry).toBeDefined();
-    const closingNote = overrideFor(overrides, 'camp_armoury', 'camp_closing_note');
-    expect(closingNote).toBeDefined();
-    expect(furnitureAt(closingNote!)).toBeDefined();
-    expect(compiledArmoury.spawns).toEqual([]);
-
-    expectCampHqProperties(compiledArmoury);
   });
 
   it('admits surface loot through a stacked placement with its authored source context', () => {
@@ -1309,10 +532,14 @@ describe('authored fixed loot', () => {
             category: 'material' as const,
             weight: 1,
             size: [1, 1] as [number, number],
-            economy: { usage: ['Military' as const], tiers: ['Tier1' as const] },
             workInProgress: false,
-            notLoot: false,
           },
+        ],
+      ]),
+      itemEconomy: new Map([
+        [
+          'fixture_gear',
+          { id: 'fixture_gear', usage: ['Military' as const], tiers: ['Tier1' as const], notLoot: false },
         ],
       ]),
     };
@@ -1339,33 +566,6 @@ describe('authored fixed loot', () => {
     };
 
     expect(authoredLayoutIssues(fixture, registry)).toEqual([]);
-  });
-
-  it('rejects surface supply outside its source economy context', () => {
-    const buildingIndex = layout.buildings.findIndex(
-      (candidate) =>
-        candidate.fixedLoot?.length && !(candidate.lootContext ?? layout.lootContext).usage.includes('Military'),
-    );
-    const building = layout.buildings[buildingIndex];
-    if (!building?.fixedLoot?.length) {
-      throw new Error('the layout fixture needs fixed loot in a non-military template');
-    }
-    const override = building.fixedLoot[0]!;
-    const itemIndex = override.items.length;
-    const buildings = [...layout.buildings];
-    buildings[buildingIndex] = {
-      ...building,
-      fixedLoot: [
-        { ...override, items: [...override.items, { item: 'rifle_assault', placement: 'surface' }] },
-        ...building.fixedLoot.slice(1),
-      ],
-    };
-    const issues = authoredLayoutIssues({ ...layout, buildings }, result.registry);
-
-    expect(issues).toContainEqual([
-      `.buildings[${buildingIndex}].fixedLoot[0].items[${itemIndex}].item`,
-      expect.stringContaining('outside the source loot context'),
-    ]);
   });
 
   it('rejects fitted-item data when fixed loot gives a sling to an item without slots', () => {
@@ -1449,57 +649,6 @@ describe('authored fixed loot', () => {
     expect(inventory.entities.setOpen(door, true)).toBeUndefined();
   });
 
-  it('keeps the FOB command tent entrance and interior reachable at standing height', () => {
-    const building = layout.buildings.find(({ template }) => template === 'camp_command_tent')!;
-    const definition = result.registry.templates.get(building.template)!;
-    const tent = compileTemplate(result.registry, definition);
-    expect(templateSpatialIssues(result.registry, tent), tent.id).toEqual([]);
-    const reachable = templateReachableStandingPositions(result.registry, tent);
-    expect(reachable.length, tent.id).toBeGreaterThan(0);
-    expect(tent.pieces.length).toBeGreaterThan(0);
-    for (const piece of tent.pieces) {
-      const [x, feet, z] = piece.pos;
-      const [pieceWidth, , pieceDepth] = piece.size;
-      expect(
-        reachable.some(([px, py, pz]) => {
-          if (py !== feet) {
-            return false;
-          }
-          const dx = Math.max(x - px, 0, px - (x + pieceWidth));
-          const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
-          return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
-        }),
-        `${piece.furniture} at ${piece.pos.join(',')}`,
-      ).toBe(true);
-    }
-
-    const { entrance } = definition.access!;
-    const [width, , depth] = tent.size;
-    const edgeSteps = [
-      { distance: entrance[0], dx: -1, dz: 0 },
-      { distance: width - 1 - entrance[0], dx: 1, dz: 0 },
-      { distance: entrance[2], dx: 0, dz: -1 },
-      { distance: depth - 1 - entrance[2], dx: 0, dz: 1 },
-    ];
-    const nearestEdge = Math.min(...edgeSteps.map(({ distance }) => distance));
-    const pathPoints = edgeSteps
-      .filter(({ distance }) => distance === nearestEdge)
-      .map(({ dx, dz }) => [
-        building.position[0] + (entrance[0] + dx) * BLOCK_SIZE,
-        building.position[2] + (entrance[2] + dz) * BLOCK_SIZE,
-      ]);
-    const clearPath = pathPoints.some(([x, z]) =>
-      layout.buildings.every((other) => {
-        if (other.template === building.template) {
-          return true;
-        }
-        const bounds = buildingBounds(other, result.registry.templates.get(other.template)!.size);
-        return !(x! >= bounds.x0 && x! < bounds.x1 && z! >= bounds.z0 && z! < bounds.z1);
-      }),
-    );
-    expect(clearPath).toBe(true);
-  });
-
   it('places worst-case rolls from every FOB armoury container', () => {
     const armoury = layout.buildings.find(({ template: id }) => id === 'camp_armoury')!;
     const definition = result.registry.templates.get(armoury.template)!;
@@ -1532,21 +681,6 @@ describe('authored fixed loot', () => {
         expect(itemCounts(placed), label).toEqual(itemCounts(supplied));
       }
     }
-  });
-
-  it('lets a player walk from inside the camp sandbag post template to its exit', () => {
-    const definition = result.registry.templates.get('camp_sandbag_post')!;
-    const post = compileTemplate(result.registry, definition);
-    expect(templateSpatialIssues(result.registry, post)).toEqual([]);
-    const [width, , depth] = post.size;
-    const reachable = templateReachableStandingPositions(result.registry, post);
-    expect(
-      reachable.some(
-        ([x, feet, z]) =>
-          feet === post.access?.storeys.find(({ id }) => id === post.access?.ground)?.floor &&
-          (x <= 1 || x >= width - 1 || z <= 1 || z >= depth - 1),
-      ),
-    ).toBe(true);
   });
 
   it.each(layout.beats!)('keeps $id fixed loot reachable from outside at standing height', (beat) => {
@@ -1589,31 +723,6 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it.each([
-    { name: 'workshop', source: layout, templateIds: ['workshop_hall', 'workshop_office', 'workshop_parts_store'] },
-    { name: 'HQ', source: result.registry.layouts.get('crisis_hq')!, templateIds: undefined },
-  ])('keeps the approaches and full opening sweeps of $name doors clear', ({ source, templateIds }) => {
-    const selected = templateIds && new Set(templateIds);
-    const site = new AuthoredSite(73, result.registry, scale, source);
-    const placements = site.placements.filter((placement) => !selected || selected.has(placement.template.id));
-    let checkedDoors = 0;
-
-    for (const [index, building] of source.buildings.entries()) {
-      if (selected && !selected.has(building.template)) {
-        continue;
-      }
-      const placement = site.placements[index]!;
-      const doors = placedPieces(placement).filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
-      checkedDoors += doors.length;
-      for (const door of doors) {
-        const at = `${building.template} door at ${door.pos.join(',')}`;
-        expect(blockedDoorCells(door, placements), at).toEqual([]);
-        expect(blockedDoorSwingCells(door, placements), `${at} swing`).toEqual([]);
-      }
-    }
-    expect(checkedDoors).toBeGreaterThan(0);
-  });
-
   it('rests HQ freestanding fixtures on floors or solid furniture tops', () => {
     const source = result.registry.layouts.get('crisis_hq')!;
     const site = new AuthoredSite(73, result.registry, scale, source);
@@ -1633,334 +742,63 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps every workshop opening connected to standing space', () => {
-    for (const templateId of ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']) {
-      const template = compileTemplate(result.registry, result.registry.templates.get(templateId)!);
-      expect(templateSpatialIssues(result.registry, template), templateId).toEqual([]);
-      const reachable = templateReachableStandingPositions(result.registry, template);
-      expect(reachable.length, templateId).toBeGreaterThan(0);
-      const doors = template.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
-      if (templateId === 'workshop_yard') {
-        continue;
-      }
-      expect(doors.length, templateId).toBeGreaterThan(0);
-      for (const door of doors) {
-        const [x, floor, z] = door.pos;
-        const [width, , depth] = door.size;
-        const nearDoor = reachable.some(([px, feet, pz]) => {
-          if (feet !== floor) {
-            return false;
-          }
-          const dx = Math.max(x - px, 0, px - (x + width));
-          const dz = Math.max(z - pz, 0, pz - (z + depth));
-          return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
-        });
-        expect(nearDoor, `${templateId} door at ${door.pos.join(',')}`).toBe(true);
-      }
-    }
-  });
-
-  it('rests the stripped workshop vehicle lowest solid voxel on its lift without fitted wheels', () => {
-    const template = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
-    const lifts = template.pieces.filter(({ furniture }) => furniture === 'workshop_lift');
-    const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
-    expect(lifts.length).toBeGreaterThan(0);
-    expect(cars.length).toBeGreaterThan(0);
-    const carDef = result.registry.furniture.get('workshop_stripped_car')!;
-    const carLook = carDef.vehicle!;
-    const workshopCarInstance = vehicleInstanceOf(carLook);
+  it("rests a wheelless vehicle's lowest solid voxel on the arms of the lift it stands on", () => {
+    const blueprint = Object.values(BLUEPRINTS)[0]!;
+    const carLook = {
+      blueprint: blueprint.id,
+      body: '#808080',
+      dirt: 0,
+      removed: blueprint.fittings.filter(({ type }) => type === wheel.type.id).map(({ id }) => id),
+      solidFill: 0.5,
+    };
+    const fixtureCar = vehicleInstanceOf(carLook);
+    expect(fixtureCar.fittings.length).toBeGreaterThan(0);
     const lowestSolidVoxelY = Math.min(
-      ...workshopCarInstance.fittings.flatMap((fitting) =>
+      ...fixtureCar.fittings.flatMap((fitting) =>
         [...partLibrary.placed(fitting).grid].flatMap(([voxel, material]) =>
           material === GLASS ? [] : [keyVoxel(voxel)[1]],
         ),
       ),
     );
-    for (const car of cars) {
-      const renderEntity = {
-        uid: 1,
-        type: car.furniture,
-        origin: car.pos,
-        pos: car.pos,
-        size: car.size,
-        facing: car.facing,
-        carried: false,
-        searched: false,
-        open: false,
-      } satisfies BlockEntity;
-      const carBottom = vehicleModel(renderEntity, carLook, carDef.size[1]).position.y + lowestSolidVoxelY * VOXEL;
-      const supportingLift = lifts.find((lift) => {
-        const overlapsX = car.pos[0] < lift.pos[0] + lift.size[0] && lift.pos[0] < car.pos[0] + car.size[0];
-        const overlapsZ = car.pos[2] < lift.pos[2] + lift.size[2] && lift.pos[2] < car.pos[2] + car.size[2];
-        return overlapsX && overlapsZ;
-      });
-      expect(supportingLift).toBeDefined();
-      const liftEntity = {
-        uid: 2,
-        type: supportingLift!.furniture,
-        origin: supportingLift!.pos,
-        pos: supportingLift!.pos,
-        size: supportingLift!.size,
-        facing: supportingLift!.facing,
-        carried: false,
-        searched: false,
-        open: false,
-      } satisfies BlockEntity;
-      const liftView = workshopLift(liftEntity);
-      const armTops = liftView.children
-        .filter(
-          (child): child is Mesh =>
-            child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
-        )
-        .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
-      expect(armTops.length).toBeGreaterThan(0);
-      expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
-    }
-
-    expect(workshopCarInstance.fittings.length).toBeGreaterThan(0);
-    expect(workshopCarInstance.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
+    const entity = (uid: number, type: string, pos: DoorCell, size: DoorCell): BlockEntity => ({
+      uid,
+      type,
+      origin: pos,
+      pos,
+      size,
+      facing: 'n',
+      carried: false,
+      searched: false,
+      open: false,
+    });
+    const lift = entity(1, 'fixture_lift', [2, 1, 3], [4, 1, 9]);
+    const carSize: DoorCell = [4, 4, 9];
+    const car = entity(2, 'fixture_car', [lift.pos[0], lift.pos[1] + lift.size[1], lift.pos[2]], carSize);
+    const carBottom = vehicleModel(car, carLook, carSize[1]).position.y + lowestSolidVoxelY * VOXEL;
+    const liftView = workshopLift(lift);
+    const armTops = liftView.children
+      .filter(
+        (child): child is Mesh =>
+          child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
+      )
+      .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
+    expect(armTops.length).toBeGreaterThan(0);
+    expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
   });
 
-  it.each([
-    {
-      kind: 'runner',
-      templates: ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard'],
-    },
-    { kind: 'crawler', templates: ['medical_hall'] },
-  ])('spawns each authored beat marker as its kind ($kind)', ({ kind, templates }) => {
+  it('spawns every always-spawning template marker as its own kind at its own position', () => {
     const site = new AuthoredSite(73, result.registry, scale, layout);
-    const templateIds = new Set(templates);
-    const markers = site.placements
-      .filter((placement) => templateIds.has(placement.template.id))
-      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === kind));
-    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
-    const matchingSpawns = spawns.filter(({ type }) => type === kind);
+    const markers = site.placements.flatMap(placedSpawns).filter(({ chance }) => chance >= 1);
+    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.actorsIn(cx, cz));
 
     expect(markers.length).toBeGreaterThan(0);
     for (const marker of markers) {
-      expect(matchingSpawns.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(
-        true,
-      );
-    }
-  });
-
-  it('places the agreed shambler threats by beat and keeps the seeded wanderer', () => {
-    const houseTemplate = result.registry.templates.get('playtest_house')!;
-    const bedroomFloor = houseTemplate.access?.storeys.find(({ id }) => id === 'bedroom')?.floor;
-    const upstairs = compileTemplate(result.registry, houseTemplate).spawns;
-    expect(upstairs.length).toBeGreaterThanOrEqual(1);
-    expect(upstairs.every(({ pos }) => pos[1] === bedroomFloor)).toBe(true);
-
-    for (const templateId of ['playtest_tool_shack', 'shed']) {
-      const template = result.registry.templates.get(templateId)!;
-      const { spawns } = compileTemplate(result.registry, template);
-      expect(spawns.some(({ zombie, chance }) => zombie === 'shambler' && chance < 1)).toBe(true);
-    }
-
-    const inside = (templateId: string, spawn: SiteLayoutDef['shamblers'][number]): boolean => {
-      const building = layout.buildings.find(({ template }) => template === templateId)!;
-      const rect = buildingBounds(building, result.registry.templates.get(templateId)!.size);
-      return (
-        spawn.position[0] >= rect.x0 &&
-        spawn.position[0] <= rect.x1 &&
-        spawn.position[2] >= rect.z0 &&
-        spawn.position[2] <= rect.z1
-      );
-    };
-    const storeThreats = layout.shamblers.filter(
-      (spawn) => spawn.type === 'shambler' && inside('playtest_store', spawn),
-    );
-    const garageThreats = layout.shamblers.filter(
-      (spawn) => spawn.type === 'shambler' && inside('playtest_gas_station', spawn),
-    );
-    expect(storeThreats.length).toBeGreaterThanOrEqual(1);
-    expect(garageThreats.length).toBeGreaterThanOrEqual(1);
-    for (const [templateId, item, spawn] of [
-      ...storeThreats.map((threat) => ['playtest_store', 'duct_tape', threat] as const),
-      ...garageThreats.map((threat) => ['playtest_gas_station', 'scrap_metal', threat] as const),
-    ]) {
-      const building = layout.buildings.find(({ template }) => template === templateId)!;
-      const buildingTemplate = compileTemplate(result.registry, result.registry.templates.get(templateId)!);
-      const container = overrideFor(placedOverrides(layout), templateId, item)!;
-      const partition = partitionRowBefore(buildingTemplate, container.override.at[2]);
-      const walking = withTestEntrance(buildingTemplate, container.override.at);
-      expect(templateSpatialIssues(result.registry, walking), templateId).toEqual([]);
-      const reachable = templateReachableStandingPositions(result.registry, walking);
-      const local: [number, number, number] = spawn.position.map(
-        (coordinate, axis) => (coordinate - building.position[axis]!) / scale.blockSize,
-      ) as [number, number, number];
-      expect(reachable, `${templateId} threat at ${local.join(',')} is reachable at standing height`).toContainEqual(
-        local,
-      );
-      expect(bodyClearOfSolids(buildingTemplate, local), `${templateId} threat body is clear of closed solids`).toBe(
-        true,
-      );
       expect(
-        local[2] - STAIR_BODY_HALF_WIDTH,
-        `${templateId} threat stands beyond partition ${partition}`,
-      ).toBeGreaterThanOrEqual(partition + 1);
-      expect(local[2] + STAIR_BODY_HALF_WIDTH).toBeLessThan(buildingTemplate.size[2]);
+        spawns.some(
+          ({ type, pos }) => type === marker.actor && pos.every((coordinate, axis) => coordinate === marker.pos[axis]),
+        ),
+        `${marker.actor} at ${marker.pos.join(',')}`,
+      ).toBe(true);
     }
-
-    const isInsideWoodland = (x: number, z: number, polygon: Point[]): boolean => {
-      let contains = false;
-      for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index, index += 1) {
-        const [xi, zi] = polygon[index]!;
-        const [xj, zj] = polygon[previous]!;
-        const crossesZ = zi > z !== zj > z;
-        if (crossesZ && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) {
-          contains = !contains;
-        }
-      }
-      return contains;
-    };
-    const treelineThreats = layout.shamblers.filter(
-      ({ type, position }) =>
-        type === 'shambler' &&
-        layout.woodlands.some(({ polygon }) => isInsideWoodland(position[0], position[2], polygon)),
-    );
-    expect(treelineThreats.length).toBeGreaterThanOrEqual(1);
-    const track = layout.tracks[0]!;
-    const roadsideThreats = layout.shamblers.filter(
-      (spawn) =>
-        spawn.type === 'shambler' &&
-        !treelineThreats.includes(spawn) &&
-        polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
-    );
-    expect(roadsideThreats.length).toBeGreaterThanOrEqual(1);
-    const campSoldiers = layout.shamblers.filter(({ type }) => type === 'military_shambler');
-    const fenceRects = layout.buildings
-      .filter(({ template }) => FOB_WALL_RUN_TEMPLATES.has(template))
-      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
-    const fenceBounds = {
-      x0: Math.min(...fenceRects.map(({ x0 }) => x0)),
-      z0: Math.min(...fenceRects.map(({ z0 }) => z0)),
-      x1: Math.max(...fenceRects.map(({ x1 }) => x1)),
-      z1: Math.max(...fenceRects.map(({ z1 }) => z1)),
-    };
-    expect(campSoldiers.length).toBeGreaterThan(0);
-    expect(
-      campSoldiers.every(
-        ({ position: [x, , z] }) =>
-          x < fenceBounds.x0 || x > fenceBounds.x1 || z < fenceBounds.z0 || z > fenceBounds.z1,
-      ),
-    ).toBe(true);
-    const campSite = new AuthoredSite(73, result.registry, scale, layout);
-    const campSpawnMarkers = layout.buildings.flatMap((building, index) =>
-      ['camp_command_tent', 'camp_tent', 'camp_hq'].includes(building.template)
-        ? placedSpawns(campSite.placements[index]!)
-        : [],
-    );
-    expect(campSpawnMarkers.length).toBeGreaterThan(0);
-    const hqIndex = layout.buildings.findIndex(({ template }) => template === 'camp_hq');
-    const hqThreats = placedSpawns(campSite.placements[hqIndex]!);
-    expect(hqThreats.length).toBeGreaterThan(0);
-    expect(hqThreats.every(({ chance }) => chance < 1)).toBe(true);
-    expect(
-      campSpawnMarkers.every(({ pos: [x, , z] }) => {
-        const worldX = x * scale.blockSize;
-        const worldZ = z * scale.blockSize;
-        return (
-          worldX >= fenceBounds.x0 && worldX <= fenceBounds.x1 && worldZ >= fenceBounds.z0 && worldZ <= fenceBounds.z1
-        );
-      }),
-    ).toBe(true);
-    const armouryPlacement =
-      campSite.placements[layout.buildings.findIndex(({ template }) => template === 'camp_armoury')]!;
-    expect(placedSpawns(armouryPlacement)).toEqual([]);
-    const parsedLayout = result.registry.layouts.get(layout.id)!;
-    const parsedThreats = parsedLayout.shamblers;
-    const parsedRoadsideThreats = parsedThreats.filter(
-      (spawn) =>
-        spawn.type === 'shambler' &&
-        !treelineThreats.some(({ position }) =>
-          position.every((coordinate, axis) => coordinate === spawn.position[axis]),
-        ) &&
-        polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
-    );
-    const parsedTreelineThreats = parsedThreats.filter(({ position }) =>
-      treelineThreats.some((spawn) => position.every((coordinate, axis) => coordinate === spawn.position[axis])),
-    );
-    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) => spawn.window?.fromGameTimeOfDay === 'dusk';
-    expect(parsedRoadsideThreats.filter(hasDuskWindow).length).toBeGreaterThanOrEqual(1);
-    expect(parsedTreelineThreats.filter(hasDuskWindow).length).toBeGreaterThanOrEqual(1);
-    expect(parsedLayout.startTimeGameTimeOfDay).toBe(
-      parseTimeOfDay(layout.startTimeGameTimeOfDay as unknown as string),
-    );
-  });
-
-  it('keeps the authored route clear except for its openable gate and walkable over terrain', () => {
-    expect(result.issues).toEqual([]);
-    const fixture = compactFixture();
-    const site = new AuthoredSite(73, result.registry, scale, fixture);
-    const rects = fixture.buildings.map((building) =>
-      buildingBounds(building, result.registry.templates.get(building.template)!.size),
-    );
-    const track = fixture.tracks[0]!;
-    const routeClearanceRects = fixture.buildings
-      .filter(({ template }) => !['camp_gate', 'camp_gate_damaged'].includes(template))
-      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
-    const route = sampleRoute(site, fixture, routeClearanceRects);
-    expect(route.samples.length).toBeGreaterThan(0);
-    expect(route.minBuildingClearance).toBeGreaterThanOrEqual(track.width / 2);
-    expect(route.maxHeightStep).toBeLessThanOrEqual(1);
-    expect(route.allOnTrackSurface).toBe(true);
-    expect(
-      polylineDistance([fixture.player.position[0], fixture.player.position[2]], track.points),
-    ).toBeLessThanOrEqual(track.width / 2);
-    const nearHouse = nearestAreaDistance(fixture, rects, route.samples, ['playtest_house']);
-    expect(nearHouse.count).toBeGreaterThan(0);
-    expect(nearHouse.distance).toBeLessThanOrEqual(track.width * 2);
-    const nearStores = nearestAreaDistance(fixture, rects, route.samples, [
-      'bungalow',
-      'playtest_store',
-      'small_house',
-      'playtest_gas_station',
-      'shed',
-    ]);
-    expect(nearStores.count).toBeGreaterThan(0);
-    expect(nearStores.distance).toBeLessThanOrEqual(track.width * 2);
-    const nearCabins = nearestAreaDistance(fixture, rects, route.samples, [
-      'playtest_dads_cabin',
-      'playtest_hunter_cabin',
-      'woodshed',
-    ]);
-    expect(nearCabins.count).toBeGreaterThan(0);
-    expect(nearCabins.distance).toBeLessThanOrEqual(track.width * 2);
-    const nearCamp = nearestAreaDistance(fixture, rects, route.samples, ['camp_sandbag_post']);
-    expect(nearCamp.count).toBeGreaterThan(0);
-    expect(nearCamp.distance).toBeLessThanOrEqual(track.width * 2);
-  });
-
-  it('joins the workshop-yard gate to the existing cabin route', () => {
-    const fixture = compactFixture();
-    const mainTrack = fixture.tracks[0]!;
-    const yard = fixture.buildings.find((building) => building.template === 'workshop_yard')!;
-    const template = result.registry.templates.get(yard.template)!;
-    const bounds = buildingBounds(yard, template.size);
-    const { entrance } = template.access!;
-    const entranceX = yard.position[0] + entrance[0] * scale.blockSize;
-    const entranceZ = yard.position[2] + entrance[2] * scale.blockSize;
-    const gatePoints: Point[] = [
-      [bounds.x0, entranceZ],
-      [bounds.x1, entranceZ],
-      [entranceX, bounds.z0],
-      [entranceX, bounds.z1],
-    ];
-    const spur = fixture.tracks.find((track) => {
-      const start = track.points[0]!;
-      const end = track.points.at(-1)!;
-      return (
-        track !== mainTrack &&
-        polylineDistance(start, mainTrack.points) <= track.width / 2 &&
-        Math.min(...gatePoints.map(([x, z]) => Math.hypot(end[0] - x, end[1] - z))) <= track.width / 2
-      );
-    })!;
-    const start = spur.points[0]!;
-    const end = spur.points.at(-1)!;
-    expect(polylineDistance(start, mainTrack.points)).toBeLessThanOrEqual(spur.width / 2);
-    expect(Math.min(...gatePoints.map(([x, z]) => Math.hypot(end[0] - x, end[1] - z)))).toBeLessThanOrEqual(
-      spur.width / 2,
-    );
   });
 });

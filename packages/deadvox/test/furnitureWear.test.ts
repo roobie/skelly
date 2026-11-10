@@ -1,6 +1,6 @@
+import { type FurnitureSpawn, fillFurnitureLoot } from '@skelly/engine/internal/core/site.ts';
+import { BlockEntities } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { type FurnitureSpawn, fillFurnitureLoot } from '../src/core/site.ts';
 import { buildFixtureRegistry as buildRegistry, fixtureBreach } from './economyFixtures.ts';
 
 const WORN = 'fixture_worn';

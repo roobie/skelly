@@ -1,0 +1,180 @@
+{
+  "sounds": [
+    {
+      "category": "body",
+      "description": "Rack the held pump shotgun: its backward hand stroke.",
+      "gain": 0.65000000000000002,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "shotgun_rack_back",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/shotgun-rack-back.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "A pump shotgun rack reaches its forward stroke.",
+      "gain": 0.65000000000000002,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "shotgun_rack_forward",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/shotgun-rack-forward.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Load a loose shell into the held pump shotgun; each shell is its own handling job.",
+      "gain": 0.5,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "shotgun_insert",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.97999999999999998, 1.02],
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Load a loose matching cartridge into the magazine in hand; each round is its own handling job.",
+      "gain": 0.34999999999999998,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "magazine_round_insert",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1200000000000001, 1.2],
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Strip the top round from a loaded magazine in hand.",
+      "gain": 0.29999999999999999,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "magazine_round_strip",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.25, 1.3500000000000001],
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Change, insert or remove the magazine of the AR or AK in hand.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "magazine_change",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
+      "variants": ["assets/audio/magazine-clipload-01.ogg", "assets/audio/magazine-clipload-02.ogg"]
+    },
+    {
+      "category": "body",
+      "description": "Work the charging handle of the AR or AK in hand.",
+      "gain": 0.5,
+      "gainJitter": [0.94999999999999996, 1.05],
+      "id": "rifle_charge",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1499999999999999, 1.2],
+      "variants": ["assets/audio/shotgun-rack-back.ogg"]
+    },
+    {
+      "category": "world",
+      "description": "A fired pump shotgun hull lands after it is ejected.",
+      "gain": 0.34999999999999998,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shotgun_hull_drop",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.96999999999999997, 1.03],
+      "variants": [
+        "assets/audio/shotgun-hull-01.ogg",
+        "assets/audio/shotgun-hull-02.ogg",
+        "assets/audio/shotgun-hull-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "description": "Fire the AK-pattern rifle, or a firearm without a shot sound of its own. A fitted suppressor shortens how far it is heard, and wear lengthens it again.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "gunshot",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/gunshot-akm-01.ogg", "assets/audio/gunshot-akm-02.ogg"],
+      "voiceCap": 32
+    },
+    {
+      "category": "world",
+      "description": "Preview only: suppressed AKM alternatives no game event plays.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "gunshot_pbs1_reference",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 50
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/gunshot-akm-pbs1-01.ogg", "assets/audio/gunshot-akm-pbs1-02.ogg"],
+      "voiceCap": 32
+    },
+    {
+      "category": "world",
+      "description": "Fire the AR-pattern rifle without a suppressor fitted.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "gunshot_m4",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [0.97999999999999998, 1.02],
+      "variants": ["assets/audio/gunshot-ar15-01.ogg", "assets/audio/gunshot-ar15-02.ogg"],
+      "voiceCap": 32
+    },
+    {
+      "category": "world",
+      "description": "Fire the AR-pattern rifle with a real suppressor fitted.",
+      "gain": 1,
+      "gainJitter": [1, 1],
+      "id": "gunshot_m4_suppressed",
+      "minIntervalSimSeconds": 0,
+      "noise": {
+        "enabled": true,
+        "radiusMetres": 100
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/gunshot-m4-suppressed-01.ogg"],
+      "voiceCap": 32
+    }
+  ]
+}

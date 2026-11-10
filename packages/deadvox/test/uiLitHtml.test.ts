@@ -3,8 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // ADR 0001: every screen in these source trees is rendered with lit-html.
-const NOT_YET_PORTED = new Set<string>();
-const DIRECTORIES = ['src/ui', 'src/debug'];
+const DIRECTORIES = ['../presentation/src/ui', 'src/debug'];
 
 // Hand-built DOM: creating, attaching or rewriting nodes instead of rendering a template.
 const HAND_DOM =
@@ -22,16 +21,8 @@ const readSources = (dir: string): { file: string; text: string }[] =>
 const sources = DIRECTORIES.flatMap(readSources);
 
 describe('UI source draws with lit-html (ADR 0001)', () => {
-  it('has no hand-built DOM outside the not-yet-ported files', () => {
-    const offenders = sources.filter((source) => !NOT_YET_PORTED.has(source.file) && HAND_DOM.test(source.text));
+  it('has no hand-built DOM', () => {
+    const offenders = sources.filter((source) => HAND_DOM.test(source.text));
     expect(offenders.map((source) => source.file)).toEqual([]);
-  });
-
-  it('lists only existing files that still build DOM by hand', () => {
-    const stale = [...NOT_YET_PORTED].filter((file) => {
-      const source = sources.find((candidate) => candidate.file === file);
-      return !(source && HAND_DOM.test(source.text));
-    });
-    expect(stale).toEqual([]);
   });
 });

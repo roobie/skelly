@@ -1,11 +1,14 @@
+import type { Registry } from '@skelly/engine/content';
+import type { SoundEventId } from '@skelly/engine/internal/core/soundEvents.ts';
+import { SoundPicker } from '@skelly/engine/internal/core/soundPicker.ts';
+import type { SessionAudio } from '@skelly/engine/internal/game/session.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { makeScale, World } from '@skelly/engine/world';
+import { GameAudio } from '@skelly/presentation/audio';
 import { describe, expect, it, vi } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundEventId } from '../src/core/soundEvents.ts';
-import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
-import { World } from '../src/core/world.ts';
-import { GameAudio } from '../src/game/audio.ts';
-import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
+import { productAssets } from '../src/product/assets.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -14,6 +17,7 @@ const seed = 73;
 const makeSession = (play: SessionAudio['play'], content: Registry = registry) =>
   createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,
@@ -38,19 +42,25 @@ const makeSession = (play: SessionAudio['play'], content: Registry = registry) =
   });
 
 describe('simulation sound admission', () => {
-  it('searching the scrap pile emits its authored hearing noise', () => {
-    const session = makeSession(() => undefined);
-    const pile = session.inventory.furnish(
-      { type: 'workshop_scrap_pile', pos: [6, 8, 10], size: [4, 1, 3], facing: 'n' },
-      [],
+  it('searching furniture emits its own authored hearing noise once', () => {
+    const base = [...registry.furniture.values()].find((furniture) => furniture.searchNoise)!;
+    expect(base).toBeDefined();
+    // A noisy event other than the base row's, so the noise heard can only come from the fixture row.
+    const [noiseEvent] = [...registry.sounds.entries()].find(
+      ([id, sound]) => sound.noise.enabled && id !== base.searchNoise!.sound,
     )!;
+    const fixture = { ...base, id: 'fixture_noisy_pile', searchNoise: { sound: noiseEvent } };
+    const content: Registry = { ...registry, furniture: new Map(registry.furniture).set(fixture.id, fixture) };
+    const session = makeSession(() => undefined, content);
+    const pile = session.inventory.furnish({ type: fixture.id, pos: [6, 8, 10], size: fixture.size, facing: 'n' }, [])!;
+    expect(pile).toBeDefined();
     const emissions = session.sim.events.reader();
 
     session.search(pile);
 
     const noises = emissions.read().filter((emission) => emission.kind === 'noise');
     expect(noises).toHaveLength(1);
-    expect(noises[0]).toMatchObject({ event: 'player_strain' });
+    expect(noises[0]).toMatchObject({ event: noiseEvent });
 
     session.search(pile);
     expect(emissions.read().filter((emission) => emission.kind === 'noise')).toHaveLength(0);
@@ -120,17 +130,23 @@ describe('simulation sound admission', () => {
   });
 
   it('applies a zombie type’s authored pitch multiplier to its mob sound', () => {
+    const fixturePitch = 1.37;
+    // A type that sounds on its first tick; the fixture row replaces its multiplier with one of the test's own and
+    // keeps its id, which its built figure is keyed by.
+    const base = [...registry.actors.values()].find((candidate) => candidate.soundPitchMultiplier !== undefined)!;
+    expect(base).toBeDefined();
+    expect(base.soundPitchMultiplier).not.toBe(fixturePitch);
+    const type = { ...base, soundPitchMultiplier: fixturePitch };
+    const content: Registry = { ...registry, actors: new Map(registry.actors).set(type.id, type) };
     const selected: Readonly<SoundEmission>[] = [];
-    const session = makeSession((emission) => selected.push(emission));
-    const type = registry.zombies.get('amalgam')!;
-    session.zombies.add(type, [6, 8, 9], [0, 0, 1]);
-    session.zombies.tick(1 / 60);
+    const session = makeSession((emission) => selected.push(emission), content);
+    session.actors.add(type, [6, 8, 9], [0, 0, 1]);
+    session.actors.tick(1 / 60);
 
-    const sound = selected.find(({ event }) => event.startsWith('amalgam_'));
+    const [sound] = selected;
     expect(sound).toBeDefined();
     const unscaled = new SoundPicker(seed, registry.sounds).pick(sound!.event, sound!.time)!;
-    expect(sound!.pick.pitch).toBeCloseTo(unscaled.pitch * type.soundPitchMultiplier!, 10);
-    expect(sound!.pick.pitch).toBeLessThan(1);
+    expect(sound!.pick.pitch).toBeCloseTo(unscaled.pitch * fixturePitch, 10);
   });
 
   it('admits a noisy player event with an unbundled asset without hiding the playback error', () => {
@@ -145,6 +161,7 @@ describe('simulation sound admission', () => {
       isSolid: () => false,
       tuning: TEST_SENSE_TUNING,
       report,
+      files: productAssets.audio,
     });
     const session = makeSession(
       (sound) => output.play(sound, sound.position.map((v) => v * 0.5) as [number, number, number]),

@@ -1,6 +1,6 @@
+import { decodeSave } from '@skelly/engine/save';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -8,7 +8,9 @@ import { capture, createRuntime, encodeFixture, formatVersion } from './snapshot
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
 const fixture = (admitted: string[]) => ({
-  furnitureMaterials: [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: admitted }],
+  furnitureMaterials: [
+    { id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: admitted },
+  ],
   furniture: [
     {
       id: 'fixture_door',

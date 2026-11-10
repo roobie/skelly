@@ -1,4 +1,19 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import type { ContentSource } from '@skelly/engine/content';
+import { pileLayout } from '@skelly/engine/internal/core/pileLayout.ts';
+import { Inventory, PILE_GRID, type Pile, spentCaseItemId, toggleLight } from '@skelly/engine/inventory';
+import type { Vec3 } from '@skelly/engine/world';
+import { createCompass } from '@skelly/presentation/internal/render/compass.ts';
+import { presentHeldDisplay } from '@skelly/presentation/internal/render/heldDisplay.ts';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import {
+  fittedPartFrame,
+  groundModelFrame,
+  heldModelFrame,
+  indexModelMaterials,
+  prepareModel,
+} from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   BoxGeometry,
@@ -17,37 +32,16 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ContentSource } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory, type Pile } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { pileLayout } from '../src/core/pileLayout.ts';
-import { spentCaseItemId } from '../src/game/firearmHandling.ts';
-import { createCompass } from '../src/render/compass.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
-import { itemLook } from '../src/render/itemLook.ts';
-import {
-  fittedPartFrame,
-  groundModelFrame,
-  heldModelFrame,
-  indexModelMaterials,
-  ModelLibrary,
-  prepareModel,
-} from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
 
-const BASE = 'src/content/base';
+import { modFileBytes } from './modFile.ts';
+import { thingModels } from './thingModels.ts';
+
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
-const base = (file: string): ContentSource => {
-  const source = `${BASE}/${file}`;
-  return { source, data: JSON.parse(readFileSync(source, 'utf8')) };
-};
 const imageLoader = {
   isImageBitmapLoader: true,
   load(_url: string, onLoad: (image: ImageBitmap) => void) {
@@ -72,10 +66,7 @@ const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box
     return coordinate >= bounds.min[axis] - 0.02 && coordinate <= bounds.max[axis] + 0.02;
   });
 const { registry, issues } = buildRegistry([
-  ...readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map(base),
+  ...baseContentSources(),
   read('test/fixtures/packs/lamp/lamp.json'),
   {
     source: 'bundle-fixture',
@@ -85,13 +76,13 @@ const { registry, issues } = buildRegistry([
 const playerFigure = registry.figures.get('player')!;
 const figureModels = await loadFigureModels(registry);
 
-it('prepares every thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
-  const recipe: { id: string }[] = JSON.parse(readFileSync('../thing-authoring-tool/exports/deadvox.json', 'utf8'));
-  expect(recipe.length).toBeGreaterThan(0);
+it('prepares every consumed thing recipe export for ground and held drawing with its grip at the hand origin', async () => {
+  const models = thingModels();
+  expect(models.length).toBeGreaterThan(0);
   await Promise.all(
-    recipe.map(async ({ id }) => {
+    models.map(async ({ id, glb }) => {
       const definition = registry.models.get(id)!;
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+      const { scene } = await parseGlb(glb);
       const { ground, held, groundParts } = prepareModel(definition, scene);
       const groundBounds = new Box3().setFromObject(ground);
       expect(groundBounds.isEmpty(), id).toBe(false);
@@ -109,7 +100,7 @@ it('prepares every thing recipe export for ground and held drawing with its grip
 
 it('rests the oil lamp on its base with its authored up axis upright', async () => {
   const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
-  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const { scene } = await parseGlb(modFileBytes(definition.file));
   const { ground } = prepareModel(definition, scene);
   ground.updateMatrixWorld(true);
   const frame = groundModelFrame(ground);
@@ -134,7 +125,7 @@ it('keeps every authored fuel fill inside its clear shell and resolves its origi
   expect(filled.length).toBeGreaterThan(0);
   await Promise.all(
     filled.map(async (model) => {
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${model.file}`));
+      const { scene } = await parseGlb(modFileBytes(model.file));
       const { supply } = model.itemPresentation!;
       if (supply.kind !== 'fill') {
         throw new Error('Expected fill selector');
@@ -171,7 +162,7 @@ it.each<[string, Vec3]>([
   'turns a %s-held compass screen to the eye, upright, with the whole model in front of the palm',
   async (_side, heldAt) => {
     const definition = registry.models.get('compass')!;
-    const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+    const { scene } = await parseGlb(modFileBytes(definition.file));
     const { held } = prepareModel(definition, scene);
     // Every canvas call is a no-op: the test observes Three transforms, not painted pixels.
     const context = new Proxy({}, { get: () => vi.fn() });
@@ -214,7 +205,7 @@ it.each<[string, Vec3]>([
 
 it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to a held compass card', async (side) => {
   const definition = registry.models.get('compass')!;
-  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const { scene } = await parseGlb(modFileBytes(definition.file));
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => new Proxy({}, { get: () => vi.fn() }) }) });
   const inventory = new Inventory(registry);
   expect(inventory.add(inventory.create('compass'), { kind: 'hand', side })).toBeTruthy();
@@ -253,7 +244,7 @@ it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to
 
 it.each(['right', 'left'] as const)('keeps the held oil lamp flame visible beyond the %s palm', async (side) => {
   const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
-  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const { scene } = await parseGlb(modFileBytes(definition.file));
   const inventory = new Inventory(registry);
   const lamp = inventory.create('oil_lamp');
   expect(inventory.add(lamp, { kind: 'hand', side })).toBe(true);
@@ -347,7 +338,7 @@ describe('piles with models', () => {
     expect(definition.model).toBeDefined();
     const modelDefinition = registry.models.get(definition.model!)!;
     expect(modelDefinition.emissiveMaterial).toBeDefined();
-    const { scene } = await parseGlb(readFileSync(`${BASE}/${modelDefinition.file}`));
+    const { scene } = await parseGlb(modFileBytes(modelDefinition.file));
     const { ground } = prepareModel(modelDefinition, scene);
     expect(new Box3().setFromObject(ground).isEmpty()).toBe(false);
     let authoredTube = false;
@@ -364,7 +355,7 @@ describe('piles with models', () => {
       version: 1,
       has: (id: string) => id === modelDefinition.id,
       groundLook: () => ground.clone(),
-    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
     const render = (on: boolean, withModel = true) => {
       const source = withModel
         ? registry
@@ -430,9 +421,7 @@ describe('piles with models', () => {
     );
     expect(flameLights.length).toBeGreaterThan(0);
     const scenes = await Promise.all(
-      flameLights.map(
-        async ({ model }) => (await parseGlb(readFileSync(`${BASE}/${registry.models.get(model!)!.file}`))).scene,
-      ),
+      flameLights.map(async ({ model }) => (await parseGlb(modFileBytes(registry.models.get(model!)!.file))).scene),
     );
     for (const [index, definition] of flameLights.entries()) {
       const modelDefinition = registry.models.get(definition.model!)!;
@@ -441,7 +430,7 @@ describe('piles with models', () => {
         version: 1,
         has: (id: string) => id === modelDefinition.id,
         groundLook: () => ground.clone(),
-      } as unknown as import('../src/render/models.ts').ModelLibrary;
+      } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);
@@ -489,7 +478,7 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
   expect(models.length).toBeGreaterThan(0);
   await Promise.all(
     models.map(async (def) => {
-      const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
+      const gltf = await parseGlb(modFileBytes(def.file));
       expect(def.gun!.internalMagazine!.capacity).toBeGreaterThan(0);
       expect(def.gun?.calibre).toBeDefined();
       expect(def.gun?.sight?.kind).toBe('iron');
@@ -572,14 +561,14 @@ it("draws a grenade without the pin and lever it has shed, by the exported glb's
   const shed = [def.pin!.piece, def.lever!.piece];
   const loads: Promise<void>[] = [];
   const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
-    loads.push(parseGlb(readFileSync(path)).then(onLoad));
+    loads.push(parseGlb(modFileBytes(path)).then(onLoad));
   });
   const models = new ModelLibrary(
     { ...registry, models: new Map([[model, def]]) },
     (message) => {
       throw new Error(message);
     },
-    { [def.file]: `${BASE}/${def.file}` },
+    { [def.file]: def.file },
     1,
   );
   spy.mockRestore();
@@ -693,8 +682,8 @@ describe('fitted attachment model frames', () => {
     if (!(slot.model && slot.mountFrame)) {
       throw new Error('Default optic look is incomplete');
     }
-    const gunScene = (await parseGlb(readFileSync(`${BASE}/${firearm.file}`))).scene;
-    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(slot.model)!.file}`))).scene;
+    const gunScene = (await parseGlb(modFileBytes(firearm.file))).scene;
+    const opticScene = (await parseGlb(modFileBytes(registry.models.get(slot.model)!.file))).scene;
     const { held } = prepareModel(firearm, gunScene);
     const modelFrame = held.children[0]!.children[0]!;
     const fitted = fittedPartFrame(slot).add(opticScene);
@@ -739,7 +728,7 @@ describe('fitted magazine model frame', () => {
     if (!slot) {
       throw new Error('Rifle magazine look is incomplete');
     }
-    const gltf = await parseGlb(readFileSync(`${BASE}/${firearm.file}`));
+    const gltf = await parseGlb(modFileBytes(firearm.file));
     const node = gltf.parser.json.nodes.find(
       (candidate: { name?: string; translation?: number[] }) => candidate.name === 'magazine:magazine',
     ) as unknown as { translation?: number[] } | undefined;
@@ -754,11 +743,27 @@ describe('fitted magazine model frame', () => {
 });
 
 describe('base pack melee', () => {
-  const melee = buildRegistry([read(`${BASE}/models-melee.json`)]).registry;
-  const models = [...melee.models.values()];
+  // Melee models from every mod holding them: a mod's other tools carry no hold pose or strike anchor to check.
+  const handToolMelee = ['crowbar', 'hammer', 'kitchen_knife', 'sledgehammer', 'wrench'];
+  const handTools = read('../mods/skelly.hand-tools/models-hand-tools.json').data as { models: { id: string }[] };
+  for (const id of handToolMelee) {
+    if (!handTools.models.some((model) => model.id === id)) {
+      throw new Error(`no hand-tool model "${id}"`);
+    }
+  }
+  const melee = buildRegistry([
+    read('../mods/skelly.melee/models-melee.json'),
+    {
+      source: 'models-hand-tools.json',
+      data: { models: handTools.models.filter(({ id }) => handToolMelee.includes(id)) },
+    },
+  ]).registry;
+  // A pack may hold models no melee weapon draws yet; only a drawn model must carry a hold and strike anchor.
+  const drawn = new Set([...registry.items.values()].filter((item) => item.weapon?.melee).map((item) => item.model));
+  const models = [...melee.models.values()].filter((model) => drawn.has(model.id));
   const heldAnchor = async (id: string, name: string): Promise<Vector3> => {
     const def = melee.models.get(id)!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const { scene } = await parseGlb(bytes);
     const { held } = prepareModel(def, scene);
     held.updateMatrixWorld(true);
@@ -784,18 +789,29 @@ describe('base pack melee', () => {
     }
   });
 
-  it('requires a hold pose for every melee model', () => {
-    const { hold, ...missingHold } = models[0]!;
-    expect(hold).toBeDefined();
-    const source = `${BASE}/models-melee.json`;
-    const { issues: found } = buildRegistry([{ source, data: { models: [missingHold] } }]);
-    expect(found).toContainEqual({ source, path: 'models[0].hold', message: 'missing' });
+  it('requires a hold pose on the model a melee weapon draws, whichever file holds it', () => {
+    const weapon = [...registry.items.values()].find((item) => item.weapon?.melee)!;
+    const source = 'fixture-any-name.json';
+    const issuesFor = (pose: object) =>
+      buildRegistry([
+        {
+          source,
+          data: {
+            items: [{ ...weapon, id: 'fixture_club', model: 'fixture_club' }],
+            models: [{ id: 'fixture_club', file: 'assets/models/fixture_club.glb', ...pose }],
+          },
+        },
+      ]).issues;
+    const missing = { source, path: 'items[0].model', message: 'melee model "fixture_club" has no hold pose' };
+
+    expect(issuesFor({})).toContainEqual(missing);
+    expect(issuesFor({ hold: models[0]!.hold })).not.toContainEqual(missing);
   });
 
   it.each(models.map((model) => [model.id, model] as const))(
     '%s loads, rests on x, and has usable palm and strike anchors at real-world scale',
     async (_, def) => {
-      const bytes = readFileSync(`${BASE}/${def.file}`);
+      const bytes = modFileBytes(def.file);
       const { scene } = await parseGlb(bytes);
       const sourceBox = new Box3().setFromObject(scene);
       const { ground } = prepareModel(def, scene);
@@ -844,7 +860,7 @@ describe('base pack melee', () => {
 
   it('holds the pipe elbow forward while its shaft stays upright', async () => {
     const def = melee.models.get('steel_pipe')!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const { scene } = await parseGlb(bytes);
     const { held } = prepareModel(def, scene);
     held.updateMatrixWorld(true);
@@ -909,7 +925,7 @@ describe('base pack modeled ammunition and spent cases', () => {
       [...ids].map(async (id) => ({
         id,
         def: registry.models.get(id)!,
-        ...(await parseGlb(readFileSync(`${BASE}/${registry.models.get(id)!.file}`))),
+        ...(await parseGlb(modFileBytes(registry.models.get(id)!.file))),
       })),
     );
     for (const { id, def, scene } of loaded) {
@@ -937,7 +953,7 @@ it('loads both exported STANAG magazine GLBs with the same body width', async ()
     ['magazine_stanag_20', 'magazine_stanag_30'].map(async (id) => {
       const definition = registry.models.get(id);
       expect(definition).toBeDefined();
-      const { scene } = await parseGlb(readFileSync(`${BASE}/${definition!.file}`));
+      const { scene } = await parseGlb(modFileBytes(definition!.file));
       scene.updateMatrixWorld(true);
       const size = new Box3().setFromObject(scene).getSize(new Vector3());
       expect(size.x).toBeGreaterThan(0);
@@ -957,10 +973,10 @@ describe('base pack guns', () => {
   const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
-    const bytes = readFileSync(`src/content/base/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
-      expect(def.gun?.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
+      expect(def.gun?.sight, `${def.id}: gun authoring tool exports need sight metadata`).toBeDefined();
     }
     const { held } = prepareModel(def, gltf.scene);
     held.updateMatrixWorld(true);
@@ -971,22 +987,6 @@ describe('base pack guns', () => {
     expect(muzzle.z).toBeLessThan(-0.05);
     expect(muzzle.y).toBeGreaterThan(0.01);
     expect(Math.abs(muzzle.x)).toBeLessThan(0.02);
-  });
-
-  it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
-    const def = models.get('rifle_assault')!;
-    const bytes = readFileSync(`src/content/base/${def.file}`);
-    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
-    const bounds = new Box3().setFromObject(scene);
-    expect(def.grip?.turn).toEqual([0, 0, 0]);
-    expect(def.anchors?.muzzle?.[0]).toBeGreaterThan(def.grip!.at[0]);
-    expect(def.anchors?.muzzle?.[0]).toBeCloseTo(bounds.max.x, 5);
-
-    const { held } = prepareModel(def, scene);
-    held.updateMatrixWorld(true);
-    const offset = held.children[0]!.children[0]!;
-    const top = new Vector3(def.grip!.at[0], def.grip!.at[1] + 0.1, def.grip!.at[2]).applyMatrix4(offset.matrixWorld);
-    expect(top.y).toBeGreaterThan(0.09);
   });
 
   it('lays the debug AR model in piles', () => {

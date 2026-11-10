@@ -1,34 +1,27 @@
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import type { MesherPort, MesherSource } from '@skelly/engine/mesh';
+import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
+import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '@skelly/engine/world';
+import { Skylight } from '@skelly/presentation/render';
 import { Scene } from 'three';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Chunk } from '../src/core/chunk.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { SkyFields } from '../src/core/skyField.ts';
-import type { SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
-import { Streamer } from '../src/game/streamer.ts';
-import { Skylight } from '../src/render/skylight.ts';
+import { describe, expect, it, vi } from 'vitest';
+import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { baseTerrainShape } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-class QuietWorker {
-  onmessage: ((event: MessageEvent) => void) | null = null;
-  postMessage(): void {
+class QuietWorker implements MesherPort {
+  post(): void {
     // The test deliberately prevents worker execution.
   }
-  terminate(): void {
-    // The test worker owns no external resources.
+  listen(): void {
+    // A quiet worker never replies.
   }
 }
 
-afterEach(() => vi.unstubAllGlobals());
+const quietMeshers: MesherSource = { count: 1, create: () => new QuietWorker() };
 
 it('builds a field over arriving all-air chunks and stops certifying it once its column unloads', () => {
-  vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
   const { registry } = buildRegistry([
@@ -73,6 +66,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
+    mesher: quietMeshers,
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -113,13 +107,13 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
 });
 
 it('reports generated-column transitions that match the generated-column snapshot', () => {
-  vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
+    mesher: quietMeshers,
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -151,13 +145,13 @@ it('reports generated-column transitions that match the generated-column snapsho
 });
 
 it('lets replay drive terrain generation and unloading without live streaming side effects', () => {
-  vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
+    mesher: quietMeshers,
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -198,11 +192,11 @@ describe('saved columns', () => {
   const generate = (cx: number, cz: number) =>
     generateColumn({ seed: 17, blocks: terrain, shape: baseTerrainShape(), scale }, cx, cz, []);
   const streamerFor = (world: World, stamp: (chunk: Chunk) => void) => {
-    vi.stubGlobal('Worker', QuietWorker);
     const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
     return new Streamer({
       world,
       meshes: meshes as never,
+      mesher: quietMeshers,
       seed: 17,
       terrain,
       shape: baseTerrainShape(),

@@ -7,7 +7,7 @@
 //                               [--scan cyan,magenta|none] [--window x,y,w,h] [--click selector]
 //
 // --click presses the element matching the given selector (for example the start control `#go`)
-// once it is enabled, so a `cam=` pose renders in the world instead of on the start screen.
+// once it is enabled, so a hash `cam` pose renders in the world instead of on the start screen.
 //
 // Opens <url> in Playwright Chromium on SwiftShader (software WebGL), waits, screenshots,
 // and scans the screenshot's pixels. It prints the WebGL renderer string, filtered console
@@ -16,9 +16,9 @@
 // Firefox cannot create a WebGL context there at all).
 //
 // Scans (only the page's first <canvas> area, so the debug UI panel is ignored):
-//   cyan     hot-check family (`hotcheck=1`): b > r+40 && g > r+40. The hot check colours by
+//   cyan     hot-check family (hash `hotcheck:true`): b > r+40 && g > r+40. The hot check colours by
 //            material; full/half/checker fill = NaN / Inf-or->8 / negative.
-//   magenta  crack-check (`crackcheck=1`): r > 180 && g < 80 && b > 180 = background showing
+//   magenta  crack-check (hash `crackcheck:true`): r > 180 && g < 80 && b > 180 = background showing
 //            through. Any hit is flagged.
 //   Strongly saturated pure-colour counts are also printed (informational, never flagged).
 //
@@ -32,9 +32,8 @@
 // clean (and vice versa); the renderer line says which one produced the pixels. It is slow,
 // hence the long waits/timeouts.
 //
-// Relates to the debug toggles in src/debug/lookUrl.ts and src/debug/camUrl.ts:
-// `?debug=1`, `cam=x,y,z,yaw,pitch,roll`, `hotcheck=1`, `crackcheck=1`, `bloom=0`, `post=0`,
-// `film=0`, `srgb=0`, `patterns=0`, `sunshadow=0`, `torchshadow=0`, `freeze=1`, `tone=`.
+// The <url> sets its debug toggles in the page hash, as in `#{debug:true,cam:[x,y,z,yaw,pitch,roll]}`;
+// see `src/hashState.ts`, `HASH_KEYS`, `src/debug/lookUrl.ts`, `LOOK_KEYS`, and `src/debug/camUrl.ts`.
 //
 // One-time per host: `npx playwright install chromium`.
 

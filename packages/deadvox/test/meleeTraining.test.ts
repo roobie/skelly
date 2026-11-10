@@ -1,8 +1,8 @@
+import type { Registry } from '@skelly/engine/content';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
@@ -36,6 +36,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
   let landed = false;
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: (_x, y) => y === 0,
     isOpaque: () => false,
@@ -57,7 +58,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
     onRead: () => {
       throw new Error('Unexpected reading in melee training fixture');
     },
-    zombieEffects: {
+    actorEffects: {
       onMeleeResult: (result) => {
         landed = result.id !== undefined;
       },
@@ -66,7 +67,7 @@ it('awards content-authored melee practice after a landed fist hit', () => {
   const initialPractice = session.character.practice.melee_combat ?? 0;
   const initialLevel = session.character.skills.melee_combat ?? 0;
   const player = session.body.pos;
-  session.zombies.add(registry.zombies.get('shambler')!, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+  session.actors.add(registry.actors.get('shambler')!, [player[0], player[1], player[2] - 1], [0, 0, 1]);
   const hands = { right: null, left: null };
 
   expect(

@@ -1,0 +1,197 @@
+{
+  "items": [
+    {
+      "category": "material",
+      "id": "rag",
+      "model": "rag",
+      "name": "Rag",
+      "size": [1, 1],
+      "stack": 6,
+      "treatment": {
+        "bleeding": 2
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "duct_tape",
+      "model": "duct_tape",
+      "name": "Duct tape",
+      "size": [1, 1],
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "nails",
+      "model": "nails",
+      "name": "Nails",
+      "size": [1, 1],
+      "stack": 100,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "scrap_metal",
+      "model": "scrap_metal",
+      "name": "Scrap metal",
+      "size": [1, 2],
+      "stack": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "stick",
+      "model": "stick",
+      "name": "Stick",
+      "size": [1, 4],
+      "stack": 6,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "wax",
+      "model": "wax",
+      "name": "Wax lump",
+      "size": [1, 1],
+      "stack": 10,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "glass_shards",
+      "model": "glass_shards",
+      "name": "Glass shards",
+      "size": [1, 1],
+      "stack": 6,
+      "weight": 80,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "electrical_tape",
+      "model": "tape_roll",
+      "name": "Electrical tape",
+      "size": [1, 1],
+      "stack": 6,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 5,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 1],
+            "item": "nails",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "scrap_metal",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "fastener_pack",
+      "model": "fastener_pack",
+      "name": "Mixed fasteners",
+      "size": [1, 1],
+      "stack": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 3,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "stick",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "wood_offcut",
+      "model": "wood_offcut",
+      "name": "Wood offcut",
+      "size": [1, 2],
+      "stack": 4,
+      "weight": 250,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "rubber_strip",
+      "model": "rubber_strip",
+      "name": "Rubber strip",
+      "size": [1, 1],
+      "stack": 6,
+      "weight": 45,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "small_spring",
+      "model": "small_spring",
+      "name": "Small spring",
+      "size": [1, 1],
+      "stack": 8,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "cloth_strip",
+      "model": "cloth_bundle",
+      "name": "Cloth strip",
+      "size": [1, 1],
+      "stack": 8,
+      "weight": 25,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "sewing_thread",
+      "model": "thread_spool",
+      "name": "Sewing thread",
+      "size": [1, 1],
+      "stack": 6,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "id": "nylon_cord",
+      "model": "cord_coil",
+      "name": "Nylon cord",
+      "size": [1, 2],
+      "stack": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A coil of sturdy braided cord.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 4,
+        "yields": [
+          {
+            "count": 4,
+            "fractions": [0.5, 1],
+            "item": "cloth_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "id": "rope",
+      "model": "cord_coil",
+      "name": "Rope",
+      "size": [1, 2],
+      "stack": 5,
+      "workInProgress": false
+    }
+  ]
+}

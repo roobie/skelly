@@ -1,0 +1,60 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#99794c",
+      "id": "clinic_sign",
+      "massKg": 2,
+      "material": "wood",
+      "mount": "wall",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Clinic direction sign",
+      "readable": {
+        "text": "Clinic set up south — they took the sick there",
+        "title": "Hand-painted sign"
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0.875],
+          "size": [1, 1, 0.125]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#99794c",
+      "id": "gas_directions_sign",
+      "massKg": 2,
+      "material": "wood",
+      "mount": "wall",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Hand-painted direction sign",
+      "readable": {
+        "text": "Dad's cabin is up the ridge, key under the step",
+        "title": "Hand-painted sign"
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0.875],
+          "size": [1, 1, 0.125]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solid": false
+    }
+  ]
+}

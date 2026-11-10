@@ -1,0 +1,94 @@
+{
+  "assets/models/acetylene_lamp.glb": { "materials": ["brass", "brass-dull", "brass-polished", "mirror-silver"] },
+  "assets/models/bow_drill.glb": { "materials": ["wood-pine", "coal-black", "wood-birch", "cord-cotton", "bark"] },
+  "assets/models/butane_torch_lighter.glb": {
+    "materials": ["plastic-black", "paint-red", "alu-bare", "steel-stainless", "plastic-red", "plastic-grey"]
+  },
+  "assets/models/candle.glb": { "materials": ["wax-ivory", "cloth-charred"] },
+  "assets/models/candlestick.glb": { "materials": ["brass"] },
+  "assets/models/clay_oil_lamp.glb": { "materials": ["clay-terracotta", "brick-buff", "coal-black", "cloth-charred"] },
+  "assets/models/crude_firestarter.glb": { "materials": ["wood-pine", "steel-bright", "steel-heat-tint", "tape-grey"] },
+  "assets/models/crude_lens.glb": { "materials": ["glass-grey"] },
+  "assets/models/crystal_cell_flashlight.glb": {
+    "materials": ["plastic-charcoal", "alu-bare", "crystal-glow-blue", "glass-clear", "rubber-black"]
+  },
+  "assets/models/crystal_floor_lamp.glb": {
+    "materials": [
+      "steel-grey",
+      "rubber-black",
+      "plastic-white",
+      "plastic-matte-black",
+      "crystal-glow-blue",
+      "brass-polished"
+    ]
+  },
+  "assets/models/crystal_lantern.glb": {
+    "materials": ["plastic-charcoal", "rubber-black", "alu-bare", "crystal-glow-blue", "steel-grey"]
+  },
+  "assets/models/electric_lantern.glb": { "materials": ["plastic-green", "plastic-frosted", "plastic-black"] },
+  "assets/models/electric_lighter.glb": {
+    "materials": ["steel-grey", "plastic-black", "ceramic-white", "steel-stainless", "crystal-glow-blue"]
+  },
+  "assets/models/ember_carrier.glb": { "materials": ["steel-galvanised", "steel-grey", "steel-bright", "coal-black"] },
+  "assets/models/everburning_torch_candelabra.glb": {
+    "materials": ["wood-oak", "iron-dull", "wood-walnut", "brass-dull", "cloth-charred", "glow-flame"]
+  },
+  "assets/models/everburning_torch.glb": {
+    "materials": ["wood-oak", "brass-dull", "glow-flame", "cloth-yellow", "wood-walnut"]
+  },
+  "assets/models/everburning_wall_sconce.glb": {
+    "materials": ["wood-oak", "iron-dull", "wood-walnut", "brass-dull", "cloth-charred", "glow-flame"]
+  },
+  "assets/models/fire_piston.glb": { "materials": ["wood-walnut", "cord-cotton", "wood-birch", "bone"] },
+  "assets/models/flint_and_steel.glb": { "materials": ["steel-heat-tint", "obsidian", "chalk-white"] },
+  "assets/models/flip_top_lighter.glb": {
+    "materials": ["alu-bare", "steel-stainless", "plastic-black", "cloth-cream", "steel-grey"]
+  },
+  "assets/models/gasoline_lantern.glb": { "materials": ["paint-red", "steel-grey", "brass", "glass-clear"] },
+  "assets/models/glow_light_covered.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
+  "assets/models/glow_light.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
+  "assets/models/glowstick.glb": { "materials": ["chemical-light tube", "end caps"] },
+  "assets/models/heavy_flashlight.glb": {
+    "materials": ["plastic-orange", "rubber-black", "plastic-black", "crystal-glow-white", "steel-grey"]
+  },
+  "assets/models/led_strip.glb": { "materials": ["plastic-black", "plastic-gloss-white", "plastic-yellow"] },
+  "assets/models/light_bulb.glb": { "materials": ["plastic-black", "alu-bare", "glass-clear"] },
+  "assets/models/lighter.glb": { "materials": ["fuel-amber", "plastic-clear-red", "steel-grey"] },
+  "assets/models/matches.glb": { "materials": ["paperboard-tan", "paint-terracotta", "paperboard-brown"] },
+  "assets/models/menorah.glb": { "materials": ["metal-silver"] },
+  "assets/models/mini_diving_flashlight.glb": {
+    "materials": ["plastic-black", "alu-anodized-black", "alu-bare", "plastic-orange", "glass-clear"]
+  },
+  "assets/models/oil_lamp.glb": { "materials": ["steel-grey", "brass", "glass-clear", "fuel-amber"] },
+  "assets/models/propane_lantern.glb": {
+    "materials": ["brass", "paint-green", "plastic-black", "glass-clear", "steel-grey"]
+  },
+  "assets/models/pump_drill.glb": {
+    "materials": ["wood-pine", "coal-black", "wood-birch", "stone-grey", "wood-oak", "cord-cotton"]
+  },
+  "assets/models/reading_light.glb": { "materials": ["plastic-black", "rubber-black", "alu-bare", "plastic-frosted"] },
+  "assets/models/road_flare.glb": { "materials": ["plastic-black", "paint-red", "paper-white", "paperboard-brown"] },
+  "assets/models/small_candle.glb": { "materials": ["wax-ivory", "cloth-charred"] },
+  "assets/models/small_lighter.glb": { "materials": ["plastic-clear-pink", "steel-grey"] },
+  "assets/models/smart_lamp.glb": {
+    "materials": ["plastic-gloss-white", "plastic-clear-blue", "alu-bare", "plastic-frosted"]
+  },
+  "assets/models/smouldering_ember_carrier.glb": {
+    "materials": ["steel-galvanised", "steel-grey", "steel-bright", "glow-flame"]
+  },
+  "assets/models/standing_floodlight.glb": {
+    "materials": ["steel-grey", "rubber-black", "plastic-black", "plastic-yellow", "glass-clear"]
+  },
+  "assets/models/standing_lamp.glb": {
+    "materials": ["paint-charcoal", "steel-stainless", "plastic-black", "glass-clear", "cloth-cotton"]
+  },
+  "assets/models/survival_match.glb": { "materials": ["wood-pine", "brick-buff", "paint-red"] },
+  "assets/models/torch.glb": { "materials": ["wood-birch", "cloth-charred"] },
+  "assets/models/twin_spout_rune_lamp.glb": {
+    "materials": ["iron-cast", "brass-dull", "cord-cotton", "crystal-glow-blue"]
+  },
+  "assets/models/variable_diving_flashlight.glb": {
+    "materials": ["plastic-black", "plastic-yellow", "rubber-black", "plastic-charcoal", "glass-clear"]
+  },
+  "assets/models/wall_light.glb": { "materials": ["steel-grey", "plastic-white", "rubber-black"] }
+}

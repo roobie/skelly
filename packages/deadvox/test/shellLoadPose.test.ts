@@ -1,24 +1,22 @@
-import { readFileSync } from 'node:fs';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
+import { heldAnchorOffset } from '@skelly/engine/pose';
+import { Character } from '@skelly/engine/sim';
+import { actionPartPaths, cloneHeldModel } from '@skelly/presentation/internal/render/firearmModel.ts';
+import { indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldAnchorOffset } from '../src/core/heldPose.ts';
-import { Inventory, SIDES } from '../src/core/inventory.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
-import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { modFileBytes } from './modFile.ts';
 
 const registry = baseRegistry();
 
 it('the firing hand follows the exported bolt knob rather than moving the support hand', async () => {
   const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
   const model = registry.models.get(rifle.model!)!;
-  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const bytes = modFileBytes(model.file);
   const gltf = await new GLTFLoader()
     .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
     .then(indexModelMaterials);

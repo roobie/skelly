@@ -1,9 +1,7 @@
-import { AuthoredSite } from '../../src/core/authoredSite.ts';
-import type { Chunk } from '../../src/core/chunk.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { CHUNK } from '../../src/core/coords.ts';
-import type { Scale } from '../../src/core/scale.ts';
-import { type BlockBox, stampChunk } from '../../src/core/structure.ts';
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
+import { CHUNK, type Chunk, type Scale } from '@skelly/engine/world';
 
 /** A small authored world with independent furniture, zombie and foliage columns. */
 export class SnapshotSite extends AuthoredSite {
@@ -29,7 +27,7 @@ export class SnapshotSite extends AuthoredSite {
     });
     this.hedges = [{ min: [224, 41, 0], max: [225, 44, 1], block: registry.blockIds.get('leaves')! }];
   }
-  override zombiesIn(cx: number, cz: number) {
+  override actorsIn(cx: number, cz: number) {
     return cz === 0 && (cx === 8 || cx === 9)
       ? [{ type: 'shambler', pos: [cx * CHUNK + 12, 41, 8] as [number, number, number] }]
       : [];

@@ -3,15 +3,20 @@ name: deadvox
 # Keep troubleshooting changes checked with browser contracts because it documents their stage modes.
 on:
   push:
-    branches: [main]
+    branches: [main, framework/refactor]
     paths:
+      - 'packages/skelly-assets'
+      - '.gitmodules'
+      - 'packages/mods/**'
       - 'packages/deadvox/**'
       - 'packages/engine/**'
-      - 'packages/tool-ui/**'
+      - 'packages/presentation/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
-      - 'packages/mobgen/src/**'
+      - 'tools/skelly-assets/**'
+      - 'tools/pinned-download.mjs'
+      - 'tools/lit-check/**'
       - 'testPool.ts'
       - '!**/*.md'
       - 'packages/deadvox/TROUBLESHOOTING.md'
@@ -20,13 +25,18 @@ on:
       - 'test/browser-ci*.mjs'
   pull_request:
     paths:
+      - 'packages/skelly-assets'
+      - '.gitmodules'
+      - 'packages/mods/**'
       - 'packages/deadvox/**'
       - 'packages/engine/**'
-      - 'packages/tool-ui/**'
+      - 'packages/presentation/**'
       - 'package.json'
       - 'package-lock.json'
       - 'tools/jsonnet/**'
-      - 'packages/mobgen/src/**'
+      - 'tools/skelly-assets/**'
+      - 'tools/pinned-download.mjs'
+      - 'tools/lit-check/**'
       - 'testPool.ts'
       - '!**/*.md'
       - 'packages/deadvox/TROUBLESHOOTING.md'
@@ -52,28 +62,37 @@ jobs:
         working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
           path: tools/jsonnet/bin
           key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       # A cold install takes seconds, so the 3-minute limit stays. A stalled registry request
       # is what timed the step out, and the root .npmrc bounds each request so a retry fits (#1108).
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       - name: Browser partition manifest
         timeout-minutes: 1
         run: node ../../test/browser-ci-manifest.mjs
-      - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
+      - run: npm ci --prefix ../../tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
@@ -105,24 +124,33 @@ jobs:
         working-directory: packages/deadvox
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Cache go-jsonnet
         uses: actions/cache@v4
         with:
           path: tools/jsonnet/bin
           key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       # Any test file can hash to any shard, and some tests read the lit-check install.
-      - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
+      - run: npm ci --prefix ../../tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Unit suite shard ${{ matrix.shard }}
         run: timeout 180 npx vitest run --maxWorkers=2 --shard=${{ matrix.shard }}
@@ -151,6 +179,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/github-script@v7
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}

@@ -1,6 +1,0 @@
-{
-  "name": "broken-straight-mouth-wider-than-head",
-  "base": "synthetic:rimmed-straight",
-  "set": { "case.body.diameterAtMouth.value": 12 },
-  "expect": ["diameters"]
-}

@@ -1,0 +1,37 @@
+{
+  "models": [
+    {
+      "file": "assets/models/paper_sheet.glb",
+      "id": "paper_sheet",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/folded_note.glb",
+      "id": "folded_note",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/notebook.glb",
+      "id": "notebook",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    }
+  ]
+}

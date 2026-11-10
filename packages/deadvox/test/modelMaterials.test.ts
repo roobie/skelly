@@ -1,4 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
+import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   BoxGeometry,
@@ -15,9 +17,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { glowingCopy } from '../src/render/itemEmissive.ts';
-import { applyModelMaterials, modelMaterialWarmUp } from '../src/render/modelMaterials.ts';
-import { prepareModel } from '../src/render/models.ts';
+import { thingModels } from './thingModels.ts';
 
 const table = {
   fixture: {
@@ -120,13 +120,10 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     (parser as unknown as { textureLoader: Loader }).textureLoader = imageLoader as unknown as Loader;
     return { name: 'stub_images' };
   });
-  const assets = 'src/content/base/assets';
-  const files = readdirSync(assets, { recursive: true, encoding: 'utf8' }).filter((file) => file.endsWith('.glb'));
+  const files = thingModels().map(({ glb }) => glb);
   expect(files).not.toHaveLength(0);
   const scenes = await Promise.all(
-    files.map(
-      async (file) => (await loader.parseAsync(Uint8Array.from(readFileSync(`${assets}/${file}`)).buffer, '')).scene,
-    ),
+    files.map(async (glb) => (await loader.parseAsync(Uint8Array.from(glb).buffer, '')).scene),
   );
   const meshes: Mesh[] = [];
   for (const scene of scenes) {

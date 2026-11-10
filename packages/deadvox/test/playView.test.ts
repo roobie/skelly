@@ -1,4 +1,18 @@
 import { runInNewContext } from 'node:vm';
+import { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
+import { inventoryLightSources } from '@skelly/engine/internal/core/lights.ts';
+import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import type { Actor } from '@skelly/engine/sim';
+import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
+import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
+import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
+import { ITEM_POINT_LIGHTS } from '@skelly/presentation/internal/render/lightPool.ts';
+import { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
+import type { Engine } from '@skelly/presentation/play';
+import { flashlightDaylightScale, Skylight } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   DirectionalLight,
@@ -12,28 +26,10 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { MapEntityStore } from '../src/core/entities.ts';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { inventoryLightSources, toggleLight } from '../src/core/lights.ts';
-import type { Body } from '../src/core/physics.ts';
-import { raycast } from '../src/core/raycast.ts';
-import type { PoweredLight } from '../src/core/sitePower.ts';
-import { skyAt } from '../src/core/sky.ts';
-import { SkyFields } from '../src/core/skyField.ts';
-import type { SkyBounds } from '../src/core/skylight.ts';
-import type { SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
-import type { Zombie } from '../src/core/zombies.ts';
-import type { Engine } from '../src/game/engine.ts';
-import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
-import { flashlightDaylightScale } from '../src/render/flashlight.ts';
-import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
-import { createPlayView } from '../src/render/playView.ts';
-import { Skylight } from '../src/render/skylight.ts';
+import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
+import { productAssets } from '../src/product/assets.ts';
+import { ragdollConfig } from '../src/product/ragdoll.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
@@ -42,6 +38,7 @@ import { makeConfig } from './fixtures/startupContent.ts';
 const FAR_PLANE_SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
 
 const registry = baseRegistry();
+const actorFigureFiles = stackActorFigureFiles(registry);
 /** Only the figure's model rows, which the drawn body needs to lay out; held items draw their fallbacks. */
 const figureModels = new Set(
   [...registry.figures.values()].flatMap(({ body, limbs }) => [
@@ -54,8 +51,8 @@ const withoutItemModels = {
   models: new Map([...registry.models].filter(([id]) => figureModels.has(id))),
 };
 // Node has no page to fetch model files from, so the library gets an empty pack and reports each model as missing.
-vi.mock('../src/render/models.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/render/models.ts')>();
+vi.mock('@skelly/presentation/internal/render/models.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@skelly/presentation/internal/render/models.ts')>();
   class EmptyPackLibrary extends actual.ModelLibrary {
     constructor(...[content, report]: ConstructorParameters<typeof actual.ModelLibrary>) {
       super(content, report, {}, 1);
@@ -126,7 +123,12 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { page });
+  const view = createPlayView(engine, inventory, vi.fn(), {
+    models: productAssets.models,
+    actorFigureFiles,
+    ragdoll: ragdollConfig,
+    page,
+  });
   syncActor(view, engine.camera);
   return {
     engine,
@@ -259,7 +261,13 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
     shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget(), poweredLights });
+  const view = createPlayView(engine, inventory, vi.fn(), {
+    models: productAssets.models,
+    actorFigureFiles,
+    ragdoll: ragdollConfig,
+    page: new EventTarget(),
+    poweredLights,
+  });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
     syncActor(view, camera);
@@ -566,7 +574,12 @@ describe('play presentation ownership', () => {
       sky: {},
       isSolid: () => false,
     } as unknown as Engine;
-    const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget() });
+    const view = createPlayView(engine, inventory, vi.fn(), {
+      models: productAssets.models,
+      actorFigureFiles,
+      ragdoll: ragdollConfig,
+      page: new EventTarget(),
+    });
 
     expect(view.pictures).toBeUndefined();
     expect(view.render()).toBeNull();
@@ -850,11 +863,11 @@ describe('play presentation ownership', () => {
       time: 0,
       playerEye: [0, 0, 0],
       playerChest: [0, 0, 0],
-      lastZombieStep: 0,
+      lastActorStep: 0,
       lastBackgroundStep: 0,
       dt: 0,
       entities: new BlockEntities(inventory.registry),
-      zombies: new MapEntityStore<Zombie>(),
+      actors: new MapEntityStore<Actor>(),
       acidGlobs: [],
       acidPuddles: [],
       frozen: false,

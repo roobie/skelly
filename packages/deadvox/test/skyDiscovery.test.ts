@@ -1,15 +1,15 @@
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { SkyFields } from '@skelly/engine/sky';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { createEngine } from '@skelly/presentation/play';
 import { afterEach, expect, it, vi } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
-import { createEngine } from '../src/game/engine.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
-vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
+vi.mock('@skelly/engine/internal/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
 afterEach(() => vi.unstubAllGlobals());
 
 it('draws the shared cache for an above-ground authored placement without an indoor flag', () => {

@@ -1,26 +1,37 @@
+import { BindingRegistry } from '@skelly/engine/input';
+import { CanonicalTerrain, installColumn } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
+import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
+import { strikeTerrain } from '@skelly/engine/internal/core/terrainStrike.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { affectedChunks } from '@skelly/engine/internal/core/world.ts';
+import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import { PILE_GRID } from '@skelly/engine/inventory';
+import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
+import { buildMesh } from '@skelly/engine/mesh';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import type { BlockBlow } from '@skelly/engine/sim';
+import { playerTuning } from '@skelly/engine/sim';
+import {
+  CHUNK,
+  generateColumn,
+  type Terrain,
+  toChunk,
+  toLocal,
+  type Vec3,
+  World,
+  worldSolid,
+} from '@skelly/engine/world';
+import type { Engine } from '@skelly/presentation/play';
+import { contentLookup } from '@skelly/presentation/ui';
 import { Scene } from 'three';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { BlockBlow } from '../src/core/blockDamage.ts';
-import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { CHUNK, toChunk, toLocal, type Vec3 } from '../src/core/coords.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { buildMesh } from '../src/core/mesher.ts';
-import { paddedIndex } from '../src/core/meshInput.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../src/core/site.ts';
-import type { BlockBox } from '../src/core/structure.ts';
-import { strikeTerrain } from '../src/core/terrainStrike.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { affectedChunks, World } from '../src/core/world.ts';
-import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { describe, expect, it, vi } from 'vitest';
 import { BuildMode } from '../src/debug/build.ts';
-import type { Engine } from '../src/game/engine.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { Streamer } from '../src/game/streamer.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
-import type { FromMesher, ToMesher } from '../src/worker/protocol.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { fixtureLootPoint } from './economyFixtures.ts';
@@ -58,9 +69,7 @@ const fixtureRegistry = () => {
     category: 'material',
     size: [PILE_GRID.w, PILE_GRID.h],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   registry.furniture.set(shelfType, {
     id: shelfType,
@@ -164,10 +173,11 @@ const fixture = (
     lootPointsIn: (cx, cz) =>
       points.filter(({ position }) => toChunk(position[0]) === cx && toChunk(position[2]) === cz),
     supplySourcesIn: (area) => footprints.in(area),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     scale,
     seed: 7,
@@ -309,20 +319,23 @@ const restore = async (f: Fixture, variant: Variant) => {
 const meshing = (f: Fixture) => {
   type Request = Extract<ToMesher, { type: 'mesh' }>;
   const requests: { worker: ControlledWorker; message: Request }[] = [];
-  class ControlledWorker {
-    onmessage: ((event: { data: FromMesher }) => void) | undefined;
-    postMessage(message: ToMesher): void {
+  class ControlledWorker implements MesherPort {
+    handlers: MesherHandlers | undefined;
+    listen(handlers: MesherHandlers): void {
+      this.handlers = handlers;
+    }
+    post(message: ToMesher): void {
       if (message.type === 'mesh') {
         requests.push({ worker: this, message });
       }
     }
   }
-  vi.stubGlobal('Worker', ControlledWorker);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const colors = new Uint8Array(f.registry.blocks.length * 4);
   const streamer = new Streamer({
     world: f.world,
     meshes: meshes as never,
+    mesher: { count: 1, create: () => new ControlledWorker() },
     seed: f.terrain.seed,
     terrain: f.terrain.blocks,
     shape: f.terrain.shape,
@@ -348,13 +361,37 @@ const meshing = (f: Fixture) => {
   };
   const reply = ({ worker, message }: ReturnType<typeof next>) => {
     const mesh = buildMesh(message.padded, colors, { wide: message.wide });
-    worker.onmessage?.({ data: { type: 'mesh', key: message.key, version: message.version, ms: 0, mesh } });
+    worker.handlers?.message({ type: 'mesh', key: message.key, version: message.version, ms: 0, mesh });
     return mesh;
   };
   return { streamer, meshes, next, reply };
 };
 
-afterEach(() => vi.unstubAllGlobals());
+const debugBuild = (f: Fixture) => {
+  const blows: BlockBlow[] = [];
+  const engine = {
+    config: { debug: true, scale },
+    registry: f.registry,
+    world: f.world,
+    scene: new Scene(),
+    isOpaque: worldSolid(f.world, f.registry, f.inventory.entities),
+  } as unknown as Engine;
+  const build = new BuildMode(engine, f.session.body, 1, {
+    strikeTerrainCell: (target, blow) => {
+      blows.push(blow);
+      return f.session.strikeTerrainCell(target, blow);
+    },
+    bindings: new BindingRegistry(INPUT_BINDINGS),
+  });
+  const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
+  const dir: Vec3 = [0, 1, 0];
+  return { build, blows, eye, dir };
+};
+
+const debugKind = (f: Fixture, damageKind: string) => {
+  const player = playerTuning(f.registry);
+  f.registry.player.set(player.id, { ...player, debugBlockTool: { ...player.debugBlockTool, damageKind } });
+};
 
 describe('supply-aware terrain destruction', () => {
   it('steps debug damage through the real strike owner, then removes the floor and its shelf like player hits', () => {
@@ -362,20 +399,7 @@ describe('supply-aware terrain destruction', () => {
     const edited = vi.fn();
     const debug = fixture(variant, undefined, edited);
     const real = fixture(variant);
-    const blows: BlockBlow[] = [];
-    const engine = {
-      config: { debug: true, scale },
-      registry: debug.registry,
-      world: debug.world,
-      scene: new Scene(),
-      isOpaque: worldSolid(debug.world, debug.registry, debug.inventory.entities),
-    } as unknown as Engine;
-    const build = new BuildMode(engine, debug.session.body, 1, (target, blow) => {
-      blows.push(blow);
-      return debug.session.strikeTerrainCell(target, blow);
-    });
-    const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
-    const dir: Vec3 = [0, 1, 0];
+    const { build, blows, eye, dir } = debugBuild(debug);
     expect(build.strike('step', eye, dir)).toBe(false);
     expect(blows).toEqual([]);
     build.toggle();
@@ -396,6 +420,33 @@ describe('supply-aware terrain destruction', () => {
     expect(edited).toHaveBeenCalledOnce();
     expect(real.playerStrike(blows[1]!.strength)).toBe(true);
     expect(logical(debug)).toEqual(logical(real));
+  });
+
+  it('normalizes debug strike strength by the selected damage kind, not blunt resistance', () => {
+    const f = fixture({ resident: true });
+    debugKind(f, 'cut');
+    const material = f.registry.blockMaterials.get('fixture_material')!;
+    f.registry.blockMaterials.set(material.id, {
+      ...material,
+      minimumStrength: 0,
+      resistance: { ...material.resistance, blunt: 0, cut: 0.5 },
+    });
+    const { build, eye, dir } = debugBuild(f);
+    build.toggle();
+    expect(build.strike('step', eye, dir)).toBe(true);
+    expect(f.world.blockDamage.get(cell)!.damage).toBeCloseTo(
+      material.durability * playerTuning(f.registry).debugBlockTool.stepDurabilityFraction,
+    );
+  });
+
+  it('refuses an unsupported debug strike kind before forwarding a terrain blow', () => {
+    const f = fixture({ resident: true });
+    debugKind(f, 'fixture_unsupported');
+    const { build, blows, eye, dir } = debugBuild(f);
+    build.toggle();
+    expect(() => build.strike('step', eye, dir)).toThrow('Unsupported block damage kind "fixture_unsupported"');
+    expect(blows).toEqual([]);
+    expect(f.world.blockDamage.get(cell)).toBeUndefined();
   });
 
   it.each(['drawn', 'in-flight'] as const)(

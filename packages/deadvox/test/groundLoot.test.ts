@@ -1,27 +1,37 @@
-import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import { lootPointStream, lootPointsByColumn, rollLoot } from '../src/core/loot.ts';
-import { groundLootSupplyIssues } from '../src/core/placementLoot.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { furnitureOf, lootSourcesOf, type Site, SupplyFootprints } from '../src/core/site.ts';
-import { templateGroundLootIssues, templateGroundLootReservations } from '../src/core/templateSpatial.ts';
-import { compileTemplate, type Placement, placedPieces, stackTemplate } from '../src/core/templates.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { lootPointStream, lootPointsByColumn, rollLoot } from '@skelly/engine/internal/core/loot.ts';
+import { groundLootSupplyIssues } from '@skelly/engine/internal/core/placementLoot.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { furnitureOf, lootSourcesOf, type Site, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import {
+  templateGroundLootIssues,
+  templateGroundLootReservations,
+} from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate, placedPieces, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { makeScale, type Placement, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
-const floor = { id: 'fixture_floor', material: FIXTURE_MATERIAL, name: 'Fixture floor', solid: true, color: '#808080' };
+const floor = {
+  id: 'fixture_floor',
+  material: FIXTURE_MATERIAL,
+  name: 'Fixture floor',
+  solid: true,
+  color: '#808080',
+  drops: { default: 'fixture_blow' },
+};
 const fixtureData = (): ContentFile => ({
+  damageKinds: fixtureDamageContent().damageKinds,
   furnitureMaterials: fixtureMaterials(),
   sounds: fixtureSounds(),
   blocks: [floor],
@@ -34,9 +44,7 @@ const fixtureData = (): ContentFile => ({
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Medical'], tiers: ['Tier1'] },
       workInProgress: false,
-      notLoot: false,
     },
     {
       id: 'fixture_wrong_usage',
@@ -44,9 +52,7 @@ const fixtureData = (): ContentFile => ({
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Industrial'], tiers: ['Tier1'] },
       workInProgress: false,
-      notLoot: false,
     },
     {
       id: 'fixture_wrong_tier',
@@ -54,10 +60,13 @@ const fixtureData = (): ContentFile => ({
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage: ['Medical'], tiers: ['Tier3'] },
       workInProgress: false,
-      notLoot: false,
     },
+  ],
+  itemEconomy: [
+    { id: 'fixture_allowed', usage: ['Medical'], tiers: ['Tier1'], notLoot: false },
+    { id: 'fixture_wrong_usage', usage: ['Industrial'], tiers: ['Tier1'], notLoot: false },
+    { id: 'fixture_wrong_tier', usage: ['Medical'], tiers: ['Tier3'], notLoot: false },
   ],
   loot: [
     {
@@ -121,6 +130,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     blockIds: new Map([...base.blockIds, [floor.id, base.blocks.length]]),
     blockMaterials: new Map([...base.blockMaterials, ...parsed.registry.blockMaterials]),
     items: new Map([...base.items, ...parsed.registry.items]),
+    itemEconomy: new Map([...base.itemEconomy, ...parsed.registry.itemEconomy]),
     furniture: new Map([...base.furniture, ...parsed.registry.furniture]),
     loot: new Map([...base.loot, ...parsed.registry.loot]),
     templates: new Map([...base.templates, ...parsed.registry.templates]),
@@ -138,11 +148,12 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     supplySourcesIn: (area) => new SupplyFootprints(placedPieces(placement), [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) => furnitureOf({ registry, seed }, placement, [cx, cz], site.lootPointsIn(cx, cz)),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   const session = (restore?: Readonly<SaveSnapshot>) =>
     createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       seed,
       scale: makeScale(0.5),
       world: new World(),
@@ -165,13 +176,6 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
       ...(restore ? { restore } : {}),
     });
   return { registry, placement, site, session };
-};
-
-const version = {
-  simulationHash: 'a'.repeat(64),
-  schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: {},
-  contentPacks: [{ id: 'fixture', version: '1', canonicalHash: 'b'.repeat(64) }],
 };
 
 describe('ground loot', () => {
@@ -207,37 +211,6 @@ describe('ground loot', () => {
     },
   );
 
-  it('keeps a looted furniture-free column empty across revisits and a save round-trip', async () => {
-    const { registry, site, session } = fixture(false);
-    const runtime = session();
-    runtime.onColumn(0, 0, site);
-    const pile = [...runtime.inventory.piles.values()][0]!;
-    expect(pile).toBeDefined();
-    const { item } = pile.items[0]!;
-    expect(runtime.inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
-    expect(runtime.inventory.piles.has(pile.pos.join(','))).toBe(false);
-    runtime.onColumnUnload(0, 0);
-    runtime.onColumn(0, 0, site);
-    expect(runtime.inventory.piles.has(pile.pos.join(','))).toBe(false);
-    expect(runtime.inventory.hands.right?.uid).toBe(item.uid);
-    const snapshot = runtime.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' });
-    expect(snapshot.world.rolledColumns).toContain('0,0');
-    const encoded = await encodeSave(snapshot, {
-      generation: 1,
-      version,
-      worldOptions: { blockSize: 0.5, site: 'forest', storeys: 1, density: null },
-    });
-    const decoded = await decodeSave(encoded, {
-      version,
-      contentLookup: (kind, id) => contentLookup(registry, kind, id),
-    });
-    expect(decoded.snapshot.world.rolledColumns).toEqual(snapshot.world.rolledColumns);
-    const restored = session(decoded.snapshot);
-    restored.onColumn(0, 0, site);
-    expect(restored.inventory.piles.has(pile.pos.join(','))).toBe(false);
-    expect(restored.inventory.hands.right?.uid).toBe(item.uid);
-  });
-
   it('wears the furniture a column spawn carries a wear share for, and leaves an unworn spawn intact', () => {
     const { registry, site, session } = fixture();
     const spawns = site.furnitureIn(0, 0);
@@ -253,26 +226,6 @@ describe('ground loot', () => {
     const intact = session();
     intact.onColumn(0, 0, { ...site, furnitureIn: () => [spawns[0]!] });
     expect([...intact.inventory.entities.records][0]!.damage).toBeUndefined();
-  });
-
-  it('marks empty columns and skips both furniture and loot enumeration on return', () => {
-    const { site, session } = fixture(false);
-    const runtime = session();
-    const furnishing = vi.spyOn(site, 'furnitureIn');
-    const points = vi.spyOn(site, 'lootPointsIn');
-    runtime.onColumn(1, 0, site);
-    expect(furnishing).toHaveBeenCalledWith(1, 0);
-    expect(points).toHaveBeenCalledWith(1, 0);
-    const snapshot = runtime.snapshot({ worldId: 'fixture_world', characterId: 'fixture_character' });
-    expect(snapshot.world.rolledColumns).toContain('1,0');
-    furnishing.mockClear();
-    points.mockClear();
-    runtime.onColumnUnload(1, 0);
-    runtime.onColumn(1, 0, site);
-    expect(furnishing).not.toHaveBeenCalled();
-    expect(points).not.toHaveBeenCalled();
-    runtime.onColumn(0, 0, site);
-    expect([...runtime.inventory.piles.values()].some((pile) => pile.items.length > 0)).toBe(true);
   });
 
   it('carries ground sources through rotation and stacked floors without aliasing', () => {

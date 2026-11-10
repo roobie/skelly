@@ -1,3 +1,58 @@
+import {
+  assembledVehicle,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  requireDayCycle,
+  type VehicleFittingDef,
+} from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { skyAt } from '@skelly/engine/sky';
+import {
+  APC,
+  addFitting,
+  type Blueprint,
+  BOX_VAN,
+  CATALOGUE,
+  type Fitting,
+  fittingById,
+  fittingWear,
+  gridBounds,
+  isClearMaterial,
+  latticeVoxels,
+  MATERIALS,
+  type MassReport,
+  type MeshBuffers,
+  MOTORBIKE,
+  measure,
+  meshGrid,
+  newInstance,
+  noiseRadius,
+  PART_CELL,
+  PART_LAYERS,
+  type Paint,
+  type PartLayer,
+  PartLibrary,
+  PICKUP,
+  partTypeOf,
+  quadColors,
+  RANGE_ROVER,
+  type Rgb,
+  removeFitting,
+  SEDAN,
+  STRIPPED_REMOVED,
+  type VehicleInstance,
+  VOXEL,
+  VOXELS_PER_CELL,
+  type VoxelGrid,
+  type WearSite,
+  wearGrid,
+  wearKey,
+  wearPalette,
+  wheel,
+} from '@skelly/engine/vehicles';
+import { BLOCK_SIZE, type Vec3 } from '@skelly/engine/world';
+import { applySky, ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import { html, render } from 'lit-html';
 import {
   BoxGeometry,
@@ -22,51 +77,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { BLOCK_SIZE } from '../core/scale.ts';
-import type { VehicleFittingDef } from '../core/schema.ts';
-import { skyAt } from '../core/sky.ts';
-import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
-import { buildBundledContent } from '../game/bundledContent.ts';
-import { ModelLibrary } from '../render/models.ts';
-import { PlayerMeshes } from '../render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
-import { applySky } from '../render/sky.ts';
-import { APC } from '../vehicles/apc.ts';
-import { BOX_VAN } from '../vehicles/boxVan.ts';
-import { CATALOGUE } from '../vehicles/catalogue.ts';
-import { MATERIALS } from '../vehicles/materials.ts';
-import {
-  addFitting,
-  type Blueprint,
-  type Fitting,
-  fittingById,
-  isClearMaterial,
-  latticeVoxels,
-  type MassReport,
-  measure,
-  newInstance,
-  noiseRadius,
-  PART_CELL,
-  PART_LAYERS,
-  type Paint,
-  type PartLayer,
-  PartLibrary,
-  partTypeOf,
-  removeFitting,
-  type VehicleInstance,
-  VOXEL,
-  VOXELS_PER_CELL,
-} from '../vehicles/model.ts';
-import { MOTORBIKE } from '../vehicles/motorbike.ts';
-import { PICKUP } from '../vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
-import { SEDAN } from '../vehicles/sedan.ts';
-import { gridBounds, type MeshBuffers, meshGrid, quadColors, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
-import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
+import { productAssets } from '../product/assets.ts';
+import { buildBundledContent } from '../product/content.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
 
 const required = <T extends Element>(selector: string): T => {
@@ -465,7 +477,7 @@ const partModels = new ModelLibrary(
     errorText = message;
     renderPanel();
   },
-  undefined,
+  { packAssets: productAssets.models },
   graphicsTuningOf(registry).modelLoadConcurrency,
 );
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
@@ -1030,7 +1042,7 @@ applySky(
     ambient,
     camera,
     radiusM: 96,
-    farPlaneScale: registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.fogFarPlaneScale ?? 1,
+    farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
   },
   skyAt(12, requireDayCycle(registry)),
 );
@@ -1197,7 +1209,7 @@ const playerGroup = new Group();
 scene.add(playerGroup);
 
 const addPlayer = (): void => {
-  const player = registry.figures.get(CORE_CONTENT_IDS.player);
+  const player = claimed(registry.figures, 'player');
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }

@@ -1,14 +1,14 @@
+import type { DecalDef } from '@skelly/engine/content';
+import type { TemplateDef } from '@skelly/engine/internal/core/content.ts';
+import { DecalSchema } from '@skelly/engine/internal/core/schema.ts';
+import { templateBodySpace } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate, type Turn } from '@skelly/engine/internal/core/templates.ts';
+import { gameHours } from '@skelly/engine/internal/core/time.ts';
+import { BlockEntities, DECAL_KINDS, panelFor, placedDecals } from '@skelly/engine/world';
+import { AuthoredDecals } from '@skelly/presentation/internal/render/decals.ts';
 import { ShaderLib } from 'three';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { BlockEntities, panelFor } from '../src/core/blockEntities.ts';
-import type { TemplateDef } from '../src/core/content.ts';
-import { DECAL_KINDS } from '../src/core/decalKinds.ts';
-import { type DecalDef, DecalSchema } from '../src/core/schema.ts';
-import { templateBodySpace } from '../src/core/templateSpatial.ts';
-import { compileTemplate, placedDecals, type Turn } from '../src/core/templates.ts';
-import { gameHours } from '../src/core/time.ts';
-import { AuthoredDecals } from '../src/render/decals.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

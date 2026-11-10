@@ -1,9 +1,14 @@
+import {
+  buildRegistry,
+  type ContentSource,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  type Registry,
+} from '@skelly/engine/content';
 import { modelMassKg } from '@skelly/thing-core/mass';
 import { describe, expect, it } from 'vitest';
-import battery from '../src/content/base/things/car_battery.model.json' with { type: 'json' };
-import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
-import { loadVehicleBlueprint, type PlacedFitting } from '../src/core/vehicleBlueprint.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
+import { baseSources } from '../src/product/content.ts';
+import battery from './fixtures/vehicle-part.model.json' with { type: 'json' };
 import { PLAYER } from './playerFixture.ts';
 
 const HOSTS = ['hatchback', 'pickup', 'hoist'];
@@ -11,7 +16,7 @@ const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
 // content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
@@ -28,12 +33,11 @@ const modPart = (
       id,
       name: 'Fixture part',
       workInProgress: false,
-      notLoot: false,
       category: 'misc',
       model: id,
       size: [3, 2],
-      economy: { usage: [], tiers: [] },
       vehicle: {
+        drops: { default: 'item_drop_wood' },
         capabilities,
         obstruction: { sight: true, light: true, sound: true, combat: true },
         ...vehicle,
@@ -112,12 +116,10 @@ describe('vehicle export contract', () => {
           {
             id: 'fixture_plain',
             workInProgress: false,
-            notLoot: false,
             name: 'Fixture plain item',
             category: 'misc',
             model: 'fixture_plain',
             size: [1, 1],
-            economy: { usage: [], tiers: [] },
           },
         ],
         ...blueprint(fitting('cell', 'fixture_plain')),

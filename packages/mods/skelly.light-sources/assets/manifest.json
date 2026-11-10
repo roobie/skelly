@@ -1,0 +1,29 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/candle.glb",
+        "assets/models/lighter.glb",
+        "assets/models/matches.glb",
+        "assets/models/oil_lamp.glb",
+        "assets/models/road_flare.glb",
+        "assets/models/torch.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
+      "download": null,
+      "files": ["assets/models/glowstick.glb"],
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
+    }
+  ]
+}

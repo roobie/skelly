@@ -1,30 +1,29 @@
+import { blockId } from '@skelly/engine/content';
+import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
+import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { NEUTRAL_AIM } from '@skelly/engine/pose';
+import {
+  BlockEntities,
+  type Body,
+  bodyOverlapsTerrain,
+  makeScale,
+  raycast,
+  stepBody,
+  type Vec3,
+  World,
+  worldSolid,
+} from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { blockId } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf } from '../src/core/items.ts';
-import { type Body, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
-import {
-  FirearmMechanics,
-  type FirearmShotEffect,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../src/game/firearmHandling.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '@skelly/engine/inventory';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
+import { CaseEffects, caseFlightPoint } from '@skelly/presentation/internal/render/caseEffects.ts';
 import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer, WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
@@ -241,6 +240,7 @@ const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = fals
   let crouchToggle = crouched;
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     entities,
     isSolid,

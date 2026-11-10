@@ -20,11 +20,14 @@ The cost to build something is not tech debt.
 ## Actor roles
 
 - **Entity:** a stored identity.
-- **Actor:** a source of effects or behavior, including the source whose modifiers
-  resolve an effect (`PILLARS.md`, "Content forward compatibility").
+- **Actor:** a body and its state, including the source whose modifiers resolve an
+  effect (`PILLARS.md`, "Content forward compatibility").
 - **Player:** a control role.
 - **Character:** a persistent persona.
-- **Agent:** an autonomous decision controller.
+- **Agent:** only the decision controller, not the actor's body or state.
+
+A setting's name in engine code ties the engine to one product. Actor and Agent
+separate the body and state from the part that decides without naming a setting.
 
 These roles do not decide whether a ship is an actor; that remains a mechanism-design
 question under #1532.

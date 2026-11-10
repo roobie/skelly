@@ -3,9 +3,43 @@ import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, posix, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
-import { createServer } from 'vite';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const BRANCH_REF_PREFIX = /^refs\/heads\//;
+const stairsStart = {
+  density: null,
+  id: 'sky_main_arrival_stairs_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'stair_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
 
 // The reference run measures the base's startup, so each base startup file must link against the base
 // modules it imports; a branch that removes an export the base imports would otherwise break the reference.
@@ -15,6 +49,7 @@ export const mainSourceOverlays = [
   'bench/run.ts',
   'bench/post.ts',
   'game/bundledContent.ts',
+  'game/browserMods.ts',
   'game/config.ts',
   'game/worldSetup.ts',
   'game/engine.ts',
@@ -37,6 +72,8 @@ export const mainSourceOverlays = [
   'render/acidEffects.ts',
   'render/gore.ts',
   'render/mobActors.ts',
+  // The renderer hands its ragdolls the figure body it draws, so the two change their spawn contract together.
+  'render/ragdoll.ts',
   // The engine builds the sky's targets and the sky installs the fog that the height fog patches; the three change together.
   'render/heightFog.ts',
   'render/sky.ts',
@@ -67,7 +104,7 @@ function contentLookView(source) {
   const rewritten = source
     .replace(
       "import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';",
-      "import { lookDefaultsOf } from '../core/lookDefaults.ts';\nimport { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';",
+      "import { lookDefaultsOf } from '@skelly/engine/internal/core/lookDefaults.ts';\nimport { DEFAULT_SHADOWS, lookOf, moodOf } from '@skelly/engine/internal/core/mood.ts';",
     )
     .replace(
       'applyLook(renderer, meshes, DEFAULT_LOOK);\n    mood.restore(DEFAULT_MOOD);',
@@ -87,19 +124,29 @@ export function adaptMainInteractionPick(source) {
   );
 }
 
+// Base world setup supplies a column-source wrapper to branch session/spawner code. Both the wrapper's
+// public method and its delegation must use the branch contract; export shims cannot rename object members.
+export function adaptMainSiteActors(source) {
+  return source.replaceAll('zombiesIn', 'actorsIn');
+}
+
 const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
       buildActorVariant(model, seed, amalgamType),
     ),`;
 
-// A base renderer that builds every model on one shared seed pool meets the branch's figure realization, which
-// refuses a seed that is not valid for a model by itself rather than drawing the next seed's body. The base
-// renderer then builds, per model, only the pool seeds that realize, as the branch builds each model's own
-// authored seeds; any other build error still fails the run. A base that builds per-model seeds needs no rewrite.
-// See `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+// A base renderer that builds every model on one shared seed pool meets the branch's figures, which exist only for
+// each model's own authored seeds rather than drawing another seed's body. The base renderer then builds, per
+// model, only the pool seeds that realize, as the branch builds each model's own authored seeds; any other build
+// error still fails the run. A base that builds per-model seeds needs no seed rewrite. The overlay retains branch
+// body-plan identities, while the base's profiles, templates and ragdoll catalogs keep implementation names;
+// reverting either side would mix content and mechanism contracts. See `packages/engine/src/core/content.ts`, `actorFigureIssues`.
 export function adaptMainSeedPool(source) {
-  return source.replace(
-    SHARED_SEED_POOL,
-    `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
+  return source
+    .replaceAll('ZombieModel', 'ActorModel')
+    .replaceAll('core/zombieModels.ts', 'core/actorModels.ts')
+    .replace(
+      SHARED_SEED_POOL,
+      `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
       try {
         return [buildActorVariant(model, seed, amalgamType)];
       } catch (error) {
@@ -109,7 +156,23 @@ export function adaptMainSeedPool(source) {
         throw error;
       }
     }),`,
-  );
+    )
+    .replace(
+      "import type { ActorModel } from '../core/actorModels.ts';",
+      "import { type ActorModel, bodyPlanModel, figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';",
+    )
+    .replaceAll('zombie.type.model', 'figureVariantOf(zombie.type)')
+    .replaceAll('type.model', 'figureVariantOf(type)')
+    .replaceAll("'amalgam'", "'fused-mass'")
+    .replace(
+      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : model]",
+      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'humanoid' : bodyPlanModel(model)]",
+    )
+    .replace('templatesByModel.get(v.model)', 'templatesByModel.get(bodyPlanModel(v.model))')
+    .replace(
+      'ragdollContent.models.includes(variant.model)',
+      'ragdollContent.models.includes(bodyPlanModel(variant.model))',
+    );
 }
 
 // The base Mood caller predates content-owned optic-lens tuning. Keep its presentation overlay while supplying
@@ -219,7 +282,7 @@ export function workspaceDirectory(git, revision, name) {
 
 /**
  * Runtime exports a module's base copy has and its branch copy lacks, for a module in any workspace package's
- * src: main sources also import sibling packages (deadvox reaches mobgen through an alias), and the base may
+ * src: main sources also import sibling packages (deadvox imports thing-core from the skelly-assets submodule), and the base may
  * keep a package in another directory. Returns the lookup and a reader of a module's base copy.
  */
 export function removedModuleExports(git, base) {
@@ -319,6 +382,7 @@ function assertOverlayBoundary(root, overlays, branchPaths) {
 const OVERLAY_ADAPTERS = {
   'render/playView.ts': contentLookView,
   'game/play.ts': adaptMainInteractionPick,
+  'game/worldSetup.ts': adaptMainSiteActors,
   'render/mobActors.ts': adaptMainSeedPool,
   'render/mood.ts': adaptMainOpticLensPass,
   'game/engine.ts': (source) =>
@@ -402,7 +466,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   };
   const mainHtml = git(['show', `${base}:${basePackage}/index.html`]);
   const appliedSources = new Set();
-  const server = await createServer({
+  const server = await createStageServer({
     root,
     configFile: resolve(root, 'vite.config.ts'),
     logLevel: 'error',
@@ -455,7 +519,10 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (overlays.has(relative)) {
             appliedSources.add(relative);
           }
-          if (relative === 'core/authoredSite.ts' || relative === 'content/base/templates-stairs.json') {
+          if (
+            relative === 'core/authoredSite.ts' ||
+            id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')
+          ) {
             source = fixtureTransform(source, id) ?? source;
           }
           return OVERLAY_ADAPTERS[relative]?.(source) ?? source;
@@ -477,7 +544,12 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     });
     await server.listen();
     const address = server.httpServer.address();
-    await page.goto(`http://127.0.0.1:${address.port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`);
+    await page.goto(
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.sky-main-arrival.stairs', stairsStart),
+        hash: { debug: true, seed: 1, radius: 32 },
+      }),
+    );
     await page.waitForFunction(
       () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
       undefined,

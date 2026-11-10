@@ -1,24 +1,17 @@
+import type { Registry } from '@skelly/engine/content';
+import type { ReplayActionPayload } from '@skelly/engine/input';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { legalAddonPlacements } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import type { Item } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '@skelly/engine/vehicles';
+import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import type { Item } from '../src/core/items.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { legalAddonPlacements } from '../src/core/vehicleBlueprint.ts';
-import {
-  copyVehicleWorkPlacement,
-  type VehicleWorkPlacement,
-  type VehicleWorkTarget,
-} from '../src/core/vehicleInstances.ts';
-import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
-  type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
   blockId,
   capture,
@@ -138,7 +131,7 @@ const fixture = (registry = fixtureRegistry()) => {
 describe('placement-carrying vehicle commands', () => {
   it('keeps one owner through a player-installed plate chain and refuses removing its occupied support', () => {
     const registry = fixtureRegistry();
-    const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+    const cell = registry.inventory.get(fixtureIds.player)!.cellMetres;
     const items = new Map(registry.items);
     const plate = items.get('mounting_plate')!;
     items.set(plate.id, {
@@ -236,7 +229,7 @@ describe('placement-carrying vehicle commands', () => {
   });
   it('moves a factory cargo item to another legal cell through work with exactly one owner and removes it again', () => {
     const registry = fixtureRegistry();
-    const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+    const cell = registry.inventory.get(fixtureIds.player)!.cellMetres;
     const items = new Map(registry.items);
     const models = new Map(registry.models);
     const floor = items.get('car_battery')!;

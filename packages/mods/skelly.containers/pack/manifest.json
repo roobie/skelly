@@ -1,0 +1,42 @@
+{
+  "dependencies": ["skelly.fuel", "skelly.inventory", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "containers-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-containers.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/fuel-parts.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jerry_can.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jerry_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lamp_oil_bottle.glb"
+    }
+  ],
+  "id": "skelly.containers",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

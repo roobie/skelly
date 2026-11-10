@@ -1,10 +1,7 @@
+import { captureSky, growSky, SKY_HALO, type SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { buildSkyResult, containsSky, skyIndex } from '@skelly/engine/sky';
+import { BlockEntities, toChunk, type Vec3, worldOpaque } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldOpaque } from '../src/core/collision.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
-import { skyIndex } from '../src/core/skylight.ts';
-import { captureSky, containsSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { buildSkylight } from './fixtures/skyOracle.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';

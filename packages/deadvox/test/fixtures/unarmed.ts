@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
-import type { MeleeClassDef } from '../../src/core/content.ts';
-import type { MeleeWeapon } from '../../src/core/zombies.ts';
-import { unarmedMeleeWeapon } from '../../src/game/melee.ts';
+import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
+import type { MeleeClassDef } from '@skelly/engine/internal/core/content.ts';
+import { unarmedMeleeWeapon } from '@skelly/engine/sim';
 
 const baseMeleeClasses = (): ReadonlyMap<string, MeleeClassDef> => {
-  const { meleeClasses } = JSON.parse(readFileSync('src/content/base/items-tools.json', 'utf8')) as {
+  const { meleeClasses } = JSON.parse(readFileSync('../mods/skelly.melee-classes/melee-classes.json', 'utf8')) as {
     meleeClasses: MeleeClassDef[];
   };
   return new Map(meleeClasses.map((meleeClass) => [meleeClass.id, meleeClass]));

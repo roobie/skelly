@@ -5,14 +5,34 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/dist", "!**/package-lock.json", "!**/__snapshots__", "!packages/deadvox/vendor/rapier-f64"]
+    // The submodule's thing-core is a root workspace, so it is indexed for import resolution.
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/package-lock.json",
+      "!**/__snapshots__",
+      "!packages/deadvox/vendor/rapier-f64",
+      "!packages/skelly-assets/*",
+      "packages/skelly-assets/tools",
+      "!packages/skelly-assets/tools/*",
+      "packages/skelly-assets/tools/packages",
+      "!packages/skelly-assets/tools/packages/*",
+      "packages/skelly-assets/tools/packages/thing-core"
+    ]
   },
-  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
+  // The submodule owns its checks; parent rules must not relint another repository.
+  "formatter": {
+    "includes": ["**", "!packages/skelly-assets/**"],
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
   "javascript": {
     "formatter": { "quoteStyle": "single", "trailingCommas": "all", "arrowParentheses": "always" }
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": { "includes": ["**", "!packages/skelly-assets/**"], "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
+    "includes": ["**", "!packages/skelly-assets/**"],
     "rules": {
       "a11y": "error",
       "complexity": "error",
@@ -108,8 +128,8 @@
         "**/vite.config.ts",
         "testPool.ts",
         "tools/jsonnet/**",
-        "tools/refresh-deadvox.mjs",
-        "packages/thing-export/src/files.ts",
+        "tools/skelly-assets/**",
+        "tools/pinned-download.mjs",
         "packages/deadvox/tools/publish-playtest.mjs",
         "packages/deadvox/tools/police-item-models.mjs",
         "packages/deadvox/tools/item-fuel-models.mjs",
@@ -123,13 +143,7 @@
     },
     {
       // Standalone Node benchmarks import game systems and print measured timings.
-      "includes": [
-        "**/src/bench/*-cpu.mjs",
-        "**/deadvox/tools/bench-zombie-swings.mjs",
-        "packages/deadvox/tools/bench-expressions.mjs",
-        "packages/deadvox/tools/probe-wasm-expressions.mjs",
-        "packages/deadvox/tools/measure-ragdolls.mjs"
-      ],
+      "includes": ["**/src/bench/*-cpu.mjs", "**/deadvox/tools/bench-zombie-swings.mjs"],
       "linter": {
         "rules": {
           "correctness": { "noNodejsModules": "off" },
@@ -138,22 +152,7 @@
       }
     },
     {
-      // Standalone Playwright check scripts (run by hand, not by vitest): they assert, read env and print.
-      "includes": ["**/gun-authoring-tool/test/browser/*.mjs"],
-      "linter": {
-        "rules": {
-          "correctness": { "noProcessGlobal": "off" },
-          "style": { "noProcessEnv": "off" },
-          "suspicious": { "noConsole": "off", "noMisplacedAssertion": "off" }
-        }
-      }
-    },
-    {
-      "includes": [
-        "packages/deadvox/tools/perf-baseline.mjs",
-        "packages/deadvox/tools/perf-baseline-trace.mjs",
-        "packages/deadvox/tools/measure-ragdolls.mjs"
-      ],
+      "includes": ["packages/deadvox/tools/perf-baseline.mjs", "packages/deadvox/tools/perf-baseline-trace.mjs"],
       "linter": { "rules": { "suspicious": { "noConsole": "off" }, "performance": { "noAwaitInLoops": "off" } } }
     },
     {
@@ -162,45 +161,60 @@
       "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
     },
     {
-      // Vite requires a default export.
-      "includes": ["**/vite.config.ts"],
+      // Vite and Vitest require a default export.
+      "includes": ["**/vite.config.ts", "**/vitest.config.ts"],
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
     },
     {
-      // mobgen's posing hot path runs once per bone per actor per frame. Profiling found
+      // Deadvox and presentation tests reach package internals through the test-only subpaths, whose export
+      // condition Biome's resolver does not apply. tsc applies it (each package's tsconfig.json, customConditions)
+      // and resolves every import in these files, so an unresolved one still fails the typecheck.
+      "includes": ["packages/deadvox/test/**/*.ts", "packages/presentation/test/**/*.ts"],
+      "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
+    },
+    {
+      // The posing hot path runs once per bone per actor per frame. Profiling found
       // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
       // indexing it directly — a measured, deliberate choice at each of these call sites, not an
       // oversight useDestructuring should keep flagging.
-      "includes": [
-        "**/mobgen/src/core/pose.ts",
-        "**/mobgen/src/viewer/stressActors.ts",
-        "**/mobgen/src/cli/bench.ts",
-        "**/mobgen/src/mob/crowd.ts"
-      ],
+      "includes": ["packages/engine/src/core/pose.ts", "packages/presentation/src/render/crowd.ts"],
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
     },
     {
-      // deadvox reuses mobgen's pure src/core and src/mob via a `@mobgen/*` path alias (vite.config.ts's
-      // resolve.alias, tsconfig.json's paths) rather than an npm dependency — mobgen has no package.json
-      // entry and isn't published, so there's nothing to "add to the manifest". Biome's dependency check
-      // doesn't follow bundler/tsconfig path aliases, so it reads every `@mobgen/...` specifier as an
-      // undeclared npm package; these simulation/rendering and test files deliberately use that alias.
-      "includes": [
-        "**/deadvox/src/render/mobActors.ts",
-        "**/deadvox/src/render/ragdoll.ts",
-        "**/deadvox/src/core/zombies.ts",
-        "**/deadvox/src/core/zombieRegions.ts",
-        "**/deadvox/src/core/zombiePose.ts",
-        "**/deadvox/src/game/session.ts",
-        "**/deadvox/src/game/shamblerAudio.ts",
-        "**/deadvox/test/mobActors.test.ts",
-        "**/deadvox/test/poseAgreement.test.ts",
-        "**/deadvox/test/zombieClips.test.ts",
-        "**/deadvox/test/zombies.test.ts",
-        "**/deadvox/test/shamblerAudio.test.ts",
-        "**/deadvox/test/zombieRegions.test.ts"
-      ],
-      "linter": { "rules": { "correctness": { "noUndeclaredDependencies": "off" } } }
+      // The runtime and presentation packages' curated entries are re-export modules by design: other packages
+      // reach them only through these. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+      "includes": ["packages/engine/src/*.ts", "packages/engine/src/*.mjs", "packages/presentation/src/*.ts"],
+      "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
+    },
+    {
+      // The runtime's no-DOM typecheck (packages/engine/tsconfig.json) keeps Node types, which declare
+      // navigator, MessageEvent, localStorage and sessionStorage, so the typecheck alone lets them through.
+      // It also never reads JavaScript runtime files (packages/engine/src/core/authoredTerrain.mjs), so
+      // document, window and requestAnimationFrame are banned here too. The path is the runtime source that
+      // tsconfig includes. `event` and `error` keep the rule's default ban.
+      "includes": ["packages/engine/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "event": "Use the event your handler receives, not the global one.",
+                  "error": "Use a local variable, not the global error.",
+                  "navigator": "Runtime code runs without the browser; take what you need from navigator as an argument.",
+                  "MessageEvent": "Runtime code runs without the browser; MessageEvent is a browser type.",
+                  "localStorage": "Runtime code runs without the browser; take storage as an argument instead.",
+                  "sessionStorage": "Runtime code runs without the browser; take storage as an argument instead.",
+                  "document": "Runtime code runs without the browser; there is no document.",
+                  "window": "Runtime code runs without the browser; use globalThis or take the value as an argument.",
+                  "requestAnimationFrame": "Runtime code runs without the browser; the caller owns the frame loop."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

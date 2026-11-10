@@ -1,3 +1,10 @@
+import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '@skelly/engine/look';
+import type { MeshData } from '@skelly/engine/mesh';
+import { dayPhaseAt } from '@skelly/engine/sim';
+import { skyAt as skyAtCycle, sunShadowStrength } from '@skelly/engine/sky';
+import { CHUNK } from '@skelly/engine/world';
 import {
   BackSide,
   Box3,
@@ -18,33 +25,26 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { MeshData } from '../src/core/mesher.ts';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
-import { skyAt as skyAtCycle, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { FrameTimes } from '../src/render/frameTimes.ts';
-import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { FrameTimes } from '@skelly/presentation/internal/render/frameTimes.ts';
+import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import {
   beamMapDue,
   IDLE_REFRESH_EVERY,
   inFrustum,
   needsMap,
-  Shadows,
   SUN_MAP_SIZE,
   snapToTexels,
   sunMapDue,
   sunShadowBias,
   sunShadowTexelSize,
   withinRange,
-} from '../src/render/shadows.ts';
+} from '@skelly/presentation/internal/render/shadows.ts';
+import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '@skelly/presentation/render';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 

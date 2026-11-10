@@ -1,5 +1,3 @@
-import { labelForAction } from '../game/inputBindings.ts';
-
 // The debug panel's groups, their open/closed state, and the catalogue of keys and URL parameters.
 //
 // Binding labels resolve through the registry so collapsing a group cannot preserve a stale shortcut.
@@ -21,8 +19,8 @@ export type GroupId =
 /** A control or readout in a group that is not a key action: documented in the catalogue only. */
 interface GroupNote {
   readonly label: string;
-  /** Shown in the key column; absent for something with no key. */
-  readonly key?: string;
+  /** The action whose bound key the key column shows; absent for something with no key. */
+  readonly action?: string;
   readonly param?: string;
 }
 
@@ -43,19 +41,11 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   { id: 'survival', title: 'Survival' },
   { id: 'shamblers', title: 'Zombies' },
   { id: 'time', title: 'Time' },
-  {
-    id: 'look',
-    title: 'Look',
-    notes: [
-      { label: 'Projected camouflage (debug URL override)', param: 'camofast=1' },
-      { label: 'Cached surface noise (debug URL override)', param: 'surfacenoise=1' },
-    ],
-  },
+  { id: 'look', title: 'Look' },
   {
     id: 'weathering',
     title: 'Weathering',
     notes: [
-      { label: 'Profile', param: 'weatheringProfile' },
       { label: 'Strength', param: 'weathering' },
       { label: 'Tint darkness', param: 'weatheringTint' },
       { label: 'Tint colour', param: 'weatheringTintColor' },
@@ -70,36 +60,18 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
       { label: 'Moss shelter bias', param: 'weatheringMossBias' },
       { label: 'Mix ceiling', param: 'weatheringMixCeiling' },
       { label: 'Weathering blend', param: 'weatheringBlend' },
-      { label: 'Coarser moss patches (debug URL override)', param: 'weathercoarse=1' },
     ],
   },
-  {
-    id: 'post',
-    title: 'Post-processing',
-    notes: [
-      { label: 'Scene scale (debug URL override)', param: 'renderscale' },
-      { label: 'Bloom-chain scale (debug URL override)', param: 'bloomscale' },
-      { label: 'Painkiller vignette (debug URL override)', param: 'drugvignette' },
-    ],
-  },
-  {
-    id: 'lighting',
-    title: 'Lighting',
-    notes: [{ label: 'Smaller sun map (debug URL override)', param: 'sunsmall=1' }],
-  },
+  { id: 'post', title: 'Post-processing' },
+  { id: 'lighting', title: 'Lighting' },
   { id: 'atmosphere', title: 'Atmosphere' },
   {
     id: 'diagnostics',
     title: 'Diagnostics',
     notes: [
       { label: 'Mouse readout (bottom left, always on)' },
-      {
-        label: 'Performance overlay',
-        get key() {
-          return labelForAction('debug.performance-toggle');
-        },
-      },
-      { label: 'Interaction ray', param: 'interactionray=1' },
+      { label: 'Performance overlay', action: 'debug.performance-toggle' },
+      { label: 'Interaction ray', param: 'interactionray:true' },
     ],
   },
   {
@@ -107,7 +79,7 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
     title: 'Share',
     hint: 'address bar · JSON',
     notes: [
-      { label: 'Camera pose, kept in the address bar', param: 'cam=x,y,z,yaw,pitch,roll' },
+      { label: 'Camera pose, kept in the address bar', param: 'cam:[x,y,z,yaw,pitch,roll]' },
       { label: 'Dump look settings (JSON), a button' },
     ],
   },
@@ -118,7 +90,7 @@ export interface GroupedAction {
   readonly key: string;
   readonly label: string;
   readonly group: GroupId;
-  /** The URL parameter this action reads and writes, with a hint of its values (`post=0`, `grade=0..1`). */
+  /** The URL parameter or hash key this action reads and writes, with a hint of its values (`post:false`, `grade:0..1`). */
   readonly param?: string;
 }
 
@@ -134,10 +106,12 @@ export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: s
   return keys.length > 0 ? keys.join(' · ') : (def.hint ?? '');
 };
 
-/** The bare parameter name of a `name=values` hint. */
-export const paramName = (param: string): string => param.split('=')[0]!;
+const HINT_NAME_END = /[=:]/;
 
-const STORAGE_KEY = 'deadvox.debug-groups-closed';
+/** The bare name of a query `name=values` or hash `key:values` hint. */
+export const paramName = (param: string): string => param.split(HINT_NAME_END)[0]!;
+
+const STORAGE_KEY = 'skelly.debug-groups-closed';
 
 export type GroupStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

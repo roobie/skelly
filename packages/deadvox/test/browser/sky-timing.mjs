@@ -85,13 +85,13 @@ export function skyTimingPlugin() {
     enforce: 'pre',
     transform(code, id) {
       const [path] = id.split('?');
-      if (path.endsWith('/src/game/engine.ts')) {
+      if (path.endsWith('/src/presentation/engine.ts')) {
         return code.replace(
           '  return {\n    ...worldSetup,',
           '  if(globalThis.skyTiming) globalThis.skyTiming.engineReadyAbsoluteRealMs=performance.timeOrigin+performance.now();\n  return {\n    ...worldSetup,',
         );
       }
-      if (path.endsWith('/src/game/streamer.ts')) {
+      if (path.endsWith('/engine/src/game/streamer.ts')) {
         return code
           .replace(
             '    worker.postMessage(msg, transfer);',
@@ -149,7 +149,7 @@ if(msg.__skyTiming) reply.__skyTiming={...msg.__skyTiming,workerStartAbsoluteRea
 postMessage(reply,`,
           );
       }
-      if (path.endsWith('/src/core/skyField.ts')) {
+      if (path.endsWith('/engine/src/core/skyField.ts')) {
         return code.replace(
           '    entry.request ??= { captured: this.capture(entry), submitted: false };',
           `

@@ -1,0 +1,28 @@
+{
+  "models": [
+    {
+      "file": "assets/models/gas_canister.glb",
+      "grip": {
+        "at": [0, 0.070000000000000007, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "gas_canister",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.059107579462102697, 0],
+          "massKg": 0.34999999999999998,
+          "node": "package:vessel"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

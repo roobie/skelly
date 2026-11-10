@@ -1,17 +1,15 @@
+import type { Registry } from '@skelly/engine/content';
+import { assertFirearmState, snapshotFirearm } from '@skelly/engine/internal/core/firearmState.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { RevolverHandling } from '@skelly/engine/internal/game/revolverHandling.ts';
+import { defOf, HandlingQueue, Inventory, spentCaseItemId } from '@skelly/engine/inventory';
+import { NEUTRAL_AIM } from '@skelly/engine/pose';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { assertFirearmState, snapshotFirearm } from '../src/core/firearmState.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf } from '../src/core/items.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
-import { RevolverHandling } from '../src/game/revolverHandling.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content } from './fixtures/startupContent.ts';
 
 const fixtureRegistry = (): Registry => {
@@ -473,6 +471,7 @@ describe('revolver cylinder handling', () => {
 const codecInventory = async (f: ReturnType<typeof fixture>): Promise<Inventory> => {
   const session = createSession({
     registry: f.registry,
+    actorFigureFiles: stackActorFigureFiles(f.registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,

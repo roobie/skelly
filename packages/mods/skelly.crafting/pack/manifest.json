@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.progression"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "crafting.json"
+    }
+  ],
+  "id": "skelly.crafting",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

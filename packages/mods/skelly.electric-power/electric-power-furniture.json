@@ -1,0 +1,88 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#79694b",
+      "id": "fuel_generator",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Generator",
+      "power": {
+        "device": "fuel_generator",
+        "enabled": true,
+        "fuelLitres": 20
+      },
+      "size": [2, 2, 2]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#343a45",
+      "id": "storage_battery",
+      "massKg": 4,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Storage battery",
+      "power": {
+        "device": "storage_battery",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "size": [1, 2, 1]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#233d62",
+      "id": "solar_panel",
+      "massKg": 16,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Solar panel",
+      "power": {
+        "device": "solar_panel",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "size": [4, 1, 2]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#777b80",
+      "id": "main_breaker",
+      "massKg": 4,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Main breaker",
+      "power": {
+        "device": "main_breaker",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "size": [1, 2, 1]
+    }
+  ]
+}

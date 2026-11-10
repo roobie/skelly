@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "category": "material",
+      "id": "work_in_progress",
+      "name": "Work in progress",
+      "size": [2, 2],
+      "twoHanded": true,
+      "weight": 0,
+      "workInProgress": true
+    }
+  ]
+}

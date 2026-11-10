@@ -1,5 +1,5 @@
+import { isForwardButton, PressDedupe } from '@skelly/engine/input';
 import { describe, expect, it } from 'vitest';
-import { isForwardButton, PressDedupe } from '../src/core/sideButton.ts';
 import { formatMouseDiag } from '../src/debug/mouseDiag.ts';
 
 describe('isForwardButton', () => {

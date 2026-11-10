@@ -3,43 +3,42 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
-import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
-import { type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { dayPhaseAt } from '../core/dayPhase.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { worldGravity } from '../core/gravity.ts';
-import { lookDefaultsOf } from '../core/lookDefaults.ts';
-import type { Body } from '../core/physics.ts';
-import { reachTuning } from '../core/reach.ts';
-import { Simulation } from '../core/sim.ts';
-import { siteGenerationOf } from '../core/sitePalette.ts';
-import { skyAt } from '../core/sky.ts';
-import type { StorageStats } from '../core/storage.ts';
-import { storageStats } from '../core/storage.ts';
+import { type ActorFigureFiles, type Registry, requireDayCycle } from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
+import type { StartupContent } from '@skelly/engine/packs';
+import { type GameConfig, makeConfig, requireStart, runStartId, startForSite } from '@skelly/engine/session';
 import {
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  BACKGROUND_ZOMBIE_SLICE_RATE,
-  ZombieSystem,
-} from '../core/zombies.ts';
-import type { StartupContent } from '../game/bundledContent.ts';
-import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/config.ts';
-import type { RenderedEngine } from '../game/engine.ts';
-import { physicsFor, playerTuning } from '../game/player.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
-import type { StreamerStats } from '../game/streamer.ts';
-import { flashlightDaylightScale } from '../render/flashlight.ts';
-import { MobActorMeshes } from '../render/mobActors.ts';
-import { applySky } from '../render/sky.ts';
-import { benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
+  ACTIVE_ACTOR_RATE,
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+  dayPhaseAt,
+  hourOfDay,
+  physicsFor,
+  playerTuning,
+  reachTuning,
+  Simulation,
+  type StorageStats,
+  storageStats,
+  worldGravity,
+} from '@skelly/engine/sim';
+import { skyAt } from '@skelly/engine/sky';
+import type { StreamerStats } from '@skelly/engine/world';
+import { type Body, siteGenerationOf } from '@skelly/engine/world';
+import type { RenderedEngine } from '@skelly/presentation/play';
+import { applySky, flashlightDaylightScale, MobActorMeshes } from '@skelly/presentation/render';
+import type { HashState } from '../hashState.ts';
+import { pageUrl, replacePageUrl } from '../pageUrl.ts';
+import { linkStartMod } from '../product/page.ts';
+import { ragdollConfig } from '../product/ragdoll.ts';
+import { createBenchLightFixture } from './lightFixture.ts';
 import {
   type BenchConfig,
   type BenchRecord,
   DEFAULT_PLAN,
   type Environment,
-  formatPlan,
   loadRecord,
   type MovingStats,
   parsePlan,
@@ -47,7 +46,7 @@ import {
   type RunResult,
   saveRecord,
 } from './plan.ts';
-import { applyBenchWeathering, benchDraw, benchNightVisionFromUrl, benchPostFromUrl, postUrlPart } from './post.ts';
+import { applyBenchWeathering, benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
@@ -57,18 +56,9 @@ export interface BenchRun {
   plan: BenchConfig[];
   index: number;
   quick: boolean;
-  /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
-  site: SiteName;
-  storeys: number;
-  density: number | null;
-  /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
-  time?: string;
-  /** Select the independent full-post workload (`&post=1`, bench/post.ts). */
+  seed: number;
+  /** Select the independent full-post workload (hash `post`, bench/post.ts). */
   post: boolean;
-  /** Apply the goggles' registry-authored night-vision view (`&nightVision=1`, bench/post.ts). */
-  nightVision: boolean;
-  /** Camera-local source positions in metres; also selects play's content-default look. */
-  flareSources?: Vec3[] | undefined;
   /** Detailed shambler population to keep active through every phase; undefined rejects a malformed URL. */
   shamblers: number | undefined;
 }
@@ -84,38 +74,74 @@ const HEADING: readonly [number, number] = [-0.9, 0.44];
 
 type Phase = 'load' | 'settle' | 'look' | 'render' | 'jog' | 'sprint';
 
-const parseBenchShamblers = (value: string): number[] | undefined => (value === '0' ? [0] : parseShamblerCounts(value));
+const parseBenchShamblers = (values: readonly number[]): number[] | undefined =>
+  values.length === 1 && values[0] === 0 ? [0] : parseShamblerCounts(values);
 
-export const benchRunFromUrl = (
-  params: URLSearchParams,
-  registry: Pick<Registry, 'layouts' | 'scenarios'>,
-): BenchRun => {
-  const plan = parsePlan(params.get('plan') ?? '') ?? [...DEFAULT_PLAN];
-  const index = Number(params.get('i') ?? 0);
-  const time = params.get('time') ?? '';
-  const shamblerValues = params.has('shamblers') ? parseBenchShamblers(params.get('shamblers')!) : [0];
+/** The world bench's run settings and seed, from the hash; its world is the run's start (`benchStartConfig`). */
+export const benchRunFromUrl = (hash: HashState): BenchRun => {
+  const plan = parsePlan(hash.plan ?? []) ?? [...DEFAULT_PLAN];
+  const index = hash.i ?? 0;
+  const shamblerValues = parseBenchShamblers(hash.shamblers ?? [0]);
   return {
     plan,
     index: Number.isInteger(index) && index >= 0 && index < plan.length ? index : 0,
-    quick: params.has('quick'),
-    post: benchPostFromUrl(params),
-    nightVision: benchNightVisionFromUrl(params),
-    flareSources: benchFlareSourcesFromUrl(params),
+    quick: hash.quick === true,
+    seed: (hash.seed ?? 1) | 0,
+    post: hash.post === true,
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
-    ...siteFromUrl(params, plan.some(({ blockSize }) => blockSize !== 0.5) ? 'forest' : 'testHouse', registry),
-    ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
+};
+
+/**
+ * A bench config at the run's start, as a played run picks it (the `start-mod` row, else a `mods` scenario's default,
+ * else the product default): its site, storeys, density and time of day. The bench sets the seed and view.
+ */
+export const benchStartConfig = (
+  content: StartupContent,
+  seed: number,
+  radiusM: number,
+  blockSize?: number,
+): GameConfig => {
+  const start = requireStart(content, runStartId(content));
+  const config = makeConfig(seed, radiusM, content, blockSize);
+  config.startId = start.id;
+  config.site = start.site;
+  config.storeys = start.storeys ?? 1;
+  config.density = start.density ?? null;
+  config.start = start.startTimeGameTimeOfDay ?? requireDayCycle(content.registry).defaultStartGameTimeOfDay;
+  applyBenchWeathering(config);
+  return config;
+};
+
+/**
+ * The workload each benchmark link runs: its site's default start at its own time. A link carries it as its own start
+ * mod, so a rerun measures the scene its earlier results measured whatever the product's default start becomes; a
+ * bare `?bench=` link takes the shared start order.
+ */
+export const BENCH_WORKLOADS = {
+  world: { bench: '1', site: 'testHouse', startTimeGameTimeOfDay: '12:00' },
+  shamblers: { bench: 'shamblers', site: 'forest', startTimeGameTimeOfDay: '23:30' },
+} as const;
+
+/** The game page's link that runs the `name` benchmark on its own workload. */
+export const benchHref = (content: StartupContent, name: keyof typeof BENCH_WORKLOADS): string => {
+  const { bench, site, startTimeGameTimeOfDay } = BENCH_WORKLOADS[name];
+  const start = { ...startForSite(content, site), id: `bench_${name}_start` };
+  const startMod = linkStartMod(`link.bench-${name}`, start, startTimeGameTimeOfDay);
+  return `?${new URLSearchParams({ bench, 'start-mod': startMod })}`;
 };
 
 const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 
-export const benchGameConfig = (run: BenchRun, params: URLSearchParams, content: StartupContent): GameConfig => {
+export const benchGameConfig = (run: BenchRun, content: StartupContent): GameConfig => {
   const { blockSize, radiusM } = currentConfig(run);
-  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
-  const { site, storeys, density } = run;
-  Object.assign(config, { site, storeys, density });
-  applyBenchWeathering(config);
-  return config;
+  return benchStartConfig(content, run.seed, radiusM, blockSize);
+};
+
+/** A calendar time's time of day as "HH:MM". */
+export const timeOfDayText = (calendar: number): string => {
+  const minutes = Math.round(hourOfDay(calendar) * 60) % (24 * 60);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 };
 
 export const environment = (engine: RenderedEngine): Environment => {
@@ -141,20 +167,26 @@ const movingStats = (frames: number[], work: number[], holes: number[]): MovingS
   holeFraction: holes.length === 0 ? 0 : holes.filter((h) => h > 0).length / holes.length,
 });
 
-export const nextUrl = (run: BenchRun, seed: number): string => {
-  if (run.index + 1 >= run.plan.length) {
-    return '?bench=report';
+/**
+ * The hash of the run after `index`, or undefined after the last run. Only the run index changes: the query and the
+ * rest of the hash stay, so every run of a bench reads the same world and settings.
+ */
+export const nextRunHash = (hash: HashState, index: number, runCount: number): HashState | undefined =>
+  index + 1 < runCount ? { ...hash, i: index + 1 } : undefined;
+
+/**
+ * Starts the next run from a fresh page, or shows the report after the last. The replaced address fires no
+ * `hashchange`, so the page's own reload on a hash change does not load it a second time.
+ */
+export const loadNextRun = (index: number, runCount: number): void => {
+  const { query, hash } = pageUrl();
+  const next = nextRunHash(hash, index, runCount);
+  if (next === undefined) {
+    location.replace('?bench=report');
+    return;
   }
-  const quick = run.quick ? '&quick' : '';
-  const site =
-    `&site=${run.site}` +
-    (run.site === 'city' ? `&storeys=${run.storeys}` : '') +
-    (run.site === 'forest' && run.density !== null ? `&density=${run.density}` : '');
-  const time = run.time === undefined ? '' : `&time=${run.time}`;
-  const shamblers = `&shamblers=${run.shamblers ?? 0}`;
-  const sources =
-    run.flareSources === undefined ? '' : `&flareSources=${encodeURIComponent(JSON.stringify(run.flareSources))}`;
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post, run.nightVision)}${sources}${quick}`;
+  replacePageUrl(query, next);
+  location.reload();
 };
 
 export const forestWorkload = (registry: Registry, seed: number, density: number | null) => {
@@ -179,34 +211,37 @@ export const forestWorkload = (registry: Registry, seed: number, density: number
   };
 };
 
-export const benchSiteLabel = (run: BenchRun): string =>
+export const benchSiteLabel = (config: Pick<GameConfig, 'site' | 'storeys' | 'density'>): string =>
   ({
-    forest: run.density === null ? 'forest, seeded density field' : `forest, density ${run.density}`,
-    city: `city, up to ${run.storeys} storeys`,
+    forest: config.density === null ? 'forest, seeded density field' : `forest, density ${config.density}`,
+    city: `city, up to ${config.storeys} storeys`,
     gauntlet: 'gauntlet',
     testHouse: 'test house',
-  })[run.site] ?? `authored site ${run.site}`;
+  })[config.site] ?? `authored site ${config.site}`;
 
-export const startBench = (engine: RenderedEngine, run: BenchRun, stats: StreamerStats): void => {
+export const startBench = (
+  engine: RenderedEngine,
+  run: BenchRun,
+  stats: StreamerStats,
+  actorFigureFiles: ActorFigureFiles,
+): void => {
   const { config, streamer, renderer, camera, world } = engine;
   const Player = playerTuning(engine.registry);
   const s = config.scale.blockSize;
   const durations = run.quick ? DURATIONS.quick : DURATIONS.full;
   const hud = document.getElementById('hud')!;
   if (run.shamblers === undefined) {
-    hud.textContent = 'Use &shamblers=N with a single valid detailed population.';
+    hud.textContent = 'Set the hash shamblers to a single valid detailed population, as in #{shamblers:[60]}.';
     return;
   }
   const shamblerCount = run.shamblers;
   document.body.classList.add('bench');
   document.getElementById('overlay')!.hidden = true;
-  const startTime = parseTimeOfDay(run.time ?? '12:00')!;
+  const startTime = config.start;
   const hour = hourOfDay(startTime);
   const dayCycle = requireDayCycle(engine.registry);
-  if (run.time !== undefined) {
-    applySky(engine.sky, skyAt(hour, dayCycle));
-  }
-  const lightFixture = createBenchLightFixture(engine, startTime, run.flareSources);
+  applySky(engine.sky, skyAt(hour, dayCycle));
+  const lightFixture = createBenchLightFixture(engine, startTime);
   window.addEventListener('pagehide', lightFixture.dispose, { once: true });
   const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
@@ -217,10 +252,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       sceneRender = counted;
     },
     post: run.post,
-    nightVision: run.nightVision,
     skyAngle: hour,
-    playLook: run.flareSources !== undefined,
-    lightPool: lightFixture.lightPool,
   });
   const draw = () => {
     lightFixture.update(camera, daylightScale);
@@ -232,12 +264,10 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       ? {
           startedAt: new Date().toISOString(),
           quick: run.quick,
-          site: benchSiteLabel(run),
-          ...(run.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, run.density) } : {}),
-          time: run.time ?? '12:00',
+          site: benchSiteLabel(config),
+          ...(config.site === 'forest' ? { forest: forestWorkload(engine.registry, config.seed, config.density) } : {}),
+          time: timeOfDayText(startTime),
           ...(run.post ? { post: true } : {}),
-          nightVision: run.nightVision,
-          ...(run.flareSources === undefined ? {} : { flareSources: run.flareSources }),
           lightWorkload: {
             active: lightFixture.activeCount(),
             carried: lightFixture.carried,
@@ -295,8 +325,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const dir = [HEADING[0] / heading, HEADING[1] / heading] as const;
   let [x, , z] = engine.spawn.pos;
   let playerBody: Body | undefined;
-  let zombies: ZombieSystem | undefined;
-  let zombieMeshes: MobActorMeshes | undefined;
+  let actors: ActorSystem | undefined;
+  let actorMeshes: MobActorMeshes | undefined;
   let movement: 'still' | 'jogging' | 'sprinting' = 'still';
   const place = (yaw: number, pitch: number) => {
     const ground = engine.groundAt(x, z);
@@ -315,7 +345,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const travelYaw = Math.atan2(-dir[0], -dir[1]);
   let aborted = false;
   const prepareShamblers = (): void => {
-    if (shamblerCount === 0 || zombies) {
+    if (shamblerCount === 0 || actors) {
       return;
     }
     try {
@@ -325,19 +355,20 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       const simulation = new Simulation({
         seed: config.seed,
         registry: engine.registry,
-        bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
-        compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+        bodyTuning: claimed(engine.registry.body, 'player')!,
+        compressionCaps: claimed(engine.registry.compression, 'player')!.caps,
         clock: { ratio: dayCycle.clockRatio, start: startTime },
       });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
-      zombies = new ZombieSystem({
-        activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
+      actors = new ActorSystem({
+        activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
+        actorFigureFiles,
         seed: config.seed,
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
         blockSize: s,
-        tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
+        tuning: claimed(engine.registry.senses, 'player')!,
         physics: physicsFor(config.scale, Player),
         player: () => ({
           pos: [...playerBody!.pos] as [number, number, number],
@@ -357,51 +388,53 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         player: playerBody,
         engine,
         registry: engine.registry,
-        zombies,
+        actors,
       });
       const graphics = graphicsTuningOf(engine.registry);
-      zombieMeshes = new MobActorMeshes(s, shamblerCount, {
-        zombies: engine.registry.zombies,
+      actorMeshes = new MobActorMeshes(s, shamblerCount, {
+        ragdoll: ragdollConfig,
+        actors: engine.registry.actors,
+        actorFigureFiles,
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
         handlingReachMetres: reachTuning(engine.registry).reachMetres,
         gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
       });
-      engine.scene.add(zombieMeshes.group);
+      engine.scene.add(actorMeshes.group);
     } catch (error) {
       aborted = true;
       hud.textContent = error instanceof Error ? error.message : String(error);
     }
   };
-  let zombieAccumulator = 0;
+  let actorAccumulator = 0;
   let backgroundAccumulator = 0;
   let backgroundSlice = 0;
   let backgroundStepTime = 0;
   const advanceShamblers = (dt: number): void => {
-    if (!(zombies && zombieMeshes)) {
+    if (!(actors && actorMeshes)) {
       return;
     }
-    zombieAccumulator += dt;
+    actorAccumulator += dt;
     backgroundAccumulator += dt;
-    while (zombieAccumulator >= 1 / ZOMBIE_RATE) {
-      zombies.tickActive(1 / ZOMBIE_RATE);
-      zombieAccumulator -= 1 / ZOMBIE_RATE;
+    while (actorAccumulator >= 1 / ACTIVE_ACTOR_RATE) {
+      actors.tickActive(1 / ACTIVE_ACTOR_RATE);
+      actorAccumulator -= 1 / ACTIVE_ACTOR_RATE;
     }
-    while (backgroundAccumulator >= 1 / BACKGROUND_ZOMBIE_SLICE_RATE) {
-      backgroundStepTime += 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
-      zombies.tickBackground(
-        1 / BACKGROUND_ZOMBIE_RATE,
+    while (backgroundAccumulator >= 1 / BACKGROUND_ACTOR_SLICE_RATE) {
+      backgroundStepTime += 1 / BACKGROUND_ACTOR_SLICE_RATE;
+      actors.tickBackground(
+        1 / BACKGROUND_ACTOR_RATE,
         backgroundStepTime,
         backgroundSlice,
-        BACKGROUND_ZOMBIE_SLICE_COUNT,
+        BACKGROUND_ACTOR_SLICE_COUNT,
       );
-      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
-      backgroundAccumulator -= 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
+      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
+      backgroundAccumulator -= 1 / BACKGROUND_ACTOR_SLICE_RATE;
     }
-    zombieMeshes.setCamera?.(camera);
+    actorMeshes.setCamera?.(camera);
     const renderTime = backgroundStepTime + backgroundAccumulator;
-    const clock = syncClock(renderTime, renderTime - zombieAccumulator, backgroundStepTime);
-    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
+    const clock = syncClock(renderTime, renderTime - actorAccumulator, backgroundStepTime);
+    actorMeshes.sync(actors.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
   };
 
   let phase: Phase = 'load';
@@ -452,7 +485,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       hud.textContent = 'Could not save results to site storage; the benchmark stopped.';
       return;
     }
-    location.replace(nextUrl(run, config.seed));
+    loadNextRun(run.index, run.plan.length);
   };
 
   const loadStep = (now: number, t: number) => {
@@ -567,7 +600,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       triangles.push(sceneRender.triangles);
     }
     hud.textContent = [
-      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius, ${benchSiteLabel(run)}`,
+      `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius, ${benchSiteLabel(config)}`,
       `${phase} ${((now - phaseStart) / 1000).toFixed(1)} s`,
       `chunks ${engine.meshes.count} meshed, ${streamer.pending} pending`,
       interrupted ? 'Tab was hidden: this run will be marked unreliable.' : 'Keep this tab visible.',

@@ -1,24 +1,15 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { type CoreMessageKey, coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
+import { doorOptions, doorPlan, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { coreLabel } from '@skelly/engine/text';
+import { makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
-import { type CoreMessageKey, coreLabel, coreMessage } from '../src/core/coreText.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions, doorPlan } from '../src/core/options.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { placedPieces } from '../src/core/templates.ts';
-import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({
-    source: f,
-    data: JSON.parse(readFileSync(join('src/content/base', f), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const furniture = {
   id: 'lock_test_door',
   name: 'Test door',
@@ -40,9 +31,22 @@ const key = (id: string, lock: string, name: string) => ({
   size: [1, 1] as [number, number],
   key: { lock },
 });
+/** One column, two blocks tall, with a locked door on storey `storey` and air on the other. */
+const storeyTemplate = (id: string, lock: string, storey: 0 | 1) => ({
+  id,
+  lootContext: { usage: ['Residential'], tier: 'Tier1' },
+  size: [1, 2, 1],
+  palette: { D: { furniture: 'lock_test_door', lock: { id: lock, locked: true } }, '.': 'air' },
+  layers: storey === 0 ? [['D'], ['.']] : [['.'], ['D']],
+});
 const fixture = () => ({
   furniture: [furniture],
-  templates: [template('lock_test_a', 'test_a'), template('lock_test_b', 'test_b')],
+  templates: [
+    template('lock_test_a', 'test_a'),
+    template('lock_test_b', 'test_b'),
+    storeyTemplate('lock_storey_ground', 'test_a', 0),
+    storeyTemplate('lock_storey_upper', 'test_b', 1),
+  ],
   items: [key('lock_test_key_a', 'test_a', 'A test key'), key('lock_test_key_b', 'test_b', 'B test key')],
 });
 const { registry, issues } = buildRegistry([...base, { source: 'lock-test.json', data: fixture() }]);
@@ -62,46 +66,32 @@ const make = () => {
 };
 
 describe('door locks', () => {
-  it('carries independent locks through explicit bedroom and cellar placements into native queued door operations', () => {
-    const bedroom = structuredClone(registry.templates.get('stairs_house')!);
-    bedroom.id = 'locked_bedroom';
-    bedroom.palette.D = { furniture: 'wood_door', lock: { id: 'bedroom', locked: true } };
-    const cellar = structuredClone(registry.templates.get('stairs_cabin')!);
-    cellar.id = 'locked_cellar';
-    cellar.palette.D = { furniture: 'wood_door', lock: { id: 'cellar', locked: true } };
-    for (let y = 1; y <= 4; y++) {
-      const row = [...cellar.layers[y]![9]!];
-      row[6] = 'D';
-      row[7] = 'D';
-      cellar.layers[y]![9] = row.join('');
-    }
-    const layout = structuredClone(registry.layouts.get('stair_demo')!);
-    layout.id = 'locks_storeys';
-    layout.buildings = [
-      { template: bedroom.id, lootContext: bedroom.lootContext, position: [55, 21, 55], rotation: 90 },
-      { template: cellar.id, lootContext: cellar.lootContext, position: [75, 21, 55], rotation: 270 },
-    ];
-    const placedRegistry = {
-      ...registry,
-      templates: new Map(registry.templates),
-      items: new Map(registry.items),
-    };
-    placedRegistry.templates.set(bedroom.id, bedroom);
-    placedRegistry.templates.set(cellar.id, cellar);
-    for (const item of [key('bedroom_key', 'bedroom', 'Bedroom key'), key('cellar_key', 'cellar', 'Cellar key')]) {
-      placedRegistry.items.set(item.id, {
-        ...item,
-        category: 'tool',
-        economy: { usage: [], tiers: [] },
-        workInProgress: false,
-        notLoot: true,
-      });
-    }
-    const site = new AuthoredSite(73, placedRegistry, makeScale(0.5), layout);
+  it('carries independent locks through placements on two storeys into native queued door operations', () => {
+    const scale = makeScale(0.5);
+    const lootContext = { usage: ['Residential' as const], tier: 'Tier1' as const };
+    const placed = ['lock_storey_ground', 'lock_storey_upper'].map((id, index) => ({
+      template: id,
+      lootContext,
+      position: [4 + 4 * index, 0, 4].map((value) => value * scale.blockSize) as Vec3,
+      rotation: 0 as const,
+    }));
+    const site = new AuthoredSite(73, registry, scale, {
+      id: 'locks_storeys',
+      lootContext,
+      bounds: { x0: 0, z0: 0, x1: 16, z1: 16 },
+      ground: 0,
+      terrain: [],
+      woodlands: [],
+      tracks: [],
+      shamblers: [],
+      player: { position: [1, 1, 1], bearing: 0 },
+      buildings: placed,
+    });
     const doors = site.placements.flatMap(placedPieces).filter((piece) => piece.lock);
-    expect(doors.map((piece) => piece.lock!.id)).toEqual(['bedroom', 'cellar']);
-    expect(new Set(doors.map((piece) => piece.pos[1])).size).toBeGreaterThan(1);
-    const inventory = new Inventory(placedRegistry);
+    expect(new Set(doors.map((piece) => piece.lock!.id))).toEqual(new Set(['test_a', 'test_b']));
+    expect(new Set(doors.map((piece) => piece.pos[1])).size).toBe(2);
+    const keyFor = (lock: string) => [...registry.items.values()].find((item) => item.key?.lock === lock)!.id;
+    const inventory = new Inventory(registry);
     const queue = new HandlingQueue(inventory);
     registerDoorAction({
       queue,
@@ -117,7 +107,7 @@ describe('door locks', () => {
         .find(({ spec }) => spec.lock?.id === piece.lock!.id)!;
       const door = inventory.furnish(spawn.spec, spawn.loot)!;
       expect(inventory.entities.setOpen(door, true)).toBe(coreMessage(inventory.registry, 'locked'));
-      const held = inventory.create(`${piece.lock!.id}_key`);
+      const held = inventory.create(keyFor(piece.lock!.id));
       inventory.add(held, { kind: 'hand', side: 'right' });
       const unlock = doorOptions(inventory, door)[1]!;
       expect(unlock.plan.ok).toBe(true);

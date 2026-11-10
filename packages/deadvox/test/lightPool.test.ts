@@ -1,29 +1,27 @@
-import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
 import {
   chargeOf,
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
   SunExposureCache,
-  toggleLight,
-} from '../src/core/lights.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { gameSeconds } from '../src/core/time.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { LightPool } from '../src/render/lightPool.ts';
+} from '@skelly/engine/internal/core/lights.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { makeScale, type SolidAt } from '@skelly/engine/world';
+import { HeldItems, LightPool } from '@skelly/presentation/render';
+import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FIXTURE_LIMIT = TEST_SENSE_TUNING.light.renderedFixtureLimit;
 const TEST_LIGHTS = [
@@ -224,7 +222,7 @@ describe('made-light point pool', () => {
     expect(pool.lights[4]!.position.z).toBeCloseTo(source!.pos[2] * SCALE.blockSize);
 
     const floor = (_x: number, y: number) => y === 0;
-    const zombies = new ZombieSystem({
+    const actors = new ActorSystem({
       player: () => ({
         pos: [50, 1, 50],
         facing: [-1, 0, 0],
@@ -240,12 +238,13 @@ describe('made-light point pool', () => {
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       tuning: TEST_SENSE_TUNING,
+      actorFigureFiles: stackActorFigureFiles(registry),
       hurtPlayer: () => undefined,
     });
-    const id = zombies.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
-    zombies.tick(1 / 60);
-    expect(zombies.store.get(id)!.mode).toBe('investigate');
-    expect(zombies.store.get(id)!.lastPerceived).toEqual(source?.pos);
+    const id = actors.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    actors.tick(1 / 60);
+    expect(actors.store.get(id)!.agent!.mode).toBe('investigate');
+    expect(actors.store.get(id)!.agent!.lastPerceived).toEqual(source?.pos);
   });
 
   it('shines a set-down light from the flame its pile draws', () => {

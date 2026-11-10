@@ -1,0 +1,52 @@
+{
+  "footstepSounds": [
+    {
+      "block": "shop_blue",
+      "family": "shambler",
+      "id": "8_shambler_shop_blue",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_green",
+      "family": "shambler",
+      "id": "8_shambler_shop_green",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_orange",
+      "family": "shambler",
+      "id": "8_shambler_shop_orange",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_yellow",
+      "family": "shambler",
+      "id": "8_shambler_shop_yellow",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_red",
+      "family": "shambler",
+      "id": "8_shambler_shop_red",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_white",
+      "family": "shambler",
+      "id": "8_shambler_shop_white",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_produce",
+      "family": "shambler",
+      "id": "8_shambler_shop_produce",
+      "sound": "shambler_step_stone"
+    },
+    {
+      "block": "shop_grille",
+      "family": "shambler",
+      "id": "8_shambler_shop_grille",
+      "sound": "shambler_step_stone"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
+import type { Modifier } from '@skelly/engine/internal/core/modifiers.ts';
+import type { AnalgesicDef } from '@skelly/engine/internal/core/pain.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Body } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Body } from '../src/core/body.ts';
-import type { Modifier } from '../src/core/modifiers.ts';
-import type { AnalgesicDef } from '../src/core/pain.ts';
-import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
@@ -188,7 +188,7 @@ describe('pain', () => {
 
   it('empties shock at the pain knockout threshold without doing so below it', () => {
     const { knockoutAt, perDamage, perRegionDamage, regionWeight } = BODY_TUNING_FIXTURE.pain;
-    const painPerDamage = perDamage.cut * regionWeight.torso + perRegionDamage;
+    const painPerDamage = perDamage.cut! * regionWeight.torso + perRegionDamage;
     const atThreshold = bodyWith();
     atThreshold.impact(knockoutAt / painPerDamage, 'torso', { kind: 'cut' });
     expect(atThreshold.pain.felt).toBeCloseTo(knockoutAt, 9);

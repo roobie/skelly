@@ -1,0 +1,18 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/baseball_bat.glb",
+        "assets/models/kabar.glb",
+        "assets/models/machete.glb",
+        "assets/models/steel_pipe.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    }
+  ]
+}

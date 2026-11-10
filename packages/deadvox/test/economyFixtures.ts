@@ -1,22 +1,32 @@
-import baseItemWear from '../src/content/base/item-wear.json' with { type: 'json' };
-import baseSounds from '../src/content/base/sounds.json' with { type: 'json' };
-import baseUi from '../src/content/base/ui.json' with { type: 'json' };
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
-import { simSeconds } from '../src/core/time.ts';
+import { buildRegistry, type ContentSource } from '@skelly/engine/content';
+import type { ItemEconomy, LootContext, LootSpawnPoint } from '@skelly/engine/internal/core/loot.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import baseItemWear from '../../mods/skelly.inventory/item-wear.json' with { type: 'json' };
+import naturalSounds from '../../mods/skelly.natural-world/natural-sounds.json' with { type: 'json' };
+import playerFamilies from '../../mods/skelly.sound-families/sound-families.json' with { type: 'json' };
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
+import baseUiSounds from '../../mods/skelly.ui/ui-sounds.json' with { type: 'json' };
+import baseSounds from '../mods/skelly.deadvox.actors/actors-sounds.json' with { type: 'json' };
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
+
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
   tiers: ['Tier1', 'Tier2', 'Tier3'],
 });
+/** Scarcity rows admitting `ids` in every fixture context; a fixture item without one never spawns randomly. */
+export const fixtureItemEconomy = (...ids: readonly string[]) =>
+  ids.map((id) => ({ id, ...fixtureEconomy(), notLoot: false }));
 export const fixtureLootContext = (): LootContext => ({ usage: ['Residential'], tier: 'Tier1' });
 /** A breach for fixture furniture whose strength no test reads; content needs one on every piece. */
 export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
 /** A material for fixture furniture whose damage look no test reads; content needs one on every piece. */
 export const FIXTURE_MATERIAL = 'fixture_material';
 /** The material table entry `FIXTURE_MATERIAL` names, for a fixture registry built without base content. */
-export const fixtureMaterials = () => [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: [] }];
+export const fixtureMaterials = () => [
+  { id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
+];
 /** The sound a blow on fixture furniture makes; materials must name one that alerts hearing. */
 export const FIXTURE_BLOW_SOUND = 'fixture_blow';
 export const fixtureSounds = () => [
@@ -38,7 +48,7 @@ export const fixtureSounds = () => [
  */
 const BASE_UI = (() => {
   const [ui] = baseUi.ui;
-  const sound = baseSounds.sounds.find(({ id }) => id === ui!.refusalSound)!;
+  const sound = baseUiSounds.sounds.find(({ id }) => id === ui!.refusalSound)!;
   return { ui: [ui], sound };
 })();
 const fixtureUi = () => structuredClone(BASE_UI);
@@ -48,9 +58,11 @@ export const fixtureMaterialSource = (): ContentSource => {
   return {
     source: 'fixture-materials.json',
     data: {
+      ...fixtureDamageContent(),
+      soundFamilies: structuredClone([...playerFamilies.soundFamilies, ...baseSounds.soundFamilies]),
       furnitureMaterials: fixtureMaterials(),
       itemWear: structuredClone(baseItemWear.itemWear),
-      sounds: [...fixtureSounds(), sound],
+      sounds: [...fixtureSounds(), sound, naturalSounds.sounds.find((entry) => entry.id === 'item_drop_wood')!],
       ui,
       recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],
     },
@@ -79,13 +91,17 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
     return entry;
   }
   if (section === 'blocks') {
-    return { material: FIXTURE_MATERIAL, ...entry };
+    return { material: FIXTURE_MATERIAL, drops: { default: FIXTURE_BLOW_SOUND }, ...entry };
   }
   if (section === 'recipes') {
     return { category: 'fixture_category', tags: [], searchTerms: [], ...entry };
   }
   if (section === 'items') {
-    return { economy: fixtureEconomy(), workInProgress: false, notLoot: false, ...entry };
+    return {
+      workInProgress: false,
+      ...entry,
+      ...(object(entry.vehicle) ? { vehicle: { drops: { default: FIXTURE_BLOW_SOUND }, ...entry.vehicle } } : {}),
+    };
   }
   if (section === 'templates') {
     return { lootContext: fixtureLootContext(), ...entry };

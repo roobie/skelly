@@ -1,0 +1,8 @@
+{
+  "catalogueRows": [
+    {
+      "furniture": ["clinic_sign", "gas_directions_sign"],
+      "id": "playtest_debug"
+    }
+  ]
+}

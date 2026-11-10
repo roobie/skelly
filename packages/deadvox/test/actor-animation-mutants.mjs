@@ -6,7 +6,7 @@ import { stripVTControlCharacters } from 'node:util';
 const mutants = [
   {
     name: 'observer orientation reaches actor aim',
-    path: 'src/render/heldViews.ts',
+    path: '../presentation/src/render/heldViews.ts',
     before: 'world.syncHeldView(pose, frame, recoil);',
     after:
       'world.syncHeldView(pose, { ...frame, aim: { yaw: observer.rotation.y, pitch: observer.rotation.x } }, recoil);',
@@ -14,7 +14,7 @@ const mutants = [
   },
   {
     name: 'arm solve precedes the final movers',
-    path: 'src/render/actorAnimator.ts',
+    path: '../presentation/src/render/actorAnimator.ts',
     before: '    this.poseArms(firearmPoses);',
     after: '',
     test: 'final arm solving samples the rummage mover output in world and overlay, and cancellation restores grips',

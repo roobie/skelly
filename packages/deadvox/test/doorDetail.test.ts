@@ -1,10 +1,8 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import { BLOCK_SIZE, BlockEntities, type BlockEntity, type Facing, isBodyDoor, panelFor } from '@skelly/engine/world';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { Box3, BoxGeometry, Group, Mesh, type Object3D, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, type BlockEntity, isBodyDoor, panelFor } from '../src/core/blockEntities.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
-import type { FurnitureDef } from '../src/core/schema.ts';
-import type { Facing } from '../src/core/templates.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

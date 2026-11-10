@@ -1,0 +1,28 @@
+{
+  "models": [
+    {
+      "file": "assets/models/apple.glb",
+      "grip": {
+        "at": [0, 0.035000000000000003, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "apple",
+      "itemPresentation": {
+        "materials": ["organic", "wood", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [0.00026315789473684215, 0.039868421052631588, 0],
+          "massKg": 0.17999999999999999,
+          "node": "body:stemmedFruit"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

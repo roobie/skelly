@@ -14,7 +14,7 @@ read_if:
 
 # Deadvox lessons
 
-These are reusable constraints, not incident timelines. Code and tests own the mechanism; this file keeps the reasons that are easy to lose during a later change.
+These are reusable constraints, not incident timelines. Code and tests own the mechanism; this file keeps the reasons that are easy to lose during a later change. A lesson stays here when its code is in the engine or presentation package, because the game is where it was learned and observed; the packages' own rules are in `packages/engine/PROJECT.md` and `packages/presentation/PROJECT.md`.
 
 ## Input capture
 
@@ -22,17 +22,17 @@ Apply mode-specific suppression when input is captured, using the mode at that e
 
 ## Browser readiness
 
-Before gameplay or debug commands, browser stages must wait for world readiness after each start or reload. A mounted debug UI, pointer lock, dismissed title menu or unpaused simulation does not certify readiness; before the first frame, the simulation's initial pause value can precede loading admission. Commands under the loading mask are deliberately discarded. Observe the loading owner or the mounted mask's completed state, not optional external resources. See `src/game/worldLoading.ts`, `WorldLoading`, and `src/ui/worldLoading.ts`, `mountWorldLoading`.
+Before gameplay or debug commands, browser stages must wait for world readiness after each start or reload. A mounted debug UI, pointer lock, dismissed title menu or unpaused simulation does not certify readiness; before the first frame, the simulation's initial pause value can precede loading admission. Commands under the loading mask are deliberately discarded. Observe the loading owner or the mounted mask's completed state, not optional external resources. See `packages/presentation/src/presentation/worldLoading.ts`, `WorldLoading`, and `packages/presentation/src/ui/worldLoading.ts`, `mountWorldLoading`.
 
-Request pointer capture before constructing a new world: synchronous setup can outlast the browser's transient user activation even within the click handler. Let the gesture handler return before setup so native capture can settle without competing with construction. Repeated acceptance while that work is pending must not create another survivor. A ready world with refused capture remains paused, so a debug route's missing output does not imply loading is still pending. See `src/main.ts`, `saveController.setNewWorldLauncher`, `src/game/input.ts`, `requestInputLock`, `src/ui/saveController.ts`, `confirmNewWorld`, and `test/browser/stairs.mjs`.
+Request pointer capture before constructing a new world: synchronous setup can outlast the browser's transient user activation even within the click handler. Let the gesture handler return before setup so native capture can settle without competing with construction. Repeated acceptance while that work is pending must not create another survivor. A ready world with refused capture remains paused, so a debug route's missing output does not imply loading is still pending. See `src/main.ts`, `saveController.setNewWorldLauncher`, `packages/presentation/src/presentation/input.ts`, `requestInputLock`, `packages/presentation/src/ui/saveController.ts`, `confirmNewWorld`, and `test/browser/stairs.mjs`.
 
-Persistence probes must wait for controller entry before touching the bound session: accepting a launch gesture does not mean construction or checkpoint binding has finished. See `src/ui/saveController.ts`, `isEntered`, and `test/browser/save-storage.mjs`, `testTitleAndAutosave`.
+Persistence probes must wait for controller entry before touching the bound session: accepting a launch gesture does not mean construction or checkpoint binding has finished. See `packages/presentation/src/ui/saveController.ts`, `isEntered`, and `test/browser/save-storage.mjs`, `testTitleAndAutosave`.
 
-Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `src/core/content.ts`, `checkScenarios`, `src/core/gauntlet.ts`, `GauntletSite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
+Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `packages/engine/src/core/content.ts`, `checkScenarios`, `packages/engine/src/core/scenarioCity.ts`, `ScenarioCitySite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
 
-Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
+Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `packages/engine/src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
 
-Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `src/core/skyField.ts`, `SkyFields`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields until standing geometry changes".
+Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `packages/engine/src/core/skyField.ts`, `SkyFields`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields until standing geometry changes".
 
 Local pixel fixtures should load only the terrain needed by their observation. A nearby dropped-light check does not earn the cost of a distant view ring; full-ring readiness makes that unrelated work part of startup. Keep the pixel oracle and completed-readiness boundary intact rather than lengthening the wait. See `test/browser/primary-action-pixel.mjs`, `measureGlowstickFloor`.
 
@@ -65,19 +65,17 @@ Admit and commit seeded sound choice, cooldown and hearing stimulus in the simul
 
 ## Item ownership
 
-Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`packages/deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
+Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`packages/deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `packages/engine/src/core/itemTree.ts`, `walkItemTree`, and `packages/engine/src/core/inventory.ts`, `Inventory.itemByUid`.
 
 ## Save-storage deadlines
 
-Bound lock acquisition separately from worker I/O. Cancel only a queued lock request; never steal a held writer lock. A frozen page can hold the origin lock, so the current page cannot recover it. Use a controlled lock holder to prove timeout and recovery rather than depending on a timing race. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `docs/decisions/0002-saves.md`.
+Bound lock acquisition separately from worker I/O. Cancel only a queued lock request; never steal a held writer lock. A frozen page can hold the origin lock, so the current page cannot recover it. Use a controlled lock holder to prove timeout and recovery rather than depending on a timing race. See `packages/presentation/src/presentation/saveStorage.ts`, `SaveStorage.withLock`, and `docs/decisions/0002-saves.md`.
 
-An unanswered worker request keeps its deadline. Only a clearly late deadline callback grants one short dispatch grace: a stalled main thread can run a due timer before an already queued healthy reply. A matching reply cancels the active timer, including that grace; an on-time timeout fails immediately. The grace cannot repeat even if its callback is also delayed, so a silent worker is still terminated. See `src/game/saveStorage.ts`, `SaveStorage.request` and `SAVE_REPLY_GRACE_REAL_MS`.
-
-The timeout error and console warning identify the unanswered request's phase, selected backend and elapsed time, along with the initial timer's lateness and available binary-payload size. An unselected backend or unmeasured payload size remains unknown, not a zero-cost observation. These details distinguish main-thread dispatch delay from ordinary deadline expiry and locate the operation to investigate; they do not prove a backend hang or that an unacknowledged commit never reached disk. Payload size is not the entire cloned-message size, and timeout diagnostics are not worker-execution timings.
+A stalled main thread can run a due deadline before an already queued healthy reply, so a late deadline must be told apart from a worker that never answered, while a silent worker is still terminated. Timeout diagnostics locate the operation to investigate; they do not prove a backend hang, that an unacknowledged commit never reached disk, or how long the worker ran. See `packages/presentation/src/presentation/saveStorage.ts`, `SaveStorage.request`.
 
 ## Sparse vehicle meshing
 
-Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
+Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `packages/engine/src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
 
 ## Wall leeway
 
@@ -98,4 +96,4 @@ With MSAA, edge samples can extrapolate non-flat varyings beyond their vertex va
 
 ## Pointer-lock scrolling
 
-A CSS overflow region cannot retarget a locked wheel to the drawn cursor. Route it to the nearest scrollable ancestor, consume it at pane edges, and keep free-pointer behavior distinct from synthetic locked-cursor coverage. See `src/ui/menuPointer.ts`, `mountMenuPointer`, and `src/ui/wheel.ts`, `wheelPixels`.
+A CSS overflow region cannot retarget a locked wheel to the drawn cursor. Route it to the nearest scrollable ancestor, consume it at pane edges, and keep free-pointer behavior distinct from synthetic locked-cursor coverage. See `packages/presentation/src/ui/menuPointer.ts`, `mountMenuPointer`, and `packages/presentation/src/ui/wheel.ts`, `wheelPixels`.

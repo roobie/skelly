@@ -1,3 +1,5 @@
+import type { MeshData } from '@skelly/engine/mesh';
+import { ChunkMeshes, Shadows } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   DirectionalLight,
@@ -11,9 +13,6 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { MeshData } from '../../src/core/mesher.ts';
-import { ChunkMeshes } from '../../src/render/chunks.ts';
-import { Shadows } from '../../src/render/shadows.ts';
 import { skyWorldFixture } from '../fixtures/skyWorld.ts';
 
 function slab(thickness: number): MeshData {

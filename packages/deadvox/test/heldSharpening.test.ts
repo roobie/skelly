@@ -1,14 +1,10 @@
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { ItemActionSelection, itemActionsFor } from '@skelly/engine/internal/game/itemActions.ts';
+import { Sharpening, sharpeningTargetForHand } from '@skelly/engine/internal/game/sharpening.ts';
+import { CraftCommands, HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character, selectPrimaryAction } from '@skelly/engine/sim';
+import { craftRows } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { gameMinutes } from '../src/core/time.ts';
-import { ItemActionSelection, itemActionsFor } from '../src/game/itemActions.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { Sharpening, sharpeningTargetForHand } from '../src/game/sharpening.ts';
-import { craftRows } from '../src/ui/craftReadout.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -23,7 +19,7 @@ const fixture = (side: HandSide = 'right') => {
     activation: 'sharpen' as const,
     kind: 'repair' as const,
     result: { item: bladeDef.id, count: 1 },
-    repair: { skill: 'crafting', amount: 0.2, perSkill: 0.05 },
+    repair: { skill: 'crafting' as const, amount: 0.2, perSkill: 0.05 },
     timeGameMinutes: gameMinutes(1),
     skills: { crafting: 0 },
     components: [],
@@ -110,6 +106,9 @@ describe('held sharpening', () => {
 
   it('never offers sharpening in the craft list or admits it through craft commands', () => {
     const f = fixture();
+    const ordinary = [...f.registry.recipes.values()].find((recipe) => recipe.activation !== 'sharpen');
+    expect(ordinary).toBeDefined();
+    f.character.initializeProgression({}, [ordinary!.id]);
     const rows = craftRows({
       registry: f.registry,
       character: f.character,

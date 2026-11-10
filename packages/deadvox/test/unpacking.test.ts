@@ -1,54 +1,60 @@
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { reach } from '@skelly/engine/internal/core/reach.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
+import { HandlingQueue, Inventory, options } from '@skelly/engine/inventory';
+import { selectPrimaryAction } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { coreMessage } from '../src/core/coreText.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { options, toHands } from '../src/core/options.ts';
-import { reach } from '../src/core/reach.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const registry = baseRegistry();
-const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
-const shellType = 'shell_12_gauge_00_buck';
+const BOX_UNPACK_SECONDS = simSeconds(4);
+const shellType = 'fixture_shell';
+const boxType = 'fixture_shell_box';
+const bagType = 'fixture_bag';
+const fillerType = 'fixture_filler';
 const payloadCount = 7;
 const stackCapacity = 11;
-const fixture = (small = false, held = true) => {
-  const bagDef = registry.items.get('hiking_backpack')!;
-  const packageRegistry = {
+const shellRow = {
+  id: shellType,
+  name: 'Fixture shell',
+  category: 'ammo' as const,
+  weight: 1,
+  size: [1, 1] as [number, number],
+  stack: stackCapacity,
+  workInProgress: false,
+};
+const boxRow = {
+  id: boxType,
+  name: 'Fixture shell box',
+  category: 'ammo' as const,
+  weight: 1,
+  size: [1, 2] as [number, number],
+  unpack: { item: shellType, count: payloadCount, simSeconds: BOX_UNPACK_SECONDS },
+  workInProgress: false,
+};
+const fixture = (small = false) => {
+  // The bag's wearable layout comes from content; only its pocket is the fixture's.
+  const bagSource = [...registry.items.values()].find((def) => def.wearable && def.container)!;
+  const pocket = { name: 'Fixture pocket', grid: (small ? [1, 1] : [4, 4]) as [number, number] };
+  const content = {
     ...registry,
     items: new Map(registry.items)
-      .set(shellType, { ...registry.items.get(shellType)!, stack: stackCapacity })
-      .set('shotshell_box', {
-        ...registry.items.get('shotshell_box')!,
-        unpack: { item: shellType, count: payloadCount, simSeconds: BOX_UNPACK_SECONDS },
+      .set(shellType, shellRow)
+      .set(boxType, boxRow)
+      .set(fillerType, { ...shellRow, id: fillerType, name: 'Fixture filler', category: 'misc' as const, stack: 1 })
+      .set(bagType, {
+        ...bagSource,
+        id: bagType,
+        container: { pockets: [{ ...pocket, handlingSimSeconds: simSeconds(0) }] },
       }),
   };
-  const content = small
-    ? {
-        ...packageRegistry,
-        items: new Map(packageRegistry.items).set(bagDef.id, {
-          ...bagDef,
-          container: {
-            pockets: [
-              { name: 'Small test pocket', grid: [1, 1] as [number, number], handlingSimSeconds: simSeconds(0) },
-            ],
-          },
-        }),
-      }
-    : packageRegistry;
   const inventory = new Inventory(content);
-  const box = inventory.create('shotshell_box');
-  const bag = inventory.create('hiking_backpack');
-  if (
-    !(
-      inventory.add(bag, { kind: 'worn' }) &&
-      inventory.add(box, held ? { kind: 'hand', side: 'right' } : { kind: 'pocket', owner: bag, pocket: 0 })
-    )
-  ) {
+  const box = inventory.create(boxType);
+  const bag = inventory.create(bagType);
+  if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
     throw new Error('Unpack fixture does not fit');
   }
   const queue = new HandlingQueue(inventory);
@@ -57,15 +63,6 @@ const fixture = (small = false, held = true) => {
 };
 
 describe('sealed ammunition package activation', () => {
-  it('ordinary Hands can put the equipped pump away and wield its sealed box without special-case transfers', () => {
-    const f = fixture(false, false);
-    const gun = f.inventory.create('pump_shotgun');
-    expect(f.inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(toHands(f.inventory, f.queue, f.box, [0, 0, 0])).toBeUndefined();
-    f.queue.tick(f.queue.remaining);
-    expect(f.inventory.hands.right).toBe(f.box);
-    expect(['pocket', 'pile']).toContain(f.inventory.locate(gun)?.kind);
-  });
   it('held primary activation yields its authored payload and consumes the noncontainer box', () => {
     const f = fixture();
     expect(f.box.pockets).toBeUndefined();
@@ -98,7 +95,7 @@ describe('sealed ammunition package activation', () => {
 
   it('unpack with no ground nearby and no pocket room refuses for want of a landing and keeps the box', () => {
     const f = fixture(true);
-    expect(f.inventory.add(f.inventory.create('aa_battery'), { kind: 'pocket', owner: f.bag, pocket: 0 })).toBe(true);
+    expect(f.inventory.add(f.inventory.create(fillerType), { kind: 'pocket', owner: f.bag, pocket: 0 })).toBe(true);
     f.inventory.landing = () => undefined;
     expect(f.unpacking.activate(f.box)).toBeUndefined();
     expect(f.queue.tick(BOX_UNPACK_SECONDS).failed.map(({ reason }) => reason)).toEqual([
@@ -128,29 +125,10 @@ describe('sealed ammunition package activation', () => {
   });
 
   it('content admission rejects a payload larger than the stack reserved by unpack spill preflight', () => {
-    const payload = registry.items.get(shellType)!;
-    const box = registry.items.get('shotshell_box')!;
     const source = {
       source: 'invalid-package.json',
       data: {
-        items: [
-          {
-            id: 'fixture_shell',
-            name: payload.name,
-            category: payload.category,
-            weight: payload.weight,
-            size: payload.size,
-            stack: stackCapacity,
-          },
-          {
-            id: 'fixture_box',
-            name: box.name,
-            category: box.category,
-            weight: box.weight,
-            size: box.size,
-            unpack: { item: 'fixture_shell', count: stackCapacity + 1, simSeconds: BOX_UNPACK_SECONDS },
-          },
-        ],
+        items: [shellRow, { ...boxRow, unpack: { ...boxRow.unpack, count: stackCapacity + 1 } }],
       },
     };
     expect(buildRegistry([source]).issues.some((issue) => issue.path.endsWith('.unpack.count'))).toBe(true);
@@ -162,7 +140,7 @@ describe('sealed ammunition package activation', () => {
           source.data.items[0],
           {
             ...source.data.items[1],
-            unpack: { item: 'fixture_shell', count: stackCapacity, simSeconds: BOX_UNPACK_SECONDS },
+            unpack: { ...boxRow.unpack, count: stackCapacity },
           },
         ],
       },

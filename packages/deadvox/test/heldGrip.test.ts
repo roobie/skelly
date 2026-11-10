@@ -1,17 +1,21 @@
+import type { ModelDef } from '@skelly/engine/content';
+import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import {
+  type FirearmShotEffect,
+  firearmHandlingFor,
+  HandlingQueue,
+  type HandSide,
+  Inventory,
+} from '@skelly/engine/inventory';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { heldFirearmTransform, heldHoldFrame, modelToView, NEUTRAL_AIM } from '@skelly/engine/pose';
+import { Character, firearmBoreRay } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { Character } from '../src/core/character.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { ejectSeconds } from '../src/core/firearmAction.ts';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldFirearmTransform, heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import type { ModelDef } from '../src/core/schema.ts';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const source = baseRegistry();
@@ -80,10 +84,11 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
 };
 
 describe('actual-slot held placement', () => {
-  it('projects each exported sight line to screen centre within one pixel in ADS', () => {
-    const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
-    for (const modelId of ['rifle_assault', 'rifle_ak', 'shotgun_pump']) {
-      const model = registry.models.get(modelId)!;
+  it('projects every exported sight line to screen centre within one pixel in ADS, barrel below it', () => {
+    const firearms = skilledFirearmsTuning(registry);
+    const sighted = [...registry.models.values()].filter((model) => model.gun?.sight);
+    expect(sighted.length).toBeGreaterThan(0);
+    for (const model of sighted) {
       expect(model.gun?.sight?.eyeReliefMetres).toBeGreaterThan(0);
       const pose = heldFirearmTransform({
         holds: registry.figures.get('player')!.holds,
@@ -97,21 +102,25 @@ describe('actual-slot held placement', () => {
         loweredPitchRadians: firearms.loweredPitchRadians,
       });
       expect(pose.sightEyeOffset).toBeDefined();
+      // The view's eye lies on the sight line; without a separate view relief it is the sight eye itself.
+      const eye = pose.rootOffset.map((offset, axis) => offset + pose.sightEyeOffset![axis]!);
+      const along = dot(eye as Vec3, pose.sightDirection!);
       for (let axis = 0; axis < 3; axis++) {
-        expect(pose.rootOffset[axis]! + pose.sightEyeOffset![axis]!).toBeCloseTo(0);
+        expect(eye[axis]! - along * pose.sightDirection![axis]!, `${model.id} eye off the sight line`).toBeCloseTo(0);
+        if (model.hands?.adsViewEyeReliefMetres === undefined) {
+          expect(eye[axis], `${model.id} sight eye at the view`).toBeCloseTo(0);
+        }
       }
       for (let axis = 0; axis < 3; axis++) {
-        expect(pose.sightUp![axis]).toBeCloseTo([0, 1, 0][axis]!, 10);
+        expect(pose.sightUp![axis], `${model.id} sight up`).toBeCloseTo([0, 1, 0][axis]!, 10);
       }
       const [horizontalErrorPixels, verticalErrorPixels, depth] = projectionErrorPixels(pose.sightDirection!);
-      expect(depth).toBeGreaterThan(0);
-      expect(horizontalErrorPixels).toBeLessThanOrEqual(1);
-      expect(verticalErrorPixels).toBeLessThanOrEqual(1);
-      if (modelId === 'shotgun_pump') {
-        const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
-        expect(barrelCenter[2]).toBeLessThan(0);
-        expect(projectedVerticalPixels(barrelCenter)).toBeLessThan(0);
-      }
+      expect(depth, model.id).toBeGreaterThan(0);
+      expect(horizontalErrorPixels, model.id).toBeLessThanOrEqual(1);
+      expect(verticalErrorPixels, model.id).toBeLessThanOrEqual(1);
+      const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
+      expect(barrelCenter[2], `${model.id} muzzle ahead`).toBeLessThan(0);
+      expect(projectedVerticalPixels(barrelCenter), `${model.id} muzzle below centre`).toBeLessThan(0);
     }
   });
 
@@ -153,7 +162,7 @@ describe('actual-slot held placement', () => {
 
   it('cups the support palm under the bore with the bore running across it from the heel to the thumb-index gap', () => {
     const model = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
-    // A gungen export runs its bore along the model's +x through the origin.
+    // A gun authoring tool export runs its bore along the model's +x through the origin.
     const bore = modelToView(model, [1, 0, 0]);
     const boreFromGrip = modelToView(model, model.grip!.at.map((value) => -value) as Vec3);
     for (const side of ['right', 'left'] as const) {
@@ -189,7 +198,7 @@ describe('actual-slot held placement', () => {
   });
 
   it('keeps a long gun’s butt in its shoulder seat while lowering and raising it, mirrored for the left slot', () => {
-    const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const firearms = skilledFirearmsTuning(registry);
     const longGuns = [...registry.models.values()].filter((model) => model.hands?.butt);
     expect(longGuns.length).toBeGreaterThan(0);
     for (const model of longGuns) {

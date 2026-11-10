@@ -1,0 +1,73 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/actors/player.1.glb",
+        "assets/models/player_arm.glb",
+        "assets/models/player_bust.glb",
+        "assets/models/player_leg.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    },
+    {
+      "author": "qubodup",
+      "changes": "Selected nine vocal variants; converted from FLAC to 24 kHz mono Opus in Ogg containers; unused source files excluded",
+      "download": "slightscreams.7z",
+      "files": [
+        "assets/audio/player-hurt-light-01.ogg",
+        "assets/audio/player-hurt-light-03.ogg",
+        "assets/audio/player-hurt-light-06.ogg",
+        "assets/audio/player-hurt-heavy-02.ogg",
+        "assets/audio/player-hurt-heavy-05.ogg",
+        "assets/audio/player-hurt-heavy-08.ogg",
+        "assets/audio/player-strain-09.ogg",
+        "assets/audio/player-strain-12.ogg",
+        "assets/audio/player-strain-14.ogg"
+      ],
+      "licence": "CC0-1.0",
+      "title": "15 vocal male strain/hurt/pain/jump sounds",
+      "url": "https://opengameart.org/content/15-vocal-male-strainhurtpainjump-sounds"
+    },
+    {
+      "author": "rubberduck",
+      "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; sfx100v2_misc_36.ogg kept byte-identical as received and renamed player-block-full-01.ogg; unused source effects excluded",
+      "download": "sfx_100_v2.zip",
+      "files": ["assets/audio/player-block-full-01.ogg"],
+      "licence": "CC0-1.0",
+      "title": "100 CC0 SFX #2",
+      "url": "https://opengameart.org/content/100-cc0-sfx-2"
+    },
+    {
+      "author": "rubberduck",
+      "changes": "Selected two wooden item-drop clips, a pouch-handling clip, and a placeholder fist hit; trimmed leading silence, faded tails, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting. The fist-hit placeholder is wired to the live and restored melee-action path when the fists profile is active.",
+      "download": "brk.zip",
+      "files": ["assets/audio/melee_hit_fist-01.ogg"],
+      "licence": "CC0-1.0",
+      "title": "75 CC0 Breaking/Falling/Hit SFX",
+      "url": "https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx"
+    },
+    {
+      "author": "MentalSanityOff",
+      "changes": "Converted the 48 kHz MP3 source to mono Opus in an Ogg container",
+      "download": "jumpland48000.mp3",
+      "files": ["assets/audio/player-landing-hard-01.ogg"],
+      "licence": "CC0-1.0",
+      "title": "Jump Landing Sound",
+      "url": "https://opengameart.org/content/jump-landing-sound"
+    },
+    {
+      "author": "bart",
+      "changes": "Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS",
+      "download": null,
+      "files": ["assets/audio/heartbeat-slow-beat.ogg", "assets/audio/heartbeat-fast-beat.ogg"],
+      "licence": "CC0-1.0",
+      "title": "Heartbeat Sounds",
+      "url": "https://opengameart.org/content/heartbeat-sounds"
+    }
+  ]
+}

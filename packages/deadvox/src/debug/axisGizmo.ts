@@ -1,4 +1,4 @@
-import type { Vec3 } from '../core/coords.ts';
+import type { Vec3 } from '@skelly/engine/world';
 
 export type Quaternion = readonly [x: number, y: number, z: number, w: number];
 

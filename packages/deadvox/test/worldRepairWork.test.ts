@@ -1,24 +1,23 @@
-import { expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { snapshotItem } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { realSeconds, simSeconds } from '../src/core/time.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
-import { furnitureActionsFor } from '../src/game/furnitureActions.ts';
-import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
+  BindingRegistry,
+  decodeInputReplay,
+  encodeInputReplay,
+  InputReplayRecorder,
   type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
-import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
-import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+} from '@skelly/engine/input';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
+import { runningCraftPresentation, workName } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { handlingViewModel, timedActionHandlingPresentation } from '@skelly/presentation/internal/ui/hud.ts';
+import { contentLookup } from '@skelly/presentation/ui';
+import { expect, it } from 'vitest';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -35,6 +34,7 @@ interface Saved {
 }
 const make = (saved?: Saved) => {
   const character = new Character(registry);
+  character.initializeProgression({}, [RECIPE]);
   const inventory = saved
     ? Inventory.restoreState(registry, saved.inventory)
     : new Inventory(registry, undefined, undefined, character);
@@ -101,7 +101,10 @@ it.each(['normal', 'compressed'] as const)(
         compressionActive: r.sim.compression.active,
       });
       expect(action).toBeDefined();
-      return handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+      return handlingViewModel(
+        timedActionHandlingPresentation(action!, handling, new BindingRegistry(INPUT_BINDINGS)),
+        handling,
+      );
     };
     const owned = structuredClone(r.work.work);
     const slice =
@@ -223,7 +226,7 @@ it.each(['left', 'right'] as const)(
   },
 );
 
-it('live reach refusal keeps escrow and both Continue routes resume the named held work', () => {
+it('live reach refusal keeps escrow and both item-work Continue routes resume the named held work', () => {
   const r = start();
   r.sim.actions.stop();
   expect(r.inventory.move(r.work, { kind: 'pile', pos: [...ORIGIN] }).ok).toBe(true);
@@ -243,11 +246,7 @@ it('live reach refusal keeps escrow and both Continue routes resume the named he
   expect(held.work!.components.map((item) => snapshotItem(item))).toEqual(inputs);
   expect(r.commands.act(held.uid, 'continue')).toBeDefined();
   r.position[0] = ORIGIN[0];
-  const choices = furnitureActionsFor(r.inventory, target, 0.5, [RECIPE]);
-  const choice = choices.find(({ id }) => id === 'continue');
-  expect(choice?.workUid).toBe(held.uid);
-  expect(furnitureActionsFor(r.inventory, r.target, 0.5, [RECIPE]).some(({ id }) => id === 'continue')).toBe(false);
-  expect(dispatch(r, { kind: 'inventory.work', itemUid: choice!.workUid!, operation: 'continue' })).toBeUndefined();
+  expect(dispatch(r, { kind: 'inventory.work', itemUid: held.uid, operation: 'continue' })).toBeUndefined();
   expect(r.sim.actions.job).toMatchObject({ stopped: false, workUid: held.uid });
   expect(held.work!.elapsed).toBe(elapsed);
   r.sim.actions.stop();

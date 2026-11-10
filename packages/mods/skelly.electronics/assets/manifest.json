@@ -1,0 +1,36 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/copper_wire.glb",
+        "assets/models/dead_desk_lamp.glb",
+        "assets/models/field_patch.glb",
+        "assets/models/fuse.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
+      "download": null,
+      "files": [
+        "assets/models/circuit_board.glb",
+        "assets/models/glass_lens.glb",
+        "assets/models/broken_toaster.glb",
+        "assets/models/table_fan.glb",
+        "assets/models/cracked_phone.glb",
+        "assets/models/broken_clock.glb",
+        "assets/models/electrical_repair_kit.glb",
+        "assets/models/glass_bulb.glb"
+      ],
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
+    }
+  ]
+}

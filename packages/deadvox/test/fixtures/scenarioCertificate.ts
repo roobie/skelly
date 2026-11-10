@@ -1,18 +1,16 @@
 import assert from 'node:assert/strict';
-import { BlockEntities } from '../../src/core/blockEntities.ts';
-import type { CityPlan } from '../../src/core/cityPlan.ts';
-import { CitySite } from '../../src/core/citySite.ts';
-import { worldSolid } from '../../src/core/collision.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { toChunk, type Vec3 } from '../../src/core/coords.ts';
-import { ladderOutward } from '../../src/core/ladders.ts';
-import { doorPlan } from '../../src/core/options.ts';
-import type { Scale } from '../../src/core/scale.ts';
-import { scenarioCertificate } from '../../src/core/scenarioCertificate.ts';
-import type { ScenarioDef } from '../../src/core/schema.ts';
-import { compileTemplate, placedPieces } from '../../src/core/templates.ts';
-import { DOOR_ACTION } from '../../src/game/doorAction.ts';
-import { createSession, IDLE, type SessionOptions } from '../../src/game/session.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { CityPlan } from '@skelly/engine/internal/core/cityPlan.ts';
+import { ladderOutward } from '@skelly/engine/internal/core/ladders.ts';
+import { scenarioCertificate } from '@skelly/engine/internal/core/scenarioCertificate.ts';
+import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
+import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import type { SessionOptions } from '@skelly/engine/internal/game/session.ts';
+import { doorPlan } from '@skelly/engine/inventory';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { BlockEntities, CitySite, type Scale, toChunk, type Vec3, worldSolid } from '@skelly/engine/world';
+import { stackActorFigureFiles } from '../baseContentFiles.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
 import { descentLid, queueDescentLidOpening } from './descentLid.ts';
 import { leaveRoof } from './scenarioStart.ts';
@@ -135,6 +133,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
   let pitch = 0;
   const options: SessionOptions = {
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     scenario: profile,
     objective: plan.composition!.objective,
     world: space.world,
@@ -244,7 +243,7 @@ export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Sc
     assert(drop.ok);
     until(() => !session.inventory.hands.left, Math.ceil((drop.job.duration + 1) * 60));
   };
-  const foot = leaveRoof(session, space, plan.composition!.start, {
+  const foot = leaveRoof(session, space, plan.composition!.start!, {
     intent: (value) => {
       intent = { ...value };
     },

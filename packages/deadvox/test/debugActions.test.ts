@@ -1,22 +1,24 @@
+import { BindingRegistry } from '@skelly/engine/input';
+import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
+import type { Weather } from '@skelly/engine/sky';
+import type { DebugHooks } from '@skelly/presentation/debug';
+import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
+import { TONE_MODES } from '@skelly/presentation/render';
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { GRAPHICS_KEYS, GRAPHICS_KNOBS } from '../src/core/graphics.ts';
-import { SHADOW_DISTANCES } from '../src/core/mood.ts';
-import type { Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
-import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
-import { DebugGunPose } from '../src/game/debugGunPose.ts';
-import type { DebugHooks } from '../src/game/debugInterface.ts';
-import { inputBindings } from '../src/game/inputBindings.ts';
-import { TONE_MODES } from '../src/render/look.ts';
+import { LOOK_KEYS } from '../src/debug/lookUrl.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
-const fixtureZombieTypes = [
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+
+const fixtureActorTypes = [
   { id: 'fixture_roamer', name: 'Fixture roamer', authoredOnly: false },
   { id: 'shamblers', name: 'Fixture authored', authoredOnly: true },
 ];
@@ -30,7 +32,7 @@ describe('debug action dispatch', () => {
     const { actions } = makeActions();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
-      if (fixtureZombieTypes.some((type) => action.id === `debug.spawn-zombie.${type.id}`)) {
+      if (fixtureActorTypes.some((type) => action.id === `debug.spawn-actor.${type.id}`)) {
         expect(action.key).toBe('');
         continue;
       }
@@ -136,13 +138,13 @@ describe('debug action dispatch', () => {
   });
   it('offers and dispatches every supplied zombie type, including authored-only types', () => {
     const { actions, spawnRequests } = makeActions();
-    for (const type of fixtureZombieTypes) {
-      const id = `debug.spawn-zombie.${type.id}`;
+    for (const type of fixtureActorTypes) {
+      const id = `debug.spawn-actor.${type.id}`;
       expect(actions.filter((action) => action.id === id)).toHaveLength(1);
       expect(dispatchDebugAction(actions, id)).toBe(true);
       expect(dispatchDebugAction(actions, id, true)).toBe(true);
     }
-    expect(spawnRequests).toEqual(fixtureZombieTypes.map((type) => ({ typeId: type.id, count: 1 })));
+    expect(spawnRequests).toEqual(fixtureActorTypes.map((type) => ({ typeId: type.id, count: 1 })));
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
@@ -152,9 +154,7 @@ describe('debug action dispatch', () => {
         (def.notes ?? []).flatMap((note) => (note.param ? [paramName(note.param)] : [])),
       ),
     ]);
-    expect([...catalogued].sort()).toEqual(
-      [...LOOK_PARAMS, ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url), 'cam', 'interactionray'].sort(),
-    );
+    expect([...catalogued].sort()).toEqual([...LOOK_KEYS, 'cam', 'interactionray'].sort());
   });
 });
 
@@ -226,6 +226,7 @@ const makeActions = (
   const gunPose = new DebugGunPose(true);
   const hooks = {
     sim,
+    keyboard: { registry: inputBindings },
     reviewMap: {
       isOpen: () => reviewMapOpen,
       toggle: () => {
@@ -282,7 +283,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
-    zombieTypes: fixtureZombieTypes,
+    actorTypes: fixtureActorTypes,
     look,
     build,
     spawnMenu,
@@ -298,7 +299,7 @@ const makeActions = (
     spawnShambler(count) {
       spawnCounts.push(count);
     },
-    spawnZombie(typeId, count) {
+    spawnActor(typeId, count) {
       spawnRequests.push({ typeId, count });
     },
     isAimEnabled: () => aimEnabled,

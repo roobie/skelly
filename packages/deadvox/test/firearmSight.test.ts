@@ -1,16 +1,21 @@
+import { adsLimits } from '@skelly/engine/internal/core/adsView.ts';
+import { heldButtOffset } from '@skelly/engine/internal/core/heldPose.ts';
+import { leanFrame } from '@skelly/engine/internal/core/lean.ts';
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import {
+  adsCameraEye,
+  aimDirection,
+  heldFirearmTransform,
+  NEUTRAL_AIM,
+  playerLookPose,
+  sightedFirearmModel,
+} from '@skelly/engine/pose';
+import { firearmBoreRay } from '@skelly/engine/sim';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { fittedPartFrame } from '@skelly/presentation/internal/render/models.ts';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { adsCameraEye, adsLimits } from '../src/core/adsView.ts';
-import { aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { sightedFirearmModel } from '../src/core/firearmSight.ts';
-import { heldButtOffset, heldFirearmTransform } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { leanFrame } from '../src/core/lean.ts';
-import { playerLookPose } from '../src/core/playerLookPose.ts';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
-import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame } from '../src/render/models.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 

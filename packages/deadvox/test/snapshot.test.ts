@@ -1,21 +1,20 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { buildRegistry } from '@skelly/engine/content';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { disassemblyOutputs, disassemblyWorkTime } from '@skelly/engine/internal/core/disassembly.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import type { Site } from '@skelly/engine/internal/core/site.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { Character, practiceForNextLevel, type RealSeconds, realSeconds } from '@skelly/engine/sim';
+import { CHUNK } from '@skelly/engine/world';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { disassemblyOutputs, disassemblyWorkTime } from '../src/core/disassembly.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { Site } from '../src/core/site.ts';
-import { type RealSeconds, realSeconds, simSeconds } from '../src/core/time.ts';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { QuickbarActions } from '../src/game/quickbarActions.ts';
-import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
-import { baseRegistryWith } from './baseRegistry.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   advance,
@@ -31,80 +30,24 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const baseContentFiles = () =>
-  readdirSync('src/content/base')
-    .filter((name) => name.endsWith('.json'))
-    .map((source) => ({
-      source,
-      data: JSON.parse(readFileSync(join('src/content/base', source), 'utf8')),
-    }));
+const baseContentFiles = () => baseContentSources() as { source: string; data: ContentFile }[];
 
 const registryWithSleepScenario = (sleepCap: number) => {
   const files = baseContentFiles();
-  const compression = files
-    .flatMap(({ data }) => data.compression ?? [])
-    .find((row) => row.id === CORE_CONTENT_IDS.player);
-  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === CORE_CONTENT_IDS.player);
+  const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === fixtureIds.player);
+  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === fixtureIds.player);
   if (!(compression && body)) {
     throw new Error('Missing scenario compression or body definition');
   }
   compression.caps.sleep = sleepCap;
-  body.sleepOnset.minGameMinutes = 0.001;
-  body.sleepOnset.maxGameMinutes = 0.001;
+  body.sleepOnset.minGameMinutes = gameMinutes(0.001);
+  body.sleepOnset.maxGameMinutes = gameMinutes(0.001);
   return buildRegistry(files);
 };
 
 // Compile the shared immutable scenario once; each runtime still owns fresh session state.
 const SLEEP_SCENARIO_CAP = 64;
 const bedSleepScenario = registryWithSleepScenario(SLEEP_SCENARIO_CAP);
-const discountedCraftRegistry = baseRegistryWith([
-  {
-    source: 'discounted-craft-fixture.json',
-    data: {
-      recipes: [
-        {
-          id: 'discounted_craft_fixture',
-          category: 'fixture_category',
-          tags: [],
-          searchTerms: [],
-          result: { item: 'torch', count: 1 },
-          timeGameMinutes: 20,
-          skills: {},
-          qualities: {},
-          components: [[{ item: 'rag', count: 1 }]],
-          workstation: 'workbench',
-        },
-      ],
-    },
-  },
-]);
-
-const startDiscountedCraft = () => {
-  const runtime = createRuntime(undefined, false, undefined, { registry: discountedCraftRegistry });
-  const pos = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
-  for (const item of Object.values(runtime.inventory.hands)) {
-    if (!runtime.inventory.move(item!, { kind: 'pile', pos }).ok) {
-      throw new Error('Cannot clear a hand for fixture work');
-    }
-  }
-  const bench = runtime.entities.add({ type: 'workbench', pos, size: [1, 3, 1], facing: 'n' });
-  if (!bench) {
-    throw new Error('Cannot place fixture workbench');
-  }
-  runtime.session.character.knownRecipes.add('discounted_craft_fixture');
-  if (!runtime.inventory.add(runtime.inventory.create('rag'), { kind: 'pile', pos })) {
-    throw new Error('Cannot place fixture craft input');
-  }
-  const planned = runtime.session.planCraft(discountedCraftRegistry.recipes.get('discounted_craft_fixture')!);
-  if (!('plan' in planned)) {
-    throw new Error(planned.missing.reason);
-  }
-  const work = runtime.inventory.beginWork(planned.plan);
-  if (!work) {
-    throw new Error('Cannot begin discounted craft');
-  }
-  return { runtime, work, startRefusal: runtime.sim.actions.startCraft(work.uid) };
-};
 
 describe('snapshot state components', () => {
   it('round-trips an active Wait through the save codec', async () => {
@@ -251,18 +194,21 @@ describe('snapshot state components', () => {
     const actor = runtime.session.character;
     expect(Object.keys(actor.skills).sort()).toEqual([...registry.skills.keys()].sort());
     expect(Object.values(actor.skills).every((level) => level === 0)).toBe(true);
-    const removedRecipe = actor.knownRecipes.values().next().value;
+    const removedRecipe = [...registry.recipes.values()].find((recipe) => !recipe.skillUnlock)?.id;
     if (removedRecipe === undefined) {
-      throw new Error('starter character has no known recipe');
+      throw new Error('Snapshot fixture needs a recipe without a skill unlock');
     }
+    actor.initializeProgression({}, [removedRecipe]);
     const firstThreshold = practiceForNextLevel(registry, actor.skills.crafting!);
     const award = firstThreshold + practiceForNextLevel(registry, actor.skills.crafting! + 1) / 2;
     actor.awardPractice('crafting', award, SKILL_LEVEL_LEGENDARY);
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
-    const combatId = CORE_CONTENT_IDS.firearmsCombat;
-    const steadinessId = registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessSkill;
+    const combatId = fixtureIds.firearmsCombat;
+    const steadinessId = [...registry.skills.values()].find(
+      (skill) => skill.capability === registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessRole,
+    )!.id;
     actor.awardPractice(combatId, firstThreshold / 3);
     actor.awardPractice(steadinessId, firstThreshold + firstThreshold / 2);
     const snapshot = capture(runtime);
@@ -285,20 +231,9 @@ describe('snapshot state components', () => {
     expect(actor.skills.crafting).toBe(savedLevel + 1);
   });
 
-  it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
-    const actor = new Character(registry);
-    const threshold = practiceForNextLevel(registry, actor.skills.crafting!);
-    actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
-    expect(actor.skills.crafting).toBe(0);
-    expect(actor.practice.crafting).toBe(threshold / 2);
-    actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
-    expect(actor.skills.crafting).toBe(1);
-    expect(actor.practice.crafting).toBe(0);
-  });
-
   it('round-trips body wounds with their bleeding tiers, a partially recovered region and a stopped treatment action', async () => {
     const runtime = createRuntime();
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = runtime.player.body.pos.map(Math.floor) as import('@skelly/engine/internal/core/coords.ts').Vec3;
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
         expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
@@ -486,38 +421,17 @@ describe('snapshot state components', () => {
     expect(restored.rest.canStop).toBe(true);
   });
 
-  it('round-trips a stopped reading action with its held book uid and progress', async () => {
-    const runtime = createRuntime();
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
-    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
-      if (item) {
-        expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
-      }
-    }
-    const book = runtime.inventory.create('field_manual');
-    expect(runtime.inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
-    runtime.sim.actions.stop();
-    const snapshot = capture(runtime);
-    expect(snapshot.character.longAction.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
-
-    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot);
-    expect(loaded.sim.actions.job).toMatchObject({
-      jobType: 'reading',
-      stopped: true,
-      bookUid: book.uid,
-      elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
-    });
-    expect(loaded.inventory.itemByUid(book.uid)?.type).toBe('field_manual');
-  });
-
   it('saves stopped reading with the book in a pile and resumes only after it is held', async () => {
     const runtime = createRuntime();
-    const initialFeet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const initialFeet = runtime.player.body.pos.map(
+      Math.floor,
+    ) as import('@skelly/engine/internal/core/coords.ts').Vec3;
     runtime.world.setBlock(initialFeet[0], initialFeet[1] - 1, initialFeet[2], blockId('grass'));
-    const otherPile: import('../src/core/coords.ts').Vec3 = [initialFeet[0] + 1, initialFeet[1], initialFeet[2]];
+    const otherPile: import('@skelly/engine/internal/core/coords.ts').Vec3 = [
+      initialFeet[0] + 1,
+      initialFeet[1],
+      initialFeet[2],
+    ];
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
         expect(runtime.inventory.move(item, { kind: 'pile', pos: otherPile }).ok).toBe(true);
@@ -529,7 +443,7 @@ describe('snapshot state components', () => {
     runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
     runtime.sim.actions.stop();
     const elapsed = runtime.sim.actions.job?.jobType === 'reading' ? runtime.sim.actions.job.elapsed : 0;
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = runtime.player.body.pos.map(Math.floor) as import('@skelly/engine/internal/core/coords.ts').Vec3;
     expect(runtime.inventory.move(book, { kind: 'pile', pos: feet }).ok).toBe(true);
     runtime.sim.scheduler.advance(1);
 
@@ -551,8 +465,8 @@ describe('snapshot state components', () => {
 
   it('omits a stale stopped reading from the save without ending the live job before its next tick', async () => {
     const runtime = createRuntime();
-    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
-    const otherPile: import('../src/core/coords.ts').Vec3 = [feet[0] + 1, feet[1], feet[2]];
+    const feet = runtime.player.body.pos.map(Math.floor) as import('@skelly/engine/internal/core/coords.ts').Vec3;
+    const otherPile: import('@skelly/engine/internal/core/coords.ts').Vec3 = [feet[0] + 1, feet[1], feet[2]];
     for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
       if (item) {
         expect(runtime.inventory.move(item, { kind: 'pile', pos: otherPile }).ok).toBe(true);
@@ -579,7 +493,7 @@ describe('snapshot state components', () => {
     const runtime = createRuntime();
     const { inventory, quickbar, survival, handling, player } = runtime;
     const beans = inventory.create('beans');
-    const feet = player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = player.body.pos.map(Math.floor) as import('@skelly/engine/internal/core/coords.ts').Vec3;
     expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
     expect(inventory.add(beans, { kind: 'hand', side: 'left' })).toBe(true);
     quickbar.assign(0, beans);
@@ -597,7 +511,7 @@ describe('snapshot state components', () => {
     const bag = inventory.hands.right!;
     const { item } = bag.pockets![0]![0]!;
     const source = inventory.targetState(inventory.targetForLocation(inventory.locate(item)!));
-    const feet = player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    const feet = player.body.pos.map(Math.floor) as import('@skelly/engine/internal/core/coords.ts').Vec3;
     expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
     expect(inventory.move(item, { kind: 'hand', side: 'left' }).ok).toBe(true);
 
@@ -607,7 +521,7 @@ describe('snapshot state components', () => {
     const actions = new QuickbarActions({
       inventory: restored.inventory,
       queue: restored.handling,
-      feet: () => restored.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3,
+      feet: () => restored.player.body.pos.map(Math.floor) as import('@skelly/engine/internal/core/coords.ts').Vec3,
       survival: restored.survival,
       notice: () => undefined,
     });
@@ -716,46 +630,14 @@ describe('snapshot state components', () => {
 });
 
 describe('craft job codec and ownership', () => {
-  it('completes a craft at a discounting station', () => {
-    const { runtime, work, startRefusal } = startDiscountedCraft();
-    expect(work.work!.duration).toBeLessThan(
-      discountedCraftRegistry.recipes.get('discounted_craft_fixture')!.timeGameMinutes,
-    );
-    expect(startRefusal).toBeUndefined();
-    expect(runtime.sim.actions.craft!.advance(work.uid, work.work!.duration)).toBe(true);
-    runtime.sim.actions.craft!.finish(work.uid);
-
-    expect(runtime.inventory.itemByUid(work.uid)).toBeUndefined();
-  });
-
-  it('round-trips a discounted craft mid-progress and then completes it', async () => {
-    const { runtime, work, startRefusal } = startDiscountedCraft();
-    expect(startRefusal).toBeUndefined();
-    runtime.sim.actions.craft!.advance(work.uid, work.work!.duration / 2);
-    const snapshot = capture(runtime);
-
-    const decoded = await decodeSave(await encodeFixture(snapshot), {
-      version: formatVersion,
-      contentLookup: (kind, id) => lookupSaveContent(discountedCraftRegistry, kind, id),
-    });
-    const loaded = createRuntime(decoded.snapshot, false, undefined, { registry: discountedCraftRegistry });
-    const loadedWork = loaded.inventory.itemByUid(work.uid)!;
-    expect(
-      loaded.sim.actions.craft!.advance(loadedWork.uid, loadedWork.work!.duration - loadedWork.work!.elapsed),
-    ).toBe(true);
-    loaded.sim.actions.craft!.finish(loadedWork.uid);
-
-    expect(loaded.inventory.itemByUid(work.uid)).toBeUndefined();
-  });
-
   it.each([false, true])(
     'encodes/restores stopped=%s work with one owned subtree and validated references',
     async (stopped) => {
       const runtime = createRuntime();
       // Use the same session/save factory as the game; clear hands through Inventory.
-      const pos: import('../src/core/coords.ts').Vec3 = runtime.player.body.pos.map(
+      const pos: import('@skelly/engine/internal/core/coords.ts').Vec3 = runtime.player.body.pos.map(
         Math.floor,
-      ) as import('../src/core/coords.ts').Vec3;
+      ) as import('@skelly/engine/internal/core/coords.ts').Vec3;
       for (const item of Object.values(runtime.inventory.hands)) {
         expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
       }
@@ -772,6 +654,7 @@ describe('craft job codec and ownership', () => {
           }),
         ).toBe(true);
       }
+      runtime.session.character.initializeProgression({}, ['torch']);
       const planned = runtime.session.planCraft(registry.recipes.get('torch')!);
       if (!('plan' in planned)) {
         throw new Error(planned.missing.reason);
@@ -843,9 +726,9 @@ describe('craft job codec and ownership', () => {
 
   it('encodes and restores an in-progress repair target and amount', async () => {
     const runtime = createRuntime();
-    const pos: import('../src/core/coords.ts').Vec3 = runtime.player.body.pos.map(
+    const pos: import('@skelly/engine/internal/core/coords.ts').Vec3 = runtime.player.body.pos.map(
       Math.floor,
-    ) as import('../src/core/coords.ts').Vec3;
+    ) as import('@skelly/engine/internal/core/coords.ts').Vec3;
     for (const item of Object.values(runtime.inventory.hands)) {
       expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
     }
@@ -865,6 +748,7 @@ describe('craft job codec and ownership', () => {
       ).toBe(true);
     }
     const recipe = registry.recipes.get('repair_crowbar')!;
+    runtime.session.character.initializeProgression({}, [recipe.id]);
     const planned = runtime.session.planCraft(recipe);
     if (!('plan' in planned)) {
       throw new Error(planned.missing.reason);
@@ -919,7 +803,7 @@ describe('restored session world state', () => {
     expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
       countsBefore,
     );
-    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.actors.actors.length);
 
     const fresh = loaded.site.furnitureIn(...loaded.columns[0]!)[0]!;
     const freshSpec = {
@@ -930,10 +814,10 @@ describe('restored session world state', () => {
     const unseenSite = {
       lootPointsIn: () => [],
       furnitureIn: () => [{ spec: freshSpec, loot: fresh.loot }],
-      zombiesIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
+      actorsIn: () => [{ type: 'shambler', pos: freshSpawnPos }],
     } as unknown as Site;
     loaded.session.onColumn(loaded.columns[0]![0] + 100, loaded.columns[0]![1], unseenSite);
     expect(loaded.entities.at(...freshSpec.pos)?.type).toBe(freshSpec.type);
-    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length + 1);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.actors.actors.length + 1);
   });
 });

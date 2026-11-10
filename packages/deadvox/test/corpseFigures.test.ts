@@ -1,18 +1,15 @@
+import { type ContentSource, FIGURE_LIMBS, type FurnitureDef } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { rotatedSize } from '@skelly/engine/internal/core/orientation.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { reachTuning } from '@skelly/engine/sim';
+import { type BlockEntity, type Facing, makeScale, rotationOf } from '@skelly/engine/world';
+import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
+import { CorpseFigures } from '@skelly/presentation/internal/render/corpseFigures.ts';
+import { type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import { Box3, Color, Mesh, type MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { type ContentSource, validateContent } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { rotatedSize, rotationOf } from '../src/core/orientation.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
-import type { Facing } from '../src/core/templates.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
-import { CarriedPiece } from '../src/render/carriedPiece.ts';
-import { CorpseFigures } from '../src/render/corpseFigures.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
+import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -186,6 +183,10 @@ describe('the content check for dead humans', () => {
     const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
     return [
       baseSource('figures-player.json'),
+      {
+        source: 'corpse-sounds',
+        data: { sounds: Object.values(body.moveSounds!).map((id) => registry.sounds.get(id)!) },
+      },
       { source: 'corpse-models.json', data: { models: modelRows.filter(({ id }) => ids.has(id)) } },
     ];
   };

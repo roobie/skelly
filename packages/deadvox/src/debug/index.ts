@@ -1,50 +1,43 @@
-import { html, nothing, render, type TemplateResult } from 'lit-html';
-import { live } from 'lit-html/directives/live.js';
-import { getBuildRevision } from '../core/buildInfo.ts';
-import { dominantSide } from '../core/character.ts';
-import { formatClock } from '../core/clock.ts';
-import { requireDayCycle, type ZombieDef } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { crosshairTarget } from '../core/crosshairTarget.ts';
+import { type ActorDef, requireDayCycle, type WeatheringDef } from '@skelly/engine/content';
+import { INPUT_REPLAY_MAX_BYTES } from '@skelly/engine/input';
+import { lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
+import { getBuildRevision } from '@skelly/engine/packs';
+import type { DebugNoclipStep } from '@skelly/engine/session';
 import {
+  type ActorAim,
+  crosshairTarget,
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroEffect,
   type FirearmsSkillZeroHandling,
-} from '../core/firearmsSkill.ts';
-import { lookDefaultsOf } from '../core/lookDefaults.ts';
-import type { ShadowState } from '../core/mood.ts';
-import { raycast } from '../core/raycast.ts';
-import type { WeatheringDef } from '../core/schema.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
-import { WEATHERING_RANGES } from '../core/weather.ts';
-import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
-import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
-import type {
-  DebugHooks,
-  DebugModule,
-  DebugNoclipStep,
-  DebugReadout,
-  DebugRuntime,
-  InputReplayStatusState,
-} from '../game/debugInterface.ts';
-import { firearmBoreTarget } from '../game/firearmAim.ts';
-import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
-import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
-import { unarmedMeleeWeapon } from '../game/melee.ts';
-import { playerTuning } from '../game/player.ts';
-import { replayFile, type SnapshotMeasurement } from '../game/playtestTools.ts';
-import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
-import { comboBox } from '../ui/comboBox.ts';
-import { positionLookedAtReadout } from '../ui/hud.ts';
+  firearmBoreTarget,
+  firearmsCombatTuning,
+  formatClock,
+  type MeleeResult,
+  playerTuning,
+  unarmedMeleeWeapon,
+} from '@skelly/engine/sim';
+import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
+import { raycast, type Vec3 } from '@skelly/engine/world';
+import {
+  type DebugHooks,
+  type DebugModule,
+  type DebugReadout,
+  type DebugRuntime,
+  type InputReplayStatusState,
+  replayFile,
+  type SnapshotMeasurement,
+} from '@skelly/presentation/debug';
+import { HOT_CATEGORIES, HOT_KINDS } from '@skelly/presentation/render';
+import { comboBox, positionLookedAtReadout } from '@skelly/presentation/ui';
+import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
+import type { HashState } from '../hashState.ts';
+import { pageHref, pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
-import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
-import { setDebugFirearmsSkill } from './debugFirearmsSkill.ts';
-import { setDebugInventoryManagementSkill } from './debugInventoryManagementSkill.ts';
-import { equipDebugBackpack, equipDebugLoadout } from './debugLoadout.ts';
-import { setDebugWound } from './debugWound.ts';
+import { type CamPose, camValue, camWriteDue, parseCamParam } from './camUrl.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -58,20 +51,25 @@ import { KitOverlay } from './kitOverlay.ts';
 import { LookControls } from './look.ts';
 import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
-import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
+import { type LookUrlState, parseLookParams, writeLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { stageRagdollSweep } from './ragdollSweep.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import {
+  spawnActorType,
   spawnShamblers,
   spawnUnawareShambler as spawnUnawareShamblerBehindWall,
-  spawnZombieType,
 } from './shamblerSpawning.ts';
+
+import { measureSessionSnapshot } from './snapshotMeasurement.ts';
+
+export const measureSnapshotForSession: DebugModule['measureSnapshotForSession'] = (snapshot, session) =>
+  measureSessionSnapshot(snapshot, session);
+
+import { spawnDebugItem } from './spawnItem.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { TransientDebugDraw } from './transientDraw.ts';
-
-const COMPASS_DEBUG_LOADOUT = 'compass';
 
 const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
   const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
@@ -151,8 +149,8 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>chunks ${readout.chunks} · ${readout.pending} pending · ${readout.holes} holes · entities ${readout.entities}</span>
   <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
-  <span>shamblers ${readout.zombies}</span>
-  ${readout.revealedZombies.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedZombies.join(' · ')}</span>` : nothing}
+  <span>shamblers ${readout.actors}</span>
+  ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-actors">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
 `;
 
 const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
@@ -337,7 +335,7 @@ const panelTemplate = ({
   setTimeOfDay,
   snapshotStatus,
   snapshotCopyStatus,
-  revealZombies,
+  revealActors,
   toggleReveal,
   measureSnapshot,
   keyTraceEnabled,
@@ -372,7 +370,9 @@ const panelTemplate = ({
   copyWeatheringValues,
   weatheringCopyStatus,
   clockInputValue,
+  labelForAction,
 }: {
+  labelForAction: (actionId: string) => string;
   open: boolean;
   groups: readonly GroupView[];
   gameFrozen: boolean;
@@ -384,7 +384,7 @@ const panelTemplate = ({
   setTimeOfDay: (hour: number, minute: number) => void;
   snapshotStatus: string;
   snapshotCopyStatus: string;
-  revealZombies: boolean;
+  revealActors: boolean;
   toggleReveal: () => void;
   measureSnapshot: () => void;
   keyTraceEnabled: boolean;
@@ -474,7 +474,7 @@ const panelTemplate = ({
         <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
       </div>
       <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
-      <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
+      <div class="debug-actions"><button id="reveal-actors" type="button" aria-pressed=${revealActors} @click=${toggleReveal}>Reveal zombies · ${revealActors ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
       <label>Set time <input id="debug-time" type="time" value=${clockInputValue} /> <button id="set-debug-time" type="button" @click=${(
@@ -574,7 +574,7 @@ const emptyReadout: DebugReadout = {
   snapshotLastMs: 0,
   snapshotP95Ms: 0,
   snapshotCount: 0,
-  revealedZombies: [],
+  revealedActors: [],
   seed: 0,
   radius: 0,
   movement: 'jogging',
@@ -582,7 +582,7 @@ const emptyReadout: DebugReadout = {
   chunks: 0,
   pending: 0,
   holes: 0,
-  zombies: 0,
+  actors: 0,
   sounds: [],
 };
 
@@ -596,8 +596,8 @@ interface ActionContext {
   spawnUnawareShambler: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
-  spawnZombie: (typeId: string, count: number) => void;
-  zombieTypes: Iterable<Pick<ZombieDef, 'id' | 'name'>>;
+  spawnActor: (typeId: string, count: number) => void;
+  actorTypes: Iterable<Pick<ActorDef, 'id' | 'name'>>;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
   isFrozen: () => boolean;
@@ -625,7 +625,7 @@ const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key
           id: 'debug.mannequin-previous',
           label: 'Pose −',
           group: 'mannequin',
-          param: 'mannequin=',
+          param: 'mannequin:',
           detail: () => mannequin.pose.name,
           run: () => mannequin.step(-1),
         },
@@ -633,7 +633,7 @@ const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key
           id: 'debug.mannequin-next',
           label: 'Pose +',
           group: 'mannequin',
-          param: 'mannequin=',
+          param: 'mannequin:',
           detail: () => mannequin.pose.name,
           run: () => mannequin.step(1),
         },
@@ -651,8 +651,8 @@ export const createDebugActions = ({
   spawnUnawareShambler,
   shamblerCount,
   spawnShambler,
-  spawnZombie,
-  zombieTypes,
+  spawnActor,
+  actorTypes,
   isAimEnabled,
   toggleAim,
   isFrozen,
@@ -804,11 +804,11 @@ export const createDebugActions = ({
           hooks.emitTestNoise();
         },
       },
-      ...Array.from(zombieTypes, (type) => ({
-        id: `debug.spawn-zombie.${type.id}`,
+      ...Array.from(actorTypes, (type) => ({
+        id: `debug.spawn-actor.${type.id}`,
         label: `Spawn ${type.name}`,
         group: 'shamblers' as const,
-        run: () => spawnZombie(type.id, 1),
+        run: () => spawnActor(type.id, 1),
       })),
       {
         id: 'debug.melee-aim-toggle',
@@ -828,7 +828,7 @@ export const createDebugActions = ({
         id: 'debug.freeze-game',
         label: 'Freeze game',
         group: 'time',
-        param: 'freeze=1',
+        param: 'freeze:true',
         state: isGameFrozen,
         run: toggleGameFrozen,
       },
@@ -836,7 +836,7 @@ export const createDebugActions = ({
         id: 'debug.tone-cycle',
         label: 'Tone mapping',
         group: 'look',
-        param: 'tone=auto/neutral/aces/agx/none',
+        param: 'tone:auto/neutral/aces/agx/none',
         detail: () => look.toneMappingName,
         run: () => look.cycleToneMapping(),
       },
@@ -844,7 +844,7 @@ export const createDebugActions = ({
         id: 'debug.exposure-decrease',
         label: 'Exposure −',
         group: 'look',
-        param: 'exposure=0.2..3',
+        param: 'exposure:0.2..3',
         detail: () => look.exposure.toFixed(1),
         run: () => look.stepExposure(-1),
       },
@@ -852,7 +852,7 @@ export const createDebugActions = ({
         id: 'debug.exposure-increase',
         label: 'Exposure +',
         group: 'look',
-        param: 'exposure=0.2..3',
+        param: 'exposure:0.2..3',
         detail: () => look.exposure.toFixed(1),
         run: () => look.stepExposure(1),
       },
@@ -860,7 +860,7 @@ export const createDebugActions = ({
         id: 'debug.linear-colours-toggle',
         label: 'sRGB block colours',
         group: 'look',
-        param: 'srgb=0',
+        param: 'srgb:false',
         state: () => look.linearColors,
         run: () => look.toggleLinearColors(),
       },
@@ -868,7 +868,7 @@ export const createDebugActions = ({
         id: 'debug.patterns-toggle',
         label: 'Surface patterns',
         group: 'look',
-        param: 'patterns=0',
+        param: 'patterns:false',
         state: () => look.patterns,
         run: () => look.togglePatterns(),
       },
@@ -876,7 +876,7 @@ export const createDebugActions = ({
         id: 'debug.ambient-occlusion-toggle',
         label: 'Wide ambient occlusion',
         group: 'lighting',
-        param: 'vao=0',
+        param: 'vao:false',
         state: () => look.occlusion,
         run: () => look.toggleOcclusion(),
       },
@@ -884,7 +884,7 @@ export const createDebugActions = ({
         id: 'debug.post-toggle',
         label: 'Mood post-processing (all)',
         group: 'post',
-        param: 'post=0',
+        param: 'post:false',
         state: () => look.moodState.post,
         run: () => look.togglePost(),
       },
@@ -892,7 +892,7 @@ export const createDebugActions = ({
         id: 'debug.bloom-toggle',
         label: 'Bloom',
         group: 'post',
-        param: 'bloom=0',
+        param: 'bloom:false',
         state: () => look.moodState.bloom,
         run: () => look.toggleBloom(),
       },
@@ -902,7 +902,7 @@ export const createDebugActions = ({
         id: 'debug.bloom-clip-decrease',
         label: 'Bloom clip −',
         group: 'post',
-        param: 'bloomclip=1..8',
+        param: 'bloomclip:1..8',
         detail: () => bloomClipDetail(look),
         run: () => look.stepBloomClip(-1),
       },
@@ -910,7 +910,7 @@ export const createDebugActions = ({
         id: 'debug.bloom-clip-increase',
         label: 'Bloom clip +',
         group: 'post',
-        param: 'bloomclip=1..8',
+        param: 'bloomclip:1..8',
         detail: () => bloomClipDetail(look),
         run: () => look.stepBloomClip(1),
       },
@@ -919,7 +919,7 @@ export const createDebugActions = ({
         id: 'debug.torch-decrease',
         label: 'Flashlight strength −',
         group: 'lighting',
-        param: 'torch=0.1..16',
+        param: 'torch:0.1..16',
         detail: () => `×${look.torch}`,
         run: () => look.stepTorch(-1),
       },
@@ -927,7 +927,7 @@ export const createDebugActions = ({
         id: 'debug.torch-increase',
         label: 'Flashlight strength +',
         group: 'lighting',
-        param: 'torch=0.1..16',
+        param: 'torch:0.1..16',
         detail: () => `×${look.torch}`,
         run: () => look.stepTorch(1),
       },
@@ -935,7 +935,7 @@ export const createDebugActions = ({
         id: 'debug.film-toggle',
         label: 'Film (vignette, grain)',
         group: 'post',
-        param: 'film=0',
+        param: 'film:false',
         state: () => look.moodState.film,
         run: () => look.toggleFilm(),
       },
@@ -945,7 +945,7 @@ export const createDebugActions = ({
         id: 'debug.sun-shadow-toggle',
         label: 'Sun shadows',
         group: 'lighting',
-        param: 'sunshadow=0',
+        param: 'sunshadow:false',
         state: () => look.shadowState.sun,
         run: () => look.toggleSunShadows(),
       },
@@ -953,7 +953,7 @@ export const createDebugActions = ({
         id: 'debug.torch-shadow-toggle',
         label: 'Flashlight shadows',
         group: 'lighting',
-        param: 'torchshadow=0',
+        param: 'torchshadow:false',
         state: () => look.shadowState.torch,
         run: () => look.toggleTorchShadows(),
       },
@@ -961,7 +961,7 @@ export const createDebugActions = ({
         id: 'debug.shadow-distance-cycle',
         label: 'Sun shadow distance',
         group: 'lighting',
-        param: 'shadowdist=16..96',
+        param: 'shadowdist:16..96',
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },
@@ -978,7 +978,7 @@ export const createDebugActions = ({
         id: 'debug.crack-check-toggle',
         label: 'Crack check (magenta background)',
         group: 'diagnostics',
-        param: 'crackcheck=1',
+        param: 'crackcheck:true',
         state: () => look.crackCheck,
         run: () => look.toggleCrackCheck(),
       },
@@ -986,7 +986,7 @@ export const createDebugActions = ({
         id: 'debug.hot-pixel-check-toggle',
         label: 'Hot-pixel check (coloured)',
         group: 'diagnostics',
-        param: 'hotcheck=1',
+        param: 'hotcheck:true',
         state: () => look.hotCheck,
         run: () => look.toggleHotCheck(),
       },
@@ -995,7 +995,7 @@ export const createDebugActions = ({
         id: 'debug.fog-decrease',
         label: 'Fogginess −',
         group: 'atmosphere',
-        param: 'fog=0..1',
+        param: 'fog:0..1',
         detail: () => look.fogginess.toFixed(1),
         run: () => look.stepFogginess(-1),
       },
@@ -1003,7 +1003,7 @@ export const createDebugActions = ({
         id: 'debug.fog-increase',
         label: 'Fogginess +',
         group: 'atmosphere',
-        param: 'fog=0..1',
+        param: 'fog:0..1',
         detail: () => look.fogginess.toFixed(1),
         run: () => look.stepFogginess(1),
       },
@@ -1011,7 +1011,7 @@ export const createDebugActions = ({
         id: 'debug.grade-decrease',
         label: 'Grade −',
         group: 'post',
-        param: 'grade=0..1',
+        param: 'grade:0..1',
         detail: () => look.moodState.grade.toFixed(1),
         run: () => look.stepGrade(-1),
       },
@@ -1019,7 +1019,7 @@ export const createDebugActions = ({
         id: 'debug.grade-increase',
         label: 'Grade +',
         group: 'post',
-        param: 'grade=0..1',
+        param: 'grade:0..1',
         detail: () => look.moodState.grade.toFixed(1),
         run: () => look.stepGrade(1),
       },
@@ -1042,7 +1042,8 @@ export const createDebugActions = ({
   ).map((action) => ({
     ...action,
     get key() {
-      return inputBindings.binding(action.id) ? labelForAction(action.id) : '';
+      const bindings = hooks.keyboard.registry;
+      return bindings.binding(action.id) ? bindings.label(action.id) : '';
     },
   }));
 
@@ -1123,8 +1124,8 @@ export const loadSkyRoute = async () => (await import('./skyRoute.ts')).attachSk
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
   const s = hooks.engine.config.scale.blockSize;
   const advanceRagdollSweep = stageRagdollSweep({
-    system: hooks.zombies(),
-    renderer: hooks.zombieRenderer,
+    system: hooks.actors(),
+    renderer: hooks.actorRenderer,
     registry: hooks.engine.registry,
     origin: hooks.body.pos,
     blockSize: s,
@@ -1132,25 +1133,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     restored: !hooks.newGame,
     groundAt: (x, z) => hooks.engine.groundAt(x * s, z * s) / s,
   });
+  const keyboardInput = hooks.keyboard;
+  const inputBindings = keyboardInput.registry;
+  const labelForAction = (actionId: string): string => inputBindings.label(actionId);
   const keyTrace = new KeyTrace();
   keyboardInput.trace = undefined;
   let keyTraceEnabled = false;
-  setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
-  setDebugInventoryManagementSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
-  setDebugWound(hooks.sim.body, location.search, hooks.engine.config.debug, hooks.newGame);
-  if (!equipDebugLoadout(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
-    equipDebugBackpack(hooks.inventory, hooks.engine.config.debug, hooks.newGame);
-    if (
-      hooks.newGame &&
-      new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
-      !hooks.inventory.hands[dominantSide(hooks.inventory.character)]
-    ) {
-      hooks.inventory.add(hooks.inventory.create('compass'), {
-        kind: 'hand',
-        side: dominantSide(hooks.inventory.character),
-      });
-    }
-  }
   const kitOverlay = new KitOverlay(hooks.engine.site?.authoredPlacements);
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;
@@ -1168,7 +1156,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let replayDownload: { url: string; name: string } | undefined;
   let replayStatus = '';
   /** The aim readout is showing a shambler, which the looked-at readout then yields to. */
-  let zombieAimShown = false;
+  let actorAimShown = false;
   let panelOpen = false;
   let f3Open = false;
   let axesVisible = true;
@@ -1180,19 +1168,26 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let firearmsSkillCopyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
-  let revealZombies = false;
+  let revealActors = false;
   let snapshotStatus = '';
   let snapshotCopyStatus = '';
   let aimEnabled = true;
-  let interactionRayEnabled = new URLSearchParams(location.search).get('interactionray') === '1';
+  let interactionRayEnabled = pageUrl().hash.interactionray === true;
   const transientDraw = new TransientDebugDraw(hooks.engine.scene, hooks.engine.config.debug);
   let lastHitText = '';
   let lastHitUntil = 0;
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
-  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, hooks.strikeTerrainCell);
-  const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
+  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, {
+    strikeTerrainCell: hooks.strikeTerrainCell,
+    bindings: inputBindings,
+  });
+  const spawnMenu = new SpawnMenu(
+    hooks.engine.registry,
+    (type) => spawnDebugItem(hooks.inventory, type, hooks.feet()),
+    inputBindings,
+  );
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
   /** Groups the operator collapsed; remembered per browser. */
@@ -1209,7 +1204,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           weathering: {
             state: {
               profileId: hooks.engine.config.weatheringProfileId,
-              defaultProfileId: hooks.engine.config.weatheringDefaultProfileId,
               settings: hooks.engine.config.weathering,
             },
             profiles: hooks.engine.registry.weathering,
@@ -1221,15 +1215,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       : {}),
   });
   const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;
-  const initialLook = parseLookParams(new URLSearchParams(location.search), {
+  const initialLook = parseLookParams(pageUrl().hash, {
     look: lookDefaults,
     defaultFogginess,
   });
   look.restore(initialLook);
-  // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
-  // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
+  // The hash's `cam` puts the player at a saved view instead of the spawn or a save's position (the body moves;
+  // saves only ever record the body, never this URL). Mid-air the player falls, unless `freeze` or noclip holds
   // them. Roll is ignored: it only comes from damage feedback.
-  const startPose = parseCamParam(new URLSearchParams(location.search));
+  const startPose = parseCamParam(pageUrl().hash);
   if (startPose) {
     const { body, input } = hooks;
     startPose.position.forEach((metres, axis) => {
@@ -1256,17 +1250,26 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     hotCheck: look.hotCheck,
     ...look.moodState,
   });
-  /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
+  /** The page's query and hash with the live look written into the hash. */
+  const lookAddress = (): { query: URLSearchParams; hash: HashState } => {
+    const { query, hash } = pageUrl();
+    return {
+      query,
+      hash: writeLookParams(hash, lookState(), {
+        look: lookDefaults,
+        defaultFogginess,
+        weathering: look.weatheringState,
+        profiles: hooks.engine.registry.weathering,
+      }),
+    };
+  };
+  /**
+   * Keeps the address bar holding the look's hash state, all of it but the live-only weathering profile choice: replaces
+   * the entry, never adds one or reloads.
+   */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState(), {
-      look: lookDefaults,
-      defaultFogginess,
-      weathering: look.weatheringState,
-      profiles: hooks.engine.registry.weathering,
-    });
-    if (next !== location.href) {
-      history.replaceState(history.state, '', next);
-    }
+    const { query, hash } = lookAddress();
+    replacePageUrl(query, hash);
     syncCamUrl(true);
   }
   const selectWeatheringProfile = (profileId: string): void => {
@@ -1318,17 +1321,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     camWritten = { ...camNow, position: [...camNow.position] as Vec3 };
     camWrittenAt = now;
-    const next = camUrl(location.href, camNow);
-    if (next !== location.href) {
-      history.replaceState(history.state, '', next);
-    }
+    const { query, hash } = pageUrl();
+    replacePageUrl(query, { ...hash, cam: camValue(camNow) });
   }
   // Pausing (the pointer lock is lost) is when the operator reaches for the address bar.
   document.addEventListener('pointerlockchange', () => syncCamUrl(true));
   // MenuPointer routes the wheel to the pane under the cursor, including this panel.
   const actions = createDebugActions({
     hooks,
-    zombieTypes: hooks.engine.registry.zombies.values(),
+    actorTypes: hooks.engine.registry.actors.values(),
     impactLaser: hooks.impactLaser,
     interactionRay: {
       enabled: () => interactionRayEnabled,
@@ -1347,8 +1348,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       noclip = !noclip;
     },
     spawnUnawareShambler: () => {
-      const zombies = hooks.zombies();
-      const placed = zombies ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, zombies) : false;
+      const actors = hooks.actors();
+      const placed = actors ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, actors) : false;
       spawnStatus = placed ? 'Placed an unaware shambler behind a wall' : 'No nearby wall could hide a shambler';
       if (placed) {
         hooks.showNotice('An unaware shambler is nearby');
@@ -1365,29 +1366,29 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }
       }
     },
-    isFrozen: () => hooks.zombies()?.isFrozen ?? false,
+    isFrozen: () => hooks.actors()?.isFrozen ?? false,
     toggleFrozen: () => {
-      const zombies = hooks.zombies();
-      zombies?.setFrozen(!zombies.isFrozen);
+      const actors = hooks.actors();
+      actors?.setFrozen(!actors.isFrozen);
     },
     isGameFrozen: () => gameFrozen,
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
     spawnShambler: (count) => {
-      const zombies = hooks.zombies();
-      const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
+      const actors = hooks.actors();
+      const placed = actors ? spawnShamblers(hooks.engine, hooks.body, actors, count) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
       }
     },
-    spawnZombie: (typeId, count) => {
-      const zombies = hooks.zombies();
-      const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, { typeId, count }) : 0;
+    spawnActor: (typeId, count) => {
+      const actors = hooks.actors();
+      const placed = actors ? spawnActorType(hooks.engine, hooks.body, actors, { typeId, count }) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
-        const name = hooks.engine.registry.zombies.get(typeId)?.name ?? typeId;
+        const name = hooks.engine.registry.actors.get(typeId)?.name ?? typeId;
         hooks.showNotice(
           placed === 1 ? `A ${name.toLowerCase()} is approaching` : `${placed} ${name.toLowerCase()}s are approaching`,
         );
@@ -1491,14 +1492,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           rangeBlocks,
         )
       : undefined;
-    const zombies = hooks.zombies();
+    const actors = hooks.actors();
     const aimTarget =
-      ray?.active && zombies
+      ray?.active && actors
         ? firearmBoreTarget({
             eye: ray.eye,
             direction: ray.dir,
             surface: target,
-            zombies,
+            actors,
             blockSize: engine.config.scale.blockSize,
             rangeBlocks,
             weapon: unarmedMeleeWeapon(engine.registry.meleeClasses),
@@ -1557,7 +1558,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const key = JSON.stringify([
       panelOpen,
       f3Open,
-      revealZombies,
+      revealActors,
       snapshotStatus,
       keyTraceEnabled,
       spawnMenu.isOpen,
@@ -1576,6 +1577,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       shellKey = key;
       render(
         panelTemplate({
+          labelForAction,
           open: panelOpen,
           groups,
           gameFrozen,
@@ -1587,10 +1589,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           setTimeOfDay: hooks.setTimeOfDay,
           snapshotStatus,
           snapshotCopyStatus,
-          revealZombies,
+          revealActors,
           toggleReveal: () => {
-            revealZombies = !revealZombies;
-            hooks.revealZombies(revealZombies);
+            revealActors = !revealActors;
+            hooks.revealActors(revealActors);
             shellKey = '';
             drawShell();
           },
@@ -1615,7 +1617,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           exportKeyTrace: () => {
             download = {
               url: URL.createObjectURL(new Blob([keyTrace.export()], { type: 'application/json' })),
-              name: 'deadvox-key-trace.json',
+              name: 'skelly-key-trace.json',
             };
             shellKey = '';
             drawShell();
@@ -1744,6 +1746,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const { config } = hooks.engine;
     const metres = config.scale.blockSize;
     const now = new Date();
+    const address = lookAddress();
+    const cam = camValue({
+      position: hooks.body.pos.map((v) => v * metres) as Vec3,
+      yaw: hooks.input.yaw,
+      pitch: hooks.input.pitch,
+      roll: hooks.roll(),
+    });
     const dump = lookDump({
       toneMapping: look.toneMappingName,
       exposure: look.exposure,
@@ -1771,12 +1780,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       pitchRad: hooks.input.pitch,
       buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
-      url: camUrl(lookUrl(location.href, lookState(), { look: lookDefaults, defaultFogginess }), {
-        position: hooks.body.pos.map((v) => v * metres) as Vec3,
-        yaw: hooks.input.yaw,
-        pitch: hooks.input.pitch,
-        roll: hooks.roll(),
-      }),
+      url: pageHref(location.href, address.query, { ...address.hash, cam }),
       now,
     });
     // Blob link rendered by the panel template, clicked, then dropped again.
@@ -1866,8 +1870,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get aimEnabled() {
       return aimEnabled;
     },
-    updateAim(aim: ZombieAim | undefined) {
-      zombieAimShown = aimEnabled && aim !== undefined;
+    updateAim(aim: ActorAim | undefined) {
+      actorAimShown = aimEnabled && aim !== undefined;
       aimOverlay.update(aimEnabled ? aim : undefined);
       if (aimReadout) {
         render(
@@ -1890,7 +1894,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (lookReadout) {
         const { engine } = hooks;
         const text =
-          active && !zombieAimShown
+          active && !actorAimShown
             ? describeLookedAt(
                 {
                   world: engine.world,
@@ -1934,8 +1938,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get spawnOpen() {
       return spawnMenu.isOpen;
     },
-    get revealZombies() {
-      return revealZombies;
+    get revealActors() {
+      return revealActors;
     },
     handleAction,
     closeMenus() {

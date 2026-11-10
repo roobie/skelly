@@ -1,0 +1,34 @@
+{
+  "dependencies": ["skelly.inventory", "skelly.melee-classes", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "traps-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-traps.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bear_trap.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bear_trap.glb"
+    }
+  ],
+  "id": "skelly.traps",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

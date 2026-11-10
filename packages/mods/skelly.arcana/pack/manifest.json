@@ -1,0 +1,22 @@
+{
+  "dependencies": ["skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "models-arcana.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    }
+  ],
+  "id": "skelly.arcana",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

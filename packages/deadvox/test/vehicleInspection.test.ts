@@ -1,8 +1,7 @@
+import { Inventory, type Item } from '@skelly/engine/inventory';
+import { copyVehicleWorkPlacement } from '@skelly/engine/vehicles';
+import { vehicleInspectionViewModel } from '@skelly/presentation/internal/ui/vehicleInspection.ts';
 import { expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { copyVehicleWorkPlacement } from '../src/core/vehicleInstances.ts';
-import { vehicleInspectionViewModel } from '../src/ui/vehicleInspection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('anchors service actions to the selected vehicle, site and part instances, offering only parts whose mount fits', () => {

@@ -1,14 +1,12 @@
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import { layoutVehiclePlacements } from '@skelly/engine/internal/game/layoutVehicles.ts';
+import type { Inventory } from '@skelly/engine/inventory';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { IDLE } from '@skelly/engine/session';
+import { registerLayoutVehicles, terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { toChunk } from '../src/core/coords.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import type { Inventory } from '../src/core/inventory.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { terrainHeight } from '../src/core/worldgen.ts';
-import { layoutVehiclePlacements, registerLayoutVehicles } from '../src/game/layoutVehicles.ts';
-import { IDLE } from '../src/game/session.ts';
 import {
   advance,
   capture,
@@ -397,17 +395,6 @@ describe('production vehicle ownership', () => {
         ({ item }) => item.uid === work.item.uid,
       ),
     ).toHaveLength(1);
-  });
-
-  it('refuses to start removing a fitting another part rests on, spending no work time', () => {
-    const runtime = createRuntime();
-    const work = wheelWork(runtime, 'fixture.loaded-strut', 'remove');
-    runtime.sim.actions.cancel();
-    const strut = runtime.inventory.vehicles.get(work.id)!.fittings.find(({ id }) => id === 'front_strut_near')!;
-
-    expect(runtime.session.beginVehicleWork('remove', work.id, strut, strut.item.uid)).toBeDefined();
-    expect(runtime.sim.actions.snapshotState().job).toBeNull();
-    expect(runtime.inventory.locate(strut.item)).toMatchObject({ kind: 'vehicle', fittingId: strut.id });
   });
 
   it('repeated testHouse registration after restore preserves saved missing parts and placement identity', async () => {

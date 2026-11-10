@@ -17,8 +17,8 @@ export async function runLocal(vite, engines, selected, compare = true) {
   const precisions = compare ? ['f64', 'f32'] : ['f64'];
   const artifacts = new URL('../../../../test-results/rapier-agreement/', import.meta.url);
   await mkdir(artifacts, { recursive: true });
-  const { runSuite } = await vite.ssrLoadModule('/src/vehicles/feasibility/runner.ts');
-  const { firstDivergence } = await vite.ssrLoadModule('/src/vehicles/feasibility/trace.ts');
+  const { runSuite } = await vite.ssrLoadModule('/src/feasibility/runner.ts');
+  const { firstDivergence } = await vite.ssrLoadModule('/src/feasibility/trace.ts');
   const { rapierCandidate } = await vite.ssrLoadModule('/tools/rapier-f64/candidate.ts');
   const results = {};
   const paths = {};
@@ -86,7 +86,7 @@ export async function runLocal(vite, engines, selected, compare = true) {
             // biome-ignore lint/correctness/noUnresolvedImports: Vite serves browser-root modules
             const { rapierCandidate: browserCandidate } = await import('/tools/rapier-f64/candidate.ts');
             // biome-ignore lint/correctness/noUnresolvedImports: Vite serves browser-root modules
-            const { runSuite: browserSuite } = await import('/src/vehicles/feasibility/runner.ts');
+            const { runSuite: browserSuite } = await import('/src/feasibility/runner.ts');
             return browserSuite(identity, browserCandidate(browserApi, numericPrecision));
           },
           { url: paths[precision], identity: baseline.identity, precision },

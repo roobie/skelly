@@ -1,5 +1,5 @@
+import { DamageFeedback } from '@skelly/presentation/internal/presentation/damageFeedback.ts';
 import { describe, expect, it } from 'vitest';
-import { DamageFeedback } from '../src/game/damageFeedback.ts';
 import { DAMAGE_FEEDBACK_TUNING_FIXTURE } from './presentationFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
@@ -56,12 +56,5 @@ describe('damage feedback', () => {
     feedback.hit(25);
     expect(feedback.step(0).vignetteOpacity).toBe(DAMAGE_FEEDBACK_TUNING_FIXTURE.vignetteMax);
     expect(Math.sign(feedback.step(0.04).roll)).toBe(1);
-  });
-
-  it('reports the accepted damage amount', () => {
-    const sim = new Simulation({ seed: 1 });
-    const events = sim.events.reader();
-    sim.hurt(25, 'test');
-    expect(events.read().find((e) => e.kind === 'damage')).toMatchObject({ kind: 'damage', amount: 25 });
   });
 });

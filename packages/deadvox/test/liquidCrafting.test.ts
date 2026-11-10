@@ -1,20 +1,23 @@
-import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import type { RecipeDef } from '../src/core/content.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { type CraftSources, planCraft } from '../src/core/crafting.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { ItemFactory, restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '../src/core/items.ts';
-import { planLiquidDraw } from '../src/core/liquids.ts';
-import { bindReach } from '../src/core/reach.ts';
+import type { RecipeDef } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '@skelly/engine/internal/core/items.ts';
+import { planLiquidDraw } from '@skelly/engine/internal/core/liquids.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import {
+  CraftCommands,
+  type CraftSources,
+  HandlingQueue,
+  Inventory,
+  ItemFactory,
+  planCraft,
+} from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry, fixtureSources } from './economyFixtures.ts';

@@ -1,11 +1,13 @@
+import type { Registry } from '@skelly/engine/content';
+import {
+  firearmAttachmentResponse,
+  muzzleLoad,
+  wearFirearmAttachments,
+} from '@skelly/engine/internal/core/firearmAttachments.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { defOf, HandlingQueue, Inventory, weightOf } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../src/core/firearmAttachments.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf, weightOf } from '../src/core/items.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 

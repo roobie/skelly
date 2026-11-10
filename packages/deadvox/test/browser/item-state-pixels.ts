@@ -1,10 +1,13 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { BindingRegistry } from '@skelly/engine/input';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { ItemFactory } from '@skelly/engine/inventory';
+import { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
+import { ItemViewer } from '@skelly/presentation/internal/ui/itemViewer.ts';
+import { ModelLibrary } from '@skelly/presentation/render';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { buildRegistry } from '../../src/core/content.ts';
-import { ItemFactory, snapshotItem } from '../../src/core/items.ts';
-import { ItemPictures } from '../../src/render/itemPictures.ts';
-import { ModelLibrary } from '../../src/render/models.ts';
-import { ItemViewer } from '../../src/ui/itemViewer.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 
 const coloredPixels = (canvas: HTMLCanvasElement) => {
   const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
@@ -99,8 +102,6 @@ export const statePixelFixture = async () => {
             name: 'Pixel',
             category: 'misc',
             workInProgress: false,
-            notLoot: false,
-            economy: { usage: [], tiers: [] },
             weight: 1,
             size: [1, 1],
             model: 'pixel',
@@ -140,7 +141,7 @@ export const statePixelFixture = async () => {
       zoomMin: 0.5,
       zoomMax: 2,
     }),
-    () => 'Close',
+    { closeText: () => 'Close', bindings: new BindingRegistry(INPUT_BINDINGS) },
   );
   const factory = new ItemFactory();
   return {

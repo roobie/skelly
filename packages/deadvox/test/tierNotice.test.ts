@@ -1,5 +1,5 @@
+import { TierNotice } from '@skelly/presentation/internal/presentation/tierNotice.ts';
 import { expect, it } from 'vitest';
-import { TierNotice } from '../src/game/tierNotice.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const { tiers } = BODY_TUNING_FIXTURE.bleeding;

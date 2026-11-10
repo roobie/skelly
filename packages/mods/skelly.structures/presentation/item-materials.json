@@ -1,0 +1,9 @@
+{
+  "assets/models/half_length_of_rail.glb": { "materials": ["scrap-rusted", "steel-bright", "plastic-charcoal"] },
+  "assets/models/hinge_set.glb": { "materials": ["brass", "steel-grey"] },
+  "assets/models/length_of_light_rail.glb": {
+    "materials": ["wood-walnut", "scrap-rusted", "steel-bright", "iron-dull"]
+  },
+  "assets/models/length_of_rail.glb": { "materials": ["scrap-rusted", "steel-bright", "plastic-charcoal"] },
+  "assets/models/peephole.glb": { "materials": ["brass-polished", "glass-clear", "brass-dull", "plastic-black"] }
+}

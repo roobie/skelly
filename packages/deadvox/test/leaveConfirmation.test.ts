@@ -1,10 +1,10 @@
+import { realTimestamp } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { realTimestamp } from '../src/core/time.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
+import { shouldConfirmPageLeave } from '@skelly/presentation/internal/ui/leaveConfirmation.ts';
 
 const confirmationWindow = BUNDLED_CONTENT.registry.saves.get('autosave')!.leaveConfirmationRealSeconds;
 

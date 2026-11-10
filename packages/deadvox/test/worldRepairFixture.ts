@@ -1,13 +1,9 @@
-import { Character } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
+import type { Registry } from '@skelly/engine/content';
+import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character, Simulation } from '@skelly/engine/sim';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 export const STOCK = 'world_repair_stock';
 export const PIECE = 'world_repair_piece';
@@ -20,7 +16,7 @@ export const worldRepairSources = () =>
     {
       source: 'world-repair-fixture',
       data: {
-        skills: [{ id: 'world_repair_skill', name: 'Fixture repair', startingRecipes: [RECIPE] }],
+        skills: [{ id: 'world_repair_skill', name: 'Fixture repair' }],
         items: [{ id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
         furniture: [PIECE, OTHER_PIECE].map((id) => ({
           id,
@@ -34,7 +30,7 @@ export const worldRepairSources = () =>
             id: RECIPE,
             kind: 'repair',
             result: { item: STOCK, count: 1 },
-            repair: { entity: PIECE, skill: 'world_repair_skill', amount: AMOUNT, perSkill: 0 },
+            repair: { entity: PIECE, skill: 'crafting', amount: AMOUNT, perSkill: 0 },
             timeGameMinutes: 1,
             skills: {},
             qualities: {},
@@ -47,13 +43,14 @@ export const worldRepairSources = () =>
 
 export const worldRepairFixture = (registry: Registry) => {
   const character = new Character(registry);
+  character.initializeProgression({}, [RECIPE]);
   const inventory = new Inventory(registry, undefined, undefined, character);
   const sim = new Simulation({
     seed: 1,
     registry,
     clock: BASE_CLOCK,
-    bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
-    compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+    bodyTuning: registry.body.get(fixtureIds.player)!,
+    compressionCaps: registry.compression.get(fixtureIds.player)!.caps,
   });
   const position: [number, number, number] = [0, 0, 0];
   const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });

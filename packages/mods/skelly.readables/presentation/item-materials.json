@@ -1,0 +1,15 @@
+{
+  "assets/models/access_code_printout.glb": { "materials": ["paper-white", "plastic-matte-black"] },
+  "assets/models/accounting_records.glb": {
+    "materials": ["paper-white", "paint-cream", "plastic-grey", "paint-oxblood", "plastic-black", "steel-stainless"]
+  },
+  "assets/models/envelope.glb": { "materials": ["paper-white"] },
+  "assets/models/folded_note.glb": { "materials": ["paper", "fold"] },
+  "assets/models/gift_card.glb": { "materials": ["plastic-red", "plastic-white", "foil-gold"] },
+  "assets/models/greeting_card.glb": { "materials": ["paper-white", "cloth-blue", "plastic-red"] },
+  "assets/models/letter.glb": { "materials": ["paper-white", "plastic-charcoal"] },
+  "assets/models/notebook.glb": { "materials": ["paper-pages-cream", "paper-cover-sage"] },
+  "assets/models/paper_sheet.glb": { "materials": ["paper", "fold"] },
+  "assets/models/postcard.glb": { "materials": ["paper-white", "plastic-blue", "leaf-green", "plastic-yellow"] },
+  "assets/models/tailoring_pattern_set.glb": { "materials": ["paper-butcher", "paper-white", "plastic-black"] }
+}

@@ -1,36 +1,42 @@
-import { readFileSync } from 'node:fs';
-import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { expect, it } from 'vitest';
-import { adsCameraEye, nearestSightEyeOffset } from '../src/core/adsView.ts';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Registry } from '../src/core/content.ts';
-import { sightedFirearmModel } from '../src/core/firearmSight.ts';
-import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { readyMeleePose } from '../src/core/meleePose.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { figureStancePose, playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
-import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
+import type { Registry } from '@skelly/engine/content';
+import { nearestSightEyeOffset } from '@skelly/engine/internal/core/adsView.ts';
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
+import { type HandSide, Inventory } from '@skelly/engine/inventory';
+import {
+  adsCameraEye,
+  figureStancePose,
+  heldFirearmTransform,
+  heldHoldFrame,
+  NEUTRAL_AIM,
+  playerAdsPose,
+  playerHeldSeatFrame,
+  playerLookPose,
+  readyMeleePose,
+  sightedFirearmModel,
+} from '@skelly/engine/pose';
+import { firearmBoreRay } from '@skelly/engine/sim';
+import { makeScale } from '@skelly/engine/world';
+import { ARM_NODE, type ArmRig } from '@skelly/presentation/internal/render/armRig.ts';
 import {
   actionPartPaths,
   cloneHeldModel,
   type HeldActionPart,
   rackGrip,
   sampleActionStroke,
-} from '../src/render/firearmModel.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import type { HeldPresentation } from '../src/render/heldPresentation.ts';
-import { createHeldViews } from '../src/render/heldViews.ts';
-import { heldModelFrame, indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import type { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
+import { createHeldViews } from '@skelly/presentation/internal/render/heldViews.ts';
+import { heldModelFrame, indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
+import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { heldState } from './heldState.ts';
+import { modFileBytes } from './modFile.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () => {
@@ -41,7 +47,7 @@ it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () 
   expect(model.hands).toBeDefined();
   expect(model.hands!.butt).toBeUndefined();
   const { holds } = registry.figures.get('player')!;
-  const { loweredPitchRadians } = registry.skills.get('firearms_combat')!.combat!.firearms!;
+  const { loweredPitchRadians } = skilledFirearmsTuning(registry);
   for (const side of ['right', 'left'] as const) {
     for (const aimingDownSights of [false, true]) {
       const pose = heldFirearmTransform({
@@ -109,7 +115,7 @@ const pistolFixture = async (
   const figure = registry.figures.get('player')!;
   const model = registry.models.get(registry.items.get('pistol_service')!.model!)!;
   const figures = await loadFigureModels(registry);
-  const bytes = readFileSync(new URL(`../src/content/base/${model.file}`, import.meta.url));
+  const bytes = modFileBytes(model.file);
   const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
   const prepared = prepareModel(model, gltf.scene);
   const paths = actionPartPaths(gltf.scene, model.gun!.action, gltf.parser);

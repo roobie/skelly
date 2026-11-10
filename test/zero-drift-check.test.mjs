@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import process from 'node:process';
 import { after, before, describe, it } from 'node:test';
 import {
   checkDocument,
@@ -10,6 +12,8 @@ import {
   comparePolicy,
   githubSlug,
   parsePythonReadIf,
+  pinnedSubmodules,
+  trackedTextFiles,
 } from '../tools/zero-drift-check.mjs';
 
 const docPath = 'docs/test.md';
@@ -25,13 +29,13 @@ before(() => {
   root = mkdtempSync(join(tmpdir(), 'zero-drift-'));
   mkdirSync(join(root, 'docs'), { recursive: true });
   mkdirSync(join(root, 'src'), { recursive: true });
-  mkdirSync(join(root, 'gungen/docs'), { recursive: true });
-  mkdirSync(join(root, 'gungen/src'), { recursive: true });
+  mkdirSync(join(root, 'packages/fixture/docs'), { recursive: true });
+  mkdirSync(join(root, 'packages/fixture/src'), { recursive: true });
   writeFileSync(
     join(root, 'src/known.ts'),
     'export function startBench() {}\nexport class ChunkMeshes { cull() {} }\n',
   );
-  writeFileSync(join(root, 'gungen/src/known.ts'), 'export function startBench() {}\n');
+  writeFileSync(join(root, 'packages/fixture/src/known.ts'), 'export function startBench() {}\n');
   writeFileSync(
     join(root, 'docs/anchors.md'),
     [
@@ -52,6 +56,7 @@ before(() => {
       '## Second',
       '## Escaped \\_name\\_',
       '## Doubled \\\\_name_',
+      '## Say "hi" now',
       '## `<!-- literal -->`',
       '[^unused]:',
       '    ## Footnote phantom',
@@ -68,8 +73,8 @@ before(() => {
     join(root, 'src/fixture.yaml'),
     'entries:\n  - name: exact fixture name\n  - name: exact "quoted" name\n  - name: exact second fixture name\n',
   );
-  mkdirSync(join(root, 'packages/engine/src'), { recursive: true });
-  writeFileSync(join(root, 'packages/engine/src/known.ts'), 'export function assemble() {}\n');
+  mkdirSync(join(root, 'packages/construct/src'), { recursive: true });
+  writeFileSync(join(root, 'packages/construct/src/known.ts'), 'export function assemble() {}\n');
 });
 after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -83,6 +88,15 @@ const scan = (text, { tracked = new Set(['src/known.ts']), ignored = new Set(), 
     pythonReadIf: pythonReadIf(reasons),
   });
 const checks = (failures) => failures.map(({ check }) => check);
+
+describe('zero-drift tracked files', () => {
+  it('skips gitlink directories without scanning submodule-owned text', () => {
+    const submodule = 'packages/asset-fixture';
+    mkdirSync(join(root, submodule), { recursive: true });
+    writeFileSync(join(root, submodule, 'README.md'), 'Owned by the submodule');
+    assert.deepEqual(trackedTextFiles([submodule, 'src/known.ts'], root), ['src/known.ts']);
+  });
+});
 
 describe('zero-drift read_if check', () => {
   it('accepts block and flow lists when they agree with the Python reader', () => {
@@ -166,12 +180,12 @@ describe('zero-drift path check', () => {
   });
 
   it('resolves subproject-relative citations from their subproject root', () => {
-    const path = 'gungen/docs/fixture.md';
+    const path = 'packages/fixture/docs/fixture.md';
     const failures = checkDocument({
       path,
       text: document(`See ${code('src/known.ts')}, ${code('startBench')}.`),
       root,
-      tracked: new Set(['gungen/src/known.ts']),
+      tracked: new Set(['packages/fixture/src/known.ts']),
       pythonReadIf: new Map([[path, ['read this']]]),
     });
     assert.deepEqual(checks(failures), []);
@@ -180,11 +194,11 @@ describe('zero-drift path check', () => {
         path,
         text: document(`See ${code(value)}, ${code('assemble')}.`),
         root,
-        tracked: new Set(['packages/engine/src/known.ts']),
+        tracked: new Set(['packages/construct/src/known.ts']),
         pythonReadIf: new Map([[path, ['read this']]]),
       });
-    assert.deepEqual(cross('packages/engine/src/known.ts'), []);
-    assert.ok(checks(cross('../packages/engine/src/known.ts')).includes('path_scope'));
+    assert.deepEqual(cross('packages/construct/src/known.ts'), []);
+    assert.ok(checks(cross('../construct/src/known.ts')).includes('path_scope'));
   });
 
   it('treats each packages/<name> as its own project root', () => {
@@ -210,6 +224,27 @@ describe('zero-drift path check', () => {
     );
     assert.ok(!checks(failures).includes('path'));
   });
+
+  it('scans text that the GFM autolink transform leaves without source positions', () => {
+    const documentWithCue = (suffix) =>
+      document(`${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/${suffix}.`);
+    const tracked = new Set(['docs/anchors.md']);
+    assert.deepEqual(scan(documentWithCue('x'), { tracked }), []);
+    for (const suffix of ['a&amp;b', 'a\\_b', 'a&#95;b']) {
+      assert.deepEqual(scan(documentWithCue(suffix), { tracked }), []);
+    }
+    assert.deepEqual(scan(document('—www.example.com/a&amp;b alone.')), []);
+    assert.deepEqual(scan(document('—www.example.com/a\\_b alone.')), []);
+    assert.deepEqual(
+      scan(
+        document(
+          `${code('docs/anchors.md')}, "Say \\"hi\\" now" and —www.example.com/x then —www.example.com/a&amp;b.`,
+        ),
+        { tracked },
+      ),
+      [],
+    );
+  });
 });
 
 describe('zero-drift symbol check', () => {
@@ -230,8 +265,91 @@ describe('zero-drift symbol check', () => {
   });
 });
 
+describe('zero-drift submodule cues', () => {
+  // A pre-push hook exports GIT_DIR; fixtures must not bind to the pushing repository.
+  // biome-ignore lint/style/noProcessEnv: fixture git keeps caller settings except Git's repository bindings.
+  const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+  const git = (dir, ...args) =>
+    execFileSync('git', ['-C', dir, '-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', ...args], {
+      encoding: 'utf8',
+      env: gitEnv,
+      stdio: 'pipe',
+    }).trim();
+  const assets = 'packages/assets';
+  const superproject = (name) => {
+    const dir = join(root, name);
+    mkdirSync(dir, { recursive: true });
+    git(dir, 'init', '-q');
+    return dir;
+  };
+  const scanPinned = (dir, text) =>
+    checkDocument({
+      path: docPath,
+      text: document(text),
+      root: dir,
+      tracked: new Set([assets]),
+      pinned: pinnedSubmodules(dir),
+      pythonReadIf: pythonReadIf(),
+    });
+
+  let pinnedRoot;
+  before(() => {
+    pinnedRoot = superproject('pinned');
+    const sub = join(pinnedRoot, assets);
+    mkdirSync(join(sub, 'src'), { recursive: true });
+    git(sub, 'init', '-q');
+    writeFileSync(join(sub, 'src/a.ts'), 'export const pinnedSymbol = 1;\n');
+    writeFileSync(join(sub, 'README.md'), '# Assets\n## Contract\n');
+    git(sub, 'add', '.');
+    git(sub, 'commit', '-qm', 'pin');
+    git(pinnedRoot, '-c', 'advice.addEmbeddedRepo=false', 'add', assets);
+    writeFileSync(join(sub, 'src/a.ts'), 'export const pinnedSymbol = 1;\nexport const laterSymbol = 2;\n');
+    writeFileSync(join(sub, 'src/later.ts'), 'export const laterFile = 1;\n');
+    git(sub, 'add', '.');
+    git(sub, 'commit', '-qm', 'later');
+    writeFileSync(join(sub, 'src/a.ts'), 'export const pinnedSymbol = 1;\nexport const worktreeSymbol = 3;\n');
+  });
+
+  it('resolves paths, symbols and sections at the pinned commit', () => {
+    assert.deepEqual(
+      scanPinned(
+        pinnedRoot,
+        `See ${code(`${assets}/src/a.ts`)}, ${code('pinnedSymbol')}, ${code(`${assets}/src/`)} and ${cue(`${assets}/README.md`, 'Contract')}.`,
+      ),
+      [],
+    );
+  });
+
+  it('rejects cues that exist only in the working tree or on an unpinned commit', () => {
+    const failures = scanPinned(
+      pinnedRoot,
+      [
+        `See ${code(`${assets}/src/a.ts`)}, ${code('worktreeSymbol')}.`,
+        `See ${code(`${assets}/src/a.ts`)}, ${code('laterSymbol')}.`,
+        `See ${code(`${assets}/src/later.ts`)}.`,
+      ].join('\n\n'),
+    );
+    assert.deepEqual(
+      failures.map(({ check, text }) => [check, text]),
+      [
+        ['path', `${assets}/src/later.ts`],
+        ['symbol', `${assets}/src/a.ts, worktreeSymbol`],
+        ['symbol', `${assets}/src/a.ts, laterSymbol`],
+      ],
+    );
+  });
+
+  it('fails loudly with the fix when the submodule is not checked out', () => {
+    const dir = superproject('unchecked');
+    mkdirSync(join(dir, assets), { recursive: true });
+    const commit = git(pinnedRoot, 'rev-parse', `:${assets}`);
+    git(dir, 'update-index', '--add', '--cacheinfo', `160000,${commit},${assets}`);
+    assert.throws(() => pinnedSubmodules(dir), new RegExp(`git submodule update --init ${assets}`));
+  });
+});
+
 describe('zero-drift section cues', () => {
-  const tracked = new Set(['docs/anchors.md', 'src/fixture.yaml', 'packages/engine/src/known.ts']);
+  const tracked = new Set(['docs/anchors.md', 'src/fixture.yaml', 'packages/construct/src/known.ts']);
   const sections = (body, path = docPath, trackedFiles = tracked) =>
     checkDocument({
       path,
@@ -262,7 +380,9 @@ describe('zero-drift section cues', () => {
   it('requires explicit paths for identifier-shaped Markdown section names', () => {
     assert.deepEqual(sections(`${cue('docs/anchors.md', 'First')}; ${cue('docs/anchors.md', 'Second')}`), []);
     assert.deepEqual(
-      sections(`${cue('docs/anchors.md', 'First')} and ${code('packages/engine/src/known.ts')}, ${code('assemble')}`),
+      sections(
+        `${cue('docs/anchors.md', 'First')} and ${code('packages/construct/src/known.ts')}, ${code('assemble')}`,
+      ),
       [],
     );
     assert.ok(checks(sections(`${cue('docs/anchors.md', 'First')} and ${code('Second')}`)).includes('section_form'));
@@ -307,7 +427,7 @@ describe('zero-drift section cues', () => {
   it('does not promote escaped backticks in text to code cue nodes', () => {
     const escaped = (value) => code(value).replaceAll('`', '\\`');
     assert.deepEqual(sections(`${escaped('docs/anchors.md')}, ${escaped('Missing')}`), []);
-    assert.deepEqual(sections(`${escaped('packages/engine/src/known.ts')}, ${escaped('missing')}`), []);
+    assert.deepEqual(sections(`${escaped('packages/construct/src/known.ts')}, ${escaped('missing')}`), []);
   });
 
   it('resolves reference links through definitions and checks their destinations and code labels', () => {
@@ -430,16 +550,19 @@ describe('zero-drift section cues', () => {
   });
 
   it('uses the same cue scanner in source, tests, config and content, joining comment-wrapped names', () => {
-    for (const path of ['packages/engine/src/fixture.ts', 'test/fixture.mjs', 'config.yaml', 'content.jsonnet']) {
+    for (const path of ['packages/construct/src/fixture.ts', 'test/fixture.mjs', 'config.yaml', 'content.jsonnet']) {
       const body = `${code('docs/anchors.md')}, "API:\n * ownership — details"`;
       assert.deepEqual(sections(body, path), []);
       const bad = sections(
-        `${code('src/missing.ts')}; ${code('packages/engine/src/known.ts')}, ${code('missing')}; ${cue('docs/anchors.md', 'Gone')}`,
+        `${code('src/missing.ts')}; ${code('packages/construct/src/known.ts')}, ${code('missing')}; ${cue('docs/anchors.md', 'Gone')}`,
         path,
       );
       assert.deepEqual(new Set(checks(bad)), new Set(['path', 'symbol', 'section']));
     }
-    assert.deepEqual(sections(`// ${code('src/known.ts')}, ${code('assemble')}`, 'packages/engine/src/fixture.ts'), []);
+    assert.deepEqual(
+      sections(`// ${code('src/known.ts')}, ${code('assemble')}`, 'packages/construct/src/fixture.ts'),
+      [],
+    );
   });
 
   it('excludes module specifiers, markup names and non-file line-like expressions from code cues', () => {
@@ -454,21 +577,16 @@ describe('zero-drift section cues', () => {
     assert.deepEqual(checks(sections(`${code('docs/anchors.md')}; "*example*"`)), ['section_form']);
     assert.deepEqual(sections(`${code('docs/anchors.md')}'s label is the player's cue.`, 'src/fixture.ts'), []);
     assert.ok(checks(sections(lineCue('foo.ts', '3'), 'src/fixture.ts')).includes('line_number'));
-    assert.deepEqual(
-      sections(`${code('src/missing.ts')} ${cue('docs/anchors.md', 'Gone')}`, 'packages/mobgen/reference/fixture.txt'),
-      [],
-    );
   });
 });
 
 describe('zero-drift policy rules', () => {
-  it('rejects first-party review and retrospective files but exempts third-party references', () => {
+  it('rejects first-party review and retrospective files', () => {
     const paths = ['docs/reviews/fixture.md', 'retro-slice-3.md'];
     assert.deepEqual(
       paths.flatMap((path) => checkPolicyRules({ path, text: '' })).map(({ path, check }) => ({ path, check })),
       paths.map((path) => ({ path, check: 'historical_doc' })),
     );
-    assert.deepEqual(checkPolicyRules({ path: 'packages/mobgen/reference/retro-fixture.md', text: '' }), []);
   });
 
   it('flags stamped source citations, not BR as an actor', () => {

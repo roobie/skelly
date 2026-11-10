@@ -1,4 +1,6 @@
 // Browser-side witness for the underwater pixel check: the depth the chunk meshes leave at the frame centre.
+
+import type { ChunkMeshes } from '@skelly/presentation/render';
 import {
   Color,
   FloatType,
@@ -9,7 +11,6 @@ import {
   type WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { ChunkMeshes } from '../../src/render/chunks.ts';
 
 /**
  * Redraws only the chunk meshes from the game camera into one float pixel at the frame centre and

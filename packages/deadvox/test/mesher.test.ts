@@ -1,7 +1,7 @@
+import { PADDED, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
+import { hash3 } from '@skelly/engine/math';
+import { buildMesh } from '@skelly/engine/mesh';
 import { describe, expect, it } from 'vitest';
-import { buildMesh } from '../src/core/mesher.ts';
-import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
-import { hash3 } from '../src/core/random.ts';
 import { culledFaces, unitFaces } from './meshFaces.ts';
 
 const colors = new Uint8Array([0, 0, 0, 200, 100, 50, 50, 100, 200]);

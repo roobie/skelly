@@ -2,22 +2,25 @@
 read_if:
   - you change bolt-rifle handling, magazine-plus-chamber capacity or open-action saves
   - you change turn-bolt posing or integral-magazine loading presentation
+  - you change debug range stock or its pending authored-content conversion
 ---
 
 # Bolt-rifle rationale
 
 ## Manual handling and ownership
 
-A bolt rifle must require a deliberate cycle after firing rather than acquire an automatic action merely because its ammunition uses one projectile. Integral loading shares the pump's queue and ammunition owner, while the open bolt remains an item fact: cancelling a hand job must not silently close it. See `src/game/firearmHandling.ts`, `FirearmMechanics`, and `src/core/firearmState.ts`, `snapshotFirearm`.
+A bolt rifle must require a deliberate cycle after firing rather than acquire an automatic action merely because its ammunition uses one projectile. Integral loading shares the pump's queue and ammunition owner, while the open bolt remains an item fact: cancelling a hand job must not silently close it. See `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`, and `packages/engine/src/core/firearmState.ts`, `snapshotFirearm`.
 
-A top-up must conserve the extracted live round without spending magazine capacity, otherwise the magazine-plus-chamber identity is unreachable. Item ownership keeps that retained round safe across interruption, saves and unloading; closing must restore it before taking a magazine round. A cancelled insertion must not consume the visible cartridge. Closing after a completed load and cancelling a partly completed round are different intentions, so cancellation must not silently close an interrupted action. See `src/core/firearmState.ts`, `FirearmState`, and `src/game/firearmHandling.ts`, `feed`, `cancelLoad`, and `stripBolt`.
+A top-up must conserve the extracted live round without spending magazine capacity, otherwise the magazine-plus-chamber identity is unreachable. Item ownership keeps that retained round safe across interruption, saves and unloading; closing must restore it before taking a magazine round. A cancelled insertion must not consume the visible cartridge. Closing after a completed load and cancelling a partly completed round are different intentions, so cancellation must not silently close an interrupted action. See `packages/engine/src/core/firearmState.ts`, `FirearmState`, and `packages/engine/src/game/firearmHandling.ts`, `feed`, `cancelLoad`, and `stripBolt`.
 
-The save copy cancels manual motion, not committed ammunition transfers. An open action cannot retain a chambered cartridge or case. Save restoration validates the item mechanism as well as the structural state; see `src/core/items.ts`, `assertAmmunition`, and `src/core/firearmState.ts`, `assertFirearmState`.
+The save copy cancels manual motion, not committed ammunition transfers. An open action cannot retain a chambered cartridge or case. Save restoration validates the item mechanism as well as the structural state; see `packages/engine/src/core/items.ts`, `assertAmmunition`, and `packages/engine/src/core/firearmState.ts`, `assertFirearmState`.
 
 ## Content and presentation
 
-The civilian cartridge is separate from military ammunition, and fitting the scope is the player's choice. The rifle and its ammunition are admitted to loot by usages and tiers like any other item; see `DESIGN.md`, "Loot". Debug range stock is capability-driven rather than a loot placement; see `src/game/testHouseRange.ts`, `testHouseRangeSupply`.
+The civilian cartridge is separate from military ammunition, and fitting the scope is the player's choice. The rifle and its ammunition are admitted to loot by usages and tiers like any other item; see `DESIGN.md`, "Loot".
 
-Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `src/content/base/models-firearms.libsonnet`, `items`, and `src/core/schema.ts`, `FirearmSchema`.
+Debug rack stock requires the explicitly selected scenario mod. Accept a hand edit for each new rifle or ammunition type, and silent absence until listed, to keep evaluation supplies in content rather than runtime synthesis. See `mods/skelly.deadvox.scenario.test-house.debug/test-house-rack.libsonnet` and `DESIGN.md`, "Debug scenes".
 
-The exported pivot, turn and stroke own the motion. Unlock must precede extraction, and the firing hand follows the knob instead of borrowing the pump's support-hand rack. The loading round approaches the top mouth rather than the pump's underside. Rendering samples the existing job clock and never moves ammunition. See `src/render/firearmModel.ts`, `poseActionParts`, `src/render/actorAnimator.ts`, `poseBoltHand`, and `src/render/shellLoadPose.ts`, `shellLoadPose`. The export rationale is in `packages/gun-authoring-tool/docs/bolt-action-export.md`.
+Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `packages/mods/skelly.firearms/models-firearms.libsonnet`, `items`, and `packages/engine/src/core/schema/items.ts`, `FirearmSchema`.
+
+The exported pivot, turn and stroke own the motion. Unlock must precede extraction, and the firing hand follows the knob instead of borrowing the pump's support-hand rack. The loading round approaches the top mouth rather than the pump's underside. Rendering samples the existing job clock and never moves ammunition. See `packages/presentation/src/render/firearmModel.ts`, `poseActionParts`, `packages/presentation/src/render/actorAnimator.ts`, `poseBoltHand`, and `packages/presentation/src/render/shellLoadPose.ts`, `shellLoadPose`. The export rationale is in `packages/skelly-assets/tools/packages/gun-authoring-tool/docs/bolt-action-export.md`.

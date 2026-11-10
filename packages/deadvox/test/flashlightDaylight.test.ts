@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
+import type { ItemDef } from '@skelly/engine/content';
+import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import { dayPhaseAt } from '@skelly/engine/sim';
+import { skyAt } from '@skelly/engine/sky';
+import { flashlightDaylightScale } from '@skelly/presentation/render';
 import { describe, expect, it } from 'vitest';
-import { SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { ItemDef } from '../src/core/schema.ts';
-import { skyAt } from '../src/core/sky.ts';
-import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
@@ -13,16 +13,11 @@ const NEAR_FIELD_M = BASE_SENSE_TUNING.light.illumination.nearFieldMetres;
 const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour, BASE_DAY_CYCLE));
 
 describe('flashlight daylight scale', () => {
-  it('preserves the flashlight at full night and dims it under the full-day sky', () => {
-    const night = scaleAt(phaseMidpoint('night') / 3600);
-    const day = scaleAt(phaseMidpoint('day') / 3600);
-    expect(night).toBeGreaterThan(day);
-    expect(night).toBeGreaterThan(0.9);
-  });
-
   it('keeps the daylight-scaled flashlight weaker than direct sun lighting', () => {
     const hour = phaseMidpoint('day') / 3600;
-    const { items } = JSON.parse(readFileSync('src/content/base/items-tools.json', 'utf8')) as { items: ItemDef[] };
+    const { items } = JSON.parse(readFileSync('../mods/skelly.electric-power/electric-power-items.json', 'utf8')) as {
+      items: ItemDef[];
+    };
     const beams = items.flatMap(({ light }) => (light?.beam && light.power ? [light] : []));
     expect(beams.length).toBeGreaterThan(0);
     for (const light of beams) {

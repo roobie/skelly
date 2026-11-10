@@ -1,20 +1,22 @@
-import { afterEach, expect, it, vi } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import { Streamer } from '../src/game/streamer.ts';
-import type { FromMesher, ToMesher } from '../src/worker/protocol.ts';
+import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
+import { CHUNK, makeScale, World } from '@skelly/engine/world';
+import { afterEach, expect, it } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 /** Answers every mesh request with a non-empty mesh when `drain` runs. */
-class AnsweringWorker {
+class AnsweringWorker implements MesherPort {
   static instances: AnsweringWorker[] = [];
-  onmessage: ((event: { data: FromMesher }) => void) | undefined;
+  private handlers: MesherHandlers | undefined;
   private readonly waiting: Extract<ToMesher, { type: 'mesh' }>[] = [];
   constructor() {
     AnsweringWorker.instances.push(this);
   }
-  postMessage(message: ToMesher): void {
+  listen(handlers: MesherHandlers): void {
+    this.handlers = handlers;
+  }
+  post(message: ToMesher): void {
     if (message.type === 'mesh') {
       this.waiting.push(message);
     }
@@ -22,13 +24,12 @@ class AnsweringWorker {
   drain(): void {
     for (const { key, version } of this.waiting.splice(0)) {
       const mesh = { indices: new Uint32Array(3) };
-      this.onmessage?.({ data: { type: 'mesh', key, version, ms: 0, mesh } as never });
+      this.handlers?.message({ type: 'mesh', key, version, ms: 0, mesh } as never);
     }
   }
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   AnsweringWorker.instances = [];
 });
 
@@ -40,8 +41,6 @@ const distance = (key: string, [pcx, pcz]: readonly [number, number]) => {
 };
 
 const liveStreamer = (preloadRings = 0) => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', AnsweringWorker);
   const drawn = new Map<string, unknown>();
   const reveal = { columns: new Set<string>() };
   const meshes = {
@@ -55,6 +54,7 @@ const liveStreamer = (preloadRings = 0) => {
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
+    mesher: { count: 1, create: () => new AnsweringWorker() },
     seed: 17,
     terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
     shape: baseTerrainShape(),
@@ -79,6 +79,26 @@ const liveStreamer = (preloadRings = 0) => {
   };
   return { streamer, drawn, reveal, settle };
 };
+
+it('requires the body column and every immediate neighbour to be generated before reporting ready', () => {
+  const { streamer } = liveStreamer();
+  streamer.setReplayControlled();
+  streamer.update(0, 0);
+  const neighbours: [number, number][] = [];
+  for (let z = -1; z <= 1; z++) {
+    for (let x = -1; x <= 1; x++) {
+      neighbours.push([x, z]);
+      expect(streamer.generateForReplay(x, z)).toBe(true);
+    }
+  }
+  expect(streamer.isReady(0, 0)).toBe(true);
+  for (const [cx, cz] of neighbours) {
+    streamer.unloadForReplay(cx, cz);
+    expect(streamer.isReady(0, 0)).toBe(false);
+    expect(streamer.generateForReplay(cx, cz)).toBe(true);
+    expect(streamer.isReady(0, 0)).toBe(true);
+  }
+});
 
 it.each([0, 1, 2])('keeps view-edge terrain revealed while loading %i extra sky rings', (preloadRings) => {
   const { streamer, drawn, reveal, settle } = liveStreamer(preloadRings);
