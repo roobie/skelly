@@ -25,6 +25,7 @@ import { SPAWN_TIME_NAMES } from '../clock.ts';
 import { DECAL_KINDS, type DecalKind } from '../decalKinds.ts';
 import { LootContextSchema, LootTierSchema, UsageSchema } from '../loot.ts';
 import { LiquidAmountSchema, LiquidContentsSchema } from './items.ts';
+import { CartridgeOddsSchema } from './loot.ts';
 import { Color, Count, Fraction, GameTimeOfDay, Id, Positive, PositiveGameHours, Size } from './primitives.ts';
 
 // ---- templates ----
@@ -56,6 +57,12 @@ export const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
   /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
   charge: optional(Fraction),
+  /** The cartridge type filling the row's magazine, or its fitted magazine; unset takes no type. */
+  cartridge: optional(Id),
+  /** Cartridge types, by weight, one of which fills the magazine when `cartridge` is unset; never with `cartridge`. */
+  cartridgeOdds: optional(CartridgeOddsSchema),
+  /** How many cartridges that magazine holds; unset rolls from the product's loot policy. */
+  load: optional(Count),
   craftedLiquids: optional(pipe(array(LiquidAmountSchema), nonEmpty())),
   liquidContents: optional(LiquidContentsSchema),
 });

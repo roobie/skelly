@@ -1,3 +1,6 @@
+// A magazine is filled with one cartridge of its calibre, picked by the odds of the table that drops it.
+local rifleCartridges = [{ item: 'cartridge_5_d_56x45', weight: 1 }, { item: 'cartridge_7_d_62x39', weight: 1 }];
+
 {
   loot: [
     // Armed-stock role tables, shared by the station, the HQ and the armed rooms: each source's
@@ -21,7 +24,7 @@
       { item: 'magazine_stanag_30', weight: 2, condition: [0.5, 0.9] },
       { item: 'magazine_stanag_20', weight: 1, condition: [0.5, 0.9] },
       { item: 'magazine_akm_30', weight: 2, condition: [0.5, 0.9] }, { nothing: true, weight: 2 },
-    ] },
+    ], cartridgeOdds: rifleCartridges },
     // Rifle supplies for the rooms outside the armoury, so the HQ's ammunition and magazines are not all in one cabinet.
     { id: 'hq_field_supplies', rolls: [1, 2], entries: [
       { item: 'cartridge_5_d_56x45', weight: 2, count: [40, 100] },
@@ -30,7 +33,7 @@
       { item: 'magazine_stanag_30', weight: 2, condition: [0.5, 0.9] },
       { item: 'magazine_stanag_20', weight: 1, condition: [0.5, 0.9] },
       { item: 'magazine_akm_30', weight: 2, condition: [0.5, 0.9] }, { nothing: true, weight: 3 },
-    ] },
+    ], cartridgeOdds: rifleCartridges },
     { id: 'armoury_cabinet', rolls: [2, 3], entries: [
       { table: 'armoury_arms', weight: 1 }, { table: 'armoury_ammunition', weight: 2 },
     ] },

@@ -42,6 +42,10 @@
     },
     {
       "kind": "content",
+      "path": "loot-policy.json"
+    },
+    {
+      "kind": "content",
       "path": "loot.json"
     }
   ],
