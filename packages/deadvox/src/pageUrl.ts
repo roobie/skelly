@@ -5,21 +5,16 @@
 import { type HashState, readHash, writeHash } from './hashState.ts';
 
 /** The mod list, the run's start mod and the switches that choose a harness. */
-const HARNESS_QUERY = ['mods', 'start-mod', 'bench', 'render', 'skyRoute', 'save-backend', 'save-test', 'debug-error'];
-
-/**
- * World setup whose home is not decided yet, so the game still reads it from the query; see
- * `packages/deadvox/docs/url-mods.md`, "Where each parameter goes".
- */
-const UNHOMED_QUERY = ['site', 'time', 'start'];
-
-const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY]);
-
-/**
- * A link names its start one way, so these are not read beside `start-mod`; see
- * `packages/deadvox/docs/url-mods.md`, "Start mod".
- */
-const START_MOD_EXCLUDES = new Set(['site', 'start']);
+const GAME_QUERY = new Set([
+  'mods',
+  'start-mod',
+  'bench',
+  'render',
+  'skyRoute',
+  'save-backend',
+  'save-test',
+  'debug-error',
+]);
 
 /** The first query parameter the game does not read; a repeated `start-mod` or one beside the mods panel is refused. */
 const unreadQuery = (query: URLSearchParams): string | undefined => {
@@ -27,10 +22,7 @@ const unreadQuery = (query: URLSearchParams): string | undefined => {
   if (unknown !== undefined || !query.has('start-mod')) {
     return unknown;
   }
-  if (query.getAll('start-mod').length > 1 || query.get('mods') === '1') {
-    return 'start-mod';
-  }
-  return [...query.keys()].find((name) => START_MOD_EXCLUDES.has(name));
+  return query.getAll('start-mod').length > 1 || query.get('mods') === '1' ? 'start-mod' : undefined;
 };
 
 export interface PageUrl {

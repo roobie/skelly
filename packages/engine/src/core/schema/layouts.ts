@@ -158,7 +158,7 @@ export const SiteLayoutSchema = strictObject({
   bounds: LayoutRect,
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,
-  /** Calendar time on day 1 when this site is selected without an explicit ?time=. */
+  /** Calendar time on day 1 for the start rows authored from this site. */
   startTimeGameTimeOfDay: optional(GameTimeOfDay),
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),

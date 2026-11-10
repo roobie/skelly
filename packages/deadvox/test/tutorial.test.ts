@@ -234,7 +234,7 @@ describe('practice objectives', () => {
   it('clears continuation and debug parameters on exit', () => {
     const start = new URL(
       tutorialUrl(
-        'https://example.org/deadvox/?mods=practice&site=city&save-backend=indexeddb#{debug:true}',
+        'https://example.org/deadvox/?mods=practice&start-mod=fixture&save-backend=indexeddb#{debug:true}',
         'practice',
         false,
       ),

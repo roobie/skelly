@@ -42,39 +42,24 @@ it('takes the default run from the admitted entry rather than a runtime scenario
   expect(makeConfig(8, 96, supplied).site).toBe(row.site);
 });
 
-it('projects generated-site starts and gives an explicit URL time and hash seed precedence', () => {
+it('projects a start mod generated-site start and gives the hash seed precedence', () => {
   const supplied = fixture();
   const row = startForSite(supplied, 'forest');
-  const defaults = configFromUrl(new URLSearchParams('site=forest'), {}, supplied, ragdollSweepViewer);
+  const started = { ...supplied, startModStart: row.id };
+  const defaults = configFromUrl(new URLSearchParams(), {}, started, ragdollSweepViewer);
   expect(defaults.startId).toBe(row.id);
+  expect(defaults.site).toBe(row.site);
   expect(defaults.seed).toBe(row.seed);
   expect(defaults.storeys).toBe(row.storeys);
-  const changed = configFromUrl(
-    new URLSearchParams(`start=${row.id}&time=11:30`),
-    { seed: 44 },
-    supplied,
-    ragdollSweepViewer,
-  );
-  expect(changed.startId).toBe(row.id);
-  expect(changed.site).toBe(row.site);
-  expect(changed.seed).toBe(44);
-  expect(changed.start).toBe(11.5 * 60 * 60);
+  expect(defaults.start).toBe(row.startTimeGameTimeOfDay);
+  expect(configFromUrl(new URLSearchParams(), { seed: 44 }, started, ragdollSweepViewer).seed).toBe(44);
 });
 
-it('refuses a selected start paired with a different site', () => {
-  const supplied = fixture();
-  const row = startForSite(supplied, 'forest');
-  const read = (query: string) => configFromUrl(new URLSearchParams(query), {}, supplied, ragdollSweepViewer);
-  expect(() => read(`start=${row.id}&site=city`)).toThrow('requires site');
-  expect(read(`start=${row.id}&site=${row.site}`).site).toBe(row.site);
-});
-
-it('refuses a missing entry or requested start instead of synthesizing a kit', () => {
+it('refuses a missing entry or start mod start instead of synthesizing a kit', () => {
   const supplied = fixture();
   expect(() => makeConfig(8, 96, { ...supplied, defaultStart: undefined })).toThrow('entry default missing');
-  expect(() =>
-    configFromUrl(new URLSearchParams('start=fixture_absent_start'), {}, supplied, ragdollSweepViewer),
-  ).toThrow('fixture_absent_start');
+  const absent = { ...supplied, startModStart: 'fixture_absent_start' };
+  expect(() => configFromUrl(new URLSearchParams(), {}, absent, ragdollSweepViewer)).toThrow('fixture_absent_start');
   expect(() => startForSite(supplied, 'fixture_absent_site')).toThrow('one authored default start');
 });
 

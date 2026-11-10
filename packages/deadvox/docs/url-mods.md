@@ -62,7 +62,7 @@ The practice link adds the practice pack after the page's own mods, so its start
 
 Inline data goes through the same intake as a player's mod, with its admission, diagnostics and byte limit, and the save identity records it as an intake-admitted mod hashed from its data, so a world resumes only with the same data. An id loads like a `?mods=` entry. The start mod loads after the `?mods=` list and must supply exactly one start row; any other count stops startup with a visible error. See `packages/engine/src/game/bundledMods.ts`, `selectBundledMods`.
 
-The run starts from the start mod's row, else the default start of the last admitted pack that names one, so a scenario loaded through `?mods=` comes before the product entry pack's default. See `packages/engine/src/game/startSelection.ts`, `runStartId`. Beside `start-mod`, a link cannot name `site` or `start`, repeat `start-mod` or open the mods panel; see `src/pageUrl.ts`, `readPageUrl`. The time of day is the start row's, else the day cycle's default; while the `time` query remains, it overrides both, so a stage that still passes it keeps its light.
+The run starts from the start mod's row, else the default start of the last admitted pack that names one, so a scenario loaded through `?mods=` comes before the product entry pack's default. See `packages/engine/src/game/startSelection.ts`, `runStartId`. A link cannot repeat `start-mod` or pair it with the mods panel; see `src/pageUrl.ts`, `readPageUrl`. The run's world and time of day are its start row's, the time falling back to the day cycle's default.
 
 ## Hash state
 
@@ -91,17 +91,15 @@ Settings without a home are not supported. One that is needed comes back as a mo
 
 **Staying as harness query switches:** save-backend, save-test, render, bench, skyRoute and debug-error. They choose the harness, not the game.
 
-**Still in the query pending a decision:** site, time and start. CI stages select their world with them, so they stay until their home is decided; see `src/pageUrl.ts`, `UNHOMED_QUERY`. Published playtest links and the practice link pick committed scenarios instead; see "Committed scenarios".
-
 **Bench mode:** `bench` stays a harness switch and picks which bench runs; everything else the bench reads follows the same homes as the game, through the same reader and the same refusal of unknown parameters.
 
-- Its world is the site the query names, with the default start's storeys and density, at the time the query names; see `src/bench/run.ts`, `benchGameConfig`.
+- Its world, storeys, density and time of day are its start row's, chosen as the game chooses it: the start mod, else a scenario's default, else the product default; see `src/bench/run.ts`, `benchStartConfig`.
 - Its run settings are hash keys: the plan, the run index, quick mode, the shambler counts of either bench and the post-processing switch, with the seed as the hash seed override. A key the game already has keeps its one meaning, so the bench reuses `post`, `debug` and `actors`.
 - A bench steps to its next run by changing only the run index in the hash and reloading, keeping the query, so each run loads the same world. See `src/bench/run.ts`, `loadNextRun`.
 
 **Out of scope:** the site map and vehicle spike pages keep their own parameters.
 
-The game entry stops startup with a visible error naming any query parameter other than `mods`, the harness switches and the parameters still pending a decision, and any hash it refuses; see `src/pageUrl.ts`, `UNHOMED_QUERY`, and `src/main.ts`. A script that still passes a dropped parameter fails at startup.
+The game entry stops startup with a visible error naming any query parameter other than `mods`, `start-mod` and the harness switches, and any hash it refuses; see `src/pageUrl.ts`, `GAME_QUERY`, and `src/main.ts`. A script that still passes a dropped parameter fails at startup.
 
 ## Browser scripts and CI
 
@@ -113,4 +111,4 @@ The slices preserve each later slice's URLs while migrating one concern at a tim
 
 1. **Start state and URL mod loading.** Build URL mod loading on the admitted new-game path in `packages/engine/src/core/startState.ts`, `applyStartState`: the remaining work is the demo source root, `?mods=` admitting demo mods and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
 2. **Hash state.** The game page and the bench read their developer keys and run settings from the hash through `src/pageUrl.ts`, `pageUrl`, and the debug panel writes them back; the remaining work is the hash bounds in `docs/url-mods.md`, "Hash state", and the browser URL helper.
-3. **World setup to mods.** Prepared debug inventory, wounds and skill levels belong in mod-owned start rows. The seed moves into the start row, with its hash override, and New world changes the hash seed. The voice-size probe in `packages/engine/src/game/actorAudio.ts` gates on the started layout instead of the site parameter. Site, time and start wait for the decision named in "Where each parameter goes"; once it moves them with the CI workflows that use them, `src/pageUrl.ts`, `UNHOMED_QUERY`, is empty and goes.
+3. **World setup to mods.** Prepared debug inventory, wounds and skill levels belong in mod-owned start rows. The seed moves into the start row, with its hash override, and New world changes the hash seed. The voice-size probe in `packages/engine/src/game/actorAudio.ts` gates on the started layout instead of the site parameter. Site, time and start are gone from the query: a link names its start with `start-mod` or a committed scenario through `?mods=`; see "Start mod".

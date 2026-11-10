@@ -7,6 +7,7 @@ import { readPageUrl } from '../src/pageUrl.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { startupContent } from './baseRegistry.ts';
+import { gameUrl, inlineStartMod } from './browser/gameUrl.mjs';
 import { reuseBundledBuilds } from './bundledContentReuse.ts';
 
 const row = (id: string, startTimeGameTimeOfDay = '06:30') => ({
@@ -41,8 +42,8 @@ const intake: ModIntake = {
 const inline = (data: unknown) => new URLSearchParams({ 'start-mod': JSON.stringify(data) });
 const select = (query: URLSearchParams, ids: string[] = []) =>
   selectBundledMods(intake, ids, [], startModFromUrl(query));
-const startOf = (selection: ReturnType<typeof select>, query = '') =>
-  configFromUrl(new URLSearchParams(query), {}, selection.content, ragdollSweepViewer);
+const startOf = (selection: ReturnType<typeof select>) =>
+  configFromUrl(new URLSearchParams(), {}, selection.content, ragdollSweepViewer);
 
 reuseBundledBuilds(startupContent());
 
@@ -63,7 +64,6 @@ describe('start-mod parameter', () => {
     const config = startOf(selection);
     expect(config.startId).toBe('fixture_start_mod_start');
     expect(config.start).toBe(parseTimeOfDay('06:30'));
-    expect(startOf(selection, 'time=21:15').start).toBe(parseTimeOfDay('21:15'));
   });
 
   it('refuses a malformed value with an issue naming the form it read', () => {
@@ -107,12 +107,31 @@ describe('start-mod parameter', () => {
     expect(await identity(mod(startMod.id, [row('fixture_start_mod_start', '07:00')]))).not.toBe(same);
   });
 
-  it('refuses a link that also names its start another way', () => {
+  it('refuses a link that names its start another way or a removed world setting', () => {
     const value = encodeURIComponent(JSON.stringify(startMod));
     expect(readPageUrl(`?start-mod=${value}`, '').refused).toBeUndefined();
-    expect(readPageUrl(`?start-mod=${value}&site=city`, '').refused).toBe('site');
+    for (const name of ['site', 'time', 'start', 'tutorial']) {
+      expect(readPageUrl(`?${name}=fixture`, '').refused).toBe(name);
+    }
     expect(readPageUrl(`?start-mod=${value}&start-mod=${startMod.id}`, '').refused).toBe('start-mod');
     expect(readPageUrl(`?mods=1&start-mod=${startMod.id}`, '').refused).toBe('start-mod');
+  });
+
+  it('reads a browser-stage URL and admits its inline start mod with its one start row', () => {
+    const url = new URL(
+      gameUrl('http://localhost', {
+        startMod: inlineStartMod('fixture.stage-start', row('fixture_stage_start')),
+        harness: { 'save-test': 1 },
+        hash: { debug: true, seed: 1 },
+      }),
+    );
+    const page = readPageUrl(url.search, url.hash);
+    expect(page.refused).toBeUndefined();
+    expect(page.hash).toEqual({ debug: true, seed: 1 });
+    const selection = select(page.query);
+    expect(selection.issues).toEqual([]);
+    expect(selection.startModRows).toBeUndefined();
+    expect(selection.content.startModStart).toBe('fixture_stage_start');
   });
 });
 

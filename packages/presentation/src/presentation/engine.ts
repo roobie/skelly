@@ -1,8 +1,7 @@
 // Builds the renderer and scene shared by play and benchmark modes. World and
 // content setup lives in worldSetup.ts. The voxel grid and physics are in blocks; the scene is in
-// metres, so chunk meshes are scaled by the block size. The game's world has the
-// selected scenario; the benchmark's has the test house. Either can have
-// the stress-test city instead (`?site=city`).
+// metres, so chunk meshes are scaled by the block size. The game's world and the
+// benchmark's are the site their start row names.
 
 import { requireDayCycle } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';

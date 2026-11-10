@@ -1,5 +1,4 @@
 import { claimed, claimedId } from '../core/capabilities.ts';
-import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK } from '../core/coords.ts';
 import { GENERATED_SITES } from '../core/generatedSites.ts';
@@ -9,7 +8,7 @@ import { resolveWeatheringUrl, type WeatheringTuning } from '../core/weatheringU
 import type { VoicePitchOverrides } from './actorAudio.ts';
 import type { StartupContent } from './bundledContent.ts';
 import { sweepFromUrl } from './ragdollConfig.ts';
-import { requireStart, runStartId, startForSite } from './startSelection.ts';
+import { requireStart, runStartId } from './startSelection.ts';
 
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
@@ -179,7 +178,10 @@ const debugStartOf = ({ debug, at }: DeveloperState): DebugStart | undefined => 
 /** A debug run is ephemeral, so it neither saves nor loads unless hash `save` also asks for it. */
 export const savingEnabledFromUrl = (hash: DeveloperState): boolean => hash.debug !== true || hash.save === true;
 
-/** Authored scene names require admitted rows; only generated-site selectors bypass that lookup. */
+/**
+ * The site map page's `site` parameter, which the game page does not read. Authored scene names require admitted
+ * rows; only generated-site selectors bypass that lookup.
+ */
 export const siteFromUrl = (
   params: URLSearchParams,
   fallback: SiteName,
@@ -209,31 +211,20 @@ export const applyWeatheringConfig = (
   config.weathering = weathering?.settings;
 };
 
-const applyStartConfig = (config: GameConfig, params: URLSearchParams, hash: DeveloperState): void => {
+const applyStartConfig = (config: GameConfig, hash: DeveloperState): void => {
   const { content } = config;
-  const requestedStart = params.get('start');
-  const selected = requireStart(content, requestedStart ?? runStartId(content), config.debug);
-  const siteSelection = siteFromUrl(params, selected.site, content.registry, config.debug);
-  const start =
-    requestedStart === null && params.has('site') ? startForSite(content, siteSelection.site, config.debug) : selected;
-  if (requestedStart !== null && params.has('site') && params.get('site') !== start.site) {
-    throw new Error(`Start "${start.id}" requires site "${start.site}"`);
-  }
+  const start = requireStart(content, runStartId(content), config.debug);
   config.startId = start.id;
-  config.site = siteSelection.site;
+  config.site = start.site;
   config.seed = hash.seed === undefined ? (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!) : hash.seed | 0;
   config.storeys = start.storeys ?? 1;
   config.density = start.density ?? null;
-  const requestedTime = params.get('time');
-  config.start =
-    requestedTime === null
-      ? (start.startTimeGameTimeOfDay ?? defaultStart(content))
-      : (parseTimeOfDay(requestedTime) ?? defaultStart(content));
+  config.start = start.startTimeGameTimeOfDay ?? defaultStart(content);
 };
 
 /**
- * Reads the start, site and time the query still names, then the developer state the product read from its hash,
- * falling back to defaults. A site uses its authored weathering profile or the default; a debug hash can tune its
+ * Starts the run from its start row (site, time of day and seed), then reads the developer state the product read
+ * from its hash, falling back to defaults. A site uses its authored weathering profile or the default; a debug hash can tune its
  * values, or set `weatheringSplit` to limit it to world x at or east of the split. The debug tools also read and
  * write look state, documented in `packages/deadvox/src/debug/lookUrl.ts`.
  * The product supplies where its ragdoll sweep places the viewer.
@@ -251,7 +242,7 @@ export const configFromUrl = (
     content,
   );
   config.debug = hash.debug === true;
-  applyStartConfig(config, query, hash);
+  applyStartConfig(config, hash);
   config.authoredDecals = hash.decals !== false;
   Object.assign(config, sweepFromUrl(query, hash.ragdollSweep, config, ragdollSweepViewer));
   applyWeatheringConfig(config, hash);
