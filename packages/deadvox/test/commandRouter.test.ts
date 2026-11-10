@@ -1,4 +1,8 @@
-import { PlayerControls, type ReplayControlSample } from '@skelly/engine/input';
+import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
+import { PlayerControls, RELOAD_GESTURE_MS, type ReplayControlSample } from '@skelly/engine/input';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { realSeconds } from '@skelly/engine/sim';
+import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
@@ -259,5 +263,77 @@ describe('command router', () => {
     router.dispatchReplayAction({ tick: 1, action: 'player.crouch-toggle', phase: 'down', context: 'play' }, sample);
     expect(controls.consumeStanceToggle()).toBe('crouch');
     expect(recogniserPresses).toEqual([]);
+  });
+
+  describe('reload press during a compression ramp-down', () => {
+    const rampingDown = (): Compression => {
+      const compression = new Compression(longActionLimits(COMPRESSION_CAPS_FIXTURE.wait));
+      compression.start(undefined, 'long-action');
+      for (let frame = 0; frame < 600 && compression.c < compression.limits.cap; frame++) {
+        planRealFrame(compression, realSeconds(1 / 60));
+      }
+      compression.stop();
+      planRealFrame(compression, realSeconds(1 / 60));
+      expect(compression.c).toBeGreaterThan(1);
+      return compression;
+    };
+    const reloadRouter = (compression: Compression, loadRefusal: string | undefined) => {
+      const session = {
+        sim: { compression, paused: false, dead: false, time: 0, body: { actionRefusal: undefined } },
+        throwCharge: { startedAt: undefined },
+        queue: { busy: false },
+        ladderHold: { hand: () => undefined },
+        firearms: {
+          busy: false,
+          reloadableUid: () => 1,
+          reloadsInOneAction: () => false,
+          loadNext: () => loadRefusal,
+          cock: () => undefined,
+          removeMagazine: () => undefined,
+          stillLoaded: () => false,
+          cancelLoad: () => undefined,
+        },
+        magazines: { reloadableUid: () => undefined },
+      } as unknown as Session;
+      const controls = new PlayerControls({ playing: () => true, viewerInputAllowed: () => true, held: () => false });
+      const router = createCommandRouter(
+        routerPorts({
+          controls,
+          session: () => session,
+          pointerLocked: () => true,
+          menuPointer: () => false,
+          inputContext: () => 'play',
+        }),
+      );
+      return { router, reload: controls.reload };
+    };
+    const hold = RELOAD_GESTURE_MS.hold;
+
+    it('keeps the ramp for a short single tap, which has no action', () => {
+      const compression = rampingDown();
+      const before = compression.c;
+      const { router, reload } = reloadRouter(compression, undefined);
+      reload.keyDown(0, router.reloadBinding());
+      reload.keyUp(hold / 2);
+      reload.advance(hold * 4, router.reloadBinding());
+      expect(compression.c).toBe(before);
+    });
+
+    it('keeps the ramp when the owner refuses a held reload', () => {
+      const compression = rampingDown();
+      const before = compression.c;
+      const { router, reload } = reloadRouter(compression, 'full');
+      reload.keyDown(0, router.reloadBinding());
+      reload.advance(hold * 2, router.reloadBinding());
+      expect(compression.c).toBe(before);
+    });
+
+    it('ends the ramp when a held reload is admitted', () => {
+      const compression = rampingDown();
+      const { router, reload } = reloadRouter(compression, undefined);
+      reload.keyDown(0, router.reloadBinding());
+      reload.advance(hold * 2, router.reloadBinding());
+      expect(compression.c).toBe(1);
+    });
   });
 });

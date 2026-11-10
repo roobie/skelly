@@ -790,20 +790,28 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- reload ----
 
-  /** `locked` is asked last among the refusals, so a refused press never ends a ramp-down. */
-  function reloadBindingWhen(locked: () => boolean): ReloadBinding | undefined {
+  /**
+   * Building the binding never changes state: a ramp-down alone leaves it available, and only an admitted
+   * gesture ends the ramp, so a short tap or an owner refusal does not.
+   */
+  function reloadBinding(): ReloadBinding | undefined {
     const session = ports.session();
     const { sim, queue, firearms } = session;
-    const refused =
+    const { compression } = sim;
+    if (
       !(ports.pointerLocked() || ports.replaying()) ||
       (ports.menuPointer() && !ports.replaying()) ||
+      (ports.replaying() ? compression.locksInput : compression.refusesKeys) ||
       sim.paused ||
       sim.dead ||
       sim.body.actionRefusal ||
       ports.buildMode() ||
-      session.throwCharge.startedAt !== undefined;
-    const target = refused ? undefined : reloadTarget(firearms, session.magazines, lines.play.notHoldingGun);
-    if (!target || locked()) {
+      session.throwCharge.startedAt !== undefined
+    ) {
+      return;
+    }
+    const target = reloadTarget(firearms, session.magazines, lines.play.notHoldingGun);
+    if (!target) {
       return;
     }
     // An admitted gesture is recorded; replay drives it back through this binding.
@@ -812,6 +820,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         presentation.refusal(reason, sim.time);
       } else {
         ports.recorder()?.queueAction(action, 'down', ports.inputContext());
+        if (!ports.replaying()) {
+          compression.admitKey();
+        }
       }
       return reason === undefined;
     };
@@ -832,10 +843,6 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       ...(target.releaseLoad ? { releaseLoad: () => target.releaseLoad!(sim.time) } : {}),
     };
   }
-
-  const reloadBinding = (): ReloadBinding | undefined =>
-    reloadBindingWhen(() => ports.session().sim.compression.locksInput);
-  const reloadKeyBinding = (): ReloadBinding | undefined => reloadBindingWhen(() => !keyAdmitted());
 
   // ---- furniture ----
 
@@ -1072,7 +1079,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         }
         break;
       case 'firearm.reload':
-        controls.reload.keyDown(at, reloadKeyBinding());
+        controls.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
         withUnlockedInput(() => liveGestures.interact.keyDown(action, at));
