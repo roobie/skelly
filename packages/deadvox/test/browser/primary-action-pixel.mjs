@@ -549,7 +549,7 @@ const enterTestHouse = async (chromium, port) => {
 
 const heldItemChecks = async (chromium, port) => {
   const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
-  const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
+  await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.input.controls.pitch = -0.55;
@@ -577,7 +577,7 @@ const heldItemChecks = async (chromium, port) => {
       return r.frames;
     }, fixture.uid);
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
-    const { measurement: on, screenshot } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
+    const { measurement: on } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
     assert.equal(on.on, true);
     process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
     assert.ok(
@@ -585,10 +585,17 @@ const heldItemChecks = async (chromium, port) => {
       'a dropped lit glowstick visibly brightens nearby floor pixels at night',
     );
     assert.deepEqual(pageErrors, []);
-    return screenshot;
   });
   await timePhase('worn-helmet-assertions', async () => {
-    const baseline = await visorRatio(page, baselineShot);
+    // A visor paints its own tint, which outshines a night scene: only a band with daylight on it can be darkened.
+    const noonFrame = await page.evaluate((noon) => {
+      const r = globalThis.primaryActionTest;
+      const { sim } = r.session;
+      sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
+      return r.frames;
+    }, 12 * 3600);
+    await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, noonFrame);
+    const baseline = await visorRatio(page, await capture());
     const uid = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.create('riot_helmet');

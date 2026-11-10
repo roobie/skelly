@@ -2699,6 +2699,12 @@ cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such
 authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
 `packages/engine/src/core/schema/furniture.ts`, `offset`.
 
+Lights form pools: the near field stays low so brightness falls off across a room instead of flooding it. That fixes
+the cause, so an intensity means something physical rather than compensating for a flat falloff light by light. One
+near-field value serves the renderer and the rules, so what the player sees keeps predicting whether they can read.
+When the near field moves, rescale each light to hold its strength at half its radius, so its reach stays about the
+same. See `packages/mods/skelly.senses/senses.jsonnet`, `nearFieldMetres`.
+
 Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
 transport therefore belongs ahead of reveal on workers; synchronous completion at
 reveal is a last resort, not the scheduling strategy. Edge fields need priority

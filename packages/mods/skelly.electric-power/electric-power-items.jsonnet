@@ -80,7 +80,7 @@ local batteryBeam = lights.batteryBeam;
         radius: 14,
         seenFrom: 8,
         color: '#7dff86',
-        intensity: 0.8,
+        intensity: 0.62,
         power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: 0.15, swapSimSeconds: 2 },
         wornSwitch: true,
         nightVision: {

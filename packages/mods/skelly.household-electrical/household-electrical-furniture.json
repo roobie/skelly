@@ -54,7 +54,7 @@
         "fuelLitres": 0,
         "light": {
           "color": "#ffdea5",
-          "intensity": 24,
+          "intensity": 16.5,
           "offset": [0, 2, 0],
           "radius": 8
         }
