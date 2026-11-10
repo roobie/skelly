@@ -1,7 +1,7 @@
 import type { ItemDef, ModelDef } from '@skelly/engine/content';
 import type { Item } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { OpticZoom } from '../src/presentation/opticZoom.ts';
+import { OpticZoom } from '../../presentation/src/presentation/opticZoom.ts';
 
 const fixture = (rememberPerWeapon = true, fixed = false) => {
   const range = { min: 2, max: fixed ? 2 : 7.3 };

@@ -3,7 +3,7 @@ import { type BrowserMod, evaluateMods } from '@skelly/engine/packs';
 import { configFromUrl } from '@skelly/engine/session';
 import { createWorldSetup } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ChunkMeshes } from '../src/presentation/entries/render.ts';
+import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { productContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

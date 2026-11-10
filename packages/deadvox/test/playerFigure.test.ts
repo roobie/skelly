@@ -37,11 +37,11 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../src/presentation/entries/render.ts';
-import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
-import { renderMeleePose } from '../src/render/meleePose.ts';
-import { FIGURE_PIVOT, firstPersonShoulder } from '../src/render/playerFigure.ts';
-import { PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { ARM_NODE, type ArmRig } from '../../presentation/src/render/armRig.ts';
+import { renderMeleePose } from '../../presentation/src/render/meleePose.ts';
+import { FIGURE_PIVOT, firstPersonShoulder } from '../../presentation/src/render/playerFigure.ts';
+import { PLAYER_SELF_MASK_LAYER } from '../../presentation/src/render/shadowFlags.ts';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -431,7 +431,7 @@ describe('held light presentation', () => {
       version: 0,
       has: () => false,
       heldLook: () => ({ root: modelRoot.clone(), parts: [], slots: {} }),
-    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
     const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     held.update(new PerspectiveCamera());
     const { shown } = heldState(held) as { shown: Map<number, Group> };

@@ -4,7 +4,7 @@ import { graphicsTuningOf } from '@skelly/engine/look';
 import { SkyFields } from '@skelly/engine/sky';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { afterEach, expect, it, vi } from 'vitest';
-import { createEngine } from '../src/presentation/entries/play.ts';
+import { createEngine } from '../../presentation/src/play.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 

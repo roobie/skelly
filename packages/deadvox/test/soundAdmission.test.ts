@@ -6,7 +6,7 @@ import { createSession, IDLE } from '@skelly/engine/session';
 import type { SoundEmission } from '@skelly/engine/sound';
 import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { GameAudio } from '../src/presentation/entries/audio.ts';
+import { GameAudio } from '../../presentation/src/audio.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

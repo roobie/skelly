@@ -3,8 +3,8 @@ import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import { ARM_SEGMENTS, buildRegistry, LEG_SEGMENTS, ModelSchema } from '@skelly/engine/content';
 import { typeWeightGrams } from '@skelly/engine/inventory';
-import { namedNodes } from '../packages/deadvox/src/presentation/entries/render.ts';
 import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
+import { namedNodes } from '../packages/presentation/src/render.ts';
 import { modelMassKg } from '../packages/skelly-assets/tools/packages/thing-core/src/mass.ts';
 import { readRecipes } from '../packages/skelly-assets/tools/recipes.mjs';
 import {

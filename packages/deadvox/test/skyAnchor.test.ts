@@ -4,8 +4,8 @@ import { containsSky, sampleSky } from '@skelly/engine/sky';
 import { BLOCK_SIZE, type BlockEntity, type Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, type Mesh, type MeshLambertMaterial } from 'three';
 import { expect, it } from 'vitest';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
+import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
+import { addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../../presentation/src/render/skyAnchor.ts';
 
 // A slim shaft and a crossarm standing in a wide envelope: the shaft's faces are set back from the envelope's
 // edge by more than the half block the receiver steps out along its normal.

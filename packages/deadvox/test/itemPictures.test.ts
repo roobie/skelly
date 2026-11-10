@@ -3,8 +3,13 @@ import { Inventory } from '@skelly/engine/inventory';
 import { Box3, BoxGeometry, Group, Mesh, MeshBasicMaterial, type OrthographicCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { ModelLibrary } from '../src/presentation/entries/render.ts';
-import { fittedPictureExtent, ItemPictures, pictureSurfaceSize, referencePainter } from '../src/render/itemPictures.ts';
+import {
+  fittedPictureExtent,
+  ItemPictures,
+  pictureSurfaceSize,
+  referencePainter,
+} from '../../presentation/src/render/itemPictures.ts';
+import { ModelLibrary } from '../../presentation/src/render.ts';
 
 const fixture = () => {
   const { registry, issues } = buildRegistry([

@@ -1,7 +1,7 @@
 import { Window } from 'happy-dom';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { mountMenuPointer } from '../src/ui/menuPointer.ts';
-import { wheelPixels } from '../src/ui/wheel.ts';
+import { mountMenuPointer } from '../../presentation/src/ui/menuPointer.ts';
+import { wheelPixels } from '../../presentation/src/ui/wheel.ts';
 
 const dom = new Window();
 for (const key of ['document', 'HTMLElement', 'Element', 'WheelEvent'] as const) {

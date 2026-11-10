@@ -7,14 +7,14 @@ import { Character } from '@skelly/engine/sim';
 import { decimalText, fillText } from '@skelly/engine/text';
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import {
   handlingViewModel,
   quickbarKey,
   quickbarViewModel,
   type TimedActionPresentation,
   timedActionHandlingPresentation,
-} from '../src/ui/hud.ts';
+} from '../../presentation/src/ui/hud.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 
 const registry = baseRegistry();

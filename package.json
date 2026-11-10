@@ -7,6 +7,7 @@
     "packages/skelly-assets/tools/packages/construct",
     "packages/skelly-assets/tools/packages/thing-core",
     "packages/engine",
+    "packages/presentation",
     "packages/deadvox",
     "packages/mods"
   ],

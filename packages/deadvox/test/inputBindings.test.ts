@@ -10,8 +10,8 @@ import {
 } from '@skelly/engine/input';
 import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
 import { describe, expect, it } from 'vitest';
+import { capturedChord, type InputCommand, KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
-import { capturedChord, type InputCommand, KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const fixture: readonly Binding[] = [

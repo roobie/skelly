@@ -4,8 +4,8 @@ import { realSeconds } from '@skelly/engine/sim';
 import type { SolidAt } from '@skelly/engine/world';
 import { PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HeldItems, LightPool } from '../src/presentation/entries/render.ts';
-import { type FlareSource, flareSources, nightVisionFlare } from '../src/render/nightVisionFlare.ts';
+import { type FlareSource, flareSources, nightVisionFlare } from '../../presentation/src/render/nightVisionFlare.ts';
+import { HeldItems, LightPool } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 

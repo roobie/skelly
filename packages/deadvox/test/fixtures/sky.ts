@@ -10,7 +10,7 @@ import { graphicsTuningOf } from '@skelly/engine/look';
 import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
 import type { Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
-import { Skylight } from '../../src/presentation/entries/render.ts';
+import { Skylight } from '../../../presentation/src/render.ts';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 
 export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, buildRadiusM = 160) {

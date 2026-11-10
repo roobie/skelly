@@ -11,7 +11,7 @@ import { decodeSave } from '@skelly/engine/save';
 import { Character, practiceForNextLevel, type RealSeconds, realSeconds } from '@skelly/engine/sim';
 import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { contentLookup as lookupSaveContent } from '../src/presentation/entries/ui.ts';
+import { contentLookup as lookupSaveContent } from '../../presentation/src/ui.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

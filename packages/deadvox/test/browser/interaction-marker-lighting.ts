@@ -12,7 +12,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import { FurnitureMeshes } from '../../src/render/furniture.ts';
+import { FurnitureMeshes } from '../../../presentation/src/render/furniture.ts';
 
 /** Owned pixels isolate the selected marker from HUD and unrelated world geometry. */
 export function interactionMarkerLightingProof() {

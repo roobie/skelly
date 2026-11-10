@@ -6,9 +6,9 @@ import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { formatClock, type RestAction, realSeconds } from '@skelly/engine/sim';
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../../presentation/src/ui/hudOptions.ts';
+import { restViewModel } from '../../presentation/src/ui/rest.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
-import { restViewModel } from '../src/ui/rest.ts';
 import { baseScreenText } from './baseRegistry.ts';
 import { Simulation } from './simulationFixture.ts';
 

@@ -1,7 +1,7 @@
 import type { PackManifest } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
-import { bundledAssetUrl } from '../src/presentation/bundledAssets.ts';
-import { bundledAssetFiles } from '../src/presentation/entries/play.ts';
+import { bundledAssetFiles } from '../../presentation/src/play.ts';
+import { bundledAssetUrl } from '../../presentation/src/presentation/bundledAssets.ts';
 
 it('isolates identical asset paths by owning pack across roots for models and audio', () => {
   const packs = ['../../mods/fixture.product', '../../../mods/fixture.shared'].map((root, index) => ({

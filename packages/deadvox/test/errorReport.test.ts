@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { errorDetails, errorReportText, errorText, feedbackUrlForError } from '../src/ui/errorReport.ts';
+import {
+  errorDetails,
+  errorReportText,
+  errorText,
+  feedbackUrlForError,
+} from '../../presentation/src/ui/errorReport.ts';
 
 const handBack = (name: string, value: unknown) => ({
   blob: new Blob([JSON.stringify(value)], { type: 'application/json' }),

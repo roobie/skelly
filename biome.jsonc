@@ -177,17 +177,13 @@
       // real time (V8's ArrayIteratorPrototypeNext) from destructuring a plain array here instead of
       // indexing it directly — a measured, deliberate choice at each of these call sites, not an
       // oversight useDestructuring should keep flagging.
-      "includes": ["packages/engine/src/core/pose.ts", "**/deadvox/src/render/crowd.ts"],
+      "includes": ["packages/engine/src/core/pose.ts", "packages/presentation/src/render/crowd.ts"],
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
     },
     {
-      // The runtime's curated entries are re-export modules by design: product code reaches the
-      // runtime only through them. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
-      "includes": [
-        "packages/engine/src/*.ts",
-        "packages/engine/src/*.mjs",
-        "packages/deadvox/src/presentation/entries/*.ts"
-      ],
+      // The runtime and presentation packages' curated entries are re-export modules by design: other packages
+      // reach them only through these. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+      "includes": ["packages/engine/src/*.ts", "packages/engine/src/*.mjs", "packages/presentation/src/*.ts"],
       "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
     },
     {

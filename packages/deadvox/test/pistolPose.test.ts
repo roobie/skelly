@@ -19,18 +19,18 @@ import { makeScale } from '@skelly/engine/world';
 import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { HeldItems, type ModelLibrary, PlayerMeshes } from '../src/presentation/entries/render.ts';
-import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
+import { ARM_NODE, type ArmRig } from '../../presentation/src/render/armRig.ts';
 import {
   actionPartPaths,
   cloneHeldModel,
   type HeldActionPart,
   rackGrip,
   sampleActionStroke,
-} from '../src/render/firearmModel.ts';
-import type { HeldPresentation } from '../src/render/heldPresentation.ts';
-import { createHeldViews } from '../src/render/heldViews.ts';
-import { heldModelFrame, indexModelMaterials, prepareModel } from '../src/render/models.ts';
+} from '../../presentation/src/render/firearmModel.ts';
+import type { HeldPresentation } from '../../presentation/src/render/heldPresentation.ts';
+import { createHeldViews } from '../../presentation/src/render/heldViews.ts';
+import { heldModelFrame, indexModelMaterials, prepareModel } from '../../presentation/src/render/models.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';

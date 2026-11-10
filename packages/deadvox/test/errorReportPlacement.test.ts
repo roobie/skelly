@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { installErrorReportHandler } from '../src/presentation/entries/ui.ts';
+import { installErrorReportHandler } from '../../presentation/src/ui.ts';
 
 const rect = (left: number, width: number): DOMRect =>
   ({ left, right: left + width, width, top: 0, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;

@@ -30,9 +30,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '../src/presentation/entries/render.ts';
-import { FrameTimes } from '../src/render/frameTimes.ts';
-import { PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { FrameTimes } from '../../presentation/src/render/frameTimes.ts';
+import { PLAYER_SELF_MASK_LAYER } from '../../presentation/src/render/shadowFlags.ts';
 import {
   beamMapDue,
   IDLE_REFRESH_EVERY,
@@ -44,7 +43,8 @@ import {
   sunShadowBias,
   sunShadowTexelSize,
   withinRange,
-} from '../src/render/shadows.ts';
+} from '../../presentation/src/render/shadows.ts';
+import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '../../presentation/src/render.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 

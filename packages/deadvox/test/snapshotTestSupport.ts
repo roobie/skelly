@@ -21,7 +21,7 @@ import {
   World,
   worldSolid,
 } from '@skelly/engine/world';
-import { contentLookup as lookupSaveContent } from '../src/presentation/entries/ui.ts';
+import { contentLookup as lookupSaveContent } from '../../presentation/src/ui.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

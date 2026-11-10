@@ -1,7 +1,7 @@
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
-import { OpticHousingMask } from '../../src/render/opticHousingMask.ts';
-import { opticLensPass, setOpticLensUniforms } from '../../src/render/opticLens.ts';
+import { OpticHousingMask } from '../../../presentation/src/render/opticHousingMask.ts';
+import { opticLensPass, setOpticLensUniforms } from '../../../presentation/src/render/opticLens.ts';
 
 // An independent silhouette supplies real tube witnesses even when the production disc correctly ignores it.
 export const scopeDiscPixels = ({ engine, view }) => {

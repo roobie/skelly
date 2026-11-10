@@ -14,12 +14,6 @@ import {
 } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
 import type { StreamerStats } from '@skelly/engine/world';
-import { loadRecord } from './bench/plan.ts';
-import { applyBenchWeathering } from './bench/post.ts';
-import { showReport } from './bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
-import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
-import { bundledCredits } from './bundledCredits.ts';
 import {
   createEngine,
   fetchActorFigureFiles,
@@ -27,8 +21,8 @@ import {
   requestInputLock,
   startPlay,
   WorldLoading,
-} from './presentation/entries/play.ts';
-import { tutorialRequested, tutorialUrl } from './presentation/entries/tutorialUrl.ts';
+} from '../../presentation/src/play.ts';
+import { tutorialRequested, tutorialUrl } from '../../presentation/src/tutorialUrl.ts';
 import {
   applyUiTokens,
   chooseMods,
@@ -40,7 +34,13 @@ import {
   mountInputOptions,
   mountWorldLoading,
   SaveController,
-} from './presentation/entries/ui.ts';
+} from '../../presentation/src/ui.ts';
+import { loadRecord } from './bench/plan.ts';
+import { applyBenchWeathering } from './bench/post.ts';
+import { showReport } from './bench/report.ts';
+import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
+import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import { bundledCredits } from './bundledCredits.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';

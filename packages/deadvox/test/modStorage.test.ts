@@ -1,6 +1,6 @@
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import { ModStorage } from '../src/presentation/modStorage.ts';
+import { ModStorage } from '../../presentation/src/presentation/modStorage.ts';
 
 const mods = [
   { source: 'mod-2/second.json', text: JSON.stringify({ id: 'second', version: '2' }), enabled: false },

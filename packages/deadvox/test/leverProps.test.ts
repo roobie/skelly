@@ -1,7 +1,7 @@
 import { realSeconds } from '@skelly/engine/sim';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { LeverProps } from '../src/render/leverProps.ts';
+import { LeverProps } from '../../presentation/src/render/leverProps.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

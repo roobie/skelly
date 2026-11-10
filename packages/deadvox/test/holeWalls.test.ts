@@ -1,8 +1,8 @@
 import { type FusedMassGrid, worldPosition } from '@skelly/engine/pose';
 import { Color } from 'three';
 import { describe, expect, it } from 'vitest';
-import { crowdCellMaskLayout, isCellInMask, packCellMask } from '../src/render/crowd.ts';
-import { holeWallGeometry } from '../src/render/holeWalls.ts';
+import { crowdCellMaskLayout, isCellInMask, packCellMask } from '../../presentation/src/render/crowd.ts';
+import { holeWallGeometry } from '../../presentation/src/render/holeWalls.ts';
 
 const DIMS = [4, 3, 3] as const;
 const index = (i: number, j: number, k: number): number => i + j * DIMS[0] + k * DIMS[0] * DIMS[1];

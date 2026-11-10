@@ -184,13 +184,13 @@ describe('simulation source fingerprint', () => {
 
   it('keeps excluded runtime edges and presentation libraries out of the actual Vite-resolved graph', async () => {
     const graph = await actualSimulationGraph();
-    expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
-    expect(graph.sources.has('src/presentation/engine.ts')).toBe(false);
-    expect(graph.sources.has('src/presentation/playtestObserver.ts')).toBe(false);
+    expect(graph.sources.has('presentation/worker/mesh.worker.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/engine.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/playtestObserver.ts')).toBe(false);
     const paths = [...graph.sources.keys()];
-    expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
-    expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
-    expect(paths.filter((path) => path.startsWith('src/presentation/'))).toEqual([]);
+    expect(paths.some((path) => path.startsWith('presentation/ui/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('presentation/render/'))).toBe(false);
+    expect(paths.filter((path) => path.startsWith('presentation/presentation/'))).toEqual([]);
     expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
     expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(graph.sources.size).toBeGreaterThan(0);
@@ -204,7 +204,7 @@ describe('simulation source fingerprint', () => {
   it('excludes WebAudio implementation but fingerprints sound admission, seeded selection and saves', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    const cap = await mutateSimulationSource(host, 'src/presentation/audio.ts');
+    const cap = await mutateSimulationSource(host, 'presentation/presentation/audio.ts');
     expect(cap.value).toBe(original);
     expect(cap.included).toBe(false);
     const picker = await mutateSimulationSource(host, 'engine/core/soundPicker.ts', '`sound:', '`changed:');
@@ -226,10 +226,10 @@ describe('simulation source fingerprint', () => {
   it('ignores HUD/paper wording but fingerprints the gameplay interaction reach', async () => {
     const host = await actualSimulationHost();
     const original = await actualSimulationFingerprint();
-    const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts');
+    const hud = await mutateSimulationSource(host, 'presentation/ui/playHud.ts');
     expect(hud.included).toBe(false);
     expect(hud.value).toBe(original);
-    const paper = await mutateSimulationSource(host, 'src/ui/reading.ts');
+    const paper = await mutateSimulationSource(host, 'presentation/ui/reading.ts');
     expect(paper.included).toBe(false);
     expect(paper.value).toBe(original);
     const reach = await mutateSimulationSource(host, 'engine/game/commandRouter.ts');
@@ -255,37 +255,37 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('engine/game/primaryAction.ts')).toBe(true);
     expect(graph.sources.has('src/debug/axisGizmo.ts')).toBe(false);
     expect(graph.sources.has('engine/game/firearmHandling.ts')).toBe(true);
-    expect(graph.sources.has('src/presentation/debugTargetRay.ts')).toBe(false);
-    expect(graph.sources.has('src/render/caseEffects.ts')).toBe(false);
-    expect(graph.sources.has('src/presentation/controls.ts')).toBe(false);
-    expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
-    expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/debugTargetRay.ts')).toBe(false);
+    expect(graph.sources.has('presentation/render/caseEffects.ts')).toBe(false);
+    expect(graph.sources.has('presentation/presentation/controls.ts')).toBe(false);
+    expect(graph.sources.has('presentation/render/meleePose.ts')).toBe(false);
+    expect(graph.sources.has('presentation/ui/primaryActionHint.ts')).toBe(false);
 
     const debugPresentation = await mutateSimulationSource(host, 'src/debug/axisGizmo.ts');
     expect(debugPresentation.included).toBe(false);
     expect(debugPresentation.value).toBe(original);
 
-    const debugTarget = await mutateSimulationSource(host, 'src/presentation/debugTargetRay.ts');
+    const debugTarget = await mutateSimulationSource(host, 'presentation/presentation/debugTargetRay.ts');
     expect(debugTarget.included).toBe(false);
     expect(debugTarget.value).toBe(original);
 
-    const hint = await mutateSimulationSource(host, 'src/ui/primaryActionHint.ts');
+    const hint = await mutateSimulationSource(host, 'presentation/ui/primaryActionHint.ts');
     expect(hint.included).toBe(false);
     expect(hint.value).toBe(original);
 
-    const helpCopy = await mutateSimulationSource(host, 'src/presentation/controls.ts');
+    const helpCopy = await mutateSimulationSource(host, 'presentation/presentation/controls.ts');
     expect(helpCopy.included).toBe(false);
     expect(helpCopy.value).toBe(original);
 
-    const offHandRenderPolicy = await mutateSimulationSource(host, 'src/render/meleePose.ts');
+    const offHandRenderPolicy = await mutateSimulationSource(host, 'presentation/render/meleePose.ts');
     expect(offHandRenderPolicy.included).toBe(false);
     expect(offHandRenderPolicy.value).toBe(original);
 
-    const casePresentation = await mutateSimulationSource(host, 'src/render/caseEffects.ts');
+    const casePresentation = await mutateSimulationSource(host, 'presentation/render/caseEffects.ts');
     expect(casePresentation.included).toBe(false);
     expect(casePresentation.value).toBe(original);
 
-    const firearmDrawing = await mutateSimulationSource(host, 'src/render/firearmModel.ts');
+    const firearmDrawing = await mutateSimulationSource(host, 'presentation/render/firearmModel.ts');
     expect(firearmDrawing.included).toBe(false);
     expect(firearmDrawing.value).toBe(original);
     const sharedFirearmTiming = await mutateSimulationSource(

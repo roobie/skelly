@@ -76,7 +76,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { applySky, ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../presentation/entries/render.ts';
+import { applySky, ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../../../presentation/src/render.ts';
 import { productAssets } from '../product/assets.ts';
 import { buildBundledContent } from '../product/content.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';

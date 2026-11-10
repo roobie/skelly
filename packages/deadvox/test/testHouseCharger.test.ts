@@ -9,7 +9,7 @@ import {
   toChunk,
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { ChunkMeshes } from '../src/presentation/entries/render.ts';
+import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';

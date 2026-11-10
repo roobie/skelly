@@ -1,6 +1,6 @@
 import type { Vector2 } from 'three';
 import { expect, it } from 'vitest';
-import { DrawCounters } from '../src/render/drawCounters.ts';
+import { DrawCounters } from '../../presentation/src/render/drawCounters.ts';
 
 const fixture = (autoReset = true) => {
   const info = {

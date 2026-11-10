@@ -22,13 +22,13 @@ import {
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import type { Engine } from '../src/presentation/entries/play.ts';
-import { flashlightDaylightScale, Skylight } from '../src/presentation/entries/render.ts';
-import { ThirdPersonOrbit } from '../src/presentation/thirdPersonOrbit.ts';
+import type { Engine } from '../../presentation/src/play.ts';
+import { ThirdPersonOrbit } from '../../presentation/src/presentation/thirdPersonOrbit.ts';
+import { ITEM_POINT_LIGHTS } from '../../presentation/src/render/lightPool.ts';
+import { createPlayView } from '../../presentation/src/render/playView.ts';
+import { flashlightDaylightScale, Skylight } from '../../presentation/src/render.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
-import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
-import { createPlayView } from '../src/render/playView.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
@@ -51,8 +51,8 @@ const withoutItemModels = {
   models: new Map([...registry.models].filter(([id]) => figureModels.has(id))),
 };
 // Node has no page to fetch model files from, so the library gets an empty pack and reports each model as missing.
-vi.mock('../src/render/models.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/render/models.ts')>();
+vi.mock('../../presentation/src/render/models.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../presentation/src/render/models.ts')>();
   class EmptyPackLibrary extends actual.ModelLibrary {
     constructor(...[content, report]: ConstructorParameters<typeof actual.ModelLibrary>) {
       super(content, report, {}, 1);

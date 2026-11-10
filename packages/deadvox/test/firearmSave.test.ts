@@ -17,7 +17,7 @@ import { createSession, IDLE } from '@skelly/engine/session';
 import { reachTuning } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { contentLookup as lookupSaveContent } from '../src/presentation/entries/ui.ts';
+import { contentLookup as lookupSaveContent } from '../../presentation/src/ui.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
@@ -712,8 +712,8 @@ it('rejects an unknown item type in a pending firearm landing', async () => {
 
 it('hides a committed pile item during its arc and lands at its current model position', async () => {
   const { Group } = await import('three');
-  const { ItemThrows } = await import('../src/render/itemThrows.ts');
-  const { PileMeshes } = await import('../src/render/piles.ts');
+  const { ItemThrows } = await import('../../presentation/src/render/itemThrows.ts');
+  const { PileMeshes } = await import('../../presentation/src/render/piles.ts');
   const runtime = session([]);
   const rifle = sessionRifle(runtime);
   const target = { kind: 'pile' as const, pos: [2, 0, 0] as [number, number, number] };
@@ -729,7 +729,7 @@ it('hides a committed pile item during its arc and lands at its current model po
     version: 0,
     has: () => ready,
     groundLook: () => new Group(),
-  } as unknown as import('../src/render/models.ts').ModelLibrary;
+  } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
   const throws = new ItemThrows(registry, models, 0.5);
   const piles = new PileMeshes(0.5, models);
   const startedAtSimSeconds = runtime.sim.time;

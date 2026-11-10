@@ -9,7 +9,7 @@ import {
   type WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { ChunkMeshes } from '../../src/presentation/entries/render.ts';
+import type { ChunkMeshes } from '../../../presentation/src/render.ts';
 
 /**
  * Redraws only the chunk meshes from the game camera into one float pixel at the frame centre and

@@ -1,6 +1,6 @@
 import type { FigureDef, FigureLimb, Registry } from '@skelly/engine/content';
 import { type Object3D, Vector3 } from 'three';
-import { FIGURE_PIVOT } from '../src/render/playerFigure.ts';
+import { FIGURE_PIVOT } from '../../presentation/src/render/playerFigure.ts';
 
 export const figureAnchorAt = ({
   group,

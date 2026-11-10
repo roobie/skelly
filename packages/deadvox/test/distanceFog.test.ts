@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: three.js shader chunk names retain their exact spelling.
 import { PerspectiveCamera, ShaderChunk, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { installDistanceFog, withDistanceFog } from '../src/render/distanceFog.ts';
+import { installDistanceFog, withDistanceFog } from '../../presentation/src/render/distanceFog.ts';
 
 // Test-owned far-plane scales, from the schema's minimum up, so no case depends on the bundled tuning.
 const SCALES = [1, 1.1, 1.5, 3];

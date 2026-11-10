@@ -3,7 +3,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { CheckpointSchedule } from '../src/ui/checkpointSchedule.ts';
+import { CheckpointSchedule } from '../../presentation/src/ui/checkpointSchedule.ts';
 
 const interval = BUNDLED_CONTENT.registry.saves.get('autosave')!.checkpointSimSeconds;
 // A power-of-two frame keeps the accumulated simulated time exact, so the boundary frame is known.

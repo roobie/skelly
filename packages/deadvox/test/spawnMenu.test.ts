@@ -1,11 +1,11 @@
 import { BindingRegistry } from '@skelly/engine/input';
 import { NoToneMapping } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import type { DebugHooks } from '../../presentation/src/debug.ts';
+import { KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
-import type { DebugHooks } from '../src/presentation/entries/debug.ts';
-import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { FakeMood } from './fakeMood.ts';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeMenuState, computeSaveMenuState, type MenuStateInput } from '../src/ui/menuState.ts';
+import { computeMenuState, computeSaveMenuState, type MenuStateInput } from '../../presentation/src/ui/menuState.ts';
 
 const base: MenuStateInput = {
   started: false,

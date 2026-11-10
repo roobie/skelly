@@ -1,6 +1,6 @@
 import { type HandPose, meleePoseAndContact, readyMeleePose } from '@skelly/engine/pose';
 import { expect, it } from 'vitest';
-import { renderMeleePose } from '../src/render/meleePose.ts';
+import { renderMeleePose } from '../../presentation/src/render/meleePose.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const { holds } = baseRegistry().figures.get('player')!;

@@ -25,7 +25,7 @@ import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } fro
 import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
+import { vehicleInstanceOf, vehicleModel, workshopLift } from '../../presentation/src/render/workshopVehicle.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 

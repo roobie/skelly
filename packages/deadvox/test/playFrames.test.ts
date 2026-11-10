@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { startPlayFrames } from '../src/render/playFrames.ts';
+import { startPlayFrames } from '../../presentation/src/render/playFrames.ts';
 
 it('passes RAF timestamps unchanged and stops when the gameplay frame returns false', () => {
   const callbacks: FrameRequestCallback[] = [];

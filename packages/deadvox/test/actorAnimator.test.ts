@@ -34,13 +34,13 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../src/presentation/entries/render.ts';
-import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
-import { HeldPresentation } from '../src/render/heldPresentation.ts';
-import { createHeldViews } from '../src/render/heldViews.ts';
-import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
-import { OpticLensRenderer } from '../src/render/opticLens.ts';
-import { OPTIC_BODY_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { ARM_NODE, solveArmRig } from '../../presentation/src/render/armRig.ts';
+import { HeldPresentation } from '../../presentation/src/render/heldPresentation.ts';
+import { createHeldViews } from '../../presentation/src/render/heldViews.ts';
+import { stepMagazineRaise } from '../../presentation/src/render/magazineLoadPose.ts';
+import { OpticLensRenderer } from '../../presentation/src/render/opticLens.ts';
+import { OPTIC_BODY_LAYER, PLAYER_SELF_MASK_LAYER } from '../../presentation/src/render/shadowFlags.ts';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
@@ -48,8 +48,8 @@ import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
-vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
-vi.mock('../src/render/armRig.ts', { spy: true });
+vi.mock('../../presentation/src/render/magazineLoadPose.ts', { spy: true });
+vi.mock('../../presentation/src/render/armRig.ts', { spy: true });
 
 const fixture = async (
   firearm = true,
@@ -354,7 +354,7 @@ it('orbit and spectator orientation cannot change world handling transforms for 
 });
 
 it('the play frame poses overlay and world held views from this frame rather than the previous view', async () => {
-  const source = readFileSync(new URL('../src/presentation/play.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../presentation/src/presentation/play.ts', import.meta.url), 'utf8');
   const start = source.indexOf('const updateFrame =');
   const end = source.indexOf('const skyRoute =', start);
   expect(start).toBeGreaterThan(0);

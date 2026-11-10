@@ -75,7 +75,7 @@ export const SIMULATION_ENTRIES = [
 
 export const SIMULATION_EXCLUSIONS = [
   // Includes playView's owned meshes/camera/draw/disposal.
-  'src/render',
+  'presentation/render',
   'src/debug',
   // Pointer-event quirks of the Mouse 5 side button (input handling); what the button does is in core/lights.ts.
   'engine/core/sideButton.ts',
@@ -114,45 +114,45 @@ export const SIMULATION_EXCLUSIONS = [
   'engine/game/saveStorageErrors.ts',
   'engine/game/saveStorageRecord.ts',
   'engine/game/saveStorageProtocol.ts',
-  'src/worker/save.worker.ts',
-  'src/ui/audioOptions.ts',
-  'src/ui/graphicsOptions.ts',
-  'src/ui/credits.ts',
-  'src/ui/death.ts',
-  'src/ui/win.ts',
+  'presentation/worker/save.worker.ts',
+  'presentation/ui/audioOptions.ts',
+  'presentation/ui/graphicsOptions.ts',
+  'presentation/ui/credits.ts',
+  'presentation/ui/death.ts',
+  'presentation/ui/win.ts',
   // Blocking player-facing error presentation; its state and exports do not affect simulation or saves.
-  'src/ui/errorReport.ts',
-  'src/ui/gameCursor.ts',
-  'src/ui/hud.ts',
-  'src/ui/hudOptions.ts',
-  'src/ui/keyCap.ts',
+  'presentation/ui/errorReport.ts',
+  'presentation/ui/gameCursor.ts',
+  'presentation/ui/hud.ts',
+  'presentation/ui/hudOptions.ts',
+  'presentation/ui/keyCap.ts',
   // Page-leave warning timing is lifecycle presentation, not simulation or saved state.
-  'src/ui/leaveConfirmation.ts',
+  'presentation/ui/leaveConfirmation.ts',
   // Read-only HUD/status/prompt projection; target selection and recorded commands stay fingerprinted.
-  'src/ui/playHud.ts',
-  'src/ui/guidedSteps.ts',
+  'presentation/ui/playHud.ts',
+  'presentation/ui/guidedSteps.ts',
   // Read-only debug readout formatting and byte-count estimates.
-  'src/ui/playReadout.ts',
-  'src/ui/inventoryScreen.ts',
+  'presentation/ui/playReadout.ts',
+  'presentation/ui/inventoryScreen.ts',
   // Read-only appliance projection; command admission and effects stay in session and core.
-  'src/ui/chargerPanel.ts',
+  'presentation/ui/chargerPanel.ts',
   // Read-only vehicle service projection; work admission and transfer stay in core/vehicleWork and session.
-  'src/ui/vehicleInspection.ts',
+  'presentation/ui/vehicleInspection.ts',
   // Craft views/readouts and UI preference/event forwarding only. Native intents/admission
   // remain fingerprinted through session -> core/craftCommands and core/longAction.
-  'src/ui/craftController.ts',
-  'src/ui/craftReadout.ts',
-  'src/ui/crafting.ts',
-  'src/ui/menuPointer.ts',
-  'src/ui/menuState.ts',
+  'presentation/ui/craftController.ts',
+  'presentation/ui/craftReadout.ts',
+  'presentation/ui/crafting.ts',
+  'presentation/ui/menuPointer.ts',
+  'presentation/ui/menuState.ts',
   // Unsupported-item hint copy is presentation only; capability policy stays in packages/engine/src/game/primaryAction.ts.
-  'src/ui/primaryActionHint.ts',
+  'presentation/ui/primaryActionHint.ts',
   // Paper text/focus/scroll/dismissal is presentation; readable admission/effects stay in core/game.
-  'src/ui/reading.ts',
-  'src/ui/rest.ts',
-  'src/ui/saveController.ts',
+  'presentation/ui/reading.ts',
+  'presentation/ui/rest.ts',
+  'presentation/ui/saveController.ts',
   // Loading-mask drawing and browser errors are startup presentation, not simulation state.
-  'src/ui/worldLoading.ts',
+  'presentation/ui/worldLoading.ts',
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
@@ -249,14 +249,23 @@ function sourcePath(id: string): string | undefined {
   return resolve(clean);
 }
 
-// The runtime package's source, named `'engine/'` in the fingerprint manifest and in entries and exclusions.
+// The runtime and presentation packages' source, named `'engine/'` and `'presentation/'` in the fingerprint
+// manifest and in entries and exclusions.
 const ENGINE_PREFIX = 'engine/';
+const PRESENTATION_PREFIX = 'presentation/';
 const engineSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../engine/src');
+const presentationSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../presentation/src');
 
-/** The file an entry or exclusion names: `'engine/'` paths are in the runtime package, others in this project. */
+/**
+ * The file an entry or exclusion names: `'engine/'` and `'presentation/'` paths are in those packages, others in
+ * this project.
+ */
 export function labelledPath(projectRoot: string, label: string): string {
-  return label.startsWith(ENGINE_PREFIX)
-    ? resolve(engineSourceRoot(projectRoot), label.slice(ENGINE_PREFIX.length))
+  if (label.startsWith(ENGINE_PREFIX)) {
+    return resolve(engineSourceRoot(projectRoot), label.slice(ENGINE_PREFIX.length));
+  }
+  return label.startsWith(PRESENTATION_PREFIX)
+    ? resolve(presentationSourceRoot(projectRoot), label.slice(PRESENTATION_PREFIX.length))
     : resolve(projectRoot, label);
 }
 
@@ -264,6 +273,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
   const roots = [
     { root: sourceRoot, prefix: 'src/' },
     { root: engineSourceRoot(projectRoot), prefix: ENGINE_PREFIX },
+    { root: presentationSourceRoot(projectRoot), prefix: PRESENTATION_PREFIX },
     { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
@@ -339,7 +349,7 @@ async function resolveTrackableModule(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, the engine's src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
+      `Runtime dependency ${specifier} resolves outside src/, the engine's and presentation's src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {

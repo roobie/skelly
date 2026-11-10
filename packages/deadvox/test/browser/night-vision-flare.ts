@@ -10,8 +10,8 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
-import { createMoodOutputPass, setNightFlareUniforms } from '../../src/render/moodOutput.ts';
-import { NO_FLARE } from '../../src/render/nightVisionFlare.ts';
+import { createMoodOutputPass, setNightFlareUniforms } from '../../../presentation/src/render/moodOutput.ts';
+import { NO_FLARE } from '../../../presentation/src/render/nightVisionFlare.ts';
 
 const SIZE = 64;
 const VIEW: NightVision = {

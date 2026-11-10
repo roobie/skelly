@@ -1,6 +1,6 @@
 import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, makeScale, raycast, stepBody } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { StepOffset } from '../src/render/stepOffset.ts';
+import { StepOffset } from '../../presentation/src/render/stepOffset.ts';
 import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const metre = makeScale(1);

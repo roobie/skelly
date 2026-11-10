@@ -5,7 +5,7 @@ import { decodeSave } from '@skelly/engine/save';
 import { SitePower } from '@skelly/engine/world';
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { LightPool } from '../src/presentation/entries/render.ts';
+import { LightPool } from '../../presentation/src/render.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import {

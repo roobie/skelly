@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { syncKeyboardLock } from '../src/ui/fullscreenOptions.ts';
+import { syncKeyboardLock } from '../../presentation/src/ui/fullscreenOptions.ts';
 
 describe('keyboard lock follows fullscreen', () => {
   it('locks while fullscreen is held, unlocks when it ends, and never locks Escape', () => {

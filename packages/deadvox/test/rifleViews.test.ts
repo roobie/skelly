@@ -22,10 +22,10 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { HeldItems, ModelLibrary, PileMeshes, PlayerMeshes } from '../src/presentation/entries/render.ts';
-import { handlingRotation } from '../src/render/handlingTurn.ts';
-import type { HeldHandlingFrame } from '../src/render/hands.ts';
-import { itemLook } from '../src/render/itemLook.ts';
+import { handlingRotation } from '../../presentation/src/render/handlingTurn.ts';
+import type { HeldHandlingFrame } from '../../presentation/src/render/hands.ts';
+import { itemLook } from '../../presentation/src/render/itemLook.ts';
+import { HeldItems, ModelLibrary, PileMeshes, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';
 import { AIM, createPlayerBody } from './playerFixture.ts';

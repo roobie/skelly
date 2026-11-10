@@ -9,8 +9,8 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { expect, it } from 'vitest';
-import { OpticHousingMask } from '../src/render/opticHousingMask.ts';
-import { OPTIC_BODY_LAYER } from '../src/render/shadowFlags.ts';
+import { OpticHousingMask } from '../../presentation/src/render/opticHousingMask.ts';
+import { OPTIC_BODY_LAYER } from '../../presentation/src/render/shadowFlags.ts';
 
 it('isolates the silhouette from the world scene and restores renderer state even if drawing throws', () => {
   const geometry = new BoxGeometry();

@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { GpuFrameTime } from '../src/render/gpuFrameTime.ts';
+import { GpuFrameTime } from '../../presentation/src/render/gpuFrameTime.ts';
 
 it('reads completed GPU queries without blocking and discards disjoint results', () => {
   let available = false;

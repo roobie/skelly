@@ -3,10 +3,10 @@ import { bodySkeleton, decodeFrame, type Pose, quatToMat3, sampleClip, severedBo
 import { reachTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import { RagdollWorld, ragdollGroups, ragdollMotion } from '../../presentation/src/render/ragdoll.ts';
+import type RAPIER from '../../presentation/src/render/ragdollRapier.ts';
+import type { RigidBody } from '../../presentation/src/render/rigidImpulse.ts';
 import { ragdollConfig, ragdollSweep } from '../src/product/ragdoll.ts';
-import { RagdollWorld, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
-import type RAPIER from '../src/render/ragdollRapier.ts';
-import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';

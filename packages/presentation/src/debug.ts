@@ -5,10 +5,10 @@ export type {
   DebugRuntime,
   InputReplayStatusState,
   SkyRouteAttachment,
-} from '../debugInterface.ts';
+} from './presentation/debugInterface.ts';
 export {
   replayFile,
   type SnapshotMeasurement,
   type SnapshotMeasurementOptions,
   type SnapshotTimerQuantum,
-} from '../playtestTools.ts';
+} from './presentation/playtestTools.ts';

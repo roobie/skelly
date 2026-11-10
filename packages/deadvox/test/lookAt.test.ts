@@ -12,7 +12,7 @@ import {
   transpose,
 } from '@skelly/engine/pose';
 import { describe, expect, it } from 'vitest';
-import { LOOK_AT_REST, lookAtPose } from '../src/render/lookAt.ts';
+import { LOOK_AT_REST, lookAtPose } from '../../presentation/src/render/lookAt.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

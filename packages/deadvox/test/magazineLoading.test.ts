@@ -20,7 +20,7 @@ import {
   magazinePress,
   readMagazineLoadFrame,
   stepMagazineRaise,
-} from '../src/render/magazineLoadPose.ts';
+} from '../../presentation/src/render/magazineLoadPose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';

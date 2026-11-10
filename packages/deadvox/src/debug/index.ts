@@ -29,9 +29,9 @@ import {
   type InputReplayStatusState,
   replayFile,
   type SnapshotMeasurement,
-} from '../presentation/entries/debug.ts';
-import { HOT_CATEGORIES, HOT_KINDS } from '../presentation/entries/render.ts';
-import { comboBox, positionLookedAtReadout } from '../presentation/entries/ui.ts';
+} from '../../../presentation/src/debug.ts';
+import { HOT_CATEGORIES, HOT_KINDS } from '../../../presentation/src/render.ts';
+import { comboBox, positionLookedAtReadout } from '../../../presentation/src/ui.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';

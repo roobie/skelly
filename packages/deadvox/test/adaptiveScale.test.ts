@@ -1,6 +1,6 @@
 import type { GraphicsOptions } from '@skelly/engine/look';
 import { expect, it } from 'vitest';
-import { AdaptiveScale } from '../src/render/adaptiveScale.ts';
+import { AdaptiveScale } from '../../presentation/src/render/adaptiveScale.ts';
 
 const policy: GraphicsOptions['renderScale'] = {
   label: 'Fixture',

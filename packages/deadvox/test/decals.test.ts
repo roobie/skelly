@@ -8,7 +8,7 @@ import { BlockEntities, DECAL_KINDS, panelFor, placedDecals } from '@skelly/engi
 import { ShaderLib } from 'three';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { AuthoredDecals } from '../src/render/decals.ts';
+import { AuthoredDecals } from '../../presentation/src/render/decals.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

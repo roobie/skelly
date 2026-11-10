@@ -1,6 +1,6 @@
 import { DataTexture, FloatType, RGBAFormat, type WebGLRenderer } from 'three';
 import { expect, it } from 'vitest';
-import { PoseTextureUpdates } from '../src/render/poseTextureUpdates.ts';
+import { PoseTextureUpdates } from '../../presentation/src/render/poseTextureUpdates.ts';
 
 it('retains queued row changes across unbound syncs, suppresses identical bits and fully uploads resized storage', () => {
   const texture = new DataTexture(new Float32Array(24), 3, 2, RGBAFormat, FloatType);

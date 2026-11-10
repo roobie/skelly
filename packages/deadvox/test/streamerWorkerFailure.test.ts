@@ -3,15 +3,15 @@ import type { FromMesher, ToMesher } from '@skelly/engine/mesh';
 import { realTimestamp } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import { type Engine, WorldLoading } from '../src/presentation/entries/play.ts';
-import { workerMesherPort } from '../src/worker/mesherPort.ts';
+import { type Engine, WorldLoading } from '../../presentation/src/play.ts';
+import { workerMesherPort } from '../../presentation/src/worker/mesherPort.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 const replies: FromMesher[] = [];
 let workerHandler: (event: { data: ToMesher }) => void;
 
 beforeAll(async () => {
-  await import('../src/worker/mesh.worker.ts');
+  await import('../../presentation/src/worker/mesh.worker.ts');
   workerHandler = globalThis.onmessage as never;
 });
 

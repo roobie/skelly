@@ -35,10 +35,10 @@ import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
+import { camoShaderConfig } from '../../presentation/src/render/surfacePatterns.ts';
+import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { controlIssues } from '../src/cli/controlIssues.ts';
-import { ChunkMeshes } from '../src/presentation/entries/render.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import {
   buildFixtureRegistry as buildRegistry,

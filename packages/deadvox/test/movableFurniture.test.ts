@@ -24,9 +24,9 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HeldItems } from '../src/presentation/entries/render.ts';
-import { CarriedPiece } from '../src/render/carriedPiece.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { CarriedPiece } from '../../presentation/src/render/carriedPiece.ts';
+import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
+import { HeldItems } from '../../presentation/src/render.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
   capture,

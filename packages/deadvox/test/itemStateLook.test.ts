@@ -11,10 +11,14 @@ import {
 } from '@skelly/engine/inventory';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { expect, it, vi } from 'vitest';
-import { type ModelLibrary, PileMeshes } from '../src/presentation/entries/render.ts';
-import { type ItemLook, itemLook } from '../src/render/itemLook.ts';
-import { ItemPictures } from '../src/render/itemPictures.ts';
-import { applyItemStateLook, disposeItemStateMaterials, fittedStateGroup } from '../src/render/itemStateLook.ts';
+import { type ItemLook, itemLook } from '../../presentation/src/render/itemLook.ts';
+import { ItemPictures } from '../../presentation/src/render/itemPictures.ts';
+import {
+  applyItemStateLook,
+  disposeItemStateMaterials,
+  fittedStateGroup,
+} from '../../presentation/src/render/itemStateLook.ts';
+import { type ModelLibrary, PileMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const fixture = () => {

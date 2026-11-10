@@ -29,10 +29,10 @@ import { coreLabel, countText, decimalText, fillText } from '@skelly/engine/text
 import { Window } from 'happy-dom';
 import { Group } from 'three';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
+import { ItemPictures } from '../../presentation/src/render/itemPictures.ts';
+import { mountMenuPointer } from '../../presentation/src/ui/menuPointer.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { ItemPictures } from '../src/render/itemPictures.ts';
-import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
@@ -78,7 +78,7 @@ Object.defineProperty(globalThis, 'dispatchEvent', {
 });
 // Happy DOM has no layout and omits this API; a moved cursor in these controls hits no drop zone.
 Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [] });
-const { InventoryScreen, targetForPackedFloorDrop } = await import('../src/ui/inventoryScreen.ts');
+const { InventoryScreen, targetForPackedFloorDrop } = await import('../../presentation/src/ui/inventoryScreen.ts');
 
 afterAll(() => dom.happyDOM.abort());
 

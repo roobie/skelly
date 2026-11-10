@@ -4,10 +4,10 @@ import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { ItemFactory } from '@skelly/engine/inventory';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-import { ModelLibrary } from '../../src/presentation/entries/render.ts';
+import { ItemPictures } from '../../../presentation/src/render/itemPictures.ts';
+import { ModelLibrary } from '../../../presentation/src/render.ts';
+import { ItemViewer } from '../../../presentation/src/ui/itemViewer.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
-import { ItemPictures } from '../../src/render/itemPictures.ts';
-import { ItemViewer } from '../../src/ui/itemViewer.ts';
 
 const coloredPixels = (canvas: HTMLCanvasElement) => {
   const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;

@@ -3,10 +3,10 @@
 import { fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
 import { afterEach, expect, it, vi } from 'vitest';
-import { comboBox } from '../src/presentation/entries/ui.ts';
-import type { ComboBoxOption } from '../src/ui/comboBox.ts';
-import { renderCrafting } from '../src/ui/crafting.ts';
-import type { CraftRow } from '../src/ui/craftReadout.ts';
+import type { ComboBoxOption } from '../../presentation/src/ui/comboBox.ts';
+import { renderCrafting } from '../../presentation/src/ui/crafting.ts';
+import type { CraftRow } from '../../presentation/src/ui/craftReadout.ts';
+import { comboBox } from '../../presentation/src/ui.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 const OPTIONS: readonly ComboBoxOption[] = [

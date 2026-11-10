@@ -16,7 +16,10 @@ import {
 } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
+import {
+  fusedMassCoreInteriorAnchor,
+  fusedMassTentaclePose,
+} from '../../presentation/src/render/fusedMassTentaclePose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: the shared arm-length assertion is called only by tests.
 import { Object3D, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { type ArmRig, type ArmTarget, solveArmRig } from '../src/render/armRig.ts';
+import { type ArmRig, type ArmTarget, solveArmRig } from '../../presentation/src/render/armRig.ts';
 
 const rigOf = (upperLength: number, foreLength: number): ArmRig => ({
   side: 'right',

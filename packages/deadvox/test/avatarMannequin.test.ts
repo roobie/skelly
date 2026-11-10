@@ -1,8 +1,8 @@
 import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { Group, Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type ModelLibrary, PlayerMeshes } from '../src/presentation/entries/render.ts';
-import { AvatarMannequin, createAvatarMannequin } from '../src/render/avatarMannequin.ts';
+import { AvatarMannequin, createAvatarMannequin } from '../../presentation/src/render/avatarMannequin.ts';
+import { type ModelLibrary, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -172,7 +172,7 @@ describe('debug avatar mannequin', () => {
     const fixtureRegistry = { ...registry, items: new Map([...registry.items, [garment.id, garment]]) };
     const fixtureModels = {
       ...models,
-      partLook: (look: import('../src/render/itemLook.ts').ItemLook) =>
+      partLook: (look: import('../../presentation/src/render/itemLook.ts').ItemLook) =>
         look.model === 'fixture_worn' ? new Group() : models.partLook(look),
     } as ModelLibrary;
     const mannequin = createAvatarMannequin(

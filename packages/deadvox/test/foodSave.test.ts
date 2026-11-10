@@ -3,7 +3,7 @@ import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../src/presentation/entries/ui.ts';
+import { contentLookup } from '../../presentation/src/ui.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 

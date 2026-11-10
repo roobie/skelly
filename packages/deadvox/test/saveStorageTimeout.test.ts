@@ -1,6 +1,6 @@
 import type { SaveBackendPreference } from '@skelly/engine/save';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SaveStorage } from '../src/presentation/saveStorage.ts';
+import { SaveStorage } from '../../presentation/src/presentation/saveStorage.ts';
 
 type Operation = 'probe' | 'read' | 'commit';
 interface Request {

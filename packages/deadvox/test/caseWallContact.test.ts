@@ -23,7 +23,7 @@ import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.t
 import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '@skelly/engine/inventory';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { firearmsCombatTuning } from '@skelly/engine/sim';
-import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
+import { CaseEffects, caseFlightPoint } from '../../presentation/src/render/caseEffects.ts';
 import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer, WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 

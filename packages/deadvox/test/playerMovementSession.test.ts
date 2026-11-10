@@ -35,7 +35,7 @@ import { createSession, IDLE } from '@skelly/engine/session';
 import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
 import { BLOCK_SIZE, footprint, makeScale, type Placement, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { contentLookup } from '../src/presentation/entries/ui.ts';
+import { contentLookup } from '../../presentation/src/ui.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';

@@ -8,11 +8,11 @@ import { guidanceFixture } from './fixtures/guidance.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { Survival } from '@skelly/engine/sim';
-import { tutorialRequested, tutorialUrl } from '../src/presentation/entries/tutorialUrl.ts';
 import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,
-} from '../src/presentation/guidedSteps.ts';
+} from '../../presentation/src/presentation/guidedSteps.ts';
+import { tutorialRequested, tutorialUrl } from '../../presentation/src/tutorialUrl.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({

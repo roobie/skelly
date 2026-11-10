@@ -6,7 +6,7 @@ import {
   PaperMapRenderCache,
   type PaperMapRenderConfig,
   samplePaperMapTerrain,
-} from '../src/render/paperMapRender.ts';
+} from '../../presentation/src/render/paperMapRender.ts';
 
 const shape: TerrainShape = {
   minHeightMetres: -3,

@@ -30,7 +30,7 @@ import {
   packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
-} from '../src/render/crowd.ts';
+} from '../../presentation/src/render/crowd.ts';
 
 const bones = bodySkeleton(
   JSON.parse(readFileSync(new URL('./fixtures/actors/fixture.body.json', import.meta.url), 'utf8')) as {

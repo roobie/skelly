@@ -10,7 +10,7 @@ const BUNDLED_CONTENT = startupContent();
 const PLAYER_VIEW_FOV_DEGREES = graphicsTuningOf(BUNDLED_CONTENT.registry).playerViewFovDegrees;
 
 import { firearmBoreRay, firearmBoreTarget } from '@skelly/engine/sim';
-import { playCrosshairFrame, projectCrosshairScreenPosition } from '../src/ui/playHud.ts';
+import { playCrosshairFrame, projectCrosshairScreenPosition } from '../../presentation/src/ui/playHud.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { FIXTURE_RANGE_BLOCKS, farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';
 

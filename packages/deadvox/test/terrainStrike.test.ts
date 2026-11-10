@@ -27,9 +27,9 @@ import {
 } from '@skelly/engine/world';
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import type { Engine } from '../../presentation/src/play.ts';
+import { contentLookup } from '../../presentation/src/ui.ts';
 import { BuildMode } from '../src/debug/build.ts';
-import type { Engine } from '../src/presentation/entries/play.ts';
-import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -2,7 +2,7 @@
 
 import { BindingRegistry } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 it('keeps native text codes and defaults intact without emitting gameplay intents', () => {

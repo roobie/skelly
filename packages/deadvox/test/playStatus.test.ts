@@ -1,6 +1,6 @@
 import { bodyRegionLabel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { bleedingStatusRows } from '../src/presentation/playStatus.ts';
+import { bleedingStatusRows } from '../../presentation/src/presentation/playStatus.ts';
 
 describe('play status projection', () => {
   it('keeps bleeding tier labels and localized region names', () => {

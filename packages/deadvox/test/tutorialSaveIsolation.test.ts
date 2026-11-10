@@ -1,8 +1,8 @@
 import { BindingRegistry } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import { type Engine, startPlay } from '../src/presentation/entries/play.ts';
-import type { SaveController } from '../src/presentation/entries/ui.ts';
-import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { type Engine, startPlay } from '../../presentation/src/play.ts';
+import { KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
+import type { SaveController } from '../../presentation/src/ui.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { baseRegistry } from './baseRegistry.ts';

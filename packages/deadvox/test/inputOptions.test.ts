@@ -3,7 +3,7 @@ import { DEBUG_ONLY_CONTEXTS } from '@skelly/engine/internal/core/inputActions.t
 import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
-import { KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
@@ -31,8 +31,8 @@ Object.defineProperty(globalThis, 'window', { configurable: true, value: dom });
 for (const key of ['addEventListener', 'removeEventListener'] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key].bind(dom) });
 }
-const { mountInputOptions } = await import('../src/ui/inputOptions.ts');
-const { mountMenuPointer } = await import('../src/ui/menuPointer.ts');
+const { mountInputOptions } = await import('../../presentation/src/ui/inputOptions.ts');
+const { mountMenuPointer } = await import('../../presentation/src/ui/menuPointer.ts');
 const inputOptionsText = baseScreenText().inputOptions;
 
 afterAll(() => dom.happyDOM.abort());

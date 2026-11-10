@@ -1,5 +1,5 @@
-import type { HeldItems } from '../src/presentation/entries/render.ts';
-import type { ActorAnimator } from '../src/render/actorAnimator.ts';
+import type { ActorAnimator } from '../../presentation/src/render/actorAnimator.ts';
+import type { HeldItems } from '../../presentation/src/render.ts';
 
 /** Read-only inspection across the transitional adapter and its physical animation owner. */
 export const heldState = (held: HeldItems): object => {

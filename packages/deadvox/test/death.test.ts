@@ -3,8 +3,14 @@
 import { defOf } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
+import {
+  type DeathSummary,
+  deathViewModel,
+  lootedText,
+  newWorldQuery,
+  showDeath,
+} from '../../presentation/src/ui/death.ts';
 import baseSounds from '../mods/skelly.deadvox.actors/actors-sounds.json' with { type: 'json' };
-import { type DeathSummary, deathViewModel, lootedText, newWorldQuery, showDeath } from '../src/ui/death.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry } = buildRegistry([

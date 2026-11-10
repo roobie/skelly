@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { foldText, matchesFind, queryWords } from '../src/ui/inventoryFind.ts';
+import { foldText, matchesFind, queryWords } from '../../presentation/src/ui/inventoryFind.ts';
 
 const find = (query: string, ...texts: string[]) => matchesFind(queryWords(query), texts);
 

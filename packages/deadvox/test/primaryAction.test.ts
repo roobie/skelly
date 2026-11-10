@@ -4,7 +4,7 @@ import { ignitionTargetForHand } from '@skelly/engine/internal/game/primaryActio
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { bindReach, Character, dominantSide, offSide, Survival, selectPrimaryAction } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
+import { primaryActionHint } from '../../presentation/src/ui/primaryActionHint.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';

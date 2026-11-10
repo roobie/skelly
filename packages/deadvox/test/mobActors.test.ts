@@ -38,23 +38,19 @@ import {
   PerspectiveCamera,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  ActorMeshes,
-  ChunkMeshes,
-  MobActorMeshes as RenderMobActorMeshes,
-} from '../src/presentation/entries/render.ts';
-import { ragdollConfig } from '../src/product/ragdoll.ts';
-import { AcidEffects } from '../src/render/acidEffects.ts';
-import { type CrowdCellMaskLayout, isCellInMask } from '../src/render/crowd.ts';
-import { Gore } from '../src/render/gore.ts';
-import { LOOK_AT_REST } from '../src/render/lookAt.ts';
+import { AcidEffects } from '../../presentation/src/render/acidEffects.ts';
+import { type CrowdCellMaskLayout, isCellInMask } from '../../presentation/src/render/crowd.ts';
+import { Gore } from '../../presentation/src/render/gore.ts';
+import { LOOK_AT_REST } from '../../presentation/src/render/lookAt.ts';
 import {
   fallDirectionAwayFromPlayer,
   perceptionLabelFor,
   hearingGazeTarget as renderHearingGazeTarget,
-} from '../src/render/mobActors.ts';
-import { initializeRagdollPhysics } from '../src/render/ragdoll.ts';
-import RAPIER from '../src/render/ragdollRapier.ts';
+} from '../../presentation/src/render/mobActors.ts';
+import { initializeRagdollPhysics } from '../../presentation/src/render/ragdoll.ts';
+import RAPIER from '../../presentation/src/render/ragdollRapier.ts';
+import { ActorMeshes, ChunkMeshes, MobActorMeshes as RenderMobActorMeshes } from '../../presentation/src/render.ts';
+import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -1326,11 +1322,15 @@ describe('MobActorMeshes reactions', () => {
       expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
       const head = actorFigure(FIGURES, SHAMBLER, 1).body.bones.findIndex((bone) => bone.id === 'head');
       const finished = (
-        renderer as unknown as { corpses: ReadonlyMap<number, { ragdoll: import('../src/render/ragdoll.ts').Ragdoll }> }
+        renderer as unknown as {
+          corpses: ReadonlyMap<number, { ragdoll: import('../../presentation/src/render/ragdoll.ts').Ragdoll }>;
+        }
       ).corpses.get(id)!;
       expect(finished.ragdoll.parts.length).toBeGreaterThan(0);
       expect(finished.ragdoll.parts.some((part) => part.sources.has(head))).toBe(false);
-      const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
+      const physics = (
+        renderer as unknown as { ragdolls: import('../../presentation/src/render/ragdoll.ts').RagdollWorld }
+      ).ragdolls;
       expect(physics.counts().bodies).toBeGreaterThan(0);
       const horizon =
         ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds +
@@ -1370,7 +1370,9 @@ describe('MobActorMeshes reactions', () => {
         renderer.sync(store);
         expect(renderer.boneMatrix(id, 'chest')).toEqual(upright);
         await renderer.whenCorpsesReady();
-        const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
+        const physics = (
+          renderer as unknown as { ragdolls: import('../../presentation/src/render/ragdoll.ts').RagdollWorld }
+        ).ragdolls;
         expect(physics.counts().bodies).toBeGreaterThan(0);
         renderer.sync(store, ragdollConfig.timestepRealSeconds);
         renderer.sync(store, ragdollConfig.timestepRealSeconds);

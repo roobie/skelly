@@ -22,8 +22,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
 
-let Flashlight: typeof import('../src/render/flashlight.ts').Flashlight;
-let cone: typeof import('../src/render/flashlightCone.ts');
+let Flashlight: typeof import('../../presentation/src/render/flashlight.ts').Flashlight;
+let cone: typeof import('../../presentation/src/render/flashlightCone.ts');
 const originalChunk = ShaderChunk.lights_pars_begin;
 const originalFragment = ShaderChunk.lights_fragment_begin;
 const originalUniforms = Object.values(ShaderLib).map((shader) => [shader, { ...shader.uniforms }] as const);
@@ -37,8 +37,8 @@ const restoreShaders = () => {
 beforeEach(async () => {
   restoreShaders();
   vi.resetModules();
-  ({ Flashlight } = await import('../src/render/flashlight.ts'));
-  cone = await import('../src/render/flashlightCone.ts');
+  ({ Flashlight } = await import('../../presentation/src/render/flashlight.ts'));
+  cone = await import('../../presentation/src/render/flashlightCone.ts');
 });
 afterEach(restoreShaders);
 
@@ -256,7 +256,7 @@ describe('flashlight cone', () => {
   });
 
   it('reads the torchspill URL switch as on, off or follow content', async () => {
-    const { spillSwitchFromSearch } = await import('../src/render/flashlight.ts');
+    const { spillSwitchFromSearch } = await import('../../presentation/src/render/flashlight.ts');
     expect(spillSwitchFromSearch('?torchspill=1')).toBe(true);
     expect(spillSwitchFromSearch('?torchspill=0')).toBe(false);
     expect(spillSwitchFromSearch('')).toBeUndefined();

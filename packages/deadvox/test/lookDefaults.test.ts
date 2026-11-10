@@ -3,8 +3,8 @@ import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { TONE_KEYS } from '@skelly/engine/internal/core/mood.ts';
 import { clampExposure, clampGrade, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import { describe, expect, it } from 'vitest';
+import { TONE_MODES } from '../../presentation/src/render.ts';
 import { defaultLookUrlState, parseLookParams, writeLookParams } from '../src/debug/lookUrl.ts';
-import { TONE_MODES } from '../src/presentation/entries/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 

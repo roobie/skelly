@@ -20,6 +20,8 @@ import {
 } from '@skelly/engine/look';
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
+import { setAutoToneWeight } from '../../presentation/src/render/autoTone.ts';
+import { hotCheckUniform } from '../../presentation/src/render/hotCheck.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   defaultLookUrlState,
@@ -29,8 +31,6 @@ import {
   parseLookParams,
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
-import { setAutoToneWeight } from '../src/render/autoTone.ts';
-import { hotCheckUniform } from '../src/render/hotCheck.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';

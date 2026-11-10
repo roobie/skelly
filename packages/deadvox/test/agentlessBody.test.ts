@@ -6,7 +6,7 @@ import { decodeSave } from '@skelly/engine/save';
 import { siteGenerationOf } from '@skelly/engine/world';
 import { parse, safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { contentLookup as registryContentLookup } from '../src/presentation/entries/ui.ts';
+import { contentLookup as registryContentLookup } from '../../presentation/src/ui.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, registry, scale } from './snapshotTestSupport.ts';

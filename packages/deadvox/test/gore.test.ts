@@ -6,8 +6,8 @@ import { type Actor, BODY_REGIONS, type BodyRegion, type HitImpulse } from '@ske
 import { BLOCK_SIZE, makeScale, type Vec3 } from '@skelly/engine/world';
 import { BoxGeometry, InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Gore, type GoreBodies } from '../src/render/gore.ts';
-import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
+import { Gore, type GoreBodies } from '../../presentation/src/render/gore.ts';
+import { PLAYER_REGION_BOXES } from '../../presentation/src/render/playerFigure.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

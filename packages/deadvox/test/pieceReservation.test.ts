@@ -2,7 +2,7 @@ import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { decodeSave } from '@skelly/engine/save';
 import { BlockEntities } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { contentLookup } from '../src/presentation/entries/ui.ts';
+import { contentLookup } from '../../presentation/src/ui.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL } from './economyFixtures.ts';

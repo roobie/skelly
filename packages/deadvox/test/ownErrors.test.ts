@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { installErrorReportHandler } from '../src/presentation/entries/ui.ts';
-import { setErrorReportContext } from '../src/ui/errorReport.ts';
-import { isOwnError } from '../src/ui/ownError.ts';
+import { setErrorReportContext } from '../../presentation/src/ui/errorReport.ts';
+import { isOwnError } from '../../presentation/src/ui/ownError.ts';
+import { installErrorReportHandler } from '../../presentation/src/ui.ts';
 
 const OWN = 'https://game.example';
 const FOREIGN_SCRIPT = 'https://analytics.example/beacon.js';

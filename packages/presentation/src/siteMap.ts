@@ -6,4 +6,4 @@ export {
   siteMapRasterToWorld,
   siteMapWorldToRaster,
   topSolidAtOrBelow,
-} from '../../render/siteMap.ts';
+} from './render/siteMap.ts';

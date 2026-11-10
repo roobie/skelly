@@ -2,10 +2,10 @@ import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import { BlockEntities, type BlockEntity } from '@skelly/engine/world';
 import type { Mesh } from 'three';
 import { expect, it } from 'vitest';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { buildShape } from '../src/render/vehicleShape.ts';
-import { type ShapePort, VehicleShapes } from '../src/render/vehicleShapes.ts';
-import { type VehicleLook, vehicleModel } from '../src/render/workshopVehicle.ts';
+import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
+import { buildShape } from '../../presentation/src/render/vehicleShape.ts';
+import { type ShapePort, VehicleShapes } from '../../presentation/src/render/vehicleShapes.ts';
+import { type VehicleLook, vehicleModel } from '../../presentation/src/render/workshopVehicle.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const entity = {

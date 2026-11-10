@@ -7,8 +7,7 @@ import { fillText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
+import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../../presentation/src/ui/hudOptions.ts';
 import {
   playCarryText,
   playCrosshairFrame,
@@ -17,8 +16,9 @@ import {
   playPromptText,
   projectCrosshairScreenPosition,
   renderPlayHud,
-} from '../src/ui/playHud.ts';
-import { playReadout } from '../src/ui/playReadout.ts';
+} from '../../presentation/src/ui/playHud.ts';
+import { playReadout } from '../../presentation/src/ui/playReadout.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

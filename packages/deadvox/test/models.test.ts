@@ -21,17 +21,17 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HeldItems, ModelLibrary, PileMeshes } from '../src/presentation/entries/render.ts';
-import { createCompass } from '../src/render/compass.ts';
-import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
-import { itemLook } from '../src/render/itemLook.ts';
+import { createCompass } from '../../presentation/src/render/compass.ts';
+import { presentHeldDisplay } from '../../presentation/src/render/heldDisplay.ts';
+import { itemLook } from '../../presentation/src/render/itemLook.ts';
 import {
   fittedPartFrame,
   groundModelFrame,
   heldModelFrame,
   indexModelMaterials,
   prepareModel,
-} from '../src/render/models.ts';
+} from '../../presentation/src/render/models.ts';
+import { HeldItems, ModelLibrary, PileMeshes } from '../../presentation/src/render.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -355,7 +355,7 @@ describe('piles with models', () => {
       version: 1,
       has: (id: string) => id === modelDefinition.id,
       groundLook: () => ground.clone(),
-    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
     const render = (on: boolean, withModel = true) => {
       const source = withModel
         ? registry
@@ -430,7 +430,7 @@ describe('piles with models', () => {
         version: 1,
         has: (id: string) => id === modelDefinition.id,
         groundLook: () => ground.clone(),
-      } as unknown as import('../src/render/models.ts').ModelLibrary;
+      } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);

@@ -4,7 +4,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
+import { shouldConfirmPageLeave } from '../../presentation/src/ui/leaveConfirmation.ts';
 
 const confirmationWindow = BUNDLED_CONTENT.registry.saves.get('autosave')!.leaveConfirmationRealSeconds;
 

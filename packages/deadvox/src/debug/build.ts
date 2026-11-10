@@ -9,7 +9,7 @@ import { decimalText } from '@skelly/engine/text';
 import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '@skelly/engine/world';
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
-import type { Engine } from '../presentation/entries/play.ts';
+import type { Engine } from '../../../presentation/src/play.ts';
 
 const hotbarTemplate = (
   blocks: readonly { color: string; name: string }[],

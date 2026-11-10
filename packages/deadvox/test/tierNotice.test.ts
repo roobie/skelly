@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { TierNotice } from '../src/presentation/tierNotice.ts';
+import { TierNotice } from '../../presentation/src/presentation/tierNotice.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const { tiers } = BODY_TUNING_FIXTURE.bleeding;

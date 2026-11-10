@@ -1,6 +1,6 @@
 import { CHUNK, Chunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { topSolidAtOrBelow } from '../src/presentation/entries/siteMap.ts';
+import { topSolidAtOrBelow } from '../../presentation/src/siteMap.ts';
 
 const SOLID = 1;
 

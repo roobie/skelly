@@ -2,7 +2,7 @@ import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { Group } from 'three';
 import { describe, expect, it } from 'vitest';
-import { VehicleMeshes } from '../src/render/vehicles.ts';
+import { VehicleMeshes } from '../../presentation/src/render/vehicles.ts';
 import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
 const spec = (placementKey: string, facing: 'n' | 'e' | 's' | 'w' = 'n') => ({

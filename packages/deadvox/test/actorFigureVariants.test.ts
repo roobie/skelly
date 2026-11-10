@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigureGeometry } from '../src/render/actorFigureGeometry.ts';
-import { figureVariants } from '../src/render/actorFigureVariants.ts';
+import { actorFigureGeometry } from '../../presentation/src/render/actorFigureGeometry.ts';
+import { figureVariants } from '../../presentation/src/render/actorFigureVariants.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

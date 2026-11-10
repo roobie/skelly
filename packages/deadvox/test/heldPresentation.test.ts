@@ -6,17 +6,17 @@ import { dominantSide } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { HeldItems, type ModelLibrary, PlayerMeshes } from '../src/presentation/entries/render.ts';
-import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
-import { HeldPresentation, heldItemPoses, type ItemHoldPose } from '../src/render/heldPresentation.ts';
-import { renderMeleePose } from '../src/render/meleePose.ts';
+import { createAvatarMannequin } from '../../presentation/src/render/avatarMannequin.ts';
+import { HeldPresentation, heldItemPoses, type ItemHoldPose } from '../../presentation/src/render/heldPresentation.ts';
+import { renderMeleePose } from '../../presentation/src/render/meleePose.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 // The compass label's canvas is unrelated to its grip; pixels are checked in the held browser stage.
-vi.mock('../src/render/compass.ts', () => ({
+vi.mock('../../presentation/src/render/compass.ts', () => ({
   createCompass: ({ root }: { root: Object3D }) => ({ group: root, update: () => undefined, dispose: () => undefined }),
 }));
 

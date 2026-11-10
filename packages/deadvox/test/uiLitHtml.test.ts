@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // ADR 0001: every screen in these source trees is rendered with lit-html.
-const DIRECTORIES = ['src/ui', 'src/debug'];
+const DIRECTORIES = ['../presentation/src/ui', 'src/debug'];
 
 // Hand-built DOM: creating, attaching or rewriting nodes instead of rendering a template.
 const HAND_DOM =

@@ -4,12 +4,8 @@ import { mergeManifests, type PackedManifest, type SoundDef } from '@skelly/engi
 import { type SoundId, soundVariantKey } from '@skelly/engine/sound';
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
+import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from '../../presentation/src/ui.ts';
 import { bundledCredits } from '../src/bundledCredits.ts';
-import {
-  buildHeartbeatSoundGuide,
-  buildSoundGuide,
-  renderHeartbeatSoundGuide,
-} from '../src/presentation/entries/ui.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 

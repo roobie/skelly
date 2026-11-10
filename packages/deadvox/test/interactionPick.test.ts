@@ -5,9 +5,9 @@ import { interactionAffordance } from '@skelly/engine/sim';
 import { type SolidAt, type Vec3, World, worldOpaque, worldSolid } from '@skelly/engine/world';
 import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { type ModelLibrary, PileMeshes } from '../src/presentation/entries/render.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { markInteractionTarget } from '../src/render/interactionMarker.ts';
+import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
+import { markInteractionTarget } from '../../presentation/src/render/interactionMarker.ts';
+import { type ModelLibrary, PileMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

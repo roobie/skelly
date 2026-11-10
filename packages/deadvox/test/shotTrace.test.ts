@@ -3,7 +3,7 @@ import type { ShotTrace } from '@skelly/engine/sim';
 import type { SolidAt, Vec3 } from '@skelly/engine/world';
 import { Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { IMPACT_MARK_CAP, ImpactEffects, PING_SECONDS } from '../src/render/impactEffects.ts';
+import { IMPACT_MARK_CAP, ImpactEffects, PING_SECONDS } from '../../presentation/src/render/impactEffects.ts';
 
 const RANGE_BLOCKS = 12;
 const plane = (x: number, y: number, z: number): boolean => x === 3 && y >= 0 && z === 0;

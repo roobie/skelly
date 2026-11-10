@@ -37,7 +37,7 @@ import {
   type Shadows,
   setHotCheck,
   TONE_MODES,
-} from '../presentation/entries/render.ts';
+} from '../../../presentation/src/render.ts';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;

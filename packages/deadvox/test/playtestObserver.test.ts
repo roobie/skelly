@@ -2,9 +2,9 @@ import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import type { Session } from '@skelly/engine/session';
 import type { PlaytestMarks } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
+import { PlaytestObserver } from '../../presentation/src/presentation/playtestObserver.ts';
+import { SessionMetrics } from '../../presentation/src/presentation/playtestTools.ts';
 import { measureSessionSnapshot } from '../src/debug/snapshotMeasurement.ts';
-import { PlaytestObserver } from '../src/presentation/playtestObserver.ts';
-import { SessionMetrics } from '../src/presentation/playtestTools.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 

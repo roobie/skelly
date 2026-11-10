@@ -3,8 +3,8 @@
 import type { ModIntake } from '@skelly/engine/packs';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import { chooseMods } from '../src/presentation/entries/ui.ts';
-import { ModStorage } from '../src/presentation/modStorage.ts';
+import { ModStorage } from '../../presentation/src/presentation/modStorage.ts';
+import { chooseMods } from '../../presentation/src/ui.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 // Admission is mocked below, so the panel reads only the byte bound.

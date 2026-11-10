@@ -9,10 +9,10 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { Mood } from '../src/presentation/entries/render.ts';
+import { Mood } from '../../presentation/src/render.ts';
 
 const query = vi.hoisted(() => ({ begin: vi.fn(), end: vi.fn() }));
-vi.mock('../src/render/gpuFrameTime.ts', () => {
+vi.mock('../../presentation/src/render/gpuFrameTime.ts', () => {
   class GpuFrameTime {
     begin = query.begin;
   }

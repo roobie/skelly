@@ -2,14 +2,14 @@ import { claimed } from '@skelly/engine/inventory';
 import type { SoundId } from '@skelly/engine/sound';
 import { playerHeartbeat } from '@skelly/engine/sound';
 import { html, render } from 'lit-html';
-import { bundledCredits } from './bundledCredits.ts';
-import { GameAudio } from './presentation/entries/audio.ts';
+import { GameAudio } from '../../presentation/src/audio.ts';
 import {
   applyUiTokens,
   buildHeartbeatSoundGuide,
   buildSoundGuide,
   renderHeartbeatSoundGuide,
-} from './presentation/entries/ui.ts';
+} from '../../presentation/src/ui.ts';
+import { bundledCredits } from './bundledCredits.ts';
 import { productAssets } from './product/assets.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
 

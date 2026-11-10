@@ -6,8 +6,8 @@ import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '@skelly/engine/internal/co
 import type { PackManifest } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { bundledAssetFiles } from '../src/presentation/entries/play.ts';
-import { applyUiTokens } from '../src/presentation/entries/ui.ts';
+import { bundledAssetFiles } from '../../presentation/src/play.ts';
+import { applyUiTokens } from '../../presentation/src/ui.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const refusalSound = {
@@ -147,7 +147,7 @@ it("draws the cursor from the later stack entry's row, with its image found in t
   expect(root.style.getPropertyValue('--cursor-frame-width')).toBe('11px');
   expect(root.style.getPropertyValue('--cursor-frame-height')).toBe('22px');
   expect(root.style.getPropertyValue('--cursor-hand-offset')).toBe('-3px');
-  const [rule] = CURSOR_RULE.exec(readFileSync('src/ui/style.css', 'utf8'))!;
+  const [rule] = CURSOR_RULE.exec(readFileSync('../presentation/src/ui/style.css', 'utf8'))!;
   expect(rule).toContain('var(--cursor-image)');
   expect(rule).not.toContain('url(');
 });

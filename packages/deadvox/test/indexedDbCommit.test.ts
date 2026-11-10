@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDurableWriteTransaction } from '../src/presentation/indexedDbCommit.ts';
+import { createDurableWriteTransaction } from '../../presentation/src/presentation/indexedDbCommit.ts';
 
 describe('IndexedDB save commits', () => {
   it('requests strict durability for save writes', () => {

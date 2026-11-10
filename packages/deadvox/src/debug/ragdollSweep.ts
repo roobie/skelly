@@ -2,7 +2,7 @@ import type { Registry } from '@skelly/engine/content';
 import { bodyPlanModel, figureVariantOf } from '@skelly/engine/pose';
 import type { ActorSystem, EntityId } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
-import type { ActorRenderer } from '../presentation/entries/render.ts';
+import type { ActorRenderer } from '../../../presentation/src/render.ts';
 import { ragdollSweep } from '../product/ragdoll.ts';
 
 export function stageRagdollSweep({

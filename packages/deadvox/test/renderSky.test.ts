@@ -11,8 +11,8 @@ import {
 } from 'three';
 import { expect, it } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { applySky, Mood } from '../src/presentation/entries/render.ts';
-import { heightFogUniforms } from '../src/render/heightFog.ts';
+import { heightFogUniforms } from '../../presentation/src/render/heightFog.ts';
+import { applySky, Mood } from '../../presentation/src/render.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 
 it('fog, background and mist follow local sky visibility from darkness to open sky', () => {

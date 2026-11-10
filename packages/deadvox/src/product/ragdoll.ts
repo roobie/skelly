@@ -1,6 +1,6 @@
 import type { DebugStart } from '@skelly/engine/session';
+import type { RagdollConfig } from '../../../presentation/src/play.ts';
 import ragdoll from '../config/ragdoll.json' with { type: 'json' };
-import type { RagdollConfig } from '../presentation/entries/play.ts';
 
 /**
  * The product's corpse physics tuning; the entry passes it to presentation, which names no product path. The

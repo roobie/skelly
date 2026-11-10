@@ -8,7 +8,7 @@ import { defOf, HandlingQueue, Inventory, spentCaseItemId } from '@skelly/engine
 import { NEUTRAL_AIM } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { HandlingLessons } from '../src/presentation/handlingLessons.ts';
+import { HandlingLessons } from '../../presentation/src/presentation/handlingLessons.ts';
 import { handlingTracksFixture } from './fixtures/guidance.ts';
 import { content } from './fixtures/startupContent.ts';
 

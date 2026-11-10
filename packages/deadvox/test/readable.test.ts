@@ -15,7 +15,7 @@ const BUNDLED_CONTENT = startupContent();
 
 import { createSession, IDLE } from '@skelly/engine/session';
 import { Survival } from '@skelly/engine/sim';
-import { computeMenuState } from '../src/ui/menuState.ts';
+import { computeMenuState } from '../../presentation/src/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureBodySounds } from './fixtures/bodySounds.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';

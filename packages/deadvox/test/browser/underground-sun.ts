@@ -12,7 +12,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import { ChunkMeshes, Shadows } from '../../src/presentation/entries/render.ts';
+import { ChunkMeshes, Shadows } from '../../../presentation/src/render.ts';
 import { skyWorldFixture } from '../fixtures/skyWorld.ts';
 
 function slab(thickness: number): MeshData {

@@ -11,7 +11,7 @@ import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { makeScale, type SolidAt } from '@skelly/engine/world';
 import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { HeldItems, LightPool } from '../src/presentation/entries/render.ts';
+import { HeldItems, LightPool } from '../../presentation/src/render.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';

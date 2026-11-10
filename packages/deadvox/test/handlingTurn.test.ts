@@ -6,7 +6,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { handlingRotation } from '../src/render/handlingTurn.ts';
+import { handlingRotation } from '../../presentation/src/render/handlingTurn.ts';
 
 const { registry } = BUNDLED_CONTENT;
 // A racked rifle with a detachable magazine; the fixtures differ only in where the charging handle sits.

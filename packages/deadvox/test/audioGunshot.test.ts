@@ -11,7 +11,7 @@ import type { SoundEmission, SoundId } from '@skelly/engine/sound';
 import { heartbeatForStamina, playerHeartbeat } from '@skelly/engine/sound';
 import { makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GameAudio } from '../src/presentation/entries/audio.ts';
+import { GameAudio } from '../../presentation/src/audio.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

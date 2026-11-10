@@ -14,8 +14,8 @@ import {
 import { firearmBoreRay } from '@skelly/engine/sim';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame } from '../src/render/models.ts';
+import { itemLook } from '../../presentation/src/render/itemLook.ts';
+import { fittedPartFrame } from '../../presentation/src/render/models.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 

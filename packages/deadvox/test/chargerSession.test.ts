@@ -1,7 +1,7 @@
 import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
 import { batteryEnergy } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { chargerPanel } from '../src/ui/chargerPanel.ts';
+import { chargerPanel } from '../../presentation/src/ui/chargerPanel.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createChargerSession } from './fixtures/chargerSession.ts';

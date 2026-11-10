@@ -6,7 +6,7 @@ import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } fr
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { Skylight } from '../src/presentation/entries/render.ts';
+import { Skylight } from '../../presentation/src/render.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 

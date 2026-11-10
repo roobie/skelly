@@ -6,7 +6,7 @@ import {
   applyImpulseAtClampedPoint,
   clampPointToRigidBody,
   type RigidBody,
-} from '../src/render/rigidImpulse.ts';
+} from '../../presentation/src/render/rigidImpulse.ts';
 
 const body = (): RigidBody => ({
   mass: 2,

@@ -14,9 +14,9 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { glowingCopy } from '../src/render/itemEmissive.ts';
-import { applyModelMaterials, modelMaterialWarmUp } from '../src/render/modelMaterials.ts';
-import { prepareModel } from '../src/render/models.ts';
+import { glowingCopy } from '../../presentation/src/render/itemEmissive.ts';
+import { applyModelMaterials, modelMaterialWarmUp } from '../../presentation/src/render/modelMaterials.ts';
+import { prepareModel } from '../../presentation/src/render/models.ts';
 import { thingModels } from './thingModels.ts';
 
 const table = {

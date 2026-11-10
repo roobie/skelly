@@ -15,8 +15,8 @@ import {
   poseActionParts,
   sampleActionStroke,
   sampleActionTurn,
-} from '../src/render/firearmModel.ts';
-import { prepareModel } from '../src/render/models.ts';
+} from '../../presentation/src/render/firearmModel.ts';
+import { prepareModel } from '../../presentation/src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';
 

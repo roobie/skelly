@@ -15,10 +15,10 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { HeldItems, type ModelLibrary } from '../src/presentation/entries/render.ts';
-import type { HeldHandlingFrame } from '../src/render/hands.ts';
-import { prepareModel } from '../src/render/models.ts';
-import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
+import type { HeldHandlingFrame } from '../../presentation/src/render/hands.ts';
+import { prepareModel } from '../../presentation/src/render/models.ts';
+import { RUMMAGE_POSE, rummageFrame } from '../../presentation/src/render/rummagePose.ts';
+import { HeldItems, type ModelLibrary } from '../../presentation/src/render.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';

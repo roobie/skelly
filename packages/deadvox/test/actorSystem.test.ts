@@ -53,10 +53,10 @@ import {
 } from '@skelly/engine/world';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { ActorMeshes } from '../src/presentation/entries/render.ts';
+import type { RagdollWorld } from '../../presentation/src/render/ragdoll.ts';
+import type { RigidBody } from '../../presentation/src/render/rigidImpulse.ts';
+import { ActorMeshes } from '../../presentation/src/render.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
-import type { RagdollWorld } from '../src/render/ragdoll.ts';
-import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

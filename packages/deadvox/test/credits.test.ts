@@ -2,8 +2,8 @@
 
 import { mergeManifests, validateManifest } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
-import { mountCredits } from '../src/presentation/entries/ui.ts';
-import { creditsViewModel } from '../src/ui/credits.ts';
+import { creditsViewModel } from '../../presentation/src/ui/credits.ts';
+import { mountCredits } from '../../presentation/src/ui.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 describe('creditsViewModel', () => {

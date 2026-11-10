@@ -1,7 +1,7 @@
 import { type Reticle, ReticleSchema, reticleScale } from '@skelly/thing-core/reticle';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
+import { opticLensPass, setOpticLensUniforms } from '../../presentation/src/render/opticLens.ts';
 
 const opticLens = { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 };
 const reticle: Reticle = {

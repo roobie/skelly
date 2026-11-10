@@ -8,9 +8,10 @@ import ts from '../../../tools/lit-check/node_modules/typescript/lib/typescript.
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');
-// The runtime package's source; its files are keyed relative to it, as deadvox's are to SOURCE.
+// The runtime and presentation packages' source; their files are keyed relative to it, as deadvox's are to SOURCE.
 const ENGINE = join(DEADVOX, '..', 'engine', 'src');
-const SOURCES = [SOURCE, ENGINE];
+const PRESENTATION = join(DEADVOX, '..', 'presentation', 'src');
+const SOURCES = [SOURCE, ENGINE, PRESENTATION];
 const sourceRelative = (file) => {
   const root = SOURCES.find((dir) => file.startsWith(`${dir}/`));
   return root ? file.slice(root.length + 1) : file;

@@ -4,7 +4,7 @@ import { OCCLUSION_RADIUS, WIDE } from '@skelly/engine/internal/core/occlusion.t
 import { buildMesh } from '@skelly/engine/mesh';
 import type { WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
-import { ChunkMeshes } from '../src/presentation/entries/render.ts';
+import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { startupContent } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 

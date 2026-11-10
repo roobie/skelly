@@ -1,6 +1,9 @@
 import { makeConfig } from '@skelly/engine/session';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import type { RenderedEngine } from '../../presentation/src/play.ts';
+import { heightFogUniforms } from '../../presentation/src/render/heightFog.ts';
+import { setHeightFogTuning } from '../../presentation/src/render.ts';
 import { benchFlareSourcesFromUrl } from '../src/bench/lightFixture.ts';
 import {
   applyBenchWeathering,
@@ -11,9 +14,6 @@ import {
 } from '../src/bench/post.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import type { RenderedEngine } from '../src/presentation/entries/play.ts';
-import { setHeightFogTuning } from '../src/presentation/entries/render.ts';
-import { heightFogUniforms } from '../src/render/heightFog.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';

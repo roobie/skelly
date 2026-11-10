@@ -3,7 +3,7 @@ import { HandlingQueue, Inventory, type Item, type Target } from '@skelly/engine
 import type { MeleePoseFrame } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { grabPose, worldGrabProgress } from '../src/render/grabPose.ts';
+import { grabPose, worldGrabProgress } from '../../presentation/src/render/grabPose.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 

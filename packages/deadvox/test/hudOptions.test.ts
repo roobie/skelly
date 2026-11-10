@@ -1,8 +1,8 @@
 import type { InteractionTarget } from '@skelly/engine/sim';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PileMeshes } from '../src/presentation/entries/render.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { markInteractionTarget } from '../src/render/interactionMarker.ts';
+import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
+import { markInteractionTarget } from '../../presentation/src/render/interactionMarker.ts';
+import { PileMeshes } from '../../presentation/src/render.ts';
 import {
   DEFAULT_HUD_OPTIONS,
   HUD_OPTION_KEYS,
@@ -10,7 +10,7 @@ import {
   hudVisibility,
   readHudOptions,
   writeHudOptions,
-} from '../src/ui/hudOptions.ts';
+} from '../../presentation/src/ui/hudOptions.ts';
 
 const storage = () => {
   const values = new Map<string, string>();

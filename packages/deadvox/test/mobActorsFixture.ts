@@ -1,8 +1,8 @@
 import player from '../../mods/skelly.body/player.json' with { type: 'json' };
 import inventory from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
-import { MobActorMeshes as RenderMobActorMeshes } from '../src/presentation/entries/render.ts';
+import type { MobActorMeshesOptions } from '../../presentation/src/render/mobActors.ts';
+import { MobActorMeshes as RenderMobActorMeshes } from '../../presentation/src/render.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
-import type { MobActorMeshesOptions } from '../src/render/mobActors.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
 export const CORPSE_LIFECYCLE = {
