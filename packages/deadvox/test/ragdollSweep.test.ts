@@ -3,7 +3,7 @@ import { makeScale } from '@skelly/engine/world';
 import { Group } from 'three';
 import { expect, it, vi } from 'vitest';
 import { stageRagdollSweep } from '../src/debug/ragdollSweep.ts';
-import { ragdollContent } from '../src/render/ragdoll.ts';
+import { ragdollSweep } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
@@ -47,6 +47,6 @@ it('stages ragdoll mechanisms using actor figure variants, not anatomy keys', ()
   });
   expect(add.mock.calls.length).toBeGreaterThan(0);
   expect(new Set(add.mock.calls.map(([type]) => bodyPlanModel(figureVariantOf(type))))).toEqual(
-    new Set(ragdollContent.sweep.models),
+    new Set(ragdollSweep.models),
   );
 });

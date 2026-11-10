@@ -153,7 +153,7 @@ import { patchHeightFog } from './heightFog.ts';
 import { holeWallGeometry } from './holeWalls.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from './lookAt.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
-import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
+import { type Ragdoll, type RagdollConfig, RagdollWorld } from './ragdoll.ts';
 import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -452,6 +452,8 @@ export interface MobActorMeshesOptions {
   readonly maxCorpses: number;
   readonly handlingReachMetres: number;
   readonly gravityMetresPerSimSecondSquared: number;
+  /** The product's corpse physics tuning. */
+  readonly ragdoll: RagdollConfig;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
@@ -1438,8 +1440,8 @@ export class MobActorMeshes implements ActorRenderer {
       return;
     }
     const variant = this.variants[corpse.variantIndex]!;
-    if (ragdollContent.models.includes(variant.body.model)) {
-      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
+    if (this.options.ragdoll.models.includes(variant.body.model)) {
+      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared, this.options.ragdoll);
       corpse.ragdoll = this.ragdolls.spawn({
         body: variant.body,
         model: variant.body.model,
@@ -1453,7 +1455,7 @@ export class MobActorMeshes implements ActorRenderer {
         excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed))),
         ...(corpse.launch ? { launch: corpse.launch } : {}),
         ...(corpse.incapacitated
-          ? { reach: Math.min(this.options.handlingReachMetres, ragdollContent.downedDriftMetres) }
+          ? { reach: Math.min(this.options.handlingReachMetres, this.options.ragdoll.downedDriftMetres) }
           : {}),
       });
     }
@@ -1721,9 +1723,9 @@ export class MobActorMeshes implements ActorRenderer {
       hitPoint[2] + dz * projection,
     ];
     const appliedPoint = applyImpulseAtClampedPoint(body, point, [
-      dx * hit.impulse * ragdollContent.debris.impulseScale,
-      dy * hit.impulse * ragdollContent.debris.impulseScale,
-      dz * hit.impulse * ragdollContent.debris.impulseScale,
+      dx * hit.impulse * this.options.ragdoll.debris.impulseScale,
+      dy * hit.impulse * this.options.ragdoll.debris.impulseScale,
+      dz * hit.impulse * this.options.ragdoll.debris.impulseScale,
     ]);
     const spin = Math.hypot(...angularVelocity(body));
     if (spin > this.options.look.launchSpinRadiansPerSimSecond) {
@@ -1774,7 +1776,7 @@ export class MobActorMeshes implements ActorRenderer {
     variant.crowdSlotAttr.needsUpdate = true;
     variant.mesh.count = variant.liveIds.length;
     this.copyCells(variant, state.localSlot, localSlot);
-    this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
+    this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared, this.options.ragdoll);
     this.debris.set(key, {
       physics: this.ragdolls.spawnRigid(body, this.rigidWorld()),
       variantIndex: state.variantIndex,
@@ -2029,7 +2031,7 @@ export class MobActorMeshes implements ActorRenderer {
   private beginCrawlFall(state: ActorRenderState, variant: Variant, actor: Actor): void {
     const crawling = actorCrawls(actor, variant.body);
     if (crawling && !state.crawling && state.lastPose && state.lastPlacement && !this.ragdolls?.failed) {
-      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
+      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared, this.options.ragdoll);
       const placement = state.lastPlacement;
       state.crawlFall = {
         elapsedRealSeconds: 0,
@@ -2045,8 +2047,8 @@ export class MobActorMeshes implements ActorRenderer {
           ground: this.rigidWorld(),
           excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, actor.severed))),
           ...(state.fallHit ? { launch: state.fallHit } : {}),
-          motion: ragdollContent.crawlFall.motion,
-          motionScale: ragdollContent.crawlFall.motionScale,
+          motion: this.options.ragdoll.crawlFall.motion,
+          motionScale: this.options.ragdoll.crawlFall.motionScale,
         }),
       };
     }
@@ -2074,7 +2076,8 @@ export class MobActorMeshes implements ActorRenderer {
   ): void {
     const fall = state.crawlFall!;
     const progress = clamp01(
-      (fall.elapsedRealSeconds - ragdollContent.crawlFall.fallSeconds) / ragdollContent.crawlFall.blendSeconds,
+      (fall.elapsedRealSeconds - this.options.ragdoll.crawlFall.fallSeconds) /
+        this.options.ragdoll.crawlFall.blendSeconds,
     );
     const blend = progress * progress * (3 - 2 * progress);
     const yaw = rotY((posed.placement.yawRad * 180) / Math.PI);
@@ -2408,11 +2411,17 @@ export class MobActorMeshes implements ActorRenderer {
         continue;
       }
       fall.elapsedRealSeconds += realDt;
-      if (!fall.released && (fall.physics.settled || fall.elapsedRealSeconds >= ragdollContent.crawlFall.fallSeconds)) {
+      if (
+        !fall.released &&
+        (fall.physics.settled || fall.elapsedRealSeconds >= this.options.ragdoll.crawlFall.fallSeconds)
+      ) {
         this.ragdolls?.remove(fall.physics);
         fall.released = true;
       }
-      if (fall.elapsedRealSeconds >= ragdollContent.crawlFall.fallSeconds + ragdollContent.crawlFall.blendSeconds) {
+      if (
+        fall.elapsedRealSeconds >=
+        this.options.ragdoll.crawlFall.fallSeconds + this.options.ragdoll.crawlFall.blendSeconds
+      ) {
         state.crawlFall = undefined;
       }
     }

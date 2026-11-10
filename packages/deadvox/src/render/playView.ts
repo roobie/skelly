@@ -67,17 +67,23 @@ import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
-import { ragdollContent } from './ragdoll.ts';
+import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
 
-const corpseBudget = (seed: number | undefined, maxCorpses: number, look: MobActorMeshesOptions['look']) => ({
-  maxCorpses: seed === undefined ? maxCorpses : ragdollContent.sweep.capacity,
+const corpseBudget = (
+  ragdoll: RagdollConfig,
+  seed: number | undefined,
+  maxCorpses: number,
+  look: MobActorMeshesOptions['look'],
+) => ({
+  ragdoll,
+  maxCorpses: seed === undefined ? maxCorpses : ragdoll.sweep.capacity,
   ragdollSeed: seed,
-  look: seed === undefined ? look : { ...look, corpseLieSimSeconds: ragdollContent.sweep.lieSeconds },
+  look: seed === undefined ? look : { ...look, corpseLieSimSeconds: ragdoll.sweep.lieSeconds },
 });
 
 export interface PlayCameraFrame {
@@ -221,6 +227,7 @@ export const createPlayView = (
   {
     models: modelFiles,
     actorFigureFiles,
+    ragdoll,
     page = globalThis,
     poweredLights = () => [],
     physicalSolid = engine.isSolid,
@@ -229,6 +236,8 @@ export const createPlayView = (
     models: PackAssetFiles;
     /** The session's built actor figures, handed to each pose input (`packages/engine/src/core/actorPose.ts`, `ActorPoseInput`). */
     actorFigureFiles: ActorFigureFiles;
+    /** The product's corpse physics tuning. */
+    ragdoll: RagdollConfig;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
@@ -359,7 +368,7 @@ export const createPlayView = (
   const actorMeshes: ActorRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
-          ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
+          ...corpseBudget(ragdoll, config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
           handlingReachMetres: reachTuning(registry).reachMetres,
           gravityMetresPerSimSecondSquared,
           canvas: engine.renderer?.domElement,

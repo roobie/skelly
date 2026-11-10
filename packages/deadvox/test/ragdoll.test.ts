@@ -3,7 +3,8 @@ import { bodySkeleton, decodeFrame, type Pose, quatToMat3, sampleClip, severedBo
 import { reachTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
+import { ragdollConfig, ragdollSweep } from '../src/product/ragdoll.ts';
+import { RagdollWorld, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -42,16 +43,16 @@ const restPose = ({ clips }: ActorFigureFile): Pose => {
 };
 
 describe('render ragdoll', () => {
-  it.each(ragdollContent.models)(
+  it.each(ragdollConfig.models)(
     '%s partitions every skeleton bone once with one limited link per non-root group',
     async (model) => {
       const figure = figureOf(model).body;
       const bones = bodySkeleton(figure);
-      const groups = ragdollGroups(bones);
+      const groups = ragdollGroups(ragdollConfig, bones);
       const indices = groups.flatMap((group) => group.indices);
       expect(indices.length).toBe(bones.length);
       expect(new Set(indices).size).toBe(indices.length);
-      const world = new RagdollWorld(WORLD_GRAVITY);
+      const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
       try {
         const corpse = world.spawn({
           body: figure,
@@ -76,7 +77,7 @@ describe('render ragdoll', () => {
             expect(group.limits).not.toBeNull();
           }
         }
-        expect(() => ragdollGroups(bones.slice(1))).toThrow();
+        expect(() => ragdollGroups(ragdollConfig, bones.slice(1))).toThrow();
       } finally {
         world.dispose();
       }
@@ -85,8 +86,10 @@ describe('render ragdoll', () => {
 
   it('rejects authored grouping omissions and duplicate ownership', () => {
     const bones = bodySkeleton(fixtureFigure);
-    expect(() => ragdollGroups(bones, new Set(), ragdollContent.groups.slice(1))).toThrow();
-    expect(() => ragdollGroups(bones, new Set(), [...ragdollContent.groups, ragdollContent.groups[0]!])).toThrow();
+    expect(() => ragdollGroups(ragdollConfig, bones, new Set(), ragdollConfig.groups.slice(1))).toThrow();
+    expect(() =>
+      ragdollGroups(ragdollConfig, bones, new Set(), [...ragdollConfig.groups, ragdollConfig.groups[0]!]),
+    ).toThrow();
   });
 
   // biome-ignore-start lint/suspicious/noMisplacedAssertion: shared invariant probe runs only inside default cases or the gated figure sweep.
@@ -101,7 +104,7 @@ describe('render ragdoll', () => {
   }) => {
     const bones = bodySkeleton(figure.body);
     const excluded = new Set([...severedBoneSet(bones, cuts)].map((id) => bones.findIndex((bone) => bone.id === id)));
-    const world = new RagdollWorld(WORLD_GRAVITY);
+    const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const corpse = world.spawn({
         body: figure.body,
@@ -119,8 +122,8 @@ describe('render ragdoll', () => {
       expect([...corpse.parts.flatMap((part) => [...part.sources.keys()])].some((index) => excluded.has(index))).toBe(
         false,
       );
-      for (let step = 0; step < ragdollContent.stepBudget; step++) {
-        world.advance(ragdollContent.timestep);
+      for (let step = 0; step < ragdollConfig.stepBudget; step++) {
+        world.advance(ragdollConfig.timestep);
       }
       expect(corpse.settled).toBe(true);
       for (const { body } of corpse.parts) {
@@ -143,17 +146,17 @@ describe('render ragdoll', () => {
 
   // Each model of the rest sweep takes the next of its cut sets in turn, so the default run covers every model and
   // cut set without the gated sweep's full product.
-  const sweepCuts = ragdollContent.sweep.cuts.slice(0, -1);
-  it.each(ragdollContent.sweep.models.map((model, index) => ({ model, cuts: sweepCuts[index % sweepCuts.length]! })))(
+  const sweepCuts = ragdollSweep.cuts.slice(0, -1);
+  it.each(ragdollSweep.models.map((model, index) => ({ model, cuts: sweepCuts[index % sweepCuts.length]! })))(
     '$model settles above ground with $cuts absent',
     ({ model, cuts }) => assertRest({ figure: figureOf(model), cuts }),
   );
 
   sweepGroup('ragdoll figure sweep', () => {
     it('rest invariants across every built figure of the presentation row', async () => {
-      for (const model of ragdollContent.sweep.models) {
+      for (const model of ragdollSweep.models) {
         for (const figure of figuresOf(model)) {
-          for (const cuts of ragdollContent.sweep.cuts.slice(0, -1)) {
+          for (const cuts of ragdollSweep.cuts.slice(0, -1)) {
             // biome-ignore lint/performance/noAwaitInLoops: each solver world is measured independently.
             await assertRest({ figure, cuts });
           }
@@ -163,7 +166,7 @@ describe('render ragdoll', () => {
   });
 
   it('keeps a downed brute trunk within handling reach and removes its tether with the body', async () => {
-    const world = new RagdollWorld(WORLD_GRAVITY);
+    const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const reach = reachTuning(baseRegistry()).reachMetres;
       const corpse = world.spawn({
@@ -177,8 +180,8 @@ describe('render ragdoll', () => {
         reach,
       });
       await world.ready;
-      for (let step = 0; step < ragdollContent.stepBudget; step++) {
-        world.advance(ragdollContent.timestep);
+      for (let step = 0; step < ragdollConfig.stepBudget; step++) {
+        world.advance(ragdollConfig.timestep);
       }
       const trunk = corpse.parts[0]!.body.translation();
       expect(Math.hypot(trunk.x, trunk.z)).toBeLessThanOrEqual(reach);
@@ -190,7 +193,7 @@ describe('render ragdoll', () => {
   });
 
   it('launches along the world-space hit direction regardless of body yaw', async () => {
-    const world = new RagdollWorld(WORLD_GRAVITY);
+    const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const corpse = world.spawn({
         body: fixtureFigure,
@@ -225,7 +228,7 @@ describe('render ragdoll', () => {
   });
 
   it('keeps seed spread with full hit-direction weight', async () => {
-    const world = new RagdollWorld(WORLD_GRAVITY);
+    const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const spawn = (seed: number) =>
         world.spawn({
@@ -238,8 +241,8 @@ describe('render ragdoll', () => {
           launch: [0, 0, -1],
           seed,
           ground,
-          motion: { ...ragdollContent.crawlFall.motion, hitDirectionWeight: 1, seedSpread: 1 },
-          motionScale: ragdollContent.crawlFall.motionScale,
+          motion: { ...ragdollConfig.crawlFall.motion, hitDirectionWeight: 1, seedSpread: 1 },
+          motionScale: ragdollConfig.crawlFall.motionScale,
         });
       const first = spawn(17);
       const second = spawn(89);
@@ -253,7 +256,7 @@ describe('render ragdoll', () => {
   });
 
   it('refreshes corpse terrain after a launch beyond its initial footprint', async () => {
-    const world = new RagdollWorld(WORLD_GRAVITY);
+    const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const corpse = world.spawn({
         body: fixtureFigure,
@@ -267,11 +270,11 @@ describe('render ragdoll', () => {
         motion: { launchSpeed: 25, upwardLift: 0, seedSpread: 0, hitDirectionWeight: 1 },
       });
       await world.ready;
-      for (let step = 0; step < ragdollContent.stepBudget; step++) {
-        world.advance(ragdollContent.timestep);
+      for (let step = 0; step < ragdollConfig.stepBudget; step++) {
+        world.advance(ragdollConfig.timestep);
       }
       const trunk = corpse.parts[0]!.body.translation();
-      expect(trunk.x).toBeGreaterThan(ragdollContent.footprintMetres[0]!);
+      expect(trunk.x).toBeGreaterThan(ragdollConfig.footprintMetres[0]!);
       expect(trunk.y).toBeGreaterThanOrEqual(0);
       expect(corpse.settled).toBe(true);
       world.remove(corpse);
@@ -283,7 +286,7 @@ describe('render ragdoll', () => {
 
   it('shares ground cells until the last overlapping owner is removed, including debris', async () => {
     const figure = fixtureFigure;
-    const world = new RagdollWorld(WORLD_GRAVITY);
+    const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const spawn = () =>
         world.spawn({ body: figure, pose, position: [0, 0, 0], yaw: 0, direction: -1, seed: 17, ground });
@@ -340,7 +343,7 @@ describe('render ragdoll', () => {
   ])(
     'keeps debris above ground when it $label and releases its travelled cells',
     async ({ center, velocity, travels }) => {
-      const world = new RagdollWorld(WORLD_GRAVITY);
+      const world = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
       try {
         const body: RigidBody = {
           mass: 1,
@@ -361,11 +364,11 @@ describe('render ragdoll', () => {
         };
         const piece = world.spawnRigid(body, ground);
         await world.ready;
-        for (let step = 0; step < ragdollContent.stepBudget; step++) {
-          world.advance(ragdollContent.timestep);
+        for (let step = 0; step < ragdollConfig.stepBudget; step++) {
+          world.advance(ragdollConfig.timestep);
         }
         if (travels) {
-          expect(body.center[0]).toBeGreaterThan(ragdollContent.footprintMetres[0]!);
+          expect(body.center[0]).toBeGreaterThan(ragdollConfig.footprintMetres[0]!);
         }
         expect(body.center[1]).toBeGreaterThanOrEqual(0);
         expect(body.asleep).toBe(true);
@@ -379,16 +382,16 @@ describe('render ragdoll', () => {
 
   it('repeats the same seeded fall in independent worlds with identical step sequences', async () => {
     const figure = fixtureFigure;
-    const a = new RagdollWorld(WORLD_GRAVITY);
-    const b = new RagdollWorld(WORLD_GRAVITY);
+    const a = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
+    const b = new RagdollWorld(WORLD_GRAVITY, ragdollConfig);
     try {
       const first = a.spawn({ body: figure, pose, position: [0, 0, 0], yaw: 0, direction: -1, seed: 17, ground });
       const second = b.spawn({ body: figure, pose, position: [0, 0, 0], yaw: 0, direction: -1, seed: 17, ground });
       await Promise.all([a.ready, b.ready]);
       const initial = [...first.transforms.values()];
-      for (let step = 0; step < ragdollContent.stepBudget; step++) {
-        a.advance(ragdollContent.timestep);
-        b.advance(ragdollContent.timestep);
+      for (let step = 0; step < ragdollConfig.stepBudget; step++) {
+        a.advance(ragdollConfig.timestep);
+        b.advance(ragdollConfig.timestep);
       }
       expect(first.parts.length).toBeGreaterThan(0);
       expect([...first.transforms.values()]).not.toEqual(initial);

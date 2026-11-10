@@ -2,8 +2,8 @@ import type { Registry } from '@skelly/engine/content';
 import { bodyPlanModel, figureVariantOf } from '@skelly/engine/pose';
 import type { ActorSystem, EntityId } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
+import { ragdollSweep } from '../product/ragdoll.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
-import { ragdollContent } from '../render/ragdoll.ts';
 
 export function stageRagdollSweep({
   system,
@@ -27,7 +27,7 @@ export function stageRagdollSweep({
   if (restored || seed === undefined || !system) {
     return () => undefined;
   }
-  const tuning = ragdollContent.sweep;
+  const tuning = ragdollSweep;
   const downed: EntityId[] = [];
   for (const [row, model] of tuning.models.entries()) {
     const type = [...registry.actors.values()].find(

@@ -30,7 +30,7 @@ import { WorldLoading } from './presentation/worldLoading.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
-import { ragdollSweepViewer } from './product/ragdoll.ts';
+import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 import { mountCredits } from './ui/credits.ts';
 import { installErrorReportHandler } from './ui/errorReport.ts';
 import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
@@ -197,6 +197,7 @@ if (bench === 'report') {
       await startPlay(engine, debugModule!, {
         assets,
         keyboard: keyboardInput,
+        ragdoll: ragdollConfig,
         restore: decoded.snapshot,
         replay: {
           inputs: decoded.inputs,
@@ -216,7 +217,7 @@ if (bench === 'report') {
     const practiceConfig = configFromUrl(practiceParams, content, ragdollSweepViewer);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
     try {
-      await startPlay(engine, undefined, { assets, keyboard: keyboardInput, tutorial: true });
+      await startPlay(engine, undefined, { assets, keyboard: keyboardInput, ragdoll: ragdollConfig, tutorial: true });
       document.getElementById('new-character-options')!.hidden = true;
       document.getElementById('tutorial-start')!.hidden = true;
       document.getElementById('save-status')!.textContent = 'Unsaved practice';
@@ -283,6 +284,7 @@ if (bench === 'report') {
         await startPlay(engine, debugModule, {
           assets,
           keyboard: keyboardInput,
+          ragdoll: ragdollConfig,
           saveController,
           restore: restored,
           ...(skyRoute ? { skyRoute } : {}),
@@ -305,6 +307,7 @@ if (bench === 'report') {
           entry = await startPlay(engine, debugModule, {
             assets,
             keyboard: keyboardInput,
+            ragdoll: ragdollConfig,
             saveController,
             loading: { owner, draw },
             ...creation,

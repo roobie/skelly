@@ -126,6 +126,7 @@ import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
+import type { RagdollConfig } from '../render/ragdoll.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
@@ -631,6 +632,8 @@ export interface StartPlayOptions {
   readonly assets: PresentationAssets;
   /** The page's keyboard, which play drives and whose keys its hints show. */
   readonly keyboard: KeyboardInput;
+  /** The product's corpse physics tuning. */
+  readonly ragdoll: RagdollConfig;
   readonly tutorial?: boolean;
   readonly skyRoute?: SkyRouteAttachment;
   readonly handedness?: HandSide;
@@ -1202,6 +1205,7 @@ const startPlayWith = (
     {
       models: options.assets.models,
       actorFigureFiles,
+      ragdoll: options.ragdoll,
       poweredLights: () => session.power?.lights() ?? [],
       physicalSolid: session.physicalSolid,
     },

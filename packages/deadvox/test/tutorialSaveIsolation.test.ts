@@ -4,6 +4,7 @@ import type { Engine } from '../src/presentation/engine.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { startPlay } from '../src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { ragdollConfig } from '../src/product/ragdoll.ts';
 import type { SaveController } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -25,7 +26,7 @@ it('rejects a save-bound content-selected guide before runtime actions or save a
   const none = { packs: [], urls: {} };
   const assets = { audio: none, models: none, cursors: none, figures: none };
   const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
-  await expect(startPlay(engine, undefined, { assets, keyboard, saveController })).rejects.toThrow(
-    'Practice cannot bind a save or restore a world',
-  );
+  await expect(
+    startPlay(engine, undefined, { assets, keyboard, ragdoll: ragdollConfig, saveController }),
+  ).rejects.toThrow('Practice cannot bind a save or restore a world');
 });

@@ -25,6 +25,7 @@ import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type:
 import type { Engine } from '../src/presentation/engine.ts';
 import { ThirdPersonOrbit } from '../src/presentation/thirdPersonOrbit.ts';
 import { productAssets } from '../src/product/assets.ts';
+import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { ITEM_POINT_LIGHTS } from '../src/render/lightPool.ts';
 import { createPlayView } from '../src/render/playView.ts';
@@ -123,7 +124,12 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     },
     isSolid,
   } as unknown as Engine;
-  const view = createPlayView(engine, inventory, vi.fn(), { models: productAssets.models, actorFigureFiles, page });
+  const view = createPlayView(engine, inventory, vi.fn(), {
+    models: productAssets.models,
+    actorFigureFiles,
+    ragdoll: ragdollConfig,
+    page,
+  });
   syncActor(view, engine.camera);
   return {
     engine,
@@ -259,6 +265,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
     actorFigureFiles,
+    ragdoll: ragdollConfig,
     page: new EventTarget(),
     poweredLights,
   });
@@ -571,6 +578,7 @@ describe('play presentation ownership', () => {
     const view = createPlayView(engine, inventory, vi.fn(), {
       models: productAssets.models,
       actorFigureFiles,
+      ragdoll: ragdollConfig,
       page: new EventTarget(),
     });
 

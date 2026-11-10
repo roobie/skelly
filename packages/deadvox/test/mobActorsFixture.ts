@@ -1,5 +1,6 @@
 import player from '../../mods/skelly.body/player.json' with { type: 'json' };
 import inventory from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
+import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { type MobActorMeshesOptions, MobActorMeshes as RenderMobActorMeshes } from '../src/render/mobActors.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
@@ -20,11 +21,12 @@ export class MobActorMeshes extends RenderMobActorMeshes {
     capacity: number | undefined,
     options: Omit<
       MobActorMeshesOptions,
-      'look' | 'maxCorpses' | 'handlingReachMetres' | 'gravityMetresPerSimSecondSquared'
+      'look' | 'maxCorpses' | 'handlingReachMetres' | 'gravityMetresPerSimSecondSquared' | 'ragdoll'
     >,
   ) {
     super(blockSize, capacity, {
       ...options,
+      ragdoll: ragdollConfig,
       look: LOOK_FIXTURE.mobActors,
       maxCorpses: CORPSE_LIFECYCLE.maxCorpses,
       handlingReachMetres: inventory.inventory[0]!.reachMetres,

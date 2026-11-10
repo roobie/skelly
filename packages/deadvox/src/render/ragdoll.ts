@@ -18,12 +18,66 @@ import {
   type Vec3,
   voxelBounds,
 } from '@skelly/engine/pose';
-import content from '../config/ragdoll.json' with { type: 'json' };
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 
-export const ragdollContent = content;
-type Motion = typeof content.motion;
+/** How a corpse is launched: speeds, lift and spread of the body's first motion. */
+interface Motion {
+  launchSpeed: number;
+  upwardLift: number;
+  spinSpeed: number;
+  seedSpread: number;
+  hitDirectionWeight: number;
+}
+
+/** A bone group the solver moves as one body, and the limits of its joint to its parent group. */
+interface RagdollGroupRule {
+  readonly bones: readonly string[];
+  readonly limits: readonly (readonly number[])[] | null;
+}
+
+/**
+ * The product's corpse physics tuning, which the product entry passes in; presentation names no product path.
+ * See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+ */
+export interface RagdollConfig {
+  readonly timestep: number;
+  readonly maxStepsPerFrame: number;
+  readonly stepBudget: number;
+  readonly density: number;
+  readonly friction: number;
+  readonly linearDamping: number;
+  readonly angularDamping: number;
+  readonly footprintMetres: readonly number[];
+  readonly downedDriftMetres: number;
+  /** Body models that fall as ragdolls. */
+  readonly models: readonly string[];
+  readonly motion: Readonly<Motion>;
+  readonly kindMotion: Readonly<Record<string, Partial<Motion>>>;
+  readonly groups: readonly RagdollGroupRule[];
+  readonly modelGroups: Readonly<Record<string, readonly RagdollGroupRule[]>>;
+  readonly shortenedLegs: { readonly absent: readonly string[]; readonly omit: readonly string[] };
+  readonly compound: {
+    readonly root: string;
+    readonly memberRoot: string;
+    readonly limits: readonly (readonly number[])[];
+  };
+  readonly debris: {
+    readonly impulseScale: number;
+    readonly friction: number;
+    readonly linearDamping: number;
+    readonly angularDamping: number;
+  };
+  readonly crawlFall: {
+    readonly fallSeconds: number;
+    readonly blendSeconds: number;
+    readonly motion: Partial<Motion>;
+    readonly motionScale: Partial<Motion>;
+  };
+  /** The debug ragdoll sweep's corpse budget and how long its corpses lie. */
+  readonly sweep: { readonly capacity: number; readonly lieSeconds: number };
+}
+
 export function ragdollMotion(
   base: Motion,
   kind: Partial<Motion>,
@@ -53,27 +107,29 @@ export interface RagdollGroup {
 }
 
 export function ragdollGroups(
+  config: RagdollConfig,
   bones: readonly Bone[],
   excluded: ReadonlySet<number> = new Set(),
-  authored = content.groups,
+  authored = config.groups,
 ): RagdollGroup[] {
-  const ordinary = content.shortenedLegs.absent.every((id) => !bones.some((bone) => bone.id === id))
-    ? authored.filter((group) => !group.bones.some((id) => content.shortenedLegs.omit.includes(id)))
+  const { shortenedLegs, compound } = config;
+  const ordinary = shortenedLegs.absent.every((id) => !bones.some((bone) => bone.id === id))
+    ? authored.filter((group) => !group.bones.some((id) => shortenedLegs.omit.includes(id)))
     : authored;
-  const definitions =
-    bones[0]?.id === content.compound.root
+  const definitions: readonly RagdollGroupRule[] =
+    bones[0]?.id === compound.root
       ? [
-          { bones: [content.compound.root], limits: null },
+          { bones: [compound.root], limits: null },
           ...bones
-            .filter((bone) => bone.parent === content.compound.root)
+            .filter((bone) => bone.parent === compound.root)
             .flatMap((root) => {
-              if (!root.id.endsWith(content.compound.memberRoot)) {
+              if (!root.id.endsWith(compound.memberRoot)) {
                 throw new Error('Invalid compound ragdoll root');
               }
-              const prefix = root.id.slice(0, -content.compound.memberRoot.length);
+              const prefix = root.id.slice(0, -compound.memberRoot.length);
               return authored.map((group) => ({
                 bones: group.bones.map((id) => prefix + id),
-                limits: group.limits ?? content.compound.limits,
+                limits: group.limits ?? compound.limits,
               }));
             }),
         ]
@@ -124,8 +180,8 @@ export interface RagdollBody {
 const groupBounds = (body: RagdollBody, indices: readonly number[]) =>
   voxelBounds(boneVoxelCentres(body, indices), body.voxelSize);
 
-const groupMass = (body: RagdollBody, indices: readonly number[]): number =>
-  massProperties(boneVoxelCentres(body, indices), body.voxelSize, content.density).mass;
+const groupMass = (body: RagdollBody, indices: readonly number[], density: number): number =>
+  massProperties(boneVoxelCentres(body, indices), body.voxelSize, density).mass;
 
 interface Part {
   readonly body: InstanceType<typeof RAPIER.RigidBody>;
@@ -164,8 +220,8 @@ interface RagdollSpawn {
   launch?: Vec3;
   reach?: number;
   scale?: number;
-  motion?: Partial<typeof content.motion>;
-  motionScale?: Partial<typeof content.motion>;
+  motion?: Partial<Motion>;
+  motionScale?: Partial<Motion>;
 }
 export class RagdollWorld {
   readonly ready: Promise<void>;
@@ -178,15 +234,18 @@ export class RagdollWorld {
   private remainder = 0;
   private disposed = false;
 
-  constructor(gravityMetresPerSimSecondSquared: number) {
+  private readonly config: RagdollConfig;
+
+  constructor(gravityMetresPerSimSecondSquared: number, config: RagdollConfig) {
     if (!Number.isFinite(gravityMetresPerSimSecondSquared)) {
       throw new Error('RagdollWorld requires world gravity');
     }
+    this.config = config;
     this.ready = initializeRagdollPhysics()
       .then(() => {
         if (!this.disposed) {
           this.world = new RAPIER.World({ x: 0, y: -gravityMetresPerSimSecondSquared, z: 0 });
-          this.world.timestep = content.timestep;
+          this.world.timestep = this.config.timestep;
         }
       })
       .catch((error: unknown) => {
@@ -249,13 +308,14 @@ export class RagdollWorld {
   ): void {
     const world = this.world!;
     const groups = ragdollGroups(
+      this.config,
       bodySkeleton(body),
       corpse.excluded,
-      (content.modelGroups as Record<string, typeof content.groups>)[model] ?? content.groups,
+      this.config.modelGroups[model] ?? this.config.groups,
     );
     const motion = ragdollMotion(
-      content.motion,
-      (content.kindMotion as Record<string, Partial<Motion>>)[model] ?? {},
+      this.config.motion,
+      this.config.kindMotion[model] ?? {},
       override ?? {},
       motionScale ?? {},
     );
@@ -283,15 +343,15 @@ export class RagdollWorld {
         RAPIER.RigidBodyDesc.dynamic()
           .setTranslation(...center)
           .setRotation(rotation(source.r))
-          .setLinearDamping(content.linearDamping)
-          .setAngularDamping(content.angularDamping),
+          .setLinearDamping(this.config.linearDamping)
+          .setAngularDamping(this.config.angularDamping),
       );
       rigid.setLinvel(vector(velocity), true);
       rigid.setAngvel(vector([spin(0), spin(1), spin(2)]), true);
       world.createCollider(
         RAPIER.ColliderDesc.cuboid(...scaled(bounds.halfExtents, scale))
-          .setMass(groupMass(body, group.indices))
-          .setFriction(content.friction),
+          .setMass(groupMass(body, group.indices, this.config.density))
+          .setFriction(this.config.friction),
         rigid,
       );
       corpse.parts.push({
@@ -382,15 +442,15 @@ export class RagdollWorld {
           })
           .setLinvel(...body.velocity)
           .setAngvel(vector(angularVelocity(body)))
-          .setLinearDamping(content.debris.linearDamping)
-          .setAngularDamping(content.debris.angularDamping)
+          .setLinearDamping(this.config.debris.linearDamping)
+          .setAngularDamping(this.config.debris.angularDamping)
           .setCcdEnabled(true),
       );
       const half = [0, 1, 2].map((axis) => Math.max(...body.corners.map((corner) => Math.abs(corner[axis]!))));
       this.world.createCollider(
         RAPIER.ColliderDesc.cuboid(half[0]!, half[1]!, half[2]!)
           .setMass(body.mass)
-          .setFriction(content.debris.friction),
+          .setFriction(this.config.debris.friction),
         rigid,
       );
       piece.parts.push({
@@ -407,7 +467,7 @@ export class RagdollWorld {
     const size = ground.blockSize;
     const origin = position.map((value) => Math.floor(value / size));
     const desired = new Set<string>();
-    const radius = content.footprintMetres.map((value) => Math.ceil(value / size));
+    const radius = this.config.footprintMetres.map((value) => Math.ceil(value / size));
     for (let x = origin[0]! - radius[0]!; x <= origin[0]! + radius[0]!; x++) {
       for (let y = origin[1]! - radius[1]!; y <= origin[1]! + radius[1]!; y++) {
         for (let z = origin[2]! - radius[2]!; z <= origin[2]! + radius[2]!; z++) {
@@ -438,7 +498,7 @@ export class RagdollWorld {
         collider: this.world!.createCollider(
           RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
             .setTranslation((x + 0.5) * size, (y + 0.5) * size, (z + 0.5) * size)
-            .setFriction(content.friction),
+            .setFriction(this.config.friction),
         ),
       };
       this.cells.set(key, cell);
@@ -466,9 +526,9 @@ export class RagdollWorld {
     }
     this.remainder += realDt;
     let steps = 0;
-    while (this.remainder >= content.timestep && steps < content.maxStepsPerFrame) {
+    while (this.remainder >= this.config.timestep && steps < this.config.maxStepsPerFrame) {
       this.world.step();
-      this.remainder -= content.timestep;
+      this.remainder -= this.config.timestep;
       steps += 1;
       for (const corpse of this.corpses) {
         this.finishStep(corpse);
@@ -517,7 +577,7 @@ export class RagdollWorld {
     corpse.steps += 1;
     this.readback(corpse);
     const asleep = corpse.parts.every((part) => part.body.isSleeping());
-    if (asleep || corpse.steps >= content.stepBudget) {
+    if (asleep || corpse.steps >= this.config.stepBudget) {
       if (asleep) {
         corpse.sleepSteps = corpse.steps;
       }
@@ -575,7 +635,7 @@ export class RagdollWorld {
       const collider = part.body.collider(0);
       collider.setShape(new RAPIER.Cuboid(...scaled(bounds.halfExtents, scale)));
       collider.setTranslationWrtParent(vector(offset));
-      collider.setMass(groupMass(body, indices));
+      collider.setMass(groupMass(body, indices, this.config.density));
     }
   }
 

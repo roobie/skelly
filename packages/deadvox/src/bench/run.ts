@@ -29,6 +29,7 @@ import { skyAt } from '@skelly/engine/sky';
 import type { StreamerStats } from '@skelly/engine/world';
 import { type Body, siteGenerationOf, type Vec3 } from '@skelly/engine/world';
 import type { RenderedEngine } from '../presentation/engine.ts';
+import { ragdollConfig } from '../product/ragdoll.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
@@ -366,6 +367,7 @@ export const startBench = (
       });
       const graphics = graphicsTuningOf(engine.registry);
       actorMeshes = new MobActorMeshes(s, shamblerCount, {
+        ragdoll: ragdollConfig,
         actors: engine.registry.actors,
         actorFigureFiles,
         look: lookDefaultsOf(engine.registry).mobActors,

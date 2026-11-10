@@ -53,8 +53,9 @@ import {
 } from '@skelly/engine/world';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
-import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
+import type { RagdollWorld } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -3980,8 +3981,8 @@ describe('dismemberment', () => {
       await (renderer as unknown as { ragdolls: RagdollWorld }).ragdolls.ready;
       const part = debrisKey.split(':')[2]!;
       try {
-        for (let frame = 0; frame < ragdollContent.stepBudget && !debris.body.asleep; frame++) {
-          renderer.sync(system.store, ragdollContent.timestep, 1);
+        for (let frame = 0; frame < ragdollConfig.stepBudget && !debris.body.asleep; frame++) {
+          renderer.sync(system.store, ragdollConfig.timestep, 1);
           const r = quatToMat3(debris.body.orientation);
           const bottom = Math.min(...debris.body.corners.map((corner) => mulMV(r, corner)[1] + debris.body.center[1]));
           if (bottom <= 0.02 && firstTouchdownCenter === undefined) {
