@@ -54,7 +54,7 @@ local crouch = {
         groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
         // Above the night sky, below dusk and a lantern held close.
         // nearFieldMetres stays low enough for lights to form pools, high enough to cap close-surface blowout.
-        illumination: { pointDecay: 1, nearFieldMetres: 1.5, readingThreshold: 0.6 },
+        illumination: { pointDecay: 1, nearFieldMetres: 1.3, readingThreshold: 0.6 },
       },
     },
   ],

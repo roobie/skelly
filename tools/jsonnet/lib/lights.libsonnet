@@ -15,7 +15,7 @@ local batteryBeam(radius, seenFrom, intensity, beam, chargePerGameHour) = {
   flashlight:: batteryBeam(
     radius=20,
     seenFrom=40,
-    intensity=4.1,
+    intensity=4,
     beam={ angleDegrees: 60, penumbra: 0.6, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
     chargePerGameHour=0.25,
   ),

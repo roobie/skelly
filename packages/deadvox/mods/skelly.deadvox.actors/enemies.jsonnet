@@ -141,7 +141,7 @@ local actors = [
   shambler + {
     id: 'acid_zombie', name: 'Acid zombie', cause: 'an acid zombie', model: 'acid', figureSeeds: acidFigureSeeds, authoredOnly: true,
     acidBody: {
-      color: '#9ad21e', charge: { idle: 0.5, charged: 2.5 }, light: { intensity: 0.33, radiusMetres: 3 },
+      color: '#9ad21e', charge: { idle: 0.5, charged: 2.5 }, light: { intensity: 0.31, radiusMetres: 3 },
       drips: { perRealSecond: 1.5, sizeMetres: 0.012 },
       deathSplash: { droplets: 24, speedMetresPerRealSecond: 3.5, slowestSpeedFraction: 0.5, sizeMetres: 0.02 },
     },

@@ -44,7 +44,7 @@
           "heightMetres": 0.14000000000000001,
           "radiusMetres": 0.035000000000000003
         },
-        "intensity": 3.2000000000000002,
+        "intensity": 3.1000000000000001,
         "radius": 6,
         "seenFrom": 60
       },
@@ -91,7 +91,7 @@
           "heightMetres": 0.029999999999999999,
           "radiusMetres": 0.0070000000000000001
         },
-        "intensity": 1.6000000000000001,
+        "intensity": 1.5,
         "radius": 3,
         "seenFrom": 15
       },
@@ -135,7 +135,7 @@
           "heightMetres": 0.050000000000000003,
           "radiusMetres": 0.02
         },
-        "intensity": 2.1000000000000001,
+        "intensity": 2,
         "liquidFuel": {
           "accepts": ["lamp_fuel"],
           "microlitresPerGameSecond": 14
@@ -177,7 +177,7 @@
         },
         "color": "#62ff81",
         "emissive": 0.80000000000000004,
-        "intensity": 0.5,
+        "intensity": 0.46000000000000002,
         "radius": 2,
         "seenFrom": 15
       },
@@ -203,7 +203,7 @@
         },
         "color": "#ff3b24",
         "emissive": 1,
-        "intensity": 1.75,
+        "intensity": 1.6499999999999999,
         "radius": 4,
         "seenFrom": 40
       },
@@ -222,7 +222,7 @@
       "light": {
         "color": "#ffd28a",
         "fuelPerGameHour": 10,
-        "intensity": 0.34999999999999998,
+        "intensity": 0.32000000000000001,
         "radius": 2,
         "seenFrom": 10
       },

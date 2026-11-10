@@ -23,7 +23,7 @@ breach.breaking(shape.colliding({
       id: 'electric_lamp', name: 'Electric lamp', size: [1, 3, 1], color: '#dbca99', material: 'steel',
       power: { device: 'lab_light', fuelLitres: 0, enabled: true,
         // From the shade, the piece's top cell.
-        light: { color: '#ffdea5', intensity: 16.5, radius: 8, offset: [0, 2, 0] } },
+        light: { color: '#ffdea5', intensity: 15.9, radius: 8, offset: [0, 2, 0] } },
     },
     {
       id: 'battery_charger',
