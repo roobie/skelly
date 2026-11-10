@@ -57,7 +57,7 @@ describe('authored debug scenario mod', () => {
       selectBundledMods(productModIntake, bundledModIdsFromUrl(new URLSearchParams({ mods: ids.join(',') }))),
     );
     expect(both.issues).toEqual([]);
-    expect(both.admittedFolderPacks.map(({ id }) => id).sort()).toEqual([...ids].sort());
+    expect(both.admitted.map(({ id }) => id).sort()).toEqual([...ids].sort());
     for (const { manifest, files } of owners) {
       for (const { data } of files) {
         for (const { id } of (data as { catalogueRows?: { id: string }[] }).catalogueRows ?? []) {

@@ -17,13 +17,16 @@ export interface BrowserMod {
   enabled: boolean;
 }
 
+type AdmittedFile = { id: string; version: string; data: unknown; source: string };
+
 export interface ModEvaluation {
   content: StartupContent;
   issues: ReadonlyMap<string, readonly ContentIssue[]>;
   canStart: boolean;
-  admitted: { id: string; version: string; data: unknown; source: string }[];
-  /** The selected folder packs that admission kept, in admission order. */
-  admittedFolderPacks: PackInput[];
+  /** The selected single-file mods that admission kept, in admission order. */
+  admitted: AdmittedFile[];
+  /** Every selected mod that admission kept, in admission order: a folder pack whole, a single-file mod as admitted. */
+  admittedInOrder: (AdmittedFile | PackInput)[];
 }
 
 type IdentifiedSource = PackInput & { id: string; version: string; data: unknown };
@@ -77,7 +80,14 @@ const readMod = (mod: BrowserMod, maxModBytes: number): IdentifiedSource | Conte
   }
 };
 
-const isFolderPack = (entry: BrowserMod | PackInput): entry is PackInput => 'manifest' in entry;
+export const isFolderPack = (entry: object): entry is PackInput => 'manifest' in entry;
+
+const admittedFile = ({ id, version, manifest, data, source }: IdentifiedSource): AdmittedFile => ({
+  id,
+  version,
+  data: { manifest, content: data },
+  source,
+});
 
 /**
  * Folder packs go through pack admission whole; only single-file mods are read as mod text. Both load in the order
@@ -147,12 +157,16 @@ export const evaluateMods = (intake: ModIntake, entries: readonly (BrowserMod | 
     previewDisabled(source);
   }
   const admission = admitPacks([...bundledPackInputs, ...ordered]);
+  const admittedInOrder = admission.packs.flatMap((pack): (AdmittedFile | PackInput)[] => {
+    if (folderPacks.includes(pack)) {
+      return [pack];
+    }
+    return selected.includes(pack as IdentifiedSource) ? [admittedFile(pack as IdentifiedSource)] : [];
+  });
   return {
     content,
-    admitted: admission.packs
-      .filter((pack): pack is IdentifiedSource => selected.includes(pack as IdentifiedSource))
-      .map(({ id, version, manifest, data, source }) => ({ id, version, data: { manifest, content: data }, source })),
-    admittedFolderPacks: admission.packs.filter((pack) => folderPacks.includes(pack)),
+    admitted: admittedInOrder.filter((entry): entry is AdmittedFile => !isFolderPack(entry)),
+    admittedInOrder,
     issues,
     canStart: content.issues.length === 0 && mods.every((mod) => !(mod.enabled && issues.get(mod.source)?.length)),
   };

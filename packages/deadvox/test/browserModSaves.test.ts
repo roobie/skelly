@@ -67,7 +67,7 @@ test('a selected opt-in closure follows the default packs in the identity once e
     })),
   );
   const normal = await currentSaveVersionIdentity();
-  const selected = await currentSaveVersionIdentity([], [], entries);
+  const selected = await currentSaveVersionIdentity(entries);
   expect(selected.components.contentPacks).toEqual([...normal.components.contentPacks, ...entries]);
   expect(entries.map(({ id }) => id)).toEqual([c, b, a].map(({ manifest }) => manifest.id));
   expect(selected.digest).not.toBe(normal.digest);

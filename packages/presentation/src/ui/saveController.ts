@@ -2,7 +2,7 @@ import { type Registry, requireDayCycle, type ScreenText } from '@skelly/engine/
 import { assertSavedLiquidContents, type ItemState } from '@skelly/engine/inventory';
 import {
   type ActiveBrowserMod,
-  type ActiveBundledMod,
+  type AdmittedBundledMod,
   contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,
@@ -15,7 +15,6 @@ import {
   type SaveSnapshot,
   type SaveStorageStatus,
   type SaveStore,
-  type SaveVersionComponents,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
   type SaveWorldOptions,
@@ -161,11 +160,10 @@ export class SaveController {
     {
       bundledMods = [],
       browserMods = [],
-      folderPacks = [],
     }: {
-      bundledMods?: readonly ActiveBundledMod[];
+      /** In load order, folder packs and single-file mods together. */
+      bundledMods?: readonly AdmittedBundledMod[];
       browserMods?: readonly ActiveBrowserMod[];
-      folderPacks?: SaveVersionComponents['contentPacks'];
     } = {},
   ) {
     this.text = text.save;
@@ -175,7 +173,7 @@ export class SaveController {
     this.savingEnabled = savingEnabled;
     this.environmentProblem = savingEnabled ? saveEnvironmentProblem(text.save) : text.save.debugRun;
     if (!this.environmentProblem) {
-      this.identity = currentSaveVersionIdentity(bundledMods, browserMods, folderPacks);
+      this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
     }
     // A debug run without saves still exports metrics that name its world and character.
     const canMintIds = !this.environmentProblem || this.environmentProblem === text.save.debugRun;

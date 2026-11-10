@@ -3,6 +3,7 @@ export { Compression, SKIP_COMPRESSION } from './core/compression.ts';
 export {
   type ActiveBrowserMod,
   type ActiveBundledMod,
+  type AdmittedBundledMod,
   contentPackDifferences,
   currentSaveVersionIdentity,
   decodeSave,

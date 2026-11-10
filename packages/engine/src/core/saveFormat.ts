@@ -1205,19 +1205,21 @@ export interface ActiveBundledMod {
 
 export type ActiveBrowserMod = ActiveBundledMod;
 
+/** A bundled mod as admitted: a single-file mod by its data, an opt-in folder pack by its build identity entry. */
+export type AdmittedBundledMod = ActiveBundledMod | SaveVersionComponents['contentPacks'][number];
+
+/** Records bundled mods in the order given, which is their load order, so a reordered stack is another identity. */
 export async function currentSaveVersionIdentity(
-  bundledMods: readonly ActiveBundledMod[] = [],
+  bundledMods: readonly AdmittedBundledMod[] = [],
   browserMods: readonly ActiveBrowserMod[] = [],
-  folderPacks: SaveVersionComponents['contentPacks'] = [],
 ): Promise<SaveVersionIdentity> {
   const components = structuredClone(defaultVersion());
-  components.contentPacks.push(...folderPacks);
   const packs = await Promise.all(
-    bundledMods.map(async (mod) => ({
-      id: `bundled.${mod.id}`,
-      version: mod.version,
-      canonicalHash: await sha256(canonicalBytes(mod.data)),
-    })),
+    bundledMods.map(async (mod) =>
+      'canonicalHash' in mod
+        ? mod
+        : { id: `bundled.${mod.id}`, version: mod.version, canonicalHash: await sha256(canonicalBytes(mod.data)) },
+    ),
   );
   const browserPacks = await Promise.all(
     browserMods.map(async (mod) => ({

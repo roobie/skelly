@@ -2,8 +2,8 @@ import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import { isPlainRecord } from '../core/canonicalJson.ts';
 import type { ContentIssue } from '../core/content.ts';
 import { type PackInput, selectFolderClosure } from '../core/packAdmission.ts';
-import type { SaveVersionComponents } from '../core/saveFormat.ts';
-import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from './browserMods.ts';
+import type { AdmittedBundledMod } from '../core/saveFormat.ts';
+import { type BrowserMod, evaluateMods, isFolderPack, type ModEvaluation, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
 import { isPracticeStart } from './startSelection.ts';
 
@@ -83,12 +83,10 @@ type AdmittedMod = ModEvaluation['admitted'][number];
 
 export interface BundledSelection {
   content: StartupContent;
-  /** Data of each admitted bundled mod, for the save identity. */
-  admitted: { id: string; version: string; data: unknown }[];
+  /** Each admitted bundled mod in admission order, for the save identity, which records that order. */
+  admitted: AdmittedBundledMod[];
   /** Data of an admitted inline start mod, which the save identity records as an intake-admitted mod. */
   inlineAdmitted: { id: string; version: string; data: unknown }[];
-  /** Identity entries of the admitted opt-in folder packs, in admission order. */
-  admittedFolderPacks: SaveVersionComponents['contentPacks'];
   issues: ContentIssue[];
   /** The number of start rows an admitted start mod supplies when it is not exactly one, which refuses the run. */
   startModRows?: number;
@@ -109,7 +107,7 @@ const ownStartRows = (
 ): string[] | undefined => {
   const startFolder =
     startMod?.form === 'id'
-      ? result.admittedFolderPacks.find(({ manifest }) => manifest.id === startMod.id)
+      ? result.admittedInOrder.filter(isFolderPack).find(({ manifest }) => manifest.id === startMod.id)
       : undefined;
   return startFolder
     ? startFolder.files.flatMap(({ data }) => startRowIds(data))
@@ -174,9 +172,10 @@ export const selectBundledMods = (
   const practice = practiceMod !== undefined && ids.includes(practiceMod);
   return {
     content: startRows?.length === 1 && !practice ? { ...result.content, startModStart: startRows[0] } : result.content,
-    admitted: result.admitted.filter((mod) => mod !== inline).map(identity),
+    admitted: result.admittedInOrder
+      .filter((mod) => mod !== inline)
+      .map((mod) => (isFolderPack(mod) ? optInPackIdentity(mod) : identity(mod))),
     inlineAdmitted: inline ? [identity(inline)] : [],
-    admittedFolderPacks: result.admittedFolderPacks.map(optInPackIdentity),
     issues,
     ...(startRows && startRows.length !== 1 ? { startModRows: startRows.length } : {}),
   };

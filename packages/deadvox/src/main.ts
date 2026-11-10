@@ -284,7 +284,6 @@ if (bench === 'report') {
       {
         bundledMods: bundled.admitted,
         browserMods: [...bundled.inlineAdmitted, ...(browserSelection?.admitted ?? [])],
-        folderPacks: bundled.admittedFolderPacks,
       },
     );
     startupScreen.append(saveStatus);

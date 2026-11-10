@@ -183,6 +183,20 @@ describe('committed scenario mods', () => {
     expect(practiceRun([practice!, scenario.id])).toBe(false);
   });
 
+  it('gives a stack of single-file mods and folder packs a save identity that follows its load order', async () => {
+    const practice = practiceModId(intake, startupContent().registry);
+    const folder = scenarios.find(([id]) => id !== practice)?.[0];
+    expect(folder).toBeDefined();
+    const digest = async (ids: string[]) => {
+      const selection = select(new URLSearchParams(), ids);
+      expect(selection.issues).toEqual([]);
+      return (await currentSaveVersionIdentity(selection.admitted, selection.inlineAdmitted)).digest;
+    };
+    const listed = await digest([scenario.id, folder!]);
+    expect(await digest([scenario.id, folder!])).toBe(listed);
+    expect(await digest([folder!, scenario.id])).not.toBe(listed);
+  });
+
   it('enters practice from a page with a start mod and leaves back to its start mod and mods', () => {
     const practice = practiceModId(intake, startupContent().registry)!;
     const page = new URL('https://example.test/deadvox/');
