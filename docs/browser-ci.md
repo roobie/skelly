@@ -17,6 +17,10 @@ GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestr
 
 A browser step's bound follows the same rule as a unit shard's: about twice its measured time, split when the work grows rather than raised. A step near its bound fails on runner variance alone, and a green rerun cannot clear that failure (`tools/browser-ci-result.mjs`, `assertBrowserResult`), so it blocks the head (#1546). The gauntlet save flow has its own step for this reason; it shares its server with the other save-controller cases. See `packages/deadvox/test/browser/gauntlet-save-regressions.mjs` and `packages/deadvox/test/browser/save-controller-fixture.mjs`, `saveControllerServer`.
 
+## Main first-mesh reference shard
+
+The main first-mesh reference runs in its own shard rather than as a step in front of branch-scene stages, because it fetches the pull request's base revision and then boots main's startup beside the branch: that git and network work would extend a shared shard's stage time, and a failure there would skip every later stage's evidence in that shard. Camo AO assertions in particular must not depend on the comparison. The shard pays its own install and browser setup, which runs in parallel with the other shards. See `packages/deadvox/test/browser/main-first-mesh.mjs` and `packages/deadvox/test/browser/sky-main-arrival.mjs`, `measureMainFirstMesh`.
+
 `test/browser-ci-manifest.mjs`, `browserManifest`, checks that executed browser cases match the reusable workflow and enabled package scripts. Explicit quarantines keep a removed case's reinstatement obligation visible.
 
 Managed-browser containment bounds launch failures without claiming a root cause; the launch cause stays unproven. See `packages/deadvox/TROUBLESHOOTING.md`.

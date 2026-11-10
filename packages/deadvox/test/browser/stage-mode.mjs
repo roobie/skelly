@@ -22,6 +22,7 @@ const modes = Object.freeze({
   'stairs-lighting-residents': 'pixel',
   'stairs-lighting-outdoor': 'pixel',
   'stairs-lighting-atlas': 'pixel',
+  'main-first-mesh': 'pixel',
   reading: 'render-free',
   'firefox-ui': 'render-free',
   'firefox-first-click': 'render-free',

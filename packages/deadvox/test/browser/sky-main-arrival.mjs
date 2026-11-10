@@ -41,145 +41,63 @@ const stairsStart = {
   wounds: [],
 };
 
-// The reference run measures the base's startup, so each base startup file must link against the base
-// modules it imports; a branch that removes an export the base imports would otherwise break the reference.
+// Overlay keys are `<workspace package name>:<path under its src>`: a package name stays stable while a
+// revision moves the package directory, and each revision's tree is read where that revision puts it.
+// The reference run measures the base's startup, so each base startup file must link against the base modules it
+// imports; a branch that removes an export the base imports would otherwise break the reference. The mesher
+// protocol stays unlisted: its module is type-only, so nothing links it at runtime.
 export const mainSourceOverlays = [
-  'main.ts',
-  'game/melee.ts',
-  'bench/run.ts',
-  'bench/post.ts',
-  'game/bundledContent.ts',
-  'game/browserMods.ts',
-  'game/config.ts',
-  'game/worldSetup.ts',
-  'game/engine.ts',
-  'game/graphicsControls.ts',
-  'game/play.ts',
-  'game/controls.ts',
-  'game/inputBindings.ts',
-  'debug/index.ts',
-  'render/playView.ts',
+  'deadvox:main.ts',
+  'deadvox:bench/run.ts',
+  'deadvox:bench/post.ts',
+  'deadvox:debug/index.ts',
+  'engine:game/melee.ts',
+  'engine:game/bundledContent.ts',
+  'engine:game/browserMods.ts',
+  'engine:game/config.ts',
+  'engine:game/worldSetup.ts',
+  'engine:game/streamer.ts',
+  'presentation:presentation/engine.ts',
+  'presentation:presentation/graphicsControls.ts',
+  'presentation:presentation/play.ts',
+  'presentation:presentation/controls.ts',
+  'presentation:presentation/inputBindings.ts',
+  'presentation:presentation/damageFeedback.ts',
+  'presentation:presentation/painCue.ts',
+  'presentation:presentation/worldLoading.ts',
+  'presentation:render/playView.ts',
   // Keep the view and figure together: their constructor and per-frame pose contracts change together. The
   // view builds the held items, whose arms hang from the figure's shoulders and whose displays sit on its
   // palm, so hands and held display stay on the figure's revision too.
-  'render/playerFigure.ts',
-  'render/hands.ts',
-  'render/heldPresentation.ts',
-  'render/heldDisplay.ts',
+  'presentation:render/playerFigure.ts',
+  'presentation:render/hands.ts',
+  'presentation:render/heldPresentation.ts',
+  'presentation:render/heldDisplay.ts',
   // The view constructs the flashlight, and the flashlight installs the near-field falloff; the three change together.
-  'render/flashlight.ts',
-  'render/lightFalloff.ts',
-  'render/acidEffects.ts',
-  'render/gore.ts',
-  'render/mobActors.ts',
+  'presentation:render/flashlight.ts',
+  'presentation:render/lightFalloff.ts',
+  'presentation:render/acidEffects.ts',
+  'presentation:render/gore.ts',
+  'presentation:render/mobActors.ts',
   // The renderer hands its ragdolls the figure body it draws, so the two change their spawn contract together.
-  'render/ragdoll.ts',
+  'presentation:render/ragdoll.ts',
   // The engine builds the sky's targets and the sky installs the fog that the height fog patches; the three change together.
-  'render/heightFog.ts',
-  'render/sky.ts',
-  'game/damageFeedback.ts',
-  'game/painCue.ts',
-  'game/worldLoading.ts',
-  'render/skylight.ts',
-  'render/mood.ts',
-  'game/streamer.ts',
-  'worker/mesh.worker.ts',
-  'worker/protocol.ts',
+  'presentation:render/heightFog.ts',
+  'presentation:render/sky.ts',
+  'presentation:render/skylight.ts',
+  'presentation:render/mood.ts',
+  'presentation:worker/mesh.worker.ts',
 ];
 
 // UI callees can keep their exports while changing arguments; export shims cannot pair those contracts.
-// Keep the whole presentation boundary with base play/main, including UI-to-UI calls, but retain branch core.
+// Keep the whole presentation UI boundary with base play/main, including UI-to-UI calls, but retain branch core.
+// `basePaths` maps each workspace package name to its base tree of src-relative paths.
 export const mainOverlaySources = (basePaths) => [
   ...mainSourceOverlays,
-  ...[...basePaths].filter((path) => path.startsWith('ui/') && SCRIPT_MODULE.test(path)),
+  ...[...(basePaths.get('presentation') ?? [])]
+    .filter((path) => path.startsWith('ui/') && SCRIPT_MODULE.test(path))
+    .map((path) => `presentation:${path}`),
 ];
-
-// A base view that still reads the look from core/mood.ts constants meets a branch whose content owns them
-// (core/lookDefaults.ts). The branch's core stays, so the base view takes the content look; a base that
-// already reads it from content needs no rewrite. Remove this once the base view reads the look from content.
-function contentLookView(source) {
-  if (!source.includes('DEFAULT_LOOK')) {
-    return source;
-  }
-  const rewritten = source
-    .replace(
-      "import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';",
-      "import { lookDefaultsOf } from '@skelly/engine/internal/core/lookDefaults.ts';\nimport { DEFAULT_SHADOWS, lookOf, moodOf } from '@skelly/engine/internal/core/mood.ts';",
-    )
-    .replace(
-      'applyLook(renderer, meshes, DEFAULT_LOOK);\n    mood.restore(DEFAULT_MOOD);',
-      'applyLook(renderer, meshes, lookOf(lookDefaultsOf(registry)));\n    mood.restore(moodOf(lookDefaultsOf(registry)));',
-    );
-  if (rewritten.includes('DEFAULT_LOOK')) {
-    throw new Error('Main view still reads DEFAULT_LOOK; update contentLookView in sky-main-arrival.mjs');
-  }
-  return rewritten;
-}
-
-// Keep the branch's physical-and-visual reach contract without replacing its core picker with main's.
-export function adaptMainInteractionPick(source) {
-  return source.replace(
-    'worldSeed: config.seed,\n      isSolid: engine.isOpaque,',
-    'worldSeed: config.seed,\n      isSolid: engine.isSolid,\n      isOpaque: engine.isOpaque,',
-  );
-}
-
-// Base world setup supplies a column-source wrapper to branch session/spawner code. Both the wrapper's
-// public method and its delegation must use the branch contract; export shims cannot rename object members.
-export function adaptMainSiteActors(source) {
-  return source.replaceAll('zombiesIn', 'actorsIn');
-}
-
-const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
-      buildActorVariant(model, seed, amalgamType),
-    ),`;
-
-// A base renderer that builds every model on one shared seed pool meets the branch's figures, which exist only for
-// each model's own authored seeds rather than drawing another seed's body. The base renderer then builds, per
-// model, only the pool seeds that realize, as the branch builds each model's own authored seeds; any other build
-// error still fails the run. A base that builds per-model seeds needs no seed rewrite. The overlay retains branch
-// body-plan identities, while the base's profiles, templates and ragdoll catalogs keep implementation names;
-// reverting either side would mix content and mechanism contracts. See `packages/engine/src/core/content.ts`, `actorFigureIssues`.
-export function adaptMainSeedPool(source) {
-  return source
-    .replaceAll('ZombieModel', 'ActorModel')
-    .replaceAll('core/zombieModels.ts', 'core/actorModels.ts')
-    .replace(
-      SHARED_SEED_POOL,
-      `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
-      try {
-        return [buildActorVariant(model, seed, amalgamType)];
-      } catch (error) {
-        if (String(error?.message).endsWith(\`\${model} seed \${seed} is not valid\`)) {
-          return [];
-        }
-        throw error;
-      }
-    }),`,
-    )
-    .replace(
-      "import type { ActorModel } from '../core/actorModels.ts';",
-      "import { type ActorModel, bodyPlanModel, figureVariantOf } from '@skelly/engine/internal/core/actorModels.ts';",
-    )
-    .replaceAll('zombie.type.model', 'figureVariantOf(zombie.type)')
-    .replaceAll('type.model', 'figureVariantOf(type)')
-    .replaceAll("'amalgam'", "'fused-mass'")
-    .replace(
-      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : model]",
-      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'humanoid' : bodyPlanModel(model)]",
-    )
-    .replace('templatesByModel.get(v.model)', 'templatesByModel.get(bodyPlanModel(v.model))')
-    .replace(
-      'ragdollContent.models.includes(variant.model)',
-      'ragdollContent.models.includes(bodyPlanModel(variant.model))',
-    );
-}
-
-// The base Mood caller predates content-owned optic-lens tuning. Keep its presentation overlay while supplying
-// the branch core API's required tuning from the graphics object it already holds.
-export function adaptMainOpticLensPass(source) {
-  return source.replace('opticLensPass()', 'opticLensPass(this.graphicsTuning.opticLens)');
-}
 
 const VALUE_DECLARATION =
   /^export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|var|function\*?|(?:abstract\s+)?class|enum)\s+([\w$]+)/gm;
@@ -254,11 +172,24 @@ export function overlayBoundaryGaps(baseSources, branchSources) {
 
 const EXPORT_SHIM = '\0main-export-shim:';
 const BASE_COPY = '?main-base';
+const overlayKeyParts = (key) => {
+  const separator = key.indexOf(':');
+  return [key.slice(0, separator), key.slice(separator + 1)];
+};
 
-export function mainOverlayPath(root, id) {
+/**
+ * Overlay key of a served module id, `null` outside every workspace package's src. `packageSources` maps each
+ * workspace package name to its src directory; a trailing separator in a directory is normalized away.
+ */
+export function mainOverlayPath(packageSources, id) {
   const [path] = id.split('?');
-  const prefix = `${resolve(root)}/src/`;
-  return path.startsWith(prefix) ? path.slice(prefix.length) : null;
+  for (const [name, directory] of packageSources) {
+    const source = resolve(directory);
+    if (path.startsWith(`${source}/`)) {
+      return `${name}:${path.slice(source.length + 1)}`;
+    }
+  }
+  return null;
 }
 
 /** Workspace packages that `revision`'s root workspace list names, with their repository directories. */
@@ -362,13 +293,17 @@ export function baseOnlyWorkspacePlugin({ deletedFrom, baseCopy }) {
 }
 
 /** A branch module beside the overlays links against their base copies, so it may import only what they export. */
-function assertOverlayBoundary(root, overlays, branchPaths) {
-  const branchSource = (relative) => resolve(root, 'src', relative);
-  const served = (relative) =>
-    SCRIPT_MODULE.test(relative) && !overlays.has(relative) && existsSync(branchSource(relative));
-  const branchSources = new Map(
-    [...branchPaths].filter(served).map((relative) => [relative, readFileSync(branchSource(relative), 'utf8')]),
-  );
+function assertOverlayBoundary(packageSources, overlays, branchPaths) {
+  const branchSources = new Map();
+  for (const [name, directory] of packageSources) {
+    for (const relative of branchPaths.get(name) ?? []) {
+      const key = `${name}:${relative}`;
+      const path = resolve(directory, relative);
+      if (SCRIPT_MODULE.test(relative) && !overlays.has(key) && existsSync(path)) {
+        branchSources.set(key, readFileSync(path, 'utf8'));
+      }
+    }
+  }
   const gaps = overlayBoundaryGaps(overlays, branchSources);
   if (gaps.length > 0) {
     const listed = gaps.map(({ importer, module, names }) => `${importer} imports ${names.join(', ')} from ${module}`);
@@ -378,19 +313,14 @@ function assertOverlayBoundary(root, overlays, branchPaths) {
   }
 }
 
-/** Source rewrites that fit a base startup module to the branch's core and content, or add the measurement hooks. */
+/** Measurement hooks added to a served base startup source: engine readiness and first mesh delivery. */
 const OVERLAY_ADAPTERS = {
-  'render/playView.ts': contentLookView,
-  'game/play.ts': adaptMainInteractionPick,
-  'game/worldSetup.ts': adaptMainSiteActors,
-  'render/mobActors.ts': adaptMainSeedPool,
-  'render/mood.ts': adaptMainOpticLensPass,
-  'game/engine.ts': (source) =>
+  'presentation:presentation/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',
       '  globalThis.mainArrival.engineReadyRealMs=performance.now();\n  return {\n    ...worldSetup,',
     ),
-  'game/streamer.ts': (source) =>
+  'engine:game/streamer.ts': (source) =>
     source.replace(
       '    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);',
       `    this.opts.meshes.set(msg.key, [cx * CHUNK, cy * CHUNK, cz * CHUNK], msg.mesh);
@@ -437,34 +367,60 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   } else {
     base = git(['rev-parse', ref]);
   }
-  // The base may place the package elsewhere, so each tree is read where its own revision puts it.
+  // Each revision may place a workspace package elsewhere, so each tree is read where its own revision puts it.
   const { name } = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
   const basePackage = workspaceDirectory(git, base, name);
-  const baseSource = `${basePackage}/src`;
-  const basePaths = treeSources(git, base, baseSource);
-  const branchPaths = treeSources(git, 'HEAD', `${workspaceDirectory(git, 'HEAD', name)}/src`);
-  const showBase = (relative) => git(['show', `${base}:${baseSource}/${relative}`]);
+  const mainHtml = git(['show', `${base}:${basePackage}/index.html`]);
+  const repository = git(['rev-parse', '--show-toplevel']);
+  // Overlay keys and trees use each package's unscoped name; a workspace list that distinguishes two packages
+  // only by scope would make those keys ambiguous, so a shared unscoped name is refused here.
+  const packagesAt = (revision) => {
+    const packages = new Map();
+    for (const { name: packageName, directory } of workspacePackages(git, revision)) {
+      const unscoped = packageName.split('/').at(-1);
+      if (packages.has(unscoped)) {
+        throw new Error(`Two workspace packages at ${revision} share the unscoped name ${unscoped}`);
+      }
+      packages.set(unscoped, directory);
+    }
+    return packages;
+  };
+  const basePackages = packagesAt(base);
+  const branchPackages = packagesAt('HEAD');
+  const packageSources = new Map(
+    [...branchPackages].map(([pkg, directory]) => [pkg, resolve(repository, directory, 'src')]),
+  );
+  const treeAt = (revision, packages) =>
+    new Map([...packages].map(([pkg, directory]) => [pkg, treeSources(git, revision, `${directory}/src`)]));
+  const basePaths = treeAt(base, basePackages);
+  const branchPaths = treeAt('HEAD', branchPackages);
+  const showBase = (key) => {
+    const [pkg, path] = overlayKeyParts(key);
+    return git(['show', `${base}:${basePackages.get(pkg)}/src/${path}`]);
+  };
   const sourceOverlays = mainOverlaySources(basePaths);
-  for (const path of sourceOverlays) {
-    if (!basePaths.has(path)) {
-      throw new Error(`Main source overlay missing at ${base}: ${baseSource}/${path}; update mainSourceOverlays`);
+  for (const key of sourceOverlays) {
+    const [pkg, path] = overlayKeyParts(key);
+    if (!basePaths.get(pkg)?.has(path)) {
+      throw new Error(
+        `Main source overlay missing at ${base}: ${basePackages.get(pkg)}/src/${path}; update mainSourceOverlays`,
+      );
     }
   }
-  const overlays = new Map(sourceOverlays.map((path) => [path, showBase(path)]));
-  assertOverlayBoundary(root, overlays, branchPaths);
+  const overlays = new Map(sourceOverlays.map((key) => [key, showBase(key)]));
+  assertOverlayBoundary(packageSources, overlays, branchPaths);
   // A main source may import an export the branch removed from a module both keep. That module stays the
   // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
   const modules = removedModuleExports(git, base);
   const { removedFrom, baseCopy, deletedFrom, shimmed: shimmedExports } = modules;
   const servedFromBase = (path) => {
-    const relative = path === undefined ? null : mainOverlayPath(root, path);
+    const relative = path === undefined ? null : mainOverlayPath(packageSources, path);
     return overlays.has(relative);
   };
   const mainImporter = (importer) => {
-    const relative = mainOverlayPath(root, importer);
+    const relative = mainOverlayPath(packageSources, importer);
     return importer.includes(BASE_COPY) || overlays.has(relative) || deletedFrom(importer);
   };
-  const mainHtml = git(['show', `${base}:${basePackage}/index.html`]);
   const appliedSources = new Set();
   const server = await createStageServer({
     root,
@@ -497,7 +453,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
             const names = removedFrom(path);
             return `export * from ${JSON.stringify(path)};\nexport { ${names.join(', ')} } from ${JSON.stringify(`${path}${BASE_COPY}`)};\n`;
           }
-          const relative = mainOverlayPath(root, id);
+          const relative = mainOverlayPath(packageSources, id);
           if (id.endsWith(BASE_COPY)) {
             return baseCopy(id);
           }
@@ -514,13 +470,13 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           },
         },
         transform(code, id) {
-          const relative = mainOverlayPath(root, id);
+          const relative = mainOverlayPath(packageSources, id);
           let source = overlays.get(relative) ?? code;
           if (overlays.has(relative)) {
             appliedSources.add(relative);
           }
           if (
-            relative === 'core/authoredSite.ts' ||
+            relative === 'engine:core/authoredSite.ts' ||
             id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')
           ) {
             source = fixtureTransform(source, id) ?? source;
@@ -558,11 +514,11 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     await page.locator('#go').click();
     for (const source of [
       'index.html',
-      'game/engine.ts',
-      'game/play.ts',
-      'render/playView.ts',
-      'game/streamer.ts',
-      'render/skylight.ts',
+      'presentation:presentation/engine.ts',
+      'presentation:presentation/play.ts',
+      'presentation:render/playView.ts',
+      'engine:game/streamer.ts',
+      'presentation:render/skylight.ts',
     ]) {
       if (!appliedSources.has(source)) {
         throw new Error(`Main overlay was not applied: ${source}`);
