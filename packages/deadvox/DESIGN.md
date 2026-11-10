@@ -673,11 +673,6 @@ because rearranging a room should not require destroying its contents. See `pack
   rule as lifting: what remains supported stays, and what loses support settles
   instead of riding the piece. A fall with no loaded floor is refused, because
   an unloaded chunk reads as air. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
-- **Nothing falls on a body.** Hurting the player with their own tidying would
-  punish an action the game wants them to take, and crushing shamblers with a
-  stack would be a cheaper weapon than any the game balances. Lifting and floor
-  steps therefore share the fall refusal; see `packages/engine/src/core/furnitureMove.ts`,
-  `fallRefusal`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
@@ -3766,7 +3761,7 @@ Holding world interaction opens the action list on every movable piece, intact o
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
+No Repair entry is offered to players until the #1469 crafting view settles input selection: a one-click repair look before that view would fix the input-choice flow prematurely. The entry returns with that view, together with the turnable 3D view of the target beside its requirements, so the player can inspect the piece they are committing supplies to. Keyboard arrow aiming is not a second target-selection path: the action-list choice already names the piece.
 
 ## UI principles
 
