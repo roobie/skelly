@@ -75,6 +75,7 @@
     restored: 'Defaults restored',
   },
   worldLoading: { loading: 'Loading world…', failed: 'Unable to load the world: {error}', reload: 'Reload game' },
+  startup: { linkRefused: 'Unknown link setting: {name}' },
   menu: { play: 'Play', continue: 'Continue' },
   credits: {
     heading: 'Credits',

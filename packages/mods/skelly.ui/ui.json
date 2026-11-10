@@ -799,6 +799,9 @@
           "validCorruptSlots": "A valid generation is available; corrupt inactive slot(s) {slots} are retained.",
           "version": "{build} · {digest}"
         },
+        "startup": {
+          "linkRefused": "Unknown link setting: {name}"
+        },
         "stats": {
           "bleeding": "{tier} — {region}",
           "bleedingWarning": "⚠ {tier} — {region}",
