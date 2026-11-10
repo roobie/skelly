@@ -150,11 +150,11 @@ export const observationPlugin = {
     // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
     observedCode = `import { dropTarget as primaryActionDropTarget } from '@skelly/engine/internal/core/options.ts';\n${observedCode}`;
     // The quickbar probe drives the router's quickbar actions directly.
-    observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from '../game/quickbarActions.ts';\n${observedCode}`;
+    observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';\n${observedCode}`;
     // The landing probe measures a throw as the router does.
     observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '@skelly/engine/internal/core/itemThrow.ts';\n${observedCode}`;
     // The ignition probe finds the hand's target as the router's hand use does.
-    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from '../game/primaryAction.ts';\n${observedCode}`;
+    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
