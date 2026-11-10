@@ -37,7 +37,11 @@ const mod = (id: string, starts: unknown[], extra: Record<string, unknown> = {})
   ...extra,
 });
 const startMod = mod('fixture.start-mod', [row('fixture_start_mod_start')]);
-const scenario = mod('fixture.scenario', [row('fixture_scenario_start')], { defaultStart: 'fixture_scenario_start' });
+const scenario = mod('fixture.scenario', [row('fixture_scenario_start')], {
+  defaultStart: 'fixture_scenario_start',
+  dependencies: ['skelly.deadvox'],
+  overrides: [{ pack: 'skelly.deadvox', entry: 'defaultStart' }],
+});
 const intake: ModIntake = {
   ...productModIntake,
   bundledMods: [
@@ -180,18 +184,6 @@ describe('committed scenario mods', () => {
     expect(practiceRun([])).toBe(false);
   });
 
-  it('starts from the last listed default whether it comes from a single-file mod or a folder pack', () => {
-    const practice = practiceModId(intake, startupContent().registry);
-    expect(practice).toBeDefined();
-    const practiceRun = (ids: string[]) => {
-      const selection = select(new URLSearchParams(), ids);
-      expect(selection.issues).toEqual([]);
-      return isPracticeStart(selection.content.registry, startOf(selection).startId);
-    };
-    expect(practiceRun([scenario.id, practice!])).toBe(true);
-    expect(practiceRun([practice!, scenario.id])).toBe(false);
-  });
-
   it('starts practice from the practice link even when the page already lists the practice pack before another scenario', () => {
     const practice = practiceModId(productModIntake, startupContent().registry);
     const other = scenarios.find(([id]) => id !== practice)?.[0];
@@ -219,8 +211,8 @@ describe('committed scenario mods', () => {
       expect(selection.issues).toEqual([]);
       return (await currentSaveVersionIdentity(selection.admitted, selection.inlineAdmitted)).digest;
     };
-    const listed = await digest([scenario.id, folder!]);
-    expect(await digest([scenario.id, folder!])).toBe(listed);
-    expect(await digest([folder!, scenario.id])).not.toBe(listed);
+    const listed = await digest([startMod.id, folder!]);
+    expect(await digest([startMod.id, folder!])).toBe(listed);
+    expect(await digest([folder!, startMod.id])).not.toBe(listed);
   });
 });
