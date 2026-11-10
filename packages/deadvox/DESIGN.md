@@ -1255,7 +1255,21 @@ unpacking must not manufacture Military-only supplies. The recovery verbs retain
 their shared meaning under `DESIGN.md`, "Crafting"; changing a verb cannot open a
 supply bypass. Fixed stock and installed descendants must match their source
 context. See `packages/engine/src/core/content.ts`, `checkMilitaryLoot`, and
-`packages/engine/src/core/magazine.ts`, `militaryLootItems`.
+`packages/engine/src/core/loot.ts`, `militaryLootItems`.
+
+A looted magazine arrives loaded, because an empty one on a shelf reads as already
+picked over. The cartridge odds depend on the place, so they sit on the loot table beside
+the magazines it drops, as one explicit list per table; nothing is derived from unrelated
+rows, and a table with no list, or none that fits the magazine's calibre, drops it empty
+rather than guess. A magazine is filled with one type for now, so every round in it is
+alike. How full it is is the product's policy, not the theme's, so the loot-policy row
+sets one share-of-capacity spread and theme packs stay free of distribution rules. One
+rule serves every looted magazine, loose or fitted, and the loads are drawn after all
+item selection so adding a magazine never shifts what else a source rolls. An authored
+spawn that needs exact contents names its cartridge and load on the fixed row. See
+`packages/engine/src/core/loot.ts`, `rollLootParts` and `magazineContents`;
+`packages/engine/src/core/schema/loot.ts`, `LootTableSchema` and `LootPolicySchema`; and
+`mods/skelly.deadvox.loot/loot-policy.jsonnet`.
 
 Hunting supplies belong at hunting places, rather than wherever a common gun can roll.
 The rifle and .308 ammunition therefore narrow their usage without changing their tiers;
