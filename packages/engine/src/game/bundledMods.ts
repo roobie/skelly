@@ -101,10 +101,25 @@ const startRowIds = (content: unknown): string[] => {
 
 const identity = ({ id, version, data }: AdmittedMod) => ({ id, version, data });
 
+/** The start rows the admitted start mod's own files supply, not those of its dependencies. */
+const ownStartRows = (
+  result: ModEvaluation,
+  startMod: StartModRequest | undefined,
+  startFile: AdmittedMod | undefined,
+): string[] | undefined => {
+  const startFolder =
+    startMod?.form === 'id'
+      ? result.admittedFolderPacks.find(({ manifest }) => manifest.id === startMod.id)
+      : undefined;
+  return startFolder
+    ? startFolder.files.flatMap(({ data }) => startRowIds(data))
+    : startFile && startRowIds((startFile.data as { content: unknown }).content);
+};
+
 /**
  * Admits the named bundled mods in the order given: an opt-in folder pack with its closure through pack admission, a
- * single-file mod through the same intake as player mods. Unknown ids are issues. The start mod is admitted last, inline data through
- * the same intake and byte limit, and must supply exactly one start row, which begins the run.
+ * single-file mod through the same intake as player mods. Unknown ids are issues. The start mod is admitted last,
+ * inline data through the same intake and byte limit, and must supply exactly one start row, which begins the run.
  */
 export const selectBundledMods = (
   intake: ModIntake,
@@ -152,20 +167,13 @@ export const selectBundledMods = (
     issues.push(...list);
   }
   const startFile = result.admitted.find(({ source }) => source === startSource);
-  const startFolder =
-    startMod?.form === 'id'
-      ? result.admittedFolderPacks.find(({ manifest }) => manifest.id === startMod.id)
-      : undefined;
-  const startRows = startFolder
-    ? startFolder.files.flatMap(({ data }) => startRowIds(data))
-    : startFile && startRowIds((startFile.data as { content: unknown }).content);
+  const startRows = ownStartRows(result, startMod, startFile);
   const inline = startMod?.form === 'inline' ? startFile : undefined;
   // Practice keeps the page's start mod in its link without starting from it, so leaving practice returns there.
   const practiceMod = practiceModId(intake, result.content.registry);
   const practice = practiceMod !== undefined && ids.includes(practiceMod);
   return {
-    content:
-      startRows?.length === 1 && !practice ? { ...result.content, startModStart: startRows[0] } : result.content,
+    content: startRows?.length === 1 && !practice ? { ...result.content, startModStart: startRows[0] } : result.content,
     admitted: result.admitted.filter((mod) => mod !== inline).map(identity),
     inlineAdmitted: inline ? [identity(inline)] : [],
     admittedFolderPacks: result.admittedFolderPacks.map(optInPackIdentity),
