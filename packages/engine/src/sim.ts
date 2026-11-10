@@ -133,7 +133,13 @@ export {
   simTimestamp,
   simToGameSeconds,
 } from './core/time.ts';
-export { ActionMenu } from './game/actionMenu.ts';
+export {
+  ActionMenu,
+  heldMenuActions,
+  type RadialAction,
+  radialEntries,
+  radialEntryIndex,
+} from './game/actionMenu.ts';
 export { firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
 export { furnitureActionsFor } from './game/furnitureActions.ts';
 export { unarmedMeleeWeapon } from './game/melee.ts';

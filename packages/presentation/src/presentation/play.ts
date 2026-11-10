@@ -70,6 +70,7 @@ import {
   requireStart,
 } from '@skelly/engine/session';
 import {
+  ActionMenu,
   type Actor,
   applyStartState,
   type BodyRegion,
@@ -77,7 +78,6 @@ import {
   discoveryForPlan,
   dominantSide,
   type EntityId,
-  ActionMenu,
   firearmBoreRay,
   firearmBoreTarget,
   firearmsCombatTuning,
@@ -93,8 +93,10 @@ import {
   PlayerTickActions,
   playerTuning,
   pryPlan,
+  type RadialAction,
   type RealSeconds,
   type RealTimestamp,
+  radialEntries,
   reachTuning,
   realSeconds as realDuration,
   realTimestamp,
@@ -817,8 +819,10 @@ const startPlayWith = (
   let interactionPressTarget: InteractionTarget | undefined;
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
-  const furnitureActionSelection = new ActionMenu(actionText(registry).itemActions.openCan);
+  const actionMenu = new ActionMenu();
   const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
+  const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
+    radialEntries(furnitureActions(entity), claimed(registry.ui, 'interface')!.actionMenu.directions.furniture);
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -852,7 +856,7 @@ const startPlayWith = (
       closeInventoryScreen: () => closeInventoryScreen(),
       syncMenuState: () => syncMenuState(),
       openInventory: (tab) => openInventory(tab),
-      openFurnitureChoices: (entity, actions) => furnitureActionSelection.open(entity, actions),
+      openFurnitureChoices: (entity, actions) => actionMenu.open('furniture', entity, actions),
       beginSearch: (entity) => playtestObserver?.beginSearch(entity, nameOf(entity)),
       weaponInspected: (item) => guide?.weapons.inspected(item, registry),
       throwVisual: (launch, owner) => itemThrows.spawn(launch, owner),
@@ -1683,7 +1687,7 @@ const startPlayWith = (
     });
     ({ started, mainMenuOpen } = state);
     if (state.paused) {
-      furnitureActionSelection.sync(undefined, true);
+      actionMenu.sync('furniture', undefined, true);
     }
     if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
@@ -1940,8 +1944,8 @@ const startPlayWith = (
     const target = interactionTargetAt();
     return (
       target?.kind === 'furniture' &&
-      furnitureActionSelection.isOpen(target.entity) &&
-      furnitureActionSelection.step(target.entity, furnitureActions(target.entity), Math.sign(deltaY))
+      actionMenu.isOpen('furniture', target.entity.uid) &&
+      actionMenu.step(furnitureMenuEntries(target.entity), Math.sign(deltaY))
     );
   };
   const cycleWieldedAction = (deltaY: number): boolean => {
@@ -2105,7 +2109,7 @@ const startPlayWith = (
   };
 
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
-    const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
+    const selected = actionMenu.confirm(furnitureActions(entity));
     if (!selected) {
       return undefined;
     }
@@ -2127,7 +2131,7 @@ const startPlayWith = (
       : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
-    if (furnitureActionSelection.isOpen(entity)) {
+    if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
     }
     if (mode === 'wield' && furnitureActions(entity).length > 0) {
@@ -2335,11 +2339,16 @@ const startPlayWith = (
       view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
     }
   };
+  const openFurnitureMenuHint = (entity: BlockEntity, key: HintText): HintText => {
+    const selected = actionMenu.choice(furnitureActions(entity));
+    return selected
+      ? html`${key}: ${selected.label} ${selected.id === 'repair' ? '' : nameOf(entity)}`
+      : useText(entity);
+  };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
-    if (furnitureActionSelection.isOpen(entity)) {
-      const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity));
-      return html`${key}: ${selected?.label} ${selected?.id === 'repair' ? '' : nameOf(entity)}`;
+    if (actionMenu.isOpen('furniture', entity.uid)) {
+      return openFurnitureMenuHint(entity, key);
     }
     if (furnitureActions(entity).length > 0) {
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: screenText.interaction.actions })}`;
@@ -2398,15 +2407,15 @@ const startPlayWith = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
   ) => {
-    furnitureActionSelection.sync(target?.kind === 'furniture' && !carry ? target.entity.uid : undefined, sim.paused);
+    actionMenu.sync('furniture', target?.kind === 'furniture' && !carry ? target.entity.uid : undefined, sim.paused);
     const interactionHint = interactionHintFor(target, carry);
     const furnitureList =
-      target?.kind === 'furniture' && furnitureActionSelection.isOpen(target.entity)
+      target?.kind === 'furniture' && actionMenu.isOpen('furniture', target.entity.uid)
         ? [
             `${nameOf(target.entity)}:`,
             ...furnitureActions(target.entity).map(
               (action) =>
-                `${action.id === furnitureActionSelection.forItem(target.entity, furnitureActions(target.entity))?.id ? '›' : ' '} ${action.label}`,
+                `${action.id === actionMenu.choice(furnitureActions(target.entity))?.id ? '›' : ' '} ${action.label}`,
             ),
           ].join('\n')
         : undefined;

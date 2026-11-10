@@ -5,6 +5,7 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
@@ -195,7 +196,7 @@ const templateIssues = (
   return out;
 };
 
-/** Checks that need only the file itself: duplicate ids, the built-in air block, template sizes. */
+/** Checks that need only the file itself, not the rest of the registry. */
 const fileIssues = (file: ContentFile): [string, string][] => {
   const out: [string, string][] = [];
   for (const section of SECTIONS) {
@@ -211,6 +212,9 @@ const fileIssues = (file: ContentFile): [string, string][] => {
     if (block.id === AIR.id) {
       out.push([`blocks[${i}].id`, '"air" is built in']);
     }
+  });
+  (file.ui ?? []).forEach((tuning, i) => {
+    out.push(...actionMenuIssues(tuning.actionMenu, `ui[${i}].actionMenu`));
   });
   (file.templates ?? []).forEach((template, i) => {
     out.push(...templateIssues(template, `templates[${i}]`));
