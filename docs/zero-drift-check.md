@@ -39,6 +39,12 @@ still need explicit cue formatting; a pack-relative runtime directory is not a
 repository citation. Negative fixtures construct their cues from fragments so the
 fixture source is not itself a false repository citation.
 
+## Subproject roots
+
+Only a package under `packages/` is a subproject whose root anchors relative citations,
+because every subproject is a package; a top-level directory such as `things/` cites from the
+repository root. See `tools/zero-drift-check.mjs`, `projectOf`.
+
 ## Anchor identity
 
 Named Markdown anchors tolerate section-number prefixes, punctuation, parenthetical

@@ -30,13 +30,11 @@ const RUN_USER_PATH = /\/run\/user\/\d+[A-Za-z0-9_./$-]*/g;
 const HOME_SHORTCUT = /(^|[\s"'`(=])(~\/[A-Za-z0-9_.$-][A-Za-z0-9_./$-]*)/gm;
 const HOST_PATH_VALUE_EXEMPTIONS = new Set(['~/.cache/ms-playwright']);
 const QUOTED_TEXT = /“[^”\n]*”|"[^"\n]*"/g;
-const SUBPROJECTS = new Set(['gungen']);
 
-// Packages sit one level deeper, as `packages/<name>`, so a project root is two segments there.
+// A subproject is a package, `packages/<name>`, so its root is the path's first two segments.
 function projectOf(path) {
   const [first, second] = path.split('/');
-  const name = first === 'packages' && second ? `packages/${second}` : first;
-  return name.startsWith('packages/') || SUBPROJECTS.has(name) ? name : undefined;
+  return first === 'packages' && second ? `packages/${second}` : undefined;
 }
 const LINE_CITATION = /(?<![\w/@.-])(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*:\d+(?:-\d+)?/g;
 const INLINE_CODE = /(?<!`)`([^`\n]+)`(?!`)/g;

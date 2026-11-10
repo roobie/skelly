@@ -29,13 +29,13 @@ before(() => {
   root = mkdtempSync(join(tmpdir(), 'zero-drift-'));
   mkdirSync(join(root, 'docs'), { recursive: true });
   mkdirSync(join(root, 'src'), { recursive: true });
-  mkdirSync(join(root, 'gungen/docs'), { recursive: true });
-  mkdirSync(join(root, 'gungen/src'), { recursive: true });
+  mkdirSync(join(root, 'packages/fixture/docs'), { recursive: true });
+  mkdirSync(join(root, 'packages/fixture/src'), { recursive: true });
   writeFileSync(
     join(root, 'src/known.ts'),
     'export function startBench() {}\nexport class ChunkMeshes { cull() {} }\n',
   );
-  writeFileSync(join(root, 'gungen/src/known.ts'), 'export function startBench() {}\n');
+  writeFileSync(join(root, 'packages/fixture/src/known.ts'), 'export function startBench() {}\n');
   writeFileSync(
     join(root, 'docs/anchors.md'),
     [
@@ -180,12 +180,12 @@ describe('zero-drift path check', () => {
   });
 
   it('resolves subproject-relative citations from their subproject root', () => {
-    const path = 'gungen/docs/fixture.md';
+    const path = 'packages/fixture/docs/fixture.md';
     const failures = checkDocument({
       path,
       text: document(`See ${code('src/known.ts')}, ${code('startBench')}.`),
       root,
-      tracked: new Set(['gungen/src/known.ts']),
+      tracked: new Set(['packages/fixture/src/known.ts']),
       pythonReadIf: new Map([[path, ['read this']]]),
     });
     assert.deepEqual(checks(failures), []);
@@ -198,7 +198,7 @@ describe('zero-drift path check', () => {
         pythonReadIf: new Map([[path, ['read this']]]),
       });
     assert.deepEqual(cross('packages/construct/src/known.ts'), []);
-    assert.ok(checks(cross('../packages/construct/src/known.ts')).includes('path_scope'));
+    assert.ok(checks(cross('../construct/src/known.ts')).includes('path_scope'));
   });
 
   it('treats each packages/<name> as its own project root', () => {

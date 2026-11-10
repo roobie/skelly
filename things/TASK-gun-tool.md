@@ -18,10 +18,10 @@ asset submodule's
 with no skelly copy, forwarding package or second recipe authority
 (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision"). The retained
 old names are the exporter metadata and the consumer output directory, both written by the
-asset release, so skelly's readers keep them until a pin bump renames them. Phase 6 also retires the dead old-name support in the submodule's
+asset release, so skelly's readers keep them until a pin bump renames them. Phase 6 also
+retires the dead old-name support in the submodule's
 `packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
-`rootsUnder`, `importTarget` and its canary fixtures; `tools/zero-drift-check.mjs`,
-`SUBPROJECTS`; the zero-drift and Deadvox import-boundary fixtures; and the gun tool's
+`rootsUnder`, `importTarget` and its canary fixtures, and the gun tool's
 `GUNGEN_SWEEPS`. None is a second authoring implementation or an old source-path alias.
 
 The consumption boundary is the gun tool's
