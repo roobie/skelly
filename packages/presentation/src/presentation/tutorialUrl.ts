@@ -1,7 +1,7 @@
 /**
  * The page entering or leaving practice. Practice is a scenario picked through `mods`, so entering adds the practice
- * mod after the page's own mods, whose start then begins the run, and leaving drops it. The product passes that mod's
- * id and the hash text practice keeps.
+ * mod after the page's own mods, whose start then begins the run, and leaving drops it. The page's `start-mod` stays,
+ * unused in practice, so leaving returns to it. The product passes that mod's id and the hash text practice keeps.
  */
 export const tutorialUrl = (
   href: string,
@@ -11,7 +11,7 @@ export const tutorialUrl = (
 ): string => {
   const url = new URL(href);
   const presentation = new URLSearchParams();
-  for (const name of ['render', 'save-backend']) {
+  for (const name of ['render', 'save-backend', 'start-mod']) {
     const value = url.searchParams.get(name);
     if (value !== null) {
       presentation.set(name, value);

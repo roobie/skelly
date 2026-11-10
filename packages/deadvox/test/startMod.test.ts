@@ -1,7 +1,14 @@
-import { type ModIntake, practiceModId, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
+import {
+  bundledModIdsFromUrl,
+  type ModIntake,
+  practiceModId,
+  selectBundledMods,
+  startModFromUrl,
+} from '@skelly/engine/packs';
 import { currentSaveVersionIdentity } from '@skelly/engine/save';
 import { configFromUrl, isPracticeStart } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
+import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { describe, expect, it } from 'vitest';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { productModIntake } from '../src/product/mods.ts';
@@ -174,5 +181,29 @@ describe('committed scenario mods', () => {
     };
     expect(practiceRun([scenario.id, practice!])).toBe(true);
     expect(practiceRun([practice!, scenario.id])).toBe(false);
+  });
+
+  it('enters practice from a page with a start mod and leaves back to its start mod and mods', () => {
+    const practice = practiceModId(intake, startupContent().registry)!;
+    const page = new URL('https://example.test/deadvox/');
+    page.searchParams.set('mods', scenario.id);
+    page.searchParams.set('start-mod', JSON.stringify(startMod));
+    const runOn = (href: string) => {
+      const url = new URL(href);
+      const read = readPageUrl(url.search, url.hash);
+      expect(read.refused).toBeUndefined();
+      const selection = select(read.query, bundledModIdsFromUrl(read.query));
+      expect(selection.issues).toEqual([]);
+      return { query: read.query, startId: startOf(selection).startId, registry: selection.content.registry };
+    };
+    const enterHref = tutorialUrl(page.href, practice, true);
+    const entered = runOn(enterHref);
+    expect(isPracticeStart(entered.registry, entered.startId)).toBe(true);
+    const left = runOn(tutorialUrl(enterHref, practice, false));
+    expect(left.startId).toBe('fixture_start_mod_start');
+    expect({ mods: left.query.get('mods'), startMod: left.query.get('start-mod') }).toEqual({
+      mods: page.searchParams.get('mods'),
+      startMod: page.searchParams.get('start-mod'),
+    });
   });
 });
