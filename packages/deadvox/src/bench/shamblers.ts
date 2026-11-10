@@ -22,11 +22,9 @@ import {
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
-import type { RenderedEngine } from '../presentation/engine.ts';
+import type { RenderedEngine } from '../presentation/entries/play.ts';
+import { ActorMeshes, type ActorRenderer, applySky, MobActorMeshes } from '../presentation/entries/render.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
-import { ActorMeshes } from '../render/actors.ts';
-import { type ActorRenderer, MobActorMeshes } from '../render/mobActors.ts';
-import { applySky } from '../render/sky.ts';
 import {
   ACTIVE_SHAMBLER_TARGET,
   type BenchRecord,

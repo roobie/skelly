@@ -20,25 +20,31 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
-import { mountControlsCard } from './presentation/controls.ts';
-import { createEngine } from './presentation/engine.ts';
-import { requestInputLock } from './presentation/input.ts';
-import { fetchActorFigureFiles, startPlay } from './presentation/play.ts';
-import { renderFreeFromUrl } from './presentation/renderMode.ts';
-import { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
-import { WorldLoading } from './presentation/worldLoading.ts';
+import {
+  createEngine,
+  fetchActorFigureFiles,
+  renderFreeFromUrl,
+  requestInputLock,
+  startPlay,
+  WorldLoading,
+} from './presentation/entries/play.ts';
+import { tutorialRequested, tutorialUrl } from './presentation/entries/tutorialUrl.ts';
+import {
+  applyUiTokens,
+  chooseMods,
+  contentLookup,
+  installErrorReportHandler,
+  mountControlsCard,
+  mountCredits,
+  mountFullscreenOptions,
+  mountInputOptions,
+  mountWorldLoading,
+  SaveController,
+} from './presentation/entries/ui.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { productModIntake } from './product/mods.ts';
 import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
-import { mountCredits } from './ui/credits.ts';
-import { installErrorReportHandler } from './ui/errorReport.ts';
-import { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
-import { mountInputOptions } from './ui/inputOptions.ts';
-import { chooseMods } from './ui/modsPanel.ts';
-import { contentLookup, SaveController } from './ui/saveController.ts';
-import { applyUiTokens } from './ui/uiTokens.ts';
-import { mountWorldLoading } from './ui/worldLoading.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 

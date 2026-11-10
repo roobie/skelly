@@ -46,11 +46,7 @@ function violationsIn(changes: Tree) {
 
 describe('runtime entries', () => {
   it('keeps every product file on the curated entries', () => {
-    expect(
-      entryViolations(fileURLToPath(new URL('../../..', import.meta.url)), ENTRY_POLICY).filter(
-        (violation) => violation.reason !== 'imports an in-place source file that is not an entry',
-      ),
-    ).toEqual([]);
+    expect(entryViolations(fileURLToPath(new URL('../../..', import.meta.url)), ENTRY_POLICY)).toEqual([]);
   });
 
   it('passes product code that imports only entries, while runtime files import each other', () => {

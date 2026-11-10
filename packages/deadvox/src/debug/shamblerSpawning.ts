@@ -2,7 +2,7 @@ import { FUSED_MASS_FIGURE_SEED } from '@skelly/engine/pose';
 import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '@skelly/engine/sim';
 import { type Body, raycast, type Vec3 } from '@skelly/engine/world';
 import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
-import type { Engine } from '../presentation/engine.ts';
+import type { Engine } from '../presentation/entries/play.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
 export const spawnActorType = (

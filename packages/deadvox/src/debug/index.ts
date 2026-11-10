@@ -21,17 +21,17 @@ import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
 import { raycast, type Vec3 } from '@skelly/engine/world';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import type {
-  DebugHooks,
-  DebugModule,
-  DebugReadout,
-  DebugRuntime,
-  InputReplayStatusState,
-} from '../presentation/debugInterface.ts';
-import { replayFile, type SnapshotMeasurement } from '../presentation/playtestTools.ts';
-import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
-import { comboBox } from '../ui/comboBox.ts';
-import { positionLookedAtReadout } from '../ui/hud.ts';
+import {
+  type DebugHooks,
+  type DebugModule,
+  type DebugReadout,
+  type DebugRuntime,
+  type InputReplayStatusState,
+  replayFile,
+  type SnapshotMeasurement,
+} from '../presentation/entries/debug.ts';
+import { HOT_CATEGORIES, HOT_KINDS } from '../presentation/entries/render.ts';
+import { comboBox, positionLookedAtReadout } from '../presentation/entries/ui.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';

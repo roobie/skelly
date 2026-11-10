@@ -28,12 +28,16 @@ import {
   type WeatheringUrlState,
 } from '@skelly/engine/sky';
 import type { WebGLRenderer } from 'three';
-import { autoToneUniforms } from '../render/autoTone.ts';
-import type { ChunkMeshes } from '../render/chunks.ts';
-import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';
-import { applyLook, TONE_MODES } from '../render/look.ts';
-import type { Mood } from '../render/mood.ts';
-import type { Shadows } from '../render/shadows.ts';
+import {
+  applyLook,
+  autoToneUniforms,
+  type ChunkMeshes,
+  hotCheckOn,
+  type Mood,
+  type Shadows,
+  setHotCheck,
+  TONE_MODES,
+} from '../presentation/entries/render.ts';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;

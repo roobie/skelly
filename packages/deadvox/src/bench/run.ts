@@ -28,11 +28,9 @@ import {
 import { skyAt } from '@skelly/engine/sky';
 import type { StreamerStats } from '@skelly/engine/world';
 import { type Body, siteGenerationOf, type Vec3 } from '@skelly/engine/world';
-import type { RenderedEngine } from '../presentation/engine.ts';
+import type { RenderedEngine } from '../presentation/entries/play.ts';
+import { applySky, flashlightDaylightScale, MobActorMeshes } from '../presentation/entries/render.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
-import { flashlightDaylightScale } from '../render/flashlight.ts';
-import { MobActorMeshes } from '../render/mobActors.ts';
-import { applySky } from '../render/sky.ts';
 import { benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
 import {
   type BenchConfig,

@@ -1,9 +1,9 @@
 import { getBuildRevision } from '@skelly/engine/packs';
 import type { Vec3 } from '@skelly/engine/world';
-import type { SkyRouteAttachment } from '../presentation/debugInterface.ts';
-import type { Engine } from '../presentation/engine.ts';
-import { forwardedActionHolds } from '../presentation/inputBindings.ts';
-import { createSkyRoutePanel } from '../ui/skyRoutePanel.ts';
+import type { SkyRouteAttachment } from '../presentation/entries/debug.ts';
+import { forwardedActionHolds } from '../presentation/entries/input.ts';
+import type { Engine } from '../presentation/entries/play.ts';
+import { createSkyRoutePanel } from '../presentation/entries/ui.ts';
 import { collectSkyGeometry } from './skyRouteGeometry.ts';
 import {
   SKY_ROUTE,

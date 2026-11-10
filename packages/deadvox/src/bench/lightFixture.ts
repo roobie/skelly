@@ -3,10 +3,8 @@ import { claimed, HandlingQueue, Inventory, toggleLight } from '@skelly/engine/i
 import { bindReach, Simulation, Survival } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { type PerspectiveCamera, Vector3 } from 'three';
-import type { RenderedEngine } from '../presentation/engine.ts';
-import type { HeldItems } from '../render/hands.ts';
-import { LightPool } from '../render/lightPool.ts';
-import { PileMeshes } from '../render/piles.ts';
+import type { RenderedEngine } from '../presentation/entries/play.ts';
+import { type HeldItems, LightPool, PileMeshes } from '../presentation/entries/render.ts';
 
 const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12 });
 const benchLightPool = (engine: Pick<RenderedEngine, 'registry' | 'scene'>): LightPool =>

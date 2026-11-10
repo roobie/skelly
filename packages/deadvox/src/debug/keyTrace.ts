@@ -1,4 +1,4 @@
-import type { KeyTraceEntry } from '../presentation/inputBindings.ts';
+import type { KeyTraceEntry } from '../presentation/entries/input.ts';
 
 const KEY_TRACE_LIMIT = 2048;
 

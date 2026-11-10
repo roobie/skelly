@@ -23,7 +23,9 @@ const keyboard = {
   context: () => ({ context: inputFixture.context, debug: false }),
   registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
 };
-vi.mock('../src/presentation/inputBindings.ts', () => ({
+// The input entry loads the rest of this module too, so only the forwarded holds are replaced.
+vi.mock('../src/presentation/inputBindings.ts', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   forwardedActionHolds: () => (action: string) => {
     inputFixture.issued.push(action);
     return () => undefined;

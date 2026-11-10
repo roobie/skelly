@@ -353,7 +353,7 @@ try {
   // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
   const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/@stage/@skelly/engine/content');
-    const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
+    const { applyUiTokens } = await import('/src/presentation/entries/ui.ts');
     const { productAssets } = await import('/src/product/assets.ts');
     const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
     const { default: baseCursor } = await import('${sharedModUrl('skelly.ui/cursor.json')}');
@@ -646,7 +646,7 @@ try {
     'world volume is persisted to localStorage',
   );
   const restoredVolumes = await evaluate(`Promise.all([
-    import('/src/presentation/audio.ts'), import('/src/product/content.ts')
+    import('/src/presentation/entries/audio.ts'), import('/src/product/content.ts')
   ]).then(([{ GameAudio }, { buildBundledContent }]) => {
     const { ui, body } = buildBundledContent().registry;
     return new GameAudio({

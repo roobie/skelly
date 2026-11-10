@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import { buildRegistry, ModelSchema } from '@skelly/engine/content';
 import { ammoMatchesCalibre, magazineFits, spentCaseItemId, typeWeightGrams } from '@skelly/engine/inventory';
-import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { namedNodes } from '../packages/deadvox/src/presentation/entries/render.ts';
 import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
 import {
   assertCutOver,

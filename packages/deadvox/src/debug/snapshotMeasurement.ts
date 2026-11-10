@@ -3,7 +3,7 @@ import type {
   SnapshotMeasurement,
   SnapshotMeasurementOptions,
   SnapshotTimerQuantum,
-} from '../presentation/playtestTools.ts';
+} from '../presentation/entries/debug.ts';
 
 const FIREFOX_USER_AGENT = /Firefox\//;
 const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;

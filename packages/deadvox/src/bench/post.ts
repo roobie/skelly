@@ -10,11 +10,13 @@ import {
 } from '@skelly/engine/look';
 import type { GameConfig } from '@skelly/engine/session';
 import { skyAt, skyInWeather, sunShadowStrength } from '@skelly/engine/sky';
-import type { RenderedEngine } from '../presentation/engine.ts';
-import { setHeightFogTuning } from '../render/heightFog.ts';
-import type { LightPool } from '../render/lightPool.ts';
-import { applyLook } from '../render/look.ts';
-import { createNightVisionFlareUpdate } from '../render/nightVisionFlare.ts';
+import type { RenderedEngine } from '../presentation/entries/play.ts';
+import {
+  applyLook,
+  createNightVisionFlareUpdate,
+  type LightPool,
+  setHeightFogTuning,
+} from '../presentation/entries/render.ts';
 
 // The benchmark's own look, fixed so results stay comparable whatever the game's default look is: every
 // effect on, which is the full cost of the mood pass.

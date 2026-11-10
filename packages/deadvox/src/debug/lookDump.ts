@@ -3,8 +3,7 @@
 
 import type { MoodState, ShadowState } from '@skelly/engine/look';
 import type { Vec3 } from '@skelly/engine/world';
-import type { DrawSubmission } from '../render/drawCounters.ts';
-import type { FrameSummary } from '../render/frameTimes.ts';
+import type { DrawSubmission, FrameSummary } from '../presentation/entries/render.ts';
 import { camValue } from './camUrl.ts';
 
 export interface LookDumpInput {

@@ -1,4 +1,4 @@
-import { bundledAssetFiles, type PresentationAssets } from '../presentation/bundledAssets.ts';
+import { bundledAssetFiles, type PresentationAssets } from '../presentation/entries/play.ts';
 import { EXTERNAL_ASSET_ROOT } from './externalRoot.ts';
 import { bundledPacks } from './packs.ts';
 

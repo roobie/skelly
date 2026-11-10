@@ -3,11 +3,15 @@ import type { SoundId } from '@skelly/engine/sound';
 import { playerHeartbeat } from '@skelly/engine/sound';
 import { html, render } from 'lit-html';
 import { bundledCredits } from './bundledCredits.ts';
-import { GameAudio } from './presentation/audio.ts';
+import { GameAudio } from './presentation/entries/audio.ts';
+import {
+  applyUiTokens,
+  buildHeartbeatSoundGuide,
+  buildSoundGuide,
+  renderHeartbeatSoundGuide,
+} from './presentation/entries/ui.ts';
 import { productAssets } from './product/assets.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';
-import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
-import { applyUiTokens } from './ui/uiTokens.ts';
 
 const { registry, issues } = buildSoundsPageContent();
 const heartbeatTuning = playerHeartbeat(registry);
