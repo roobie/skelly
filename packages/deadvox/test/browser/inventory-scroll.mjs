@@ -367,7 +367,7 @@ const vite = await createStageServer({
       name: 'foregrip-fit-game-observer',
       enforce: 'pre',
       transform(code, id) {
-        if (id.split('?')[0].endsWith('/src/game/bundledContent.ts')) {
+        if (id.split('?')[0].endsWith('/engine/src/game/bundledContent.ts')) {
           const marker = 'const admission = admitPacks(packs);';
           assert.ok(code.includes(marker), 'content admission marker still exists');
           // Retain live UI/material content rather than the standalone fixture's support source.

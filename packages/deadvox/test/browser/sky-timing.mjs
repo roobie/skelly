@@ -91,7 +91,7 @@ export function skyTimingPlugin() {
           '  if(globalThis.skyTiming) globalThis.skyTiming.engineReadyAbsoluteRealMs=performance.timeOrigin+performance.now();\n  return {\n    ...worldSetup,',
         );
       }
-      if (path.endsWith('/src/game/streamer.ts')) {
+      if (path.endsWith('/engine/src/game/streamer.ts')) {
         return code
           .replace(
             '    worker.postMessage(msg, transfer);',

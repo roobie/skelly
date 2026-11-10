@@ -7,6 +7,7 @@ const ENGINE_TEST_CONDITION = 'skelly-engine-test';
 // The URL prefix page code puts before a runtime package specifier, e.g. `/@stage/@skelly/engine/internal/core/x.ts`.
 const PAGE_PREFIX = '/@stage/';
 const PAGE_MODULE = '\0stage-engine:';
+const ENGINE_SPECIFIER = '@skelly/engine/';
 
 /**
  * Code a stage runs in the page imports a runtime module as `/@stage/<package specifier>`. A plain `/@id/` URL
@@ -18,7 +19,7 @@ function pageEngineModules() {
     name: 'skelly:stage-engine-modules',
     enforce: 'pre',
     resolveId(id) {
-      return id.startsWith(`${PAGE_PREFIX}@skelly/engine/`)
+      return id.startsWith(`${PAGE_PREFIX}${ENGINE_SPECIFIER}`)
         ? `${PAGE_MODULE}${id.slice(PAGE_PREFIX.length)}`
         : undefined;
     },
@@ -26,9 +27,14 @@ function pageEngineModules() {
       if (!id.startsWith(PAGE_MODULE)) {
         return;
       }
-      const resolved = await this.resolve(id.slice(PAGE_MODULE.length), undefined, { skipSelf: true });
+      // The id can also arrive as a raw `/@id/` URL, so the specifier is checked again here.
+      const specifier = id.slice(PAGE_MODULE.length);
+      if (!specifier.startsWith(ENGINE_SPECIFIER)) {
+        throw new Error(`A stage page may load only runtime package modules, not ${specifier}`);
+      }
+      const resolved = await this.resolve(specifier, undefined, { skipSelf: true });
       if (!resolved) {
-        throw new Error(`Cannot resolve ${id.slice(PAGE_MODULE.length)} for a stage page`);
+        throw new Error(`Cannot resolve ${specifier} for a stage page`);
       }
       return `export * from ${JSON.stringify(resolved.id)};\n`;
     },

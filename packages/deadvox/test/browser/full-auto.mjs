@@ -229,10 +229,12 @@ try {
   );
   // Read committed reports before returning from fire so native starts must still share their shot's frame.
   await page.evaluate(async () => {
-    const moduleUrl = '/src/game/firearmHandling.ts';
+    const moduleUrl = '/@stage/@skelly/engine/internal/game/firearmHandling.ts';
     const { FirearmMechanics } = await import(moduleUrl);
     if (typeof FirearmMechanics?.prototype?.fire !== 'function') {
-      throw new Error('Full-auto observer needs src/game/firearmHandling.ts FirearmMechanics.prototype.fire');
+      throw new Error(
+        'Full-auto observer needs packages/engine/src/game/firearmHandling.ts FirearmMechanics.prototype.fire',
+      );
     }
     const { fire } = FirearmMechanics.prototype;
     FirearmMechanics.prototype.fire = function (input) {
@@ -504,7 +506,7 @@ try {
   });
   const tuning = await page.evaluate(async () => {
     const { inventory } = globalThis.fullAutoRuntime;
-    const moduleUrl = '/src/game/entries/inventory.ts';
+    const moduleUrl = '/@stage/@skelly/engine/inventory';
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
     const rifle = inventory.hands.right;
     const data = firearmHandlingFor(rifle, inventory.registry);

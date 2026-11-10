@@ -168,7 +168,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { leaveRoof } = await import('/test/fixtures/scenarioStart.ts');
       const certificate = scenarioCertificate(engine.site);
       let foot;
-      const { IDLE } = await import('/src/game/entries/session.ts');
+      const { IDLE } = await import('/@stage/@skelly/engine/session');
       const [clue] = placedPieces(engine.site.plan.composition.leads[0]);
       if (!clue) {
         throw new Error('No public clue');
@@ -321,10 +321,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
       const { engine, session, input } = w;
       const { scenarioCertificate } = await import('/@stage/@skelly/engine/internal/core/scenarioCertificate.ts');
       const { doorPlan } = await import('/@stage/@skelly/engine/internal/core/options.ts');
-      const { DOOR_ACTION } = await import('/src/game/doorAction.ts');
+      const { DOOR_ACTION } = await import('/@stage/@skelly/engine/internal/game/doorAction.ts');
       const { ladderOutward } = await import('/@stage/@skelly/engine/internal/core/ladders.ts');
       const { descentLid, queueDescentLidOpening } = await import('/test/fixtures/descentLid.ts');
-      const { IDLE } = await import('/src/game/entries/session.ts');
+      const { IDLE } = await import('/@stage/@skelly/engine/session');
       const { plan } = engine.site;
       const certificate = scenarioCertificate(engine.site);
       if (certificate.issues.length > 0) {

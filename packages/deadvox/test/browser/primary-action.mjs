@@ -31,9 +31,9 @@ const startStateModule = '/@stage/@skelly/engine/internal/core/startState.ts';
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
 const firearmActionModule = '/@stage/@skelly/engine/internal/core/firearmAction.ts';
 const inputBindingsModule = '/src/product/input.ts';
-const inputReplayModule = '/src/game/entries/input.ts';
-const firearmHandlingModule = '/src/game/entries/inventory.ts';
-const reloadInputModule = '/src/game/entries/input.ts';
+const inputReplayModule = '/@stage/@skelly/engine/input';
+const firearmHandlingModule = '/@stage/@skelly/engine/inventory';
+const reloadInputModule = '/@stage/@skelly/engine/input';
 const magazineModule = '/@stage/@skelly/engine/internal/core/magazine.ts';
 const heldPoseModule = '/@stage/@skelly/engine/internal/core/heldPose.ts';
 const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
@@ -1486,7 +1486,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       {
         pileLayoutModuleUrl: pileLayoutModule,
         playerLookPoseModuleUrl: '/@stage/@skelly/engine/internal/core/playerLookPose.ts',
-        inputModuleUrl: '/src/game/playerControls.ts',
+        inputModuleUrl: '/@stage/@skelly/engine/internal/game/playerControls.ts',
         ground: placed,
       },
     );
@@ -3423,7 +3423,7 @@ try {
 
     // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
     const firearm = await page.evaluate(async () => {
-      const moduleUrl = '/src/game/entries/inventory.ts';
+      const moduleUrl = '/@stage/@skelly/engine/inventory';
       const magazineUrl = '/@stage/@skelly/engine/internal/core/magazine.ts';
       const optionsUrl = '/@stage/@skelly/engine/internal/core/options.ts';
       const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);

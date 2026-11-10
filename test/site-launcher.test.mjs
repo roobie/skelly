@@ -223,8 +223,8 @@ describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
     const supported = paramsReadBy([
       'packages/deadvox/src/main.ts',
-      'packages/deadvox/src/game/config.ts',
-      'packages/deadvox/src/game/ragdollConfig.ts',
+      'packages/engine/src/game/config.ts',
+      'packages/engine/src/game/ragdollConfig.ts',
       'packages/engine/src/core/weatheringUrl.ts',
       'packages/deadvox/src/bench/run.ts',
       'packages/deadvox/src/bench/shamblers.ts',

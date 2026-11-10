@@ -37,4 +37,23 @@ describe('stage dev servers', () => {
     vi.stubEnv('VITEST', '');
     expect(await resolvesInternal(stageServerConfig({}), 'serve')).toEqual({ page: true, server: true });
   });
+
+  // A page can request the plugin's module id directly, so its load checks the specifier too.
+  it('serve page modules for runtime package specifiers only', async () => {
+    const plugin = (stageServerConfig({}).plugins as { name: string; load: PageModuleLoad }[]).find(
+      ({ name }) => name === 'skelly:stage-engine-modules',
+    );
+    const context = { resolve: (specifier: string) => Promise.resolve({ id: `/resolved/${specifier}` }) };
+    await expect(plugin?.load.call(context, '\0stage-engine:@skelly/engine/sim')).resolves.toBe(
+      'export * from "/resolved/@skelly/engine/sim";\n',
+    );
+    await expect(plugin?.load.call(context, '\0stage-engine:/src/main.ts')).rejects.toThrow(
+      'only runtime package modules',
+    );
+  });
 });
+
+type PageModuleLoad = (
+  this: { resolve: (specifier: string) => Promise<{ id: string }> },
+  id: string,
+) => Promise<string | undefined>;

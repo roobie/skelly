@@ -33,7 +33,7 @@ const observation = {
     if (id.endsWith('/src/render/models.ts')) {
       return instrumentModelLoads(code);
     }
-    if (id.endsWith('/src/game/worldSetup.ts')) {
+    if (id.endsWith('/engine/src/game/worldSetup.ts')) {
       // The scenario as it enters kind dispatch, so the fixture holds whichever site the kind builds.
       const marker = 'const scenario = registry.scenarios.get(config.site);';
       assert(code.includes(marker), 'scenario population fixture admission point exists');
@@ -48,7 +48,7 @@ const observation = {
         '    globalThis.saveControllerConstructed = true;\n    this.environmentProblem = saveEnvironmentProblem();',
       );
     }
-    if (id.endsWith('/src/game/simulationStepper.ts')) {
+    if (id.endsWith('/engine/src/game/simulationStepper.ts')) {
       const stepperMarker = '    step,\n';
       assert(code.includes(stepperMarker), 'stepper roll observation point exists');
       return code.replace(

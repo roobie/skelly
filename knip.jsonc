@@ -31,12 +31,8 @@
         "/src/presentation/controls.ts",
         "/src/presentation/guidedSteps.ts",
         "/src/ui/guidedSteps.ts",
-        "/src/game/unpacking.ts",
-        "/src/game/firearmHandling.ts",
         "/src/ui/inventoryScreen.ts",
         "/test/fixtures/capabilityIds.ts",
-        "/src/game/entries/session.ts",
-        "/src/game/doorAction.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
         "/test/browser/sky-selection.ts",
@@ -55,7 +51,11 @@
         "/@stage/@skelly/engine/internal/core/furnitureSurface.ts",
         "/@stage/@skelly/engine/internal/core/scenarioCertificate.ts",
         "/@stage/@skelly/engine/internal/core/options.ts",
-        "/@stage/@skelly/engine/internal/core/ladders.ts"
+        "/@stage/@skelly/engine/internal/core/ladders.ts",
+        "/@stage/@skelly/engine/internal/game/unpacking.ts",
+        "/@stage/@skelly/engine/internal/game/firearmHandling.ts",
+        "/@stage/@skelly/engine/internal/game/doorAction.ts",
+        "/@stage/@skelly/engine/session"
       ],
       "entry": [
         "index.html!",

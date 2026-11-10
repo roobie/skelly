@@ -96,7 +96,7 @@ export const observationPlugin = {
       });
       return JSON.stringify(data);
     }
-    if (id.endsWith('/src/game/commandRouter.ts')) {
+    if (id.endsWith('/engine/src/game/commandRouter.ts')) {
       const throwQueueMarker = `      ports.pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
           throwHeldItem(heldItem, hand, distance);

@@ -71,7 +71,7 @@ try {
               '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
             [
-              '/src/game/simulationStepper.ts',
+              '/engine/src/game/simulationStepper.ts',
               '      advanceLiveFrame',
               '      if (!sim.paused) globalThis.__uiContractSimulationResumes += 1;\n',
             ],
@@ -199,7 +199,7 @@ try {
   );
   discovery.phase = 'UI assertions';
   const keyBindings =
-    await evaluate(`Promise.all([import('/src/product/input.ts'), import('/src/game/entries/input.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
+    await evaluate(`Promise.all([import('/src/product/input.ts'), import('/@stage/@skelly/engine/input')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
   }))`);

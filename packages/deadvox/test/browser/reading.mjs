@@ -30,7 +30,7 @@ const vite = await createStageServer({
       name: 'reading-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/game/worldSetup.ts')) {
+        if (id.endsWith('/engine/src/game/worldSetup.ts')) {
           const anchor = "  if (config.site === 'forest') {";
           assert.equal(code.split(anchor).length, 2);
           return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;

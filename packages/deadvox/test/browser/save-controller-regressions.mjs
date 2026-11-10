@@ -131,7 +131,7 @@ try {
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/@stage/@skelly/engine/internal/core/inventory.ts');
         const { HandlingQueue } = await import('/@stage/@skelly/engine/internal/core/handling.ts');
-        const { Unpacking } = await import('/src/game/unpacking.ts');
+        const { Unpacking } = await import('/@stage/@skelly/engine/internal/game/unpacking.ts');
         const { dominantSide } = await import('/@stage/@skelly/engine/internal/core/character.ts');
         const { inputBindings } = await import('/src/product/input.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
@@ -247,11 +247,11 @@ try {
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/@stage/@skelly/engine/internal/core/inventory.ts');
         const { HandlingQueue } = await import('/@stage/@skelly/engine/internal/core/handling.ts');
-        const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
+        const { FirearmMechanics } = await import('/@stage/@skelly/engine/internal/game/firearmHandling.ts');
         const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
         const { bindReach } = await import('/@stage/@skelly/engine/internal/core/reach.ts');
         const { fixtureIds } = await import('/test/fixtures/capabilityIds.ts');
-        const { Unpacking } = await import('/src/game/unpacking.ts');
+        const { Unpacking } = await import('/@stage/@skelly/engine/internal/game/unpacking.ts');
         const { inputBindings } = await import('/src/product/input.ts');
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
@@ -960,7 +960,7 @@ try {
       metrics: await handBack('#playtest-metrics-export'),
       replay: await handBack('#playtest-replay-export'),
     };
-    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/src/game/entries/input.ts' };
+    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/@stage/@skelly/engine/input' };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
