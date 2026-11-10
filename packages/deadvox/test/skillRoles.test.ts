@@ -19,6 +19,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 import { advance, createRuntime } from './snapshotTestSupport.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const roleRecipe = {
   id: 'fixture_role_recipe',
@@ -78,14 +79,17 @@ const sourcesWithoutSkills = () =>
     };
   });
 
-it('validates and runs an alternative stack with no skills or progression provider', () => {
-  const { registry, issues } = buildRegistry(sourcesWithoutSkills());
-  expect(issues).toEqual([]);
-  expect(requiredContentIssues(registry)).toEqual([]);
-  expect(registry.skills.size).toBe(0);
-  const runtime = createRuntime(undefined, false, undefined, { registry });
-  advance(runtime, 1);
-  expect(runtime.session.character.snapshotState().skills).toEqual({});
+// Builds the whole bundled stack and runs a session, so it runs only in the manual slow-test workflow.
+sweepGroup('validates and runs an alternative stack with no skills or progression provider', () => {
+  it('validates and runs an alternative stack with no skills or progression provider', () => {
+    const { registry, issues } = buildRegistry(sourcesWithoutSkills());
+    expect(issues).toEqual([]);
+    expect(requiredContentIssues(registry)).toEqual([]);
+    expect(registry.skills.size).toBe(0);
+    const runtime = createRuntime(undefined, false, undefined, { registry });
+    advance(runtime, 1);
+    expect(runtime.session.character.snapshotState().skills).toEqual({});
+  });
 });
 
 it('a recipe role without a provider adds neither a skill gate nor an unlock requirement', () => {
