@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ENTRY_POLICY, entryViolations } from '../tools/runtimeEntries.ts';
 
@@ -30,6 +31,10 @@ function violationsIn(changes: Tree) {
 }
 
 describe('runtime entries', () => {
+  it('keeps every product file on the curated entries', () => {
+    expect(entryViolations(fileURLToPath(new URL('../../..', import.meta.url)), ENTRY_POLICY)).toEqual([]);
+  });
+
   it('passes product code that imports only entries, while runtime files import each other', () => {
     expect(violationsIn({})).toEqual([]);
   });
