@@ -6,9 +6,13 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { readHash, writeHash } from '../packages/deadvox/src/hashState.ts';
-import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
+import {
+  gitEnvironment,
+  playHref,
+  playtestRound,
+  publishPlaytest,
+} from '../packages/deadvox/tools/publish-playtest.mjs';
 import { bundledModCatalogueIssues } from '../packages/engine/src/modCatalogue.ts';
-import { tutorialRequested } from '../packages/presentation/src/tutorialUrl.ts';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -61,6 +65,29 @@ const authoredLayoutIds = () =>
       .filter((name) => LAYOUT_FILE_PATTERN.test(name))
       .flatMap((name) => JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`)).layouts.map((layout) => layout.id)),
   );
+const modJson = (name) =>
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    existsSync(join(ROOT, DEADVOX_MODS, mod, name)) ? [JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`))] : [],
+  );
+// The game plays a practice run from a start whose site carries practice; see
+// `packages/engine/src/game/startSelection.ts`, `isPracticeStart`.
+const practiceSites = () =>
+  readdirSync(join(ROOT, DEADVOX_MODS)).flatMap((mod) =>
+    readdirSync(join(ROOT, DEADVOX_MODS, mod))
+      .filter((name) => name.endsWith('.json'))
+      .flatMap((name) => JSON.parse(read(`${DEADVOX_MODS}/${mod}/${name}`)).layouts ?? [])
+      .filter((layout) => layout.practice)
+      .map((layout) => layout.id),
+  );
+// A committed scenario the game picks through `mods` is an opt-in pack whose default start is an authored start row;
+// its site, or undefined when the pack is not one.
+const scenarioSite = (id) => {
+  const { optIn, defaultStart } = JSON.parse(read(`${DEADVOX_MODS}/${id}/pack/manifest.json`));
+  const row = modJson('starts.json')
+    .flatMap(({ starts }) => starts)
+    .find((start) => start.id === defaultStart);
+  return optIn === true ? row?.site : undefined;
+};
 
 const intentionallyUnofferedDeadvoxParams = {
   start: 'An admitted start-row selector; a player start picker is separate UI work.',
@@ -529,16 +556,16 @@ describe('site launchers track the games’ URL parameters', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const offered = siteOfferedForTest();
     const defaults = launcherModelForTest().deadvox;
-    assert.equal(
-      tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams),
-      true,
-      'play composes a URL the game accepts as practice',
+    const practice = practiceSites();
+    assert.ok(
+      practice.includes(makeDeadvox({ ...defaults, site: 'tutorial' }).searchParams.get('site')),
+      'play composes a URL the game plays as practice',
     );
     assert.equal(offered(defaults, 'tutorial'), true, 'play offers the practice tutorial');
     for (const bench of ['1', 'shamblers', 'report']) {
       assert.equal(offered({ ...defaults, bench }, 'tutorial'), false, `bench ${bench} hides the practice tutorial`);
       assert.equal(
-        tutorialRequested(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams),
+        practice.includes(makeDeadvox({ ...defaults, site: 'tutorial', bench }).searchParams.get('site')),
         false,
         `bench ${bench} does not compose a practice URL`,
       );
@@ -547,9 +574,15 @@ describe('site launchers track the games’ URL parameters', () => {
 });
 
 describe('site launcher playtest entry', () => {
-  it('keeps the Round 1 play link and routes Round 2 to the gauntlet', () => {
-    assert.equal(playtestRound(1).playQuery, 'site=playtest');
-    assert.equal(playtestRound(2).playQuery, 'site=gauntlet');
+  it('plays each round from a committed scenario mod, Round 2 from the gauntlet', () => {
+    for (const round of [1, 2]) {
+      const { scenario } = playtestRound(round);
+      assert.ok(scenarioSite(scenario), `Round ${round} picks ${scenario}, an opt-in pack naming an authored start`);
+    }
+    const scenarioIds = JSON.parse(
+      read('packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/scenarios.json'),
+    ).scenarios.map((scenario) => scenario.id);
+    assert.ok(scenarioIds.includes(scenarioSite(playtestRound(2).scenario)), 'Round 2 starts in the gauntlet');
   });
 
   it('keeps the Round 1 and Round 2 links in a separate links card', () => {
@@ -643,22 +676,28 @@ describe('site launcher playtest entry', () => {
       const script = readFileSync(join(output, 'round1.js'), 'utf8');
       const href = script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(href, 'the assembled page has a play link');
-      assert.equal(href, `${config.playPath}?site=playtest`, 'play stays relative to the round domain');
+      assert.equal(href, playHref(config, config.scenario), 'play stays relative to the round domain');
       const tutorialHref = script.match(TUTORIAL_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(tutorialHref, 'the assembled page has a tutorial link');
       const tutorial = new URL(tutorialHref, config.url);
-      assert.equal(tutorial.searchParams.get('tutorial'), '1', 'the tutorial action requests practice');
-      tutorial.searchParams.delete('tutorial');
+      assert.ok(
+        practiceSites().includes(scenarioSite(tutorial.searchParams.get('mods'))),
+        'the tutorial action picks a practice scenario',
+      );
       const play = new URL(href, config.url);
-      assert.equal(tutorial.href, play.href, 'practice uses the same frozen game URL');
+      assert.equal(tutorial.pathname, play.pathname, 'practice uses the same frozen game');
       const beginnerHref = script.match(BEGINNER_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
       assert.ok(beginnerHref, 'the assembled page has a beginner-mode link');
       assert.ok(script.indexOf('class="playtest-action"') < script.indexOf('class="beginner-action"'));
       const beginner = new URL(beginnerHref, config.url);
-      assert.equal(beginner.searchParams.get('mods'), 'skelly.deadvox.beginner', 'beginner selects its bundled mod');
-      beginner.searchParams.delete('mods');
+      assert.equal(
+        beginner.searchParams.get('mods'),
+        `${config.scenario},skelly.deadvox.beginner`,
+        'beginner adds its bundled mod to the round scenario',
+      );
+      beginner.searchParams.set('mods', config.scenario);
       assert.equal(beginner.href, play.href, 'beginner mode uses the same frozen game URL');
-      assert.ok(authoredLayoutIds().includes(play.searchParams.get('site')), 'play selects an authored site');
+      assert.ok(authoredLayoutIds().includes(scenarioSite(config.scenario)), 'play starts at an authored site');
       assert.equal(play.searchParams.has('debug'), false);
       assert.ok(html.includes(`<link rel="canonical" href="${config.url}"`));
       assert.ok(html.includes(`<meta property="og:url" content="${config.url}"`));
@@ -683,7 +722,7 @@ describe('site launcher playtest entry', () => {
       const round2 = publishPlaytest({ round: 2, gameSha, dryRun: true, root });
       const round2Script = readFileSync(join(round2.output, 'round2.js'), 'utf8');
       const round2Href = round2Script.match(PLAY_LINK_PATTERN)?.[0].match(HREF_PATTERN)?.[1];
-      assert.equal(round2Href, `${playtestRound(2).playPath}?${playtestRound(2).playQuery}`);
+      assert.equal(round2Href, playHref(playtestRound(2), playtestRound(2).scenario));
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -24,12 +24,13 @@ export const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }
   return url.href;
 };
 
-export const playPage = (): PlayPage => {
+/** The game page; `practiceMod` is the mod that leaving practice drops. */
+export const playPage = (practiceMod: string | undefined): PlayPage => {
   const { query, hash } = pageUrl();
   return {
     debugError: query.get('debug-error') === '1',
     // The hash is read again at each link, so it carries what the debug tools wrote back since startup.
-    leaveTutorial: () => location.assign(tutorialUrl(location.href, false, tutorialHash(pageUrl().hash))),
+    leaveTutorial: () => location.assign(tutorialUrl(location.href, practiceMod, false, tutorialHash(pageUrl().hash))),
     newWorld: (seed) => location.assign(newWorldHref(location.href, pageUrl().hash, seed)),
     reloadForReplay: () => location.assign(replayHref(location.href, pageUrl().hash)),
     reviewMapHref: new URL('map.html', location.href).href,

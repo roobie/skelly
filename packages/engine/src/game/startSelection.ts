@@ -8,6 +8,15 @@ import type { StartupContent } from './bundledContent.ts';
 export const runStartId = (content: StartupContent): string | undefined =>
   content.startModStart ?? content.defaultStart;
 
+/**
+ * A practice run begins from a start row whose site carries practice, so the game knows it from the loaded content,
+ * not from the link that loaded it.
+ */
+export const isPracticeStart = (registry: StartupContent['registry'], startId: string): boolean => {
+  const start = registry.starts.get(startId);
+  return start !== undefined && registry.layouts.get(start.site)?.practice !== undefined;
+};
+
 export const requireStart = (content: StartupContent, id: string | undefined, debug = false): StartDef => {
   const start = id === undefined ? undefined : content.registry.starts.get(id);
   if (!start || (start.debugOnly && !debug)) {

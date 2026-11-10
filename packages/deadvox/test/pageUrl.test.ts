@@ -80,17 +80,18 @@ describe('page links', () => {
     const page =
       'https://example.org/deadvox/?mods=fixture&site=city&render=0#{debug:true,seed:3,radius:64,cam:[1,2,3,0,0,0]}';
     const { hash } = readPageUrl(new URL(page).search, new URL(page).hash);
+    const enterPractice = tutorialUrl(page, 'fixture.practice', true, tutorialHash(hash));
     const links = {
       newWorld: newWorldHref(page, hash, 4),
       replay: replayHref(page, hash),
-      enterPractice: tutorialUrl(page, true, tutorialHash(hash)),
-      leavePractice: tutorialUrl(page, false, tutorialHash(hash)),
+      enterPractice,
+      leavePractice: tutorialUrl(enterPractice, 'fixture.practice', false, tutorialHash(hash)),
     };
     for (const [name, href] of Object.entries(links)) {
       const url = new URL(href);
       const read = readPageUrl(url.search, url.hash);
       expect(read.refused, name).toBeUndefined();
-      expect(read.query.get('mods'), name).toBe('fixture');
+      expect(read.query.get('mods'), name).toBe(name === 'enterPractice' ? 'fixture,fixture.practice' : 'fixture');
     }
     expect(readPageUrl(new URL(links.newWorld).search, new URL(links.newWorld).hash).hash.seed).toBe(4);
     expect(readPageUrl(new URL(links.replay).search, new URL(links.replay).hash).hash).toEqual({

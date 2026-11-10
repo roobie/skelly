@@ -32,12 +32,12 @@ const app = text
         <section class="mode" aria-labelledby="mode-beginner">
           <h2 id="mode-beginner">${text.beginnerHeading}</h2>
           <p>${text.beginnerHint}</p>
-          <a class="beginner-action" href="{{PLAY_URL}}&mods=skelly.deadvox.beginner">${text.beginnerLink}</a>
+          <a class="beginner-action" href="{{BEGINNER_URL}}">${text.beginnerLink}</a>
         </section>
         <section class="mode" aria-labelledby="mode-tutorial">
           <h2 id="mode-tutorial">${text.tutorialHeading}</h2>
           <p>${text.tutorialHint}</p>
-          <a class="tutorial-action" href="{{PLAY_URL}}&tutorial=1">${text.tutorialLink}</a>
+          <a class="tutorial-action" href="{{PRACTICE_URL}}">${text.tutorialLink}</a>
         </section>
       </section>
       <footer><a href="https://roobie.github.io/skelly/">skelly projects</a></footer>

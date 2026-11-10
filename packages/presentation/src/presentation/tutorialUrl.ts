@@ -1,24 +1,33 @@
-export const tutorialRequested = (params: URLSearchParams): boolean =>
-  params.get('tutorial') === '1' || params.get('site') === 'tutorial';
-
-/** The page entering or leaving practice; the product passes the hash text practice keeps. */
-export const tutorialUrl = (href: string, practice: boolean, keptHash = ''): string => {
+/**
+ * The page entering or leaving practice. Practice is a scenario picked through `mods`, so entering adds the practice
+ * mod after the page's own mods, whose start then begins the run, and leaving drops it. The product passes that mod's
+ * id and the hash text practice keeps.
+ */
+export const tutorialUrl = (
+  href: string,
+  practiceMod: string | undefined,
+  practice: boolean,
+  keptHash = '',
+): string => {
   const url = new URL(href);
   const presentation = new URLSearchParams();
-  for (const name of ['render', 'save-backend', 'mods']) {
+  for (const name of ['render', 'save-backend']) {
     const value = url.searchParams.get(name);
     if (value !== null) {
       presentation.set(name, value);
     }
   }
-  const site = url.searchParams.get('site');
-  if (site !== null && site !== 'tutorial') {
-    presentation.set('site', site);
+  const mods = (url.searchParams.get('mods') ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id !== '' && id !== '1' && id !== practiceMod);
+  if (practice && practiceMod !== undefined) {
+    mods.push(practiceMod);
+  }
+  if (mods.length > 0) {
+    presentation.set('mods', mods.join(','));
   }
   url.search = presentation.toString();
   url.hash = keptHash;
-  if (practice) {
-    url.searchParams.set('tutorial', '1');
-  }
   return url.href;
 };

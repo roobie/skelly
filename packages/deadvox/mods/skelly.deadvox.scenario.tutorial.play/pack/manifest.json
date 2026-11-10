@@ -1,0 +1,11 @@
+{
+  "defaultStart": "tutorial",
+  "dependencies": ["skelly.deadvox.scenario.tutorial"],
+  "files": [],
+  "id": "skelly.deadvox.scenario.tutorial.play",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

@@ -5,6 +5,7 @@ import { selectFolderClosure } from '../core/packAdmission.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
 import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
+import { isPracticeStart } from './startSelection.ts';
 
 export interface BundledMod {
   id: string;
@@ -45,6 +46,17 @@ export const bundledModIdsFromUrl = (params: URLSearchParams): string[] => {
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
+};
+
+/**
+ * The opt-in pack whose default start is a practice start, found from content so no code names the tutorial; when
+ * none or several qualify there is no practice link.
+ */
+export const practiceModId = (intake: ModIntake, registry: StartupContent['registry']): string | undefined => {
+  const ids = intake.content.availablePackInputs
+    .filter(({ manifest: { optIn, defaultStart } }) => optIn && defaultStart && isPracticeStart(registry, defaultStart))
+    .map(({ manifest }) => manifest.id);
+  return ids.length === 1 ? ids[0] : undefined;
 };
 
 /**

@@ -1,6 +1,6 @@
-import { type ModIntake, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
+import { type ModIntake, practiceModId, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
 import { currentSaveVersionIdentity } from '@skelly/engine/save';
-import { configFromUrl } from '@skelly/engine/session';
+import { configFromUrl, isPracticeStart } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { readPageUrl } from '../src/pageUrl.ts';
@@ -113,5 +113,35 @@ describe('start-mod parameter', () => {
     expect(readPageUrl(`?start-mod=${value}&site=city`, '').refused).toBe('site');
     expect(readPageUrl(`?start-mod=${value}&start-mod=${startMod.id}`, '').refused).toBe('start-mod');
     expect(readPageUrl(`?mods=1&start-mod=${startMod.id}`, '').refused).toBe('start-mod');
+  });
+});
+
+describe('committed scenario mods', () => {
+  const scenarios = productModIntake.content.availablePackInputs.flatMap(({ manifest: { id, optIn, defaultStart } }) =>
+    optIn && defaultStart !== undefined ? [[id, defaultStart] as const] : [],
+  );
+  const runOf = (ids: string[]) => {
+    const { content } = selectBundledMods(productModIntake, ids);
+    return { content, config: configFromUrl(new URLSearchParams(), {}, content, ragdollSweepViewer) };
+  };
+
+  it('ships scenarios that a link picks by id', () => {
+    expect(scenarios.length).toBeGreaterThan(0);
+  });
+
+  it.each(scenarios)('starts the run from the default start of %s when mods picks it', (id, defaultStart) => {
+    expect(selectBundledMods(productModIntake, [id]).issues).toEqual([]);
+    expect(runOf([id]).config.startId).toBe(defaultStart);
+  });
+
+  it('knows a practice run from its start row, whichever link loaded it', () => {
+    const practice = practiceModId(productModIntake, startupContent().registry);
+    expect(practice).toBeDefined();
+    const practiceRun = (ids: string[]) => {
+      const { content, config } = runOf(ids);
+      return isPracticeStart(content.registry, config.startId);
+    };
+    expect(practiceRun([practice!])).toBe(true);
+    expect(practiceRun([])).toBe(false);
   });
 });

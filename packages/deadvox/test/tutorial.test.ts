@@ -12,7 +12,7 @@ import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,
 } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
-import { tutorialRequested, tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -92,7 +92,7 @@ describe('practice objectives', () => {
     tutorial.choose('light-choice');
     observe();
     expect(tutorial.stage).toBe('revolver');
-    expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
+    expect(new URL(tutorialUrl('https://example.org/deadvox/?mods=practice', 'practice', false)).search).toBe('');
   });
 
   it('completes the light module on a lit light, a finished battery swap and the light on again', () => {
@@ -222,26 +222,22 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
-  it('returns practice to its selected site and beginner mode', () => {
-    for (const [site, mode] of [
-      ['playtest', null],
-      ['gauntlet', 'skelly.deadvox.beginner'],
-    ]) {
-      const returned = new URL(
-        tutorialUrl(`https://example.org/deadvox/?site=${site}&tutorial=1${mode ? `&mods=${mode}` : ''}`, false),
-      );
-      expect(returned.searchParams.get('site')).toBe(site);
-      expect(returned.searchParams.get('mods')).toBe(mode);
-      expect(returned.searchParams.has('tutorial')).toBe(false);
+  it('enters practice after the page mods and returns to them', () => {
+    for (const mods of [null, 'scenario', 'scenario,beginner']) {
+      const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
+      const entered = new URL(tutorialUrl(page, 'practice', true));
+      expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : `${mods},practice`);
+      expect(new URL(tutorialUrl(entered.href, 'practice', false)).searchParams.get('mods')).toBe(mods);
     }
   });
 
-  it('also isolates direct authored-site links and clears continuation and debug parameters on exit', () => {
-    expect(tutorialRequested(new URLSearchParams('site=tutorial'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('tutorial=1'))).toBe(true);
-    expect(tutorialRequested(new URLSearchParams('site=gauntlet'))).toBe(false);
+  it('clears continuation and debug parameters on exit', () => {
     const start = new URL(
-      tutorialUrl('https://example.org/deadvox/?tutorial=1&save-backend=indexeddb#{debug:true}', false),
+      tutorialUrl(
+        'https://example.org/deadvox/?mods=practice&site=city&save-backend=indexeddb#{debug:true}',
+        'practice',
+        false,
+      ),
     );
     expect(start.pathname).toBe('/deadvox/');
     expect(start.searchParams.get('save-backend')).toBe('indexeddb');

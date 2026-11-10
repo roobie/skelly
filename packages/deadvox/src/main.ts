@@ -3,12 +3,19 @@
 
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
-import { bundledModIdsFromUrl, getBuildRevision, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
+import {
+  bundledModIdsFromUrl,
+  getBuildRevision,
+  practiceModId,
+  selectBundledMods,
+  startModFromUrl,
+} from '@skelly/engine/packs';
 import type { SaveBackendPreference } from '@skelly/engine/save';
 import {
   applyWeatheringConfig,
   configFromUrl,
   DEFAULT_RADIUS_M,
+  isPracticeStart,
   makeConfig,
   savingEnabledFromUrl,
 } from '@skelly/engine/session';
@@ -23,7 +30,7 @@ import {
   startPlay,
   WorldLoading,
 } from '@skelly/presentation/play';
-import { tutorialRequested, tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import {
   applyUiTokens,
   chooseMods,
@@ -42,7 +49,7 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
-import { readHash, writeHash } from './hashState.ts';
+import { writeHash } from './hashState.ts';
 import { pageUrl } from './pageUrl.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
@@ -205,7 +212,8 @@ if (bench === 'report') {
   );
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const skyRoute = params.get('skyRoute') === '1' ? await debugModule?.loadSkyRoute() : undefined;
-  const page = playPage();
+  const practiceMod = practiceModId(productModIntake, content.registry);
+  const page = playPage(practiceMod);
   const engineOptions = { render: !renderFree };
   if (pendingReplay) {
     try {
@@ -242,20 +250,10 @@ if (bench === 'report') {
       clearPendingInputReplay(replayStash);
       showStartupFailure(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
     }
-  } else if (tutorialRequested(params)) {
-    const practice = new URL(tutorialUrl(location.href, true, tutorialHash(hash)));
-    const practiceParams = new URLSearchParams(practice.search);
-    practiceParams.set('site', 'tutorial');
-    const practiceHash = readHash(practice.hash);
-    const practiceConfig = configFromUrl(
-      practiceParams,
-      'hash' in practiceHash ? practiceHash.hash : {},
-      content,
-      ragdollSweepViewer,
-    );
-    const engine = createEngine(practiceConfig, view, undefined, engineOptions);
+  } else if (isPracticeStart(content.registry, config.startId)) {
+    const engine = createEngine(config, view, undefined, engineOptions);
     try {
-      await startPlay(engine, undefined, {
+      await startPlay(engine, debugModule, {
         assets,
         page,
         keyboard: keyboardInput,
@@ -270,9 +268,11 @@ if (bench === 'report') {
       showStartupFailure(`Practice failed to load: ${error instanceof Error ? error.message : String(error)}`);
     }
   } else {
-    document.getElementById('tutorial-start')!.addEventListener('click', (event) => {
+    const practiceStart = document.getElementById('tutorial-start')!;
+    practiceStart.hidden = practiceMod === undefined;
+    practiceStart.addEventListener('click', (event) => {
       event.stopPropagation();
-      location.assign(tutorialUrl(location.href, true, tutorialHash(hash)));
+      location.assign(tutorialUrl(location.href, practiceMod, true, tutorialHash(hash)));
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';

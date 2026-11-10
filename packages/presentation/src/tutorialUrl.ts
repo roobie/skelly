@@ -1,1 +1,1 @@
-export { tutorialRequested, tutorialUrl } from './presentation/tutorialUrl.ts';
+export { tutorialUrl } from './presentation/tutorialUrl.ts';

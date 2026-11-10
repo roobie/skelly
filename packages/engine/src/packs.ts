@@ -30,6 +30,7 @@ export {
 export {
   bundledModIdsFromUrl,
   bundledModsFrom,
+  practiceModId,
   selectBundledMods,
   startModFromUrl,
 } from './game/bundledMods.ts';

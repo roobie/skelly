@@ -22,4 +22,4 @@ export {
   type InputReplayVerification,
   inputReplayStoppedStatus,
 } from './game/simulationStepper.ts';
-export { requireStart, startForSite } from './game/startSelection.ts';
+export { isPracticeStart, requireStart, startForSite } from './game/startSelection.ts';

@@ -541,8 +541,9 @@ try {
         null,
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
+      const practiceHref = page.url();
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial')),
+        page.waitForURL((target) => target.href !== practiceHref),
         page.locator('#death button').press('Enter'),
       ]);
       await page.waitForFunction(
@@ -553,8 +554,9 @@ try {
       assert.equal(await page.locator('#title-prompt').isHidden(), true, 'saved-world choice hides the centre prompt');
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
+      const reenteredHref = page.url();
       await Promise.all([
-        page.waitForURL((target) => !target.searchParams.has('tutorial')),
+        page.waitForURL((target) => target.href !== reenteredHref),
         page.getByRole('button', { name: 'Exit practice', exact: true }).press('Enter'),
       ]);
       await page.waitForFunction(() => document.querySelector('#startup-screen').hidden);

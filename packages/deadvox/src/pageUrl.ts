@@ -11,7 +11,7 @@ const HARNESS_QUERY = ['mods', 'start-mod', 'bench', 'render', 'skyRoute', 'save
  * World setup whose home is not decided yet, so the game still reads it from the query; see
  * `packages/deadvox/docs/url-mods.md`, "Where each parameter goes".
  */
-const UNHOMED_QUERY = ['site', 'time', 'start', 'tutorial'];
+const UNHOMED_QUERY = ['site', 'time', 'start'];
 
 const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY]);
 
@@ -19,7 +19,7 @@ const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY]);
  * A link names its start one way, so these are not read beside `start-mod`; see
  * `packages/deadvox/docs/url-mods.md`, "Start mod".
  */
-const START_MOD_EXCLUDES = new Set(['site', 'start', 'tutorial']);
+const START_MOD_EXCLUDES = new Set(['site', 'start']);
 
 /** The first query parameter the game does not read; a repeated `start-mod` or one beside the mods panel is refused. */
 const unreadQuery = (query: URLSearchParams): string | undefined => {
