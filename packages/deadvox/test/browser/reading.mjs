@@ -1282,8 +1282,8 @@ try {
       { waitUntil: 'domcontentloaded' },
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    // The forest start mod is its own save namespace, so the house save leaves nothing here to replace.
     await page.locator('#go').click();
-    await page.locator('#save-replace-confirm').click();
     await page.waitForFunction(
       () =>
         document.querySelector('#world-loading')?.dataset.state === 'ready' &&
