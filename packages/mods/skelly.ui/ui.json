@@ -194,7 +194,6 @@
           "pull": "Trigger pull"
         },
         "survival": {
-          "actionListHeading": "{item}:",
           "batteryDetail": "Battery {percent}%",
           "burnedOut": "It has burned out",
           "cantUseFromHere": "I can't use the {item} from here",

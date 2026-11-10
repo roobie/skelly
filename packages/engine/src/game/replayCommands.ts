@@ -18,6 +18,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'inventory.inspect'; itemUid: number }
   | { kind: 'inventory.activate'; itemUid: number }
+  | { kind: 'hand.action'; itemUid: number; actionId: string }
   | { kind: 'inventory.wield-or-pocket'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
@@ -227,6 +228,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.activate':
     case 'inventory.inspect':
       return isUid(payload.itemUid);
+    case 'hand.action':
+      return isUid(payload.itemUid) && typeof payload.actionId === 'string' && payload.actionId.length > 0;
     case 'power.set':
       return isPowerPayload(payload);
     case 'charger.start':
@@ -307,6 +310,8 @@ export interface ReplayCommandOwners {
   search: (entityUid: number) => string | undefined;
   inspect?: (itemUid: number) => void;
   activate?: (itemUid: number) => string | undefined;
+  /** Runs the held item's action `actionId` once, as the action menu or a tap chose it. */
+  handAction?: (itemUid: number, actionId: string) => string | undefined;
   wieldOrPocket?: (itemUid: number, feet: [number, number, number]) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
@@ -382,6 +387,10 @@ export const applyReplayActionPayload = (
     case 'inventory.activate':
     case 'inventory.wield-or-pocket':
       return applyInventoryItemAction(payload, owners);
+    case 'hand.action':
+      return owners.handAction
+        ? owners.handAction(payload.itemUid, payload.actionId)
+        : 'Hand action is unavailable';
     case 'inventory.inspect':
       owners.inspect?.(payload.itemUid);
       return undefined;

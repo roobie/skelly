@@ -141,6 +141,7 @@ export {
   radialEntryIndex,
 } from './game/actionMenu.ts';
 export { firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
+export { HeldActionPress, type HeldActionTrigger, heldMenuOpens } from './game/heldActionPress.ts';
 export { furnitureActionsFor } from './game/furnitureActions.ts';
 export { unarmedMeleeWeapon } from './game/melee.ts';
 export { createPlayerBody, type MoveIntent, physicsFor, playerTuning } from './game/player.ts';

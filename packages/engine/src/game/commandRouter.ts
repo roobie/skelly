@@ -151,6 +151,8 @@ interface LiveGesturePorts {
   wornLight: PressGesture;
   /** Picks the interaction target at the press and forgets it at the release. */
   interact: PressGesture;
+  /** Takes the off-hand use press when the held item offers a choice; false leaves it to the ordinary use. */
+  offHandUse: { keyDown: (at: number) => boolean; keyUp: (at: number) => void };
   quickbar: { keyDown: (slot: number, at: number) => void; keyUp: (slot: number, at: number) => void };
   /** Cancels every held live gesture, as a refusal does. */
   cancelHeld: () => void;
@@ -1074,7 +1076,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         withUnlockedInput(() => liveGestures.wornLight.keyDown(action, at));
         break;
       case 'hand.use-off':
-        if (!ports.replaying()) {
+        if (!(ports.replaying() || liveGestures.offHandUse.keyDown(at))) {
           controls.useOff();
         }
         break;
@@ -1115,6 +1117,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     }
     if (action === 'world.interact') {
       liveGestures.interact.keyUp(action, at);
+    }
+    if (action === 'hand.use-off') {
+      liveGestures.offHandUse.keyUp(at);
     }
     if (action === 'player.crouch-toggle') {
       liveGestures.crouchProne.keyUp(action, at);
@@ -1237,6 +1242,22 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       activate: (uid) => {
         const item = inventory.itemByUid(uid);
         return item ? survival.activateHeld(item) : lines.common.gone;
+      },
+      handAction: (uid, actionId) => {
+        const item = inventory.itemByUid(uid);
+        const hand = item && survival.handOf(item);
+        if (!item || hand === undefined) {
+          return lines.common.gone;
+        }
+        return survival.withItemAction(item, actionId, (action) => {
+          // Resumes here rather than through the hand use, which would record a second command for the one choice.
+          if (action.continuing) {
+            continueAction();
+          } else {
+            handUse.perform(hand);
+          }
+          return undefined;
+        });
       },
       pickup: (uid, mode, feetPosition) => {
         const item = inventory.itemByUid(uid);

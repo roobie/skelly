@@ -24,7 +24,7 @@ export interface ItemAction {
   readonly battery?: 'unload';
   readonly opening?: true;
   readonly sharpening?: true;
-  /** Resuming a held, paused craft: the action list is where a paused craft's status lives. */
+  /** Resuming a held, paused craft: the action menu is where a paused craft's status lives. */
   readonly continuing?: true;
   readonly workUid?: number;
   /** A menu entry that opens a list of these instead of acting itself. */
@@ -78,7 +78,7 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
   return target ? [...actions, { id: 'open-can', label: labels.openCan, opening: true }] : actions;
 };
 
-/** The light's own click first, so the wheel has to be turned to take the battery out. */
+/** The light's own click first, so the default use switches it rather than taking the battery out. */
 const lightActions = (item: Item, inventory: Inventory): readonly ItemAction[] => {
   const { registry } = inventory;
   let own: 'switchOff' | 'switchOn' | 'use' = 'use';
@@ -138,56 +138,26 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
     return actionPriority.damage > bestPriority.damage ? action : best;
   }, undefined);
 
+/**
+ * The action an item's use runs: the one the player chose for that use, else the default. A choice lasts only for
+ * the use it was made for, so a later ordinary use or quickbar press never runs an action the player cannot see.
+ */
 export class ItemActionSelection {
-  private readonly selected = new Map<number, string>();
-  private readonly openCanLabel: string;
-
-  constructor(openCanLabel: string) {
-    this.openCanLabel = openCanLabel;
-  }
+  private chosen: Readonly<{ uid: number; id: string }> | undefined;
 
   forItem(item: Pick<Item, 'uid'>, actions: readonly ItemAction[]): ItemAction | undefined {
-    if (this.selected.get(item.uid) === 'sharpen' && !actions.some((action) => action.sharpening)) {
-      return { id: 'sharpen', label: 'Sharpen', sharpening: true };
-    }
-    if (this.selected.get(item.uid) === 'open-can' && !actions.some((action) => action.opening)) {
-      return { id: 'open-can', label: this.openCanLabel, opening: true };
-    }
-    if (actions.length === 0) {
-      this.selected.delete(item.uid);
-      return undefined;
-    }
-    const selectedId = this.selected.get(item.uid);
-    const current = selectedId === undefined ? undefined : actions.find((action) => action.id === selectedId);
-    if (current) {
-      return current;
-    }
-    const fallback = defaultItemAction(actions);
-    if (fallback) {
-      this.selected.set(item.uid, fallback.id);
-    }
-    return fallback;
+    const { chosen } = this;
+    const current = chosen?.uid === item.uid ? actions.find((action) => action.id === chosen.id) : undefined;
+    return current ?? defaultItemAction(actions);
   }
 
-  step(item: Pick<Item, 'uid'>, actions: readonly ItemAction[], direction: number): boolean {
-    if (direction === 0) {
-      return false;
+  /** Runs `use` with `action` chosen for `item`. */
+  choose<T>(item: Pick<Item, 'uid'>, action: ItemAction, use: () => T): T {
+    this.chosen = { uid: item.uid, id: action.id };
+    try {
+      return use();
+    } finally {
+      this.chosen = undefined;
     }
-    if (
-      actions.length === 1 &&
-      ((this.selected.get(item.uid) === 'open-can' && !actions[0]!.opening) ||
-        (this.selected.get(item.uid) === 'sharpen' && !actions[0]!.sharpening))
-    ) {
-      this.selected.set(item.uid, actions[0]!.id);
-      return true;
-    }
-    if (actions.length < 2) {
-      return false;
-    }
-    const current = this.forItem(item, actions)!;
-    const index = actions.indexOf(current);
-    const next = actions[(index + (direction > 0 ? 1 : -1) + actions.length) % actions.length]!;
-    this.selected.set(item.uid, next.id);
-    return true;
   }
 }

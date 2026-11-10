@@ -151,20 +151,26 @@ describe('held can opening', () => {
     expect(f.can.type).toBe('test_empty');
   });
 
-  it('the wheel selection chooses opening rather than the tool swing, without a lost-target attack', () => {
+  it('a chosen opening runs once instead of the swing, and refuses rather than swinging once its target is gone', () => {
     const f = fixture('left');
-    const selected = () => selectPrimaryAction(f.inventory, f.other, f.survival.selectedItemAction(f.tool)?.id);
-    expect(selected().kind).toBe('melee');
-    expect(f.survival.availableItemActions(f.tool).some((action) => action.opening)).toBe(true);
-    expect(f.survival.wieldedItemActionHint()).toBeDefined();
-    expect(f.survival.cycleItemAction(f.tool, 1)).toBe(true);
-    expect(selected().kind).toBe('open-can');
+    const selected = () => selectPrimaryAction(f.inventory, f.other, f.survival.selectedItemAction(f.tool)?.id).kind;
+    const opening = f.survival.availableItemActions(f.tool).find((action) => action.opening);
+    expect(opening).toBeDefined();
+    expect(selected()).toBe('melee');
+    let chosenUse: string | undefined;
+    const choose = () =>
+      f.survival.withItemAction(f.tool, opening!.id, () => {
+        chosenUse = selected();
+        return undefined;
+      });
+    expect(choose()).toBeUndefined();
+    expect(chosenUse).toBe('open-can');
+    expect(selected()).toBe('melee');
     expect(f.inventory.move(f.can, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
     expect(openingTargetForHand(f.inventory, f.other)).toBeUndefined();
-    expect(selected().kind).toBe('open-can');
-    expect(f.survival.wieldedItemActionHint()).toBeUndefined();
-    expect(f.survival.cycleItemAction(f.tool, 1)).toBe(true);
-    expect(selected().kind).toBe('melee');
+    chosenUse = undefined;
+    expect(choose()).toBeDefined();
+    expect(chosenUse).toBeUndefined();
   });
 
   it('a tutorial opening is earned by completion, not activation or cancellation', () => {
