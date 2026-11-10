@@ -1,5 +1,5 @@
-// Sky spike "scatter" for issue #1505: three's Preetham scattering dome (`three/addons/objects/
-// Sky.js`), whose r186 shader already carries procedural FBM clouds and a sun disc. Patched to
+// Sky spike "scatter" for issue #1505: three's Preetham scattering dome (the `Sky` addon
+// object), whose r186 shader already carries procedural FBM clouds and a sun disc. Patched to
 // fade into the fog at the horizon, dim by diffuse sky visibility, and add the shared stars
 // and a moon. All uniforms derive from the keyed sky (engine/core/sky.ts, skyAt), so the day
 // cycle's content still owns the look. The pano spike (render/skyPano.ts) reuses this dome,
