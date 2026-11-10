@@ -1,5 +1,5 @@
 // Chunk storage: what's held in memory, and estimates under the layouts in
-// `CHALLENGES.md`, "Half-metre blocks" (full chunks, uniform chunks and palette packing).
+// `packages/deadvox/CHALLENGES.md`, "Half-metre blocks" (full chunks, uniform chunks and palette packing).
 
 import type { Chunk } from './chunk.ts';
 import { CHUNK_VOLUME } from './coords.ts';

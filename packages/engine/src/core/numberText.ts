@@ -1,7 +1,7 @@
 // One precision table for every number a player can read, so raw floats never reach UI text
-// (`INTERFACE.md`, "Text") and each kind's precision lives here rather than scattered at call
+// (`packages/deadvox/INTERFACE.md`, "Text") and each kind's precision lives here rather than scattered at call
 // sites (`PILLARS.md`, "Content forward compatibility"). Text slots accept only strings
-// (`src/core/textTemplate.ts`, `fillText`, and `src/ui/keyCap.ts`, `fillHint`), so a number must
+// (`src/core/textTemplate.ts`, `fillText`, and `packages/deadvox/src/ui/keyCap.ts`, `fillHint`), so a number must
 // name its kind here.
 
 /** Whole counts: rounds, levels, indexes, calories, cells. */

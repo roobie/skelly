@@ -1,6 +1,6 @@
 // The mood pass's numbers: colour grade, film and bloom. Pure; render/mood.ts feeds them to
 // the shaders. The grade is one strength in [0, 1]: 0 leaves the picture alone, 1 is the
-// designed look (`DESIGN.md`, "Rendering": muted and grey, colour kept for what means something).
+// designed look (`packages/deadvox/DESIGN.md`, "Rendering": muted and grey, colour kept for what means something).
 
 import type { Rgb } from './sky.ts';
 
@@ -199,7 +199,7 @@ export const BLOOM_RADIUS = 0.6;
  *
  * Derived by porting three's GLSL tone-map functions (tonemapping_pars_fragment, the ones OutputPass
  * runs) for a grey input, applying the sRGB OETF, and solving display(x) = 0.95 by bisection (the
- * port is test/toneCurves.ts, which also checks these):
+ * port is packages/deadvox/test/toneCurves.ts, which also checks these):
  *   aces     x = 2.039 (ACES Filmic, with three's 1/0.6 input scale; x = 1 already shows 0.888)
  *   agx      x = 5.024 (a long shoulder: x = 1 shows only 0.792)
  *   neutral  x = 1.084

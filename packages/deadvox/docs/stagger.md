@@ -8,13 +8,13 @@ read_if:
 
 # Stagger
 
-Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "Related issues and admission"). Without that, a shambler at reach is answered only by trading blows. A heavy enough hit holds the zombie still and spoils the attack it was winding up, so a well-timed strike buys time instead of only damage. See `src/core/actorSystem.ts`, `ActorSystem`, `stagger`.
+Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "Related issues and admission"). Without that, a shambler at reach is answered only by trading blows. A heavy enough hit holds the zombie still and spoils the attack it was winding up, so a well-timed strike buys time instead of only damage. See `packages/engine/src/core/actorSystem.ts`, `ActorSystem`, `stagger`.
 
 ## The rules
 
-**Stagger rewards commitment.** A player commits by charging a strike or by carrying a heavy, slow weapon, and either can reach a type's threshold, the heavy weapon even on an ordinary swing. Light, quick ordinary swings stay below it, so stagger is a reward for commitment rather than a side effect of every swing. Where "heavy" starts is tuning, set by weapon impulse against each type's threshold in content. See `src/core/actorSystem.ts`, `stagger`, and `tools/jsonnet/lib/melee-weapon.libsonnet`, `melee`.
+**Stagger rewards commitment.** A player commits by charging a strike or by carrying a heavy, slow weapon, and either can reach a type's threshold, the heavy weapon even on an ordinary swing. Light, quick ordinary swings stay below it, so stagger is a reward for commitment rather than a side effect of every swing. Where "heavy" starts is tuning, set by weapon impulse against each type's threshold in content. See `packages/engine/src/core/actorSystem.ts`, `stagger`, and `tools/jsonnet/lib/melee-weapon.libsonnet`, `melee`.
 
-**A threshold, per type.** Both the threshold and the duration are content, because sturdier types should shrug off what drops a shambler. See `src/core/schema/actors.ts`, `ActorSchema`.
+**A threshold, per type.** Both the threshold and the duration are content, because sturdier types should shrug off what drops a shambler. See `packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
 
 **It spoils the attack in progress.** A stagger cancels the melee wind-up and the acid spit and blocks new ones until it ends. A wind-up that resumed afterwards would land anyway, and the interruption would mean nothing.
 
@@ -26,7 +26,7 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 **Only melee staggers.** Stagger rewards a committed strike, so thrown, projectile and blast hits keep their own effects. Whether they should stagger too is open: see `docs/charged-attacks.md`, "Open questions".
 
-**It is not the hit flinch.** The flinch is presentation and runs on every damaging hit; stagger is simulation and changes what the zombie may do. See `src/core/actorPose.ts`, `actorHitFlinchDuration`.
+**It is not the hit flinch.** The flinch is presentation and runs on every damaging hit; stagger is simulation and changes what the zombie may do. See `packages/engine/src/core/actorPose.ts`, `actorHitFlinchDuration`.
 
 ## Which types stagger
 

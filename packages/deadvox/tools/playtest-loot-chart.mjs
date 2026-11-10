@@ -255,7 +255,7 @@ const lines = [
   '# Playtest loot progression',
   '',
   'Buildings are grouped under their nearest beat area by building-center distance; ties follow Beats layer order.',
-  'Fixed container items are furnished before rolled filler; a full container can crowd it out (see `src/core/inventory.ts`, `Inventory.furnish`).',
+  'Fixed container items are furnished before rolled filler; a full container can crowd it out (see `packages/engine/src/core/inventory.ts`, `Inventory.furnish`).',
   'Fixed items are authored placements. Weighted table choices are per roll; roll and item counts are inclusive ranges.',
   '',
 ];

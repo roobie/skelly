@@ -1,4 +1,4 @@
-// A detachable box magazine (`SLICE-3.md`, "Firearms for real"): an item whose model carries gungen's fitted round column.
+// A detachable box magazine (`packages/deadvox/SLICE-3.md`, "Firearms for real"): an item whose model carries gungen's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
 import { batteryFits } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';

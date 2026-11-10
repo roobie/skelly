@@ -38,7 +38,7 @@ export const GraphicsTuningSchema = strictObject({
   /**
    * The camera's far plane as a multiple of where the fog ends. Fog goes by horizontal distance; a
    * larger scale lets more of what is far above or below the camera stay unfogged, and culls less
-   * (`src/render/distanceFog.ts`).
+   * (`packages/deadvox/src/render/distanceFog.ts`).
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
@@ -47,7 +47,7 @@ export const GraphicsTuningSchema = strictObject({
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
   skyPreloadRings: Count,
-  /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
+  /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
@@ -75,7 +75,7 @@ export const GraphicsTuningSchema = strictObject({
     dropletSpawnsPerFrame: Count,
     dripSourceCap: Count,
     /**
-     * Flesh chunks thrown with the blood on every carve and on hard hits (`src/render/gore.ts`, `Gore.carved` and
+     * Flesh chunks thrown with the blood on every carve and on hard hits (`packages/deadvox/src/render/gore.ts`, `Gore.carved` and
      * `Gore.wounded`): which models, how many a throw starts, the pool they recycle oldest first, how they fly,
      * spin and fade. A row without it throws none.
      */

@@ -62,7 +62,7 @@ export interface AimWobbleNoiseState {
   readonly rng: RngState;
 }
 
-/** Held breath and the recovery after it gives out (`DESIGN.md`, "Holding breath"). */
+/** Held breath and the recovery after it gives out (`packages/deadvox/DESIGN.md`, "Holding breath"). */
 export interface BreathHoldState {
   readonly held: boolean;
   readonly recoveryRemainingSimSeconds: number;

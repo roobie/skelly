@@ -31,7 +31,7 @@ export const SenseSchema = strictObject({
   /** How long a player vocal noise stays audible to shamblers after it is emitted. */
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   /**
-   * The shambler voice-pitch law (`DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
+   * The shambler voice-pitch law (`packages/deadvox/DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
    * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on a zombie type.
    */
   actorVoice: strictObject({
@@ -62,7 +62,7 @@ export const SenseSchema = strictObject({
      */
     groundLight: strictObject({ senseHeightMetres: Positive, renderLiftMetres: Positive }),
     /**
-     * Light at a point, in the renderer's light units (`DESIGN.md`, "Light"): the distance decay and near-field
+     * Light at a point, in the renderer's light units (`packages/deadvox/DESIGN.md`, "Light"): the distance decay and near-field
      * offset every punctual light is drawn and measured with, and the least light a page or sign needs to be read.
      */
     illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),

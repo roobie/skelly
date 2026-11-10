@@ -1,7 +1,7 @@
 /**
  * A mid-size four-door family sedan, built from parts on a welded monocoque, with front-wheel drive from a
  * transverse four-cylinder engine. Proportions follow the class's period side elevation (see
- * `docs/vehicle-spike.md`, "Proportions"); the name stays generic.
+ * `packages/deadvox/docs/vehicle-spike.md`, "Proportions"); the name stays generic.
  */
 import {
   type Authored,

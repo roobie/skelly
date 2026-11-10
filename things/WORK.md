@@ -24,7 +24,7 @@ Why each boundary matters, and where it is checked:
   dependency graph stays free of authoring geometry (see `things/WORK.md`, "Decisions").
 - Shared fields need one owner so tool and consumer contracts cannot diverge. See
   `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
-  `packages/deadvox/src/core/schema/models.ts`, `ModelSchema` and `GunModelSchema`.
+  `packages/engine/src/core/schema/models.ts`, `ModelSchema` and `GunModelSchema`.
 - The gun tool's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
   "gungen exports satisfy deadvox model validation".
 
@@ -39,7 +39,7 @@ Why each boundary matters, and where it is checked:
 One neutral, shared model envelope lets Deadvox consume every tool's output without
 making the core know which kind of thing it describes. See
 `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
-`packages/deadvox/src/core/schema/models.ts`, `ModelSchema`. Domain packs own their extensions;
+`packages/engine/src/core/schema/models.ts`, `ModelSchema`. Domain packs own their extensions;
 sharing a field requires an intentional promotion rather than leaking one pack's vocabulary
 into another.
 
@@ -82,7 +82,7 @@ Settled:
   separate composition record to keep in step with the parts. Deadvox checks that the
   named item exists and weighs what the part does. See
   `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `ModelPartSchema`, and
-  `packages/deadvox/src/core/content.ts`, `checkModelPartItems`.
+  `packages/engine/src/core/content.ts`, `checkModelPartItems`.
 - An assembly's export carries each part's mass and centre of mass, and an export package
   above `thing-core` writes them with the GLB and the model entry (`things/README.md`,
   "Rules"; `things/README.md`, "Packages").
@@ -150,7 +150,7 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
    part masses and fitted child items keep their own weight. See `packages/skelly-assets/tools/packages/thing-export/README.md`, "Physical model";
    `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet`, `parts`; and
-   `packages/deadvox/src/core/items.ts`, `typeWeightGrams`.
+   `packages/engine/src/core/items.ts`, `typeWeightGrams`.
 3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users
    can gain parts, and that non-gun parts carry summed mass and a weighted centre without

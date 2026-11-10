@@ -98,10 +98,10 @@ const VEHICLE_CAPABILITIES = [
 
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
 
-/** Eyes sits beside the head so goggles stack with a helmet or headlamp (`DESIGN.md`, "The item model"). */
+/** Eyes sits beside the head so goggles stack with a helmet or headlamp (`packages/deadvox/DESIGN.md`, "The item model"). */
 const CLOTHING_SLOTS = ['head', 'eyes', 'torso', 'vest', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 
-/** The shoulder holds a slung long gun, never clothing (`DESIGN.md`, "Shoulder and sling"). */
+/** The shoulder holds a slung long gun, never clothing (`packages/deadvox/DESIGN.md`, "Shoulder and sling"). */
 export const WEAR_SLOTS = [...CLOTHING_SLOTS, 'shoulder'] as const;
 
 export type WearSlot = (typeof WEAR_SLOTS)[number];
@@ -113,7 +113,7 @@ const Area = tuple([Cells, Cells]);
 
 const PocketSchema = strictObject({
   name: optional(Name),
-  /** Its grid: the only limit on what fits (`DESIGN.md`, "The item model"). */
+  /** Its grid: the only limit on what fits (`packages/deadvox/DESIGN.md`, "The item model"). */
   grid: Area,
   /** Sim seconds to take an item out or put one in, before the per-cell part. */
   handlingSimSeconds: SimSeconds,
@@ -142,7 +142,7 @@ const WearableSchema = pipe(
     warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
     wearPerDamage: optional(NonNegative),
     protects: optional(record(Id, pipe(NonNegative, maxValue(1)))),
-    /** Damage kinds that neither reach the wearer through it nor wear it (`DESIGN.md`, "Worn coverage"). */
+    /** Damage kinds that neither reach the wearer through it nor wear it (`packages/deadvox/DESIGN.md`, "Worn coverage"). */
     imperviousTo: optional(
       pipe(
         array(Id),
@@ -201,7 +201,7 @@ const CanisterSchema = strictObject({
   capacity: Positive,
 });
 
-/** Holding the attack past the wind-up builds a stronger strike. Doc: `docs/charged-attacks.md`. */
+/** Holding the attack past the wind-up builds a stronger strike. Doc: `packages/deadvox/docs/charged-attacks.md`. */
 const MeleeChargeSchema = strictObject({
   /** Sim seconds of holding that reach the full charge; holding longer adds nothing. */
   fullSimSeconds: PositiveSimSeconds,
@@ -404,7 +404,7 @@ export const BeamSpillSchema = strictObject({
 
 export type BeamSpill = InferOutput<typeof BeamSpillSchema>;
 
-/** How bright light in view flares through the goggles (`src/render/nightVisionFlare.ts`, `nightVisionFlare`). */
+/** How bright light in view flares through the goggles (`packages/deadvox/src/render/nightVisionFlare.ts`, `nightVisionFlare`). */
 const NightVisionFlareSchema = strictObject({
   /** How hard the summed sources wash the view out; 0 turns the flare off. */
   strength: NonNegative,
@@ -441,7 +441,7 @@ export type NightVision = InferOutput<typeof NightVisionSchema>;
 const LightSchema = strictObject({
   /** Metres it lights up. */
   radius: Positive,
-  /** Metres from which others can see it (`DESIGN.md`, "Light"). */
+  /** Metres from which others can see it (`packages/deadvox/DESIGN.md`, "Light"). */
   seenFrom: Positive,
   /** Point-light colour, and intensity in the light units the renderer draws and the simulation measures. */
   color: Color,
@@ -492,13 +492,13 @@ const LightSchema = strictObject({
   ),
   /** Stays lit while worn and answers the worn-light control, so a source not in the hand needs no new key. */
   wornSwitch: optional(vBoolean()),
-  /** How the view looks through it while worn, on and charged (`DESIGN.md`, "Light"). */
+  /** How the view looks through it while worn, on and charged (`packages/deadvox/DESIGN.md`, "Light"). */
   nightVision: optional(NightVisionSchema),
 });
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
-/** A thrown charge whose fuse starts when it leaves the hand (`DESIGN.md`, "Hand grenade"). */
+/** A thrown charge whose fuse starts when it leaves the hand (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
 const ExplosiveSchema = strictObject({
   fuseSimSeconds: PositiveSimSeconds,
   /**
@@ -522,7 +522,7 @@ const ExplosiveSchema = strictObject({
   sound: Id,
 });
 
-/** A trap set on the floor that springs on whatever enters its cell (`SLICE-5.md`, "Settled bear-trap rules — issue #107"). */
+/** A trap set on the floor that springs on whatever enters its cell (`packages/deadvox/SLICE-5.md`, "Settled bear-trap rules — issue #107"). */
 const TrapSchema = strictObject({
   setSimSeconds: PositiveSimSeconds,
   /** One uninterrupted bare-hands attempt; an interrupted attempt starts again from nothing. */
@@ -637,7 +637,7 @@ const DisassemblySchema = strictObject({
   liquidRecovery: optional(LiquidRecoverySchema),
 });
 
-/** What one dose of a painkiller does to felt pain (`DESIGN.md`, "Pain"); it heals nothing. */
+/** What one dose of a painkiller does to felt pain (`packages/deadvox/DESIGN.md`, "Pain"); it heals nothing. */
 const AnalgesicSchema = strictObject({
   /** Painkillers that share one cap; an item without a group is its own. */
   group: optional(Id),
@@ -657,7 +657,7 @@ const AnalgesicSchema = strictObject({
   vignette: optional(Fraction),
 });
 
-/** What one application does to a body wound (`DESIGN.md`, "Bleeding"). */
+/** What one application does to a body wound (`packages/deadvox/DESIGN.md`, "Bleeding"). */
 export const TreatmentSchema = pipe(
   strictObject({
     /** Strength: the bleeding one application closes before its roll and modifiers, in `treatmentEffort` units. */
@@ -817,7 +817,7 @@ export const ItemSchema = strictObject({
   key: optional(strictObject({ lock: Id })),
   /**
    * Dropped across a closed door from the side the player stands on, it bars the door from the other side
-   * (`DESIGN.md`, "Door bar"). Held in both hands to set; `look` draws it on the door.
+   * (`packages/deadvox/DESIGN.md`, "Door bar"). Held in both hands to set; `look` draws it on the door.
    */
   doorBar: optional(
     strictObject({
@@ -856,7 +856,7 @@ export const ItemSchema = strictObject({
       /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
       ratedLoadKg: optional(Positive),
       /**
-       * A cargo space: a block whose footprint is its one pocket (`DESIGN.md`, "Vehicles", **Cargo space.**).
+       * A cargo space: a block whose footprint is its one pocket (`packages/deadvox/DESIGN.md`, "Vehicles", **Cargo space.**).
        * Its block is a fitting's `cargo` cells, whatever voxels its model is drawn in.
        */
       cargoSpace: optional(

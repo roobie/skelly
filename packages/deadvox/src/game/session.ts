@@ -2686,7 +2686,7 @@ export const createSession = (options: SessionOptions) => {
     },
     power,
     skyFields,
-    /** Light reaching a point in blocks (`src/core/illumination.ts`, `illuminationAt`). */
+    /** Light reaching a point in blocks (`packages/engine/src/core/illumination.ts`, `illuminationAt`). */
     illuminationAt: (point: Vec3): number => illuminationAt(lightScene(), point),
     /** Why a page can't be read where its light is measured, or undefined when it can. */
     readingLight,

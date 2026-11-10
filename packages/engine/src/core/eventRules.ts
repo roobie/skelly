@@ -18,7 +18,7 @@ export interface EventRuleAdvance {
 
 /**
  * Fires each due rule once, in authored order. Only the calendar and the run's saved firing record decide
- * firing, never column loading or rendering (`docs/decisions/0008-deterministic-world.md`, "Decision").
+ * firing, never column loading or rendering (`packages/deadvox/docs/decisions/0008-deterministic-world.md`, "Decision").
  */
 export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, registry, actors }: EventRuleAdvance) => {
   if (run.won) {

@@ -2,17 +2,19 @@
 read_if:
   - you rely on the runtime closure check to prove the runtime reaches nothing outside the runtime set
   - you rely on the no-DOM typecheck or the runtime's browser-name lint ban to keep browser APIs out of the runtime
-  - you change the closure check, the Vite config, a deadvox tsconfig or a workspace manifest
+  - you change the closure check, the Vite config, a deadvox or engine tsconfig or a workspace manifest
   - a reviewer reports a route around the closure check and you need to know whether it is already accepted
 tags: [deadvox, refactor, testing, tooling]
 ---
 
 # Runtime closure check: limits
 
-The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`, and the Vite gate in
-`test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typecheck
-(`tsconfig.runtime.json`) and the browser-name lint ban (`biome.jsonc`, `noRestrictedGlobals`)
-exist to catch honest mistakes: a contributor who adds an import, a
+The runtime set is the engine package's source and deadvox's `src/game`; see
+`tools/runtimeClosure.ts`, `ENGINE_POLICY` and `RUNTIME_POLICY`. The closure check
+(`tools/runtimeClosure.ts`, `runtimeClosureViolations`, and the Vite gate in
+`test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typechecks
+(`packages/engine/tsconfig.json` and `tsconfig.runtime.json`) and the browser-name lint ban
+(`biome.jsonc`, `noRestrictedGlobals`) exist to catch honest mistakes: a contributor who adds an import, a
 glob, a manifest field, a tsconfig option, a symlink or a Vite root that lets the runtime reach
 presentation or product code, or who uses a browser API in the runtime. They do not defend
 against a deliberate bypass. Closing every
@@ -32,7 +34,7 @@ sees.
 - **Plugin hooks other than config and id resolution:** hooks such as `buildStart` can mutate shared
   state that resolution reads later; modelling every hook is the Vite re-implementation this check
   avoids.
-- **Browser names a later `@types/node` declares:** the no-DOM typecheck compiles the runtime set
+- **Browser names a later `@types/node` declares:** the no-DOM typechecks compile the runtime set
   with the ES libraries and Node's types, so a DOM-only name such as `document` fails, but a
   browser name that `@types/node` declares as a Node global compiles. The lint ban
   (`biome.jsonc`, `noRestrictedGlobals`, on the runtime set's paths) fails the ones it names;
@@ -59,7 +61,7 @@ sees.
   them; it guards module edges only.
 - **Insides of npm packages:** a package that is neither a workspace nor named in
   `RUNTIME_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked. Its DOM use is
-  not caught by either check: the no-DOM typecheck inherits `skipLibCheck`, so it reads neither the
+  not caught by either check: the no-DOM typechecks set `skipLibCheck`, so it reads neither the
   package's JavaScript nor errors in its declarations, and a declaration typed with a DOM type such
   as `HTMLElement` still compiles in runtime code that imports it. Local source files in the
   runtime set are always followed, except under a directory `RUNTIME_POLICY`, `leaves` names.

@@ -1,6 +1,6 @@
 /**
  * Where a vehicle piece stops movement and light. It is read from the same fitted parts that are drawn,
- * so collision cannot drift from the model (`DESIGN.md`, "Vehicles").
+ * so collision cannot drift from the model (`packages/deadvox/DESIGN.md`, "Vehicles").
  */
 
 import { BLUEPRINTS, CATALOGUE } from './catalogue.ts';
@@ -77,7 +77,7 @@ export const solidBlocks = (
     const span = columns.get(column);
     columns.set(column, span ? [Math.min(span[0], y), Math.max(span[1], y)] : [y, y]);
   }
-  // The model's forward +x is the piece's front, local −z, and its +z the piece's right, as `src/render/workshopVehicle.ts` draws it.
+  // The model's forward +x is the piece's front, local −z, and its +z the piece's right, as `packages/deadvox/src/render/workshopVehicle.ts` draws it.
   const filled = new Map<string, number>();
   for (const [column, [low, high]] of columns) {
     const [x, , z] = keyVoxel(column);

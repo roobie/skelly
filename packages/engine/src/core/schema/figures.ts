@@ -18,7 +18,7 @@ import { Degrees } from './layouts.ts';
 import { Point, UnitVector } from './models.ts';
 import { Color, Fraction, Id, NonNegative, Positive, PositiveRealSeconds } from './primitives.ts';
 
-/** A lowered stance's drawn pose, pivoting about the hip; `DESIGN.md`, "Crouching and lying prone". */
+/** A lowered stance's drawn pose, pivoting about the hip; `packages/deadvox/DESIGN.md`, "Crouching and lying prone". */
 const StancePoseSchema = strictObject({
   hipDropMetres: NonNegative,
   /** Torso, head and arms pitch forward about the hip. */
@@ -57,7 +57,7 @@ export const FIGURE_LIMB_JOINTS: Readonly<Record<FigureLimb, FigureJoint>> = {
 /** An authored limb: its model and the model anchor that sits at, and turns about, its body joint. */
 const FigureLimbSchema = strictObject({ model: Id, joint: Id });
 
-/** The arm model's segments, each a part the first-person view turns about its own joint; `DESIGN.md`, "Models". */
+/** The arm model's segments, each a part the first-person view turns about its own joint; `packages/deadvox/DESIGN.md`, "Models". */
 export const ARM_SEGMENTS = ['upper', 'fore', 'hand', 'fingers', 'thumb'] as const;
 
 export type ArmSegment = (typeof ARM_SEGMENTS)[number];
@@ -136,7 +136,7 @@ const HeldPosesSchema = strictObject({
 
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 
-/** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
+/** Actor models and poses are content so appearance doesn't live in renderer code; `packages/deadvox/DESIGN.md`, "Models". */
 /** How the view animates between hip and sights across an aim's acquisition and release. */
 const AdsViewBlendSchema = strictObject({
   easing: picklist(['linear', 'smoothstep']),
@@ -226,11 +226,11 @@ export const FigureSchema = strictObject({
     /** How long the drawn body takes to settle into a new stance. */
     blendRealSeconds: PositiveRealSeconds,
   }),
-  /** The prone body while aiming down sights: chest raised and propped on the elbows (`DESIGN.md`, "Character"). */
+  /** The prone body while aiming down sights: chest raised and propped on the elbows (`packages/deadvox/DESIGN.md`, "Character"). */
   proneAdsPose: StancePoseSchema,
   /**
    * Temporary corpse role tint by outfit id, with a colour per model part's material slot. Omitted slots keep the
-   * model colour. This is not clothing; delete with #1366 (`DESIGN.md`, "Dead humans").
+   * model colour. This is not clothing; delete with #1366 (`packages/deadvox/DESIGN.md`, "Dead humans").
    */
   outfits: record(Id, record(Id, record(Id, Color))),
   /** How a dead body lies. It rests on its lowest point, so it has no hip drop. */

@@ -1,6 +1,6 @@
 // Dynamic attachment admission uses only gungen's certificates and exported rail-notch footprints. The sling mount
 // and the light mount on a rail-less long gun are the exceptions: deadvox owns them, because gungen exports no sling
-// (`DESIGN.md`, "Shoulder and sling") and no strap-on light site.
+// (`packages/deadvox/DESIGN.md`, "Shoulder and sling") and no strap-on light site.
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import type { Item } from './items.ts';
 

@@ -11,7 +11,7 @@ tags: [deadvox, adr, ui, lit-html]
 
 ## Decision
 
-Render screens with lit-html from plain view models. Screens send commands and own presentation state; `src/core` has no UI-library dependency. Updating only changed DOM preserves focus and scroll position while keeping the simulation headless.
+Render screens with lit-html from plain view models. Screens send commands and own presentation state; `packages/engine/src/core` has no UI-library dependency. Updating only changed DOM preserves focus and scroll position while keeping the simulation headless.
 
 The core remains plain mutable state rather than adopting a reactive framework: those models would change the simulation boundary without a project need. Keep new dependencies small and maintainable, and do not depend on a single maintainer.
 

@@ -1,4 +1,4 @@
-// How much light reaches a point (`DESIGN.md`, "Light"): sky, lights in the inventory's reach and powered
+// How much light reaches a point (`packages/deadvox/DESIGN.md`, "Light"): sky, lights in the inventory's reach and powered
 // fixtures, in the light units the renderer draws with, so what the player sees and what the rules read agree.
 
 import { claimed } from './capabilities.ts';
@@ -26,7 +26,7 @@ export interface IlluminationScene {
 }
 
 /**
- * The renderer's point-light falloff (three.js `getDistanceAttenuation` as patched by `src/render/lightFalloff.ts`,
+ * The renderer's point-light falloff (three.js `getDistanceAttenuation` as patched by `packages/deadvox/src/render/lightFalloff.ts`,
  * `installNearFieldFalloff`), so both sides measure alike.
  */
 const distanceAttenuation = (

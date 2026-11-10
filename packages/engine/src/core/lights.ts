@@ -1,4 +1,4 @@
-// Carried lights and their batteries (`DESIGN.md`, "Light"). A powered light owns its battery
+// Carried lights and their batteries (`packages/deadvox/DESIGN.md`, "Light"). A powered light owns its battery
 // as a child item in `slots.battery`, so charge and identity have one owner. A light drains only
 // while it's on, at its rate per game hour, in closed form: a long step drains exactly
 // what ticking every second would, and the light goes out when the charge runs out.
@@ -79,7 +79,7 @@ export const lightExposureFor = (
   return undefined;
 };
 
-/** The night-vision view of a worn light that is on and charged, if any (`DESIGN.md`, "Light"). */
+/** The night-vision view of a worn light that is on and charged, if any (`packages/deadvox/DESIGN.md`, "Light"). */
 export const wornNightVision = (inventory: Inventory): NightVision | undefined => {
   const { registry } = inventory;
   for (const [slot, item] of Object.entries(inventory.worn)) {

@@ -1,4 +1,4 @@
-// Block entities (`DESIGN.md`, "Block entities"): furniture with state, such as a
+// Block entities (`packages/deadvox/DESIGN.md`, "Block entities"): furniture with state, such as a
 // cupboard's contents or whether a door is open. Each is anchored at its lowest
 // corner and spans a box of cells; every cell points back at it, so collision and
 // ray casts find it from any of them. Worldgen claims a piece by the corner it
@@ -285,7 +285,7 @@ export class BlockEntities {
   private readonly reservedUids = new Set<number>();
   /**
    * Derived from `byOrigin` and rebuilt on restore, never saved: every explored piece stays in memory, so a lookup
-   * must not scan them all (`DESIGN.md`, "Edits persist").
+   * must not scan them all (`packages/deadvox/DESIGN.md`, "Edits persist").
    */
   private readonly uids = new Map<number, BlockEntity>();
   /** Each standing piece under every world column its cells reach into. */
@@ -541,7 +541,7 @@ export class BlockEntities {
 
   /**
    * Adds a piece of furniture. A spec whose origin is already claimed is ignored and returns undefined. A moved or
-   * removed piece stays away because a column is furnished once (`src/game/session.ts`, `rolledColumns`), not
+   * removed piece stays away because a column is furnished once (`packages/deadvox/src/game/session.ts`, `rolledColumns`), not
    * because of this claim.
    */
   add(spec: EntitySpec): BlockEntity | undefined {
@@ -711,7 +711,7 @@ export class BlockEntities {
   /**
    * Why a standing piece can't be taken out of the world by itself: it holds items, or it is a door with a piece
    * barricading its doorway. What rests on it is the mover's to check (`src/core/furnitureMove.ts`,
-   * `removalRefusal`). See `DESIGN.md`, "Edits persist".
+   * `removalRefusal`). See `packages/deadvox/DESIGN.md`, "Edits persist".
    */
   removalRefusal(entity: BlockEntity): string | undefined {
     const messages = claimed(this.registry.ui, 'interface')!.furnitureMoveMessages;
@@ -746,7 +746,7 @@ export class BlockEntities {
   /**
    * Takes a ruined piece out of the world for good, and its pockets with it; the caller lays what they held on
    * piles (`src/core/furnitureMove.ts`, `ruinFurniture`): a blow can't be refused, so the removal refusals don't apply
-   * (`DESIGN.md`, "Edits persist").
+   * (`packages/deadvox/DESIGN.md`, "Edits persist").
    */
   destroy(entity: BlockEntity): void {
     if (this.byOrigin.get(key(...entity.origin)) !== entity || entity.carried) {
@@ -1157,7 +1157,7 @@ export class BlockEntities {
 
   /**
    * Holds a standing piece against use while its deconstruction is pending, paused or not, until `release` or its
-   * removal (`DESIGN.md`, "Edits persist").
+   * removal (`packages/deadvox/DESIGN.md`, "Edits persist").
    */
   reserve(entity: BlockEntity): void {
     if (this.byUid(entity.uid) !== entity || entity.carried) {

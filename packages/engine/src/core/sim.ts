@@ -439,7 +439,7 @@ export class Simulation {
 
   /**
    * Starts debug compression, such as the skip. Neither shamblers nearby nor bleeding refuse it: only an
-   * emitted interruption, such as a hit, stops it (`DESIGN.md`, "Long actions").
+   * emitted interruption, such as a hit, stops it (`packages/deadvox/DESIGN.md`, "Long actions").
    */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     if (this.actions.job?.jobType === 'forceDoor' && !this.actions.job.stopped) {

@@ -129,8 +129,8 @@ entry pack selects the default scenario and start. A player start picker is sepa
 UI work, not a prerequisite for recording the content relationship. Start admission
 must not require lower-layer definitions to supply a playable scenario, and placement
 must use ordinary item and character owners rather than privileged preset state.
-See `packages/deadvox/src/core/startIssues.ts`, `startIssues`, and
-`packages/deadvox/src/core/startState.ts`, `applyStartState`.
+See `packages/engine/src/core/startIssues.ts`, `startIssues`, and
+`packages/engine/src/core/startState.ts`, `applyStartState`.
 
 Fresh normal product starts use admitted rows and the entry pack's default, including
 selection of generated worlds and explicit initial recipe knowledge. Skill-earned
@@ -149,11 +149,11 @@ combined into one completed lesson. See `packages/deadvox/src/presentation/guide
 and `packages/deadvox/src/ui/guidedSteps.ts`, `mountGuidance`.
 Input references share the action catalogue rather than the browser resolver so
 admission cannot pull DOM timing into simulation. See
-`packages/deadvox/src/core/inputActions.ts`, `INPUT_ACTIONS`.
+`packages/engine/src/core/inputActions.ts`, `INPUT_ACTIONS`.
 
 Attempt recording is scenario content carried by scenario or layout rows. Without
 an authored row there is nothing to record against, so no code default stands in.
-See `packages/deadvox/src/core/schema/attemptPolicy.ts`, `AttemptPolicySchema`, and
+See `packages/engine/src/core/schema/attemptPolicy.ts`, `AttemptPolicySchema`, and
 `packages/deadvox/src/presentation/playtestObserver.ts`, `createAttemptRecording`.
 
 Snapshot measurement is a debugging aid, not scenario attempt policy: its result
@@ -161,7 +161,7 @@ never reaches the attempt file, so scenarios must not tune it. See
 `packages/deadvox/src/debug/snapshotMeasurement.ts`, `measureSessionSnapshot`.
 
 Observation mechanisms do not stage or mutate the world; staging that needs another
-mechanism requires its own decision. See `packages/deadvox/src/core/stageMarks.ts`,
+mechanism requires its own decision. See `packages/engine/src/core/stageMarks.ts`,
 `stageMarkArea` and `stageMarksAt`.
 
 Theme mods stand alone without wiring themselves into any product's distribution.
@@ -200,11 +200,11 @@ precisely: a horde is a crowd moving together toward stimuli. A formation-based 
 would need its own mechanism, not a vaguer name for the horde. Use descriptive names
 for framework mechanisms, including scenario assembly: a scenario name in framework
 code ties every product to one scenario. See
-`packages/deadvox/src/core/scenarioCity.ts`, `ScenarioCitySite` and
+`packages/engine/src/core/scenarioCity.ts`, `ScenarioCitySite` and
 `scenarioCityPopulation`. Generic words must not blur distinct mechanisms.
 Content selectors and taxonomies move out of code regardless of the mechanism's name;
-see `packages/deadvox/src/core/settlementSpawns.ts`, `settlementHordeSpawn`, and
-`packages/deadvox/src/core/loot.ts`, `LOOT_TIERS`.
+see `packages/engine/src/core/settlementSpawns.ts`, `settlementHordeSpawn`, and
+`packages/engine/src/core/loot.ts`, `LOOT_TIERS`.
 
 ## Remote intake
 
@@ -244,7 +244,7 @@ mechanisms still require scoped engine work.
 
 The runtime moves out of `packages/deadvox` into its own workspace package, and content
 splits into `skelly.*` mods in one refactor. The runtime package is `packages/engine`,
-`@skelly/engine`, when it moves under #1532. The assembly/geometry library therefore gave
+`@skelly/engine`. The assembly/geometry library therefore gave
 up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
 for that name are in its
 `packages/skelly-assets/tools/packages/construct/README.md`,
@@ -252,39 +252,45 @@ for that name are in its
 `name`): every workspace package shares the `@skelly/` scope, so the product's name
 matches the runtime and presentation packages the refactor adds.
 
-Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
-`packages/deadvox/src/game`, the entries in `packages/deadvox/src/engine` and the workspace
-libraries the deadvox package depends on) reaches nothing outside that set, not even for types: no presentation, render or UI code
-and no product configuration, mods or pages, whether by import or by glob. The runtime
-then moves out as its own package with nothing left behind to import, and the presentation
-side moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`, `RUNTIME_POLICY`.
-The same set also compiles without DOM types, so a DOM-only name in runtime source fails
-the deadvox typecheck; see `packages/deadvox/tsconfig.runtime.json`. That config keeps Node's
-types, which declare `navigator`, `MessageEvent`, `localStorage` and `sessionStorage`, so the
-typecheck alone lets those through; a lint ban on the runtime set fails them. See
-`biome.jsonc`, `noRestrictedGlobals`. The checks guard
-honest edits, not deliberate bypasses; what they do not check is in
-`packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
+Runtime code (the `packages/engine` package, `packages/deadvox/src/game` until it joins
+that package, and the workspace libraries each depends on) reaches nothing outside that
+set, not even for types: no presentation, render or UI code and no product configuration,
+mods or pages, whether by import or by glob. The runtime package reaches no file of
+deadvox at all, and imports only the npm packages its manifest names in `dependencies`.
+The presentation side then moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`,
+`RUNTIME_POLICY` and `ENGINE_POLICY`. Runtime source also compiles without DOM types, so a
+DOM-only name in it fails the typecheck; see `packages/engine/tsconfig.json` and
+`packages/deadvox/tsconfig.runtime.json`. Those configs keep Node's types, which declare
+`navigator`, `MessageEvent`, `localStorage` and `sessionStorage`, so the typecheck alone
+lets those through; a lint ban on runtime source fails them. See `biome.jsonc`,
+`noRestrictedGlobals`. The checks guard honest edits, not deliberate bypasses; what they
+do not check is in `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 
 The runtime package exports curated entry points only, so its surface is chosen rather
-than every file it holds. Product code (deadvox source outside the runtime set, its tools,
-its Vite config, the Tiled extension and the root deadvox contract tests) reaches
-`packages/deadvox/src/core` and `packages/deadvox/src/vehicles` only through the entry
-modules in `packages/deadvox/src/engine`, one per domain, and an entry carries only what
-product code uses. A consumer that runs without an npm install gets an entry that loads no
-npm dependency, because a re-export loads its whole module even when the consumer takes one
-name: the site-launcher CI job runs `test/site-launcher.test.mjs` uninstalled, so the mod
-catalogue has its own entry; see `packages/deadvox/src/engine/modCatalogue.ts`. Tests that use shipped content stay in deadvox, yet need runtime
-internals no entry carries. They import those internals by module path, the test-only
-surface; when the runtime becomes its own package, that surface becomes one test-only
-subpath export under an export condition that only the deadvox Vitest config enables.
-Tests also take a name from an entry when the entry carries it. A separate test-only
-surface keeps product code on the curated entries without growing the entries to serve
-tests. The entry-only check fails a product file that imports past an entry, so neither
-product code nor a product build reaches the test-only surface; see
-`packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`. It reads import syntax
-with a literal target; a module path a browser stage or the dev server loads from a
-string is not checked.
+than every file it holds: one entry per domain, each carrying only what code outside the
+package uses. Product code (deadvox source, `src/game` included, its tools, its Vite
+config, the Tiled extension and the root deadvox contract tests) imports the runtime only
+as `@skelly/engine/<entry>`; see `packages/engine/package.json`, `exports`. A consumer
+that runs without an npm install names an entry's file instead of the package: Tiled's
+script runtime has no package resolution, and the site-launcher CI job runs
+`test/site-launcher.test.mjs` uninstalled. Such a consumer gets an entry that loads no npm
+dependency, because a re-export loads its whole module even when the consumer takes one
+name, so the mod catalogue has its own entry; see `packages/engine/src/modCatalogue.ts`.
+
+Tests that use shipped content stay in deadvox, yet need runtime internals no entry
+carries. They import those through the package's one test-only subpath,
+`@skelly/engine/internal/*`, which resolves only under the `skelly-engine-test` export
+condition. Only the deadvox Vitest config enables it, so neither the dev server nor a
+product build can resolve that subpath. Tests also take a name from an entry when the
+entry carries it. A separate test-only surface keeps product code on the curated entries
+without growing the entries to serve tests. Browser stages run under the dev server
+without the condition: they load a runtime module into the page by the URL the dev server
+gives the package's file, which is the URL the game's own imports load, so the stage
+shares the game's module instances; see `packages/deadvox/test/browser/engineModules.mjs`.
+The entry-only check fails a product file that imports a non-entry subpath or reaches the
+package's files by path; see `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
+It reads import syntax with a literal target; a module path a browser stage or the dev
+server loads from a string is not checked.
 
 Runtime and presentation code name no product path. The product globs its own mod roots
 and reads its own configuration, then passes the maps in, so the runtime carries neither a

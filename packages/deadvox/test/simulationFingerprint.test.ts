@@ -328,7 +328,7 @@ describe('simulation source fingerprint', () => {
     const graph = await actualSimulationGraph();
     expect(SIMULATION_EXCLUSIONS).toContain('engine/core/assets.ts');
     expect(NON_RUNTIME_SOURCE_RULES).not.toHaveProperty('engine/core/assets.ts');
-    // Engine files are labelled `engine/` in the manifest, as SIMULATION_ENTRIES names them.
+    // Engine files are labelled `'engine/'` in the manifest, as SIMULATION_ENTRIES names them.
     const engineSource = relative(projectRoot, dirname(labelledPath(projectRoot, 'engine/core')));
     const engineCore = await sourceFilesUnder(join(engineSource, 'core'));
     const modules = [

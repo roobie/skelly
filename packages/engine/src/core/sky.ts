@@ -1,7 +1,7 @@
 // Sun position, sky colour, light and fog by time of day. Pure numbers; the renderer
-// applies them (render/sky.ts). The palette is muted (`DESIGN.md`, "Rendering"), and
+// applies them (render/sky.ts). The palette is muted (`packages/deadvox/DESIGN.md`, "Rendering"), and
 // nights are dark. The looks and where they sit in each phase are content: the day
-// cycle's `looks` and `keys` (`docs/content.md`, "Day cycle"); this file only blends them.
+// cycle's `looks` and `keys` (`packages/deadvox/docs/content.md`, "Day cycle"); this file only blends them.
 
 import type { Vec3 } from './coords.ts';
 import { type DayCycle, type DayPhase, type DayPhaseState, dayPhaseAt } from './dayPhase.ts';

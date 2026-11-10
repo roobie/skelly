@@ -1,5 +1,5 @@
 // World regions: the unit saves are split by, and the unit of the block of nine regions simulated around the
-// player (`docs/decisions/0008-deterministic-world.md`, "Decision").
+// player (`packages/deadvox/docs/decisions/0008-deterministic-world.md`, "Decision").
 
 import type { Vec3 } from './coords.ts';
 

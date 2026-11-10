@@ -29,7 +29,7 @@ import {
 import { Count, Id, PositiveGameHours } from './primitives.ts';
 import { CellCoordinate, CellPosition } from './templates.ts';
 
-/** A scenario event: once its trigger has passed and every condition holds, its effects apply once. See `SLICE-5.md`, "Settled event and playtest rules". */
+/** A scenario event: once its trigger has passed and every condition holds, its effects apply once. See `packages/deadvox/SLICE-5.md`, "Settled event and playtest rules". */
 const EventRuleSchema = strictObject({
   id: Id,
   trigger: union([strictObject({ kind: literal('elapsed'), afterGameHours: PositiveGameHours })]),

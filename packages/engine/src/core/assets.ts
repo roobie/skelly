@@ -1,4 +1,4 @@
-// The asset manifest: where each file under a pack's assets directory came from (`DESIGN.md`, "Assets and credits"). A source is one download; the credits screen is drawn from
+// The asset manifest: where each file under a pack's assets directory came from (`packages/deadvox/DESIGN.md`, "Assets and credits"). A source is one download; the credits screen is drawn from
 // it. Only licences we accept are allowed, and the ones that need credit need an
 // author and a link. The checks against the files themselves take a list of them, so
 // they stay pure; the validator reads the disk.

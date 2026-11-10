@@ -26,7 +26,7 @@ content that is checked. The checks cover each piece on its own, one compile of 
 cover container reach or spawn clearance in each assembled alternative, so keep scenes inside
 the placement rules below, which hold for every alternative by construction. See
 `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-scenes.libsonnet`, `scenes` and `slot`;
-`src/core/mapKit.ts`, `mapKitIssues`; `test/cityKitRoutes.test.ts`; and
+`packages/engine/src/core/mapKit.ts`, `mapKitIssues`; `test/cityKitRoutes.test.ts`; and
 `mods/skelly.deadvox.scenario.gauntlet.city/aftermath.libsonnet`, `pieces` and `slot`, which offers disorder poses as
 separate slots.
 
@@ -75,7 +75,7 @@ the slot. The intact and boarded doors own their leaf cells; the missing door le
 opening as shared air, which a body may walk through. Planks stand proud of the leaf on the
 street side, so a boarded door is still a door and can be opened from inside. Its shape
 hangs on the leaf and swings open with it: once open it clears its leaf cells like any
-doorway door, and only the front of a shaped container (a cabinet, a safe) keeps its body solid (`src/core/blockEntities.ts`, `isBodyDoor`).
+doorway door, and only the front of a shaped container (a cabinet, a safe) keeps its body solid (`packages/engine/src/core/blockEntities.ts`, `isBodyDoor`).
 
 Boarding is a barricade made from inside, so it holds against the street. The boarded door's
 content names the barricaded side (`door.barredFrom`, a face of the door's facing), and a door
@@ -83,7 +83,7 @@ refuses opening from that side while it opens from the other. The refusal is the
 ordinary door refusal. From the street the only way in is breaking the leaf with blows, the
 player's or a zombie's; damage short of that leaves the boarded side refusing and the other side
 opening, so boarding never becomes a wall or a free passage (`packages/deadvox/DESIGN.md`, "Base building and electricity").
-See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`; `src/core/blockEntities.ts`,
+See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-city-doors.libsonnet`, `furniture`; `packages/engine/src/core/blockEntities.ts`,
 `doorRefusal`; `test/locks.test.ts`, "boarded doors"; and `test/cityKitPlan.test.ts`,
 "gauntlet door openings".
 

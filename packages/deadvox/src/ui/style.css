@@ -1026,7 +1026,7 @@ body.unconscious::after {
 .inv-target > .inv-pile-label {
   color: var(--text);
 }
-/* One grid cell is 3rem: `GRID_CELL_REM` in src/core/inventoryGridName.ts. */
+/* One grid cell is 3rem: `GRID_CELL_REM` in packages/engine/src/core/inventoryGridName.ts. */
 #inventory .inv-grid-packed {
   display: grid;
   grid-template-columns: repeat(auto-fill, 3rem);

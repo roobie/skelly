@@ -52,7 +52,7 @@ export const Point = ModelPointSchema;
 
 /**
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
- * along x (`DESIGN.md`, "Piles and item models"). The entry adds what the file can't say.
+ * along x (`packages/deadvox/DESIGN.md`, "Piles and item models"). The entry adds what the file can't say.
  */
 const SoundMultipliers = pipe(
   tuple([Positive, Positive]),
@@ -454,7 +454,7 @@ export const GunModelSchema = pipe(
     revolver: optional(RevolverSchema),
     /**
      * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
-     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (`DESIGN.md`, "Rifles"). Hand-authored: the export does not carry it.
+     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (`packages/deadvox/DESIGN.md`, "Rifles"). Hand-authored: the export does not carry it.
      */
     chargingHandleDegrees: optional(pipe(number(), minValue(-180), maxValue(180))),
   }),
@@ -493,7 +493,7 @@ export const GunModelSchema = pipe(
 
 /**
  * The safety lever a fused throwable sheds when its fuse lights: the exported piece that leaves the model and
- * how it flies off (`DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
+ * how it flies off (`packages/deadvox/DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
  */
 const LeverModelSchema = strictObject({
   piece: pipe(string(), nonEmpty()),
@@ -504,7 +504,7 @@ const LeverModelSchema = strictObject({
 
 /**
  * The safety pin a fused throwable hides while it is pulled: the exported piece drawn as the pin and its ring
- * (`DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
+ * (`packages/deadvox/DESIGN.md`, "Hand grenade"). Hand-authored: the export does not carry it.
  */
 const PinModelSchema = strictObject({ piece: pipe(string(), nonEmpty()) });
 

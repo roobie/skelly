@@ -286,7 +286,7 @@ class MobActorMeshes extends FixtureMobActorMeshes {
 const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 
-/** A minimal, valid Actor — same shape ActorSystem.add() builds (src/core/actorSystem.ts), constructed
+/** A minimal, valid Actor — same shape ActorSystem.add() builds (packages/engine/src/core/actorSystem.ts), constructed
  * directly so these tests don't need a full ActorSystem (physics/senses/etc, irrelevant here). */
 const makeActor = (
   position: Vec3,
@@ -475,7 +475,7 @@ describe('feet at body.pos.y (built pose convention)', () => {
     }
     // Not toBeCloseTo(0, ...): the ground fit smooth-mins across tied corners rather than taking a hard min, so a
     // flat sole's several tied-lowest corners undershoot true zero by a few millimetres, by design
-    // (`src/core/actorClips.ts`, `stanceFit`).
+    // (`packages/engine/src/core/actorClips.ts`, `stanceFit`).
     expect(Math.abs(minY)).toBeLessThan(0.02);
   });
 });

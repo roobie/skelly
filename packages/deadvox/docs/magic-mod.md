@@ -65,8 +65,8 @@ The parts it takes from Magiclysm's design, in engine terms:
 The resolver and its carriers exist, but no content reaches them. Player and creature bodies
 carry modifier lists that nothing fills, content cannot declare a modifier, and skills apply
 their effects through a separate saturation curve at each consumer. See
-`src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `src/core/sim.ts`, `Simulation`;
-and `src/core/character.ts`, `skillSaturation`.
+`packages/engine/src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `packages/engine/src/core/sim.ts`, `Simulation`;
+and `packages/engine/src/core/character.ts`, `skillSaturation`.
 
 Needed:
 
@@ -150,7 +150,7 @@ that the needs and stamina sim already measures. One swing practises melee, but 
 sustained heavy work moves strength. Tying training to load rather than action events
 denies repeat-an-action grinding, and spending it only while the body is fed and rested
 keeps it integrated over sim time as needs are, so time compression and replay stay
-deterministic; see `src/core/needs.ts`, `stepNeeds`. Diminishing returns and a soft cap
+deterministic; see `packages/engine/src/core/needs.ts`, `stepNeeds`. Diminishing returns and a soft cap
 relative to the innate value keep training from overriding who the character is.
 
 Atrophy follows starvation and long injury, not merely a lack of training, and it has
@@ -166,10 +166,10 @@ measure and the training integrator.
 
 Skill effects fold into the resolver; skills stay the owner of progression: practice,
 levels, recipe unlocks and training activities. Mechanism capabilities select providers
-without fixing their ids; see `src/core/capabilities.ts`, `claimed`. The resolver must
+without fixing their ids; see `packages/engine/src/core/capabilities.ts`, `claimed`. The resolver must
 also decouple effects from their provider's tuning shape so content can combine
 contributors instead of requiring one predefined skill block. Content naming the skill
-driving an interaction remains valid; see `src/core/prying.ts`, `pryPlan`. The fold
+driving an interaction remains valid; see `packages/engine/src/core/prying.ts`, `pryPlan`. The fold
 generalizes that relationship rather than restoring fixed skill ids.
 
 Each modified effect resolves in one pipeline:
@@ -187,7 +187,7 @@ The engine owns each effect's true bounds, such as a duration staying positive; 
 cannot lift them (`PILLARS.md`, "Content forward compatibility"). The consumers'
 differing curve shapes (a saturating factor, interpolation from skill zero to expert, a
 minimum plus a range) all reduce to a factor on a base, so the effect declares its curve
-and the consumer stops calling `src/core/character.ts`, `skillSaturation`. A mod can then
+and the consumer stops calling `packages/engine/src/core/character.ts`, `skillSaturation`. A mod can then
 feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
 an existing skill into a new effect.
 
@@ -199,7 +199,7 @@ Progression thresholds are content too: the level range, the practice a legendar
 needs, whether the legendary level has effects or is vanity, and the default training
 ceiling. Code keeps the mechanism, that levels are whole numbers, practice only
 accumulates and a ceiling stops it, and checks saved levels against content. See
-`src/core/character.ts`, `Character.awardPractice` and `skillEffectLevel`.
+`packages/engine/src/core/character.ts`, `Character.awardPractice` and `skillEffectLevel`.
 
 The fold lands with or before attributes, so no consumer gains a second input path only to
 lose it. Moving consumers keeps each one's tuned shape, not its exact numbers; tests assert
@@ -211,7 +211,7 @@ The magic mod's buffs, debuffs and enchantment procs need a generic effect: the 
 carrier with a lifetime. Each lasting condition has its own owner, so nothing else can
 apply one. Analgesic doses already have most of an effect's shape (an onset, peak and fade
 envelope, stacking groups under a cap, aging that prunes spent doses, and presentation that
-follows strength); see `src/core/pain.ts`, `analgesia`, `ageDoses` and `drugVignette`.
+follows strength); see `packages/engine/src/core/pain.ts`, `analgesia`, `ageDoses` and `drugVignette`.
 
 #### Effects and conditions
 
@@ -220,7 +220,7 @@ an enchantment's proc, a curse. A condition is what the body computes from its o
 bleeding per wound, the pain level, hunger and fatigue tiers. Conditions stay with their
 owners because they are physiology, but their consequences are modifiers of the same kind
 an effect carries, so pain's aim penalty and a curse's aim penalty are one thing. Pain's
-fixed consequences become such modifiers; see `src/core/pain.ts`, `painEffects`.
+fixed consequences become such modifiers; see `packages/engine/src/core/pain.ts`, `painEffects`.
 
 #### Impairment and grit
 
@@ -239,11 +239,11 @@ in `docs/magic-mod.md`, "Attribute vocabulary".
 - **Stacking:** content selects one mechanism: refresh the duration, add intensity up to a
   maximum, or independent instances under a group cap as analgesics stack.
 - **Modifiers** scaled by the effect's current strength, including modifiers on attributes.
-- **Damage over time** as an exposure source; see `src/core/damageExposure.ts`,
+- **Damage over time** as an exposure source; see `packages/engine/src/core/damageExposure.ts`,
   `DamageExposures`.
 - **Rules the existing owners hard-code,** as content selections: refusing time
   compression, as heavy bleeding does, and interrupting long actions, as a critical need
-  does; see `src/core/needs.ts`, `CriticalRule`.
+  does; see `packages/engine/src/core/needs.ts`, `CriticalRule`.
 - **Removal groups,** so a cure or a dispel names a group rather than an effect id.
 - **Body cues** for presentation (`INTERFACE.md`, "Diegesis and development"); a list of
   effects is at most a toggleable meta element.
@@ -255,10 +255,10 @@ engine draws them (`docs/decisions/0004-content-language.md`, "Mod rules").
 #### State and actors
 
 Each actor saves its active instances (effect, source, age, intensity), pruned when spent.
-Aging is closed-form, so compressed and ticked time agree, as `src/core/pain.ts`,
+Aging is closed-form, so compressed and ticked time agree, as `packages/engine/src/core/pain.ts`,
 `fadeAcute`, and `DamageExposures` already do. Effects are actor-generic from the start:
 spells put fire, slowness and stuns on creatures, and a creature with no effects costs
-nothing. Creature stagger can later move onto effects; see `src/core/actorState.ts`, `staggerSimSeconds`.
+nothing. Creature stagger can later move onto effects; see `packages/engine/src/core/actorState.ts`, `staggerSimSeconds`.
 
 Analgesics are the first consumer: the mechanism must express painkillers before magic
 relies on it.
@@ -268,7 +268,7 @@ relies on it.
 Mana needs a pool, and stamina is the only pool there is, with every pool feature
 hard-coded to it: a recovery delay that starts on emptying, a winded gate with hysteresis,
 slower recovery while a need is critical, and a fixed scale with no maximum to raise; see
-`src/core/needs.ts`, `spendStamina`, `stepStamina` and `canSprint`.
+`packages/engine/src/core/needs.ts`, `spendStamina`, `stepStamina` and `canSprint`.
 
 A pool is a spendable effort resource: stamina, mana, and later a psionic or bionic one.
 Hunger, thirst, fatigue and blood are conditions
@@ -304,7 +304,7 @@ A cost target is a pool or a body cost: health or blood, which `Body` pays under
 rules, so blood spent on a spell or ritual lowers blood and brings its shock and recovery
 as any blood loss does. A ritual may instead pay through a self-inflicted wound, so
 bleeding and treatment apply. Stamina- and blood-cast spells then need no special case.
-See `src/core/body.ts`, `Body`.
+See `packages/engine/src/core/body.ts`, `Body`.
 
 #### State
 
@@ -314,7 +314,7 @@ consumer, as analgesics are for effects; mana is the second.
 
 ### 4. Traits and start state
 
-Normal start kits are content; see `src/core/startState.ts`, `applyStartState`, and
+Normal start kits are content; see `packages/engine/src/core/startState.ts`, `applyStartState`, and
 `docs/url-mods.md`, "Start state in mods". Traits still need a content mechanism because
 schools grant them at the start and mutation changes them during play. Deadvox's mutation
 pressure spreads outward from its labs (`DESIGN.md`, "Points of interest"), so that
@@ -370,7 +370,7 @@ school grants the mana pool, so no player entry is patched.
 The magic mod and the fantasy product ship first as bundled packs in the repository, as
 Cataclysm ships Magiclysm. That keeps folder and URL mods, browser Jsonnet and the mod
 authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical path.
-The asset manifest is already per pack (`src/core/assets.ts`, `validateManifest` and
+The asset manifest is already per pack (`packages/engine/src/core/assets.ts`, `validateManifest` and
 `MANIFEST_PATH`), and validation accepts manifests beyond the base one
 (`src/cli/validate.ts`). A bundled mod, though, is a single file with no assets directory
 (`src/config/bundled/`), so bundled packs need an assets directory and manifest of their
@@ -387,7 +387,7 @@ and the product it brings it into, which is what lets it settle their clashes.
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
+   (`packages/engine/src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
    choices need ids, since rows are 0007's first keyed list.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
@@ -424,7 +424,7 @@ A bounded map keyed by content id, open in #313, keeps those properties because 
 bound its size; per-altar ritual progress would need it.
 
 The only shipped rule mechanism is the scenario event rules; see
-`src/core/eventRules.ts`, `advanceEventRules`.
+`packages/engine/src/core/eventRules.ts`, `advanceEventRules`.
 
 ### 6. Spells: abilities with an effect dispatch
 
@@ -442,10 +442,10 @@ no mechanism reads.
 
 Parts to reuse:
 
-- **Blast falloff and sight:** `src/core/explosive.ts`, `blastShare` and `inSight`.
-- **Arcing projectile:** `src/core/acidGlob.ts`, `advanceAcidGlob`.
-- **Block changes for earthshaping:** `src/core/world.ts`, `World.setBlock`.
-- **Hold and release for channelled casts:** `src/core/playerCombat.ts`, `holdCharge`
+- **Blast falloff and sight:** `packages/engine/src/core/explosive.ts`, `blastShare` and `inSight`.
+- **Arcing projectile:** `packages/engine/src/core/acidGlob.ts`, `advanceAcidGlob`.
+- **Block changes for earthshaping:** `packages/engine/src/core/world.ts`, `World.setBlock`.
+- **Hold and release for channelled casts:** `packages/engine/src/core/playerCombat.ts`, `holdCharge`
   and `releaseCharge`.
 - **Cast progress:** `src/ui/hud.ts`, `renderHandling`.
 
@@ -453,19 +453,19 @@ Closed lists to open:
 
 - **Item use:** `src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
   non-item action, or an item capability whose payload is an effect.
-- **Long jobs:** `src/core/longAction.ts`, `LongJob`. Cast time is one more job.
+- **Long jobs:** `packages/engine/src/core/longAction.ts`, `LongJob`. Cast time is one more job.
 - **Projectiles and puddles:** they belong to `ActorSystem` and are typed to the spit
-  ability; see `src/core/actorSystem.ts`, `ActorSystem.detonate`. A player-usable system
+  ability; see `packages/engine/src/core/actorSystem.ts`, `ActorSystem.detonate`. A player-usable system
   needs an effect payload and a damage kind per blast.
-- **Book outcomes:** reading only teaches recipes; see `src/core/bookReading.ts`.
+- **Book outcomes:** reading only teaches recipes; see `packages/engine/src/core/bookReading.ts`.
 - **Quickbar:** it binds items only; see `src/game/quickbar.ts`.
 
 ### 7. Open damage kinds
 
 Elemental schools need new damage identities without new code enumerations.
-Declarations and class admission belong to `src/core/schema/damageKinds.ts`,
-`DamageKindSchema`, and `src/core/damageContent.ts`, `checkDamageKinds`. Actor
-resistance is keyed by kind and region; see `src/core/actorSystem.ts`, `damageToActor`.
+Declarations and class admission belong to `packages/engine/src/core/schema/damageKinds.ts`,
+`DamageKindSchema`, and `packages/engine/src/core/damageContent.ts`, `checkDamageKinds`. Actor
+resistance is keyed by kind and region; see `packages/engine/src/core/actorSystem.ts`, `damageToActor`.
 Naming an elemental kind is not enough to make every target support it. #1532 must
 settle target applicability before extending body or terrain response domains; see
 `docs/pack-split.md`, "Hard cases".
@@ -485,8 +485,8 @@ a declared name cannot manufacture an unsupported world reaction.
 ### 8. Creature abilities, factions and allies
 
 Creature stats are content, but abilities and body models are closed code lists, and the
-AI targets only the player character; see `src/core/schema/actors.ts`, `ACTOR_ABILITIES`;
-`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/actorState.ts`, `AgentMode`.
+AI targets only the player character; see `packages/engine/src/core/schema/actors.ts`, `ACTOR_ABILITIES`;
+`packages/engine/src/core/actorModels.ts`, `BODY_PLANS`; and `packages/engine/src/core/actorState.ts`, `AgentMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.
 
@@ -497,7 +497,7 @@ comes last.
   "Diegesis and development", favours bodily cues, so how mana feels on the body is
   settled before a bar is added.
 - **Transient light:** light spells and glowing projectiles need a world light source that
-  is not an item or a fixture; see `src/core/illumination.ts`, `IlluminationScene`.
+  is not an item or a fixture; see `packages/engine/src/core/illumination.ts`, `IlluminationScene`.
 - **Mod UI by content:** mods bring screens and widgets through content alone, with no
   engine change, so a start flow, a spell list or a mana readout is mod content rather
   than a closed code list. `docs/decisions/0004-content-language.md`, "Mod rules", defers

@@ -1,6 +1,6 @@
 /**
  * Where a shaped piece stops movement and light. It is read from the same boxes that are drawn, so collision
- * cannot drift from the look (`docs/content.md`, "Furniture solidity").
+ * cannot drift from the look (`packages/deadvox/docs/content.md`, "Furniture solidity").
  */
 
 import type { Vec3 } from './coords.ts';

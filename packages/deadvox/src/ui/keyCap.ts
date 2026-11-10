@@ -17,7 +17,7 @@ export interface KeyLabels {
 export const keyCap = (keys: KeyLabels, actionId: string): TemplateResult =>
   html`<kbd class="keycap">${keys.label(actionId)}</kbd>`;
 
-/** A directive filling a hint slot, such as the crafting combo box. Intersected with `object` because lit's `DirectiveResult` interface has no members, so a bare number would be assignable to it; a number must pass `src/core/numberText.ts` first. */
+/** A directive filling a hint slot, such as the crafting combo box. Intersected with `object` because lit's `DirectiveResult` interface has no members, so a bare number would be assignable to it; a number must pass `packages/engine/src/core/numberText.ts` first. */
 export type HintDirective = DirectiveResult & object;
 
 /** A content text line with its `{slot}`s filled; a key cap or other markup can fill a slot. */

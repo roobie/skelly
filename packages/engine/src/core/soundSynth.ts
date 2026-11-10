@@ -1,6 +1,6 @@
 /// <reference path="./jfxr.d.ts" />
 // Sound recipes: a sound given in content as a jfxr preset and rendered by the jfxr library
-// (`DESIGN.md`, "Assets and credits"). The reference carries the jfxr declarations to every package that
+// (`packages/deadvox/DESIGN.md`, "Assets and credits"). The reference carries the jfxr declarations to every package that
 // compiles this file.
 
 import { type Clip, type Parameter, Sound, Synth } from 'jfxr';

@@ -1,4 +1,4 @@
-// Item instances and grid space (`DESIGN.md`, "The item model"). An item takes w × h
+// Item instances and grid space (`packages/deadvox/DESIGN.md`, "The item model"). An item takes w × h
 // cells and can be rotated; a container's pockets are grids. Identical, stateless
 // items stack up to their type's limit.
 
@@ -745,7 +745,7 @@ export const craftComponentEligible = (item: Item, consumeFitted = false): boole
   isEmpty(item) ||
   (consumeFitted && !holdsLiquid(item) && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
 
-/** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
+/** Condition as a word, from the content band table (`packages/deadvox/DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
   const bands = claimed(registry.inventory, 'player')!.conditionBands;
   return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;

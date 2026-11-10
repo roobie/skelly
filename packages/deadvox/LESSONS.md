@@ -28,11 +28,11 @@ Request pointer capture before constructing a new world: synchronous setup can o
 
 Persistence probes must wait for controller entry before touching the bound session: accepting a launch gesture does not mean construction or checkpoint binding has finished. See `src/ui/saveController.ts`, `isEntered`, and `test/browser/save-storage.mjs`, `testTitleAndAutosave`.
 
-Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `src/core/content.ts`, `checkScenarios`, `src/core/scenarioCity.ts`, `ScenarioCitySite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
+Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `packages/engine/src/core/content.ts`, `checkScenarios`, `packages/engine/src/core/scenarioCity.ts`, `ScenarioCitySite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
 
-Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
+Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `packages/engine/src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
 
-Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `src/core/skyField.ts`, `SkyFields`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields until standing geometry changes".
+Furniture occlusion depends on standing geometry, not container search state. Repeating shape transforms for every lighting field multiplies startup work by both furniture and field count without adding information. See `packages/engine/src/core/skyField.ts`, `SkyFields`, and `test/skylightFields.test.ts`, "shares one furniture bounds scan across fields until standing geometry changes".
 
 Local pixel fixtures should load only the terrain needed by their observation. A nearby dropped-light check does not earn the cost of a distant view ring; full-ring readiness makes that unrelated work part of startup. Keep the pixel oracle and completed-readiness boundary intact rather than lengthening the wait. See `test/browser/primary-action-pixel.mjs`, `measureGlowstickFloor`.
 
@@ -65,7 +65,7 @@ Admit and commit seeded sound choice, cooldown and hearing stimulus in the simul
 
 ## Item ownership
 
-Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`packages/deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `src/core/itemTree.ts`, `walkItemTree`, and `src/core/inventory.ts`, `Inventory.itemByUid`.
+Hands, worn slots and container/pile/furniture trees own items. Quickbar bindings and selected lights hold UIDs and resolve them through inventory; they are not aliases that require lifetime cleanup; a quickbar binding resolves only among carried items (`packages/deadvox/INTERACTIONS.md`, "Ownership"). At snapshot boundaries validate saved light references rather than repairing malformed data. See `packages/engine/src/core/itemTree.ts`, `walkItemTree`, and `packages/engine/src/core/inventory.ts`, `Inventory.itemByUid`.
 
 ## Save-storage deadlines
 
@@ -77,7 +77,7 @@ The timeout error and console warning identify the unanswered request's phase, s
 
 ## Sparse vehicle meshing
 
-Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
+Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `packages/engine/src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
 
 ## Wall leeway
 

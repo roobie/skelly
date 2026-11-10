@@ -256,11 +256,11 @@ function sourcePath(id: string): string | undefined {
   return resolve(clean);
 }
 
-// The runtime package's source, named `engine/` in the fingerprint manifest and in entries and exclusions.
+// The runtime package's source, named `'engine/'` in the fingerprint manifest and in entries and exclusions.
 const ENGINE_PREFIX = 'engine/';
 const engineSourceRoot = (projectRoot: string): string => resolve(projectRoot, '../engine/src');
 
-/** The file an entry or exclusion names: `engine/` paths are in the runtime package, others in this project. */
+/** The file an entry or exclusion names: `'engine/'` paths are in the runtime package, others in this project. */
 export function labelledPath(projectRoot: string, label: string): string {
   return label.startsWith(ENGINE_PREFIX)
     ? resolve(engineSourceRoot(projectRoot), label.slice(ENGINE_PREFIX.length))

@@ -69,7 +69,7 @@ const DamageResistanceSchema = record(
   ),
 );
 
-/** What a landed hit can be, picked by weight as it lands (`DESIGN.md`, "Bleeding"). */
+/** What a landed hit can be, picked by weight as it lands (`packages/deadvox/DESIGN.md`, "Bleeding"). */
 const DamageMoveSchema = strictObject({
   id: Id,
   weight: Positive,
@@ -86,7 +86,7 @@ const MeleeMovesSchema = pipe(
   nonEmpty('needs at least one move'),
 );
 
-/** Tunables of the `acidSpit` ability (`docs/acid-zombie.md`, "Ability, not type"). */
+/** Tunables of the `acidSpit` ability (`packages/deadvox/docs/acid-zombie.md`, "Ability, not type"). */
 const AcidSpitSchema = pipe(
   strictObject({
     rangeBand: strictObject({ nearMetres: Positive, farMetres: Positive }),
@@ -115,7 +115,7 @@ const AcidSpitSchema = pipe(
   check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
 );
 
-/** How the acid model's body shows its acid (`docs/acid-zombie.md`, "Model"). Presentation only. */
+/** How the acid model's body shows its acid (`packages/deadvox/docs/acid-zombie.md`, "Model"). Presentation only. */
 const AcidBodySchema = pipe(
   strictObject({
     color: Color,
@@ -157,7 +157,7 @@ const AgentSchema = strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,
     /**
-     * How far a zombie held up at a piece looks for a way past it (`DESIGN.md`, "Senses and AI"). It bashes the piece
+     * How far a zombie held up at a piece looks for a way past it (`packages/deadvox/DESIGN.md`, "Senses and AI"). It bashes the piece
      * only when no way past gains ground toward its target within this reach.
      */
     wayAroundReachMetres: Positive,

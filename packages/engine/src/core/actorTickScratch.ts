@@ -9,7 +9,7 @@ import type { ActorDef } from './schema.ts';
 
 // Phases share this scratch to avoid per-zombie allocation; it lives apart from body primitives so their
 // imports do not carry decision contracts. Write each per-zombie field before its first read.
-// `test/actorSystem.test.ts`, `vocalNoiseDoesNotLeakBetweenActorPasses`, guards the cross-pass case.
+// `packages/deadvox/test/actorSystem.test.ts`, `vocalNoiseDoesNotLeakBetweenActorPasses`, guards the cross-pass case.
 
 export interface ActorTickScratch {
   dt: number;

@@ -41,7 +41,7 @@ Use transient world-space primitives for spatial diagnostics rather than a one-o
 
 The Diagnostics interaction-ray toggle draws to the nearer of an opaque hit or the target F would pick, within reach. Its cross sits outside the hit: along the surface normal for blocks, or back along the ray for targets without a normal. See `src/debug/index.ts`, `drawInteractionRay`, and `src/game/handUse.ts`, `interactionTargetAt`.
 
-Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `src/core/weatheringUrl.ts`.
+Look and camera parameters are copied from the URL, making a reported pose reproducible. Use `tools/render-probe.mjs` with a `cam=` pose for headless shader reproduction; inspect the screenshot and pixel scan. SwiftShader is not a GPU, so a clean run cannot rule out driver-specific defects. Flip one debug toggle at a time before theorizing; see `src/debug/lookUrl.ts`, `src/debug/camUrl.ts`, and `packages/engine/src/core/weatheringUrl.ts`.
 
 Compare beam spill at the same nighttime camera pose with `?torchspill=0` for the plain cone and `?torchspill=1` for the blended profile. Reload between comparisons because the shared shader is installed before materials compile. See `src/render/playView.ts`, `createPlayView`.
 

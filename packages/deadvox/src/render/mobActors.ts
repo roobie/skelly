@@ -3,7 +3,7 @@
 // Same shape as ActorMeshes
 // (group/sync/…, see ActorRenderer below) so play.ts can hold either behind one variable.
 //
-// Each figure is drawn from the session's built files (`src/core/actorFigureFiles.ts`): its mesh, body and clips,
+// Each figure is drawn from the session's built files (`packages/engine/src/core/actorFigureFiles.ts`): its mesh, body and clips,
 // so the game draws exactly the figure the authoring tools exported. The draw strategy: one shared bone-matrix
 // DataTexture for every zombie so shadow and colour passes consume the same pose, and one InstancedMesh per body
 // variant, each vertex fetching its own bone's matrix with a single texelFetch — see ./crowd.ts for the
@@ -23,14 +23,14 @@
 // a recent near stimulus while investigating. Hearing gaze has deterministic render-only jitter; stale gaze
 // eases back to the simulation pose at the same bounded rate, and never feeds hit-region FK.
 // Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
-// death is different — src/core/actorSystem.ts's onDeath removes the zombie from its store and calls actorDied
+// death is different — packages/engine/src/core/actorSystem.ts's onDeath removes the zombie from its store and calls actorDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
 // slot/variant/instance, falls (as a ragdoll, or through the figure's built death clip when it bakes one),
 // holds once lying, sinks, then frees the slot. Corpses are render-only; incapacitated zombies remain
 // simulation entities, fall once and lie in their existing row, excluded from corpse eviction, until finishing
 // one off makes it an ordinary corpse.
 //
-// Dismemberment: src/core/actorState.ts's Actor.severed (part names, e.g.
+// Dismemberment: packages/engine/src/core/actorState.ts's Actor.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
 // just re-expands actor.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
 // "just work": a restored zombie's severed list is already exactly right). A severed bone is hidden by
@@ -160,7 +160,7 @@ import { castsAndReceives } from './shadowFlags.ts';
 /** What play.ts needs from either renderer, so it can hold `ActorMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`actorDied` are optional: ActorMeshes has none of them (see
  * src/render/actors.ts), MobActorMeshes has all three. `actorDied` must be called for every death (see
- * src/core/actorSystem.ts's onDeath and play.ts's forwarding) so a corpse renderer can tell "died, keep as a
+ * packages/engine/src/core/actorSystem.ts's onDeath and play.ts's forwarding) so a corpse renderer can tell "died, keep as a
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
 export interface ActorRenderer {
   readonly group: Group;
@@ -182,11 +182,11 @@ export interface ActorRenderer {
   actorWounded?: (id: EntityId, hit: HitImpulse) => void;
   actorDied?: (id: EntityId, actor: Actor, playerPos?: Vec3) => void;
   actorIncapacitated?: (id: EntityId, actor: Actor) => void;
-  /** Called once for every part severed (src/core/actorSystem.ts's onSever, forwarded by play.ts) — a flying
+  /** Called once for every part severed (packages/engine/src/core/actorSystem.ts's onSever, forwarded by play.ts) — a flying
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
   actorSevered?: (id: EntityId, part: string, hit?: HitImpulse, actor?: Actor) => Vec3 | undefined;
-  /** Called when a hit knocks flesh out of a fused-mass body (src/core/actorSystem.ts's onCarve, forwarded by play.ts). */
+  /** Called when a hit knocks flesh out of a fused-mass body (packages/engine/src/core/actorSystem.ts's onCarve, forwarded by play.ts). */
   actorCarved?: (id: EntityId, actor: Actor) => void;
 }
 
@@ -382,7 +382,7 @@ interface Corpse extends SlotHolder {
   groundedAt?: number;
   /** Frozen at the instant of death — a corpse keeps whatever was severed while it was still alive (see
    * this module's header comment); parts severed by the killing blow itself are already included, since
-   * onSever fires before onDeath (src/core/actorSystem.ts's swing). */
+   * onSever fires before onDeath (packages/engine/src/core/actorSystem.ts's swing). */
   readonly severed: readonly string[];
   /** How bloodied the body was as it fell (gore.ts's woundSeverity), drawn as stains until it's gone. */
   readonly bloodiness: number;
@@ -456,7 +456,7 @@ export interface MobActorMeshesOptions {
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
   readonly actors: ReadonlyMap<string, DrawnActorType>;
-  /** The session's built actor figures, handed to each pose input (`src/core/actorPose.ts`, `ActorPoseInput`). */
+  /** The session's built actor figures, handed to each pose input (`packages/engine/src/core/actorPose.ts`, `ActorPoseInput`). */
   readonly actorFigureFiles: ActorFigureFiles;
   /** Draws only the first this-many figure seeds of each type. */
   readonly poolSize?: number;
@@ -893,7 +893,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /** Test-only: `boneId`'s *rotation* submatrix (row-major, the Mat3 convention of
-   * src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live zombie or a corpse) —
+   * packages/engine/src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live zombie or a corpse) —
    * the world rotation, not just this bone's own local pose delta, but since a zombie facing along -Z has
    * yaw 0 (packCrowdBoneMatrix contributes no extra rotation at yaw 0 — see its own comment), comparing this
    * against IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
@@ -1268,7 +1268,7 @@ export class MobActorMeshes implements ActorRenderer {
     cells.walls[localSlot] = mesh;
   }
 
-  /** Called when a hit knocks flesh out of a fused-mass body (src/core/actorSystem.ts's onCarve, forwarded by play.ts):
+  /** Called when a hit knocks flesh out of a fused-mass body (packages/engine/src/core/actorSystem.ts's onCarve, forwarded by play.ts):
    * hides the carved cells, a corpse's too, since the shot that kills it carves after its death. */
   actorCarved(id: EntityId, actor: Actor): void {
     const holder = this.states.get(id) ?? this.corpses.get(id);
@@ -1351,7 +1351,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /**
-   * Called once for every death (src/core/actorSystem.ts's onDeath, forwarded by play.ts) — the sim removes
+   * Called once for every death (packages/engine/src/core/actorSystem.ts's onDeath, forwarded by play.ts) — the sim removes
    * the zombie from its store in the very same call, before or after this frame's sync() runs either way
    * (see this module's header comment on why that ordering is safe): this method moves `id` out of
    * `this.states` (the live map) into `this.corpses` *immediately and synchronously*, so sync()'s prune
@@ -1515,9 +1515,9 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /**
-   * Called once for every part severed (src/core/actorSystem.ts's onSever, forwarded by play.ts) — spawns one
+   * Called once for every part severed (packages/engine/src/core/actorSystem.ts's onSever, forwarded by play.ts) — spawns one
    * piece of flying debris in the *same* zombie's variant (see this module's header comment). No-ops for an
-   * id this renderer isn't tracking as a live zombie (over capacity, or — per src/core/actorSystem.ts's swing,
+   * id this renderer isn't tracking as a live zombie (over capacity, or — per packages/engine/src/core/actorSystem.ts's swing,
    * which calls onSever before onDeath on the same hit — already dead this exact hit is impossible, since
    * actorDied hasn't run yet; but a stale/unknown part name, or no position yet on the zombie's very first
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward

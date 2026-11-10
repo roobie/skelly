@@ -83,7 +83,7 @@ const DoorForcingSchema = pipe(
   ),
 );
 
-/** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`docs/content.md`, "Door detail"). */
+/** How a doorway leaf or hatch reads as one that opens; lengths are in metres (`packages/deadvox/docs/content.md`, "Door detail"). */
 const DoorDetailSchema = strictObject({
   /** Colour of the handle and hinges. */
   hardware: Color,
@@ -122,17 +122,17 @@ export const FurnitureSchema = pipe(
     /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
     size: Size,
     color: Color,
-    /** The furniture material whose damage looks the piece shows (`DESIGN.md`, "Block entities"). */
+    /** The furniture material whose damage looks the piece shows (`packages/deadvox/DESIGN.md`, "Block entities"). */
     material: Id,
     /** Estimated kilograms for a piece that can be lifted or dragged. */
     massKg: optional(NonNegative),
     solid: optional(vBoolean()),
-    /** A flat piece that may lie on a shut hatch (`DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
+    /** A flat piece that may lie on a shut hatch (`packages/deadvox/DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
     cover: optional(literal(true)),
     /** A debug practice surface; hits may receive a profile-specific presentation ping. */
     shotTarget: optional(literal(true)),
     scenarioGoal: optional(literal(true)),
-    /** Carried, it turns but won't tip over (`DESIGN.md`, "Moving furniture"). */
+    /** Carried, it turns but won't tip over (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
     upright: optional(literal(true)),
     readable: optional(ReadableSchema),
     mount: optional(literal('wall')),
@@ -156,13 +156,13 @@ export const FurnitureSchema = pipe(
       }),
     ),
     /**
-     * How the piece yields to blows (`DESIGN.md`, "Block entities"); every piece has it. Strength is in the N·s of a
+     * How the piece yields to blows (`packages/deadvox/DESIGN.md`, "Block entities"); every piece has it. Strength is in the N·s of a
      * melee weapon's `impulse`: a blow below `minimumStrength` does nothing, and the strengths of blows at or above it
      * add up to `durability`, which ruins the piece.
      */
     breach: strictObject({ minimumStrength: Positive, durability: Positive }),
     /**
-     * Worldgen may place the piece already worn, by a share of its durability drawn from this range (`DESIGN.md`,
+     * Worldgen may place the piece already worn, by a share of its durability drawn from this range (`packages/deadvox/DESIGN.md`,
      * "Block entities"). Both ends stay below 1, so a placed piece is never ruined; no range places it intact.
      */
     wear: optional(
@@ -174,13 +174,13 @@ export const FurnitureSchema = pipe(
         check(({ from, to }) => from <= to, 'wear must run from the lower share to the higher'),
       ),
     ),
-    /** What a ruined piece leaves besides its contents (`DESIGN.md`, "Damage, destruction and dismemberment"). */
+    /** What a ruined piece leaves besides its contents (`packages/deadvox/DESIGN.md`, "Damage, destruction and dismemberment"). */
     ruin: optional(
       strictObject({
         debris: array(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
       }),
     ),
-    /** The player climbs it; its facing is the side the climber stands on (`DESIGN.md`, "Ladders and hatches"). */
+    /** The player climbs it; its facing is the side the climber stands on (`packages/deadvox/DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     appearance: optional(
       strictObject({
@@ -190,7 +190,7 @@ export const FurnitureSchema = pipe(
     ),
     /**
      * A dead human, drawn as the figure lying in its corpse pose and dressed in the named outfit of that figure
-     * (`DESIGN.md`, "Dead humans").
+     * (`packages/deadvox/DESIGN.md`, "Dead humans").
      */
     corpse: optional(strictObject({ figure: Id, outfit: Id })),
     /** Boxes in cell coordinates that the piece is drawn as. */

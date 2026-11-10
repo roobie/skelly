@@ -2349,7 +2349,7 @@ const checkFigures = (registry: Registry, report: Report): void => {
 };
 
 /**
- * A two-handed firearm is drawn held by its authored hands (`DESIGN.md`, "Models"), so its model must author them;
+ * A two-handed firearm is drawn held by its authored hands (`packages/deadvox/DESIGN.md`, "Models"), so its model must author them;
  * a hold's seat is authored for the right shoulder, and its palm and fingers span the hand frame.
  */
 const checkHeldHands = (registry: Registry, report: Report): void => {

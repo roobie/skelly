@@ -8,7 +8,7 @@ read_if:
 
 # Rifle cycle playback
 
-A firearm preview uses the spawn menu or a mod-owned start row. Start initialization applies only to a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. See `src/core/startState.ts`, `applyStartState`, and `docs/url-mods.md`, "Start state in mods".
+A firearm preview uses the spawn menu or a mod-owned start row. Start initialization applies only to a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. See `packages/engine/src/core/startState.ts`, `applyStartState`, and `docs/url-mods.md`, "Start state in mods".
 
 Racking, changing and removing a magazine are ordinary handling actions. Their durations and cycle geometry come from the Gungen export; handling blocks firing, reduces movement and prevents sprinting. Automatic action motion is presentation on a mechanical cycle, not a cancellable manual queue job. See `src/game/firearmHandling.ts`, `FirearmMechanics`.
 
@@ -16,4 +16,4 @@ Held-clone bindings use exact exported node names from `parser.json.nodes` and `
 
 The simulation scheduler owns chamber transitions and commits a spent case when the exported ejection point is crossed. The renderer cannot create a case or decide its admission time. Ejection uses the exported anchor and direction with the held firearm transform, not cosmetic camera motion. Flight, mass and case values are gameplay estimates, not measured firearm data.
 
-Automatic cycles and pending fired cases survive a snapshot. Manual motion is omitted from the save copy without changing the live action; chamber contents remain saved. Case RNG is selected at shot admission, while case-item UID allocation occurs at ejection. The per-block case owner and recovery rationale are in `DESIGN.md`, "Spent cases per block". See `src/core/saveFormat.ts`, `wirePayloadSchema`, and `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`.
+Automatic cycles and pending fired cases survive a snapshot. Manual motion is omitted from the save copy without changing the live action; chamber contents remain saved. Case RNG is selected at shot admission, while case-item UID allocation occurs at ejection. The per-block case owner and recovery rationale are in `DESIGN.md`, "Spent cases per block". See `packages/engine/src/core/saveFormat.ts`, `wirePayloadSchema`, and `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`.

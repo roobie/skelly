@@ -33,9 +33,9 @@ maps: selected choices cannot exceed their declared envelope. Quota admission li
 needs fitting references, not another compilation of every building in the city. Routes
 sharing a roof origin share one static flood rather than repeating the same search for
 each exit. These avoid multiplying validation work by content size without caching
-mutable registries. See `src/core/templates.ts`, `templateEnvelope`;
-`src/core/cityLots.ts`, `cityLotQuotaIssues`; `src/core/scenarioStart.ts`,
-`skylineIssues`; and `src/core/templateSpatial.ts`, `templateWalkingRoutes`.
+mutable registries. See `packages/engine/src/core/templates.ts`, `templateEnvelope`;
+`packages/engine/src/core/cityLots.ts`, `cityLotQuotaIssues`; `packages/engine/src/core/scenarioStart.ts`,
+`skylineIssues`; and `packages/engine/src/core/templateSpatial.ts`, `templateWalkingRoutes`.
 
 Start-only admission and obstruction cases must not repeatedly certify unrelated lab
 routes. Keep full-composition coverage at the integration boundary: valid exits alone
@@ -45,7 +45,7 @@ authored whole, with no furnishing alternatives to substitute. Focused obstructi
 use the same start-proof owner. A shared read-only compiled plan is safe only
 when each obstruction probe owns fresh route-space and entity state; a clear probe
 must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.test.ts`,
-`certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
+`certificate`; and `packages/engine/src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
 `scenarioCertificate`.
 
 Queued lock operations exercise runtime placement and key ownership, not whole-pack

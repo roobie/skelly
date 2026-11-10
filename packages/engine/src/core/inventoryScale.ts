@@ -1,4 +1,4 @@
-// Inventory space at real size (`DESIGN.md`, "The item model"): content names the side of one cell, and every
+// Inventory space at real size (`packages/deadvox/DESIGN.md`, "The item model"): content names the side of one cell, and every
 // footprint and pocket is a real size rounded up to it. These checks hold content to that unit.
 
 import type { FurnitureDef, ItemDef, ModelDef, Registry } from './content.ts';

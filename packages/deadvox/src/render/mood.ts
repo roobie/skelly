@@ -234,7 +234,7 @@ export class Mood {
   }
 
   /**
-   * Blurs and darkens the edges for a drug in effect (`src/core/pain.ts`, `drugVignette`), 0 to 1 before the
+   * Blurs and darkens the edges for a drug in effect (`packages/engine/src/core/pain.ts`, `drugVignette`), 0 to 1 before the
    * player's setting; cheap enough to call every frame. It shows only with post on, but not only with film.
    */
   setDrugVignette(strength: number): void {

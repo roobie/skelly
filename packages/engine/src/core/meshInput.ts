@@ -1,5 +1,5 @@
 // What the mesher reads from the world: block arrays copied out of the chunks around one chunk. Presentation
-// only (the simulation never meshes), so the save fingerprint excludes it (tools/simulationFingerprint.ts).
+// only (the simulation never meshes), so the save fingerprint excludes it (packages/deadvox/tools/simulationFingerprint.ts).
 
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';

@@ -3,7 +3,7 @@ import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import type { BodyTuningDef } from './schema.ts';
 
-/** The worn item a hit on the region meets first (`DESIGN.md`, "Worn coverage"). */
+/** The worn item a hit on the region meets first (`packages/deadvox/DESIGN.md`, "Worn coverage"). */
 const wornItemMet = (
   inventory: Inventory,
   tuning: BodyTuningDef,

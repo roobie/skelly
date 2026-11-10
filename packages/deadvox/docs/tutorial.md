@@ -8,7 +8,7 @@ read_if:
 Practice is a separate authored place, not a guided replacement world. Guaranteed
 supplies and a compact route let a newcomer learn ordinary interactions without
 depending on random scavenging. See `mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet` and
-`src/core/authoredSite.ts`, `AuthoredSite`.
+`packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
 Keep the essentials short so entry remains cheap. Optional modules must not lengthen
 everyone's first session or make declining further practice a failure. Linear weapons
@@ -43,7 +43,7 @@ used their supplies. Observation must not become another execution owner; the
 framework boundary is in `docs/decisions/0009-content-defined-products.md`,
 "Starts and mixing". See `src/game/unpacking.ts`, `Unpacking.complete`,
 `src/game/firearmHandling.ts`, `FirearmMechanics`, and
-`src/core/playerCombat.ts`, `PlayerCombat`.
+`packages/engine/src/core/playerCombat.ts`, `PlayerCombat`.
 
 Avoidance teaches that fighting is optional. Naming a destination makes leaving the
 threat legible without changing ordinary senses or damage. Injury must not become a

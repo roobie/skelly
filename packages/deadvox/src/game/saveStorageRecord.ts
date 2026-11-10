@@ -7,7 +7,7 @@ const LENGTH_BYTES = 4;
 const CHECKSUM_BYTES = 32;
 export const SAVE_RECORD_HEADER_BYTES =
   MAGIC.length + IDENTITY_BYTES + GENERATION_BYTES + LENGTH_BYTES + CHECKSUM_BYTES;
-// Bounds the compressed save as stored; `src/core/saveFormat.ts`, `decodeSave`, bounds its decompressed payload.
+// Bounds the compressed save as stored; `packages/engine/src/core/saveFormat.ts`, `decodeSave`, bounds its decompressed payload.
 export const SAVE_RECORD_MAX_BYTES = 50 * 1024 * 1024;
 
 export interface SaveSlotRecord {

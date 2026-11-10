@@ -791,8 +791,8 @@ export class AgentController {
 
   /**
    * A zombie held up on the way to its target bashes what holds it, once per attack cooldown, but only where that is
-   * its one way through (`DESIGN.md`, "Senses and AI"): a piece it can walk past is left to its slide and wander.
-   * Whether the blow does anything is the piece's gate, not the zombie's (`DESIGN.md`, "Base building and
+   * its one way through (`packages/deadvox/DESIGN.md`, "Senses and AI"): a piece it can walk past is left to its slide and wander.
+   * Whether the blow does anything is the piece's gate, not the zombie's (`packages/deadvox/DESIGN.md`, "Base building and
    * electricity"); a type of strength 0 never bashes. A zombie whose blow lands stays at the piece instead of sliding
    * or wandering off along the wall.
    */

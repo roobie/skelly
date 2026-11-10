@@ -85,8 +85,8 @@ interior visibility. A passing debug route or export tool is not that exit.
 
 Vehicle membership and ordinary inventory ownership are exclusive so disassembly can
 retain the item's condition, resources and contents without reconciling two mutable
-copies. The production owner is `src/core/vehicleInstances.ts`, `VehicleInstances`;
-its parts join ordinary lookup and UID validation through `src/core/itemTree.ts`,
+copies. The production owner is `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances`;
+its parts join ordinary lookup and UID validation through `packages/engine/src/core/itemTree.ts`,
 `itemRoots` and `savedItemTree`. Factory service suggestions remain distinct from
 occupied fittings so an absent part does not erase its reinstall location or seal
 the build to blueprint sockets. Failed or interrupted transfers must retain the
@@ -101,7 +101,7 @@ geometry out of Deadvox are in `things/WORK.md`, "Decisions". Vehicle-specific
 capabilities and gameplay requirements belong to validated game content, not the
 neutral core. The export contract precedes full VAT editor productionisation.
 
-The spike's `src/vehicles/model.ts`, `PartType`, `Fitting` and `VehicleInstance`,
+The spike's `packages/engine/src/vehicles/model.ts`, `PartType`, `Fitting` and `VehicleInstance`,
 are useful concepts, not a production schema to preserve. Do not carry its mass
 field and geometric-centroid calculation forward as a competing authority to
 exported per-part mass and centre of mass. Attached cargo, fuel and occupants also
@@ -123,7 +123,7 @@ of play instead of scheduled maintenance. Fuel and charge consumption are not we
 
 Fitted and loose parts use the shared item condition vocabulary so removing a part
 does not change what its condition means. This is not a new vehicle ladder or a
-new numeric representation; its owner is `src/core/items.ts`, `Item`.
+new numeric representation; its owner is `packages/engine/src/core/items.ts`, `Item`.
 
 Impact can detach a struck part and cascade through unsupported dependents. Surviving
 parts remain recoverable world items; damage does not silently delete ownership.
@@ -139,12 +139,12 @@ voxel erosion or player-operated cutting of welded assemblies.
 Keep attachment legality, structural support, work requirements and functional
 capability separate. Contact can suggest supports but cannot choose the structural
 contract: touching two surfaces does not mean both hold the part up. See
-`src/vehicles/model.ts`, `supportProblems`, `addFitting` and `removeFitting`.
+`packages/engine/src/vehicles/model.ts`, `supportProblems`, `addFitting` and `removeFitting`.
 The spike's refusal to remove a support is not an impact-detachment implementation.
 
 Install, remove and repair are distinct activities. Cutting a weld is not welding
 in reverse. Use the existing long-action and crafting ownership boundaries rather
-than building a vehicle job scheduler; see `src/core/craftWork.ts`,
+than building a vehicle job scheduler; see `packages/engine/src/core/craftWork.ts`,
 `craftActionHooks`. Vehicle jobs need a world-target adapter because an installed
 part is not an ordinary inventory repair target. Revalidate reach, supports,
 resources and destination on completion. The hoist's lifted load must participate
@@ -173,7 +173,7 @@ blocking. Gas sealing is a separate question.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
 world collision and picking derived, not hand-authored per wreck. The shared pose and
-part boxes are projected by `src/core/vehicleProjection.ts`, `projectVehicleParts`,
+part boxes are projected by `packages/engine/src/core/vehicleProjection.ts`, `projectVehicleParts`,
 and presentation groups each instance through `src/render/vehicles.ts`,
 `VehicleMeshes`. The filled-column approximation is not an enterable-cabin or
 transparent-window model. Extend the consumers without treating that approximation as
@@ -218,10 +218,10 @@ Persist authoritative instance identity, build membership and placement, support
 and joint state, part condition and appearance, door state, storage contents,
 resource amounts, vehicle pose and motion, occupants, lifted loads and any resumable
 work. These are intended state obligations, not a parallel field schema. Extend
-owning types and `src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
+owning types and `packages/engine/src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
 Derived mass, capabilities, geometry caches and world occupancy are rebuilt from
 that truth, never restored as independent editable totals. The parked owner crosses
-the durable boundary through `src/core/saveFormat.ts`, `makeWirePayload` and
+the durable boundary through `packages/engine/src/core/saveFormat.ts`, `makeWirePayload` and
 `restoreWirePayload`, rather than relying on a snapshot-only copy. Scenario
 registration must preserve saved builds instead of regenerating missing parts;
 see `src/game/layoutVehicles.ts`, `registerLayoutVehicles`.

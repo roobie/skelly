@@ -1,4 +1,4 @@
-// A piece's pose as a quarter-turn rotation (`DESIGN.md`, "Moving furniture"). Stored as the heading every
+// A piece's pose as a quarter-turn rotation (`packages/deadvox/DESIGN.md`, "Moving furniture"). Stored as the heading every
 // standing piece already has plus the face it lies on, so doors, ladders and worldgen keep reading `facing`;
 // as a rotation it composes, so a carried piece turns about fixed world axes from any pose.
 

@@ -1,4 +1,4 @@
-// Whether a ground supply can overfill the one pile it is added to (`DESIGN.md`, "Loot"). The
+// Whether a ground supply can overfill the one pile it is added to (`packages/deadvox/DESIGN.md`, "Loot"). The
 // packer replays every reachable roll with the runtime's first-fit placement and credits the
 // source's admission, but never stack merging: each stack is placed on its own.
 

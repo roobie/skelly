@@ -34,7 +34,7 @@ Browser evaluation is a dependency of editing, not permission to save unevaluabl
 The shared loader owns merge history, winning origins, conflicts and validation. The
 tool consumes a loader-side report that retains shadowed definitions, rather than
 reimplementing the merge and risking different verdicts. The existing merge owner is
-`packages/deadvox/src/core/content.ts`, `merge`; the authoring report is planned work.
+`packages/engine/src/core/content.ts`, `merge`; the authoring report is planned work.
 Retention optimizations must preserve that single authority.
 
 Editing waits for typed field patches and per-field origins under
@@ -57,7 +57,7 @@ GitHub URL distribution is canonical. Archive intake is deferred; a later archiv
 fetcher uses this manifest rather than defining another format.
 
 Licence and provenance accompany supplied assets, rather than treating a local or remote
-file as automatically redistributable; see `packages/deadvox/src/core/assets.ts`,
+file as automatically redistributable; see `packages/engine/src/core/assets.ts`,
 `validateManifest`. Admission, atomic persistence and resource cleanup must cover binaries
 as well as definitions. Intake limits and other tunables belong in content, never code
 constants, under `PILLARS.md`, "Content forward compatibility". Trusted admission limits
@@ -129,7 +129,7 @@ start flow.
 4. **New-entry and patch editor.** Depends on slice 1 for the workspace/API, slice 2
    for patch semantics and per-field origins, and slice 3 to evaluate saved Jsonnet in
    the browser. Derive structural forms from
-   `packages/deadvox/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
+   `packages/engine/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
    second schema; add presentation metadata at that owner. The first editing workflow
    saves Jsonnet and uses the engine's patch semantics and per-field origins.
 5. **Validation parity.** Depends on slice 1 for the hosted/local file adapters, not

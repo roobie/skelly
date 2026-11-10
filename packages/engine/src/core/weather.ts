@@ -1,4 +1,4 @@
-// Render-only, so this file is excluded from the simulation fingerprint (tools/simulationFingerprint.ts).
+// Render-only, so this file is excluded from the simulation fingerprint (packages/deadvox/tools/simulationFingerprint.ts).
 // If weather ever affects the simulation, remove that exclusion and bring the weather state into the
 // save (docs/decisions/0002-saves.md).
 //
@@ -13,7 +13,7 @@ export interface Weather {
   fogginess: number;
 }
 
-/** The day cycle's weather tuning (`docs/content.md`, "Day cycle"). */
+/** The day cycle's weather tuning (`packages/deadvox/docs/content.md`, "Day cycle"). */
 export type WeatherTuning = DayCycleDef['weather'];
 
 /** Weathering profiles keep place-level age coherent while allowing distinct site moods. */

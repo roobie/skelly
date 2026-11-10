@@ -14,7 +14,7 @@ import {
 } from 'valibot';
 
 /**
- * Integer units per authored unit (`docs/electricity.md`, "Integer units"). Rates count units per game
+ * Integer units per authored unit (`packages/deadvox/docs/electricity.md`, "Integer units"). Rates count units per game
  * millisecond, so a watt and a litre per game hour scale alike.
  */
 export const POWER_UNITS = {

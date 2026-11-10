@@ -359,7 +359,7 @@ export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: It
   return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
 };
 
-/** Loading from the item card's battery slot (`DESIGN.md`, "Light"). */
+/** Loading from the item card's battery slot (`packages/deadvox/DESIGN.md`, "Light"). */
 export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Item): UseOption => {
   const inv = view.player.inventory;
   const refusal = batterySlotRefusal(view, light, battery);
@@ -573,7 +573,7 @@ const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   }
   const dominant = dominantSide(inv.character);
   const held = inv.hands[dominant];
-  // A battery goes beside the light it fits, so using it puts it in (`DESIGN.md`, "Light").
+  // A battery goes beside the light it fits, so using it puts it in (`packages/deadvox/DESIGN.md`, "Light").
   return def.battery && held && fitsLight(inv.registry, held, item) ? otherHand(dominant) : dominant;
 };
 

@@ -17,7 +17,7 @@ A normal top-up preserves live cartridges and picks out cases individually. Deli
 
 Speedloaders are follow-up work, not part of loose-round loading. Separating them keeps the cylinder's ownership and interruptions reviewable before another ammunition container is introduced.
 
-The revolver is one-handed with one-hand aim, leaving the off hand available rather than treating a handgun as a long gun. Loading a round requires that the hand not wielding the gun is free, because that hand carries the round to the chamber. Its reach and the visible round share the loading job's progress; ordinary stance posing must not overwrite the reach. See `src/game/revolverHandling.ts`, `RevolverHandling`, and `src/render/actorAnimator.ts`, `ActorAnimator`. Existing grip, bore and sight transforms own aiming; moving parts do not change shot admission. See `src/core/heldPose.ts`, `heldFirearmTransform`.
+The revolver is one-handed with one-hand aim, leaving the off hand available rather than treating a handgun as a long gun. Loading a round requires that the hand not wielding the gun is free, because that hand carries the round to the chamber. Its reach and the visible round share the loading job's progress; ordinary stance posing must not overwrite the reach. See `src/game/revolverHandling.ts`, `RevolverHandling`, and `src/render/actorAnimator.ts`, `ActorAnimator`. Existing grip, bore and sight transforms own aiming; moving parts do not change shot admission. See `packages/engine/src/core/heldPose.ts`, `heldFirearmTransform`.
 
 Only the authored calibre is accepted. Per-chamber cartridge types remain explicit so future compatible ammunition can use the same owner without inventing a second chamber representation. Compatibility needs its own content rule before another calibre can be loaded.
 
@@ -25,9 +25,9 @@ The export contract and playable handling are separate changes: validating geome
 
 ## Ownership and persistence
 
-A cylinder is the only ammunition owner in a revolver, so no cartridge can be counted twice. Loading starts after the aligned chamber, because a double-action pull advances before striking; loading must not silently rotate simulation alignment. See `src/core/firearmState.ts`, `CylinderState`, and `src/game/revolverHandling.ts`, `RevolverHandling`.
+A cylinder is the only ammunition owner in a revolver, so no cartridge can be counted twice. Loading starts after the aligned chamber, because a double-action pull advances before striking; loading must not silently rotate simulation alignment. See `packages/engine/src/core/firearmState.ts`, `CylinderState`, and `src/game/revolverHandling.ts`, `RevolverHandling`.
 
-Saving must neither duplicate ammunition nor reset recovery. Ejected rounds and cases are item-owned before presentation sees them, so saving or hiding the model cannot duplicate them, and the last shot time is firearm state, so a save between two shots keeps the recovery gate. See `src/core/firearmState.ts`, `snapshotFirearm`, `src/core/items.ts`, `assertAmmunition`, and `src/core/saveFormat.ts`, `wirePayloadSchema`.
+Saving must neither duplicate ammunition nor reset recovery. Ejected rounds and cases are item-owned before presentation sees them, so saving or hiding the model cannot duplicate them, and the last shot time is firearm state, so a save between two shots keeps the recovery gate. See `packages/engine/src/core/firearmState.ts`, `snapshotFirearm`, `packages/engine/src/core/items.ts`, `assertAmmunition`, and `packages/engine/src/core/saveFormat.ts`, `wirePayloadSchema`.
 
 ## Content and presentation
 

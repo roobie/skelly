@@ -39,7 +39,7 @@ const CoveringSlots = pipe(
   check((slots) => new Set(slots).size === slots.length, 'covering slots must be unique'),
 );
 
-/** One bleeding tier; the list runs mildest first (`DESIGN.md`, "Bleeding"). */
+/** One bleeding tier; the list runs mildest first (`packages/deadvox/DESIGN.md`, "Bleeding"). */
 const BleedingTierSchema = strictObject({
   id: Id,
   /** How the HUD, inventory and item actions name a wound bleeding at this tier. */
@@ -66,7 +66,7 @@ const BleedingTierSchema = strictObject({
   pain: NonNegative,
 });
 
-/** One pain tier, its start a share of the knockout threshold; the list runs mildest first (`DESIGN.md`, "Pain"). */
+/** One pain tier, its start a share of the knockout threshold; the list runs mildest first (`packages/deadvox/DESIGN.md`, "Pain"). */
 const PainTierSchema = strictObject({
   id: Id,
   /** Where the tier starts, as a share of the knockout threshold. The first tier's start is where pain's effects begin. */
@@ -131,7 +131,7 @@ const CriticalNeedSchema = pipe(
   check((rule) => (rule.below === undefined) !== (rule.above === undefined), 'needs exactly one of below and above'),
 );
 
-/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`packages/deadvox/src/core/needs.ts`). */
+/** Survival needs and stamina. Vitals run 0 to 100; fatigue is sleep debt (`src/core/needs.ts`). */
 const NeedsTuningSchema = strictObject({
   /** The needs and stamina a new character starts with. */
   spawn: strictObject({ calories: NeedPercent, hydration: NeedPercent, fatigue: NonNegative, stamina: NeedPercent }),
@@ -192,7 +192,7 @@ export const BodyTuningSchema = pipe(
     shockPerDamage: perDamageKind(NonNegative),
     /** How much harder a hit of each damage kind wears the outermost worn item on the struck region; 1 is the item's own rate. */
     outerWearMultiplier: perDamageKind(NonNegative),
-    /** The wear slots covering each region, outermost first; a hit meets the first one worn (`DESIGN.md`, "Worn coverage"). */
+    /** The wear slots covering each region, outermost first; a hit meets the first one worn (`packages/deadvox/DESIGN.md`, "Worn coverage"). */
     coverage: strictObject(
       Object.fromEntries(BODY_REGIONS.map((region) => [region, CoveringSlots])) as Record<
         BodyRegion,
@@ -266,7 +266,7 @@ export const BodyTuningSchema = pipe(
     /** Health lost per Sim second while infection is advanced. */
     advancedInfectionHealthLossPerSimSecond: SimRate,
     needs: NeedsTuningSchema,
-    /** The stamina heartbeat, a presentation cue only (`DESIGN.md`, "Audio"). */
+    /** The stamina heartbeat, a presentation cue only (`packages/deadvox/DESIGN.md`, "Audio"). */
     heartbeat: strictObject({
       /** One beat each: the slow recording, and the shorter one used once a beat is too quick for the slow one. */
       sounds: strictObject({ slow: Id, fast: Id }),

@@ -40,11 +40,11 @@ authored placement owner. It stands on the showroom deck beside the spawn, so ch
 needs no walk. Changes to showroom staging must preserve that reach for the charger
 and its service stock, so facing a feature prop does not put charging out of reach.
 Site power reads finished authored placements independently of streaming; see
-`src/core/sitePower.ts`, `placedPowerDevices`.
+`packages/engine/src/core/sitePower.ts`, `placedPowerDevices`.
 
 Keep fixture layouts marked as demos so their containers do not contribute world
 loot supply. The demo flag is an economy boundary, not a save policy; see
-`src/core/authoredSite.ts`, `AuthoredSite`.
+`packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
 ## Haven and land
 
@@ -138,7 +138,7 @@ supply. The catalogue floor must join the debug scenario mod so evaluation equip
 cannot turn the ordinary haven into a warehouse. Accept a hand edit per new furniture
 piece and silent absence until listed. Focus follows admitted props in either profile
 because it only chooses a fresh session's start; scenario identity must not choose its
-reach. See `src/core/authoredSite.ts`, `AuthoredSite`.
+reach. See `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
 The destruction slot stays in normal mode because its tool, stock and breakable deck
 exercise ordinary combat and furniture floor loss without privileged setup. See
@@ -169,8 +169,8 @@ Keep the shelf reachable behind the player's starting point instead of crowding
 their row. Its independent placement remains a showroom slot so fixture stock, focus,
 house power and deck validation retain their existing owners rather than gaining a runtime
 staging overlay. Content owns the placement; see
-`mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet`, `showroom`; `src/core/schema/layouts.ts`,
-`ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
+`mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet`, `showroom`; `packages/engine/src/core/schema/layouts.ts`,
+`ShowroomSchema`; and `packages/engine/src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
 The catalogue needs no per-feature slot because it exposes evaluation pieces rather than
 staging a feature's supplies. It shows every loaded catalogue row, hand-kept content
@@ -181,7 +181,7 @@ hosts the floor but holds no row, so the floor shows only the rows of the debug 
 selected with it. Select them together for the full showroom:
 `?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug,skelly.deadvox.scenario.debug,skelly.deadvox.scenario.gauntlet.debug,skelly.deadvox.scenario.playtest.debug,skelly.deadvox.scenario.tutorial.debug`.
 See `mods/skelly.deadvox.scenario.debug/catalogue.jsonnet`, `catalogueRows`, and
-`src/core/showroom.ts`, `ShowroomCatalogue`.
+`packages/engine/src/core/showroom.ts`, `ShowroomCatalogue`.
 
 Each row starts a new line, in load order, so each mod's pieces stay together; a short row
 leaves a gap at its line's end. Keep the floor beyond the startup ring to avoid delaying
@@ -221,7 +221,7 @@ checker is implied. See `mods/skelly.deadvox.scenario.test-house.debug/layouts.j
 Repair targets and components must remain within reach of their stations. Their authored
 conditions and contents belong with their container destinations, not a second runtime
 placement owner. Ordinary authored spawning owns arrival and restoration. See
-`src/core/schema/layouts.ts`, `FixedLootOverride`, and `src/core/authoredSite.ts`,
+`packages/engine/src/core/schema/layouts.ts`, `FixedLootOverride`, and `packages/engine/src/core/authoredSite.ts`,
 `AuthoredSite`.
 
 Keep floor-standing service equipment visible by the bays rather than hiding it in a
@@ -233,4 +233,4 @@ See `mods/skelly.deadvox.scenario.test-house/templates-test-house.jsonnet`, `tes
 Authored sites use the template block scale; do not retain a code-built house as a
 fallback for other scales. Mixed-scale benchmark plans use a scale-independent default
 scene instead. Explicitly selecting the house requires the authored scale. See
-`src/bench/run.ts`, `benchRunFromUrl`, and `src/core/authoredSite.ts`, `AuthoredSite`.
+`src/bench/run.ts`, `benchRunFromUrl`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.

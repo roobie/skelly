@@ -39,7 +39,7 @@ cell. Stairs and excavation use the same authority rather than a privileged post
 Reserved cells are owned air that body proofs may rely on; other owned air only
 excavates. An ownership layer must agree with the literal blocks and with every delegated
 child's footprint so a mark cannot promise space that a child fills. See
-`packages/deadvox/src/core/templateOwnership.ts`, `compileOwnership`.
+`packages/engine/src/core/templateOwnership.ts`, `compileOwnership`.
 
 Reserve walking volume, support and connector mouths before attaching rooms or clutter.
 Role palettes separate structural meaning from material choice: interior flooring must
@@ -54,8 +54,8 @@ revalidation; field patches follow `docs/decisions/0007-typed-field-patches.md`,
 
 Extend the existing template compiler and city plan rather than creating another stamping
 engine. Compiled ownership and provenance travel with the geometry so diagnostics can
-explain both claimed solids and reserved voids. See `packages/deadvox/src/core/templates.ts`,
-`compileTemplate` and `stampPlacement`, and `packages/deadvox/src/core/cityPlan.ts`, `buildCityPlan`.
+explain both claimed solids and reserved voids. See `packages/engine/src/core/templates.ts`,
+`compileTemplate` and `stampPlacement`, and `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`.
 
 ## City storey boundaries
 
@@ -99,7 +99,7 @@ copy of the lab geometry. Portal anchors address finished furniture positions, n
 palette characters, because markers belong to individual pieces. The final city-site
 witness walks closed descent lids, opens them, descends and returns through ordinary
 session commands. See `packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-service.libsonnet`,
-`mapAssemblies`, `packages/deadvox/src/core/scenarioPortal.ts`, `portalPieces`, and
+`mapAssemblies`, `packages/engine/src/core/scenarioPortal.ts`, `portalPieces`, and
 `packages/deadvox/test/fixtures/scenarioCertificate.ts`, `traverseScenario`.
 
 ## Consequences

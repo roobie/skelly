@@ -112,8 +112,8 @@ a skill id because skills are never core content; mechanism roles keep those row
 valid with zero skills. A role with no provider adds no requirement. Theme rows may
 name skill ids through declared dependencies, so admission checks those references
 at load. Referencing a role does not provide its skill or take over its provider.
-See `src/core/recipeSkills.ts`, `recipeSkillRequirements`; `src/core/disassembly.ts`,
-`planDisassembly`; `src/core/prying.ts`, `pryPlan`; and `src/core/capabilities.ts`,
+See `packages/engine/src/core/recipeSkills.ts`, `recipeSkillRequirements`; `packages/engine/src/core/disassembly.ts`,
+`planDisassembly`; `packages/engine/src/core/prying.ts`, `pryPlan`; and `packages/engine/src/core/capabilities.ts`,
 `CONTENT_CAPABILITIES`.
 
 **Tunables follow their mechanism's content owner.** Shared body, senses and needs
@@ -140,26 +140,26 @@ not reasons to invent another anatomy. Cut legs do not create a new plan: a legs
 humanoid remains humanoid, with its cut and crawl posing selected by its built body.
 Build words describe the figure rather than its behaviour or character. Figure variants
 retain those realizations without making actor identity select implementation. See
-`src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and
-`bodyPlanModel`; `src/core/legLoss.ts`, `crawlsAfterLegLoss`;
-`src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
+`packages/engine/src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and
+`bodyPlanModel`; `packages/engine/src/core/legLoss.ts`, `crawlsAfterLegLoss`;
+`packages/engine/src/core/actorPose.ts`, `actorCrawls`; and `packages/engine/src/core/schema/actors.ts`, `ActorSchema`
 and `actorRegionsMatchModel`.
 The body/Agent ownership rule belongs to
 `docs/decisions/0009-content-defined-products.md`, "Vocabulary". See
-`src/core/schema/actors.ts`, `ActorSchema`; `src/core/actorState.ts`, `Actor`,
-`ActorState` and `snapshotActor`; `src/core/agentSave.ts`, `snapshotAgent`; and
-`src/core/actorMotion.ts`, `canStartBodyAttack`, `setActorChaseStance`,
+`packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `packages/engine/src/core/actorState.ts`, `Actor`,
+`ActorState` and `snapshotActor`; `packages/engine/src/core/agentSave.ts`, `snapshotAgent`; and
+`packages/engine/src/core/actorMotion.ts`, `canStartBodyAttack`, `setActorChaseStance`,
 `turnActorBodyLook` and `turnActorHeadLook`.
 Saved presence must match content presence: otherwise restore would silently add
-or discard a controller. See `src/core/actorSystem.ts`, `ActorSystem.restoreState`, and
-`src/core/saveFormat.ts`, `wirePayloadSchema`.
+or discard a controller. See `packages/engine/src/core/actorSystem.ts`, `ActorSystem.restoreState`, and
+`packages/engine/src/core/saveFormat.ts`, `wirePayloadSchema`.
 
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
-`src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,
-and `src/core/capabilities.ts`, `capabilityIssues`. Declared sound families let another
+`packages/engine/src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,
+and `packages/engine/src/core/capabilities.ts`, `capabilityIssues`. Declared sound families let another
 actor reuse surface responses without pretending to be a particular creature; see
-`src/core/footsteps.ts`, `footstepEventForBlock`.
+`packages/engine/src/core/footsteps.ts`, `footstepEventForBlock`.
 
 **Ability composition.** The wind-up, projectile and ground hazard behind acid spit
 are general mechanisms; acid presentation and type-specific resistance are content.
@@ -170,15 +170,15 @@ values without preemptively redesigning the ability's shape or name. See
 
 **Damage kinds are content.** Naming a kind must not require a code edit. Admission
 checks declarations and class compatibility, while content owns response tuning and
-actor resistance; see `src/core/schema/damageKinds.ts`, `DamageKindSchema`,
-`src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/actorSystem.ts`,
+actor resistance; see `packages/engine/src/core/schema/damageKinds.ts`, `DamageKindSchema`,
+`packages/engine/src/core/damageContent.ts`, `checkDamageKinds`, and `packages/engine/src/core/actorSystem.ts`,
 `damageToActor`. A weapon's animation mechanism is a separate content selection, so
 adding a melee kind does not imply adding a pose; see `src/game/melee.ts`,
 `meleeProfileForWeapon`. Every declared kind works on both bodies and terrain:
 there must be no silent no-effect pair. Complete response maps make admission catch
-missing pairs before a hit reaches a runtime error; see `src/core/damageContent.ts`,
-`checkDamageKinds`, `src/core/body.ts`, `damageResponse`, and
-`src/core/schema/blocks.ts`, `BlockMaterialSchema`.
+missing pairs before a hit reaches a runtime error; see `packages/engine/src/core/damageContent.ts`,
+`checkDamageKinds`, `packages/engine/src/core/body.ts`, `damageResponse`, and
+`packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 
 Authored defaults reuse the nearest existing injury response rather than introducing
 another balance decision: force follows blunt, fragments follow pierce, and block
@@ -203,9 +203,9 @@ See `packages/mods/skelly.packaged-foods/pack/manifest.jsonnet`, `dependencies`.
 **Keys.** A key is content of whichever pack holds its lock-bearing door, not of core
 structures. Validation requires every key to name a lock some door in the same stack carries,
 so a core key whose door sits in a scenario template would fail the core stack alone. The core
-key box is a generic container and names no key. See `src/core/content.ts`, `checkKeys`.
+key box is a generic container and names no key. See `packages/engine/src/core/content.ts`, `checkKeys`.
 
-**Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `src/core/liquids.ts`, `vesselAccepts`.
+**Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `packages/engine/src/core/liquids.ts`, `vesselAccepts`.
 
 **Recipes.** A recipe goes with its output's mod, and a recipe whose output is in core goes to `skelly.basic-recipes`, so one rule places every recipe. The cost is that `skelly.basic-recipes` grows and a recipe spanning two topics makes its mod depend on the other.
 
@@ -213,9 +213,9 @@ key box is a generic container and names no key. See `src/core/content.ts`, `che
 
 **Household electrical devices.** Lamps, chargers and fridges share one mod, `skelly.household-electrical`, because many more lamps and small devices will come. Power sources, storage, switches and every device row stay in `skelly.electric-power`, as do items that sources and household devices both use. See `packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet`, `furniture`.
 
-**Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `src/core/capabilities.ts`, `requiredForStack`, and `src/game/session.ts`, `createSessionPower`.
+**Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `packages/engine/src/core/capabilities.ts`, `requiredForStack`, and `src/game/session.ts`, `createSessionPower`.
 
-**Site generation.** A stack that builds no site needs no site look, so product-free stacks validate clean. A stack holding a start, layout or scenario builds a site, and fails validation without the site-generation row. See `src/core/capabilities.ts`, `requiredForStack`, and `src/core/sitePalette.ts`, `siteGenerationOf`.
+**Site generation.** A stack that builds no site needs no site look, so product-free stacks validate clean. A stack holding a start, layout or scenario builds a site, and fails validation without the site-generation row. See `packages/engine/src/core/capabilities.ts`, `requiredForStack`, and `packages/engine/src/core/sitePalette.ts`, `siteGenerationOf`.
 
 **Cursor.** The basic cursor is content presentation, not UI chrome, so it sits in
 `skelly.ui`, and a theme or product mod may replace it by data with a styled one. It has
@@ -225,7 +225,7 @@ a styled cursor can be any size; the sheet stacks the arrow frame above the hand
 stack without the row fails validation. A winning row whose image cannot be loaded falls
 back to the nearest earlier row that can: an unloadable mod cursor should not stop the game,
 so the player keeps a working cursor and the log names the mod. See
-`src/core/schema/cursors.ts`, `CursorSchema`, and `src/ui/uiTokens.ts`, `applyUiTokens`.
+`packages/engine/src/core/schema/cursors.ts`, `CursorSchema`, and `src/ui/uiTokens.ts`, `applyUiTokens`.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
@@ -234,22 +234,22 @@ live in a product section keyed by family and block, because a core block cannot
 product's actor. A block-adding mod must add rows for every family a loaded actor walks
 with, because a silent footstep is a bug that must be refused at load; a block that authors
 no footsteps and a family no loaded actor uses need none. Rows merge across mods, and a
-scenario's own blocks take their rows from that scenario's mod. See `src/core/footsteps.ts`,
-`footstepEventForBlock`; `src/core/content.ts`, `checkFootstepCoverage`;
+scenario's own blocks take their rows from that scenario's mod. See `packages/engine/src/core/footsteps.ts`,
+`footstepEventForBlock`; `packages/engine/src/core/content.ts`, `checkFootstepCoverage`;
 `mods/skelly.deadvox.actors/footstep-sounds.jsonnet`, `footstepSounds`; and
 `mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.jsonnet`, `footstepSounds`.
 A sound row's file lives in the row's own pack, copied with its credit when packs share it,
 so each mod loads with only its declared dependencies. The cost is duplicate bytes, and
-replacing a file in one pack leaves the other copies. See `src/core/assets.ts`,
+replacing a file in one pack leaves the other copies. See `packages/engine/src/core/assets.ts`,
 `soundFileIssues`.
 A preview-only row that no entry selects goes with its topic, so a door preview sits with the door sounds. The cost is that a stack loading that topic carries a row no event plays.
 Mechanisms read selections from triggering entries;
-`src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
+`packages/engine/src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
 providers at those fields rather than requiring every product event. Other optional
 presentation selections mean silence when omitted, never a borrowed sound. Door
 presentation need not alert hearing; forcing it to do so would change quiet doors
 merely because their former default became explicit. Search remains a hearing event;
-see `src/core/content.ts`, `checkSearchNoise`.
+see `packages/engine/src/core/content.ts`, `checkSearchNoise`.
 A pile sounds like what it landed on, not the terrain beneath its support. Terrain
 blocks, furniture materials and fitted vehicle parts own the same drop-response table.
 Items optionally select their own sound character through the open sound-family
@@ -259,9 +259,9 @@ size or appearance. Each receiver requires an authored any-item default so an om
 character or an unlisted pair still plays that receiver's sound, never silence or a
 sound borrowed from another item. Air and non-solid terrain cannot receive piles and
 need no default. Overlapping vehicle parts need a stable receiver; authored order
-supplies it without a separate priority setting. See `src/core/dropSounds.ts`,
+supplies it without a separate priority setting. See `packages/engine/src/core/dropSounds.ts`,
 `checkDropSounds` and `pileDropSound`,
-`src/core/vehicleProjection.ts`, `vehiclePartAt`, and `src/game/audioPresentation.ts`,
+`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartAt`, and `src/game/audioPresentation.ts`,
 `handlingMoveCompleteCue`. Fired-case presentation remains a firearm selection.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
@@ -293,8 +293,8 @@ handling do not own a product's sway or penalty policy.
 Aim feel that applies to everyone is product policy, so each product sets its own; input and view controls stay shared.
 Skills modify that policy; a product can use it without a skill system. Expert endpoints belong to skills because
 those are what the skills reach; policy owns the unskilled baseline, so a product
-without skills needs no ceiling. See `src/core/skillTraining.ts`, `firearmsCombatTuning`
-and `meleeCombatTuning`; `src/core/aim.ts`, `playerAimTuning`. A core-only validation
+without skills needs no ceiling. See `packages/engine/src/core/skillTraining.ts`, `firearmsCombatTuning`
+and `meleeCombatTuning`; `packages/engine/src/core/aim.ts`, `playerAimTuning`. A core-only validation
 stack has no modifiers and does not imply a playable product.
 
 **Zero skills preserve Body.** The skill list stays empty beside the body/injury
@@ -308,20 +308,20 @@ Code owns the implemented capabilities; content owns their claimants. A required
 capability must have one live provider, not a promised content id, so a product can
 replace providers without changing mechanisms. Competing claimants fail closed
 rather than letting load order choose. Unsupported claims and claims without their
-required data are invalid. See `src/core/capabilities.ts`, `CONTENT_CAPABILITIES`,
-`claimed` and `capabilityIssues`; `src/core/schema/capability.ts`, `capabilityField`;
-and `src/core/content.ts`, `requiredContentIssues`.
+required data are invalid. See `packages/engine/src/core/capabilities.ts`, `CONTENT_CAPABILITIES`,
+`claimed` and `capabilityIssues`; `packages/engine/src/core/schema/capability.ts`, `capabilityField`;
+and `packages/engine/src/core/content.ts`, `requiredContentIssues`.
 
 Provider identity must not widen mechanism dispatch: a weapon class must resolve a
 declared melee kind and an implemented pose, so a typo fails admission instead of the
 first swing. The unarmed provider may have an independent id; see
-`src/core/schema/items.ts`, `MeleeClassSchema`, and `src/core/damageContent.ts`,
+`packages/engine/src/core/schema/items.ts`, `MeleeClassSchema`, and `packages/engine/src/core/damageContent.ts`,
 `checkDamageKinds`.
 
 A neutral weathering profile belongs in shared content: it is engine-level
 presentation that every product needs. Overgrown and benchmark profiles belong to
 Deadvox because they express its flavour. The default is a capability, not a profile
-id; see `src/core/weatheringUrl.ts`, `resolveWeatheringUrl`. #1532 owns moving the
+id; see `packages/engine/src/core/weatheringUrl.ts`, `resolveWeatheringUrl`. #1532 owns moving the
 profiles to their shared and product topics; capability selection does not move
 content.
 
@@ -334,7 +334,7 @@ scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 
 Validate a stack of every core-tier mod alone, without skills, actors or
 scenario content. It must report zero issues from both
-`src/core/content.ts`, `buildRegistry` and `requiredContentIssues`: registry
+`packages/engine/src/core/content.ts`, `buildRegistry` and `requiredContentIssues`: registry
 construction can discard broken files, so a registry existing is not proof of
 validity. This check keeps upward references out of shared content.
 
@@ -350,7 +350,7 @@ applies to playable stacks (`docs/content.md`, "Static reachability").
 These workstreams preserve #637's proof obligations within that one refactor:
 
 - **Pack boundaries:** prove shared-provider validation. Bundled intake uses the common manifest and fail-closed
-  entry conflicts in `src/core/packAdmission.ts`, `admitPacks`; topic extraction must
+  entry conflicts in `packages/engine/src/core/packAdmission.ts`, `admitPacks`; topic extraction must
   preserve that boundary rather than flattening packs into files. Typed field patches
   remain separate work under `docs/decisions/0007-typed-field-patches.md`, "Implementation ownership".
   Folder fetchers, remote-origin policy, binary provenance and atomic cleanup remain
@@ -360,7 +360,7 @@ These workstreams preserve #637's proof obligations within that one refactor:
   shared content must validate without product sound rows.
 - **Actors and damage:** prove a new actor id using an existing body plan is admitted
   without a code edit, and a shared stack needs no zombie type. Generator identity
-  follows implemented body plans; see `src/core/saveFormat.ts`, `defaultVersion`.
+  follows implemented body plans; see `packages/engine/src/core/saveFormat.ts`, `defaultVersion`.
 - **Ranged content and policy:** shared content validates without firearms. Preserve
   full-product firing and grenade behavior in an existing browser flow while product
   skills read through roles. Prepared debug kits belong in mod-owned start rows,
@@ -382,8 +382,8 @@ These workstreams preserve #637's proof obligations within that one refactor:
   gauntlet is split this way.
   Validation follows that ownership: the scenario row answers for its city and each
   start row for its placement. City checks certify without a start, while playable-run
-  checks need the selected start. See `src/core/schema/starts.ts`, `StartSchema`;
-  `src/core/startIssues.ts`, `startIssues`; and `src/core/scenarioCertificate.ts`,
+  checks need the selected start. See `packages/engine/src/core/schema/starts.ts`, `StartSchema`;
+  `packages/engine/src/core/startIssues.ts`, `startIssues`; and `packages/engine/src/core/scenarioCertificate.ts`,
   `scenarioCityCertificate`. Coordinate the start path with `docs/url-mods.md`,
   "Start state in mods".
 - **Provider substitution:** an alternative stack supplying the required capabilities
@@ -397,7 +397,7 @@ under `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope"
 ## Debug mods
 
 A debug mod is a folder mod whose folder equals its id, like any other, but its manifest
-carries the opt-in marker; see `src/core/packAdmission.ts`, `PackManifestSchema`. Without
+carries the opt-in marker; see `packages/engine/src/core/packAdmission.ts`, `PackManifestSchema`. Without
 the marker every folder under a mod root loads for everyone, so a debug mod's overrides
 would change normal play. The marker only withholds a pack from the default set: it is
 not a tier, grants no privilege and is never inferred from the id.
@@ -407,7 +407,7 @@ pack's dependencies over every shipped pack and drops those the default set alre
 holds, so a marked pack may depend on another marked pack and each loads once.
 Selection invents nothing: ordinary admission then refuses a missing dependency or a
 cycle, and folder packs never pass through the single-file mod reader. See
-`src/core/packAdmission.ts`, `selectFolderClosure`, and `src/game/bundledMods.ts`,
+`packages/engine/src/core/packAdmission.ts`, `selectFolderClosure`, and `src/game/bundledMods.ts`,
 `selectBundledMods`.
 
 The build hashes marked packs beside the default ones and keeps their identities in a
@@ -427,13 +427,13 @@ every loaded row. The section is an engine mechanism, not a mod's row, so using 
 dependency; a row's furniture still constrains placement like any reference, and rows
 override by id like other entries. A debug mod's rows show only when the test-house debug
 mod is selected too, and the grid lays rows out in load order. See
-`src/core/schema/catalogueRows.ts`, `CatalogueRowSchema`, and `src/core/showroom.ts`,
+`packages/engine/src/core/schema/catalogueRows.ts`, `CatalogueRowSchema`, and `packages/engine/src/core/showroom.ts`,
 `ShowroomCatalogue`.
 
 ## Save identity
 
 Record each admitted pack separately and in order so a refusal can identify the
-changed pack; see `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and
+changed pack; see `packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity` and
 `contentPackDifferences`. Scenario and product topic packs use the same identity rule.
 The identity records only admitted packs: the default packs, then each selected marked
 pack once under its own id, in admission order. A normal save therefore names no debug
@@ -442,7 +442,7 @@ This remains pack-list identity until #1395 implements evaluated-content identit
 under `docs/decisions/0008-deterministic-world.md`, "Decision". Generator identity
 follows body plans rather than setting model names, so renaming an actor does not
 pretend its generator changed. Saved damage references resolve against the admitted
-kind declarations rather than a code enumeration; see `src/core/saveFormat.ts`,
+kind declarations rather than a code enumeration; see `packages/engine/src/core/saveFormat.ts`,
 `validateContentReferences`. Save-store policy is unchanged;
 see `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
 No pre-beta migration is owed (`AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").

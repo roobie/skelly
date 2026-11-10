@@ -8,10 +8,10 @@ const GRID_NAME_LINE_HEIGHT = 1.15;
 const GRID_NAME_HORIZONTAL_INSETS_PX = 12;
 const GRID_NAME_VERTICAL_INSETS_PX = 8;
 // The share of a line the prediction fills; the rest is the margin for UI fonts the glyph table doesn't cover
-// (`DESIGN.md`, "Inventory screen").
+// (`packages/deadvox/DESIGN.md`, "Inventory screen").
 const GRID_NAME_LINE_FILL = 0.95;
 
-// Glyph advances in em, printed by tools/grid-name-glyph-widths.mjs (`npm run probe:glyph-widths`). A glyph that isn't
+// Glyph advances in em, printed by packages/deadvox/tools/grid-name-glyph-widths.mjs (`npm run probe:glyph-widths`). A glyph that isn't
 // listed counts as the widest one.
 const GLYPH_WIDTHS_EM: readonly (readonly [number, string])[] = [
   [0.28, 'ijlìíî'],

@@ -1,5 +1,5 @@
 // Each move is worked out on a shadow of the cells before anything changes,
-// so a refusal leaves the world as it was (`DESIGN.md`, "Moving furniture").
+// so a refusal leaves the world as it was (`packages/deadvox/DESIGN.md`, "Moving furniture").
 
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
@@ -482,7 +482,7 @@ export const planVehicleRemovalPiles = (
 /**
  * Why a piece must stay for what is on it: a body standing on it always holds it, and with `settles` false, so does
  * a piece or pile resting on it. Lifting lets those settle; removal refuses them, so it never floats or strands
- * anything (`DESIGN.md`, "Edits persist").
+ * anything (`packages/deadvox/DESIGN.md`, "Edits persist").
  */
 const supportRefusal = (mover: FurnitureMover, entity: BlockEntity, settles: boolean): string | undefined => {
   const { inventory } = mover;

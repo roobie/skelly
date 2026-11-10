@@ -13,7 +13,7 @@ tags: [deadvox, adr, mods, url, debug, testing]
 
 ## Context
 
-World preparation, player setup, developer view state and test harness control need distinct owners so a new demo does not require another private runtime preset. Normal player setup is admitted start content; see `packages/deadvox/src/core/startState.ts`, `applyStartState`. Debug kits use a normal start plus the spawn menu or a mod-owned row; see `docs/decisions/0009-content-defined-products.md`, "Starts and mixing". The query-to-hash migration on PR #1539 must use those same ownership boundaries. The bench retains its run parser until that migration; see `packages/deadvox/src/bench/run.ts`, `benchRunFromUrl`.
+World preparation, player setup, developer view state and test harness control need distinct owners so a new demo does not require another private runtime preset. Normal player setup is admitted start content; see `packages/engine/src/core/startState.ts`, `applyStartState`. Debug kits use a normal start plus the spawn menu or a mod-owned row; see `docs/decisions/0009-content-defined-products.md`, "Starts and mixing". The query-to-hash migration on PR #1539 must use those same ownership boundaries. The bench retains its run parser until that migration; see `packages/deadvox/src/bench/run.ts`, `benchRunFromUrl`.
 
 The project owes no backwards compatibility; see `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
 

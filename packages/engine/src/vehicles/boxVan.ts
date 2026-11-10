@@ -2,7 +2,7 @@
  * A typical European 3.5-tonne light box van, built from parts: a rear-wheel-drive chassis cab
  * with a 4.2 m dry-freight box fitted behind it. 6.3 m long, 2.0 m wide at the cab and 2.1 m at the
  * box, 3.1 m tall over the box, 3.75 m wheelbase, 1.72 m track, single rear wheels. The sizes are
- * the class's, not one model's (see `docs/vehicle-spike.md`, "Proportions").
+ * the class's, not one model's (see `packages/deadvox/docs/vehicle-spike.md`, "Proportions").
  */
 import {
   type Authored,

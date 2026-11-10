@@ -54,7 +54,7 @@ const gap = (a: readonly number[], b: readonly number[]): number =>
   a.length === b.length ? Math.max(0, ...a.map((value, i) => Math.abs(value - b[i]!))) : Number.POSITIVE_INFINITY;
 const close = (a: readonly number[], b: readonly number[]): boolean => gap(a, b) <= TOLERANCE;
 
-// The stance motion hash of `packages/deadvox/src/core/actorClips.ts`, `phaseFor`, restated so a test can find an oscillator's zero.
+// The stance motion hash of `packages/engine/src/core/actorClips.ts`, `phaseFor`, restated so a test can find an oscillator's zero.
 const phaseFor = (seed: number, salt: number): number => {
   const h = Math.sin(seed * 12.9898 + salt * 78.233) * 43_758.5453;
   return (h - Math.floor(h)) * 2 * Math.PI;

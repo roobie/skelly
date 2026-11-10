@@ -1,5 +1,5 @@
 /**
- * Cargo spaces (`DESIGN.md`, "Vehicles", **Cargo space.**): a block resting on a load floor, whose footprint on
+ * Cargo spaces (`packages/deadvox/DESIGN.md`, "Vehicles", **Cargo space.**): a block resting on a load floor, whose footprint on
  * the inventory cell lattice is its one pocket. The free floor bounds where a player can drag one out; fitting
  * refuses a block outside it, above its clearance, or a part placed into a fitted cargo space.
  */
@@ -227,7 +227,7 @@ export const fitIssue = (
 
 /**
  * Disassembly keeps size and contents on the item so refitting cannot erase either
- * (`DESIGN.md`, "Vehicles").
+ * (`packages/deadvox/DESIGN.md`, "Vehicles").
  */
 export const cargoSpaceItem = (factory: ItemFactory, registry: Registry, type: string, cells: CargoCells): Item => {
   const item = factory.create(registry, type, 1);

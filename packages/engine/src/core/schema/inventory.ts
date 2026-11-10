@@ -25,15 +25,15 @@ import { capabilityField } from './capability.ts';
 export const InventoryTuningSchema = strictObject({
   id: Id,
   capability: capabilityField('inventory'),
-  /** What a condition reads as (`DESIGN.md`, "The item model"); furniture reads the same table. */
+  /** What a condition reads as (`packages/deadvox/DESIGN.md`, "The item model"); furniture reads the same table. */
   conditionBands: ConditionBandsSchema,
-  /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`DESIGN.md`, "The item model"). */
+  /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`packages/deadvox/DESIGN.md`, "The item model"). */
   cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
   keyHoldRealSeconds: Positive,
   handling: strictObject({ perCellSimSeconds: SimSeconds, groundSimSeconds: SimSeconds, wearSimSeconds: SimSeconds }),
-  /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
+  /** Most pile states validation explores for one ground supply before calling it unproven (`packages/deadvox/DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
   /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
   autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
@@ -47,13 +47,13 @@ export const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
+  /** Air resistance on a thrown item (`packages/deadvox/DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
     /** Drag coefficient against the item's footprint area; it folds in the shape and how much of the footprint faces the air. */
     footprintDragCoefficient: NonNegative,
   }),
-  /** Carrying furniture in both hands (`DESIGN.md`, "Moving furniture"). */
+  /** Carrying furniture in both hands (`packages/deadvox/DESIGN.md`, "Moving furniture"). */
   furnitureMove: strictObject({
     /** The largest piece the player can lift, along each side. */
     maxSizeMetres: Positive,

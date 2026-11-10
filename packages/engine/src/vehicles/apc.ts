@@ -2,7 +2,7 @@
  * An eight-wheeled armoured personnel carrier, built from parts: 7.0 m long, 2.75 m wide, 2.4 m to
  * the hull roof, on four axles 1.2 m, 2.0 m and 1.2 m apart with 1.06 m wheels. The front two axles
  * steer; the driver sits front left beside the engine; the squad boards by a rear ramp, with room to
- * walk in crouched, and sits on benches over the wheels. See `docs/vehicle-spike.md`, "Proportions".
+ * walk in crouched, and sits on benches over the wheels. See `packages/deadvox/docs/vehicle-spike.md`, "Proportions".
  */
 import {
   type Authored,
@@ -164,7 +164,7 @@ const hullRoof = authored({ ...own('hull-roof', 'Hull roof', 'roof', 1300), pane
   disc('y', [...CUPOLA, CUPOLA_HOLE], [ROOF_Y, ROOF_TOP], 'air'),
 ]);
 
-/** The opening is taller than a crouched player (`test/vehicleParts.test.ts`, "troop compartment"). */
+/** The opening is taller than a crouched player (`packages/deadvox/test/vehicleParts.test.ts`, "troop compartment"). */
 const RAMP_TOP = 70;
 const RAMP: readonly [Vec3i, Vec3i] = [
   [4, 26, 24],

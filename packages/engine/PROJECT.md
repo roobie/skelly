@@ -13,7 +13,8 @@ holds no presentation code and no product content; the boundary and its reasons 
 
 ## Entry points
 
-Other packages import the runtime only through the curated entries in `package.json`, `exports`, one per domain.
+Other packages import the runtime only through the curated entries that the `exports` field of `package.json` names, one
+per domain.
 An entry carries only what code outside the package uses, so the package's surface is chosen rather than every
 file it holds.
 

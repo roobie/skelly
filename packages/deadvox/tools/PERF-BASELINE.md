@@ -111,7 +111,7 @@ preserve all consumers' pose data.
 
 Prefer excluding impossible work to retaining mutable simulation projections. Inventory ownership,
 light power and terrain edits must be visible immediately, without a second invalidation protocol.
-See `packages/deadvox/src/core/lights.ts`, `inventoryLightSources`, and `packages/deadvox/src/core/physics.ts`,
+See `packages/engine/src/core/lights.ts`, `inventoryLightSources`, and `packages/engine/src/core/physics.ts`,
 `moveTerrainAxis`. Revolver cancellation needs only the continuations already owned by handling,
 not every idle item in the world; see `packages/deadvox/src/game/revolverHandling.ts`, `cancelUnheld`.
 Eligibility still reads live ownership, so moving a gun between steps cannot leave its handling running.
