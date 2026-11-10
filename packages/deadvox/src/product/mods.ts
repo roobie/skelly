@@ -1,7 +1,6 @@
 import browserModConfig from '../config/browser-mods.json' with { type: 'json' };
 import bundledModList from '../config/bundled-mods.json' with { type: 'json' };
-import type { ModIntake } from '../game/browserMods.ts';
-import { bundledModsFrom } from '../game/bundledMods.ts';
+import { bundledModsFrom, type ModIntake } from '../game/entries/packs.ts';
 import { productContent } from './content.ts';
 
 /** Mod admission's view of the product: its shipped content, bundled mods and mod file bound. */

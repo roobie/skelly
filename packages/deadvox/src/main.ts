@@ -10,17 +10,17 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
-import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
+import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/entries/input.ts';
+import { bundledModIdsFromUrl, selectBundledMods } from './game/entries/packs.ts';
+import type { SaveBackendPreference } from './game/entries/save.ts';
 import {
   applyWeatheringConfig,
   configFromUrl,
   DEFAULT_RADIUS_M,
   makeConfig,
   savingEnabledFromUrl,
-} from './game/config.ts';
-import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
-import type { SaveBackendPreference } from './game/storageContract.ts';
-import type { StreamerStats } from './game/streamer.ts';
+} from './game/entries/session.ts';
+import type { StreamerStats } from './game/entries/world.ts';
 import { mountControlsCard } from './presentation/controls.ts';
 import { createEngine } from './presentation/engine.ts';
 import { requestInputLock } from './presentation/input.ts';

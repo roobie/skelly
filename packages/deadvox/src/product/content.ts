@@ -1,4 +1,4 @@
-import { type BundledContent, createBundledContent } from '../game/bundledContent.ts';
+import { type BundledContent, createBundledContent } from '../game/entries/packs.ts';
 import { bundledPacks } from './packs.ts';
 
 // Glob keys are relative to this directory, as the pack roots of `src/product/packs.ts`, `bundledPacks`, are.

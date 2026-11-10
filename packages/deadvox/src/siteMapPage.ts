@@ -13,9 +13,8 @@ import {
   WORLD_BOTTOM_M,
   worldGroundAt,
 } from '@skelly/engine/world';
-import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
-import { startForSite } from './game/startSelection.ts';
-import { siteForReviewMap } from './game/worldSetup.ts';
+import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl, startForSite } from './game/entries/session.ts';
+import { siteForReviewMap } from './game/entries/world.ts';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from './presentation/mapSliceInput.ts';
 import { buildBundledContent } from './product/content.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';

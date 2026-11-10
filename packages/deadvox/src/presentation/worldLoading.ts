@@ -1,6 +1,6 @@
 import type { RealTimestamp } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
-import type { ReplayGeneratedColumn } from '../game/inputReplay.ts';
+import type { ReplayGeneratedColumn } from '../game/entries/input.ts';
 import type { Engine } from './engine.ts';
 
 // Scale the deadline to chunk-sized work so large views do not inherit a small view's failure budget.

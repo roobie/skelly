@@ -9,9 +9,8 @@ import type {
 } from '@skelly/engine/sim';
 import type { Weather } from '@skelly/engine/sky';
 import type { Body, Vec3 } from '@skelly/engine/world';
-import type { RealFrameObserver } from '../game/frameDriver.ts';
-import type { HeardSound } from '../game/hearing.ts';
-import type { Session } from '../game/session.ts';
+import type { DebugNoclipStep, RealFrameObserver, Session } from '../game/entries/session.ts';
+import type { HeardSound } from '../game/entries/sound.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
@@ -27,7 +26,6 @@ export type SkyRouteAttachment = (hooks: {
   keyboard: KeyboardInput;
 }) => RealFrameObserver | undefined;
 
-import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
 import type { SnapshotMeasurement } from './playtestTools.ts';
 
 export type InputReplayStatusState =

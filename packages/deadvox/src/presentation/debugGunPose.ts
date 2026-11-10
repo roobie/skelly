@@ -1,4 +1,4 @@
-import type { SessionControls } from '../game/session.ts';
+import type { SessionControls } from '../game/entries/session.ts';
 
 export type DebugGunPoseMode = 'relaxed' | 'hip' | 'ads';
 

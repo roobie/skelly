@@ -67,48 +67,50 @@ import {
 import { type SoundEmission, soundVariantKey } from '@skelly/engine/sound';
 import { fillText as fillScreenText } from '@skelly/engine/text';
 import { type BlockEntity, CitySite, raycast, type Vec3 } from '@skelly/engine/world';
-import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/audioPresentation.ts';
-import { columnArrival } from '../game/columnArrival.ts';
-import { createCommandRouter } from '../game/commandRouter.ts';
-import { CrouchProneInput } from '../game/crouchProneInput.ts';
-import { firearmBoreRay, firearmBoreTarget } from '../game/firearmAim.ts';
-import { firearmHandlingFor } from '../game/firearmHandling.ts';
-import { observeRealFrame } from '../game/frameDriver.ts';
-import { FurnitureActionSelection, furnitureActionsFor } from '../game/furnitureActions.ts';
 import {
+  CrouchProneInput,
+  createReplayPlayStateBinding,
   encodeInputReplay,
+  InputReplayDriver,
+  type InputReplayDriverPorts,
+  InputReplayPlayer,
   InputReplayRecorder,
   joinInputReplayWindows,
+  PressHoldInput,
+  RELOAD_GESTURE_MS,
   type ReplayAction,
+  type ReplayActionPayload,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
   type ReplayStartState,
   stashInputReplay,
   withReplayExportGuard,
-} from '../game/inputReplay.ts';
-import { createReplayPlayStateBinding } from '../game/inputReplayActions.ts';
-import { InputReplayDriver, type InputReplayDriverPorts } from '../game/inputReplayDriver.ts';
-import { InputReplayPlayer } from '../game/inputReplayPlayer.ts';
-import type { ItemAction } from '../game/itemActions.ts';
-import { registerLayoutVehicles } from '../game/layoutVehicles.ts';
-import { unarmedMeleeWeapon } from '../game/melee.ts';
-import { playerTuning } from '../game/player.ts';
-import { PlayerTickActions } from '../game/playerTickActions.ts';
-import { PressHoldInput } from '../game/pressHoldInput.ts';
-import { selectPrimaryAction } from '../game/primaryAction.ts';
-import { RELOAD_GESTURE_MS } from '../game/reloadInput.ts';
-import type { ReplayActionPayload } from '../game/replayCommands.ts';
-import { restKindForFurniture } from '../game/rest.ts';
-import { createSession } from '../game/session.ts';
+} from '../game/entries/input.ts';
+import { firearmHandlingFor, type ItemAction } from '../game/entries/inventory.ts';
 import {
+  createCommandRouter,
+  createSession,
   createSimulationStepper,
   type InputRecording,
   type InputReplayVerification,
   inputReplayStoppedStatus,
-} from '../game/simulationStepper.ts';
-import { requireStart } from '../game/startSelection.ts';
-import { playerStartFromWorld } from '../game/worldSetup.ts';
+  observeRealFrame,
+  requireStart,
+} from '../game/entries/session.ts';
+import {
+  FurnitureActionSelection,
+  firearmBoreRay,
+  firearmBoreTarget,
+  furnitureActionsFor,
+  PlayerTickActions,
+  playerTuning,
+  restKindForFurniture,
+  selectPrimaryAction,
+  unarmedMeleeWeapon,
+} from '../game/entries/sim.ts';
+import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/entries/sound.ts';
+import { columnArrival, playerStartFromWorld, registerLayoutVehicles } from '../game/entries/world.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';

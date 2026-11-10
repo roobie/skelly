@@ -2,7 +2,7 @@ import type { AttemptPolicyDef } from '@skelly/engine/content';
 import type { CompletedMove, HandlingQueue, Inventory, Location, MoveJob, TickResult } from '@skelly/engine/inventory';
 import { formatClock, type PlaytestMarks, stageMarksAt } from '@skelly/engine/sim';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { Session } from '../game/session.ts';
+import type { Session } from '../game/entries/session.ts';
 import {
   type HandBackFile,
   loadMetrics,

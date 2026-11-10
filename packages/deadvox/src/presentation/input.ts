@@ -1,6 +1,6 @@
 // Pointer-lock mouse listeners writing the player's controls; keyboard intents come from the shared semantic owner.
 
-import { PlayerControls } from '../game/playerControls.ts';
+import { PlayerControls } from '../game/entries/input.ts';
 import type { KeyboardInput } from './inputBindings.ts';
 
 export const nextMenuCursor = (

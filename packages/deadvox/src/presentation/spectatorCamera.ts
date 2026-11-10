@@ -1,5 +1,5 @@
 import { type Body, bodyOverlapsTerrain, type SolidAt, type Vec3 } from '@skelly/engine/world';
-import { IDLE, type SessionControls } from '../game/session.ts';
+import { IDLE, type SessionControls } from '../game/entries/session.ts';
 
 /** Actions that keep working while the camera is detached; every other command belongs to the avatar. */
 const DETACHED_COMMAND_PREFIXES = ['debug.', 'noclip.', 'ui.main-menu-toggle', 'hud.toggle'] as const;

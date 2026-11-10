@@ -9,13 +9,14 @@ import {
 } from '@skelly/engine/sound';
 import type { SolidAt, Vec3 } from '@skelly/engine/world';
 import {
+  type HeardSound,
+  Hearing,
   type HeartbeatTarget,
   type HeartbeatTuning,
   heartbeatForStamina,
   playerHeartbeat,
-} from '../game/audioPresentation.ts';
-import { type HeardSound, Hearing } from '../game/hearing.ts';
-import { VoiceCaps } from '../game/voiceCaps.ts';
+  VoiceCaps,
+} from '../game/entries/sound.ts';
 import { bundledAssetUrl, type PackAssetFiles } from './bundledAssets.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';

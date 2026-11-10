@@ -1,23 +1,22 @@
 import type { SaveSnapshot } from '@skelly/engine/save';
-import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
   type RawSaveSlots,
+  type SaveBackend,
+  type SaveBackendPreference,
   type SaveCommitRequest,
+  type SaveCommitResult,
   SaveCorruptionError,
+  type SaveEncodingOptions,
+  type SaveLoadResult,
+  type SaveQuota,
   type SaveSlotPair,
-} from '../game/saveStorageProtocol.ts';
-import type {
-  SaveBackend,
-  SaveBackendPreference,
-  SaveCommitResult,
-  SaveEncodingOptions,
-  SaveLoadResult,
-  SaveQuota,
-  SaveStorageStatus,
-  SaveStore,
-} from '../game/storageContract.ts';
+  SaveStorageError,
+  type SaveStorageErrorKind,
+  type SaveStorageStatus,
+  type SaveStore,
+} from '../game/entries/save.ts';
 
 const SAVE_WRITE_LOCK = 'skelly-save-storage';
 const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {

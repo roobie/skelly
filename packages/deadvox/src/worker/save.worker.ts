@@ -5,8 +5,13 @@ import {
   type SaveWorldOptions,
   SHA256_HEX,
 } from '@skelly/engine/save';
-import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
-import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
+import {
+  SAVE_RECORD_HEADER_BYTES,
+  SAVE_RECORD_MAX_BYTES,
+  SaveStorageError,
+  type SaveStorageErrorKind,
+  sealSaveSlot,
+} from '../game/entries/save.ts';
 import { createDurableWriteTransaction } from '../presentation/indexedDbCommit.ts';
 
 const DATABASE = 'skelly-save-slots';
