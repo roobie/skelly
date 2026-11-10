@@ -255,6 +255,7 @@ const makeDeadvoxForTest = () => {
     'START_KIT',
     'SITE_STARTS',
     'launcherStartMod',
+    'parsePlan',
     'startSite',
     'defaultTime',
     'setStart',
@@ -273,6 +274,11 @@ const makeDeadvoxForTest = () => {
     .join('\n');
   return new Function('location', `${source}\nreturn makeDeadvox;`)({ href: 'https://example.test/site/' });
 };
+
+const defaultTimeForTest = () =>
+  new Function(
+    `${['siteOffered', 'DEFAULT_SITE', 'SITE_STARTS', 'parsePlan', 'startSite', 'defaultTime'].map(extractDeclaration).join('\n')}\nreturn defaultTime;`,
+  )();
 
 // Evaluates the launcher's site predicate and input handler, so the tests observe the same
 // clearing rule the page runs rather than re-describing it.
@@ -520,6 +526,23 @@ describe('site launchers track the games’ URL parameters', () => {
     }
     const shambler = linkStart(makeDeadvox({ ...defaults, bench: 'shamblers', site: 'city', time: '21:15' }));
     assert.equal(shambler.site, 'forest', 'the shambler benchmark runs in the forest whatever site was chosen');
+  });
+
+  it('runs each benchmark on its own workload when no site or time is chosen', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaultTime = defaultTimeForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const workloads = [
+      [{ bench: '1' }, 'testHouse', '12:00'],
+      [{ bench: '1', plan: '1:64,0.5:96' }, 'forest', '12:00'],
+      [{ bench: 'shamblers' }, 'forest', '23:30'],
+    ];
+    for (const [choice, site, time] of workloads) {
+      const d = { ...defaults, ...choice };
+      const url = makeDeadvox({ ...d, time: defaultTime(d) });
+      assert.equal(readPageUrl(url.search, url.hash).refused, undefined, `the game reads every parameter of ${url}`);
+      assert.deepEqual(linkStart(url), { site, time }, `${url} keeps its workload`);
+    }
   });
 
   it('plays the gauntlet scenario at its own time through mods, and the default site through no start at all', () => {

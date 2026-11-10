@@ -145,7 +145,7 @@ const copyButton = (label: string, text: string, status: HTMLElement): HTMLButto
   return button;
 };
 
-const showShamblerReport = (card: HTMLElement, record: BenchRecord): void => {
+const showShamblerReport = (card: HTMLElement, record: BenchRecord, againHref: string): void => {
   const results = record.shamblers!;
   const table = element('table');
   const head = table.createTHead().insertRow();
@@ -167,7 +167,7 @@ const showShamblerReport = (card: HTMLElement, record: BenchRecord): void => {
   text.readOnly = true;
   text.value = markdown;
   const again = element('a', 'Run shambler benchmark again');
-  again.href = '?bench=shamblers';
+  again.href = againHref;
   const play = element('a', 'Play');
   play.href = './';
   const env = element('ul');
@@ -199,7 +199,7 @@ const showShamblerReport = (card: HTMLElement, record: BenchRecord): void => {
   );
 };
 
-const showWorldReport = (card: HTMLElement, record: BenchRecord): void => {
+const showWorldReport = (card: HTMLElement, record: BenchRecord, againHref: string): void => {
   const table = element('table');
   const head = table.createTHead().insertRow();
   for (const h of HEADERS) {
@@ -219,7 +219,7 @@ const showWorldReport = (card: HTMLElement, record: BenchRecord): void => {
   text.readOnly = true;
   text.value = markdown;
   const again = element('a', 'Run again');
-  again.href = '?bench=1';
+  again.href = againHref;
   const play = element('a', 'Play');
   play.href = './';
   const env = element('ul');
@@ -248,13 +248,18 @@ const showWorldReport = (card: HTMLElement, record: BenchRecord): void => {
   );
 };
 
-export const showReport = (card: HTMLElement, record: BenchRecord | undefined): void => {
+/** The report page; `again` holds each benchmark's rerun link, which keeps that benchmark's own workload. */
+export const showReport = (
+  card: HTMLElement,
+  record: BenchRecord | undefined,
+  again: { readonly world: string; readonly shamblers: string },
+): void => {
   card.classList.add('report');
   if (!record || (record.runs.length === 0 && !record.shamblers?.length)) {
     card.replaceChildren(element('h1', 'No benchmark results'), element('p', 'Run the benchmark first.'));
   } else if (record.shamblers?.length) {
-    showShamblerReport(card, record);
+    showShamblerReport(card, record, again.shamblers);
   } else {
-    showWorldReport(card, record);
+    showWorldReport(card, record, again.world);
   }
 };

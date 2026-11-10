@@ -44,7 +44,7 @@ import {
 } from '@skelly/presentation/ui';
 import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, benchStartConfig, startBench } from './bench/run.ts';
+import { benchGameConfig, benchHref, benchRunFromUrl, benchStartConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
 import { writeHash } from './hashState.ts';
@@ -173,6 +173,7 @@ if (bench === null) {
       link.href = target.href;
     }
   }
+  (document.getElementById('bench-link') as HTMLAnchorElement).href = benchHref(content, 'world');
 }
 
 if (bench !== null) {
@@ -180,7 +181,10 @@ if (bench !== null) {
 }
 if (bench === 'report') {
   document.body.classList.add('bench');
-  showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
+  showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord(), {
+    world: benchHref(content, 'world'),
+    shamblers: benchHref(content, 'shamblers'),
+  });
 } else if (bench === null) {
   keyboardInput.install();
   inputBindings.loadLayout();

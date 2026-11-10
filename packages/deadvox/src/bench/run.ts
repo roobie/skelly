@@ -7,7 +7,7 @@ import { type ActorFigureFiles, type Registry, requireDayCycle } from '@skelly/e
 import { claimed } from '@skelly/engine/inventory';
 import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
 import type { StartupContent } from '@skelly/engine/packs';
-import { type GameConfig, makeConfig, requireStart, runStartId } from '@skelly/engine/session';
+import { type GameConfig, makeConfig, requireStart, runStartId, startForSite } from '@skelly/engine/session';
 import {
   ACTIVE_ACTOR_RATE,
   ActorSystem,
@@ -31,6 +31,7 @@ import type { RenderedEngine } from '@skelly/presentation/play';
 import { applySky, flashlightDaylightScale, MobActorMeshes } from '@skelly/presentation/render';
 import type { HashState } from '../hashState.ts';
 import { pageUrl, replacePageUrl } from '../pageUrl.ts';
+import { linkStartMod } from '../product/page.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
 import { createBenchLightFixture } from './lightFixture.ts';
 import {
@@ -110,6 +111,23 @@ export const benchStartConfig = (
   config.start = start.startTimeGameTimeOfDay ?? requireDayCycle(content.registry).defaultStartGameTimeOfDay;
   applyBenchWeathering(config);
   return config;
+};
+
+/**
+ * The workload each benchmark link runs: its site's default start at its own time. A link carries it as its own start
+ * mod, so a rerun measures the scene its earlier results measured whatever the product's default start becomes; a
+ * bare `?bench=` link takes the shared start order.
+ */
+export const BENCH_WORKLOADS = {
+  world: { bench: '1', site: 'testHouse', time: '12:00' },
+  shamblers: { bench: 'shamblers', site: 'forest', time: '23:30' },
+} as const;
+
+/** The game page's link that runs the `name` benchmark on its own workload. */
+export const benchHref = (content: StartupContent, name: keyof typeof BENCH_WORKLOADS): string => {
+  const { bench, site, time } = BENCH_WORKLOADS[name];
+  const start = { ...startForSite(content, site), id: `bench_${name}_start` };
+  return `?${new URLSearchParams({ bench, 'start-mod': linkStartMod(`link.bench-${name}`, start, time) })}`;
 };
 
 const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;

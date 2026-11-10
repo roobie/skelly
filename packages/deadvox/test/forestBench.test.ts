@@ -1,13 +1,15 @@
 import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
 import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
-import type { StartupContent } from '@skelly/engine/packs';
+import { bundledModIdsFromUrl, type StartupContent, selectBundledMods, startModFromUrl } from '@skelly/engine/packs';
 import { requireStart } from '@skelly/engine/session';
 import { siteGenerationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
 import {
+  BENCH_WORKLOADS,
   benchGameConfig,
+  benchHref,
   benchRunFromUrl,
   benchSiteLabel,
   benchStartConfig,
@@ -15,6 +17,8 @@ import {
   nextRunHash,
   timeOfDayText,
 } from '../src/bench/run.ts';
+import { readPageUrl } from '../src/pageUrl.ts';
+import { productModIntake } from '../src/product/mods.ts';
 import { configFromUrl, content } from './fixtures/startupContent.ts';
 
 const FOREST_START: StartDef = {
@@ -65,6 +69,27 @@ describe('forest benchmark workload identity', () => {
     expect(config).toMatchObject({ startId: product.id, site: played.site, start: played.start });
     expect(config).toMatchObject({ storeys: played.storeys, density: played.density });
   });
+
+  it.each(Object.keys(BENCH_WORKLOADS) as (keyof typeof BENCH_WORKLOADS)[])(
+    'runs the %s benchmark link on its own workload',
+    (name) => {
+      const read = readPageUrl(benchHref(content, name), '');
+      expect(read.refused).toBeUndefined();
+      expect(read.query.get('bench')).toBe(BENCH_WORKLOADS[name].bench);
+      const selection = selectBundledMods(
+        productModIntake,
+        bundledModIdsFromUrl(read.query),
+        [],
+        startModFromUrl(read.query),
+      );
+      expect(selection.issues).toEqual([]);
+      const config = benchStartConfig(selection.content, 1, 64);
+      expect({ site: config.site, time: timeOfDayText(config.start) }).toEqual({
+        site: BENCH_WORKLOADS[name].site,
+        time: BENCH_WORKLOADS[name].time,
+      });
+    },
+  );
 
   it('refuses a stored record of an unknown shape instead of resuming it', () => {
     const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');

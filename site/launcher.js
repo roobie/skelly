@@ -316,15 +316,30 @@ const launcherStartMod = (site, time) => ({
     },
   ],
 });
-// The shambler benchmark always runs in the forest.
+// Each benchmark keeps its own workload, so its results stay comparable whatever the product's default start becomes:
+// the shambler benchmark always runs in the forest at night, and the world benchmark without a chosen site runs the
+// test house at noon, or the forest for a plan that mixes block sizes.
 const startSite = (d) => {
   if (d.bench === 'shamblers') {
     return 'forest';
   }
-  return d.site !== '' && siteOffered(d, d.site) ? d.site : DEFAULT_SITE;
+  if (d.site !== '' && siteOffered(d, d.site)) {
+    return d.site;
+  }
+  if (d.bench === '1') {
+    return parsePlan(d.plan)?.some(([blockSize]) => Number(blockSize) !== 0.5) ? 'forest' : 'testHouse';
+  }
+  return DEFAULT_SITE;
 };
-const defaultTime = (d) =>
-  d.bench === 'shamblers' ? '23:30' : (SITE_STARTS[startSite(d)] ?? SITE_STARTS[DEFAULT_SITE]).startTimeGameTimeOfDay;
+const defaultTime = (d) => {
+  if (d.bench === 'shamblers') {
+    return '23:30';
+  }
+  if (d.bench === '1') {
+    return '12:00';
+  }
+  return (SITE_STARTS[startSite(d)] ?? SITE_STARTS[DEFAULT_SITE]).startTimeGameTimeOfDay;
+};
 // A committed scenario at its own time goes through `mods`; any other site or time is a launcher start row.
 const setStart = (p, d) => {
   const site = startSite(d);
