@@ -251,13 +251,12 @@ const checkOverrides = (
   fail: Report,
 ): void => {
   for (const [entry, history] of entrySetters(packs, fail)) {
-    // The last setter answers for every earlier one. A middle setter answers only for a predecessor it depends on:
+    // The last setter answers for every earlier one. A middle setter answers only for earlier setters it depends on:
     // independent setters are a clash that a later pack settles by depending on and declaring both
     // (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
     history.forEach((setter, index) => {
       const last = index === history.length - 1;
-      const owners = last ? history.slice(0, -1) : history.slice(Math.max(index - 1, 0), index);
-      for (const owner of owners) {
+      for (const owner of history.slice(0, index)) {
         const depends = dependencies.get(setter.manifest.id)!.has(owner.manifest.id);
         if (!last && !depends) {
           continue;

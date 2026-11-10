@@ -97,6 +97,22 @@ it('refuses a middle pack that redefines an earlier entry undeclared even when t
   expect(admitPacks([a, b, c]).issues).toEqual([]);
 });
 
+it('refuses a middle pack that overrides a non-adjacent dependency undeclared, though the last pack settles all', () => {
+  const a = pack('fixture.a');
+  const b = pack('fixture.b');
+  const c = pack('fixture.c', [a.manifest.id]);
+  const d = pack('fixture.d', [a.manifest.id, b.manifest.id, c.manifest.id]);
+  for (const input of [a, b, c, d]) {
+    input.files[0]!.data = { blocks: [{ id: 'fixture_shared' }] };
+  }
+  d.manifest.overrides = [a, b, c].map(({ manifest }) => ({ pack: manifest.id, entry: 'blocks:fixture_shared' }));
+  const refused = admitPacks([a, b, c, d]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: c.source, path: 'overrides' })]);
+  expect(refused.issues[0]!.message).toContain(a.manifest.id);
+  c.manifest.overrides = [{ pack: a.manifest.id, entry: 'blocks:fixture_shared' }];
+  expect(admitPacks([a, b, c, d]).issues).toEqual([]);
+});
+
 it('refuses one pack setting an entry id in two of its files, naming both files', () => {
   const input = pack('fixture.twice');
   input.manifest.files = [
