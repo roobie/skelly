@@ -421,40 +421,69 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
   });
 };
 
-const visorRatio = (page, shot) =>
-  page.evaluate(async (base64) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${base64}`;
-    await image.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext('2d');
-    context.drawImage(image, 0, 0);
-    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    let edge = 0;
-    let edgeCount = 0;
-    let centre = 0;
-    let centreCount = 0;
-    const inCentre = (value) => value > 0.4 && value < 0.6;
-    for (let offset = 0; offset < data.length; offset += 4) {
-      const pixel = offset / 4;
-      const nx = (pixel % canvas.width) / canvas.width;
-      const ny = Math.floor(pixel / canvas.width) / canvas.height;
-      const light = data[offset] + data[offset + 1] + data[offset + 2];
+// Puts a helmet on and takes it off, reading the edge/centre ratio of the frames either side. The reads sit a few
+// frames apart because the daylit scene keeps changing as the world streams in, and they use the drawing buffer
+// because a page screenshot costs seconds on CI's software renderer.
+const visorRatios = (page) =>
+  page.evaluate(async () => {
+    const r = globalThis.primaryActionTest;
+    const { held } = r.view;
+    const visorParent = held.warmUpTarget.camera;
+    const gl = r.engine.renderer.getContext();
+    const bandOf = (nx, ny) => {
       if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
-        edge += light;
-        edgeCount += 1;
-      } else if (inCentre(nx) && inCentre(ny)) {
-        centre += light;
-        centreCount += 1;
+        return 'edge';
       }
+      return nx > 0.4 && nx < 0.6 && ny > 0.4 && ny < 0.6 ? 'centre' : undefined;
+    };
+    const ratio = () => {
+      const width = gl.drawingBufferWidth;
+      const height = gl.drawingBufferHeight;
+      const data = new Uint8Array(width * height * 4);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      const sums = { edge: { light: 0, count: 0 }, centre: { light: 0, count: 0 } };
+      for (let offset = 0; offset < data.length; offset += 4) {
+        const pixel = offset / 4;
+        // The buffer's rows run bottom to top.
+        const band = bandOf((pixel % width) / width, 1 - Math.floor(pixel / width) / height);
+        if (band) {
+          sums[band].light += data[offset] + data[offset + 1] + data[offset + 2];
+          sums[band].count += 1;
+        }
+      }
+      return sums.edge.light / sums.edge.count / (sums.centre.light / sums.centre.count);
+    };
+    const nextFrame = () =>
+      new Promise((drawn) => {
+        const { render } = held;
+        held.render = (...args) => {
+          render.apply(held, args);
+          held.render = render;
+          drawn(ratio());
+        };
+      });
+    // The frame after the visor's state is seen, so the read cannot land before it is drawn.
+    const onceVisor = async (count) => {
+      for (let frames = 0; frames < 30; frames += 1) {
+        if (visorParent.children.length === count) {
+          return nextFrame();
+        }
+        await nextFrame();
+      }
+      throw new Error(`The held camera did not reach ${count} visor children within 30 frames`);
+    };
+    const baseline = await nextFrame();
+    const helmet = r.inventory.create('riot_helmet');
+    if (!r.inventory.add(helmet, { kind: 'worn' })) {
+      throw new Error('Could not wear helmet fixture');
     }
-    if (!(centre > 0 && edge > 0)) {
-      throw new Error('Visor comparison needs a visible scene');
+    const worn = await onceVisor(1);
+    const removed = r.inventory.move(helmet, { kind: 'pile', pos: r.feet() });
+    if (!removed.ok) {
+      throw new Error(removed.reason);
     }
-    return edge / edgeCount / (centre / centreCount);
-  }, shot.toString('base64'));
+    return { baseline, worn, restored: await onceVisor(0) };
+  });
 
 const fakePointerLock = () => {
   let locked = false;
@@ -595,7 +624,11 @@ const heldItemChecks = async (chromium, port) => {
       return r.frames;
     }, 12 * 3600);
     await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, noonFrame);
-    const baseline = await visorRatio(page, await capture());
+    const { baseline, worn, restored } = await visorRatios(page);
+    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
+    assert.ok(baseline > 0 && Number.isFinite(baseline), 'the visor comparison needs a visible scene');
+    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
+    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     const uid = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.create('riot_helmet');
@@ -608,8 +641,6 @@ const heldItemChecks = async (chromium, port) => {
       const r = globalThis.primaryActionTest;
       return r.view.held.warmUpTarget.camera.children.length > 0;
     });
-    const worn = await visorRatio(page, await capture());
-    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
     await page.evaluate(() => globalThis.primaryActionTest.thirdPerson.toggle());
     await page.waitForFunction(() => {
       const attachment = globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-head');
@@ -629,9 +660,6 @@ const heldItemChecks = async (chromium, port) => {
         !r.view.playerMeshes.group.getObjectByName('worn-head') && r.view.held.warmUpTarget.camera.children.length === 0
       );
     });
-    const restored = await visorRatio(page, await capture());
-    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
-    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
   await timePhase('own-head-mask-assertions', async () => {
