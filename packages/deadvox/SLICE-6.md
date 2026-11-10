@@ -224,7 +224,7 @@ that truth, never restored as independent editable totals. The parked owner cros
 the durable boundary through `packages/engine/src/core/saveFormat.ts`, `makeWirePayload` and
 `restoreWirePayload`, rather than relying on a snapshot-only copy. Scenario
 registration must preserve saved builds instead of regenerating missing parts;
-see `src/game/layoutVehicles.ts`, `registerLayoutVehicles`.
+see `packages/engine/src/game/layoutVehicles.ts`, `registerLayoutVehicles`.
 
 Saving in motion, during work or across detachment must be equivalent to continuing
 without a load; parking is not permission to erase momentum at save time. Settled

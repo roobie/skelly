@@ -23,7 +23,7 @@ admission is not production and must not refresh found food. A sealed nonperisha
 package has no exposed serving history; opening it starts that serving's history.
 Repackaging an existing perishable serving must preserve its history, while an
 empty vessel must not retain it. See `packages/engine/src/core/inventory.ts`, `Inventory.transform`,
-`packages/engine/src/core/craftWork.ts`, `craftActionHooks`, and `src/game/unpacking.ts`, `Unpacking`.
+`packages/engine/src/core/craftWork.ts`, `craftActionHooks`, and `packages/engine/src/game/unpacking.ts`, `Unpacking`.
 
 ## Environments
 
@@ -41,7 +41,7 @@ so only later aging changes; `INTERACTIONS.md`, "Ownership", owns that boundary.
 
 Queries project exposure without mutating owners, so looking at food cannot change
 simulation results. Consumption resolves the actual serving, not its vessel shell.
-See `packages/engine/src/core/food.ts`, `servingDef` and `spoilage`, and `src/game/survival.ts`,
+See `packages/engine/src/core/food.ts`, `servingDef` and `spoilage`, and `packages/engine/src/game/survival.ts`,
 `Survival.finishConsuming`.
 
 Snapshots settle the entire inventory forest at one absolute calendar boundary so

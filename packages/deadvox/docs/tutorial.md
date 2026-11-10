@@ -41,8 +41,8 @@ Completed outcomes, not requests or pressed buttons, are the teaching evidence.
 Remembering early outcomes prevents lesson order from stranding someone who already
 used their supplies. Observation must not become another execution owner; the
 framework boundary is in `docs/decisions/0009-content-defined-products.md`,
-"Starts and mixing". See `src/game/unpacking.ts`, `Unpacking.complete`,
-`src/game/firearmHandling.ts`, `FirearmMechanics`, and
+"Starts and mixing". See `packages/engine/src/game/unpacking.ts`, `Unpacking.complete`,
+`packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`, and
 `packages/engine/src/core/playerCombat.ts`, `PlayerCombat`.
 
 Avoidance teaches that fighting is optional. Naming a destination makes leaving the

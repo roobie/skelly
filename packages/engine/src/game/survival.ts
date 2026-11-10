@@ -1,6 +1,6 @@
-// Using what's in your hands (`DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
+// Using what's in your hands (`packages/deadvox/DESIGN.md`, "Hands"): eating, drinking and taking a painkiller
 // are short actions in the handling queue, a light switches on and off, and a battery goes into
-// a light as the player chooses (`DESIGN.md`, "Light"), or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
+// a light as the player chooses (`packages/deadvox/DESIGN.md`, "Light"), or comes out of it. A light whose content sets `wornSwitch` also stays lit while worn and answers the
 // worn-light control (`toggleWornLights`).
 // The needs themselves are in the simulation (core/needs.ts).
 

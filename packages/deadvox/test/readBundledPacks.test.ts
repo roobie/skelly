@@ -347,7 +347,7 @@ it('external json and asset entries admit in the browser with the reader hashes'
     const defines = await bundledPackDefines([input!]);
     const hashes: Record<string, string> = JSON.parse(defines.__SKELLY_FILE_HASHES__!);
     const identities = JSON.parse(defines.__SKELLY_CONTENT_PACKS__!);
-    // The browser looks each entry up by its logical key, as `src/game/bundledContent.ts` does.
+    // The browser looks each entry up by its logical key, as `packages/engine/src/game/bundledContent.ts` does.
     const runtime = {
       ...input!,
       files: input!.manifest.files.map(({ path, kind }) => ({

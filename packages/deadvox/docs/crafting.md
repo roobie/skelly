@@ -48,7 +48,7 @@ Disassembly promises its yield when work starts, so stopping, skill changes or t
 
 Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `packages/engine/src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `tools/jsonnet/lib/sharpen-recipes.libsonnet`, `sharpenRecipes`.
 
-Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `packages/engine/src/core/bookReading.ts`, `bookReadingHooks`, and `src/game/readingClose.ts`, `stopReadingOnClose`.
+Reading a recipe book progresses only while its page is open. Closing the page pauses work and preserves progress; movement closes it and passes through. Readable-only notes and signs do not create a timed job. See `packages/engine/src/core/bookReading.ts`, `bookReadingHooks`, and `packages/engine/src/game/readingClose.ts`, `stopReadingOnClose`.
 
 ## Long actions
 

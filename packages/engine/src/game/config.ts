@@ -45,7 +45,7 @@ export interface GameConfig {
   debugStart?: DebugStart;
   /**
    * A fresh start facing a showroom prop of this furniture type (`?focus=<furniture>`), so a look request lands
-   * in front of the thing to look at. See `docs/test-house.md`, "Focus".
+   * in front of the thing to look at. See `packages/deadvox/docs/test-house.md`, "Focus".
    */
   focus?: string;
   /**
@@ -65,7 +65,7 @@ export interface GameConfig {
   weathering: WeatheringDef | undefined;
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
   weatheringSplit?: number;
-  /** Zombies are drawn as full built figures (src/render/mobActors.ts) by default; `?actors=boxes` draws
+  /** Zombies are drawn as full built figures (`packages/deadvox/src/render/mobActors.ts`) by default; `?actors=boxes` draws
    * ActorMeshes' six boxes instead. */
   actors: ActorRenderMode;
 }
@@ -249,7 +249,7 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => 
 
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
+ * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in `packages/deadvox/src/debug/lookUrl.ts`.
  * The product supplies where its ragdoll sweep places the viewer.
  */
 export const configFromUrl = (

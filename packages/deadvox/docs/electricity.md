@@ -90,7 +90,7 @@ An authored facility is one electrical grid because its floors belong to one pla
 not separate power puzzles. Build from finished placements rather than streamed
 entities so a remote floor draws power before the player visits it. See
 `packages/engine/src/core/sitePower.ts`, `placedPowerDevices` and `SitePower`, and
-`src/game/worldSetup.ts`, `createWorldSetup`.
+`packages/engine/src/game/worldSetup.ts`, `createWorldSetup`.
 
 Generator control and a main breaker serve different purposes: stopping a generator
 saves fuel without disabling independent solar and storage; opening the breaker
@@ -102,7 +102,7 @@ See `packages/engine/src/core/power.ts`, `PowerNetwork.setEnabled`, and `package
 Player controls use ordinary reach and use-admission checks, not debug privileges,
 because cutting supply is an ordinary appliance interaction. Explicit enabled-state
 commands preserve replay intent instead of toggling whatever state a replay finds.
-See `src/game/session.ts`, `powerControl`, and `src/game/replayCommands.ts`,
+See `packages/engine/src/game/session.ts`, `powerControl`, and `packages/engine/src/game/replayCommands.ts`,
 `applyReplayActionPayload`.
 
 Removing equipment settles old service and disables its authored connection so a

@@ -43,7 +43,7 @@ export interface VehicleInspectionViewModel {
 export interface VehicleInspectionSource {
   readonly inventory: Pick<Inventory, 'vehicles' | 'registry' | 'name'>;
   readonly reach: Pick<ReachSnapshot, 'entries'>;
-  /** The core admission for one selected operation; see `src/game/session.ts`, `vehicleWorkRefusal`. */
+  /** The core admission for one selected operation; see `packages/engine/src/game/session.ts`, `vehicleWorkRefusal`. */
   readonly refusal: (
     kind: VehicleWorkKind,
     vehicleId: number,

@@ -482,7 +482,7 @@ interface SessionDebug {
   stepNoclip: (step: DebugNoclipStep) => void;
 }
 
-/** A committed round with its segments traced against the world its hits resolve in (`DESIGN.md`, "Shot impacts"). */
+/** A committed round with its segments traced against the world its hits resolve in (`packages/deadvox/DESIGN.md`, "Shot impacts"). */
 export interface ResolvedFirearmTrajectory extends FirearmTrajectory {
   readonly traces: readonly ShotTrace[];
 }
@@ -552,7 +552,7 @@ export interface SessionOptions {
   onTerrainEdited?: (chunks: Vec3[]) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
-  /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`DESIGN.md`, "Hand grenade"). */
+  /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
   onFuseLit?: (item: Item) => void;
   /** Presentation-only: a melee block absorbed damage. */
   onBlock?: (jolt: BlockJolt, full: boolean) => void;
@@ -1300,7 +1300,7 @@ export const createSession = (options: SessionOptions) => {
   validateSnipingAdsFirearm(registry, firearmInHands(), snipingAdsUid);
   /**
    * Effective ADS: the sights are wanted and a held long gun's acquisition has completed. Other
-   * firearms aim as soon as they are ready, so acquisition never delays them (`DESIGN.md`, "Combat and noise").
+   * firearms aim as soon as they are ready, so acquisition never delays them (`packages/deadvox/DESIGN.md`, "Combat and noise").
    */
   const aimingDownSights = (): boolean => {
     const held = firearmInHands();
@@ -1336,7 +1336,7 @@ export const createSession = (options: SessionOptions) => {
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
-  /** `DESIGN.md`, "Ladders and hatches". */
+  /** `packages/deadvox/DESIGN.md`, "Ladders and hatches". */
   const ladderHold = new LadderHold({
     entities,
     body,
@@ -1393,7 +1393,7 @@ export const createSession = (options: SessionOptions) => {
       playPlayerSound(bodyTuning.sounds.breath[cue]);
     }
   };
-  /** `DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
+  /** `packages/deadvox/DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
   const breathHoldWanted = (intent: MoveIntent, readyGait: boolean): boolean => {
     const heldFirearm = firearmInHands();
     return (
@@ -1811,7 +1811,7 @@ export const createSession = (options: SessionOptions) => {
     }
     return location ? bodyCentre(body) : undefined;
   };
-  /** The explosive is used up; the blast and its fragments hurt zombies and the player alike (`DESIGN.md`, "Hand grenade"). */
+  /** The explosive is used up; the blast and its fragments hurt zombies and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
   const detonate = (item: Item): void => {
     const spec = registry.items.get(item.type)?.explosive;
     const at = detonationPoint(item);
@@ -1907,7 +1907,7 @@ export const createSession = (options: SessionOptions) => {
     playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
   };
 
-  // ---- moving furniture (`DESIGN.md`, "Moving furniture") ----
+  // ---- moving furniture (`packages/deadvox/DESIGN.md`, "Moving furniture") ----
 
   const moveTerrain = terrainSolid(world, registry);
   const furnitureMover = (): FurnitureMover => ({
@@ -2484,7 +2484,7 @@ export const createSession = (options: SessionOptions) => {
   };
   /**
    * The construction action's removal: it cancels the work that names the piece, then takes the piece out of the
-   * world, so a save never names a missing piece; a refusal cancels nothing (`DESIGN.md`, "Edits persist").
+   * world, so a save never names a missing piece; a refusal cancels nothing (`packages/deadvox/DESIGN.md`, "Edits persist").
    */
   const removePiece = (entity: BlockEntity): string | undefined => {
     if (entities.byUid(entity.uid) !== entity) {

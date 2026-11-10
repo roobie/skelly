@@ -25,4 +25,4 @@ changing physical slots. A failed action preserves ownership. A light never pick
 its own battery from reach; the player chooses it (`DESIGN.md`, "Light"). A loaded
 light switches on only through a separate use, and a refusal consumes no battery.
 See `packages/engine/src/core/character.ts`, `dominantSide` and `offSide`, and
-`src/game/survival.ts`, `Survival.useFromQuickbar`.
+`packages/engine/src/game/survival.ts`, `Survival.useFromQuickbar`.

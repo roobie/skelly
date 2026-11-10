@@ -1,4 +1,4 @@
-// A held item's throw, from the press that picks its hand and item through release or cancel. The session owns it so a climber holds still while it charges (`DESIGN.md`, "Ladders and hatches").
+// A held item's throw, from the press that picks its hand and item through release or cancel. The session owns it so a climber holds still while it charges (`packages/deadvox/DESIGN.md`, "Ladders and hatches").
 
 import { actionText, fillText } from '../core/actionText.ts';
 import { dominantSide, offSide } from '../core/character.ts';

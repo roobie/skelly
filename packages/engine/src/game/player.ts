@@ -32,7 +32,7 @@ export const createPlayerBody = (scale: Scale, pos: Vec3, tuning: PlayerDef): Bo
   onGround: false,
 });
 
-/** Which stance key was pressed; `DESIGN.md`, "Crouching and lying prone". */
+/** Which stance key was pressed; `packages/deadvox/DESIGN.md`, "Crouching and lying prone". */
 export type StanceToggle = 'crouch' | 'prone';
 
 /** The stance a key press asks for: crouch toggles standing, prone toggles a crouch, and either rises from prone. */
@@ -142,7 +142,7 @@ export const movementPace = (
 
 /**
  * Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. An airborne body keeps
- * the velocity it left the ground with (`DESIGN.md`, "Moving in the air"); a ladder climber is not airborne.
+ * the velocity it left the ground with (`packages/deadvox/DESIGN.md`, "Moving in the air"); a ladder climber is not airborne.
  */
 export const steer = (
   body: Body,

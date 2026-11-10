@@ -19,7 +19,7 @@ Dynamic world events remain a design need in #313; #393 tracks extraction of Typ
 
 ## Decision
 
-Content and tuning belong in schema-validated mods, while exact mechanisms stay engine-owned. Core, theme, product and scenario ownership follows `docs/decisions/0009-content-defined-products.md`, "Definitions and distribution"; no single core pack owns every shared value. The loader remains one authority for admission; see `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `docs/jsonnet.md` for authoring.
+Content and tuning belong in schema-validated mods, while exact mechanisms stay engine-owned. Core, theme, product and scenario ownership follows `docs/decisions/0009-content-defined-products.md`, "Definitions and distribution"; no single core pack owns every shared value. The loader remains one authority for admission; see `packages/engine/src/game/bundledContent.ts`, `buildBundledContent`, and `docs/jsonnet.md` for authoring.
 
 Mod and event rules use restricted CEL inside a typed rule envelope, and no scripting language is admitted. The envelope is Jsonnet data: a trigger, an optional condition and a list of engine effects. CEL fills only the condition and the effect arguments. It cannot sequence, loop or mutate, so the engine keeps scheduling, state, randomness and effects, as the mod rules below require. A maintained runtime supplies parsing, type checking and evaluation without making a new language an engine maintenance obligation. A mod-facing rule may describe a consequence, but cannot mutate state outside the engine's validated boundary.
 

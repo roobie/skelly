@@ -61,7 +61,7 @@ export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && (TRAINING_ACTIONS.has(job.jobType) || job.jobType.startsWith('revolver.'));
 /**
  * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
- * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`DESIGN.md`, "Combat and
+ * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`packages/deadvox/DESIGN.md`, "Combat and
  * noise", rifles). The skill's reload factor shortens both.
  */
 const magazineTimes = (
@@ -340,7 +340,7 @@ export class FirearmMechanics {
       ) => void;
       firearmsSkillLevel?: () => number;
       firearmsSkillZeroHandling?: () => FirearmsSkillZeroHandling;
-      /** What the body multiplies hand loading and racking times by (`DESIGN.md`, "Pain"). */
+      /** What the body multiplies hand loading and racking times by (`packages/deadvox/DESIGN.md`, "Pain"). */
       handlingSlowdown?: () => number;
     },
   ) {
@@ -1139,7 +1139,7 @@ export class FirearmMechanics {
 
   /**
    * Swaps in the fullest carried magazine that fits (lowest UID on a tie, so the choice is save-stable), whatever
-   * the fitted one holds (`CONTROLS.md`, "Reload, rack, remove").
+   * the fitted one holds (`packages/deadvox/CONTROLS.md`, "Reload, rack, remove").
    */
   private changeMagazine(gun: Item, time: number): string | undefined {
     const { common, firearm } = this.text;
@@ -1159,7 +1159,7 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (`CONTROLS.md`, "Reload, rack, remove"). */
+  /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (`packages/deadvox/CONTROLS.md`, "Reload, rack, remove"). */
   removeMagazine(uid: number, time: number): string | undefined {
     const revolver = this.inventory.itemByUid(uid);
     if (revolver?.firearm?.cylinder && this.held(uid)) {
@@ -1692,7 +1692,7 @@ export class FirearmMechanics {
 
   /**
    * At impact, place the case in its landing pile or the first supported spill spot with room. A metadata-only probe
-   * avoids allocating an item UID until a destination is known (`DESIGN.md`, "Spent cases per block").
+   * avoids allocating an item UID until a destination is known (`packages/deadvox/DESIGN.md`, "Spent cases per block").
    */
   private ejectionDrop(type: string, landing: Vec3): ReturnType<typeof dropTarget> {
     const item = { uid: 0, type, count: 1, condition: 1 };

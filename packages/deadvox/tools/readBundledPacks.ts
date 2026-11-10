@@ -45,7 +45,7 @@ export const readAvailablePacks = (packageRoot: string, external: string = EXTER
             )
         : [];
     })
-    // The save identity lists packs in this order, so it follows the game's: `src/game/bundledContent.ts`,
+    // The save identity lists packs in this order, so it follows the game's: `packages/engine/src/game/bundledContent.ts`,
     // `createBundledContent`.
     .sort((left, right) => `${left}/pack/manifest.json`.localeCompare(`${right}/pack/manifest.json`));
   const inputs = roots.map((root) => {

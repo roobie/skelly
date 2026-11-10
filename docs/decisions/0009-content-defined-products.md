@@ -252,34 +252,27 @@ for that name are in its
 `name`): every workspace package shares the `@skelly/` scope, so the product's name
 matches the runtime and presentation packages the refactor adds.
 
-Runtime code (the `packages/engine` package, `packages/deadvox/src/game` until it joins
-that package, and the workspace libraries each depends on) reaches nothing outside that
-set, not even for types: no presentation, render or UI code and no product configuration,
-mods or pages, whether by import or by glob. The runtime package reaches no file of
-deadvox at all, and imports only the npm packages its manifest names in `dependencies`.
+Runtime code (the `packages/engine` package and the workspace libraries it depends on)
+reaches nothing outside that set, not even for types: no file of deadvox, so no
+presentation, render or UI code and no product configuration, mods or pages, whether by
+import or by glob. It imports only the npm packages its manifest names in `dependencies`.
 The presentation side then moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`,
-`RUNTIME_POLICY` and `ENGINE_POLICY`. Runtime source also compiles without DOM types, so a
-DOM-only name in it fails the typecheck; see `packages/engine/tsconfig.json` and
-`packages/deadvox/tsconfig.runtime.json`. Those configs keep Node's types, which declare
-`navigator`, `MessageEvent`, `localStorage` and `sessionStorage`, so the typecheck alone
-lets those through; a lint ban on runtime source fails them. See `biome.jsonc`,
+`ENGINE_POLICY`. Runtime source also compiles without DOM types, so a DOM-only name in it
+fails the typecheck; see `packages/engine/tsconfig.json`. That config keeps Node's types,
+which declare `navigator`, `MessageEvent`, `localStorage` and `sessionStorage`, so the
+typecheck alone lets those through; a lint ban on runtime source fails them. See `biome.jsonc`,
 `noRestrictedGlobals`. The checks guard honest edits, not deliberate bypasses; what they
 do not check is in `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
 
 The runtime package exports curated entry points only, so its surface is chosen rather
 than every file it holds: one entry per domain, each carrying only what code outside the
-package uses. Product code (deadvox source, `src/game` included, its tools, its Vite
-config, the Tiled extension and the root deadvox contract tests) imports the runtime only
+package uses. Product code (deadvox source, its tools, its Vite config, the Tiled extension and the root deadvox contract tests) imports the runtime only
 as `@skelly/engine/<entry>`; see `packages/engine/package.json`, `exports`. A consumer
 that runs without an npm install names an entry's file instead of the package: Tiled's
 script runtime has no package resolution, and the site-launcher CI job runs
 `test/site-launcher.test.mjs` uninstalled. Such a consumer gets an entry that loads no npm
 dependency, because a re-export loads its whole module even when the consumer takes one
 name, so the mod catalogue has its own entry; see `packages/engine/src/modCatalogue.ts`.
-Until `packages/deadvox/src/game` joins the package (#1532), it has curated entries of its
-own in `packages/deadvox/src/game/entries`, one per domain and named after the package
-entry each joins, and product code outside it imports it only through them. Tests import
-the game modules no entry carries by their path, the place the test-only subpath takes over.
 
 Tests that use shipped content stay in deadvox, yet need runtime internals no entry
 carries. They import those through the package's one test-only subpath,
@@ -292,8 +285,7 @@ page code share the unit tests' test-only surface; all of them create their serv
 place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. The
 product dev server and the product build never enable it, so they cannot resolve the
 subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a
-product file that imports a non-entry subpath, reaches the package's files by path, or
-reaches the game source other than through its entries; see
+product file that imports a non-entry subpath or reaches the package's files by path; see
 `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
 It reads import syntax with a literal target; a module path a browser stage or the dev
 server loads from a string is not checked.

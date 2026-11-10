@@ -9,11 +9,11 @@ tags: [deadvox, refactor, testing, tooling]
 
 # Runtime closure check: limits
 
-The runtime set is the engine package's source and deadvox's `src/game`; see
-`tools/runtimeClosure.ts`, `ENGINE_POLICY` and `RUNTIME_POLICY`. The closure check
-(`tools/runtimeClosure.ts`, `runtimeClosureViolations`, and the Vite gate in
-`test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typechecks
-(`packages/engine/tsconfig.json` and `tsconfig.runtime.json`) and the browser-name lint ban
+The runtime set is the engine package's source; see `tools/runtimeClosure.ts`,
+`ENGINE_POLICY`. The closure check (`tools/runtimeClosure.ts`, `runtimeClosureViolations`,
+and the gate on the deadvox Vite config that bundles that source, in
+`test/runtimeClosure.test.ts`, `viteGateIssues`), the no-DOM typecheck
+(`packages/engine/tsconfig.json`) and the browser-name lint ban
 (`biome.jsonc`, `noRestrictedGlobals`) exist to catch honest mistakes: a contributor who adds an import, a
 glob, a manifest field, a tsconfig option, a symlink or a Vite root that lets the runtime reach
 presentation or product code, or who uses a browser API in the runtime. They do not defend
@@ -34,13 +34,13 @@ sees.
 - **Plugin hooks other than config and id resolution:** hooks such as `buildStart` can mutate shared
   state that resolution reads later; modelling every hook is the Vite re-implementation this check
   avoids.
-- **Browser names a later `@types/node` declares:** the no-DOM typechecks compile the runtime set
+- **Browser names a later `@types/node` declares:** the no-DOM typecheck compiles the runtime set
   with the ES libraries and Node's types, so a DOM-only name such as `document` fails, but a
   browser name that `@types/node` declares as a Node global compiles. The lint ban
   (`biome.jsonc`, `noRestrictedGlobals`, on the runtime set's paths) fails the ones it names;
   a name a later `@types/node` upgrade adds passes both checks until it is added to the ban.
 - **Vite runs started outside the package:** an absent Vite `root` is the working directory, which
-  the package's scripts set to the policy root; a run from another directory or with a CLI root
+  deadvox's scripts set to its package root; a run from another directory or with a CLI root
   flag is not seen.
 - **Vite settings outside `resolve`, `root` and plugins:** per-environment resolution, SSR
   resolution and worker plugins are not compared with the policy; the real config sets none that
@@ -60,11 +60,11 @@ sees.
   registers, and data files that name presentation modules are not imports, so the check never sees
   them; it guards module edges only.
 - **Insides of npm packages:** a package that is neither a workspace nor named in
-  `RUNTIME_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked. Its DOM use is
-  not caught by either check: the no-DOM typechecks set `skipLibCheck`, so it reads neither the
+  `ENGINE_POLICY`, `forbiddenPackages` is a leaf, so what it imports is not walked. Its DOM use is
+  not caught by either check: the no-DOM typecheck sets `skipLibCheck`, so it reads neither the
   package's JavaScript nor errors in its declarations, and a declaration typed with a DOM type such
   as `HTMLElement` still compiles in runtime code that imports it. Local source files in the
-  runtime set are always followed, except under a directory `RUNTIME_POLICY`, `leaves` names.
+  runtime set are always followed, except under a directory `ENGINE_POLICY`, `leaves` names.
 - **Negated glob patterns:** skipped, so the check matches more than Vite does; this over-reports
   and never hides an edge.
 

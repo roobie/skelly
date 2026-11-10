@@ -104,7 +104,7 @@ const cloneFixtureChunk = (source: Chunk): Chunk => {
 
 export type Runtime = ReturnType<typeof createRuntime>;
 
-// These stand in for the streamer (`src/game/streamer.ts`, `Streamer`), so a touched column's
+// These stand in for the streamer (`packages/engine/src/game/streamer.ts`, `Streamer`), so a touched column's
 // resident chunks are neither regenerated nor dropped.
 export const addFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
   for (const chunk of fixtureChunksFor([[cx, cz]])) {
@@ -123,7 +123,7 @@ export const removeFixtureColumn = (runtime: Runtime, cx: number, cz: number): v
   }
 };
 
-// The scenario factory builds the same session the game does (src/game/session.ts) and only
+// The scenario factory builds the same session the game does (`packages/engine/src/game/session.ts`) and only
 // supplies what the DOM would: controls, sound output, and the fixture world. Fresh and
 // restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.

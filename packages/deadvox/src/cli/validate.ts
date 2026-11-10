@@ -104,7 +104,7 @@ export const validate = (
   let packs: PackInput[];
   try {
     packs = readBundledPacks(root, stack);
-    admitted = admitPacks(packs.map((pack) => ({ ...pack, source: join('src/game', pack.source) })));
+    admitted = admitPacks(packs.map((pack) => ({ ...pack, source: join('src/product', pack.source) })));
   } catch (error) {
     write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
@@ -119,8 +119,8 @@ export const validate = (
     ...fragments.filter(isManifest),
   ];
 
-  /** A pack's external namespace, as validate's pack roots are relative to `src/game`. */
-  const namespace = (id: string): string => resolve(root, 'src/game', EXTERNAL_ASSET_ROOT, id);
+  /** A pack's external namespace, as validate's pack roots are relative to `src/product`, where the product globs them. */
+  const namespace = (id: string): string => resolve(root, 'src/product', EXTERNAL_ASSET_ROOT, id);
   const listed = (from: string, packRoot: string): string[] =>
     existsSync(from)
       ? readdirSync(from, { recursive: true, withFileTypes: true })

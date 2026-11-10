@@ -12,9 +12,9 @@ The pump, rack-cant and sound look/listening gate passed. Acceptance does not fr
 
 ## Manual handling
 
-Cycling and ammunition handling are player choices, not presentation pretending an automatic action occurred. Simulation mechanics remain authoritative when rendering or audio fails. See `src/game/firearmHandling.ts`, `FirearmMechanics`, and `src/game/reloadInput.ts`, `ReloadInput`.
+Cycling and ammunition handling are player choices, not presentation pretending an automatic action occurred. Simulation mechanics remain authoritative when rendering or audio fails. See `packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`, and `packages/engine/src/game/reloadInput.ts`, `ReloadInput`.
 
-A sealed ammunition box is not a container: opening it is a handling decision, not immediate access to hidden ammunition. Refusing placement must not destroy committed ammunition. See `src/game/unpacking.ts`, `Unpacking`.
+A sealed ammunition box is not a container: opening it is a handling decision, not immediate access to hidden ammunition. Refusing placement must not destroy committed ammunition. See `packages/engine/src/game/unpacking.ts`, `Unpacking`.
 
 ## Presentation
 

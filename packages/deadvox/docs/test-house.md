@@ -121,7 +121,7 @@ content identity back into game logic. Requirements keep their shared panel owne
 The ragdoll sample requires explicit debug mod selection as well as debug tools because
 staged deaths are evaluation fixtures, not residents of the haven. Its viewer stands
 downrange of the authored rack so the sample stays out of domestic space. See
-`src/debug/ragdollSweep.ts`, `stageRagdollSweep`; `src/game/ragdollConfig.ts`, `sweepFromUrl`;
+`src/debug/ragdollSweep.ts`, `stageRagdollSweep`; `packages/engine/src/game/ragdollConfig.ts`, `sweepFromUrl`;
 and `src/config/ragdoll.jsonnet`, `sweep`.
 
 House power and its controls belong in normal mode: mixed generation and storage,
@@ -149,7 +149,7 @@ evaluation convenience, not a player ability. They use the session's ordinary te
 strike so floor loss and supply admission remain real. The existing target HUD shows
 stored damage because terrain damage has no rendered appearance; the direct editor
 delete remains separate and does not test destruction. See `src/debug/build.ts`,
-`BuildMode`, and `src/game/session.ts`, `strikeTerrainCell`.
+`BuildMode`, and `packages/engine/src/game/session.ts`, `strikeTerrainCell`.
 
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to
@@ -197,7 +197,7 @@ thing to look at. A slot wins over the catalogue, because a slot is that feature
 staging. Unavailable focus must use the default spawn with a visible message rather than
 silently, so a mistyped request or absent scenario mod is noticed. A restored session
 ignores focus, as it ignores other
-start overrides. See `src/game/config.ts`, `focus`, and `src/game/worldSetup.ts`,
+start overrides. See `packages/engine/src/game/config.ts`, `focus`, and `packages/engine/src/game/worldSetup.ts`,
 `playerStartFromWorld`.
 
 ## Garage

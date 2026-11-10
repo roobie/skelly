@@ -31,7 +31,7 @@ export const buildSoundsPageContent = () =>
   buildRegistry([
     ...Object.entries(soundFiles)
       .sort(([a], [b]) => a.localeCompare(b))
-      // Named as the game names them from src/game, so audio finds each sound's files beside its source.
+      // Named as the game names them from `src/product`, so audio finds each sound's files beside its source.
       .map(([path, data]) => ({ source: `../${path}`, data })),
     { source: '../../../mods/skelly.ui/ui.json', data: uiFile },
     { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },

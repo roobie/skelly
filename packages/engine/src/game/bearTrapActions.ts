@@ -36,7 +36,7 @@ export const queueTrapAction = (queue: HandlingQueue, item: Item, label: string,
 };
 
 /**
- * Disarming is one uninterrupted commitment (`SLICE-5.md`, "Settled bear-trap rules — issue #107"): an
+ * Disarming is one uninterrupted commitment (`packages/deadvox/SLICE-5.md`, "Settled bear-trap rules — issue #107"): an
  * interruption withdraws the attempt, so the next one starts its full duration.
  */
 export const interruptDisarm = (queue: HandlingQueue): void => {

@@ -451,14 +451,14 @@ Parts to reuse:
 
 Closed lists to open:
 
-- **Item use:** `src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
+- **Item use:** `packages/engine/src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
   non-item action, or an item capability whose payload is an effect.
 - **Long jobs:** `packages/engine/src/core/longAction.ts`, `LongJob`. Cast time is one more job.
 - **Projectiles and puddles:** they belong to `ActorSystem` and are typed to the spit
   ability; see `packages/engine/src/core/actorSystem.ts`, `ActorSystem.detonate`. A player-usable system
   needs an effect payload and a damage kind per blast.
 - **Book outcomes:** reading only teaches recipes; see `packages/engine/src/core/bookReading.ts`.
-- **Quickbar:** it binds items only; see `src/game/quickbar.ts`.
+- **Quickbar:** it binds items only; see `packages/engine/src/game/quickbar.ts`.
 
 ### 7. Open damage kinds
 

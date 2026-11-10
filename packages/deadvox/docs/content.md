@@ -40,15 +40,15 @@ Browser mods carry explicit pack metadata independently of their delivery URL or
 filename, so a mirror or renamed upload cannot silently select one mod twice.
 Their inline definitions pass through the bundled stack's dependency and entry-conflict
 boundary, rather than gaining override rights from selection order. See
-`src/game/browserMods.ts`, `readMod` and `evaluateMods`, and
+`packages/engine/src/game/browserMods.ts`, `readMod` and `evaluateMods`, and
 `packages/engine/src/core/packAdmission.ts`, `admitPacks`.
 Bundled fragments belong to their manifest's pack, not separate mods; see
-`src/game/bundledContent.ts`, `createBundledContent`.
+`packages/engine/src/game/bundledContent.ts`, `createBundledContent`.
 
 The pre-start panel rejects invalid files whole and keeps their diagnostics visible.
 An enabled invalid file blocks Start rather than silently starting a different world;
 disabling it permits startup with the remaining content, including the base pack alone.
-See `src/ui/modsPanel.ts`, `chooseMods`, and `src/game/browserMods.ts`, `evaluateMods`.
+See `src/ui/modsPanel.ts`, `chooseMods`, and `packages/engine/src/game/browserMods.ts`, `evaluateMods`.
 The intake byte limit belongs to trusted startup configuration in
 `src/config/browser-mods.jsonnet`, not to a selected mod: admission must bound a file
 before parsing or trusting its definitions. The product passes it to admission; see
@@ -64,7 +64,7 @@ canonical content. Delivery names and JSON object key order are not identity. De
 order determines the effective stack; selection order breaks ties between independent
 packs and remains part of identity. Disabled files supply neither dependencies nor save
 identity. Continue refuses pack differences rather than resuming under different
-content. See `src/game/browserMods.ts`, `evaluateMods`, and
+content. See `packages/engine/src/game/browserMods.ts`, `evaluateMods`, and
 `packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
 The pack-list identity is the rule until #1395 moves identity to the evaluated
 content, as `docs/decisions/0008-deterministic-world.md`, "Decision" rules.
@@ -85,7 +85,7 @@ the same intake as a player mod, so an unknown id is refused at startup with the
 diagnostics instead of being ignored. A bundled mod's Jsonnet source derives its compiled
 rows from core content at build time, so its transformation remains beside its content.
 A bundled mod's file name matches its mod id, so the file is found by id. See
-`src/config/bundled/skelly.deadvox.beginner.jsonnet` and `src/game/bundledMods.ts`, `selectBundledMods`.
+`src/config/bundled/skelly.deadvox.beginner.jsonnet` and `packages/engine/src/game/bundledMods.ts`, `selectBundledMods`.
 The same parameter names an opt-in folder mod, which joins through pack admission with its
 closure rather than this intake; see `docs/pack-split.md`, "Debug mods".
 
@@ -114,7 +114,7 @@ Bundled packs use the common manifest contract so dependency ownership and delib
 entry replacement survive extraction into topics. A missing dependency, cycle or
 undeclared cross-pack override refuses the stack; filename order must never choose a
 winner between packs. The tier grants no privilege. See `packages/engine/src/core/packAdmission.ts`,
-`PackManifestSchema` and `admitPacks`, and `src/game/bundledContent.ts`, `createBundledContent`.
+`PackManifestSchema` and `admitPacks`, and `packages/engine/src/game/bundledContent.ts`, `createBundledContent`.
 Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
 silently remove authored content from validation and the game. See
 `tools/readBundledPacks.ts`, `readBundledPacks`.
@@ -207,7 +207,7 @@ and `docs/test-house.md`, "Normal and debug additions".
 
 ## Weathering profiles
 
-Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `packages/engine/src/core/schema/weathering.ts`, `WeatheringSchema`; `packages/engine/src/core/content.ts`, `referenceIssues`; and `src/game/config.ts`, `configFromUrl`.
+Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `packages/engine/src/core/schema/weathering.ts`, `WeatheringSchema`; `packages/engine/src/core/content.ts`, `referenceIssues`; and `packages/engine/src/game/config.ts`, `configFromUrl`.
 
 ## Day cycle
 
@@ -421,7 +421,7 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
 - **Kind.** The row's `kind` selects the site mechanism through a dispatch table that owns
   its keys. A new scenario of an existing kind is content alone; a new kind is a code
   mechanism, because how a site is built and proved is geometry, not data. See
-  `packages/engine/src/core/scenarioKinds.ts`, `SCENARIO_KINDS`; and `src/game/worldSetup.ts`,
+  `packages/engine/src/core/scenarioKinds.ts`, `SCENARIO_KINDS`; and `packages/engine/src/game/worldSetup.ts`,
   `SCENARIO_SITES`.
 - **Route proof.** Each kind's code proves that its own routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
@@ -584,4 +584,4 @@ whole-scene variation; screenshots also need operator judgment.
 
 ## Furniture action noise
 
-Give a furniture action explicit noise only when it should expose the player; ordinary doors and containers stay quiet. Keep the sound's hearing radius with the event, and reject a selected event that cannot alert. See `FurnitureSchema` and the noise checks in `packages/engine/src/core/content.ts`. Door-action registration lives in `src/game/doorAction.ts`; rummage handling lives in `src/game/session.ts`.
+Give a furniture action explicit noise only when it should expose the player; ordinary doors and containers stay quiet. Keep the sound's hearing radius with the event, and reject a selected event that cannot alert. See `FurnitureSchema` and the noise checks in `packages/engine/src/core/content.ts`. Door-action registration lives in `packages/engine/src/game/doorAction.ts`; rummage handling lives in `packages/engine/src/game/session.ts`.

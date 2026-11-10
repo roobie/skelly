@@ -113,7 +113,7 @@ Prefer excluding impossible work to retaining mutable simulation projections. In
 light power and terrain edits must be visible immediately, without a second invalidation protocol.
 See `packages/engine/src/core/lights.ts`, `inventoryLightSources`, and `packages/engine/src/core/physics.ts`,
 `moveTerrainAxis`. Revolver cancellation needs only the continuations already owned by handling,
-not every idle item in the world; see `packages/deadvox/src/game/revolverHandling.ts`, `cancelUnheld`.
+not every idle item in the world; see `packages/engine/src/game/revolverHandling.ts`, `cancelUnheld`.
 Eligibility still reads live ownership, so moving a gun between steps cannot leave its handling running.
 Equivalence fixtures compare pruned exposure and cancellation to full item-tree scans, and terrain-only
 movement to the generic obstacle path; see `packages/deadvox/test/lightPool.test.ts`,

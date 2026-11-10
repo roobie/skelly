@@ -366,7 +366,7 @@ export const ActorSchema = strictObject({
     lifetimeRealSeconds: NonNegative,
     partVelocityShare: Fraction,
   }),
-  /** The timed actions that clear a downed body (src/game/downedBody.ts). Finishing it off needs no tool;
+  /** The timed actions that clear a downed body (`packages/engine/src/game/downedBody.ts`). Finishing it off needs no tool;
    * dismembering it needs a carried tool with the quality and leaves its arms and head behind. */
   downed: optional(
     strictObject({

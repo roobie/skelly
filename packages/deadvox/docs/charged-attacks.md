@@ -18,7 +18,7 @@ Slice 5 admits charged attacks so committing to a strike has a place in defence 
 
 **The build-up, its cap and its cost are the weapon's content.** Weapons differ in how they reward commitment, and modders tune them per weapon in the `melee` block. The cap means holding longer stops paying. A charge scales impulse as well as damage, because force is what staggers; validation requires every melee weapon to carry an impulse, so a charge always has one to scale. See `packages/engine/src/core/schema/items.ts`, `MeleeChargeSchema`, and `tools/jsonnet/lib/melee-weapon.libsonnet`, `melee`.
 
-**Stamina is paid on release, and a short purse caps the strike.** A charge that is dropped costs nothing beyond the swing it started from. A release the player cannot fully pay for still strikes, only at the level paid: refusing the release would throw away an attack the player committed to. See `packages/engine/src/core/playerCombat.ts`, `releaseCharge`, and `src/game/session.ts`, `createSession`.
+**Stamina is paid on release, and a short purse caps the strike.** A charge that is dropped costs nothing beyond the swing it started from. A release the player cannot fully pay for still strikes, only at the level paid: refusing the release would throw away an attack the player committed to. See `packages/engine/src/core/playerCombat.ts`, `releaseCharge`, and `packages/engine/src/game/session.ts`, `createSession`.
 
 **Holding is not recovery.** The wait before the next swing is frozen while the charge is held. Otherwise a long hold would pay off the cooldown and the release would be followed at once by a free swing.
 
@@ -26,7 +26,7 @@ Slice 5 admits charged attacks so committing to a strike has a place in defence 
 
 **Only the dominant hand's weapon charges.** The hold control is the dominant hand's use; off-hand and fist alternation keep their ordinary swings, and a weapon without `charge` content never charges.
 
-**An interruption drops the charge without a strike.** A hit taken, a change of held items, an off-hand use, a hands action such as handling, throwing or a ladder grip, and losing control all drop it. Releasing on interruption would turn every interruption into a free hit and make the charge safer than a tap. See `packages/engine/src/core/playerCombat.ts`, `cancelCharge`, and `src/game/session.ts`, `createSession`.
+**An interruption drops the charge without a strike.** A hit taken, a change of held items, an off-hand use, a hands action such as handling, throwing or a ladder grip, and losing control all drop it. Releasing on interruption would turn every interruption into a free hit and make the charge safer than a tap. See `packages/engine/src/core/playerCombat.ts`, `cancelCharge`, and `packages/engine/src/game/session.ts`, `createSession`.
 
 **A save mid-charge restores the same charge.** The held time is part of the melee action's snapshot, so loading neither drops the commitment nor releases it as a free strike. See `packages/engine/src/core/saveFormat.ts`.
 

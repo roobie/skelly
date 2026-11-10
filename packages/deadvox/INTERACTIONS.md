@@ -12,11 +12,11 @@ This document keeps the reasons and ownership rules behind item use, crafting an
 
 ## Ownership
 
-Queries must not acquire ownership: inspecting an action is not consent to spend. Commands revalidate at admission and completion because reach, tools and world state can change after inspection. Recorded intents carry identities and choices rather than executable plans, so replay cannot substitute nearby stock or another target. See `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`, and `src/game/replayCommands.ts`, `ReplayActionPayload` and `applyReplayActionPayload`.
+Queries must not acquire ownership: inspecting an action is not consent to spend. Commands revalidate at admission and completion because reach, tools and world state can change after inspection. Recorded intents carry identities and choices rather than executable plans, so replay cannot substitute nearby stock or another target. See `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`, and `packages/engine/src/game/replayCommands.ts`, `ReplayActionPayload` and `applyReplayActionPayload`.
 
-Non-owning selections cannot extend an owner's authority. A quickbar binding must not reach an item that has left the person, and transient UI state must not become saved simulation truth. See `src/game/quickbar.ts`, `Quickbar.resolve`, and `packages/engine/src/core/inventory.ts`, `Inventory.carriedByUid`.
+Non-owning selections cannot extend an owner's authority. A quickbar binding must not reach an item that has left the person, and transient UI state must not become saved simulation truth. See `packages/engine/src/game/quickbar.ts`, `Quickbar.resolve`, and `packages/engine/src/core/inventory.ts`, `Inventory.carriedByUid`.
 
-Liquid service requires an explicit destination: silently choosing another vessel or discarding excess would hide a consequential player choice. Vessels retain their owners so pouring does not masquerade as fitting or moving a container. Each committed increment uses live admission rather than a saved plan, preventing competing requests from spending the same contents. Interruption keeps liquid already moved: cancellation must not undo physical effects or resume an unsaved pour. Explicit endpoint commands make replay independent of nearby stock. See `src/game/survival.ts`, `Survival.pour`, `src/game/replayCommands.ts`, `applyReplayActionPayload`, `packages/engine/src/core/liquids.ts`, `planLiquidTransfer`, and `packages/engine/src/core/inventory.ts`, `Inventory.planLiquidTransfer` and `Inventory.transferLiquid`.
+Liquid service requires an explicit destination: silently choosing another vessel or discarding excess would hide a consequential player choice. Vessels retain their owners so pouring does not masquerade as fitting or moving a container. Each committed increment uses live admission rather than a saved plan, preventing competing requests from spending the same contents. Interruption keeps liquid already moved: cancellation must not undo physical effects or resume an unsaved pour. Explicit endpoint commands make replay independent of nearby stock. See `packages/engine/src/game/survival.ts`, `Survival.pour`, `packages/engine/src/game/replayCommands.ts`, `applyReplayActionPayload`, `packages/engine/src/core/liquids.ts`, `planLiquidTransfer`, and `packages/engine/src/core/inventory.ts`, `Inventory.planLiquidTransfer` and `Inventory.transferLiquid`.
 
 A refused pour must distinguish a burning endpoint, a full receiver and an unheld source: a blanket incompatibility message hides the actionable state and falsely suggests the vessels cannot exchange fuel. See `packages/engine/src/core/options.ts`, `pourRefusal`.
 
@@ -32,7 +32,7 @@ Inventory Management improves ordinary transfers and derived gathering, unpackin
 
 ## Held consumables
 
-Food and drink use their food capability; painkillers use their analgesic capability, one pill per use; treatment uses its treatment capability on a wound it can help. The held item owns its primary action, while quickbar use remains a separate route. See `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`.
+Food and drink use their food capability; painkillers use their analgesic capability, one pill per use; treatment uses its treatment capability on a wound it can help. The held item owns its primary action, while quickbar use remains a separate route. See `packages/engine/src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`.
 
 ## Crafting
 
@@ -42,7 +42,7 @@ Recipes are content. Alternatives may compete for the same stock, so planning mu
 
 The planner is a disposable view. Commands obtain current reach and plan again; editing a returned plan cannot change later results. See `packages/engine/src/core/crafting.ts`, `planCraft`, and `packages/engine/src/core/longAction.ts`, `LongActions`.
 
-Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `src/game/readingClose.ts`, `stopReadingOnClose`, and `packages/engine/src/core/bookReading.ts`, `bookReadingHooks`.
+Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `packages/engine/src/game/readingClose.ts`, `stopReadingOnClose`, and `packages/engine/src/core/bookReading.ts`, `bookReadingHooks`.
 
 Take-apart work snapshots its yield so stopping and resuming cannot change the promised output after a skill, tool or burn change. Recovered liquid follows the source's own consumption record and remaining burn because only liquid actually used and not spent can return. A selected receiver and approval of any stated spill keep a consequential destination or discard visible to the player. See `packages/engine/src/core/disassembly.ts`, `planDisassembly`; `packages/engine/src/core/inventory.ts`, `Inventory.planLiquidReceipts`; and `DESIGN.md`, "Crafting".
 
@@ -62,7 +62,7 @@ The bear-trap rules and their reasons are in `SLICE-5.md`, "Settled bear-trap ru
 
 A set trap is an ordinary item lying in a ground pile, with its armed or holding state on the item. The pile already saves, splits by region and owns the item, so recovery is an ordinary pickup of that same item and no placed-object store is needed until construction places entities (`SLICE-5.md`, "Construction and persistent placement"). A set or holding trap refuses every move, so it cannot be picked up still armed or pulled off a caught leg. The holding state names its victim and how long its jaws still hold; the player's wound and the zombie's leg damage live in their own bodies. See `packages/engine/src/core/bearTrap.ts`, `BearTraps`, and `packages/engine/src/core/inventory.ts`, `Inventory.plan`.
 
-Setting and disarming are handling jobs. Handling jobs are never saved, which makes the disarm non-resumable across a save as the rule requires. A hit, a critical need or movement withdraws a pending disarm instead of pausing it, so the next attempt starts its full duration. Its completion clears the armed state and fires nothing. See `src/game/bearTrapActions.ts`, `interruptDisarm`.
+Setting and disarming are handling jobs. Handling jobs are never saved, which makes the disarm non-resumable across a save as the rule requires. A hit, a critical need or movement withdraws a pending disarm instead of pausing it, so the next attempt starts its full duration. Its completion clears the armed state and fires nothing. See `packages/engine/src/game/bearTrapActions.ts`, `interruptDisarm`.
 
 Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `packages/engine/src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `packages/engine/src/core/actorSystem.ts`, `ActorSystemOptions`.
 
@@ -83,7 +83,7 @@ not at the end of an absence. See `packages/engine/src/core/power.ts`, `PowerWor
 
 Authored appliance identity must survive streaming and reload rather than depend
 on whichever mesh is visible. See `packages/engine/src/core/sitePower.ts`, `SitePower`, and
-`src/game/session.ts`, `createSessionPower`. Every power settlement, from a
+`packages/engine/src/game/session.ts`, `createSessionPower`. Every power settlement, from a
 scheduled tick or a control, updates charging cells in the same step, so power
 and cell energy always share one boundary. A snapshot copies that boundary
 without settling it, because settling would make saving change the run. See
@@ -94,7 +94,7 @@ Loading and collecting use ordinary handling so the same reach and ownership
 checks apply at admission and completion. Starting and stopping do not occupy
 hands; an opened inventory surface keeps machine diagnosis local without a
 permanent HUD. See `src/ui/chargerPanel.ts`, `chargerPanel`, and
-`src/game/session.ts`, `chargerControl`.
+`packages/engine/src/game/session.ts`, `chargerControl`.
 
 Relocation and destruction settle before ownership changes, including pieces
 that fall when their support moves, so reserved contents are neither lost nor

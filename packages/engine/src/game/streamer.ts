@@ -430,7 +430,7 @@ export class Streamer {
 
   /**
    * Drops chunk data far out of range. Untouched columns regenerate from the seed when
-   * the player returns; touched ones stay in memory for the session (`DESIGN.md`, "Edits persist").
+   * the player returns; touched ones stay in memory for the session (`packages/deadvox/DESIGN.md`, "Edits persist").
    */
   private unloadFar(): void {
     const { world, scale, radius, preloadRings, hysteresis } = this.opts;

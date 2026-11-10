@@ -22,7 +22,7 @@ The world is large and almost all of it is unloaded at any moment. A save restor
 
 The JavaScript spec gives basic arithmetic, `Math.sqrt`, `Math.fround`, `Math.floor` and `Math.imul` one exact result on every engine, but lets engines approximate the other Math functions and `**`, and change them between versions. The simulation and worldgen call them throughout.
 
-Time compression follows frame time, and loading or unloading a column has simulation effects, so replay records both as if they were inputs; see `src/game/inputReplay.ts`, `ReplayWire`, and `src/game/inputReplayDriver.ts`, `InputReplayDriver`.
+Time compression follows frame time, and loading or unloading a column has simulation effects, so replay records both as if they were inputs; see `packages/engine/src/game/inputReplay.ts`, `ReplayWire`, and `packages/engine/src/game/inputReplayDriver.ts`, `InputReplayDriver`.
 
 ## Decision
 

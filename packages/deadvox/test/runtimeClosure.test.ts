@@ -109,7 +109,7 @@ async function settledPlugins(option: unknown): Promise<unknown[]> {
 
 /**
  * What in a loaded Vite config could resolve differently from the closure check: any resolution option, a
- * root other than the policy root (it anchors `/` specifiers and globs), or a plugin hook that edits config or
+ * root other than the package root (it anchors `/` specifiers and globs), or a plugin hook that edits config or
  * resolves ids. See `packages/deadvox/docs/runtime-closure-limits.md`.
  */
 async function viteGateIssues(config: UserConfig): Promise<string[]> {
@@ -117,7 +117,7 @@ async function viteGateIssues(config: UserConfig): Promise<string[]> {
   if (config.resolve !== undefined) {
     issues.push('resolve');
   }
-  // An absent root is the working directory, which the package's scripts set to the policy root.
+  // An absent root is the working directory, which the package's scripts set to the package root.
   if (config.root !== undefined && resolve(viteRoot, config.root) !== viteRoot) {
     issues.push('root');
   }

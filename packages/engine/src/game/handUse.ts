@@ -100,7 +100,7 @@ export function createHandUse(deps: HandUseDeps): HandUse {
       isOpaque: deps.pick.isOpaque,
       vehicleParts: session.vehicleParts.all(),
       throughLadders: session.ladderHold.on,
-      // Piles lay out as drawn once their content's models load, never by load timing (`CONTROLS.md`, "Replay boundary").
+      // Piles lay out as drawn once their content's models load, never by load timing (`packages/deadvox/CONTROLS.md`, "Replay boundary").
       hasModel: (id) => registry.models.has(id),
       downedBodies: [...session.actorStore.entries()]
         .filter(([, actor]) => actor.incapacitated)

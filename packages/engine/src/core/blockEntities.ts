@@ -541,7 +541,7 @@ export class BlockEntities {
 
   /**
    * Adds a piece of furniture. A spec whose origin is already claimed is ignored and returns undefined. A moved or
-   * removed piece stays away because a column is furnished once (`packages/deadvox/src/game/session.ts`, `rolledColumns`), not
+   * removed piece stays away because a column is furnished once (`packages/engine/src/game/session.ts`, `rolledColumns`), not
    * because of this claim.
    */
   add(spec: EntitySpec): BlockEntity | undefined {

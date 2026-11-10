@@ -173,7 +173,7 @@ checks declarations and class compatibility, while content owns response tuning 
 actor resistance; see `packages/engine/src/core/schema/damageKinds.ts`, `DamageKindSchema`,
 `packages/engine/src/core/damageContent.ts`, `checkDamageKinds`, and `packages/engine/src/core/actorSystem.ts`,
 `damageToActor`. A weapon's animation mechanism is a separate content selection, so
-adding a melee kind does not imply adding a pose; see `src/game/melee.ts`,
+adding a melee kind does not imply adding a pose; see `packages/engine/src/game/melee.ts`,
 `meleeProfileForWeapon`. Every declared kind works on both bodies and terrain:
 there must be no silent no-effect pair. Complete response maps make admission catch
 missing pairs before a hit reaches a runtime error; see `packages/engine/src/core/damageContent.ts`,
@@ -213,7 +213,7 @@ key box is a generic container and names no key. See `packages/engine/src/core/c
 
 **Household electrical devices.** Lamps, chargers and fridges share one mod, `skelly.household-electrical`, because many more lamps and small devices will come. Power sources, storage, switches and every device row stay in `skelly.electric-power`, as do items that sources and household devices both use. See `packages/mods/skelly.household-electrical/household-electrical-furniture.jsonnet`, `furniture`.
 
-**Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `packages/engine/src/core/capabilities.ts`, `requiredForStack`, and `src/game/session.ts`, `createSessionPower`.
+**Power tuning.** Tuning is a power device's dependency, so a stack with no device owes none and runs no power tick, while a loaded device without tuning fails validation. See `packages/engine/src/core/capabilities.ts`, `requiredForStack`, and `packages/engine/src/game/session.ts`, `createSessionPower`.
 
 **Site generation.** A stack that builds no site needs no site look, so product-free stacks validate clean. A stack holding a start, layout or scenario builds a site, and fails validation without the site-generation row. See `packages/engine/src/core/capabilities.ts`, `requiredForStack`, and `packages/engine/src/core/sitePalette.ts`, `siteGenerationOf`.
 
@@ -261,7 +261,7 @@ sound borrowed from another item. Air and non-solid terrain cannot receive piles
 need no default. Overlapping vehicle parts need a stable receiver; authored order
 supplies it without a separate priority setting. See `packages/engine/src/core/dropSounds.ts`,
 `checkDropSounds` and `pileDropSound`,
-`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartAt`, and `src/game/audioPresentation.ts`,
+`packages/engine/src/core/vehicleProjection.ts`, `vehiclePartAt`, and `packages/engine/src/game/audioPresentation.ts`,
 `handlingMoveCompleteCue`. Fired-case presentation remains a firearm selection.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
@@ -407,7 +407,7 @@ pack's dependencies over every shipped pack and drops those the default set alre
 holds, so a marked pack may depend on another marked pack and each loads once.
 Selection invents nothing: ordinary admission then refuses a missing dependency or a
 cycle, and folder packs never pass through the single-file mod reader. See
-`packages/engine/src/core/packAdmission.ts`, `selectFolderClosure`, and `src/game/bundledMods.ts`,
+`packages/engine/src/core/packAdmission.ts`, `selectFolderClosure`, and `packages/engine/src/game/bundledMods.ts`,
 `selectBundledMods`.
 
 The build hashes marked packs beside the default ones and keeps their identities in a

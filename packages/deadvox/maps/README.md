@@ -20,7 +20,7 @@ Surface placement makes authored gear visible without bypassing source economy e
 
 The playtest gives the player a sidearm and its ammunition early, as two separate finds in different containers of the first house on the route from spawn. See `mods/skelly.deadvox.scenario.playtest/layouts-playtest.json`; the kit is checked by hand, as `docs/deferred-assertions.md` records.
 
-The layout owns the playtest start time, with an explicit URL time taking precedence. Beat rectangles and key-item markers feed observation metrics only; they do not affect simulation. See `packages/engine/src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `src/game/config.ts`, `configFromUrl`.
+The layout owns the playtest start time, with an explicit URL time taking precedence. Beat rectangles and key-item markers feed observation metrics only; they do not affect simulation. See `packages/engine/src/core/authoredSite.ts`, `AuthoredSite.playtestMarks`, and `packages/engine/src/game/config.ts`, `configFromUrl`.
 
 Time-windowed spawn markers use named game-clock boundaries. Horde markers place grouped threats at a standing point; the FOB west-wall horde makes noisy armoury entry consequential while the east-wall crouch passage remains a quiet route. See `maps/extensions/deadvox.mjs`, `addHorde`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite.hordesIn`.
 
