@@ -1,11 +1,13 @@
-import { claimed } from '../core/capabilities.ts';
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { SolidAt } from '../core/raycast.ts';
-import type { SenseDef, SoundDef, SoundRecipe } from '../core/schema.ts';
-import type { SoundId } from '../core/soundEvents.ts';
-import type { SoundEmission } from '../core/soundPicker.ts';
-import { renderSoundRecipe, soundRecipeFor, soundVariantKey } from '../core/soundSynth.ts';
+import type { Registry, SenseDef, SoundDef, SoundRecipe } from '../engine/content.ts';
+import { claimed } from '../engine/inventory.ts';
+import {
+  renderSoundRecipe,
+  type SoundEmission,
+  type SoundId,
+  soundRecipeFor,
+  soundVariantKey,
+} from '../engine/sound.ts';
+import type { SolidAt, Vec3 } from '../engine/world.ts';
 import {
   type HeartbeatTarget,
   type HeartbeatTuning,

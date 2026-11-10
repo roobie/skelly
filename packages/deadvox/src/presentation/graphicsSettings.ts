@@ -1,4 +1,4 @@
-import { type GraphicsOptions, type GraphicsSettings, validGraphicsSettings } from '../core/graphics.ts';
+import { type GraphicsOptions, type GraphicsSettings, validGraphicsSettings } from '../engine/look.ts';
 
 const STORAGE_KEY = 'skelly.graphics-settings';
 type SettingsStorage = Pick<Storage, 'getItem' | 'setItem'>;

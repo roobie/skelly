@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
 import { bundledCredits } from './bundledCredits.ts';
-import { claimed } from './core/capabilities.ts';
-import type { SoundId } from './core/soundEvents.ts';
+import { claimed } from './engine/inventory.ts';
+import type { SoundId } from './engine/sound.ts';
 import { playerHeartbeat } from './game/audioPresentation.ts';
 import { GameAudio } from './presentation/audio.ts';
 import { productAssets } from './product/assets.ts';

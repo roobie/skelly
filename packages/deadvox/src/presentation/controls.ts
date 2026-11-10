@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import { bindingIsDebugOnly, contextsForRun, POINTER_ACTIONS } from '../core/inputActions.ts';
+import { bindingIsDebugOnly, contextsForRun, POINTER_ACTIONS } from '../engine/input.ts';
 import { type BindingRegistry, NATIVE_INPUTS } from '../game/bindingRegistry.ts';
 
 export interface ControlsCardRow {

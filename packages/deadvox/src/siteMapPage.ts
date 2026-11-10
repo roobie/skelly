@@ -1,10 +1,18 @@
-import { buildingBounds } from './core/authoredTerrain.mjs';
-import type { Chunk } from './core/chunk.ts';
-import { blockColors } from './core/content.ts';
-import { CHUNK, compassBearing, toChunk, toLocal } from './core/coords.ts';
-import { BLOCK_SIZE, WORLD_BOTTOM_M } from './core/scale.ts';
-import { sitePalette, terrainShapeOf } from './core/sitePalette.ts';
-import { generateColumn, worldGroundAt } from './core/worldgen.ts';
+import { blockColors } from './engine/content.ts';
+import { buildingBounds } from './engine/terrain.mjs';
+import {
+  BLOCK_SIZE,
+  CHUNK,
+  type Chunk,
+  compassBearing,
+  generateColumn,
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  toLocal,
+  WORLD_BOTTOM_M,
+  worldGroundAt,
+} from './engine/world.ts';
 import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { startForSite } from './game/startSelection.ts';
 import { siteForReviewMap } from './game/worldSetup.ts';

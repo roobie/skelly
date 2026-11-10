@@ -1,4 +1,4 @@
-import type { Vec3 } from '../core/coords.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export interface DebugTargetRay {
   readonly origin: Vec3;

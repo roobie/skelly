@@ -1,11 +1,14 @@
-import type { ActorAim, ActorSystem, MeleeResult } from '../core/actorSystem.ts';
-import type { Character } from '../core/character.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
-import type { Inventory } from '../core/inventory.ts';
-import type { Body } from '../core/physics.ts';
-import type { Simulation } from '../core/sim.ts';
-import type { Weather } from '../core/weather.ts';
+import type { Inventory } from '../engine/inventory.ts';
+import type {
+  ActorAim,
+  ActorSystem,
+  Character,
+  FirearmsSkillZeroHandling,
+  MeleeResult,
+  Simulation,
+} from '../engine/sim.ts';
+import type { Weather } from '../engine/sky.ts';
+import type { Body, Vec3 } from '../engine/world.ts';
 import type { RealFrameObserver } from '../game/frameDriver.ts';
 import type { HeardSound } from '../game/hearing.ts';
 import type { Session } from '../game/session.ts';

@@ -1,4 +1,4 @@
-import { declaredAsset } from '../core/packFiles.ts';
+import { declaredAsset } from '../engine/packs.ts';
 import type { BundledPack } from '../game/bundledContent.ts';
 
 /** Asset URLs keyed by owning pack id and path, with the packs whose roots own them; the product globs both. */

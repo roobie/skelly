@@ -1,6 +1,10 @@
-import { SHA256_HEX } from '../core/canonicalJson.ts';
-import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
-import type { SaveSnapshot } from '../core/saveState.ts';
+import {
+  encodeSave,
+  type SaveSnapshot,
+  type SaveVersionComponents,
+  type SaveWorldOptions,
+  SHA256_HEX,
+} from '../engine/save.ts';
 import { SaveStorageError, type SaveStorageErrorKind } from '../game/saveStorageErrors.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
 import { createDurableWriteTransaction } from '../presentation/indexedDbCommit.ts';

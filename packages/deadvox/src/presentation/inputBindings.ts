@@ -5,7 +5,7 @@ import {
   INVENTORY_TAB_BINDINGS,
   type InputContext,
   type Modifier,
-} from '../core/inputActions.ts';
+} from '../engine/input.ts';
 import {
   BindingRegistry,
   chordIssue,

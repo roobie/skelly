@@ -1,6 +1,4 @@
-import type { Vec3 } from '../core/coords.ts';
-import { type Body, bodyOverlapsTerrain } from '../core/physics.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import { type Body, bodyOverlapsTerrain, type SolidAt, type Vec3 } from '../engine/world.ts';
 import { IDLE, type SessionControls } from '../game/session.ts';
 
 /** Actions that keep working while the camera is detached; every other command belongs to the avatar. */

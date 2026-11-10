@@ -1,5 +1,5 @@
-import type { Vec3 } from '../core/coords.ts';
-import type { RealTimestamp } from '../core/time.ts';
+import type { RealTimestamp } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import type { ReplayGeneratedColumn } from '../game/inputReplay.ts';
 import type { Engine } from './engine.ts';
 

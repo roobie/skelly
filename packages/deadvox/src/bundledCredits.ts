@@ -1,4 +1,4 @@
-import { mergeManifests } from './core/assets.ts';
+import { mergeManifests } from './engine/content.ts';
 
 const manifests = {
   ...import.meta.glob<unknown>('../mods/*/assets/manifest.json', { eager: true, import: 'default' }),

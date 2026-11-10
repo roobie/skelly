@@ -6,7 +6,7 @@ import {
   readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
-} from '../core/graphics.ts';
+} from '../engine/look.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from './graphicsSettings.ts';
 
 interface GraphicsTargets {

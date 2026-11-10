@@ -1,7 +1,5 @@
-import type { Registry } from '../core/content.ts';
-import type { HandlingFact } from '../core/guidanceFacts.ts';
-import { defOf, type Item } from '../core/items.ts';
-import type { GuidanceDef } from '../core/schema/guidance.ts';
+import type { GuidanceDef, HandlingFact, Registry } from '../engine/content.ts';
+import { defOf, type Item } from '../engine/inventory.ts';
 import type { FirearmOutcome } from '../game/firearmHandling.ts';
 
 type Track = GuidanceDef['handling'][number];

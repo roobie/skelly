@@ -1,4 +1,4 @@
-import type { MetricsLimits } from '../core/schema/attemptPolicy.ts';
+import type { MetricsLimits } from '../engine/content.ts';
 
 export interface ContainerLootMetric {
   readonly container: string;

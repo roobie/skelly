@@ -1,10 +1,8 @@
 // Builds chunk meshes off the main thread. Buffers are transferred, not copied.
 
-import { CHUNK, type Vec3 } from '../core/coords.ts';
-import type { FencePostDefs } from '../core/fencePosts.ts';
-import { buildMesh, type MeshData } from '../core/mesher.ts';
-import { buildSkyResult } from '../core/skyTransport.ts';
-import type { WireMeshes } from '../core/wireMesh.ts';
+import { buildMesh, type FencePostDefs, type MeshData, type WireMeshes } from '../engine/mesh.ts';
+import { buildSkyResult } from '../engine/sky.ts';
+import { CHUNK, type Vec3 } from '../engine/world.ts';
 import type { FromMesher, ToMesher } from '../game/mesherProtocol.ts';
 import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
 

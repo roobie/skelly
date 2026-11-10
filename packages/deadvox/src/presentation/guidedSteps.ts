@@ -1,7 +1,6 @@
-import type { Vec3 } from '../core/coords.ts';
-import type { GuidanceDef, GuidanceGate } from '../core/schema/guidance.ts';
-import type { Rect } from '../core/site.ts';
-import { insideStageArea } from '../core/stageMarks.ts';
+import type { GuidanceDef, GuidanceGate } from '../engine/content.ts';
+import { insideStageArea, type Rect } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { HandlingLessons } from './handlingLessons.ts';
 
 export interface GuidanceObservation {

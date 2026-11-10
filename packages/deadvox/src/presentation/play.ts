@@ -2,49 +2,71 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import { type ActorFigureFiles, loadActorFigureFiles } from '../core/actorFigureFiles.ts';
-import { PLAYER_CHEST_METRES } from '../core/actorMotion.ts';
-import type { Actor } from '../core/actorState.ts';
-import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
-import type { BlockEntity } from '../core/blockEntities.ts';
-import type { BodyRegion } from '../core/body.ts';
-import { getBuildRevision } from '../core/buildInfo.ts';
-import { claimed } from '../core/capabilities.ts';
-import { dominantSide, offSide } from '../core/character.ts';
-import { CitySite } from '../core/citySite.ts';
-import { formatClock, nextTimeOfDay } from '../core/clock.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { crosshairTarget } from '../core/crosshairTarget.ts';
-import type { EntityId } from '../core/entities.ts';
-import type { PinState } from '../core/explosive.ts';
-import { sightedFirearmModel } from '../core/firearmSight.ts';
-import { heldFirearmTransform } from '../core/heldPose.ts';
-import type { InputContext, inventoryTabForAction } from '../core/inputActions.ts';
-import { interactionAffordance } from '../core/interactionAffordance.ts';
-import type { InteractionTarget } from '../core/interactionPick.ts';
-import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
-import { damageWord, defOf, type Item } from '../core/items.ts';
-import { chargeShare, wornNightVision } from '../core/lights.ts';
-import type { LongJob } from '../core/longAction.ts';
-import { doorOptions, doorPlan, heldDoorBar } from '../core/options.ts';
-import { playerAdsPose } from '../core/playerAdsPose.ts';
-import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
-import { pryPlan } from '../core/prying.ts';
-import { raycast } from '../core/raycast.ts';
-import { reachTuning } from '../core/reach.ts';
-import type { SaveSnapshot } from '../core/saveState.ts';
-import { pileScatterPlacements } from '../core/scatterPile.ts';
-import { discoveryForPlan } from '../core/scenarioDiscovery.ts';
-import type { BodyTuningDef } from '../core/schema.ts';
-import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
-import type { SoundEmission } from '../core/soundPicker.ts';
-import { soundVariantKey } from '../core/soundSynth.ts';
-import { stageMarkArea } from '../core/stageMarks.ts';
-import { applyStartState } from '../core/startState.ts';
-import { fillText as fillScreenText } from '../core/textTemplate.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
+import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from '../engine/content.ts';
+import {
+  type ActionText,
+  actionText,
+  fillText,
+  type InputContext,
+  type inventoryTabForAction,
+  isForwardButton,
+  PressDedupe,
+} from '../engine/input.ts';
+import {
+  chargeShare,
+  claimed,
+  damageWord,
+  defOf,
+  doorOptions,
+  doorPlan,
+  type HandSide,
+  heldDoorBar,
+  type Inventory,
+  type Item,
+  type Pile,
+  pileScatterPlacements,
+  wornNightVision,
+} from '../engine/inventory.ts';
+import { getBuildRevision } from '../engine/packs.ts';
+import {
+  aimDirection,
+  heldFirearmTransform,
+  NEUTRAL_AIM,
+  playerAdsPose,
+  playerEyePosition,
+  playerHeldSeatFrame,
+  playerLookPose,
+  sightedFirearmModel,
+} from '../engine/pose.ts';
+import type { SaveSnapshot } from '../engine/save.ts';
+import {
+  type Actor,
+  applyStartState,
+  type BodyRegion,
+  crosshairTarget,
+  discoveryForPlan,
+  dominantSide,
+  type EntityId,
+  firearmsCombatTuning,
+  formatClock,
+  type InteractionTarget,
+  interactionAffordance,
+  type LongJob,
+  nextTimeOfDay,
+  offSide,
+  type PinState,
+  PLAYER_CHEST_METRES,
+  pryPlan,
+  type RealSeconds,
+  type RealTimestamp,
+  reachTuning,
+  realSeconds as realDuration,
+  realTimestamp,
+  stageMarkArea,
+} from '../engine/sim.ts';
+import { type SoundEmission, soundVariantKey } from '../engine/sound.ts';
+import { fillText as fillScreenText } from '../engine/text.ts';
+import { type BlockEntity, CitySite, raycast, type Vec3 } from '../engine/world.ts';
 import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/audioPresentation.ts';
 import { columnArrival } from '../game/columnArrival.ts';
 import { createCommandRouter } from '../game/commandRouter.ts';
