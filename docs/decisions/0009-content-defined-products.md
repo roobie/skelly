@@ -194,6 +194,8 @@ Body-plan mechanisms use descriptive anatomy names: humanoid rather than shamble
 fused-mass rather than amalgam, and shape names for other forms. Product content ids
 may retain their setting vocabulary. This keeps reusable anatomy independent of the
 product that first supplies it; see `packages/deadvox/docs/pack-split.md`, "Creature framework".
+Engine and presentation sources are held to this by a test, so a setting word cannot creep back
+into shared code; see `test/setting-vocabulary.test.mjs`, `settingWordHits`.
 
 Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army
