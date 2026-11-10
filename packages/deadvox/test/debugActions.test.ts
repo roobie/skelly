@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
-import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
+import { LOOK_KEYS } from '../src/debug/lookUrl.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
@@ -157,7 +157,13 @@ describe('debug action dispatch', () => {
       ),
     ]);
     expect([...catalogued].sort()).toEqual(
-      [...LOOK_PARAMS, ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url), 'cam', 'interactionray'].sort(),
+      [
+        ...LOOK_KEYS,
+        'weatheringProfile',
+        ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url),
+        'cam',
+        'interactionray',
+      ].sort(),
     );
   });
 });

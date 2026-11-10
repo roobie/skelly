@@ -67,7 +67,7 @@ describe('debug group headers', () => {
 
   it('has unique group ids and takes the name out of a parameter hint', () => {
     expect(new Set(DEBUG_GROUPS.map((def) => def.id)).size).toBe(DEBUG_GROUPS.length);
-    expect(paramName('bloomclip=1..8')).toBe('bloomclip');
-    expect(paramName('cam=x,y,z,yaw,pitch,roll')).toBe('cam');
+    expect(paramName('sunsmall=1')).toBe('sunsmall');
+    expect(paramName('cam:[x,y,z,yaw,pitch,roll]')).toBe('cam');
   });
 });

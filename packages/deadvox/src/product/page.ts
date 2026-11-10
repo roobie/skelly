@@ -28,9 +28,10 @@ export const playPage = (): PlayPage => {
   const { query, hash } = pageUrl();
   return {
     debugError: query.get('debug-error') === '1',
-    leaveTutorial: () => location.assign(tutorialUrl(location.href, false, tutorialHash(hash))),
-    newWorld: (seed) => location.assign(newWorldHref(location.href, hash, seed)),
-    reloadForReplay: () => location.assign(replayHref(location.href, hash)),
+    // The hash is read again at each link, so it carries what the debug tools wrote back since startup.
+    leaveTutorial: () => location.assign(tutorialUrl(location.href, false, tutorialHash(pageUrl().hash))),
+    newWorld: (seed) => location.assign(newWorldHref(location.href, pageUrl().hash, seed)),
+    reloadForReplay: () => location.assign(replayHref(location.href, pageUrl().hash)),
     reviewMapHref: new URL('map.html', location.href).href,
     probes: {
       torchspill: hash.torchspill,

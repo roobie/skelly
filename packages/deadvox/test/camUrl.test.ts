@@ -3,58 +3,44 @@ import { describe, expect, it } from 'vitest';
 import {
   CAM_WRITE_INTERVAL_MS,
   type CamPose,
-  camUrl,
   camValue,
   camWriteDue,
   parseCamParam,
   poseChanged,
 } from '../src/debug/camUrl.ts';
+import { readHash, writeHash } from '../src/hashState.ts';
 
 const pose: CamPose = { position: [12.345, 1.6, -7.891], yaw: 1, pitch: -0.25, roll: 0 };
-const params = (value: string) => new URLSearchParams({ cam: value });
 
-describe('cam URL parameter', () => {
+describe('cam hash key', () => {
   it('writes metres to 2 decimals and degrees to 1, and reads it back to that precision', () => {
-    expect(camValue(pose)).toBe('12.35,1.60,-7.89,57.3,-14.3,0.0');
-    const back = parseCamParam(params(camValue(pose)))!;
+    expect(camValue(pose)).toEqual([12.35, 1.6, -7.89, 57.3, -14.3, 0]);
+    const back = parseCamParam({ cam: camValue(pose) })!;
     expect(back.position).toEqual([12.35, 1.6, -7.89]);
     expect(back.yaw).toBeCloseTo(pose.yaw, 2);
     expect(back.pitch).toBeCloseTo(pose.pitch, 2);
     expect(back.roll).toBe(0);
-    // Stable: what was written parses to what writes the same text again.
-    expect(camValue(back)).toBe(camValue(pose));
+    // Stable: what was written parses to what writes the same values again.
+    expect(camValue(back)).toEqual(camValue(pose));
   });
 
   it('wraps yaw to [-180, 180) and clamps a hand-edited pitch to the mouse-look limit', () => {
-    expect(camValue({ ...pose, yaw: 3 * Math.PI })).toBe('12.35,1.60,-7.89,-180.0,-14.3,0.0');
-    expect(parseCamParam(params('0,0,0,0,90,0'))!.pitch).toBeCloseTo(LOOK_PITCH_LIMIT, 9);
-    expect(parseCamParam(params('0,0,0,0,-90,0'))!.pitch).toBeCloseTo(-LOOK_PITCH_LIMIT, 9);
+    expect(camValue({ ...pose, yaw: 3 * Math.PI })[3]).toBe(-180);
+    expect(parseCamParam({ cam: [0, 0, 0, 0, 90, 0] })!.pitch).toBeCloseTo(LOOK_PITCH_LIMIT, 9);
+    expect(parseCamParam({ cam: [0, 0, 0, 0, -90, 0] })!.pitch).toBeCloseTo(-LOOK_PITCH_LIMIT, 9);
   });
 
-  it('ignores a missing or malformed value without throwing', () => {
-    for (const bad of [
-      '',
-      '1,2,3',
-      '1,2,3,4,5',
-      '1,2,3,4,5,6,7',
-      'a,b,c,d,e,f',
-      '1,2,,4,5,6',
-      '1,2,3,4,5,Infinity',
-      'NaN,0,0,0,0,0',
-    ]) {
-      expect(parseCamParam(params(bad))).toBeUndefined();
+  it('ignores a missing value or one with the wrong count of numbers', () => {
+    for (const bad of [[], [1, 2, 3], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7]]) {
+      expect(parseCamParam({ cam: bad })).toBeUndefined();
     }
-    expect(parseCamParam(new URLSearchParams())).toBeUndefined();
+    expect(parseCamParam({})).toBeUndefined();
   });
 
-  it('sets cam in a URL and leaves every other parameter, path and hash alone', () => {
-    const href = 'http://localhost:5173/play?debug=1&tone=aces&time=20:30&cam=0,0,0,0,0,0#x';
-    const next = new URL(camUrl(href, pose));
-    expect(next.searchParams.get('cam')).toBe('12.35,1.60,-7.89,57.3,-14.3,0.0');
-    expect(next.search).toBe('?debug=1&tone=aces&time=20:30&cam=12.35,1.60,-7.89,57.3,-14.3,0.0');
-    expect(next.pathname).toBe('/play');
-    expect(next.hash).toBe('#x');
-    expect(parseCamParam(next.searchParams)!.position).toEqual([12.35, 1.6, -7.89]);
+  it('comes back from the written hash text with the other keys', () => {
+    const read = readHash(writeHash({ debug: true, cam: camValue(pose) }));
+    expect('hash' in read && read.hash.debug).toBe(true);
+    expect('hash' in read && parseCamParam(read.hash)!.position).toEqual([12.35, 1.6, -7.89]);
   });
 });
 

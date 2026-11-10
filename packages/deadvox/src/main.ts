@@ -52,6 +52,9 @@ import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
 const { query: params, hash } = pageUrl();
+// A link or an edit that changes only the hash does not load the page again, and the game reads its hash once at
+// startup, so it reloads. The debug write-back replaces the address, which fires no `hashchange`.
+addEventListener('hashchange', () => location.reload());
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
 installErrorReportHandler();

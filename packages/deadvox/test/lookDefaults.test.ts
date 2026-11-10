@@ -30,21 +30,21 @@ describe('the content default look', () => {
     }
   });
 
-  it('is what the game applies with no URL parameters', () => {
-    const state = parseLookParams(new URLSearchParams(''), urlDefaults);
+  it('is what the game applies with no hash keys', () => {
+    const state = parseLookParams({}, urlDefaults);
     expect(state).toMatchObject({ ...lookOf(defaults), ...moodOf(defaults) });
   });
 
-  it('is written as no URL parameters, so links carry nothing for it', () => {
+  it('is written as no hash keys, so links carry nothing for it', () => {
     const state = defaultLookUrlState(urlDefaults);
-    expect(writeLookParams(new URLSearchParams('debug=1'), state, urlDefaults).toString()).toBe('debug=1');
+    expect(writeLookParams({ debug: true }, state, urlDefaults)).toEqual({ debug: true });
   });
 
-  it('is overridden by an explicit parameter and the override is written back', () => {
+  it('is overridden by an explicit key and the override is written back', () => {
     const flipped = !defaults.post;
-    const state = parseLookParams(new URLSearchParams(`post=${flipped ? 1 : 0}`), urlDefaults);
+    const state = parseLookParams({ post: flipped }, urlDefaults);
     expect(state.post).toBe(flipped);
-    expect(writeLookParams(new URLSearchParams(''), state, urlDefaults).toString()).toBe(`post=${flipped ? 1 : 0}`);
+    expect(writeLookParams({}, state, urlDefaults)).toEqual({ post: flipped });
   });
 
   it('holds a tone key the renderer knows and values already within the clamp ranges', () => {

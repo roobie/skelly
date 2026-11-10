@@ -36,8 +36,8 @@ export type WeatheringTuning = { readonly [Param in (typeof NUMBER_FIELDS)[numbe
   readonly [Param in (typeof COLOR_FIELDS)[number][0]]?: string;
 };
 
-export const WEATHERING_URL_PARAMS = [
-  'weatheringProfile',
+/** The hash keys of the debug weathering edits; the profile choice is not among them. */
+export const WEATHERING_TUNING_KEYS = [
   ...NUMBER_FIELDS.map(([param]) => param),
   ...COLOR_FIELDS.map(([param]) => param),
 ] as const;
@@ -67,8 +67,7 @@ const applyColorOverrides = (tuning: WeatheringTuning, settings: WeatheringDef):
 
 /** Resolves the site profile, then applies only recognized, bounded debug edits. */
 export const resolveWeatheringUrl = (
-  requestedProfile: string | null | undefined,
-  tuning: WeatheringTuning,
+  { profile: requestedProfile, tuning }: { profile: string | null | undefined; tuning: WeatheringTuning },
   profiles: ReadonlyMap<string, WeatheringDef>,
   defaultProfileId: string = claimedId(profiles, 'defaultWeathering'),
   debug = false,
@@ -87,35 +86,28 @@ export const resolveWeatheringUrl = (
   return { profileId: profile.id, defaultProfileId, settings };
 };
 
-/** Replaces weathering URL parameters with the chosen profile and only its non-default edits. */
+/** The chosen profile when it is not the site's, and only the edits that depart from that profile. */
 export const writeWeatheringParams = (
-  params: URLSearchParams,
   state: WeatheringUrlState | undefined,
   profiles: ReadonlyMap<string, WeatheringDef>,
-): URLSearchParams => {
-  const next = new URLSearchParams(params);
-  for (const name of WEATHERING_URL_PARAMS) {
-    next.delete(name);
+): { profile: string | undefined; tuning: WeatheringTuning } => {
+  const baseline = state && profiles.get(state.profileId);
+  if (!(state && baseline)) {
+    return { profile: undefined, tuning: {} };
   }
-  if (!state) {
-    return next;
-  }
-  const baseline = profiles.get(state.profileId);
-  if (!baseline) {
-    return next;
-  }
-  if (state.profileId !== state.defaultProfileId) {
-    next.set('weatheringProfile', state.profileId);
-  }
+  const tuning: Record<string, number | string> = {};
   for (const [param, field] of NUMBER_FIELDS) {
     if (state.settings[field] !== baseline[field]) {
-      next.set(param, String(state.settings[field]));
+      tuning[param] = state.settings[field];
     }
   }
   for (const [param, field] of COLOR_FIELDS) {
     if (state.settings[field] !== baseline[field]) {
-      next.set(param, state.settings[field]);
+      tuning[param] = state.settings[field];
     }
   }
-  return next;
+  return {
+    profile: state.profileId === state.defaultProfileId ? undefined : state.profileId,
+    tuning: tuning as WeatheringTuning,
+  };
 };

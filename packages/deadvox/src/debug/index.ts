@@ -17,7 +17,7 @@ import {
   playerTuning,
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
-import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
+import { WEATHERING_RANGES, type WeatheringUrlState, writeWeatheringParams } from '@skelly/engine/sky';
 import { raycast, type Vec3 } from '@skelly/engine/world';
 import {
   type DebugHooks,
@@ -32,10 +32,12 @@ import { HOT_CATEGORIES, HOT_KINDS } from '@skelly/presentation/render';
 import { comboBox, positionLookedAtReadout } from '@skelly/presentation/ui';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
+import type { HashState } from '../hashState.ts';
+import { pageHref, pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
-import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
+import { type CamPose, camValue, camWriteDue, parseCamParam } from './camUrl.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -49,7 +51,7 @@ import { KitOverlay } from './kitOverlay.ts';
 import { LookControls } from './look.ts';
 import { lookDump, lookDumpFilename } from './lookDump.ts';
 import { describeLookedAt } from './lookedAt.ts';
-import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
+import { type LookUrlState, parseLookParams, writeLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { stageRagdollSweep } from './ragdollSweep.ts';
@@ -623,7 +625,7 @@ const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key
           id: 'debug.mannequin-previous',
           label: 'Pose −',
           group: 'mannequin',
-          param: 'mannequin=',
+          param: 'mannequin:',
           detail: () => mannequin.pose.name,
           run: () => mannequin.step(-1),
         },
@@ -631,7 +633,7 @@ const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key
           id: 'debug.mannequin-next',
           label: 'Pose +',
           group: 'mannequin',
-          param: 'mannequin=',
+          param: 'mannequin:',
           detail: () => mannequin.pose.name,
           run: () => mannequin.step(1),
         },
@@ -826,7 +828,7 @@ export const createDebugActions = ({
         id: 'debug.freeze-game',
         label: 'Freeze game',
         group: 'time',
-        param: 'freeze=1',
+        param: 'freeze:true',
         state: isGameFrozen,
         run: toggleGameFrozen,
       },
@@ -834,7 +836,7 @@ export const createDebugActions = ({
         id: 'debug.tone-cycle',
         label: 'Tone mapping',
         group: 'look',
-        param: 'tone=auto/neutral/aces/agx/none',
+        param: 'tone:auto/neutral/aces/agx/none',
         detail: () => look.toneMappingName,
         run: () => look.cycleToneMapping(),
       },
@@ -842,7 +844,7 @@ export const createDebugActions = ({
         id: 'debug.exposure-decrease',
         label: 'Exposure −',
         group: 'look',
-        param: 'exposure=0.2..3',
+        param: 'exposure:0.2..3',
         detail: () => look.exposure.toFixed(1),
         run: () => look.stepExposure(-1),
       },
@@ -850,7 +852,7 @@ export const createDebugActions = ({
         id: 'debug.exposure-increase',
         label: 'Exposure +',
         group: 'look',
-        param: 'exposure=0.2..3',
+        param: 'exposure:0.2..3',
         detail: () => look.exposure.toFixed(1),
         run: () => look.stepExposure(1),
       },
@@ -858,7 +860,7 @@ export const createDebugActions = ({
         id: 'debug.linear-colours-toggle',
         label: 'sRGB block colours',
         group: 'look',
-        param: 'srgb=0',
+        param: 'srgb:false',
         state: () => look.linearColors,
         run: () => look.toggleLinearColors(),
       },
@@ -866,7 +868,7 @@ export const createDebugActions = ({
         id: 'debug.patterns-toggle',
         label: 'Surface patterns',
         group: 'look',
-        param: 'patterns=0',
+        param: 'patterns:false',
         state: () => look.patterns,
         run: () => look.togglePatterns(),
       },
@@ -874,7 +876,7 @@ export const createDebugActions = ({
         id: 'debug.ambient-occlusion-toggle',
         label: 'Wide ambient occlusion',
         group: 'lighting',
-        param: 'vao=0',
+        param: 'vao:false',
         state: () => look.occlusion,
         run: () => look.toggleOcclusion(),
       },
@@ -882,7 +884,7 @@ export const createDebugActions = ({
         id: 'debug.post-toggle',
         label: 'Mood post-processing (all)',
         group: 'post',
-        param: 'post=0',
+        param: 'post:false',
         state: () => look.moodState.post,
         run: () => look.togglePost(),
       },
@@ -890,7 +892,7 @@ export const createDebugActions = ({
         id: 'debug.bloom-toggle',
         label: 'Bloom',
         group: 'post',
-        param: 'bloom=0',
+        param: 'bloom:false',
         state: () => look.moodState.bloom,
         run: () => look.toggleBloom(),
       },
@@ -900,7 +902,7 @@ export const createDebugActions = ({
         id: 'debug.bloom-clip-decrease',
         label: 'Bloom clip −',
         group: 'post',
-        param: 'bloomclip=1..8',
+        param: 'bloomclip:1..8',
         detail: () => bloomClipDetail(look),
         run: () => look.stepBloomClip(-1),
       },
@@ -908,7 +910,7 @@ export const createDebugActions = ({
         id: 'debug.bloom-clip-increase',
         label: 'Bloom clip +',
         group: 'post',
-        param: 'bloomclip=1..8',
+        param: 'bloomclip:1..8',
         detail: () => bloomClipDetail(look),
         run: () => look.stepBloomClip(1),
       },
@@ -917,7 +919,7 @@ export const createDebugActions = ({
         id: 'debug.torch-decrease',
         label: 'Flashlight strength −',
         group: 'lighting',
-        param: 'torch=0.1..16',
+        param: 'torch:0.1..16',
         detail: () => `×${look.torch}`,
         run: () => look.stepTorch(-1),
       },
@@ -925,7 +927,7 @@ export const createDebugActions = ({
         id: 'debug.torch-increase',
         label: 'Flashlight strength +',
         group: 'lighting',
-        param: 'torch=0.1..16',
+        param: 'torch:0.1..16',
         detail: () => `×${look.torch}`,
         run: () => look.stepTorch(1),
       },
@@ -933,7 +935,7 @@ export const createDebugActions = ({
         id: 'debug.film-toggle',
         label: 'Film (vignette, grain)',
         group: 'post',
-        param: 'film=0',
+        param: 'film:false',
         state: () => look.moodState.film,
         run: () => look.toggleFilm(),
       },
@@ -943,7 +945,7 @@ export const createDebugActions = ({
         id: 'debug.sun-shadow-toggle',
         label: 'Sun shadows',
         group: 'lighting',
-        param: 'sunshadow=0',
+        param: 'sunshadow:false',
         state: () => look.shadowState.sun,
         run: () => look.toggleSunShadows(),
       },
@@ -951,7 +953,7 @@ export const createDebugActions = ({
         id: 'debug.torch-shadow-toggle',
         label: 'Flashlight shadows',
         group: 'lighting',
-        param: 'torchshadow=0',
+        param: 'torchshadow:false',
         state: () => look.shadowState.torch,
         run: () => look.toggleTorchShadows(),
       },
@@ -959,7 +961,7 @@ export const createDebugActions = ({
         id: 'debug.shadow-distance-cycle',
         label: 'Sun shadow distance',
         group: 'lighting',
-        param: 'shadowdist=16..96',
+        param: 'shadowdist:16..96',
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },
@@ -976,7 +978,7 @@ export const createDebugActions = ({
         id: 'debug.crack-check-toggle',
         label: 'Crack check (magenta background)',
         group: 'diagnostics',
-        param: 'crackcheck=1',
+        param: 'crackcheck:true',
         state: () => look.crackCheck,
         run: () => look.toggleCrackCheck(),
       },
@@ -984,7 +986,7 @@ export const createDebugActions = ({
         id: 'debug.hot-pixel-check-toggle',
         label: 'Hot-pixel check (coloured)',
         group: 'diagnostics',
-        param: 'hotcheck=1',
+        param: 'hotcheck:true',
         state: () => look.hotCheck,
         run: () => look.toggleHotCheck(),
       },
@@ -993,7 +995,7 @@ export const createDebugActions = ({
         id: 'debug.fog-decrease',
         label: 'Fogginess −',
         group: 'atmosphere',
-        param: 'fog=0..1',
+        param: 'fog:0..1',
         detail: () => look.fogginess.toFixed(1),
         run: () => look.stepFogginess(-1),
       },
@@ -1001,7 +1003,7 @@ export const createDebugActions = ({
         id: 'debug.fog-increase',
         label: 'Fogginess +',
         group: 'atmosphere',
-        param: 'fog=0..1',
+        param: 'fog:0..1',
         detail: () => look.fogginess.toFixed(1),
         run: () => look.stepFogginess(1),
       },
@@ -1009,7 +1011,7 @@ export const createDebugActions = ({
         id: 'debug.grade-decrease',
         label: 'Grade −',
         group: 'post',
-        param: 'grade=0..1',
+        param: 'grade:0..1',
         detail: () => look.moodState.grade.toFixed(1),
         run: () => look.stepGrade(-1),
       },
@@ -1017,7 +1019,7 @@ export const createDebugActions = ({
         id: 'debug.grade-increase',
         label: 'Grade +',
         group: 'post',
-        param: 'grade=0..1',
+        param: 'grade:0..1',
         detail: () => look.moodState.grade.toFixed(1),
         run: () => look.stepGrade(1),
       },
@@ -1170,7 +1172,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let snapshotStatus = '';
   let snapshotCopyStatus = '';
   let aimEnabled = true;
-  let interactionRayEnabled = new URLSearchParams(location.search).get('interactionray') === '1';
+  let interactionRayEnabled = pageUrl().hash.interactionray === true;
   const transientDraw = new TransientDebugDraw(hooks.engine.scene, hooks.engine.config.debug);
   let lastHitText = '';
   let lastHitUntil = 0;
@@ -1214,15 +1216,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       : {}),
   });
   const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;
-  const initialLook = parseLookParams(new URLSearchParams(location.search), {
+  const initialLook = parseLookParams(pageUrl().hash, {
     look: lookDefaults,
     defaultFogginess,
   });
   look.restore(initialLook);
-  // `?cam=` puts the player at a saved view instead of the spawn or a save's position (the body moves; saves
-  // only ever record the body, never this URL). Mid-air the player falls, unless `freeze=1` or noclip holds
+  // The hash's `cam` puts the player at a saved view instead of the spawn or a save's position (the body moves;
+  // saves only ever record the body, never this URL). Mid-air the player falls, unless `freeze` or noclip holds
   // them. Roll is ignored: it only comes from damage feedback.
-  const startPose = parseCamParam(new URLSearchParams(location.search));
+  const startPose = parseCamParam(pageUrl().hash);
   if (startPose) {
     const { body, input } = hooks;
     startPose.position.forEach((metres, axis) => {
@@ -1249,17 +1251,27 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     hotCheck: look.hotCheck,
     ...look.moodState,
   });
+  /** The page's query and hash with the live look written in: the weathering profile in the query, the rest in the hash. */
+  const lookAddress = (): { query: URLSearchParams; hash: HashState } => {
+    const { query, hash } = pageUrl();
+    const weathering = look.weatheringState;
+    const profiles = hooks.engine.registry.weathering;
+    const next = new URLSearchParams(query);
+    const { profile } = writeWeatheringParams(weathering, profiles);
+    if (profile === undefined) {
+      next.delete('weatheringProfile');
+    } else {
+      next.set('weatheringProfile', profile);
+    }
+    return {
+      query: next,
+      hash: writeLookParams(hash, lookState(), { look: lookDefaults, defaultFogginess, weathering, profiles }),
+    };
+  };
   /** Keeps the address bar reproducing the current look: replaces the entry, never adds one or reloads. */
   function syncLookUrl(): void {
-    const next = lookUrl(location.href, lookState(), {
-      look: lookDefaults,
-      defaultFogginess,
-      weathering: look.weatheringState,
-      profiles: hooks.engine.registry.weathering,
-    });
-    if (next !== location.href) {
-      history.replaceState(history.state, '', next);
-    }
+    const { query, hash } = lookAddress();
+    replacePageUrl(query, hash);
     syncCamUrl(true);
   }
   const selectWeatheringProfile = (profileId: string): void => {
@@ -1311,10 +1323,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     camWritten = { ...camNow, position: [...camNow.position] as Vec3 };
     camWrittenAt = now;
-    const next = camUrl(location.href, camNow);
-    if (next !== location.href) {
-      history.replaceState(history.state, '', next);
-    }
+    const { query, hash } = pageUrl();
+    replacePageUrl(query, { ...hash, cam: camValue(camNow) });
   }
   // Pausing (the pointer lock is lost) is when the operator reaches for the address bar.
   document.addEventListener('pointerlockchange', () => syncCamUrl(true));
@@ -1738,6 +1748,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const { config } = hooks.engine;
     const metres = config.scale.blockSize;
     const now = new Date();
+    const address = lookAddress();
+    const cam = camValue({
+      position: hooks.body.pos.map((v) => v * metres) as Vec3,
+      yaw: hooks.input.yaw,
+      pitch: hooks.input.pitch,
+      roll: hooks.roll(),
+    });
     const dump = lookDump({
       toneMapping: look.toneMappingName,
       exposure: look.exposure,
@@ -1765,12 +1782,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       pitchRad: hooks.input.pitch,
       buildRevision: getBuildRevision(),
       rollRad: hooks.roll(),
-      url: camUrl(lookUrl(location.href, lookState(), { look: lookDefaults, defaultFogginess }), {
-        position: hooks.body.pos.map((v) => v * metres) as Vec3,
-        yaw: hooks.input.yaw,
-        pitch: hooks.input.pitch,
-        roll: hooks.roll(),
-      }),
+      url: pageHref(location.href, address.query, { ...address.hash, cam }),
       now,
     });
     // Blob link rendered by the panel template, clicked, then dropped again.

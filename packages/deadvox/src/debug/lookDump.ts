@@ -86,7 +86,7 @@ export const lookDump = (input: LookDumpInput) => ({
     positionM: input.positionM.map((v) => round(v, 2)),
     yawRad: round(input.yawRad, 3),
     pitchRad: round(input.pitchRad, 3),
-    /** The `?cam=` value that returns to this view (camUrl.ts). */
+    /** The hash `cam` value that returns to this view (camUrl.ts). */
     cam: camValue({ position: input.positionM, yaw: input.yawRad, pitch: input.pitchRad, roll: input.rollRad }),
   },
 });

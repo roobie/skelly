@@ -25,19 +25,19 @@ import { describe, expect, it } from 'vitest';
 import { LookControls } from '../src/debug/look.ts';
 import {
   defaultLookUrlState,
-  LOOK_PARAMS,
+  LOOK_KEYS,
   type LookUrlState,
-  lookUrl,
   parseLookParams,
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
+import type { HashState } from '../src/hashState.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
-// Every switch off, against the parser's "on unless 0" reading, and the exposure inside the clamp range, so a parser
-// that ignores the given default for a switch or an exposure fails instead of passing by coincidence.
+// Every switch off, against the parser's "on unless false" reading, and the exposure inside the clamp range, so a
+// parser that ignores the given default for a switch or an exposure fails instead of passing by coincidence.
 const URL_LOOK: LookDefaults = {
   ...LOOK_FIXTURE,
   exposure: 1.5,
@@ -51,25 +51,44 @@ const URL_LOOK: LookDefaults = {
 const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
 const URL_DEFAULTS = { look: URL_LOOK, defaultFogginess: DEFAULT_FOGGINESS };
 const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(URL_DEFAULTS);
-const parse = (query: string) => parseLookParams(new URLSearchParams(query), URL_DEFAULTS);
-const write = (query: string, state: LookUrlState) =>
-  writeLookParams(new URLSearchParams(query), state, URL_DEFAULTS).toString();
+const parse = (hash: HashState) => parseLookParams(hash, URL_DEFAULTS);
+const write = (hash: HashState, state: LookUrlState) => writeLookParams(hash, state, URL_DEFAULTS);
 const isTenth = (value: number) => Math.abs(value * 10 - Math.round(value * 10)) < 1e-9;
 const isHundredth = (value: number) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-9;
 
-describe('look URL parameters', () => {
-  it('reads defaults from an empty query', () => {
-    expect(parse('')).toEqual(DEFAULT_LOOK_URL_STATE);
-    expect(parse('debug=1&site=testHouse&seed=7')).toEqual(DEFAULT_LOOK_URL_STATE);
+// Every control away from its default.
+const CHANGED_STATE: LookUrlState = {
+  tone: 'none',
+  exposure: 1.4,
+  srgb: true,
+  patterns: true,
+  vao: true,
+  freeze: true,
+  post: true,
+  bloom: true,
+  film: true,
+  grade: 0.6,
+  bloomClip: 3.5,
+  fogginess: 0.7,
+  torch: 1.56,
+  shadows: { sun: false, torch: false, distance: 64 },
+  crackCheck: true,
+  hotCheck: true,
+};
+
+describe('look hash keys', () => {
+  it('reads defaults from an empty hash', () => {
+    expect(parse({})).toEqual(DEFAULT_LOOK_URL_STATE);
+    expect(parse({ debug: true, seed: 7 })).toEqual(DEFAULT_LOOK_URL_STATE);
   });
 
   it('removes every registered look override when writing game defaults', () => {
-    const params = new URLSearchParams('debug=1&seed=7');
-    expect(LOOK_PARAMS.length).toBeGreaterThan(0);
-    for (const name of LOOK_PARAMS) {
-      params.set(name, 'fixture');
-    }
-    expect(write(params.toString(), DEFAULT_LOOK_URL_STATE)).toBe('debug=1&seed=7');
+    const changed = write({ debug: true, seed: 7 }, CHANGED_STATE);
+    expect(LOOK_KEYS.length).toBeGreaterThan(0);
+    expect(LOOK_KEYS.some((key) => key in changed)).toBe(true);
+    const cleared = write(changed, DEFAULT_LOOK_URL_STATE);
+    expect(cleared).toStrictEqual({ debug: true, seed: 7 });
+    expect(LOOK_KEYS.filter((key) => key in cleared)).toEqual([]);
   });
 
   it('has the given default look as its defaults', () => {
@@ -85,250 +104,241 @@ describe('look URL parameters', () => {
     });
   });
 
-  it('reads the diagnostic checks only from "1", and writes them only when on', () => {
-    expect(parse('crackcheck=1&hotcheck=1')).toMatchObject({ crackCheck: true, hotCheck: true });
-    expect(parse('crackcheck=0&hotcheck=true')).toMatchObject({ crackCheck: false, hotCheck: false });
-    expect(write('debug=1&crackcheck=1&hotcheck=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, crackCheck: true })).toBe('debug=1&crackcheck=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, hotCheck: true })).toBe('debug=1&hotcheck=1');
+  it('reads the diagnostic checks only from true, and writes them only when on', () => {
+    expect(parse({ crackcheck: true, hotcheck: true })).toMatchObject({ crackCheck: true, hotCheck: true });
+    expect(parse({ crackcheck: false, hotcheck: false })).toMatchObject({ crackCheck: false, hotCheck: false });
+    expect(write({ debug: true, crackcheck: true, hotcheck: true }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, crackCheck: true })).toEqual({
+      debug: true,
+      crackcheck: true,
+    });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, hotCheck: true })).toEqual({
+      debug: true,
+      hotcheck: true,
+    });
   });
 
   it('round-trips a state', () => {
-    const state: LookUrlState = {
-      tone: 'none',
-      exposure: 1.4,
-      srgb: true,
-      patterns: true,
-      vao: true,
-      freeze: true,
-      post: true,
-      bloom: true,
-      film: true,
-      grade: 0.6,
-      bloomClip: 3.5,
-      fogginess: 0.7,
-      torch: 1.56,
-      shadows: { sun: false, torch: false, distance: 64 },
-      crackCheck: true,
-      hotCheck: true,
-    };
-    expect(parse(write('', state))).toEqual(state);
+    expect(parse(write({}, CHANGED_STATE))).toEqual(CHANGED_STATE);
   });
 
-  it('leaves graphics override identity untouched on unrelated look changes', () => {
-    const query = 'debug=1&renderscale=1&bloomscale=0.2&sunsmall=0&camofast=1&weathercoarse=0';
-    const changed = new URLSearchParams(write(query, { ...DEFAULT_LOOK_URL_STATE, tone: 'agx' }));
-    const original = new URLSearchParams(query);
-    for (const [key, value] of original) {
-      expect(changed.get(key)).toBe(value);
-    }
-    expect(write('debug=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-  });
-
-  it('keeps both shadows on unless sunshadow=0 / torchshadow=0, and omits the defaults', () => {
-    expect(parse('sunshadow=0').shadows).toEqual({ ...DEFAULT_SHADOWS, sun: false });
-    expect(parse('torchshadow=0').shadows).toEqual({ ...DEFAULT_SHADOWS, torch: false });
-    expect(parse('sunshadow=1&torchshadow=off').shadows).toEqual(DEFAULT_LOOK_URL_STATE.shadows);
-    expect(write('debug=1&sunshadow=0&torchshadow=0&shadowdist=64', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+  it('keeps both shadows on unless sunshadow / torchshadow is false, and omits the defaults', () => {
+    expect(parse({ sunshadow: false }).shadows).toEqual({ ...DEFAULT_SHADOWS, sun: false });
+    expect(parse({ torchshadow: false }).shadows).toEqual({ ...DEFAULT_SHADOWS, torch: false });
+    expect(
+      write({ debug: true, sunshadow: false, torchshadow: false, shadowdist: 64 }, DEFAULT_LOOK_URL_STATE),
+    ).toEqual({ debug: true });
     const state = (shadows: LookUrlState['shadows']): LookUrlState => ({ ...DEFAULT_LOOK_URL_STATE, shadows });
-    expect(write('debug=1', state({ sun: false, torch: true, distance: DEFAULT_SHADOWS.distance }))).toBe(
-      'debug=1&sunshadow=0',
-    );
-    expect(write('debug=1', state({ sun: true, torch: false, distance: DEFAULT_SHADOWS.distance }))).toBe(
-      'debug=1&torchshadow=0',
-    );
+    expect(write({ debug: true }, state({ sun: false, torch: true, distance: DEFAULT_SHADOWS.distance }))).toEqual({
+      debug: true,
+      sunshadow: false,
+    });
+    expect(write({ debug: true }, state({ sun: true, torch: false, distance: DEFAULT_SHADOWS.distance }))).toEqual({
+      debug: true,
+      torchshadow: false,
+    });
   });
 
-  it('clamps the shadow distance to a whole-metre range that holds every key stop, and ignores nonsense', () => {
-    const distance = (raw: string) => parse(`shadowdist=${raw}`).shadows.distance;
+  it('clamps the shadow distance to a whole-metre range that holds every key stop', () => {
+    const distance = (raw: number) => parse({ shadowdist: raw }).shadows.distance;
     for (const stop of SHADOW_DISTANCES) {
-      expect(distance(String(stop))).toBe(stop);
+      expect(distance(stop)).toBe(stop);
     }
     for (const raw of [33.6, 1, -50, 500, 5000]) {
-      expect(distance(String(raw))).toBe(clampShadowDistance(raw));
-      expect(Number.isInteger(distance(String(raw)))).toBe(true);
+      expect(distance(raw)).toBe(clampShadowDistance(raw));
+      expect(Number.isInteger(distance(raw))).toBe(true);
     }
-    expect(distance('1')).toBeGreaterThan(1);
-    expect(distance('-50')).toBe(distance('1'));
-    expect(distance('500')).toBeLessThan(500);
-    expect(distance('5000')).toBe(distance('500'));
-    expect(distance('')).toBe(DEFAULT_SHADOWS.distance);
-    expect(distance('abc')).toBe(DEFAULT_SHADOWS.distance);
+    expect(distance(1)).toBeGreaterThan(1);
+    expect(distance(-50)).toBe(distance(1));
+    expect(distance(500)).toBeLessThan(500);
+    expect(distance(5000)).toBe(distance(500));
+    expect(parse({}).shadows.distance).toBe(DEFAULT_SHADOWS.distance);
     const nonDefaultDistance = SHADOW_DISTANCES.find((stop) => stop !== DEFAULT_SHADOWS.distance)!;
     expect(
-      write('', {
-        ...DEFAULT_LOOK_URL_STATE,
-        shadows: { ...DEFAULT_SHADOWS, distance: nonDefaultDistance },
-      }),
-    ).toBe(`shadowdist=${nonDefaultDistance}`);
+      write(
+        {},
+        {
+          ...DEFAULT_LOOK_URL_STATE,
+          shadows: { ...DEFAULT_SHADOWS, distance: nonDefaultDistance },
+        },
+      ),
+    ).toEqual({ shadowdist: nonDefaultDistance });
   });
 
   it('records only deviations from the defaults', () => {
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, srgb: true })).toBe('srgb=1');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'none' })).toBe('tone=none');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, exposure: 1 })).toBe('exposure=1.0');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, fogginess: 0 })).toBe('fog=0.0');
-    // Spellings of other values for the defaulted parameters read as the default and are dropped.
-    expect(write('debug=1&tone=auto&exposure=3&fog=0.2&grade=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, srgb: true })).toEqual({ srgb: true });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, tone: 'none' })).toEqual({ tone: 'none' });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, exposure: 1 })).toEqual({ exposure: 1 });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, fogginess: 0 })).toEqual({ fog: 0 });
+    // Other values for the defaulted keys are dropped when the state is the default.
+    expect(write({ debug: true, tone: 'auto', exposure: 3, fog: 0.2, grade: 1 }, DEFAULT_LOOK_URL_STATE)).toEqual({
+      debug: true,
+    });
   });
 
   it('reads every tone key, with auto the default and aces now written out', () => {
     for (const tone of ['none', 'agx', 'aces', 'neutral', 'auto']) {
-      expect(parse(`tone=${tone}`).tone).toBe(tone);
+      expect(parse({ tone }).tone).toBe(tone);
     }
-    expect(parse('').tone).toBe('auto');
-    expect(parse('tone=sepia').tone).toBe('auto');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'aces' })).toBe('tone=aces');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'neutral' })).toBe('tone=neutral');
-    expect(write('debug=1&tone=aces', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
+    expect(parse({}).tone).toBe('auto');
+    expect(parse({ tone: 'sepia' }).tone).toBe('auto');
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, tone: 'aces' })).toEqual({ tone: 'aces' });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, tone: 'neutral' })).toEqual({ tone: 'neutral' });
+    expect(write({ debug: true, tone: 'aces' }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
   });
 
-  it('reads each mood switch from 1 or 0, falls back to the given default, and omits the defaults', () => {
-    expect(parse('')).toMatchObject({ post: false, bloom: false, film: false, grade: URL_LOOK.grade });
-    expect(parse('post=1&bloom=1&film=1')).toMatchObject({ post: true, bloom: true, film: true });
-    expect(parse('post=0&bloom=0&film=0')).toMatchObject({ post: false, bloom: false, film: false });
-    expect(parse('post=on&bloom=off&film=')).toMatchObject({ post: false, bloom: false, film: false });
-    expect(write('debug=1&post=1&bloom=1&film=1&grade=0.4', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloom: true })).toBe('debug=1&bloom=1');
+  it('reads each mood switch as given, falls back to the given default, and omits the defaults', () => {
+    expect(parse({})).toMatchObject({ post: false, bloom: false, film: false, grade: URL_LOOK.grade });
+    expect(parse({ post: true, bloom: true, film: true })).toMatchObject({ post: true, bloom: true, film: true });
+    expect(parse({ post: false, bloom: false, film: false })).toMatchObject({ post: false, bloom: false, film: false });
+    expect(write({ debug: true, post: true, bloom: true, film: true, grade: 0.4 }, DEFAULT_LOOK_URL_STATE)).toEqual({
+      debug: true,
+    });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, bloom: true })).toEqual({ debug: true, bloom: true });
   });
 
   it('follows the tone mapper unless bloomclip overrides it, clamping in tenths', () => {
-    const clip = (raw: string) => parse(`bloomclip=${raw}`).bloomClip;
-    expect(parse('').bloomClip).toBeNull();
-    expect(clip('3.5')).toBe(clampBloomClip(3.5));
-    const rounded = clip('3.26')!;
+    const clip = (raw: number) => parse({ bloomclip: raw }).bloomClip;
+    expect(parse({}).bloomClip).toBeNull();
+    expect(clip(3.5)).toBe(clampBloomClip(3.5));
+    const rounded = clip(3.26)!;
     expect(rounded).toBe(clampBloomClip(3.26));
     expect(isTenth(rounded)).toBe(true);
     expect(Math.abs(rounded - 3.26)).toBeLessThanOrEqual(0.05);
-    expect(clip('0.2')).toBe(MIN_BLOOM_CLIP);
-    expect(clip('-4')).toBe(MIN_BLOOM_CLIP);
-    expect(clip('50')).toBeLessThan(50);
-    expect(clip('500')).toBe(clip('50'));
-    expect(clip('')).toBeNull();
-    expect(clip('abc')).toBeNull();
+    expect(clip(0.2)).toBe(MIN_BLOOM_CLIP);
+    expect(clip(-4)).toBe(MIN_BLOOM_CLIP);
+    expect(clip(50)).toBeLessThan(50);
+    expect(clip(500)).toBe(clip(50));
   });
 
   it('reads the tone mapper own clip as no override, and writes an override only when it differs', () => {
     const aces = BLOOM_CLIP_BY_TONE.aces!;
     const agx = BLOOM_CLIP_BY_TONE.agx!;
     expect(aces).not.toBe(agx);
-    expect(parse(`tone=aces&bloomclip=${aces}`).bloomClip).toBeNull();
-    expect(parse(`tone=agx&bloomclip=${agx}`).bloomClip).toBeNull();
-    expect(parse(`tone=agx&bloomclip=${aces}`).bloomClip).toBe(aces);
-    expect(write('debug=1&bloomclip=3', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: 3 })).toBe('debug=1&bloomclip=3.0');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, tone: 'aces', bloomClip: aces })).toBe('debug=1&tone=aces');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, tone: 'agx', bloomClip: aces })).toBe(
-      `tone=agx&bloomclip=${aces.toFixed(1)}`,
-    );
+    expect(parse({ tone: 'aces', bloomclip: aces }).bloomClip).toBeNull();
+    expect(parse({ tone: 'agx', bloomclip: agx }).bloomClip).toBeNull();
+    expect(parse({ tone: 'agx', bloomclip: aces }).bloomClip).toBe(aces);
+    expect(write({ debug: true, bloomclip: 3 }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, bloomClip: 3 })).toEqual({ debug: true, bloomclip: 3 });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, tone: 'aces', bloomClip: aces })).toEqual({
+      debug: true,
+      tone: 'aces',
+    });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, tone: 'agx', bloomClip: aces })).toEqual({
+      tone: 'agx',
+      bloomclip: Number(aces.toFixed(1)),
+    });
   });
 
   it('keeps any bloomclip under auto, whose own clip moves with the time of day', () => {
     // Both ends of auto's range are real overrides at some hour.
     const neutral = BLOOM_CLIP_BY_TONE.neutral!;
     const aces = BLOOM_CLIP_BY_TONE.aces!;
-    expect(parse(`bloomclip=${neutral}`).bloomClip).toBe(neutral);
-    expect(parse(`bloomclip=${aces}`).bloomClip).toBe(aces);
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, bloomClip: aces })).toBe(
-      `debug=1&bloomclip=${aces.toFixed(1)}`,
-    );
+    expect(parse({ bloomclip: neutral }).bloomClip).toBe(neutral);
+    expect(parse({ bloomclip: aces }).bloomClip).toBe(aces);
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, bloomClip: aces })).toEqual({
+      debug: true,
+      bloomclip: Number(aces.toFixed(1)),
+    });
   });
 
   it('reads the flashlight multiplier clamped in hundredths, and writes it only when not the default', () => {
-    const torch = (raw: string) => parse(`torch=${raw}`).torch;
-    expect(parse('').torch).toBe(DEFAULT_TORCH);
-    expect(torch('2.5')).toBe(clampTorch(2.5));
-    const rounded = torch('1.567');
+    const torch = (raw: number) => parse({ torch: raw }).torch;
+    expect(parse({}).torch).toBe(DEFAULT_TORCH);
+    expect(torch(2.5)).toBe(clampTorch(2.5));
+    const rounded = torch(1.567);
     expect(rounded).toBe(clampTorch(1.567));
     expect(isHundredth(rounded)).toBe(true);
     expect(Math.abs(rounded - 1.567)).toBeLessThanOrEqual(0.005);
-    expect(torch('0')).toBeGreaterThan(0);
-    expect(torch('-5')).toBe(torch('0'));
-    expect(torch('99')).toBeLessThan(99);
-    expect(torch('9999')).toBe(torch('99'));
-    expect(torch('')).toBe(DEFAULT_TORCH);
-    expect(torch('abc')).toBe(DEFAULT_TORCH);
-    expect(write('debug=1&torch=3', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, torch: 0.64 })).toBe('debug=1&torch=0.64');
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, torch: 4 })).toBe('torch=4');
+    expect(torch(0)).toBeGreaterThan(0);
+    expect(torch(-5)).toBe(torch(0));
+    expect(torch(99)).toBeLessThan(99);
+    expect(torch(9999)).toBe(torch(99));
+    expect(write({ debug: true, torch: 3 }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, torch: 0.64 })).toEqual({ debug: true, torch: 0.64 });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, torch: 4 })).toEqual({ torch: 4 });
   });
 
-  it('clamps fogginess to 0..1 in tenths and ignores nonsense', () => {
-    expect(parse('fog=0').fogginess).toBe(0);
-    expect(parse('fog=0.34').fogginess).toBe(0.3);
-    expect(parse('fog=7').fogginess).toBe(1);
-    expect(parse('fog=-1').fogginess).toBe(0);
-    expect(parse('fog=').fogginess).toBe(DEFAULT_FOGGINESS);
-    expect(parse('fog=abc').fogginess).toBe(DEFAULT_FOGGINESS);
+  it('clamps fogginess to 0..1 in tenths', () => {
+    expect(parse({ fog: 0 }).fogginess).toBe(0);
+    expect(parse({ fog: 0.34 }).fogginess).toBe(0.3);
+    expect(parse({ fog: 7 }).fogginess).toBe(1);
+    expect(parse({ fog: -1 }).fogginess).toBe(0);
   });
 
-  it('reads colour decode from srgb=1 or 0, else the given default', () => {
-    expect(parse('srgb=0').srgb).toBe(false);
-    expect(parse('srgb=1').srgb).toBe(true);
-    expect(parse('srgb=on').srgb).toBe(URL_LOOK.srgb);
+  it('reads colour decode from srgb, else the given default', () => {
+    expect(parse({ srgb: false }).srgb).toBe(false);
+    expect(parse({ srgb: true }).srgb).toBe(true);
+    expect(parse({}).srgb).toBe(URL_LOOK.srgb);
   });
 
-  it('clamps the grade to 0..1 in tenths and ignores nonsense', () => {
-    expect(parse('grade=0').grade).toBe(0);
-    expect(parse('grade=0.34').grade).toBe(0.3);
-    expect(parse('grade=7').grade).toBe(1);
-    expect(parse('grade=-2').grade).toBe(0);
-    expect(parse('grade=').grade).toBe(URL_LOOK.grade);
-    expect(parse('grade=abc').grade).toBe(URL_LOOK.grade);
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, grade: 0 })).toBe('grade=0.0');
+  it('clamps the grade to 0..1 in tenths', () => {
+    expect(parse({ grade: 0 }).grade).toBe(0);
+    expect(parse({ grade: 0.34 }).grade).toBe(0.3);
+    expect(parse({ grade: 7 }).grade).toBe(1);
+    expect(parse({ grade: -2 }).grade).toBe(0);
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, grade: 0 })).toEqual({ grade: 0 });
   });
 
-  it('reads surface patterns from patterns=1 or 0, else the given default', () => {
-    expect(parse('patterns=0').patterns).toBe(false);
-    expect(parse('patterns=1').patterns).toBe(true);
-    expect(parse('patterns=on').patterns).toBe(URL_LOOK.patterns);
-    expect(write('debug=1&patterns=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, patterns: true })).toBe('debug=1&patterns=1');
+  it('reads surface patterns from patterns, else the given default', () => {
+    expect(parse({ patterns: false }).patterns).toBe(false);
+    expect(parse({ patterns: true }).patterns).toBe(true);
+    expect(parse({}).patterns).toBe(URL_LOOK.patterns);
+    expect(write({ debug: true, patterns: true }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, patterns: true })).toEqual({
+      debug: true,
+      patterns: true,
+    });
   });
 
-  it('reads wide ambient occlusion from vao=1 or 0, else the given default', () => {
-    expect(parse('vao=0').vao).toBe(false);
-    expect(parse('vao=1').vao).toBe(true);
-    expect(parse('vao=on').vao).toBe(URL_LOOK.vao);
-    expect(write('debug=1&vao=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, vao: true })).toBe('debug=1&vao=1');
+  it('reads wide ambient occlusion from vao, else the given default', () => {
+    expect(parse({ vao: false }).vao).toBe(false);
+    expect(parse({ vao: true }).vao).toBe(true);
+    expect(parse({}).vao).toBe(URL_LOOK.vao);
+    expect(write({ debug: true, vao: true }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, vao: true })).toEqual({ debug: true, vao: true });
   });
 
   it('keeps the game freeze only while it is on', () => {
-    expect(parse('freeze=1').freeze).toBe(true);
-    expect(parse('freeze=true').freeze).toBe(false);
-    expect(write('debug=1&freeze=1', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
-    expect(write('debug=1', { ...DEFAULT_LOOK_URL_STATE, freeze: true })).toBe('debug=1&freeze=1');
+    expect(parse({ freeze: true }).freeze).toBe(true);
+    expect(parse({ freeze: false }).freeze).toBe(false);
+    expect(write({ debug: true, freeze: true }, DEFAULT_LOOK_URL_STATE)).toEqual({ debug: true });
+    expect(write({ debug: true }, { ...DEFAULT_LOOK_URL_STATE, freeze: true })).toEqual({ debug: true, freeze: true });
   });
 
-  it('ignores invalid values, an infinite exposure among them, instead of throwing', () => {
+  it('ignores an unknown tone and non-finite numbers, an infinite exposure among them, instead of throwing', () => {
     expect(
-      parse(
-        'tone=sepia&exposure=abc&srgb=yes&freeze=yes&renderscale=NaN&bloomscale=&sunsmall=yes&camofast=on&weathercoarse=off',
-      ),
+      parse({
+        tone: 'sepia',
+        exposure: Number.NaN,
+        grade: Number.NaN,
+        fog: Number.NaN,
+        bloomclip: Number.NaN,
+        torch: Number.NaN,
+        shadowdist: Number.NaN,
+      }),
     ).toEqual(DEFAULT_LOOK_URL_STATE);
-    expect(parse('exposure=&tone=')).toEqual(DEFAULT_LOOK_URL_STATE);
     expect(URL_LOOK.exposure).not.toBe(MAX_EXPOSURE);
-    expect(parse('exposure=Infinity').exposure).toBe(URL_LOOK.exposure);
+    expect(parse({ exposure: Number.POSITIVE_INFINITY }).exposure).toBe(URL_LOOK.exposure);
   });
 
   it('clamps exposure to the exposure limits and rounds to a tenth', () => {
-    expect(parse(`exposure=${MAX_EXPOSURE * 3}`).exposure).toBe(MAX_EXPOSURE);
-    expect(parse('exposure=0').exposure).toBe(MIN_EXPOSURE);
-    const rounded = parse('exposure=1.26').exposure;
+    expect(parse({ exposure: MAX_EXPOSURE * 3 }).exposure).toBe(MAX_EXPOSURE);
+    expect(parse({ exposure: 0 }).exposure).toBe(MIN_EXPOSURE);
+    const rounded = parse({ exposure: 1.26 }).exposure;
     expect(rounded).toBe(clampExposure(1.26));
     expect(isTenth(rounded)).toBe(true);
     expect(Math.abs(rounded - 1.26)).toBeLessThanOrEqual(0.05);
   });
 
-  it('replaces only its own parameters and keeps the rest, path and hash', () => {
+  it('replaces only its own keys and keeps the rest', () => {
     const state: LookUrlState = { ...DEFAULT_LOOK_URL_STATE, tone: 'agx' };
-    expect(write('debug=1&tone=none&seed=5&exposure=2&time=20%3A30&site=testHouse', state)).toBe(
-      'debug=1&seed=5&time=20%3A30&site=testHouse&tone=agx',
-    );
-    expect(lookUrl('http://localhost:5173/play?debug=1&time=20:30&srgb=0#x', state, URL_DEFAULTS)).toBe(
-      'http://localhost:5173/play?debug=1&time=20:30&tone=agx#x',
-    );
+    expect(write({ debug: true, tone: 'none', seed: 5, exposure: 2, cam: [1, 2, 3, 90, 0] }, state)).toStrictEqual({
+      debug: true,
+      seed: 5,
+      cam: [1, 2, 3, 90, 0],
+      tone: 'agx',
+    });
   });
 });
 
@@ -356,7 +366,7 @@ describe('restoring look controls from URL state', () => {
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
-    look.restore(parse('tone=neutral&exposure=2.5&srgb=1&patterns=0&vao=0'));
+    look.restore(parse({ tone: 'neutral', exposure: 2.5, srgb: true, patterns: false, vao: false }));
     expect([look.toneKey, look.exposure, look.linearColors, look.patterns, look.occlusion]).toEqual([
       'neutral',
       2.5,
@@ -375,7 +385,7 @@ describe('restoring look controls from URL state', () => {
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
-    look.restore(parse('post=0&bloom=0&film=0&grade=0.5&fog=0.6'));
+    look.restore(parse({ post: false, bloom: false, film: false, grade: 0.5, fog: 0.6 }));
     expect(look.moodState).toEqual({ post: false, bloom: false, film: false, grade: 0.5, bloomClip: null });
     expect(mood.grade).toBe(0.5);
     expect(weather.fogginess).toBe(0.6);
@@ -391,7 +401,7 @@ describe('restoring look controls from URL state', () => {
       shadows: new FakeShadows(),
       flashlight,
     });
-    look.restore(parse('tone=aces&bloomclip=3&torch=2'));
+    look.restore(parse({ tone: 'aces', bloomclip: 3, torch: 2 }));
     expect([mood.bloomClip, look.bloomClip, look.bloomClipIsDefault, flashlight.strength, look.torch]).toEqual([
       3,
       3,
@@ -399,7 +409,7 @@ describe('restoring look controls from URL state', () => {
       2,
       2,
     ]);
-    look.restore(parse('tone=aces'));
+    look.restore(parse({ tone: 'aces' }));
     expect([mood.bloomClip, look.bloomClip, look.bloomClipIsDefault, flashlight.strength]).toEqual([
       null,
       BLOOM_CLIP_BY_TONE.aces,
@@ -439,12 +449,12 @@ describe('restoring look controls from URL state', () => {
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
-    look.restore(parse('crackcheck=1&hotcheck=1'));
+    look.restore(parse({ crackcheck: true, hotcheck: true }));
     expect([look.crackCheck, mood.crackCheck, look.hotCheck, hotCheckUniform.value]).toEqual([true, true, true, 1]);
     look.toggleCrackCheck();
     look.toggleHotCheck();
     expect([look.crackCheck, look.hotCheck, hotCheckUniform.value]).toEqual([false, false, 0]);
-    look.restore(parse(''));
+    look.restore(parse({}));
     expect([look.crackCheck, look.hotCheck]).toEqual([false, false]);
   });
 
@@ -456,7 +466,7 @@ describe('restoring look controls from URL state', () => {
       shadows,
       flashlight: { strength: 1 },
     });
-    look.restore(parse('sunshadow=0&shadowdist=64'));
+    look.restore(parse({ sunshadow: false, shadowdist: 64 }));
     expect(look.shadowState).toEqual({ sun: false, torch: true, distance: 64 });
     expect(shadows.settings).toEqual({ sun: false, torch: true, distance: 64 });
   });

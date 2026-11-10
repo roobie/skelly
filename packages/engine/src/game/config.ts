@@ -147,12 +147,7 @@ export interface DebugStart {
 }
 
 /** A debug-only number inside its bounds; anything else keeps the default. */
-const debugNumber = (
-  hash: DeveloperState,
-  value: number | undefined,
-  min: number,
-  max: number,
-): number | undefined =>
+const debugNumber = (hash: DeveloperState, value: number | undefined, min: number, max: number): number | undefined =>
   hash.debug === true && value !== undefined && Number.isFinite(value) && value >= min && value <= max
     ? value
     : undefined;
@@ -221,8 +216,7 @@ export const applyWeatheringConfig = (
   config.weatheringDefaultProfileId =
     registry.layouts.get(config.site)?.weatheringProfile ?? claimedId(registry.weathering, 'defaultWeathering');
   const weathering = resolveWeatheringUrl(
-    query.get('weatheringProfile'),
-    hash,
+    { profile: query.get('weatheringProfile'), tuning: hash },
     registry.weathering,
     config.weatheringDefaultProfileId,
     config.debug,
@@ -243,8 +237,7 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams, hash: Dev
   }
   config.startId = start.id;
   config.site = siteSelection.site;
-  config.seed =
-    hash.seed === undefined ? (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!) : hash.seed | 0;
+  config.seed = hash.seed === undefined ? (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!) : hash.seed | 0;
   config.storeys = params.has('storeys') ? siteSelection.storeys : (start.storeys ?? 1);
   config.density = params.has('density') ? siteSelection.density : (start.density ?? null);
   const requestedTime = params.get('time');

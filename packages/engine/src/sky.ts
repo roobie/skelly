@@ -15,7 +15,7 @@ export { clampFogginess, skyInWeather, WEATHERING_RANGES, type Weather } from '.
 export {
   isWeatheringColor,
   resolveWeatheringUrl,
-  WEATHERING_URL_PARAMS,
+  WEATHERING_TUNING_KEYS,
   type WeatheringUrlState,
   writeWeatheringParams,
 } from './core/weatheringUrl.ts';
