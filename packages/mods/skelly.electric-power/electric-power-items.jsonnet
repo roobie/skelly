@@ -61,7 +61,7 @@ local batteryBeam = lights.batteryBeam;
       light: batteryBeam(
         radius=12,
         seenFrom=30,
-        intensity=4.5,
+        intensity=3.4,
         beam={ angleDegrees: 48, penumbra: 0.5, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
         chargePerGameHour=0.2,
       ) + { wornSwitch: true },
