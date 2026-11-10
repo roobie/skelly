@@ -15,12 +15,19 @@ import {
   Vector2,
   Vector3,
 } from 'three';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
-import type { Sky } from '../core/sky.ts';
-import { type SkyField, type SkyFields, type SkySubmit, skyRoofAt } from '../core/skyField.ts';
-import { type SkyChannel, skyIndex } from '../core/skylight.ts';
-import { containsSky } from '../core/skySnapshot.ts';
-import { type SkyResult, sampleSky } from '../core/skyTransport.ts';
+import {
+  containsSky,
+  type Sky,
+  type SkyChannel,
+  type SkyField,
+  type SkyFields,
+  type SkyResult,
+  type SkySubmit,
+  sampleSky,
+  skyIndex,
+  skyRoofAt,
+} from '../engine/sky.ts';
+import { CHUNK, type Vec3 } from '../engine/world.ts';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';

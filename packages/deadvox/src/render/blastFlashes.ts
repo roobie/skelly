@@ -1,5 +1,5 @@
 import { AdditiveBlending, Group, Mesh, MeshBasicMaterial, NormalBlending, SphereGeometry, type Vector3 } from 'three';
-import type { Vec3 } from '../core/coords.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 // Presentation only: how long each part of a blast shows, how far it swells as a share of the blast radius, and
 // how many blasts can show at once.

@@ -1,6 +1,5 @@
-import type { Job } from '../core/handling.ts';
-import type { Inventory } from '../core/inventory.ts';
-import type { HandPose, MeleePoseFrame } from '../core/meleePose.ts';
+import type { Inventory, Job } from '../engine/inventory.ts';
+import type { HandPose, MeleePoseFrame } from '../engine/pose.ts';
 
 const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
 const smooth = (value: number): number => {

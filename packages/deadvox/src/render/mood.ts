@@ -38,8 +38,9 @@ import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import type { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { assertGraphicsValue, type GraphicsOptions } from '../core/graphics.ts';
+import type { GraphicsTuningDef, NightVision } from '../engine/content.ts';
 import {
+  assertGraphicsValue,
   BLOOM_RADIUS,
   bloomClipFor,
   bloomThreshold,
@@ -47,14 +48,14 @@ import {
   clampGrade,
   drugVignetteShown,
   GRAIN,
+  type GraphicsOptions,
   gradeParams,
   type MoodState,
   targetColorScale,
   VIGNETTE,
-} from '../core/mood.ts';
-import type { OpticLensFrame } from '../core/opticView.ts';
-import type { GraphicsTuningDef, NightVision } from '../core/schema.ts';
-import type { Sky } from '../core/sky.ts';
+} from '../engine/look.ts';
+import type { OpticLensFrame } from '../engine/pose.ts';
+import type { Sky } from '../engine/sky.ts';
 import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';

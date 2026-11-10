@@ -15,13 +15,18 @@ import {
   Object3D,
   Vector3,
 } from 'three';
-import type { ColumnReveal } from '../core/columnReveal.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Item, type Placed } from '../core/items.ts';
-import { type EffectivePileDisplay, effectivePileDisplays } from '../core/pileDisplay.ts';
-import { PILE_BUNDLE_WIDTH } from '../core/pileLayout.ts';
-import type { PileScatterPlacement } from '../core/scatterPile.ts';
-import { SPENT_CASE_SCATTER_CAP } from '../core/scatterPile.ts';
+import {
+  defOf,
+  type EffectivePileDisplay,
+  effectivePileDisplays,
+  type Inventory,
+  type Item,
+  PILE_BUNDLE_WIDTH,
+  type PileScatterPlacement,
+  type Placed,
+  SPENT_CASE_SCATTER_CAP,
+} from '../engine/inventory.ts';
+import type { ColumnReveal } from '../engine/mesh.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { itemLook } from './itemLook.ts';

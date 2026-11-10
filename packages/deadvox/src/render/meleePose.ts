@@ -1,13 +1,12 @@
-import { DEFAULT_HANDED_CHARACTER } from '../core/character.ts';
+import type { HeldPosesDef } from '../engine/content.ts';
 import {
   type MeleeActionPose,
   type MeleeHand,
   type MeleePoseFrame,
   meleePoseAndContact,
   readyMeleePose,
-} from '../core/meleePose.ts';
-
-import type { HeldPosesDef } from '../core/schema.ts';
+} from '../engine/pose.ts';
+import { DEFAULT_HANDED_CHARACTER } from '../engine/sim.ts';
 
 /** Build a held-item render pose, keeping an occupied support hand in its natural hold pose. */
 export const renderMeleePose = (

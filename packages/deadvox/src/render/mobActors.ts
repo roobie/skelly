@@ -67,47 +67,61 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { type ActorFigureFiles, actorFigure } from '../core/actorFigureFiles.ts';
+import {
+  type ActorBody,
+  type ActorClips,
+  type ActorFigureFiles,
+  actorFigure,
+  actorFigureKey,
+  type LookAtProfile,
+} from '../engine/content.ts';
+import type { LookDefaults } from '../engine/look.ts';
+import type { Quaternion } from '../engine/math.ts';
+import type { ColumnReveal } from '../engine/mesh.ts';
 import {
   type ActorPoseScene,
   acidSpitWindupProgress,
   actorCrawls,
   actorPoseInputFor,
-  posedActor,
-} from '../core/actorPose.ts';
-import { type Actor, actorAttackReachMetres } from '../core/actorState.ts';
-import { BACKGROUND_ACTOR_RATE, type HitImpulse } from '../core/actorSystem.ts';
-import {
+  allocateBoneTransforms,
   applyPoint,
+  type BodyAnchor,
+  type Bone,
+  bodyPartMass,
+  bodySkeleton,
+  boneTransforms,
+  boneTransformsInto,
+  boneVoxelCentres,
+  FUSED_MASS_FIGURE_SEED,
+  type FusedMassGrid,
+  fusedMassTypeOf,
+  indexBonesByParent,
   type Mat3,
+  type MutableTransform,
   mat3ToQuat,
   mulMM,
   mulMV,
+  type ParentIndex,
+  type Pose,
+  posedActor,
   quatToMat3,
   rotY,
+  severableParts,
+  severedBoneSet,
   slerpQuat,
   type Transform,
   transpose,
-} from '../core/boneMath.ts';
-import { type BodyAnchor, type Bone, bodySkeleton } from '../core/bones.ts';
-import { severableParts, severedBoneSet } from '../core/boneTree.ts';
-import type { ColumnReveal } from '../core/columnReveal.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { EntityId, EntityStore } from '../core/entities.ts';
-import { FUSED_MASS_FIGURE_SEED, type FusedMassGrid, fusedMassTypeOf } from '../core/fusedMassFigure.ts';
-import { bodyPartMass, boneVoxelCentres, voxelBounds } from '../core/massProperties.ts';
-import type { LookDefaults } from '../core/mood.ts';
+  voxelBounds,
+} from '../engine/pose.ts';
 import {
-  allocateBoneTransforms,
-  boneTransforms,
-  boneTransformsInto,
-  indexBonesByParent,
-  type MutableTransform,
-  type ParentIndex,
-  type Pose,
-} from '../core/pose.ts';
-import { type ActorBody, type ActorClips, actorFigureKey, type LookAtProfile } from '../core/schema/actors.ts';
-import type { Quaternion } from '../core/spatial.ts';
+  type Actor,
+  actorAttackReachMetres,
+  BACKGROUND_ACTOR_RATE,
+  type EntityId,
+  type EntityStore,
+  type HitImpulse,
+} from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { figureVariants } from './actorFigureVariants.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';

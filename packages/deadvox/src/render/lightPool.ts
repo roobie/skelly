@@ -1,9 +1,6 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
-import { claimed } from '../core/capabilities.ts';
-import type { Inventory, Location } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import { lightExposureFor } from '../core/lights.ts';
-import type { PoweredLight } from '../core/sitePower.ts';
+import { claimed, type Inventory, type Item, type Location, lightExposureFor } from '../engine/inventory.ts';
+import type { PoweredLight } from '../engine/world.ts';
 import type { HeldItems } from './hands.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 import type { PileMeshes } from './piles.ts';

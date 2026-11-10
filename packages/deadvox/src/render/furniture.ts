@@ -12,20 +12,20 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import type { FurnitureDef } from '../engine/content.ts';
+import type { ColumnReveal } from '../engine/mesh.ts';
 import {
   type BlockEntities,
   type BlockEntity,
   type DoorPanelBox,
   doorBarBox,
+  type Facing,
   isBodyDoor,
   panelFor,
   poseKey,
-} from '../core/blockEntities.ts';
-import type { ColumnReveal } from '../core/columnReveal.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { rotationOf } from '../core/orientation.ts';
-import type { FurnitureDef } from '../core/schema.ts';
-import type { Facing } from '../core/templates.ts';
+  rotationOf,
+  type Vec3,
+} from '../engine/world.ts';
 import { doorDetail } from './doorDetail.ts';
 import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';

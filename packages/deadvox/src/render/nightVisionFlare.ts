@@ -1,7 +1,6 @@
 import { type Camera, Vector3 } from 'three';
-import type { Vec3 } from '../core/coords.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
-import type { NightVision } from '../core/schema.ts';
+import type { NightVision } from '../engine/content.ts';
+import { raycast, type SolidAt, type Vec3 } from '../engine/world.ts';
 import { type LightPool, NIGHT_VISION_HALOS } from './lightPool.ts';
 import type { Mood } from './mood.ts';
 

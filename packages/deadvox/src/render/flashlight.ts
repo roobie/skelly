@@ -2,13 +2,10 @@
 // changes then update light properties and uniforms without recompiling materials.
 
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
-import type { Registry } from '../core/content.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { inventoryLightEntries, lightExposureFor } from '../core/lights.ts';
-import { DEFAULT_TORCH } from '../core/mood.ts';
-import type { BeamSpill } from '../core/schema.ts';
-import type { Sky } from '../core/sky.ts';
+import type { BeamSpill, Registry } from '../engine/content.ts';
+import { defOf, type Inventory, type Item, inventoryLightEntries, lightExposureFor } from '../engine/inventory.ts';
+import { DEFAULT_TORCH } from '../engine/look.ts';
+import type { Sky } from '../engine/sky.ts';
 import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
 import type { PileMeshes } from './piles.ts';

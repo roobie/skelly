@@ -2,11 +2,9 @@
 // owns at their slots. Every view draws an item from this, never from its type alone, so a rifle looks the same in
 // the hands and on the ground.
 
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { supplyShare } from '../core/lights.ts';
+import type { Registry } from '../engine/content.ts';
+import { defOf, type Item, LIGHT_MOUNT_SLOT, supplyShare } from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export interface ItemStateLook {
   readonly on?: boolean;

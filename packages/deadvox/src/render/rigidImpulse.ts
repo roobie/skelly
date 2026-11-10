@@ -1,5 +1,5 @@
-import type { Vec3 } from '../core/coords.ts';
-import { add, cross, dot, type Quaternion, rotateVector as rotate, scale, sub } from '../core/spatial.ts';
+import { add, cross, dot, type Quaternion, rotateVector as rotate, scale, sub } from '../engine/math.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export type Tensor3 = readonly [Vec3, Vec3, Vec3];
 export interface RigidBody {

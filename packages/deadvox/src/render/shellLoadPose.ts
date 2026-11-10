@@ -1,6 +1,6 @@
-import type { Vec3 } from '../core/coords.ts';
-import type { HandSide } from '../core/inventory.ts';
-import type { RoundFeedPoseTuning } from '../core/schema.ts';
+import type { RoundFeedPoseTuning } from '../engine/content.ts';
+import type { HandSide } from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 /** Presentation estimates; the load job owns time and BR's look owns this path. */
 const FEED = {

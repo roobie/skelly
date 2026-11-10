@@ -1,5 +1,5 @@
 import { Box3, Group, Mesh, type Object3D, Quaternion, Vector3 } from 'three';
-import type { ModelDef } from '../core/content.ts';
+import type { ModelDef } from '../engine/content.ts';
 
 // Presentation only: how many shed levers can fly at once.
 const LEVERS = 4;

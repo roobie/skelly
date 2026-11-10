@@ -1,5 +1,5 @@
-import type { Vec3 } from '../core/coords.ts';
-import { type StepOffsetState, updateStepOffset } from '../core/stepOffset.ts';
+import { type StepOffsetState, updateStepOffset } from '../engine/pose.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 /** Render-only vertical compensation for grounded, one-step terrain snaps. */
 export class StepOffset {

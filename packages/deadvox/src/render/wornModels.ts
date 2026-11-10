@@ -1,8 +1,7 @@
 import { Group, type Object3D } from 'three';
-import type { FigureDef, ItemDef, Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { defOf, type Item } from '../core/items.ts';
-import type { WearSlot } from '../core/schema.ts';
+import type { FigureDef, ItemDef, Registry, WearSlot } from '../engine/content.ts';
+import { defOf, type Item } from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { type ItemLook, itemLook, itemStateLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';

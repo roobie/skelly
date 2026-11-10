@@ -1,35 +1,36 @@
 // The player's world body: the figure row's authored models posed about their joints.
 
 import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
-import { FIGURE_BOXES, type FigureBox } from '../core/actorRegions.ts';
-import type { BodyRegion } from '../core/body.ts';
-import { dominantSide } from '../core/character.ts';
-import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
-import { presentedOptic } from '../core/opticView.ts';
-import type { Body } from '../core/physics.ts';
-import {
-  type FigureStancePose,
-  figureStancePose,
-  type PlayerLookPose,
-  playerHeldSeatFrame,
-  playerLeanPoint,
-  playerLookPose,
-  playerPosePoint,
-} from '../core/playerLookPose.ts';
-import type { PlayerStance } from '../core/playerStance.ts';
 import {
   FIGURE_LIMB_JOINTS,
   FIGURE_LIMBS,
+  type FigureDef,
   type FigureJoint,
   type FigureLimb,
   LEG_SEGMENTS,
   type LegSegment,
+  type ModelDef,
+  type Registry,
   type WearSlot,
-} from '../core/schema.ts';
+} from '../engine/content.ts';
+import { defOf, type HandSide, type Inventory, type Item } from '../engine/inventory.ts';
+import {
+  FIGURE_BOXES,
+  type FigureBox,
+  type FigureStancePose,
+  figureStancePose,
+  type MeleePoseFrame,
+  type PlayerLookPose,
+  type PlayerStance,
+  playerHeldSeatFrame,
+  playerLeanPoint,
+  playerLookPose,
+  playerPosePoint,
+  presentedOptic,
+  readyMeleePose,
+} from '../engine/pose.ts';
+import { type BodyRegion, dominantSide } from '../engine/sim.ts';
+import type { Body, Vec3 } from '../engine/world.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';
@@ -191,8 +192,8 @@ export interface PlayerFigurePose {
   headYaw?: number;
   headPitch?: number;
   stancePose?: FigureStancePose;
-  ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
-  lean?: import('../core/lean.ts').LeanFrame | undefined;
+  ads?: import('../engine/pose.ts').PlayerAdsPose | undefined;
+  lean?: import('../engine/pose.ts').LeanFrame | undefined;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];

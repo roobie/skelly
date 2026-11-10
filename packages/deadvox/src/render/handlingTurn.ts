@@ -1,8 +1,8 @@
 /** Align the model and crosshair with visible hand motion; shots retain the unturned bore. */
 
-import type { ModelDef } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { HandSide } from '../core/inventory.ts';
+import type { ModelDef } from '../engine/content.ts';
+import type { HandSide } from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { magazineMotion, rackCant, rackGrip } from './firearmModel.ts';
 import type { HeldFirearmPose } from './hands.ts';
 

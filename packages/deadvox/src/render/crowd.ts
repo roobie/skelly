@@ -9,7 +9,7 @@
 // actor's row: a row-major 3x4 affine matrix, r0 r1 r2 tx | r3 r4 r5 ty | r6 r7 r8 tz (no perspective row —
 // every transform here is rigid).
 
-import type { MutableTransform } from '../core/pose.ts';
+import type { MutableTransform } from '../engine/pose.ts';
 
 export interface CrowdTextureLayout {
   readonly bonesPerSlot: number;

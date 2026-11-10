@@ -1,10 +1,8 @@
 import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshLambertMaterial, Quaternion, Vector3 } from 'three';
-import { type BlockEntities, panelFor } from '../core/blockEntities.ts';
-import { DECAL_KINDS } from '../core/decalKinds.ts';
-import { Rng } from '../core/random.ts';
-import type { DecalDef } from '../core/schema.ts';
-import { type Placement, placedDecals } from '../core/templates.ts';
-import type { GameSeconds } from '../core/time.ts';
+import type { DecalDef } from '../engine/content.ts';
+import { Rng } from '../engine/math.ts';
+import type { GameSeconds } from '../engine/sim.ts';
+import { type BlockEntities, DECAL_KINDS, type Placement, panelFor, placedDecals } from '../engine/world.ts';
 import { STAIN_NOISE_GLSL } from './bloodStain.ts';
 import { patchHeightFog } from './heightFog.ts';
 

@@ -1,19 +1,24 @@
 import content from '../config/ragdoll.json' with { type: 'json' };
+import { hash3 } from '../engine/math.ts';
 import {
   applyPoint,
+  type Bone,
+  type BuiltBone,
+  bodySkeleton,
+  boneTransforms,
+  boneVoxelCentres,
+  massProperties,
   mat3ToQuat,
   mulMM,
   mulMV,
+  type Pose,
   quatToMat3,
   rotY,
   type Transform,
   transpose,
   type Vec3,
-} from '../core/boneMath.ts';
-import { type Bone, type BuiltBone, bodySkeleton } from '../core/bones.ts';
-import { boneVoxelCentres, massProperties, voxelBounds } from '../core/massProperties.ts';
-import { boneTransforms, type Pose } from '../core/pose.ts';
-import { hash3 } from '../core/random.ts';
+  voxelBounds,
+} from '../engine/pose.ts';
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 

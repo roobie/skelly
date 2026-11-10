@@ -1,27 +1,27 @@
 import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion, Vector3 } from 'three';
-import { type AimFrame, NEUTRAL_AIM } from '../core/aim.ts';
-import { dominantSide } from '../core/character.ts';
-import type { FigureDef, ModelDef } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
-import { firearmAimHandPose } from '../core/firearmAimPose.ts';
-import { sightedFirearmModel } from '../core/firearmSight.ts';
-import type { Job } from '../core/handling.ts';
+import { type FigureDef, HELD_DISPLAY_KIND, type ModelDef } from '../engine/content.ts';
+import { defOf, type HandSide, Inventory, type Item, type Job } from '../engine/inventory.ts';
 import {
+  type AimFrame,
   blendHeldFirearmTransforms,
+  type FirearmAimOffHand,
+  firearmAimHandPose,
+  firearmAimOffHand,
   heldAnchorOffset,
   heldLoweredPitch,
+  type interpolateHandPose,
+  type MeleePoseFrame,
   modelToView,
+  NEUTRAL_AIM,
+  type OpticZoomFrame,
   readyFirearmPose,
+  readyMeleePose,
+  revolverChamberPoint,
+  sightedFirearmModel,
   throwStanceHandOffset,
-} from '../core/heldPose.ts';
-import { type HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { type interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
-import type { OpticZoomFrame } from '../core/opticView.ts';
-import { revolverChamberPoint } from '../core/revolverPose.ts';
-import { HELD_DISPLAY_KIND } from '../core/schema.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
+} from '../engine/pose.ts';
+import { dominantSide, firearmsCombatTuning } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,

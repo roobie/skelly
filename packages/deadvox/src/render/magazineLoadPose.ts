@@ -1,6 +1,5 @@
-import type { Vec3 } from '../core/coords.ts';
-import type { Job } from '../core/handling.ts';
-import { type HandSide, type Inventory, SIDES } from '../core/inventory.ts';
+import { type HandSide, type Inventory, type Job, SIDES } from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { MAGAZINE_LOAD_ACTION, MAGAZINE_STRIP_ACTION } from '../game/magazineHandling.ts';
 
 /** Presentation estimates; each round's job owns time, and BR's look owns this path. */

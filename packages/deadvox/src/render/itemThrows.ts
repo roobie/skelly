@@ -1,12 +1,17 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, type Object3D, Vector3 } from 'three';
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { PILE_GRID } from '../core/inventoryScale.ts';
-import { cellCount, defOf, type Item } from '../core/items.ts';
-import { type ItemFlight, itemFlightPoint } from '../core/itemThrow.ts';
-import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDisplay.ts';
-import { PILE_DISPLAY_KIND } from '../core/schema.ts';
+import { PILE_DISPLAY_KIND, type Registry } from '../engine/content.ts';
+import {
+  cellCount,
+  defOf,
+  effectivePileDisplay,
+  effectivePileItemPosition,
+  type Inventory,
+  type Item,
+  type ItemFlight,
+  itemFlightPoint,
+  PILE_GRID,
+} from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import { itemLook } from './itemLook.ts';

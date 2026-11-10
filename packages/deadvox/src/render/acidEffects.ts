@@ -1,10 +1,8 @@
 import { CircleGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
-import type { AcidGlobState } from '../core/acidGlob.ts';
-import type { AcidPuddleState } from '../core/acidPuddle.ts';
-import type { Actor } from '../core/actorState.ts';
-import type { ActorDef } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { Rng } from '../core/random.ts';
+import type { ActorDef } from '../engine/content.ts';
+import { Rng } from '../engine/math.ts';
+import type { AcidGlobState, AcidPuddleState, Actor } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 
 type Appearance = NonNullable<ActorDef['acidSpit']>['presentation'];

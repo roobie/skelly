@@ -1,7 +1,7 @@
 import type { Object3D } from 'three';
 import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, Vector3, WebGLRenderer } from 'three';
-import type { Registry } from '../core/content.ts';
-import type { GridSize, Item } from '../core/items.ts';
+import type { Registry } from '../engine/content.ts';
+import type { GridSize, Item } from '../engine/inventory.ts';
 import { itemLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import { ModelFlames } from './modelFlame.ts';

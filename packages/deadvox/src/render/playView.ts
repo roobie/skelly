@@ -1,33 +1,29 @@
 // Owned play presentation resources and read-only frame projections. Gameplay chooses
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
-import type { AcidGlobState } from '../core/acidGlob.ts';
-import type { AcidPuddleState } from '../core/acidPuddle.ts';
-import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
-import type { Actor } from '../core/actorState.ts';
-import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
-import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
-import type { BlockEntities } from '../core/blockEntities.ts';
-import { claimed } from '../core/capabilities.ts';
-import { hourOfDay } from '../core/clock.ts';
-import { requireDayCycle } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { EntityStore } from '../core/entities.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
-import { lookDefaultsOf } from '../core/lookDefaults.ts';
-import type { BlockJolt } from '../core/meleeCombat.ts';
-import type { MeleePoseFrame } from '../core/meleePose.ts';
-import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
-import type { Body } from '../core/physics.ts';
-import { figureStancePose, type PlayerAdsPose, playerLookPose } from '../core/playerLookPose.ts';
-import type { PlayerStance } from '../core/playerStance.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
-import { reachTuning } from '../core/reach.ts';
-import type { BodyTuningDef, NightVision } from '../core/schema.ts';
-import type { PoweredLight } from '../core/sitePower.ts';
-import { skyAt, sunShadowStrength } from '../core/sky.ts';
-import { skyInWeather, type Weather } from '../core/weather.ts';
+import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '../engine/content.ts';
+import { claimed, type Inventory, type Item } from '../engine/inventory.ts';
+import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '../engine/look.ts';
+import {
+  adsCameraEye,
+  figureStancePose,
+  guardAdsCamera,
+  type MeleePoseFrame,
+  type PlayerAdsPose,
+  type PlayerStance,
+  playerLookPose,
+} from '../engine/pose.ts';
+import {
+  type AcidGlobState,
+  type AcidPuddleState,
+  type Actor,
+  BACKGROUND_ACTOR_RATE,
+  type BlockJolt,
+  type EntityStore,
+  hourOfDay,
+  reachTuning,
+} from '../engine/sim.ts';
+import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '../engine/sky.ts';
+import { type BlockEntities, type Body, type PoweredLight, raycast, type SolidAt, type Vec3 } from '../engine/world.ts';
 import type { FromMesher } from '../game/mesherProtocol.ts';
 import { playerTuning } from '../game/player.ts';
 import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
@@ -90,7 +86,7 @@ export interface PlayCameraFrame {
   /** How far the view has carried the aim from hip to sights; the camera slides with it. */
   readonly adsAim?: number;
   readonly stance: PlayerStance;
-  readonly lean?: import('../core/lean.ts').LeanFrame | undefined;
+  readonly lean?: import('../engine/pose.ts').LeanFrame | undefined;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;

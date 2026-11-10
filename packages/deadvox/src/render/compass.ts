@@ -14,8 +14,8 @@ import {
   SRGBColorSpace,
   Vector3,
 } from 'three';
-import { compassBearing, yawFromBearing } from '../core/coords.ts';
-import type { CompassDial, ModelDef } from '../core/schema.ts';
+import type { CompassDial, ModelDef } from '../engine/content.ts';
+import { compassBearing, yawFromBearing } from '../engine/world.ts';
 import { heldModelFrame } from './models.ts';
 
 const FULL_TURN = Math.PI * 2;

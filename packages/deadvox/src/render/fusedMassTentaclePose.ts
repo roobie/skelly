@@ -1,6 +1,5 @@
-import { type Mat3, mulMV, type Transform } from '../core/boneMath.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { FusedMassFigure } from '../core/fusedMassFigure.ts';
+import { type FusedMassFigure, type Mat3, mulMV, type Transform } from '../engine/pose.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export interface FusedMassTentaclePoseInput {
   readonly start: Vec3;

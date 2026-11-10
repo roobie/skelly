@@ -1,10 +1,17 @@
+import type { LookAtProfile } from '../engine/content.ts';
 import {
   applyPoint,
+  type Bone,
+  boneTransforms,
+  clampJointAngles,
   IDENTITY_M,
+  jointAngles,
+  jointRotation,
   type Mat3,
   mat3ToQuat,
   mulMM,
   mulMV,
+  type Pose,
   type Quat,
   quatToMat3,
   rotX,
@@ -13,11 +20,7 @@ import {
   type Transform,
   transpose,
   type Vec3,
-} from '../core/boneMath.ts';
-import type { Bone } from '../core/bones.ts';
-import { clampJointAngles, jointAngles, jointRotation } from '../core/joints.ts';
-import { boneTransforms, type Pose } from '../core/pose.ts';
-import type { LookAtProfile } from '../core/schema/actors.ts';
+} from '../engine/pose.ts';
 
 export type LookAtState = Quat;
 export const LOOK_AT_REST: LookAtState = [0, 0, 0, 1];

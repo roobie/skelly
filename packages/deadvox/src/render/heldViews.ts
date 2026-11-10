@@ -1,6 +1,6 @@
 import type { PerspectiveCamera } from 'three';
-import type { Inventory } from '../core/inventory.ts';
-import type { MeleePoseFrame } from '../core/meleePose.ts';
+import type { Inventory } from '../engine/inventory.ts';
+import type { MeleePoseFrame } from '../engine/pose.ts';
 import { createHeldAnimation, type HeldHandlingFrame } from './actorAnimator.ts';
 import type { HeldItems } from './hands.ts';
 import type { PlayerMeshes } from './playerFigure.ts';

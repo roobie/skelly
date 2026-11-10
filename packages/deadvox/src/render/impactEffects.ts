@@ -14,8 +14,8 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three';
-import type { Vec3 } from '../core/coords.ts';
-import type { ShotTrace } from '../core/shotTrace.ts';
+import type { ShotTrace } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export const IMPACT_MARK_CAP = 96;
 const DUST_SECONDS = 0.55;

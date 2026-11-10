@@ -19,8 +19,8 @@ import {
 } from 'three';
 import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
-import { attachmentFrame } from '../core/attachmentFrame.ts';
-import type { ModelDef, Registry } from '../core/content.ts';
+import type { ModelDef, Registry } from '../engine/content.ts';
+import { attachmentFrame } from '../engine/pose.ts';
 import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';

@@ -1,6 +1,10 @@
-import { type PaperMapCoverage, paperMapBounds } from '../core/paperMap.ts';
-import type { PublicCartographicFeature } from '../core/publicCartography.ts';
-import { type Terrain, worldGroundAt } from '../core/worldgen.ts';
+import {
+  type PaperMapCoverage,
+  type PublicCartographicFeature,
+  paperMapBounds,
+  type Terrain,
+  worldGroundAt,
+} from '../engine/world.ts';
 import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from './siteMap.ts';
 
 export interface PaperMapRenderConfig {

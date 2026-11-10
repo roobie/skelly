@@ -16,14 +16,17 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { claimed } from '../core/capabilities.ts';
-import type { FigureDef } from '../core/content.ts';
-import { heldAdsStandoffMetres, heldTorsoForwardDegrees } from '../core/heldPose.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
-import { isInHeldItemSlotTree } from '../core/itemTree.ts';
-import type { MeleePoseFrame } from '../core/meleePose.ts';
-import { type OpticLensFrame, presentedOptic, projectLensAperture, projectOpticReticle } from '../core/opticView.ts';
+import type { FigureDef } from '../engine/content.ts';
+import { claimed, defOf, type HandSide, type Inventory, type Item, isInHeldItemSlotTree } from '../engine/inventory.ts';
+import {
+  heldAdsStandoffMetres,
+  heldTorsoForwardDegrees,
+  type MeleePoseFrame,
+  type OpticLensFrame,
+  presentedOptic,
+  projectLensAperture,
+  projectOpticReticle,
+} from '../engine/pose.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';

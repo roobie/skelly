@@ -2,12 +2,10 @@
 // each avatar pose can be judged from outside. It is a drawing only: no simulation, collision or save knows it.
 
 import { Group, type Object3D } from 'three';
-import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { Item } from '../core/items.ts';
-import type { Body } from '../core/physics.ts';
-import type { PlayerStance } from '../core/playerStance.ts';
-import type { WearSlot } from '../core/schema.ts';
+import type { FigureDef, ModelDef, Registry, WearSlot } from '../engine/content.ts';
+import type { Item } from '../engine/inventory.ts';
+import type { PlayerStance } from '../engine/pose.ts';
+import type { Body, Vec3 } from '../engine/world.ts';
 import { heldItemPoses, type ItemHoldPose } from './heldPresentation.ts';
 import type { ModelLibrary } from './models.ts';
 import { type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';

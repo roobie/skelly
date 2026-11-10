@@ -1,5 +1,5 @@
 import { ShaderChunk, ShaderLib } from 'three';
-import type { BeamSpill } from '../core/schema.ts';
+import type { BeamSpill } from '../engine/content.ts';
 
 /** Cone radius, not angle, grows by the spill ratio at every axial distance. */
 export const spillHalfAngle = (beamHalfAngle: number, profile: BeamSpill): number =>

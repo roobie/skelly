@@ -11,14 +11,9 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import type { BlockEntity } from '../core/blockEntities.ts';
-import type { FurnitureDef } from '../core/content.ts';
-import { rotationOf } from '../core/orientation.ts';
-import { BLOCK_SIZE } from '../core/scale.ts';
-import { BLUEPRINTS } from '../vehicles/catalogue.ts';
-import { MATERIALS } from '../vehicles/materials.ts';
-import { newInstance, type Paint } from '../vehicles/model.ts';
-import { GLASS, quadColors, type Rgb } from '../vehicles/voxels.ts';
+import type { FurnitureDef } from '../engine/content.ts';
+import { BLUEPRINTS, GLASS, MATERIALS, newInstance, type Paint, quadColors, type Rgb } from '../engine/vehicles.ts';
+import { BLOCK_SIZE, type BlockEntity, rotationOf } from '../engine/world.ts';
 import { type Part, type Shape, VehicleShapes } from './vehicleShapes.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */

@@ -1,5 +1,5 @@
 import { BufferAttribute, type BufferGeometry } from 'three';
-import { BLOCK_SIZE } from '../core/scale.ts';
+import { BLOCK_SIZE } from '../engine/world.ts';
 
 /** Vertex attribute holding where a surface samples the sky from; the sky receiver patch reads it when `SKY_ANCHOR` is defined. */
 export const SKY_ANCHOR_ATTRIBUTE = 'skyAnchor';

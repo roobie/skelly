@@ -1,10 +1,8 @@
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
-import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../core/actorRegions.ts';
-import type { Actor } from '../core/actorState.ts';
-import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
-import type { ColumnReveal } from '../core/columnReveal.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { EntityId, EntityStore } from '../core/entities.ts';
+import type { ColumnReveal } from '../engine/mesh.ts';
+import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../engine/pose.ts';
+import { type Actor, BACKGROUND_ACTOR_RATE, type EntityId, type EntityStore } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';

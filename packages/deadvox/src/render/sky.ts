@@ -7,7 +7,7 @@ import {
   type Scene,
   SRGBColorSpace,
 } from 'three';
-import type { Rgb, Sky } from '../core/sky.ts';
+import type { Rgb, Sky } from '../engine/sky.ts';
 import { installDistanceFog } from './distanceFog.ts';
 
 export interface SkyTargets {

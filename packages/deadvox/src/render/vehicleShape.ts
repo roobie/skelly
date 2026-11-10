@@ -1,9 +1,16 @@
 import { BufferAttribute, BufferGeometry } from 'three';
-import { BLUEPRINTS } from '../vehicles/catalogue.ts';
-import { VOXEL } from '../vehicles/model.ts';
-import type { PartData, ShapeData } from '../vehicles/shapeData.ts';
-import { fittedGrid } from '../vehicles/solid.ts';
-import { GLASS, keyVoxel, type MeshBuffers, meshGrid, voxelKey } from '../vehicles/voxels.ts';
+import {
+  BLUEPRINTS,
+  fittedGrid,
+  GLASS,
+  keyVoxel,
+  type MeshBuffers,
+  meshGrid,
+  type PartData,
+  type ShapeData,
+  VOXEL,
+  voxelKey,
+} from '../engine/vehicles.ts';
 import { addSkyOpeningAnchors } from './skyAnchor.ts';
 
 const partOf = (
