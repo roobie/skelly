@@ -1,6 +1,6 @@
 // The entry-only check keeps product code on the runtime and presentation packages' curated entries, off their
 // test-only subpaths and out of their files; the reasons are in
-// `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+// `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.

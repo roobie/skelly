@@ -193,7 +193,7 @@ const testFiles = runSweeps
 // Tests that use shipped content reach engine and presentation internals through the packages' test-only
 // subpaths, which resolve only under this condition. Vitest sets VITEST before it loads this config; the product dev server and build never
 // enable it, and browser stages add it to the servers they create. See
-// `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+// `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 // Vitest gives each of its environments (`__vitest__` runs global setup) its own resolve options.
 const engineTestResolve = { resolve: { conditions: ['skelly-test'] } };
 const engineTestEnvironments =

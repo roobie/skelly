@@ -10,7 +10,7 @@ read_if:
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you add a debug mod, change how opt-in folder mods are selected or add catalogue rows
-  - you plan the gated SkellyEngine runtime and content extraction (#1532)
+  - you plan SkellyEngine runtime and content extraction
   - you place a recipe, power tuning, a manual or a household electrical device in a mod
   - you change when a stack needs site generation or what core-alone validation requires
 ---
@@ -344,10 +344,9 @@ adding them merely to test core would reintroduce consumer dependencies.
 no test edit. Manifest, model and sound checks apply per pack; static reachability
 applies to playable stacks (`docs/content.md`, "Static reachability").
 
-## Refactor workstreams
+## Package workstreams
 
-#1532 delivers runtime extraction and content separation together after its PR gate.
-These workstreams preserve #637's proof obligations within that one refactor:
+These workstreams preserve #637's proof obligations:
 
 - **Pack boundaries:** prove shared-provider validation. Bundled intake uses the common manifest and fail-closed
   entry conflicts in `packages/engine/src/core/packAdmission.ts`, `admitPacks`; topic extraction must

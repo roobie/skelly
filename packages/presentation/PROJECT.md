@@ -11,7 +11,7 @@ read_if:
 `@skelly/presentation` draws and plays the game the engine runs: rendering (`src/render`), the UI (`src/ui`),
 play, input, audio and the debug surface (`src/presentation`), and the mesher and save workers (`src/worker`).
 It holds no product content and names no product path; the product passes its configuration in. The boundary
-and its reasons are in `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+and its reasons are in `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
 
 ## Imports
 

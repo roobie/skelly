@@ -182,7 +182,7 @@
     },
     {
       // The runtime and presentation packages' curated entries are re-export modules by design: other packages
-      // reach them only through these. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+      // reach them only through these. See `docs/decisions/0009-content-defined-products.md`, "Package boundaries".
       "includes": ["packages/engine/src/*.ts", "packages/engine/src/*.mjs", "packages/presentation/src/*.ts"],
       "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
     },

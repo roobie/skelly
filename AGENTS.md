@@ -1,7 +1,6 @@
 ---
 read_if:
   - you're an agent starting any task in this repository (always)
-  - you check whether the framework refactor gate permits a new PR
   - you add or upgrade a dependency, including the pinned Rapier f64 build
   - you rename, move or re-import TypeScript symbols
 ---
@@ -106,12 +105,6 @@ GitHub artifact without private tooling, so references point only from the priva
   so each review has one target. Existing letter-suffix IDs remain unchanged.
 
 ## Git workflow and worktrees
-
-New PRs are frozen under #1532 except as
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate", permits. That
-section owns the exceptions, closure trigger and reasons; keeping one gate avoids
-conflicting delivery rules. Open permitted PRs as drafts for CI; other work may use
-an existing PR.
 
 One topic branch per feature, in a worktree at `.claude/worktrees/<name>` from
 `origin/main`, merged through a reviewed PR. Run the full install under "Installing check

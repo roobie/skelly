@@ -2,7 +2,6 @@
 read_if:
   - you start a feature branch, push, take in main, or clean up after a merge
   - you wonder why skelly never rebases or force-pushes a published branch
-  - you check the framework refactor gate before opening a draft PR
   - you bump the shared asset release pin and submodule
 ---
 
@@ -25,9 +24,8 @@ defects before they reach `main`.
 2. Run the installs under "Installing check dependencies" in `AGENTS.md` before the first
    push. The pre-push hook runs checks across every subproject, and a fresh worktree has
    no `node_modules`, so without them even the push that publishes the branch fails.
-3. `git push -u origin <branch>`, and open a draft PR only when permitted by
-   `docs/decisions/0009-content-defined-products.md`, "Refactor gate". CI then checks
-   every later push, so no agent has to repeat the full matrix locally.
+3. `git push -u origin <branch>`, and open a draft PR. CI then checks every later
+   push, so no agent has to repeat the full matrix locally.
 
 ## While working
 
@@ -73,9 +71,6 @@ Consumed rows must still match the pinned exports; see `test/model-export-sync.m
 so the glow tag and material names change together in one released model row,
 not in a consumer mapping. See
 `packages/mods/skelly.light-sources/models-light-sources.jsonnet`.
-
-Asset-move PRs target `framework/refactor` and take it in by merging
-`origin/framework/refactor`, not `main`, so the extraction stays on its reviewed base.
 
 ## Merge and clean up
 

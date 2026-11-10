@@ -3,7 +3,7 @@ read_if:
   - you build or scope the mod authoring tool or its SkellyEngine authoring API
   - you change mod folders, tool-to-game handoff, sharing or default mod selection
   - you schedule typed field patches against the tool's editing slices
-  - you apply the remote-intake rules and framework PR gate to tool delivery
+  - you apply the remote-intake rules to tool delivery
 ---
 
 # 8. A mod authoring tool over the shared loader
@@ -40,9 +40,8 @@ Retention optimizations must preserve that single authority.
 Editing waits for typed field patches and per-field origins under
 `docs/decisions/0007-typed-field-patches.md`, "Decision". A temporary copy-based override
 editor and drift view would be discarded when patches arrive. Overview and read-only
-inspection need not wait. The engine patch merge retains priority over queued work,
-subject to `docs/decisions/0009-content-defined-products.md`, "Refactor gate". Design-check
-it against the patch ADR before implementation. Dependency admission and conflict
+inspection need not wait. The engine patch merge retains priority over queued work.
+Design-check it against the patch ADR before implementation. Dependency admission and conflict
 enforcement must be delivered or explicitly depended on, not assumed to exist because
 their rules have been documented.
 
@@ -82,7 +81,7 @@ mod intake, not the bundled-id selector; see
 
 GitHub-hosted URL folders are the canonical sharing path, not an authorization or
 repository-API integration. Catalogue preparation produces a reviewable addition for a
-human to submit when the PR gate permits; it does not publish automatically. Jsonnet
+human to submit; it does not publish automatically. Jsonnet
 keeps that output on the repository's authoring path without another conversion language.
 A gallery remains a possible later product, not part of this build.
 
@@ -93,12 +92,10 @@ Control placement and active-set disclosure belong to that combined UX design.
 
 ## Build plan
 
-These slices describe delivery dependencies, not permission to open new PRs under
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate". Work must use an
-existing PR or wait until the refactor is executed. The independent game slice has no
-tool dependency. The engine field-patch work retains priority over queued engine work
-within that gate and can run beside read-only inspection; editing cannot overtake it.
-Remove completed plan entries when code becomes their authority.
+These slices describe delivery dependencies. The independent game slice has no tool
+dependency. The engine field-patch work retains priority over queued engine work and
+can run beside read-only inspection; editing cannot overtake it. Remove completed plan
+entries when code becomes their authority.
 
 **Independent game slice: Default start flow.** This plan owns integration of mod
 selection alongside new-game and Continue. It depends on shared admission and
@@ -116,9 +113,9 @@ start flow.
    import direction with an import-boundary test like `packages/skelly-assets/tools/packages/construct/test/constructImportBoundary.test.ts`,
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
 2. **Engine field-patch merge.** Design-check and build the merge, schema marking
-   and per-field origins governed by ADR 0007. This is independently scheduled within
-   the PR gate, not blocked on slice 1. Resolve dependency-admission and fail-closed
-   enforcement prerequisites against `packages/deadvox/docs/pack-split.md`, "Refactor workstreams"; the
+   and per-field origins governed by ADR 0007. This is independently scheduled, not
+   blocked on slice 1. Resolve dependency-admission and fail-closed
+   enforcement prerequisites against `packages/deadvox/docs/pack-split.md`, "Package workstreams"; the
    documented rules alone are not enforcement. This unblocks editing without a throwaway
    whole-entry editor.
 3. **Browser Jsonnet evaluation.** Deliver the #801 prerequisite so both run modes can
