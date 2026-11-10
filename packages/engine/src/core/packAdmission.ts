@@ -38,6 +38,17 @@ export interface PackInput {
   files: ContentSource[];
 }
 
+/**
+ * The one order of pack manifest keys: by UTF-16 code unit, so locale and platform never reorder packs. The bundle
+ * stamp and the save identity list packs in this order, so the browser and the build must share it.
+ */
+export const comparePackKeys = (left: string, right: string): number => {
+  if (left < right) {
+    return -1;
+  }
+  return left > right ? 1 : 0;
+};
+
 // An id in no inventory stays out of the closure, so admission reports it as a missing dependency.
 export const selectFolderClosure = <T extends { readonly manifest: PackManifest }>(
   requested: readonly string[],
@@ -212,22 +223,63 @@ const contentEntries = (data: unknown): string[] => {
   return entries;
 };
 
-const entrySetters = (packs: readonly PackInput[]): Map<string, PackInput[]> => {
+/** The entries each of a pack's content files sets, by the path its manifest lists. */
+const packFileEntries = (pack: PackInput): { path: string; entries: string[] }[] => {
+  const sources = packSources(pack);
+  return pack.manifest.files
+    .filter(({ kind }) => kind === 'content')
+    .map(({ path }, index) => ({ path, entries: contentEntries(sources[index]!.data) }));
+};
+
+/** One pack may set an entry id in one file only. */
+const checkSameIdFiles = (
+  pack: PackInput,
+  files: readonly { path: string; entries: string[] }[],
+  fail: Report,
+): void => {
+  const seen = new Map<string, string>();
+  for (const { path, entries } of files) {
+    for (const entry of entries) {
+      const first = seen.get(entry);
+      if (first !== undefined && first !== path) {
+        fail(pack, 'files', `Pack ${pack.manifest.id}: entry ${entry} is set by both ${first} and ${path}; keep one`);
+      }
+      seen.set(entry, first ?? path);
+    }
+  }
+};
+
+const entrySetters = (packs: readonly PackInput[], fail: Report): Map<string, PackInput[]> => {
   const setters = new Map<string, PackInput[]>();
   for (const pack of packs) {
-    const entries = packSources(pack).flatMap(({ data }) => contentEntries(data));
+    const files = packFileEntries(pack);
+    checkSameIdFiles(pack, files, fail);
+    const addresses = new Set(files.flatMap(({ entries }) => entries));
     if (pack.manifest.defaultStart !== undefined) {
-      entries.push('defaultStart');
+      addresses.add('defaultStart');
     }
-    for (const entry of entries) {
-      const history = setters.get(entry) ?? [];
-      if (!history.includes(pack)) {
-        history.push(pack);
-      }
-      setters.set(entry, history);
+    for (const entry of addresses) {
+      setters.set(entry, [...(setters.get(entry) ?? []), pack]);
     }
   }
   return setters;
+};
+
+/** A setter that displaces an owner's entry must depend on the owner and declare the override. */
+const checkOverride = (
+  { setter, owner, entry, depends }: { setter: PackInput; owner: PackInput; entry: string; depends: boolean },
+  fail: Report,
+): void => {
+  const declared = setter.manifest.overrides.some(
+    (override) => override.pack === owner.manifest.id && override.entry === entry,
+  );
+  if (!(depends && declared)) {
+    fail(
+      setter,
+      'overrides',
+      `Pack ${setter.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
+    );
+  }
 };
 
 const checkOverrides = (
@@ -235,20 +287,19 @@ const checkOverrides = (
   dependencies: ReadonlyMap<string, ReadonlySet<string>>,
   fail: Report,
 ): void => {
-  for (const [entry, history] of entrySetters(packs)) {
-    const winner = history.at(-1)!;
-    for (const owner of history.slice(0, -1)) {
-      const declared = winner.manifest.overrides.some(
-        (override) => override.pack === owner.manifest.id && override.entry === entry,
-      );
-      if (!(dependencies.get(winner.manifest.id)!.has(owner.manifest.id) && declared)) {
-        fail(
-          winner,
-          'overrides',
-          `Pack ${winner.manifest.id}: entry ${entry} overrides pack ${owner.manifest.id}; declare the dependency and override`,
-        );
+  for (const [entry, history] of entrySetters(packs, fail)) {
+    // The last setter answers for every earlier one. A middle setter answers only for earlier setters it depends on:
+    // independent setters are a clash that a later pack settles by depending on and declaring both
+    // (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
+    history.forEach((setter, index) => {
+      const last = index === history.length - 1;
+      for (const owner of history.slice(0, index)) {
+        const depends = dependencies.get(setter.manifest.id)!.has(owner.manifest.id);
+        if (last || depends) {
+          checkOverride({ setter, owner, entry, depends }, fail);
+        }
       }
-    }
+    });
   }
 };
 

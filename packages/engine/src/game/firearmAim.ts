@@ -101,7 +101,7 @@ const normalizeDirection = (direction: Vec3): Vec3 => {
   return direction.map((value) => value / length) as Vec3;
 };
 
-/** Reports the nearest visible world surface or posed zombie region along a firearm ray. */
+/** Reports the nearest visible world surface or posed actor region along a firearm ray. */
 export const firearmBoreTarget = ({
   eye,
   direction,

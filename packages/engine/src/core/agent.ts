@@ -790,10 +790,10 @@ export class AgentController {
   }
 
   /**
-   * A zombie held up on the way to its target bashes what holds it, once per attack cooldown, but only where that is
+   * An actor held up on the way to its target bashes what holds it, once per attack cooldown, but only where that is
    * its one way through (`packages/deadvox/DESIGN.md`, "Senses and AI"): a piece it can walk past is left to its slide and wander.
-   * Whether the blow does anything is the piece's gate, not the zombie's (`packages/deadvox/DESIGN.md`, "Base building and
-   * electricity"); a type of strength 0 never bashes. A zombie whose blow lands stays at the piece instead of sliding
+   * Whether the blow does anything is the piece's gate, not the actor's (`packages/deadvox/DESIGN.md`, "Base building and
+   * electricity"); a type of strength 0 never bashes. An actor whose blow lands stays at the piece instead of sliding
    * or wandering off along the wall.
    */
   private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
@@ -921,7 +921,7 @@ const OBSTACLE_WANDER_ANGLES = [
   (-3 * Math.PI) / 4,
   Math.PI,
 ] as const;
-/** The slanted headings that still gain ground toward an intent, which a zombie held up tries to get past a piece. */
+/** The slanted headings that still gain ground toward an intent, which an actor held up tries to get past a piece. */
 const OBSTACLE_BYPASS_ANGLES = [Math.PI / 4, -Math.PI / 4] as const;
 const WAY_AROUND_STEPS = 8;
 interface ObstacleProbe {

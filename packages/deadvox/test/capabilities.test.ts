@@ -107,6 +107,17 @@ describe('content capabilities', () => {
     }
   });
 
+  it('names each competing claimant by pack and source file', () => {
+    const { issues } = buildRegistry([
+      { source: 'fixture.a/rows.json', data: { compression: [compression('first')] } },
+      { source: 'fixture.b/rows.json', data: { compression: [compression('second')] } },
+    ]);
+    expect(issues).toHaveLength(1);
+    for (const pack of ['fixture.a', 'fixture.b']) {
+      expect(issues[0]?.message).toContain(`${pack}/rows.json`);
+    }
+  });
+
   it('rejects a claim without its required payload and an unsupported claim', () => {
     for (const entry of [
       { id: 'incomplete', capability: 'player' },

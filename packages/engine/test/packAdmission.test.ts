@@ -105,6 +105,53 @@ it('requires defaultStart setters to declare the same dependency override as con
   expect(admitPacks([owner, play]).packs).toEqual([]);
 });
 
+it('refuses a middle pack that redefines an earlier entry undeclared even when the last pack declares both', () => {
+  const a = pack('fixture.a');
+  const b = pack('fixture.b', [a.manifest.id]);
+  const c = pack('fixture.c', [a.manifest.id, b.manifest.id]);
+  for (const input of [a, b, c]) {
+    input.files[0]!.data = { blocks: [{ id: 'fixture_shared' }] };
+  }
+  c.manifest.overrides = [a, b].map(({ manifest }) => ({ pack: manifest.id, entry: 'blocks:fixture_shared' }));
+  const refused = admitPacks([a, b, c]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: b.source, path: 'overrides' })]);
+  expect(refused.issues[0]!.message).toContain(a.manifest.id);
+  b.manifest.overrides = [{ pack: a.manifest.id, entry: 'blocks:fixture_shared' }];
+  expect(admitPacks([a, b, c]).issues).toEqual([]);
+});
+
+it('refuses a middle pack that overrides a non-adjacent dependency undeclared, though the last pack settles all', () => {
+  const a = pack('fixture.a');
+  const b = pack('fixture.b');
+  const c = pack('fixture.c', [a.manifest.id]);
+  const d = pack('fixture.d', [a.manifest.id, b.manifest.id, c.manifest.id]);
+  for (const input of [a, b, c, d]) {
+    input.files[0]!.data = { blocks: [{ id: 'fixture_shared' }] };
+  }
+  d.manifest.overrides = [a, b, c].map(({ manifest }) => ({ pack: manifest.id, entry: 'blocks:fixture_shared' }));
+  const refused = admitPacks([a, b, c, d]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: c.source, path: 'overrides' })]);
+  expect(refused.issues[0]!.message).toContain(a.manifest.id);
+  c.manifest.overrides = [{ pack: a.manifest.id, entry: 'blocks:fixture_shared' }];
+  expect(admitPacks([a, b, c, d]).issues).toEqual([]);
+});
+
+it('refuses one pack setting an entry id in two of its files, naming both files', () => {
+  const input = pack('fixture.twice');
+  input.manifest.files = [
+    { path: 'one.json', kind: 'content' },
+    { path: 'two.json', kind: 'content' },
+  ];
+  input.files = [
+    { source: 'one.json', data: { blocks: [{ id: 'fixture_shared' }] } },
+    { source: 'two.json', data: { blocks: [{ id: 'fixture_shared' }] } },
+  ];
+  const refused = admitPacks([input]);
+  expect(refused.issues).toEqual([expect.objectContaining({ source: input.source })]);
+  expect(refused.issues[0]!.message).toContain('one.json');
+  expect(refused.issues[0]!.message).toContain('two.json');
+});
+
 it('refuses a dependency cycle without admitting part of it', () => {
   const first = pack('fixture.first', ['fixture.second']);
   const second = pack('fixture.second', ['fixture.first']);

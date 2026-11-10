@@ -1,5 +1,4 @@
 // biome-ignore-all lint/correctness/noNodejsModules: Vite build plugin, never browser code.
-
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

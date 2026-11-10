@@ -72,7 +72,9 @@ it('prepares identities for alternative start packs without admitting them toget
     }),
   );
   const inputs = [entry, ...alternatives];
-  expect(admitPacks(inputs).issues.length).toBeGreaterThan(0);
+  expect(admitPacks(inputs).issues).toEqual([
+    expect.objectContaining({ message: expect.stringContaining('defaultStart') }),
+  ]);
   const defines = await bundledPackDefines(inputs, entry.manifest.id);
   expect(JSON.parse(defines.__SKELLY_OPT_IN_PACKS__!).map(({ id }: { id: string }) => id)).toEqual(ids(alternatives));
   alternatives[0]!.manifest.overrides = [];

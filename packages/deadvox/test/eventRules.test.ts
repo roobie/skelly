@@ -151,7 +151,7 @@ describe('scenario event rules', () => {
 
   it.each([
     ['an unadmitted trigger kind', { trigger: { kind: 'area' } }, '.trigger.kind', 'elapsed'],
-    ['a missing zombie type', {}, '.actor', 'no zombie type'],
+    ['a missing actor type', {}, '.actor', 'no actor type'],
     ['a duplicate id', 'duplicate', '.id', 'duplicate event rule'],
   ] as const)('rejects a scenario whose rule has %s', (_label, change, pathEnd, message) => {
     const scenario = fixtureScenario();

@@ -1,11 +1,11 @@
-// Draws zombies as their built actor figures instead of ActorMeshes' six boxes — the default behind
+// Draws actors as their built figures instead of ActorMeshes' six boxes — the default behind
 // the hash `actors` key (GameConfig.actors; `actors:boxes` selects the fallback; see `packages/engine/src/game/config.ts`).
 // Same shape as ActorMeshes
 // (group/sync/…, see ActorRenderer below) so play.ts can hold either behind one variable.
 //
 // Each figure is drawn from the session's built files (`packages/engine/src/core/actorFigureFiles.ts`): its mesh, body and clips,
 // so the game draws exactly the figure the authoring tools exported. The draw strategy: one shared bone-matrix
-// DataTexture for every zombie so shadow and colour passes consume the same pose, and one InstancedMesh per body
+// DataTexture for every actor so shadow and colour passes consume the same pose, and one InstancedMesh per body
 // variant, each vertex fetching its own bone's matrix with a single texelFetch — see ./crowd.ts for the
 // packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile at the
 // <begin_vertex>/<beginnormal_vertex> chunks (checked against three r186's meshlambert.glsl.js).
@@ -14,7 +14,7 @@
 // are those the `actors` option's types author (`drawnSeeds`), and types that bake the same figure share one
 // variant (`src/render/actorFigureVariants.ts`, `figureVariants`);
 // `DEFAULT_CAPACITY` provides the default capacity. A variant's overflow is not drawn, though its sim state
-// is unaffected — a hard per-variant cap for that zombie's whole life, not a rotating "nearest capacity"
+// is unaffected — a hard per-variant cap for that actor's whole life, not a rotating "nearest capacity"
 // set. Picking the nearest actors would require per-frame distance sorting within every overflowing variant.
 //
 // Living base pose (gait, idle clock, attack cooldown phase, and hit flinch) is simulation-owned and comes
@@ -23,24 +23,24 @@
 // a recent near stimulus while investigating. Hearing gaze has deterministic render-only jitter; stale gaze
 // eases back to the simulation pose at the same bounded rate, and never feeds hit-region FK.
 // Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
-// death is different — packages/engine/src/core/actorSystem.ts's onDeath removes the zombie from its store and calls actorDied
+// death is different — packages/engine/src/core/actorSystem.ts's onDeath removes the actor from its store and calls actorDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
 // slot/variant/instance, falls (as a ragdoll, or through the figure's built death clip when it bakes one),
-// holds once lying, sinks, then frees the slot. Corpses are render-only; incapacitated zombies remain
+// holds once lying, sinks, then frees the slot. Corpses are render-only; incapacitated actors remain
 // simulation entities, fall once and lie in their existing row, excluded from corpse eviction, until finishing
 // one off makes it an ordinary corpse.
 //
 // Dismemberment: packages/engine/src/core/actorState.ts's Actor.severed (part names, e.g.
-// "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live zombie,
+// "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live actor,
 // just re-expands actor.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
-// "just work": a restored zombie's severed list is already exactly right). A severed bone is hidden by
+// "just work": a restored actor's severed list is already exactly right). A severed bone is hidden by
 // writing an all-zero 3x4 matrix for it in the shared texture (packZeroBone) — a zero matrix collapses
 // every one of that bone's vertices to the origin, degenerate, so hiding it needs no shader logic at all.
 // The severed-bone bitmask (crowd.ts's packSeveredMask) exists only for the *gore* effect: a survivor
 // bone's face whose neighbourBone has just been severed (see ./actorFigureGeometry.ts) gets tinted in the fragment
 // shader. A corpse's severed set is frozen at the instant of death, same as its pose. Severing also spawns
 // one piece of flying debris (see the Debris type below) — its own InstancedMesh row shows only the
-// severed subtree (the inverse of a live zombie/corpse: the carried bones are real, everything else is
+// severed subtree (the inverse of a live actor/corpse: the carried bones are real, everything else is
 // zeroed) and shares the corpse Rapier world and cap/eviction/lifecycle machinery
 // (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
@@ -183,7 +183,7 @@ export interface ActorRenderer {
   actorDied?: (id: EntityId, actor: Actor, playerPos?: Vec3) => void;
   actorIncapacitated?: (id: EntityId, actor: Actor) => void;
   /** Called once for every part severed (packages/engine/src/core/actorSystem.ts's onSever, forwarded by play.ts) — a flying
-   * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
+   * limb of debris, not the whole actor; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
   actorSevered?: (id: EntityId, part: string, hit?: HitImpulse, actor?: Actor) => Vec3 | undefined;
   /** Called when a hit knocks flesh out of a fused-mass body (packages/engine/src/core/actorSystem.ts's onCarve, forwarded by play.ts). */
@@ -211,7 +211,7 @@ const severedBoneIds = (variant: Variant, parts: readonly string[]): ReadonlySet
   );
 
 /** Which way a corpse should topple: away from the player if a position is available (in reach at the
- * moment of death, in the player's forward hemisphere from the zombie's own facing → topple backward,
+ * moment of death, in the player's forward hemisphere from the actor's own facing → topple backward,
  * away; otherwise the player is behind it → topple forward, away), else backward — the documented default
  * for "no player position available." Exported for test/mobActors.test.ts. */
 export const fallDirectionAwayFromPlayer = (facing: Vec3, actorPos: Vec3, playerPos: Vec3 | undefined): 1 | -1 => {
@@ -230,9 +230,9 @@ const backgroundActorBlend = (actor: Actor, simulationTime: number | undefined, 
     ? fallback
     : clamp01((simulationTime - actor.renderPrevious.time) * BACKGROUND_ACTOR_RATE);
 
-/** A live zombie is keyed by its EntityId; a piece of debris (there can be more than one per zombie, over
+/** A live actor is keyed by its EntityId; a piece of debris (there can be more than one per actor, over
  * its lifetime) gets its own synthetic string key — see actorSevered. Corpses stay EntityId-keyed (one
- * per zombie). */
+ * per actor). */
 type SlotKey = EntityId | string;
 
 /** A severable part's rigid body as debris, in the scaled rest frame about its centre of mass. */
@@ -265,20 +265,20 @@ interface Variant {
   readonly geometry: BufferGeometry;
   readonly mesh: InstancedMesh;
   readonly crowdSlotAttr: InstancedBufferAttribute;
-  /** Reused every frame for every zombie of this variant: each place-and-pack fully consumes it before
+  /** Reused every frame for every actor of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps. */
   readonly scratch: MutableTransform[];
-  /** Local slot numbers (0..capacity-1) not currently assigned to a live zombie, corpse, *or debris* of
+  /** Local slot numbers (0..capacity-1) not currently assigned to a live actor, corpse, *or debris* of
    * this variant. */
   readonly freeLocalSlots: number[];
-  /** Dense, compacted (swap-removed) list of the zombie/corpse/debris keys currently drawn by this
+  /** Dense, compacted (swap-removed) list of the actor/corpse/debris keys currently drawn by this
    * variant's InstancedMesh — liveIds[k] is instance k. A corpse or a piece of debris stays in this list
-   * exactly like a live zombie (see MobActorMeshes' own doc comment); only freeSlot ever removes an entry. */
+   * exactly like a live actor (see MobActorMeshes' own doc comment); only freeSlot ever removes an entry. */
   readonly liveIds: SlotKey[];
   readonly idToInstanceIndex: Map<SlotKey, number>;
 }
 
-/** The three fields freeSlot needs to release a live zombie's, a corpse's, or a piece of debris's
+/** The three fields freeSlot needs to release a live actor's, a corpse's, or a piece of debris's
  * row/instance — ActorRenderState, Corpse and Debris all satisfy this structurally. */
 interface SlotHolder {
   readonly variantIndex: number;
@@ -298,7 +298,7 @@ interface ActorRenderState extends SlotHolder {
   drawnFall?: Map<number, Transform> | undefined;
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
-  /** The simulation zombie last drawn in this slot. */
+  /** The simulation actor last drawn in this slot. */
   actor: Actor | undefined;
   lastSeenFrame: number;
 }
@@ -365,7 +365,7 @@ export const hearingGazeTarget = (
   return [-Math.sin(yaw) * horizontal, Math.sin(pitch) * distance, -Math.cos(yaw) * horizontal];
 };
 
-/** A dead zombie keeps its live slot after the simulation has forgotten it. */
+/** A dead actor keeps its live slot after the simulation has forgotten it. */
 interface Corpse extends SlotHolder {
   /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
   readonly incapacitated: boolean;
@@ -456,7 +456,7 @@ export interface MobActorMeshesOptions {
   readonly ragdoll: RagdollConfig;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
-  /** The zombie types to draw: a variant per model they select and figure seed they author. */
+  /** The actor types to draw: a variant per model they select and figure seed they author. */
   readonly actors: ReadonlyMap<string, DrawnActorType>;
   /** The session's built actor figures, handed to each pose input (`packages/engine/src/core/actorPose.ts`, `ActorPoseInput`). */
   readonly actorFigureFiles: ActorFigureFiles;
@@ -612,7 +612,7 @@ const crowdMaterials = (
   return { material, depthMaterial };
 };
 
-/** Draws zombies as their built figures, one shared bone-matrix texture and one InstancedMesh per variant
+/** Draws actors as their built figures, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
 export class MobActorMeshes implements ActorRenderer {
   readonly group = new Group();
@@ -694,7 +694,7 @@ export class MobActorMeshes implements ActorRenderer {
     );
     const buildMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
-    console.info(`MobActorMeshes: built ${built.length} zombie figure variants in ${buildMs.toFixed(1)} ms`);
+    console.info(`MobActorMeshes: built ${built.length} actor figure variants in ${buildMs.toFixed(1)} ms`);
 
     const bonesPerSlot = Math.max(1, ...built.map((v) => v.figure.body.bones.length));
     // Each model/seed variant owns its own capacity rows in the shared bone texture, plus the hidden row.
@@ -886,7 +886,7 @@ export class MobActorMeshes implements ActorRenderer {
     return order;
   }
 
-  /** Whether `id` currently has a drawn instance (a slot) — true for a live zombie *or* a corpse still
+  /** Whether `id` currently has a drawn instance (a slot) — true for a live actor *or* a corpse still
    * lying/sinking. False for an id the sim knows about but this renderer hasn't (yet, or ever, if its
    * variant is at capacity) assigned one — see this module's header comment on the overflow behaviour.
    * Exported for test/mobActors.test.ts; play.ts has no use for it. */
@@ -895,12 +895,12 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /** Test-only: `boneId`'s *rotation* submatrix (row-major, the Mat3 convention of
-   * packages/engine/src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live zombie or a corpse) —
-   * the world rotation, not just this bone's own local pose delta, but since a zombie facing along -Z has
+   * packages/engine/src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live actor or a corpse) —
+   * the world rotation, not just this bone's own local pose delta, but since an actor facing along -Z has
    * yaw 0 (packCrowdBoneMatrix contributes no extra rotation at yaw 0 — see its own comment), comparing this
    * against IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
    * used to assert the old bind/A-pose (every bone left at its raw rest orientation) never reappears.
-   * Undefined for an unknown id/boneId, or for a bone this zombie/corpse has severed (reads as the zero
+   * Undefined for an unknown id/boneId, or for a bone this actor/corpse has severed (reads as the zero
    * matrix, not a rotation). */
   boneRotation(id: EntityId, boneId: string): Mat3 | undefined {
     const holder: SlotHolder | undefined = this.states.get(id) ?? this.corpses.get(id);
@@ -948,7 +948,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /** Test-only: true if `boneId`'s matrix in the shared texture, for the row currently assigned to `id` (a
-   * live zombie or a corpse), is the all-zero matrix a severed bone is packed as (see packZeroBone). False
+   * live actor or a corpse), is the all-zero matrix a severed bone is packed as (see packZeroBone). False
    * if `id`/`boneId` aren't found — a caller checking "is this hidden" for a bone that doesn't exist would
    * otherwise read as trivially true from an all-zero read past the texture's own bounds. */
   isBoneHidden(id: EntityId, boneId: string): boolean {
@@ -983,7 +983,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /** The oldest (lowest insertOrder) corpse or debris belonging to `variantIndex` — evicted to make room
-   * for a live zombie needing a slot there, or a new corpse/debris exceeding the shared corpse budget. Scans both Maps
+   * for a live actor needing a slot there, or a new corpse/debris exceeding the shared corpse budget. Scans both Maps
    * since neither's own iteration order alone says which of a corpse and a debris is older (see Corpse/
    * Debris's own insertOrder doc comments). */
   private evictOldestDeadThingInVariant(variantIndex: number): void {
@@ -1045,7 +1045,7 @@ export class MobActorMeshes implements ActorRenderer {
     const variant = this.variants[variantIndex]!;
     if (variant.freeLocalSlots.length === 0) {
       // Corpses and debris count toward capacity (see this module's header comment): make room by dropping
-      // this variant's own oldest dead thing before giving up on a live zombie.
+      // this variant's own oldest dead thing before giving up on a live actor.
       this.evictOldestDeadThingInVariant(variantIndex);
     }
     const localSlot = variant.freeLocalSlots.pop();
@@ -1170,7 +1170,7 @@ export class MobActorMeshes implements ActorRenderer {
     meshes.tip.position.set(pose.end[0], pose.end[1], pose.end[2]);
   }
 
-  /** Releases `entry`'s row/instance back to its variant, swap-compacting whichever key (a live zombie, a
+  /** Releases `entry`'s row/instance back to its variant, swap-compacting whichever key (a live actor, a
    * corpse, or a piece of debris — all three share the same dense liveIds/instanceIndex bookkeeping) was
    * drawn last into the now-vacated slot. Shared by removeActor (a plain vanish), freeCorpse and
    * freeDebris (expiry or eviction); none of them touch `this.states`/`this.corpses`/`this.debris`
@@ -1314,7 +1314,7 @@ export class MobActorMeshes implements ActorRenderer {
     this.debris.delete(key);
   }
 
-  /** A torso-destroyed zombie remains in the store, so its fallen row stays while it lies there: no sink/despawn
+  /** A torso-destroyed actor remains in the store, so its fallen row stays while it lies there: no sink/despawn
    * and no corpse-budget eviction until it dies (see finishDownedCorpse). A death corpse is render-only with the
    * finite lifecycle below. */
   actorIncapacitated(id: EntityId, actor: Actor): void {
@@ -1354,7 +1354,7 @@ export class MobActorMeshes implements ActorRenderer {
 
   /**
    * Called once for every death (packages/engine/src/core/actorSystem.ts's onDeath, forwarded by play.ts) — the sim removes
-   * the zombie from its store in the very same call, before or after this frame's sync() runs either way
+   * the actor from its store in the very same call, before or after this frame's sync() runs either way
    * (see this module's header comment on why that ordering is safe): this method moves `id` out of
    * `this.states` (the live map) into `this.corpses` *immediately and synchronously*, so sync()'s prune
    * loop — which only ever looks at `this.states` — never sees `id` at all once it's died, whichever order
@@ -1382,7 +1382,7 @@ export class MobActorMeshes implements ActorRenderer {
       return;
     }
     // `id` deliberately stays in this.states until the very end: a global-cap eviction below can swap-
-    // compact the *dying* zombie's own instance into the vacated slot (if it happens to be the one
+    // compact the *dying* actor's own instance into the vacated slot (if it happens to be the one
     // currently last in its variant's liveIds) — freeSlot's lookup must still find it as a SlotHolder,
     // which this.states (not yet deleted) still provides, exactly as it did before this death.
     if (this.evictableDeadThingCount() >= this.options.maxCorpses) {
@@ -1518,10 +1518,10 @@ export class MobActorMeshes implements ActorRenderer {
 
   /**
    * Called once for every part severed (packages/engine/src/core/actorSystem.ts's onSever, forwarded by play.ts) — spawns one
-   * piece of flying debris in the *same* zombie's variant (see this module's header comment). No-ops for an
-   * id this renderer isn't tracking as a live zombie (over capacity, or — per packages/engine/src/core/actorSystem.ts's swing,
+   * piece of flying debris in the *same* actor's variant (see this module's header comment). No-ops for an
+   * id this renderer isn't tracking as a live actor (over capacity, or — per packages/engine/src/core/actorSystem.ts's swing,
    * which calls onSever before onDeath on the same hit — already dead this exact hit is impossible, since
-   * actorDied hasn't run yet; but a stale/unknown part name, or no position yet on the zombie's very first
+   * actorDied hasn't run yet; but a stale/unknown part name, or no position yet on the actor's very first
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
    * the shared corpse budget exactly like a corpse (see actorDied's own eviction).
    * Returns the piece's launch velocity (metres per real second), which the cut's blood inherits; undefined when
@@ -1806,7 +1806,7 @@ export class MobActorMeshes implements ActorRenderer {
     return !this.frustum.intersectsSphere(this.boundingSphere);
   }
 
-  /** Interpolated pos/yaw/headYaw at `blend` between a zombie's last two fixed-step poses — exactly
+  /** Interpolated pos/yaw/headYaw at `blend` between an actor's last two fixed-step poses — exactly
    * ActorMeshes.renderPose's own maths (src/render/actors.ts), duplicated rather than extracted there:
    * that file is left alone on purpose (see this module's header comment). */
   private interpolateRenderPose(actor: Actor, blend: number): { pos: Vec3; yaw: number; headYaw: number } {
@@ -1860,7 +1860,7 @@ export class MobActorMeshes implements ActorRenderer {
   /** FK from `pose`, then packs every bone at `globalRow`: severed bones get a zero matrix (hidden — see
    * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask and the
    * bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared by
-   * packPose (a live zombie) and packCorpse; packDebris packs its own inverse (only the carried subtree is
+   * packPose (a live actor) and packCorpse; packDebris packs its own inverse (only the carried subtree is
    * real) directly, since the two cases share little beyond "call packCrowdBoneMatrix or packZeroBone". */
   private packSkeleton(
     globalRow: number,

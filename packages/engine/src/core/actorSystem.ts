@@ -136,7 +136,7 @@ const actorRegionsFor = (type: ActorDef, body: ActorBody): ActorRegions => {
     (body.manifest?.regions ?? []).map((region) => {
       const health = maxActorRegionHealth(type, region.id as ActorHitRegion);
       if (health === undefined) {
-        throw new Error(`Zombie type ${type.id} has no health for amalgam region ${region.id}`);
+        throw new Error(`Actor type ${type.id} has no health for fused-mass region ${region.id}`);
       }
       return [region.id, health];
     }),
@@ -187,20 +187,20 @@ export interface ActorAim {
   readonly health: number;
   readonly maxHealth: number;
   readonly boxes: readonly PosedBoneBox[];
-  /** The box the ray struck: entered first, or for an amalgam, the one whose flesh it met. */
+  /** The box the ray struck: entered first, or for a fused mass, the one whose flesh it met. */
   readonly hitBox: PosedBoneBox;
-  /** The amalgam flesh cell the ray struck (core/fusedMassCarving.ts, `fleshHit`). */
+  /** The fused-mass flesh cell the ray struck (core/fusedMassCarving.ts, `fleshHit`). */
   readonly cell?: number | undefined;
 }
 
-/** Where one hit struck an amalgam's flesh, before it is carved. */
+/** Where one hit struck a fused mass's flesh, before it is carved. */
 interface FusedMassStrike {
   readonly cell: number;
   readonly damage: number;
   readonly hit: HitImpulse;
 }
 
-/** Where a hit struck a zombie's flesh, for its caller to carve, when the zombie carves. */
+/** Where a hit struck an actor's flesh, for its caller to carve, when the actor carves. */
 const strikeOf = (
   actor: Actor,
   cell: number | undefined,
@@ -212,7 +212,7 @@ interface MeleeHitContext {
   readonly id: EntityId;
   readonly actor: Actor;
   readonly region: ActorHitRegion;
-  /** The amalgam flesh cell the hit struck, which a type that carves knocks out around. */
+  /** The fused-mass flesh cell the hit struck, which a type that carves knocks out around. */
   readonly cell: number | undefined;
   readonly origin: Vec3;
   readonly direction: Vec3;
@@ -312,7 +312,7 @@ export interface ActorSystemOptions {
   isSoundBlocking?: SolidAt;
   meleeBlocker?: MeleeBlocker;
   /**
-   * `isSolid` as cached bricks, which an amalgam's exact shape moves against (core/solidBricks.ts). Without
+   * `isSolid` as cached bricks, which a fused mass's exact shape moves against (core/solidBricks.ts). Without
    * it the bricks are read from `isSolid` on every query: right, but slower.
    */
   solidBricks?: SolidBricks | undefined;
@@ -334,7 +334,7 @@ export interface ActorSystemOptions {
     attacker: EntityId,
     kind: DamageKind,
   ) => void;
-  /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
+  /** The id is what a renderer keys its corpse on; the actor is already out of the store. */
   onDeath?: (id: EntityId, actor: Actor) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
   onIncapacitated?: (id: EntityId, actor: Actor) => void;
@@ -360,7 +360,7 @@ export interface ActorSystemOptions {
    * `actor.severed` already includes `part`, so a renderer reading actor.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
   onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
-  /** Called when a hit knocks flesh out of an amalgam, *after* `actor.carved` includes `cells`. `hit` is
+  /** Called when a hit knocks flesh out of a fused mass, *after* `actor.carved` includes `cells`. `hit` is
    * the strike the hole centres on. */
   onCarve?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
   /** Reports the actual result of an attempted player melee swing; absent in normal play. */
@@ -368,7 +368,7 @@ export interface ActorSystemOptions {
   /** Presentation-only recoil for a confirmed hit. */
   onMeleeContact?: (impulse: number) => void;
   /**
-   * A bash at a pursuing zombie's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
+   * A bash at a pursuing actor's obstacle contact: `ahead` is its box moved the obstacle lookahead along its aim.
    * The owner of doors resolves it against the leaf there and makes its noise; true when a leaf took the blow.
    */
   bashObstacle?: (ahead: Body, strength: number) => boolean;
@@ -429,7 +429,7 @@ const blastOrder = (actor: Actor): ActorHitRegion[] => {
   ];
 };
 const OBSTACLE_LOOKAHEAD_METRES = 0.7;
-/** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
+/** Where a spit leaves an actor: its posed mouth, held at the end of the wind-up, so the line follows the
  * drawn-back head and its gaze. */
 const spitOrigin = (actor: Actor, id: EntityId, scene: ActorPoseScene): Vec3 =>
   posedMouth({ ...actorPoseInputFor(actor, id, scene), spitProgress: 1 });
@@ -555,7 +555,7 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
   return true;
 };
 
-/** The nearest region a ray strikes, and for an amalgam the flesh cell. */
+/** The nearest region a ray strikes, and for a fused mass the flesh cell. */
 interface RegionHit {
   readonly id: EntityId;
   readonly actor: Actor;
@@ -567,7 +567,7 @@ interface RegionHit {
   readonly cell: number | undefined;
 }
 
-/** An amalgam body's exact shape, and the last facing it turned to clear of terrain. */
+/** A fused-mass body's exact shape, and the last facing it turned to clear of terrain. */
 interface FusedMassCollider {
   readonly actor: Actor;
   readonly shape: FusedMassShape;
@@ -597,7 +597,7 @@ export class ActorSystem {
   private readonly tickScratch = createActorTickScratch();
   private frozen = false;
   private readonly solidBricks: SolidBricks;
-  /** Per body: its amalgam's shape and the last facing it turned to without meeting terrain; null otherwise. */
+  /** Per body: its fused mass's shape and the last facing it turned to without meeting terrain; null otherwise. */
   private readonly shapes = new WeakMap<Body, FusedMassCollider | null>();
   private readonly missing = new WeakMap<
     Actor,
@@ -619,7 +619,7 @@ export class ActorSystem {
     });
   }
 
-  /** The amalgam's flesh as its body's shape, turned to its facing; every other body moves as its box. */
+  /** The fused mass's flesh as its body's shape, turned to its facing; every other body moves as its box. */
   readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
 
   private colliderOf(body: Body): FusedMassCollider | undefined {
@@ -649,7 +649,7 @@ export class ActorSystem {
     return collider;
   }
 
-  /** The flesh an amalgam has lost, rebuilt only when its holes or severed members change. */
+  /** The flesh a fused mass has lost, rebuilt only when its holes or severed members change. */
   private missingFor(actor: Actor): MissingFlesh {
     const cached = this.missing.get(actor);
     if (cached && cached.carved === actor.carved && cached.severed === actor.severed.length) {
@@ -665,7 +665,7 @@ export class ActorSystem {
     return actorFigure(this.options.actorFigureFiles, type, figureSeed);
   }
 
-  /** The fused-mass figure of an amalgam; throws for any other body. */
+  /** The figure of a fused-mass body; throws for any other body. */
   private fusedMassOf(type: ActorDef, figureSeed: number): FusedMassFigure {
     const { fusedMass } = this.figureFor(type, figureSeed);
     if (!fusedMass) {
@@ -683,7 +683,7 @@ export class ActorSystem {
   }
 
   /**
-   * Turns an amalgam clear of terrain. A turn that swings its flesh into terrain shoves the body off it by the
+   * Turns a fused mass clear of terrain. A turn that swings its flesh into terrain shoves the body off it by the
    * shortest push that frees the turned flesh, as a body against a wall pivots off it to turn, and that tick
    * it doesn't also move back into what it was pushed off. When no push as far as the turn moved its flesh
    * frees it, it keeps the last facing that was clear. If both overlap (it started in terrain), the turn stands.
@@ -712,7 +712,7 @@ export class ActorSystem {
     collider.facing = copy(actor.facing);
   }
   /**
-   * Whether an amalgam's step this tick could change nothing, so its shape tests are skipped: it rests on
+   * Whether a fused mass's step this tick could change nothing, so its shape tests are skipped: it rests on
    * the ground where it last came to rest, neither moving nor turning, and no solid block has changed.
    */
   private restsStill(actor: Actor): boolean {
@@ -814,7 +814,7 @@ export class ActorSystem {
 
   restoreState(state: ActorSystemState, resolveType: (id: string) => ActorDef | undefined): void {
     if (this.store.size > 0) {
-      throw new Error('Zombie state restores only into an empty entity store');
+      throw new Error('Actor state restores only into an empty entity store');
     }
     const puddles = this.restorePuddles(state, resolveType);
     const globs = state.acidGlobs.map((glob) => {
@@ -839,7 +839,7 @@ export class ActorSystem {
       return { state: { ...glob, pos: copy(glob.pos), velocity: copy(glob.velocity) }, type };
     });
     const entries = state.actors.map(
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted zombie invariant before mutating the entity store.
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted actor invariant before mutating the entity store.
       ({ id, actor }) => {
         if (
           !Number.isSafeInteger(id) ||
@@ -866,23 +866,23 @@ export class ActorSystem {
           !validObstacleWanderState(actor) ||
           typeof actor.incapacitated !== 'boolean'
         ) {
-          throw new Error(`Invalid zombie state for entity ${id}`);
+          throw new Error(`Invalid actor state for entity ${id}`);
         }
         const type = resolveType(actor.type);
         if (!type) {
-          throw new Error(`Missing zombie type ${actor.type}`);
+          throw new Error(`Missing actor type ${actor.type}`);
         }
         if ((actor.agent !== undefined) !== (type.agent !== undefined)) {
           throw new Error(`Invalid agent presence for entity ${id}`);
         }
         if ((!type.attack && (actor.attackWindup > 0 || actor.attackWait > 0)) || (!type.agent && actor.chaseStance)) {
-          throw new Error(`Invalid zombie state for entity ${id}`);
+          throw new Error(`Invalid actor state for entity ${id}`);
         }
         if (type.model === 'fused-mass' && actor.figureSeed !== FUSED_MASS_FIGURE_SEED) {
-          throw new Error(`Invalid amalgam figure seed for entity ${id}`);
+          throw new Error(`Invalid fused-mass figure seed for entity ${id}`);
         }
         if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(actor.figureSeed)) {
-          throw new Error(`Invalid zombie state for entity ${id}`);
+          throw new Error(`Invalid actor state for entity ${id}`);
         }
         const expectedRegions = actorRegionsFor(type, this.figureFor(type, actor.figureSeed).body);
         const expectedRegionIds = Object.keys(expectedRegions);
@@ -894,7 +894,7 @@ export class ActorSystem {
             return !Number.isFinite(health) || health! < 0 || health! > expectedRegions[region]!;
           })
         ) {
-          throw new Error(`Invalid zombie regions for entity ${id}`);
+          throw new Error(`Invalid actor regions for entity ${id}`);
         }
         if (type.model === 'fused-mass') {
           const envelope = actorBodyDimensions(type, this.options.blockSize);
@@ -903,7 +903,7 @@ export class ActorSystem {
             actor.body.halfDepth !== envelope.halfDepth ||
             actor.body.height !== envelope.height
           ) {
-            throw new Error(`Invalid amalgam collision envelope for entity ${id}`);
+            throw new Error(`Invalid fused-mass collision envelope for entity ${id}`);
           }
           const validParts = new Set(
             this.fusedMassOf(type, actor.figureSeed)
@@ -914,7 +914,7 @@ export class ActorSystem {
             new Set(actor.severed).size !== actor.severed.length ||
             actor.severed.some((part) => !validParts.has(part))
           ) {
-            throw new Error(`Invalid amalgam severed parts for entity ${id}`);
+            throw new Error(`Invalid fused-mass severed parts for entity ${id}`);
           }
         }
         if (!validCarvedCells(type.carving ? this.fusedMassOf(type, actor.figureSeed) : undefined, actor.carved)) {
@@ -995,7 +995,7 @@ export class ActorSystem {
       if (actor.agent?.hordeId !== undefined) {
         const horde = this.agentHorde.hordes.get(actor.agent.hordeId)?.state;
         if (!horde || horde.type !== actor.type.id) {
-          throw new Error(`Missing or mismatched horde ${actor.agent.hordeId} for zombie`);
+          throw new Error(`Missing or mismatched horde ${actor.agent.hordeId} for actor`);
         }
       }
     }
@@ -1366,7 +1366,7 @@ export class ActorSystem {
   /**
    * Whether a wall stands just ahead along `aim`. A box-sized body moves its box as far ahead and tests
    * whether it meets terrain: a ray from its centre misses the block corner its body catches, so it would
-   * grind against that corner without ever registering the contact. An amalgam's flesh reaches metres past
+   * grind against that corner without ever registering the contact. A fused mass's flesh reaches metres past
    * its centre, so its shape is moved as far ahead instead.
    */
   private wallAhead(aim: Vec3): boolean {
@@ -1378,7 +1378,7 @@ export class ActorSystem {
     return bodyOverlapsTerrain(this.bodyAhead(aim), isSolid);
   }
 
-  /** The zombie's box at its tick start, moved the obstacle lookahead along `aim`. */
+  /** The actor's box at its tick start, moved the obstacle lookahead along `aim`. */
   private readonly boundBodyAhead = this.bodyAhead.bind(this);
 
   private bodyAhead(aim: Vec3): Body {
@@ -1387,7 +1387,7 @@ export class ActorSystem {
     return { ...actor.body, pos: [beforeStep[0] + aim[0] * reach, beforeStep[1], beforeStep[2] + aim[2] * reach] };
   }
 
-  /** Whether an amalgam's flesh, moved the obstacle lookahead along `heading` and lifted over a step, meets terrain. */
+  /** Whether a fused mass's flesh, moved the obstacle lookahead along `heading` and lifted over a step, meets terrain. */
   private fleshMeets(shape: BodyShape, heading: Vec3): boolean {
     const { actor, blockSize } = this.tickScratch;
     const { pos } = actor.body;
@@ -1397,7 +1397,7 @@ export class ActorSystem {
   }
 
   /**
-   * The side an amalgam meeting a wall slides to: the one its flesh can move to. Met at a slant, that is the
+   * The side a fused mass meeting a wall slides to: the one its flesh can move to. Met at a slant, that is the
    * side the wall leads it along; caught on a door frame or wall end, the side that frees it. A random side
    * there could back it out of the gap it was sliding into or pin it. When both sides are open, or neither
    * side is free, it draws, as a shambler always does.
@@ -1596,7 +1596,7 @@ export class ActorSystem {
     }
   }
 
-  /** Advances every selected zombie at a fixed caller-supplied simulation dt. */
+  /** Advances every selected actor at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep body-only dispatch beside the ordered perception and movement passes.
   tick(
     dt: number,
@@ -1891,7 +1891,7 @@ export class ActorSystem {
     return nearest;
   }
 
-  /** The ray's first unblocked hit on one zombie's regions when it is nearer than `nearest`, else `nearest`. */
+  /** The ray's first unblocked hit on one actor's regions when it is nearer than `nearest`, else `nearest`. */
   private nearerRegionHit(
     {
       id,
@@ -1920,7 +1920,7 @@ export class ActorSystem {
         continue;
       }
       const boxes = posed[region] ?? [];
-      // An amalgam is struck only on its flesh: its boxes are loose around rounded lobes (#563).
+      // A fused mass is struck only on its flesh: its boxes are loose around rounded lobes (#563).
       const hit: { readonly distance: number; readonly box: PosedBoneBox; readonly cell?: number } | undefined = figure
         ? fleshHit({ figure, missing: this.missingFor(actor), boxes, origin, direction, blockSize })
         : posedRegionHit(boxes, origin, direction, blockSize);
@@ -1989,7 +1989,7 @@ export class ActorSystem {
       ...projectileWeapon(shot.damage, shot.rangeMetres, shot.impulse, shot.damageKind),
       ...(shot.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: shot.headDamageMultiplier }),
     };
-    // One shot's pellets carve one hole per amalgam, struck against the flesh as it was before the shot's
+    // One shot's pellets carve one hole per fused mass, struck against the flesh as it was before the shot's
     // holes, so pellets on one line can't tunnel through the body.
     const strikes = new Map<EntityId, { actor: Actor; strikes: FusedMassStrike[] }>();
     for (const direction of shot.directions) {
@@ -2127,7 +2127,7 @@ export class ActorSystem {
     return this.resolveMeleeNow(origin, direction, weapon, isFist);
   }
 
-  /** Applies one hit's damage and effects; returns where it struck an amalgam's flesh, for the caller to carve. */
+  /** Applies one hit's damage and effects; returns where it struck a fused mass's flesh, for the caller to carve. */
   private applyMeleeHit({
     id,
     actor,
@@ -2260,7 +2260,7 @@ export class ActorSystem {
     return incapacitated;
   }
 
-  /** Takes health from a zombie's legs not yet destroyed, shared between them, as a hit there would. */
+  /** Takes health from an actor's legs not yet destroyed, shared between them, as a hit there would. */
   injureLegs(id: EntityId, damage: number): void {
     const actor = this.store.get(id);
     if (!actor || damage <= 0) {
@@ -2303,9 +2303,9 @@ export class ActorSystem {
   }
 
   /**
-   * Ends a downed zombie as a kill does: its head is destroyed, it leaves the store and onDeath fires, so its
+   * Ends a downed actor as a kill does: its head is destroyed, it leaves the store and onDeath fires, so its
    * body sinks as a corpse. Dismembering first cuts off whichever arms are still on, and the head, each left
-   * behind through onSevered. Returns why not for a zombie that isn't lying downed.
+   * behind through onSevered. Returns why not for an actor that isn't lying downed.
    */
   finishDowned(id: EntityId, dismember: boolean): string | undefined {
     const actor = this.store.get(id);

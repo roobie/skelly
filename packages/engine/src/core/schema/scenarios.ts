@@ -40,7 +40,7 @@ const EventRuleSchema = strictObject({
   effects: pipe(
     array(
       union([
-        /** A horde of one zombie type appears at `at`, in world cells, and heads for where the player stood. */
+        /** A horde of one actor type appears at `at`, in world cells, and heads for where the player stood. */
         strictObject({
           kind: literal('releaseHorde'),
           actor: Id,

@@ -1,5 +1,4 @@
 // biome-ignore-all lint/correctness/noNodejsModules: build-time validation runs in Node.
-
 import { realpathSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
