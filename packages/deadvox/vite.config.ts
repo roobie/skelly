@@ -194,7 +194,7 @@ const testFiles = runSweeps
 // enable it, and browser stages add it to the servers they create. See
 // `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 // Vitest gives each of its environments (`__vitest__` runs global setup) its own resolve options.
-const engineTestResolve = { resolve: { conditions: ['skelly-engine-test'] } };
+const engineTestResolve = { resolve: { conditions: ['skelly-test'] } };
 const engineTestEnvironments =
   // biome-ignore lint/style/noProcessEnv: Vitest's documented runner marker.
   process.env.VITEST === 'true'

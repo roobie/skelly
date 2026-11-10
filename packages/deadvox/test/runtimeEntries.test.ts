@@ -14,7 +14,7 @@ const UP_TO_PACKAGES = '../'.repeat(3);
 const cleanTree: Tree = {
   'packages/engine/package.json': JSON.stringify({
     name: '@skelly/engine',
-    exports: { './sim': './src/sim.ts', './internal/*': { 'skelly-engine-test': './src/*' } },
+    exports: { './sim': './src/sim.ts', './internal/*': { 'skelly-test': './src/*' } },
   }),
   'packages/engine/src/core/rule.ts': 'export const rule = 1;\n',
   'packages/engine/src/core/inner.ts': "import { rule } from './rule.ts';\nexport const inner = rule;\n",

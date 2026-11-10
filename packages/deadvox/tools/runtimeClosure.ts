@@ -22,6 +22,8 @@ export interface RuntimeClosurePolicy {
   readonly forbidden: readonly string[];
   /** npm packages no runtime file, or local file it reaches, may import, with every subpath. */
   readonly forbiddenPackages: readonly string[];
+  /** Export conditions only tests enable: a workspace subpath that resolves only under one is not shipped. */
+  readonly testConditions: readonly string[];
   /** The Vite project root, where a glob pattern or base with a leading slash starts. */
   readonly viteRoot: string;
   /** The compiler config for the start set; it may set only resolution the check models. */
@@ -43,8 +45,22 @@ export const ENGINE_POLICY: RuntimeClosurePolicy = {
   manifest: 'packages/engine/package.json',
   forbidden: ['packages/deadvox', 'packages/presentation'],
   forbiddenPackages: ['three', 'lit', 'lit-html'],
+  testConditions: ['skelly-test'],
   viteRoot: 'packages/engine',
   tsconfig: 'packages/engine/tsconfig.json',
+};
+
+// The presentation package (#1532): it reaches no product package by any route, and reaches the engine only
+// through its curated entries; see `packages/presentation/PROJECT.md`, "Imports".
+export const PRESENTATION_POLICY: RuntimeClosurePolicy = {
+  start: ['packages/presentation/src'],
+  leaves: [],
+  manifest: 'packages/presentation/package.json',
+  forbidden: ['packages/deadvox'],
+  forbiddenPackages: [],
+  testConditions: ENGINE_POLICY.testConditions,
+  viteRoot: 'packages/presentation',
+  tsconfig: 'packages/presentation/tsconfig.json',
 };
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
@@ -71,7 +87,8 @@ const PACKAGE_KEYS = new Set([
 // The tsconfig keys and compiler options the check models. Most cannot add files or change resolution;
 // the ones that can are constrained in `tsconfigInputs`: moduleResolution, module, paths, types (bare
 // package names, each classified like an import), lib (compiler library names) and include (paths inside
-// the package). customConditions needs no constraint: the check follows every condition of an `exports` value.
+// the package). customConditions needs no constraint: the check follows every condition of an `exports` value,
+// and fails a subpath that resolves only under a test condition.
 const TSCONFIG_KEYS = new Set(['compilerOptions', 'include']);
 const BARE_TYPE_PACKAGE = /^(?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*(?:\/[a-z0-9][\w.-]*)*$/;
 const COMPILER_LIBRARY = /^[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*$/;
@@ -139,22 +156,42 @@ function workspacesOf(repoRoot: string): Workspace[] {
     });
 }
 
-/** Every target string under an `exports` value: each condition (nested too) and each array fallback. */
-function exportTargets(value: unknown): string[] {
+/**
+ * Every target string under an `exports` value: each condition (nested too) except the skipped ones, and each
+ * array fallback.
+ */
+function exportTargets(value: unknown, skipped: readonly string[] = []): string[] {
   if (typeof value === 'string') {
     return [value];
   }
   if (Array.isArray(value)) {
-    return value.flatMap(exportTargets);
+    return value.flatMap((item) => exportTargets(item, skipped));
   }
-  return value && typeof value === 'object' ? Object.values(value).flatMap(exportTargets) : [];
+  return value && typeof value === 'object'
+    ? Object.entries(value)
+        .filter(([condition]) => !skipped.includes(condition))
+        .flatMap(([, target]) => exportTargets(target, skipped))
+    : [];
+}
+
+/**
+ * The shipped workspace paths a subpath can name, outside the test conditions; or why it names none: it
+ * resolves only under a test condition, or the check cannot resolve it conservatively.
+ */
+function workspacePaths(workspace: Workspace, subpath: string, testConditions: readonly string[]): string[] | string {
+  const all = workspacePathsUnder(workspace, subpath, []);
+  if (typeof all === 'string' || all.length === 0) {
+    return all;
+  }
+  const shipped = workspacePathsUnder(workspace, subpath, testConditions);
+  return shipped.length === 0 ? 'imports a subpath that resolves only under a test condition' : shipped;
 }
 
 /**
  * The workspace paths a subpath can name: every target of the exact `exports` key, else of every
- * matching pattern; or why the check cannot resolve it conservatively.
+ * matching pattern, outside the skipped conditions; or why the check cannot resolve it conservatively.
  */
-function workspacePaths(workspace: Workspace, subpath: string): string[] | string {
+function workspacePathsUnder(workspace: Workspace, subpath: string, skipped: readonly string[]): string[] | string {
   if (workspace.exports === undefined) {
     // Without exports the root resolves through main, module or types fields, which the check does not model.
     return subpath === '' ? `a workspace root without exports: ${workspace.name}` : [`${workspace.dir}${subpath}`];
@@ -168,7 +205,7 @@ function workspacePaths(workspace: Workspace, subpath: string): string[] | strin
   const key = `.${subpath}`;
   const inDir = (target: string) => join(workspace.dir, target).split(sep).join('/');
   if (Object.hasOwn(map, key)) {
-    return exportTargets(map[key]).map(inDir);
+    return exportTargets(map[key], skipped).map(inDir);
   }
   return Object.entries(map).flatMap(([pattern, value]) => {
     const star = pattern.indexOf('*');
@@ -176,7 +213,7 @@ function workspacePaths(workspace: Workspace, subpath: string): string[] | strin
       return [];
     }
     const matched = key.slice(star, key.length - (pattern.length - star - 1));
-    return exportTargets(value).map((target) => inDir(target.replaceAll('*', matched)));
+    return exportTargets(value, skipped).map((target) => inDir(target.replaceAll('*', matched)));
   });
 }
 
@@ -775,7 +812,7 @@ class ClosureWalk {
     }
     // The workspace manifest steers this resolution (exports, typesVersions), whatever manifest the target has.
     this.judgeManifestFile(importer, specifier, posix.join(workspace.dir, 'package.json'));
-    const resolved = this.found(workspacePaths(workspace, specifier.slice(name.length)));
+    const resolved = this.found(workspacePaths(workspace, specifier.slice(name.length), this.policy.testConditions));
     return 'files' in resolved ? { files: resolved.files, library: workspace.dir } : resolved;
   }
 

@@ -4,7 +4,12 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
-import { ENGINE_POLICY, type RuntimeClosurePolicy, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
+import {
+  ENGINE_POLICY,
+  PRESENTATION_POLICY,
+  type RuntimeClosurePolicy,
+  runtimeClosureViolations,
+} from '../tools/runtimeClosure.ts';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 type Tree = Record<string, string>;
@@ -23,6 +28,7 @@ const FIXTURE_POLICY: RuntimeClosurePolicy = {
     'packages/presentation',
   ],
   forbiddenPackages: ENGINE_POLICY.forbiddenPackages,
+  testConditions: ENGINE_POLICY.testConditions,
   viteRoot: 'packages/deadvox',
   tsconfig: 'packages/deadvox/tsconfig.json',
 };
@@ -54,7 +60,7 @@ const cleanTree: Tree = {
   'packages/engine/package.json': JSON.stringify({
     name: '@skelly/engine',
     type: 'module',
-    exports: { './sim': './src/sim.ts' },
+    exports: { './sim': './src/sim.ts', './internal/*': { 'skelly-test': './src/*' } },
   }),
   'packages/engine/src/sim.ts': "export { solid } from './vehicles/solid.ts';\n",
   'packages/engine/src/vehicles/solid.ts': 'export const solid = 1;\n',
@@ -179,6 +185,10 @@ describe('runtime closure', () => {
     expect(runtimeClosureViolations(repoRoot, ENGINE_POLICY)).toEqual([]);
   });
 
+  it('keeps the presentation package off deadvox and the engine’s test-only subpath, and on the packages it declares', () => {
+    expect(runtimeClosureViolations(repoRoot, PRESENTATION_POLICY)).toEqual([]);
+  });
+
   // The loaded config is checked, not the file's text, because a config file may compute its values.
   it('runs on a Vite config that sets no resolution options', async () => {
     expect(await configFileGateIssues(join(viteRoot, 'vite.config.ts'))).toEqual([]);
@@ -265,6 +275,13 @@ describe('runtime closure', () => {
   it('fails a runtime file that imports its own package by name instead of by relative path', () => {
     const violations = violationsIn({ [catalog]: "export { rule } from '@skelly/deadvox/rule';\n" });
     expect(reasons(violations)).toEqual([[catalog, 'imports its own package by name']]);
+  });
+
+  it('fails a runtime file that imports a library subpath that resolves only under a test condition', () => {
+    const violations = violationsIn({
+      [catalog]: "export { solid } from '@skelly/engine/internal/vehicles/solid.ts';\n",
+    });
+    expect(reasons(violations)).toEqual([[catalog, 'imports a subpath that resolves only under a test condition']]);
   });
 
   it('fails a runtime file that imports an npm package its manifest does not name in dependencies', () => {

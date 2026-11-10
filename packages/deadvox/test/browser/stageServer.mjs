@@ -3,7 +3,7 @@
 // `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 import { createServer, defaultClientConditions, defaultServerConditions, mergeConfig } from 'vite';
 
-const ENGINE_TEST_CONDITION = 'skelly-engine-test';
+const ENGINE_TEST_CONDITION = 'skelly-test';
 // The URL prefix page code puts before a runtime package specifier, e.g. `/@stage/@skelly/engine/internal/core/x.ts`.
 const PAGE_PREFIX = '/@stage/';
 const PAGE_MODULE = '\0stage-engine:';

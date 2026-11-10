@@ -24,7 +24,7 @@
     "./vehicles": "./src/vehicles.ts",
     "./world": "./src/world.ts",
     "./internal/*": {
-      "skelly-engine-test": "./src/*"
+      "skelly-test": "./src/*"
     }
   },
   "scripts": {
