@@ -18,7 +18,7 @@ export const newWorldHref = (href: string, hash: HashState, seed: number): strin
 };
 
 /** The page again with debug on and the camera and freeze dropped, so a stashed replay starts from its own view. */
-export const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }: HashState): string => {
+const replayHref = (href: string, { cam: _cam, freeze: _freeze, ...hash }: HashState): string => {
   const url = new URL(href);
   url.hash = writeHash({ ...hash, debug: true });
   return url.href;

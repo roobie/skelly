@@ -1034,7 +1034,8 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoiceFor().bodyPitch(mobBody, options.voicePitchOverrides) : 1);
+    const bodyPitch =
+      soundPitchMultiplier ?? (mobBody ? actorVoiceFor().bodyPitch(mobBody, options.voicePitchOverrides) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);

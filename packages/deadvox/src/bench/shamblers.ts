@@ -69,7 +69,14 @@ export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | 
   ) {
     return undefined;
   }
-  return { counts, index, seed, time, actors: actorRendererFromUrl(params.get('actors')), post: benchPostFromUrl(params) };
+  return {
+    counts,
+    index,
+    seed,
+    time,
+    actors: actorRendererFromUrl(params.get('actors')),
+    post: benchPostFromUrl(params),
+  };
 };
 
 const nextUrl = (run: ShamblerBenchRun): string => {

@@ -43,7 +43,6 @@ const SHADOW_RADIUS = 2;
 /** The lens sits just ahead of the eye, so the map starts close in. */
 const SHADOW_NEAR = 0.1;
 
-
 export class Flashlight {
   readonly light = new SpotLight(undefined, 0);
   readonly lights: readonly SpotLight[];

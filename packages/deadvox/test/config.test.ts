@@ -120,9 +120,7 @@ it('accepts bounded weathering splits only in debug runs and defaults the compar
 it('turns off only world-scale weathering variation through a debug override', () => {
   const content = configFromUrl().weathering;
   expect(content).toBeDefined();
-  expect(configFromUrl('', { weatheringVariation: 0 }).weathering?.variationStrength).toBe(
-    content?.variationStrength,
-  );
+  expect(configFromUrl('', { weatheringVariation: 0 }).weathering?.variationStrength).toBe(content?.variationStrength);
   const variationOff = configFromUrl('', { debug: true, weatheringVariation: 0 }).weathering;
   expect(variationOff?.strength).toBe(content?.strength);
   expect(variationOff?.variationStrength).toBe(0);

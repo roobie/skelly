@@ -73,9 +73,9 @@ it('refuses a selected start paired with a different site', () => {
 it('refuses a missing entry or requested start instead of synthesizing a kit', () => {
   const supplied = fixture();
   expect(() => makeConfig(8, 96, { ...supplied, defaultStart: undefined })).toThrow('entry default missing');
-  expect(() => configFromUrl(new URLSearchParams('start=fixture_absent_start'), {}, supplied, ragdollSweepViewer)).toThrow(
-    'fixture_absent_start',
-  );
+  expect(() =>
+    configFromUrl(new URLSearchParams('start=fixture_absent_start'), {}, supplied, ragdollSweepViewer),
+  ).toThrow('fixture_absent_start');
   expect(() => startForSite(supplied, 'fixture_absent_site')).toThrow('one authored default start');
 });
 

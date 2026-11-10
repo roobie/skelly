@@ -16,7 +16,8 @@ import {
 import { observeSkyRoute, skyRendererIdentity } from './skyRouteObserver.ts';
 
 export function skyRouteUrl() {
-  const query = new URLSearchParams({ site: 'playtest', skyRoute: '1', time: '13:00' });
+  const query = new URLSearchParams({ site: 'playtest', skyRoute: '1' });
+  query.set('time', '13:00');
   return pageHref(location.href, query, { debug: true, seed: 1, radius: 48, at: [SKY_ROUTE.start, SKY_ROUTE.z, -90] });
 }
 function eligibleSkyFields(engine: Engine, metres: Vec3) {

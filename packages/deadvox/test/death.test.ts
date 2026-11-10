@@ -1,12 +1,7 @@
 // @vitest-environment happy-dom
 
 import { defOf } from '@skelly/engine/inventory';
-import {
-  type DeathSummary,
-  deathViewModel,
-  lootedText,
-  showDeath,
-} from '@skelly/presentation/internal/ui/death.ts';
+import { type DeathSummary, deathViewModel, lootedText, showDeath } from '@skelly/presentation/internal/ui/death.ts';
 import { describe, expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import baseSounds from '../mods/skelly.deadvox.actors/actors-sounds.json' with { type: 'json' };

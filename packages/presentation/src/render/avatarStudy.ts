@@ -12,15 +12,14 @@ import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 /** Metres between neighbouring figures, centre to centre. */
 const SPACING = 0.7;
 
-/** The study a debug run asks for, added to the scene; it holds no figure when debug is off or it names none. */
+/** The study a debug run asks for, added to the scene; it holds no figure when the run names none. */
 export const createAvatarStudy = (
   scene: Object3D,
-  debug: boolean,
   blockSize: number,
   models: ModelLibrary,
   requested: readonly string[] = [],
 ) => {
-  const ids = debug ? requested.filter(Boolean) : [];
+  const ids = requested.filter(Boolean);
   const study = new AvatarStudy(blockSize, ids, models);
   scene.add(study.group);
   return study;
