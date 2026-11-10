@@ -8,7 +8,6 @@ import { claimed } from '@skelly/engine/inventory';
 import { FUSED_MASS_FIGURE_SEED, fusedMassCollisionEnvelope, fusedMassTypeOf } from '@skelly/engine/pose';
 import { BlockEntities, makeScale, siteGenerationOf, World, worldBricks, worldSolid } from '@skelly/engine/world';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { physicsFor, playerTuning } from '../game/player.ts';
 
 const args = process.argv.slice(2);
 if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-9a-f]{7,40}$/.test(args[1]))) {
@@ -33,8 +32,9 @@ if (args.length > 0) {
     },
   });
 }
-// The simulation entry loads the shape, so it is imported only once the hook can substitute it.
+// The simulation entries load the shape, so they are imported only once the hook can substitute it.
 const { ActorSystem, dayPhaseAt } = await import('@skelly/engine/sim');
+const { physicsFor, playerTuning } = await import('../game/entries/sim.ts');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }

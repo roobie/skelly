@@ -4,7 +4,7 @@
 
 import type { Registry } from '@skelly/engine/content';
 import { html, render, type TemplateResult } from 'lit-html';
-import type { BindingRegistry } from '../game/bindingRegistry.ts';
+import type { BindingRegistry } from '../game/entries/input.ts';
 
 const WHITESPACE = /\s+/;
 

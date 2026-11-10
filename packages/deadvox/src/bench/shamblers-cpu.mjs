@@ -12,7 +12,7 @@ import {
 } from '@skelly/engine/sim';
 import { siteGenerationOf } from '@skelly/engine/world';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { physicsFor, playerTuning } from '../game/player.ts';
+import { physicsFor, playerTuning } from '../game/entries/sim.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
