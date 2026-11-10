@@ -110,7 +110,7 @@ local yardTop = [
       { template: 'rural_medical_post', position: [52, 21, 52], rotation: 0 },
       { template: 'rural_medical_grounds', position: [52, 21, 59], rotation: 0 },
     ],
-    player: { position: [57, 21.5, 65], bearing: 0 }, shamblers: [], woodlands: [],
+    player: { position: [57, 21.5, 65], bearing: 0 }, actors: [], woodlands: [],
     tracks: [{ points: [[57, 82], [57, 59]], width: 2.5, surface: 'dirt' }],
   }],
 }

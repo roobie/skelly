@@ -1542,8 +1542,8 @@ const checkSpawnWindows = (registry: Registry, report: Report) => {
     }
   }
   for (const layout of registry.layouts.values()) {
-    layout.shamblers?.forEach((shambler, index) => {
-      check(shambler.window, (message) => report('layouts', layout.id, `.shamblers[${index}].window`, message));
+    layout.actors?.forEach((spawn, index) => {
+      check(spawn.window, (message) => report('layouts', layout.id, `.actors[${index}].window`, message));
     });
   }
 };

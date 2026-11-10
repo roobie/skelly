@@ -218,7 +218,7 @@ const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number
       }
     }
   }
-  for (const spawn of fixture.shamblers) {
+  for (const spawn of fixture.actors) {
     const cx = toChunk(Math.floor(spawn.position[0] / scale.blockSize));
     const cz = toChunk(Math.floor(spawn.position[2] / scale.blockSize));
     columns.set(`${cx},${cz}`, [cx, cz]);
@@ -560,7 +560,7 @@ describe('authored fixed loot', () => {
       terrain: [],
       woodlands: [],
       tracks: [],
-      shamblers: [],
+      actors: [],
       hordes: [],
       beats: [],
     };

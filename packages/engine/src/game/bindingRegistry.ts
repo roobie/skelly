@@ -1,9 +1,25 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 
-import { type Binding, bindingIsDebugOnly, type Chord, INPUT_ACTIONS, type Modifier } from '../core/inputActions.ts';
+import {
+  type Binding,
+  bindingIsDebugOnly,
+  type Chord,
+  debugSpawnActorRow,
+  debugSpawnActorType,
+  INPUT_ACTIONS,
+  type Modifier,
+} from '../core/inputActions.ts';
 
-const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
-  INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] }));
+// The keyboard exists before content loads, so a keyed spawn row spells its actor from the id, not the content name.
+const keyedSpawnRows = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
+  [...defaults].flatMap(([id, keys]) => {
+    const typeId = debugSpawnActorType(id);
+    return typeId === undefined ? [] : [{ ...debugSpawnActorRow(typeId, typeId.replaceAll('_', ' ')), defaults: keys }];
+  });
+const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] => [
+  ...INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] })),
+  ...keyedSpawnRows(defaults),
+];
 /** A controls file: each action's default keys. */
 export interface ControlsFile {
   readonly controls: readonly { readonly id: string; readonly keys: readonly Chord[] }[];
@@ -174,8 +190,14 @@ export const bindingConflict = (
   return undefined;
 };
 const ACTION_IDS: ReadonlySet<string> = new Set(INPUT_ACTIONS.map(({ id }) => id));
-export const controlRowIssue = (id: string, keys: readonly Chord[]): string | undefined => {
-  if (!ACTION_IDS.has(id)) {
+/** `actors` are the loaded actor types, which a debug spawn row must name. */
+export const controlRowIssue = (
+  id: string,
+  keys: readonly Chord[],
+  actors: ReadonlyMap<string, unknown>,
+): string | undefined => {
+  const spawned = debugSpawnActorType(id);
+  if (spawned === undefined ? !ACTION_IDS.has(id) : !actors.has(spawned)) {
     return `unknown action ${id}`;
   }
   for (const chord of keys) {

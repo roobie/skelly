@@ -15,6 +15,7 @@
   ],
   "layouts": [
     {
+      "actors": [],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -58,7 +59,6 @@
         "bearing": 180,
         "position": [0, 0.5, -1.5]
       },
-      "shamblers": [],
       "terrain": [],
       "tracks": [],
       "woodlands": []

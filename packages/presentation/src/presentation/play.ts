@@ -1767,7 +1767,7 @@ const startPlayWith = (
 
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
-   * stepping as rest (needs, scheduler and shamblers all run). Another call
+   * stepping as rest (needs, scheduler and actors all run). Another call
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {

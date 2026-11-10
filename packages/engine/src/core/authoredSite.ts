@@ -231,7 +231,7 @@ export class AuthoredSite implements Site {
     };
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],
-      ...layout.shamblers.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
+      ...layout.actors.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
       ...(layout.hordes ?? []).map((horde): [number, number] => [horde.position[0], horde.position[2]]),
       ...this.placements
         .flatMap(placedSpawns)
@@ -475,7 +475,7 @@ export class AuthoredSite implements Site {
       chance: marker.chance,
       ...(marker.window ? { window: marker.window } : {}),
     }));
-    const explicit = layout.shamblers.map((spawn) => ({
+    const explicit = layout.actors.map((spawn) => ({
       ...spawn,
       pos: blocks(spawn.position),
       chance: spawn.chance ?? 1,

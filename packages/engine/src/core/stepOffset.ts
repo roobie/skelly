@@ -23,7 +23,7 @@ const STEP_SNAP_FRACTION = 0.8;
 const STEP_EASE_SECONDS = 0.25;
 const EPSILON = 1e-4;
 
-/** Fixed-step pure transition shared by the shambler simulation and render-only player/box helpers. */
+/** Fixed-step pure transition shared by the actor simulation and render-only player/box helpers. */
 export const updateStepOffset = (state: StepOffsetState, update: StepOffsetUpdate): StepOffsetState => {
   const { position, grounded, dt, stepHeightMetres, reset = false } = update;
   const { offset: initialOffset, previous } = state;

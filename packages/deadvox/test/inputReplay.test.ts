@@ -1,6 +1,7 @@
 import {
   clearPendingInputReplay,
   createReplayPlayStateBinding,
+  debugSpawnActorRow,
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
@@ -709,6 +710,17 @@ describe('input replay', () => {
       const recorder = new InputReplayRecorder(start);
       expect(() => recorder.queueAction(command.id, 'down', context)).not.toThrow();
     }
+  });
+
+  it('round-trips a content-derived debug spawn action through a recording', async () => {
+    const { id } = debugSpawnActorRow('fixture_roamer', 'Fixture roamer');
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    recorder.queueAction(id, 'down', 'play');
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions).toMatchObject([{ action: id, phase: 'down', context: 'play' }]);
   });
 
   it('reports the supplied stop reason instead of an idle recording', () => {

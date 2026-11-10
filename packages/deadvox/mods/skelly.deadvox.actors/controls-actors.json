@@ -1,0 +1,36 @@
+{
+  "controls": [
+    {
+      "id": "debug.spawn-actor.runner",
+      "keys": [
+        {
+          "code": "Numpad1"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-actor.crawler",
+      "keys": [
+        {
+          "code": "Numpad2"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-actor.amalgam",
+      "keys": [
+        {
+          "code": "Numpad4"
+        }
+      ]
+    },
+    {
+      "id": "debug.spawn-actor.acid_zombie",
+      "keys": [
+        {
+          "code": "Numpad6"
+        }
+      ]
+    }
+  ]
+}

@@ -9,7 +9,7 @@
       "terrain": [],
       "buildings": [],
       "player": { "position": [16, 21.5, 16], "bearing": 0 },
-      "shamblers": [
+      "actors": [
         { "type": "shambler", "position": [12, 21.5, 16], "chance": 1 },
         { "type": "shambler", "position": [20, 21.5, 16], "chance": 1 }
       ],

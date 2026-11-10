@@ -71,6 +71,15 @@ const row = (
 });
 const debugRow = (id: string, description: string, contexts: readonly InputContext[] = entered): Action =>
   row(id, description, contexts, 'press', { debug: true, gate: 'debug.gate' });
+const DEBUG_SPAWN_ACTOR_PREFIX = 'debug.spawn-actor.';
+/** The actor type a debug spawn action id names, if it is one. */
+export const debugSpawnActorType = (id: string): string | undefined =>
+  id.startsWith(DEBUG_SPAWN_ACTOR_PREFIX) && id.length > DEBUG_SPAWN_ACTOR_PREFIX.length
+    ? id.slice(DEBUG_SPAWN_ACTOR_PREFIX.length)
+    : undefined;
+/** The debug row spawning one actor type. Actor types are content, so these rows are never in `INPUT_ACTIONS`. */
+export const debugSpawnActorRow = (typeId: string, name: string): Action =>
+  debugRow(`${DEBUG_SPAWN_ACTOR_PREFIX}${typeId}`, `Spawn ${name}`);
 /** Modal navigation of the review-map page, like the spawn menu's: no debug gate held, never reaches the game. */
 const mapRow = (id: string, description: string): Action =>
   row(id, description, ['review-map'], 'press', { repeat: true });
@@ -200,18 +209,14 @@ export const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.mannequin-next', 'Mannequin pose +'),
   debugRow('debug.mannequin-place', 'Place mannequin here'),
   debugRow('debug.perception-labels-toggle', 'Perception labels'),
-  debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler'),
+  debugRow('debug.spawn-unaware-actor', 'Spawn unaware actor'),
   debugRow('debug.test-noise', 'Test noise'),
   debugRow('debug.compression-test', 'Compression test'),
   debugRow('debug.interruption-test', 'Emit interruption'),
   debugRow('debug.hurt', 'Take damage'),
-  debugRow('debug.spawn-shamblers', 'Spawn shamblers'),
-  debugRow('debug.spawn-actor.runner', 'Spawn runner'),
-  debugRow('debug.spawn-actor.crawler', 'Spawn crawler'),
-  debugRow('debug.spawn-actor.amalgam', 'Spawn amalgam'),
-  debugRow('debug.spawn-actor.acid_zombie', 'Spawn acid zombie'),
+  debugRow('debug.spawn-actors', 'Spawn actors'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes'),
-  debugRow('debug.freeze-shamblers', 'Freeze shamblers'),
+  debugRow('debug.freeze-actors', 'Freeze actors'),
   debugRow('debug.review-map-toggle', 'Review map', ['play', 'carrying', 'noclip', 'review-map']),
   mapRow('debug.map-slice-down', 'Review map: cut lower'),
   mapRow('debug.map-slice-up', 'Review map: cut higher'),

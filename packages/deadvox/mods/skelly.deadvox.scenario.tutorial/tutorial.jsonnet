@@ -114,7 +114,7 @@ breach.breaking(shape.colliding({
       ] }],
     }],
     player: { position: [0, 0.5, 8], bearing: 0 },
-    shamblers: [{ type: 'shambler', position: [24, 0.5, 2] }],
+    actors: [{ type: 'shambler', position: [24, 0.5, 2] }],
     woodlands: [],
     tracks: [
       { points: [[0, 12], [0, 1], [-8, 1], [-8, -12]], width: 3, surface: 'dirt' },

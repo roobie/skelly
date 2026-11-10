@@ -199,7 +199,7 @@ const sourceForZombie = (id) => {
 };
 const addSpawnCounts = (counts, chance, count = 1) => counts.set(chance, (counts.get(chance) ?? 0) + count);
 
-for (const spawn of playtest.shamblers) {
+for (const spawn of playtest.actors) {
   addSpawnCounts(sourceForZombie(spawn.type).map, spawn.chance ?? 1);
 }
 for (const { spawns } of buildings) {

@@ -1,6 +1,6 @@
 import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
-import { INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
+import { debugSpawnActorType, INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import type { MoveIntent } from './player.ts';
@@ -115,6 +115,18 @@ const ACTION_IDS = [
   ]),
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
+// Debug spawn ids come from content, so they join the in-memory index on first use; the wire carries ids, not indices.
+const isReplayAction = (action: string): boolean =>
+  ACTION_INDEX.has(action) || debugSpawnActorType(action) !== undefined;
+const actionIndex = (action: string): number => {
+  const known = ACTION_INDEX.get(action);
+  if (known !== undefined) {
+    return known;
+  }
+  const index = ACTION_IDS.push(action) - 1;
+  ACTION_INDEX.set(action, index);
+  return index;
+};
 // Derive contexts from the actions so adding a binding context cannot make recording throw.
 const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_ACTIONS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));
@@ -249,7 +261,7 @@ const isValidQueuedAction = (
   context: InputContext,
   payload: ReplayActionPayload | undefined,
 ): boolean => {
-  if (!(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context))) {
+  if (!(isReplayAction(action) && CONTEXT_INDEX.has(context))) {
     return false;
   }
   const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) ? payload !== undefined : true;
@@ -305,7 +317,7 @@ const isReplayActionRecord = (
     tick >= 0 &&
     tick <= frameCount &&
     tick >= lastTick &&
-    ACTION_INDEX.has(action) &&
+    isReplayAction(action) &&
     (candidate.phase === 'down' || candidate.phase === 'up') &&
     typeof candidate.context === 'string' &&
     CONTEXT_INDEX.has(candidate.context as InputContext) &&
@@ -548,7 +560,7 @@ export class InputReplayRecorder {
         const index = this.actionCount;
         this.actionCount += 1;
         this.actionTicks[index] = this.frameCount;
-        this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
+        this.actionIds[index] = actionIndex(pending.action);
         this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
         this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
         if (pending.payload !== undefined) {
@@ -590,7 +602,7 @@ export class InputReplayRecorder {
       const index = this.actionCount;
       this.actionCount += 1;
       this.actionTicks[index] = this.frameCount;
-      this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
+      this.actionIds[index] = actionIndex(pending.action);
       this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
       this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
       if (pending.payload !== undefined) {

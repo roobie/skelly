@@ -13,6 +13,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/assets/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/controls-actors.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/controls-actors.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/enemies.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.actors/enemies.json"
     },
