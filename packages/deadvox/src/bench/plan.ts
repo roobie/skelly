@@ -11,25 +11,21 @@ export interface BenchConfig {
   radiusM: number;
 }
 
-/** The game's 0.5 m blocks at each view distance on offer. Compare sizes with `?plan=1:96,0.5:96`. */
+/** The game's 0.5 m blocks at each view distance on offer. Compare sizes with `#{plan:[1,96,0.5,96]}`. */
 export const DEFAULT_PLAN: readonly BenchConfig[] = [64, 96, 128].map((radiusM) => ({ blockSize: 0.5, radiusM }));
 
 export const ACTIVE_SHAMBLER_TARGET = 60;
 export const BACKGROUND_SHAMBLER_BENCH_RING_METRES = [80, 90] as const;
 export const DEFAULT_SHAMBLER_COUNTS = [ACTIVE_SHAMBLER_TARGET, ACTIVE_SHAMBLER_TARGET + 300] as const;
 const MAX_SHAMBLER_COUNT = 500;
-const SHAMBLER_COUNTS_PATTERN = /^\d+(,\d+)*$/;
 
-export const parseShamblerCounts = (text: string): number[] | undefined => {
-  if (!SHAMBLER_COUNTS_PATTERN.test(text)) {
-    return undefined;
-  }
-  const counts = text.split(',').map(Number);
-  return counts.every((n) => Number.isSafeInteger(n) && n > 0 && n <= MAX_SHAMBLER_COUNT) &&
-    new Set(counts).size === counts.length
-    ? counts
+/** Unique shambler counts, one per run; undefined if any is not a whole number from 1 to the cap. */
+export const parseShamblerCounts = (counts: readonly number[]): number[] | undefined =>
+  counts.length > 0 &&
+  counts.every((n) => Number.isSafeInteger(n) && n > 0 && n <= MAX_SHAMBLER_COUNT) &&
+  new Set(counts).size === counts.length
+    ? [...counts]
     : undefined;
-};
 
 const SHAMBLER_SEED_PATTERN = /^-?\d+$/;
 export const parseShamblerSeed = (text: string): number | undefined => {
@@ -40,20 +36,20 @@ export const parseShamblerSeed = (text: string): number | undefined => {
   return Number.isInteger(seed) && seed >= -2_147_483_648 && seed <= 2_147_483_647 ? seed : undefined;
 };
 
-/** Parses "1:64,0.5:96"; returns undefined if anything is malformed. */
-export const parsePlan = (text: string): BenchConfig[] | undefined => {
-  const plan = text.split(',').map((part) => {
-    const [block, radius] = part.split(':').map(Number);
-    return { blockSize: block ?? Number.NaN, radiusM: radius ?? Number.NaN };
-  });
+/**
+ * Reads a plan written as block size and radius pairs, as in `[1,64,0.5,96]`; returns undefined if anything is
+ * malformed. The hash holds no nested arrays, so the pairs are flat.
+ */
+export const parsePlan = (pairs: readonly number[]): BenchConfig[] | undefined => {
+  const plan = Array.from({ length: Math.ceil(pairs.length / 2) }, (_, entry) => ({
+    blockSize: pairs[2 * entry]!,
+    radiusM: pairs[2 * entry + 1] ?? Number.NaN,
+  }));
   const valid = plan.every(
     ({ blockSize, radiusM }) => [1, 0.5, 0.25].includes(blockSize) && radiusM >= 16 && radiusM <= 512,
   );
   return valid && plan.length > 0 ? plan : undefined;
 };
-
-export const formatPlan = (plan: readonly BenchConfig[]): string =>
-  plan.map(({ blockSize, radiusM }) => `${blockSize}:${radiusM}`).join(',');
 
 /** CPU milliseconds per frame spent streaming, simulating and submitting the render (not GPU time). */
 interface WorkStats {

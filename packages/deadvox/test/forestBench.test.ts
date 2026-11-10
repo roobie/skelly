@@ -2,7 +2,7 @@ import { siteGenerationOf } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { type BenchRecord, DEFAULT_PLAN, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
+import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextRunHash } from '../src/bench/run.ts';
 import { configFromUrl, content, siteFromUrl } from './fixtures/startupContent.ts';
 
 it('parses forest density strictly, including zero/one, without silently switching the requested site', () => {
@@ -22,43 +22,30 @@ it('parses forest density strictly, including zero/one, without silently switchi
 
 describe('forest benchmark workload identity', () => {
   it('keeps forest site, density, seed, time and post on the second run and names the density in its label', () => {
-    const run = benchRunFromUrl(
-      new URLSearchParams('site=forest&density=0.75&seed=7&time=23:30&post=1&plan=0.5:64,0.5:96'),
-      { layouts: new Map(), scenarios: new Map() },
-    );
-    const next = new URLSearchParams(nextUrl(run, 7));
-    expect(benchRunFromUrl(next, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
+    const query = new URLSearchParams('site=forest&density=0.75&time=23:30');
+    const hash = { seed: 7, post: true, plan: [0.5, 64, 0.5, 96] };
+    const run = benchRunFromUrl(query, hash, { layouts: new Map(), scenarios: new Map() });
+    const next = nextRunHash(hash, run.index, run.plan.length)!;
+    expect(benchRunFromUrl(query, next, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
       site: 'forest',
       density: 0.75,
       index: 1,
       time: '23:30',
       post: true,
+      seed: 7,
     });
-    expect(next.get('seed')).toBe('7');
-    expect(configFromUrl(next, { seed: Number(next.get('seed')) })).toMatchObject({
+    expect(configFromUrl(query, next)).toMatchObject({
       site: 'forest',
       density: 0.75,
       seed: 7,
     });
     expect(benchSiteLabel(run)).toContain(String(run.density));
-    const field = benchRunFromUrl(new URLSearchParams('site=forest&plan=0.5:64,0.5:96'), {
-      layouts: new Map(),
-      scenarios: new Map(),
-    });
-    const nextField = new URLSearchParams(nextUrl(field, 1));
-    expect(nextField.has('density')).toBe(false);
-    expect(benchRunFromUrl(nextField, { layouts: new Map(), scenarios: new Map() })).toMatchObject({
-      site: 'forest',
-      density: null,
-      index: 1,
-    });
   });
 
   it('builds the forest config for the first run of a forest plan that names no site', () => {
-    const params = new URLSearchParams('plan=1:64,1:96');
-    const run = benchRunFromUrl(params, content.registry);
+    const run = benchRunFromUrl(new URLSearchParams(), { plan: [1, 64, 1, 96] }, content.registry);
     expect(run.site).toBe('forest');
-    expect(benchGameConfig(run, params, content)).toMatchObject({
+    expect(benchGameConfig(run, content)).toMatchObject({
       site: run.site,
       storeys: run.storeys,
       density: run.density,
@@ -83,10 +70,14 @@ describe('forest benchmark workload identity', () => {
   });
 
   it('retains the seeded forest workload, with camera routes inside its extent at every plan radius, in both result export formats', () => {
-    const run = benchRunFromUrl(new URLSearchParams('site=forest&post=1'), {
-      layouts: new Map(),
-      scenarios: new Map(),
-    });
+    const run = benchRunFromUrl(
+      new URLSearchParams('site=forest'),
+      { post: true },
+      {
+        layouts: new Map(),
+        scenarios: new Map(),
+      },
+    );
     const record: BenchRecord = {
       startedAt: 'first-look',
       quick: false,

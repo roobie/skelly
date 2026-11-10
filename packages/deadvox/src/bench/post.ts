@@ -35,14 +35,8 @@ export const applyBenchWeathering = (config: GameConfig): void => {
   config.weathering = profile ? { ...profile } : undefined;
 };
 
-export const benchPostFromUrl = (params: URLSearchParams): boolean => params.get('post') === '1';
-
 /** Enables the goggles' registry-authored night-vision view for a benchmark. */
 export const benchNightVisionFromUrl = (params: URLSearchParams): boolean => params.get('nightVision') === '1';
-
-/** The URL fragments that keep the post options on for the next run of a bench. */
-export const postUrlPart = (post: boolean, nightVision = false): string =>
-  `${post ? '&post=1' : ''}${nightVision ? '&nightVision=1' : ''}`;
 
 /** Scene counters before post-processing overwrites renderer.info. */
 interface BenchSceneRenderStats {

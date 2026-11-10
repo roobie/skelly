@@ -58,6 +58,10 @@ const HASH_KEYS = {
   mannequin: 'string',
   mannequinWear: 'strings',
   avatarStudy: 'strings',
+  plan: 'numbers',
+  i: 'number',
+  quick: 'boolean',
+  shamblers: 'numbers',
 } as const satisfies Record<string, HashKind>;
 
 type HashKeys = typeof HASH_KEYS;

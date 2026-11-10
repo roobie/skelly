@@ -30,6 +30,8 @@ import type { StreamerStats } from '@skelly/engine/world';
 import { type Body, siteGenerationOf, type Vec3 } from '@skelly/engine/world';
 import type { RenderedEngine } from '@skelly/presentation/play';
 import { applySky, flashlightDaylightScale, MobActorMeshes } from '@skelly/presentation/render';
+import type { HashState } from '../hashState.ts';
+import { pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
 import { benchFlareSourcesFromUrl, createBenchLightFixture } from './lightFixture.ts';
 import {
@@ -37,7 +39,6 @@ import {
   type BenchRecord,
   DEFAULT_PLAN,
   type Environment,
-  formatPlan,
   loadRecord,
   type MovingStats,
   parsePlan,
@@ -45,7 +46,7 @@ import {
   type RunResult,
   saveRecord,
 } from './plan.ts';
-import { applyBenchWeathering, benchDraw, benchNightVisionFromUrl, benchPostFromUrl, postUrlPart } from './post.ts';
+import { applyBenchWeathering, benchDraw, benchNightVisionFromUrl } from './post.ts';
 import { syncClock } from './renderClock.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
@@ -55,13 +56,14 @@ export interface BenchRun {
   plan: BenchConfig[];
   index: number;
   quick: boolean;
+  seed: number;
   /** The stress-test city instead of the test house (`&site=city`, `&storeys=N`). */
   site: SiteName;
   storeys: number;
   density: number | null;
   /** Time of day as "HH:MM" (`&time=`); noon when absent. Night brings the fog, and the far plane, closer. */
   time?: string;
-  /** Select the independent full-post workload (`&post=1`, bench/post.ts). */
+  /** Select the independent full-post workload (hash `post`, bench/post.ts). */
   post: boolean;
   /** Apply the goggles' registry-authored night-vision view (`&nightVision=1`, bench/post.ts). */
   nightVision: boolean;
@@ -82,29 +84,33 @@ const HEADING: readonly [number, number] = [-0.9, 0.44];
 
 type Phase = 'load' | 'settle' | 'look' | 'render' | 'jog' | 'sprint';
 
-const parseBenchShamblers = (value: string): number[] | undefined => (value === '0' ? [0] : parseShamblerCounts(value));
+const parseBenchShamblers = (values: readonly number[]): number[] | undefined =>
+  values.length === 1 && values[0] === 0 ? [0] : parseShamblerCounts(values);
 
+/** The world bench's run: its world setup from the query, its run settings and seed from the hash. */
 export const benchRunFromUrl = (
-  params: URLSearchParams,
+  query: URLSearchParams,
+  hash: HashState,
   registry: Pick<Registry, 'layouts' | 'scenarios'>,
 ): BenchRun => {
-  const plan = parsePlan(params.get('plan') ?? '') ?? [...DEFAULT_PLAN];
-  const index = Number(params.get('i') ?? 0);
-  const time = params.get('time') ?? '';
-  const shamblerValues = params.has('shamblers') ? parseBenchShamblers(params.get('shamblers')!) : [0];
+  const plan = parsePlan(hash.plan ?? []) ?? [...DEFAULT_PLAN];
+  const index = hash.i ?? 0;
+  const time = query.get('time') ?? '';
+  const shamblerValues = parseBenchShamblers(hash.shamblers ?? [0]);
   return {
     plan,
     index: Number.isInteger(index) && index >= 0 && index < plan.length ? index : 0,
-    quick: params.has('quick'),
-    post: benchPostFromUrl(params),
-    nightVision: benchNightVisionFromUrl(params),
-    flareSources: benchFlareSourcesFromUrl(params),
+    quick: hash.quick === true,
+    seed: (hash.seed ?? 1) | 0,
+    post: hash.post === true,
+    nightVision: benchNightVisionFromUrl(query),
+    flareSources: benchFlareSourcesFromUrl(query),
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
     ...siteFromUrl(
-      params,
+      query,
       plan.some(({ blockSize }) => blockSize !== 0.5) ? 'forest' : 'testHouse',
       registry,
-      params.get('debug') === '1',
+      hash.debug === true,
     ),
     ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
@@ -112,9 +118,9 @@ export const benchRunFromUrl = (
 
 const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 
-export const benchGameConfig = (run: BenchRun, params: URLSearchParams, content: StartupContent): GameConfig => {
+export const benchGameConfig = (run: BenchRun, content: StartupContent): GameConfig => {
   const { blockSize, radiusM } = currentConfig(run);
-  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
+  const config = makeConfig(run.seed, radiusM, content, blockSize);
   const { site, storeys, density } = run;
   Object.assign(config, { site, storeys, density });
   applyBenchWeathering(config);
@@ -144,20 +150,26 @@ const movingStats = (frames: number[], work: number[], holes: number[]): MovingS
   holeFraction: holes.length === 0 ? 0 : holes.filter((h) => h > 0).length / holes.length,
 });
 
-export const nextUrl = (run: BenchRun, seed: number): string => {
-  if (run.index + 1 >= run.plan.length) {
-    return '?bench=report';
+/**
+ * The hash of the run after `index`, or undefined after the last run. Only the run index changes: the query and the
+ * rest of the hash stay, so every run of a bench reads the same world and settings.
+ */
+export const nextRunHash = (hash: HashState, index: number, runCount: number): HashState | undefined =>
+  index + 1 < runCount ? { ...hash, i: index + 1 } : undefined;
+
+/**
+ * Starts the next run from a fresh page, or shows the report after the last. The replaced address fires no
+ * `hashchange`, so the page's own reload on a hash change does not load it a second time.
+ */
+export const loadNextRun = (index: number, runCount: number): void => {
+  const { query, hash } = pageUrl();
+  const next = nextRunHash(hash, index, runCount);
+  if (next === undefined) {
+    location.replace('?bench=report');
+    return;
   }
-  const quick = run.quick ? '&quick' : '';
-  const site =
-    `&site=${run.site}` +
-    (run.site === 'city' ? `&storeys=${run.storeys}` : '') +
-    (run.site === 'forest' && run.density !== null ? `&density=${run.density}` : '');
-  const time = run.time === undefined ? '' : `&time=${run.time}`;
-  const shamblers = `&shamblers=${run.shamblers ?? 0}`;
-  const sources =
-    run.flareSources === undefined ? '' : `&flareSources=${encodeURIComponent(JSON.stringify(run.flareSources))}`;
-  return `?bench=1&i=${run.index + 1}&plan=${formatPlan(run.plan)}&seed=${seed}${site}${time}${shamblers}${postUrlPart(run.post, run.nightVision)}${sources}${quick}`;
+  replacePageUrl(query, next);
+  location.reload();
 };
 
 export const forestWorkload = (registry: Registry, seed: number, density: number | null) => {
@@ -202,7 +214,7 @@ export const startBench = (
   const durations = run.quick ? DURATIONS.quick : DURATIONS.full;
   const hud = document.getElementById('hud')!;
   if (run.shamblers === undefined) {
-    hud.textContent = 'Use &shamblers=N with a single valid detailed population.';
+    hud.textContent = 'Set the hash shamblers to a single valid detailed population, as in #{shamblers:[60]}.';
     return;
   }
   const shamblerCount = run.shamblers;
@@ -463,7 +475,7 @@ export const startBench = (
       hud.textContent = 'Could not save results to site storage; the benchmark stopped.';
       return;
     }
-    location.replace(nextUrl(run, config.seed));
+    loadNextRun(run.index, run.plan.length);
   };
 
   const loadStep = (now: number, t: number) => {

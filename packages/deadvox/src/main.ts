@@ -1,5 +1,5 @@
-// Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
-// results; otherwise the game starts (hash `radius` in metres, `seed`).
+// Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=shamblers` the shambler benchmark and
+// `?bench=report` shows their results; otherwise the game starts (hash `radius` in metres, `seed`).
 
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
@@ -371,7 +371,7 @@ if (bench === 'report') {
     }
   }
 } else if (bench === 'shamblers') {
-  const run = shamblerRunFromUrl(params);
+  const run = shamblerRunFromUrl(params, hash);
   if (run) {
     const config = makeConfig(run.seed, DEFAULT_RADIUS_M, content);
     config.site = 'forest';
@@ -381,12 +381,12 @@ if (bench === 'report') {
     startShamblerBench(engine, run, await fetchActorFigureFiles(engine.registry, assets.figures));
   } else {
     document.getElementById('hud')!.textContent =
-      'Invalid shambler benchmark parameters. Use n as unique positive integers up to 500, seed as a signed 32-bit integer, and time as HH:MM (default 23:30).';
+      'Invalid shambler benchmark parameters. Use the hash shamblers as unique positive integers up to 500, the hash seed as a signed 32-bit integer, and the query time as HH:MM (default 23:30).';
   }
 } else {
-  const run = benchRunFromUrl(params, content.registry);
+  const run = benchRunFromUrl(params, hash, content.registry);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
-  const config = benchGameConfig(run, params, content);
+  const config = benchGameConfig(run, content);
   const engine = createEngine(config, view, stats, { graphicsSource: 'mod' });
   startBench(engine, run, stats, await fetchActorFigureFiles(engine.registry, assets.figures));
 }

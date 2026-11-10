@@ -35,6 +35,11 @@ describe('page query', () => {
     expect(readPageUrl('?mods=fixture', '').refused).toBeUndefined();
   });
 
+  it('refuses a bench run setting left in the query, as it does on the game page', () => {
+    expect(readPageUrl('?bench=1&plan=0.5:64', '').refused).toBe('plan');
+    expect(readPageUrl('?bench=1', '#{plan:[0.5,64]}').refused).toBeUndefined();
+  });
+
   it('hands the hash seed to the game configuration', () => {
     const { query, hash } = readPageUrl('', `#${writeHash({ seed: 4321 })}`);
     expect(configFromUrl(query, hash).seed).toBe(4321);

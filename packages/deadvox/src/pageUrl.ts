@@ -23,7 +23,13 @@ const UNHOMED_QUERY = [
   ...Object.values(GRAPHICS_KNOBS).map(({ url }) => url),
 ];
 
-const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY]);
+/**
+ * Bench workload switches with no home decided yet, so the bench still reads them from the query; see
+ * `packages/deadvox/docs/url-mods.md`, "Bench mode".
+ */
+const UNDECIDED_BENCH_QUERY = ['nightVision', 'flareSources'];
+
+const GAME_QUERY = new Set([...HARNESS_QUERY, ...UNHOMED_QUERY, ...UNDECIDED_BENCH_QUERY]);
 
 export interface PageUrl {
   readonly query: URLSearchParams;
@@ -32,12 +38,12 @@ export interface PageUrl {
   readonly refused?: string;
 }
 
-/** Reads a page URL's query and hash. A bench page keeps its own query until it moves onto these homes. */
+/** Reads a page URL's query and hash. */
 export const readPageUrl = (search: string, fragment: string): PageUrl => {
   const query = new URLSearchParams(search);
   const read = readHash(fragment);
   const hash = 'hash' in read ? read.hash : {};
-  const unknown = query.has('bench') ? undefined : [...query.keys()].find((name) => !GAME_QUERY.has(name));
+  const unknown = [...query.keys()].find((name) => !GAME_QUERY.has(name));
   const refused = unknown ?? ('refused' in read ? read.refused : undefined);
   return { query, hash, ...(refused === undefined ? {} : { refused }) };
 };

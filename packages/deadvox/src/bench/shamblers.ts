@@ -24,6 +24,7 @@ import { skyAt } from '@skelly/engine/sky';
 import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
 import type { RenderedEngine } from '@skelly/presentation/play';
 import { ActorMeshes, type ActorRenderer, applySky, MobActorMeshes } from '@skelly/presentation/render';
+import type { HashState } from '../hashState.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
 import {
   ACTIVE_SHAMBLER_TARGET,
@@ -35,9 +36,9 @@ import {
   type ShamblerRunResult,
   saveRecord,
 } from './plan.ts';
-import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
+import { benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
-import { environment } from './run.ts';
+import { environment, loadNextRun } from './run.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
@@ -51,15 +52,16 @@ export interface ShamblerBenchRun {
   seed: number;
   time: string;
   actors: ActorRenderMode;
-  /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
+  /** Draw through the mood pass with the default look (hash `post`, bench/post.ts). */
   post: boolean;
 }
 
-export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | undefined => {
-  const counts = parseShamblerCounts(params.get('n') ?? DEFAULT_SHAMBLER_COUNTS.join(','));
-  const index = Number(params.get('i') ?? 0);
-  const seed = parseShamblerSeed(params.get('seed') ?? '1');
-  const time = params.get('time') ?? '23:30';
+/** The shambler bench's run: its time of day from the query, its counts, run index and seed from the hash. */
+export const shamblerRunFromUrl = (query: URLSearchParams, hash: HashState): ShamblerBenchRun | undefined => {
+  const counts = parseShamblerCounts(hash.shamblers ?? DEFAULT_SHAMBLER_COUNTS);
+  const index = hash.i ?? 0;
+  const seed = parseShamblerSeed(String(hash.seed ?? 1));
+  const time = query.get('time') ?? '23:30';
   if (
     !(counts && Number.isInteger(index)) ||
     index < 0 ||
@@ -74,16 +76,9 @@ export const shamblerRunFromUrl = (params: URLSearchParams): ShamblerBenchRun | 
     index,
     seed,
     time,
-    actors: actorRendererFromUrl(params.get('actors')),
-    post: benchPostFromUrl(params),
+    actors: actorRendererFromUrl(hash.actors),
+    post: hash.post === true,
   };
-};
-
-const nextUrl = (run: ShamblerBenchRun): string => {
-  if (run.index + 1 >= run.counts.length) {
-    return '?bench=report';
-  }
-  return `?bench=shamblers&i=${run.index + 1}&n=${run.counts.join(',')}&seed=${run.seed}&time=${run.time}&actors=${run.actors}${postUrlPart(run.post)}`;
 };
 
 const playerFacing = (yaw: number): [number, number, number] => [-Math.sin(yaw), 0, -Math.cos(yaw)];
@@ -267,7 +262,7 @@ export const startShamblerBench = (
       hud.textContent = 'Could not save shambler results to site storage; the benchmark stopped.';
       return;
     }
-    location.replace(nextUrl(run));
+    loadNextRun(run.index, run.counts.length);
   };
 
   const load = (now: number): boolean => {

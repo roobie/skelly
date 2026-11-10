@@ -5,14 +5,8 @@ import { setHeightFogTuning } from '@skelly/presentation/render';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { benchFlareSourcesFromUrl } from '../src/bench/lightFixture.ts';
-import {
-  applyBenchWeathering,
-  benchDraw,
-  benchNightVisionFromUrl,
-  benchPostFromUrl,
-  postUrlPart,
-} from '../src/bench/post.ts';
-import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
+import { applyBenchWeathering, benchDraw } from '../src/bench/post.ts';
+import { benchRunFromUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
@@ -33,41 +27,28 @@ describe('benchmark weathering', () => {
 });
 
 describe('benchmark post-processing option', () => {
-  it('is off unless &post=1, so the default benchmark renders as it always did', () => {
-    expect(benchPostFromUrl(params('bench=1'))).toBe(false);
-    expect(benchPostFromUrl(params('bench=1&post=0'))).toBe(false);
-    expect(benchPostFromUrl(params('bench=1&post=true'))).toBe(false);
-    expect(benchPostFromUrl(params('bench=1&post=1'))).toBe(true);
-    expect(benchNightVisionFromUrl(params('bench=1'))).toBe(false);
-    expect(benchNightVisionFromUrl(params('bench=1&nightVision=1'))).toBe(true);
+  it('is off unless the hash turns post on, so the default benchmark renders as it always did', () => {
+    const world = { layouts: new Map(), scenarios: new Map() };
+    expect(benchRunFromUrl(params('bench=1'), {}, world).post).toBe(false);
+    expect(benchRunFromUrl(params('bench=1'), { post: false }, world).post).toBe(false);
+    expect(benchRunFromUrl(params('bench=1'), { post: true }, world).post).toBe(true);
+    expect(benchRunFromUrl(params('bench=1'), {}, world).nightVision).toBe(false);
+    expect(benchRunFromUrl(params('bench=1&nightVision=1'), {}, world).nightVision).toBe(true);
   });
 
-  it('is carried in the next-run URL fragment only when on', () => {
-    expect(postUrlPart(true, false)).toBe('&post=1');
-    expect(postUrlPart(false, false)).toBe('');
-  });
-
-  it('carries night vision to the next benchmark run', () => {
-    const run = benchRunFromUrl(params('bench=1&nightVision=1'), { layouts: new Map(), scenarios: new Map() });
-    expect(benchNightVisionFromUrl(params(nextUrl(run, 1)))).toBe(true);
-  });
-
-  it('keeps query-authored sources across runs and rejects invalid placements', () => {
+  it('reads query-authored sources and rejects invalid placements', () => {
     const positions = [
       [0, 0, -2],
       [0.2, 0, -3],
     ];
     const query = params(`bench=1&flareSources=${JSON.stringify(positions)}`);
-    const run = benchRunFromUrl(query, { layouts: new Map(), scenarios: new Map() });
-    expect(benchFlareSourcesFromUrl(params(nextUrl(run, 1)))).toEqual(positions);
+    expect(benchRunFromUrl(query, {}, { layouts: new Map(), scenarios: new Map() }).flareSources).toEqual(positions);
     expect(() => benchFlareSourcesFromUrl(params('flareSources=[[1,2]]'))).toThrow();
   });
 
   it('is read by both benchmark modes', () => {
-    expect(benchRunFromUrl(params('bench=1'), { layouts: new Map(), scenarios: new Map() }).post).toBe(false);
-    expect(benchRunFromUrl(params('bench=1&post=1'), { layouts: new Map(), scenarios: new Map() }).post).toBe(true);
-    expect(shamblerRunFromUrl(params('bench=shamblers'))?.post).toBe(false);
-    expect(shamblerRunFromUrl(params('bench=shamblers&post=1'))?.post).toBe(true);
+    expect(shamblerRunFromUrl(params('bench=shamblers'), {})?.post).toBe(false);
+    expect(shamblerRunFromUrl(params('bench=shamblers'), { post: true })?.post).toBe(true);
   });
 
   it.each([false, true])('initializes authored fog independently of prior play with post=%s', (post) => {
