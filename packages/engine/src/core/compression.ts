@@ -88,6 +88,23 @@ export class Compression {
     this.c = 1;
   }
 
+  /**
+   * Admits a key press: with no running action and no waiting prompt, the press ends a ramp-down at
+   * once (`packages/deadvox/DESIGN.md`, "Long actions"). Refused otherwise, leaving state alone.
+   */
+  admitKey(): boolean {
+    if (this.refusesKeys) {
+      return false;
+    }
+    this.snap();
+    return true;
+  }
+
+  /** A running action or a waiting prompt refuses keys; a ramp-down alone does not. */
+  get refusesKeys(): boolean {
+    return this.active || this.interruption !== undefined;
+  }
+
   /** The player's inputs are locked while time runs faster or a prompt is waiting. */
   get locksInput(): boolean {
     return this.active || this.c > 1 || this.interruption !== undefined;

@@ -2231,7 +2231,7 @@ const startPlayWith = (
     if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
       return;
     }
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || spectator.enabled || debugTools?.buildOn || !compression.admitKey()) {
       return;
     }
     if (router.refusePrimaryUseWhileHandling()) {
@@ -2242,7 +2242,7 @@ const startPlayWith = (
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
   inputTarget.addEventListener('mousedown', (e) => {
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || !debugTools?.buildOn) {
+    if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitKey()) {
       return;
     }
     debugTools.click(e.button, eye(), lookDir());
