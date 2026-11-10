@@ -7,7 +7,7 @@
 // the feet (plus a transient step smoothing), so the feet restore the view exactly. Roll only comes from damage
 // feedback; it is written but ignored on restore. Anything unparseable reads as absent.
 
-import type { Vec3 } from '../core/coords.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export interface CamPose {
   /** Feet position, metres. */

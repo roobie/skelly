@@ -1,8 +1,5 @@
-import type { Vec3 } from '../core/coords.ts';
-import type { Inventory } from '../core/inventory.ts';
-import { ItemFactory } from '../core/items.ts';
-import { putDownRefusal } from '../core/itemThrow.ts';
-import { freshDropTarget } from '../core/options.ts';
+import { freshDropTarget, type Inventory, ItemFactory, putDownRefusal } from '../engine/inventory.ts';
+import type { Vec3 } from '../engine/world.ts';
 
 export const spawnDebugItem = (inventory: Inventory, type: string, feet: Vec3): string => {
   const preview = new ItemFactory().create(inventory.registry, type);

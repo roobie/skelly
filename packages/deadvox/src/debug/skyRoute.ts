@@ -1,5 +1,5 @@
-import { getBuildRevision } from '../core/buildInfo.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { getBuildRevision } from '../engine/packs.ts';
+import type { Vec3 } from '../engine/world.ts';
 import type { SkyRouteAttachment } from '../presentation/debugInterface.ts';
 import type { Engine } from '../presentation/engine.ts';
 import { forwardedActionHolds } from '../presentation/inputBindings.ts';

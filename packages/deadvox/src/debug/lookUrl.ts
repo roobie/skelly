@@ -28,6 +28,7 @@
 //
 // Unparseable values fall back to the default. The debug time-of-day override is not persisted.
 
+import type { WeatheringDef } from '../engine/content.ts';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -44,10 +45,13 @@ import {
   type MoodState,
   moodOf,
   type ShadowState,
-} from '../core/mood.ts';
-import type { WeatheringDef } from '../core/schema.ts';
-import { clampFogginess } from '../core/weather.ts';
-import { WEATHERING_URL_PARAMS, type WeatheringUrlState, writeWeatheringParams } from '../core/weatheringUrl.ts';
+} from '../engine/look.ts';
+import {
+  clampFogginess,
+  WEATHERING_URL_PARAMS,
+  type WeatheringUrlState,
+  writeWeatheringParams,
+} from '../engine/sky.ts';
 import { TONE_MODES } from '../render/look.ts';
 
 export interface LookUrlState extends LookState, MoodState {

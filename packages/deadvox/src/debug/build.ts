@@ -2,13 +2,11 @@
 
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
-import { actionText, fillText } from '../core/actionText.ts';
-import type { BlockBlow } from '../core/blockDamage.ts';
-import { blockId } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { decimalText } from '../core/numberText.ts';
-import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
-import { raycast } from '../core/raycast.ts';
+import { blockId } from '../engine/content.ts';
+import { actionText, fillText } from '../engine/input.ts';
+import type { BlockBlow } from '../engine/sim.ts';
+import { decimalText } from '../engine/text.ts';
+import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '../engine/world.ts';
 import type { BindingRegistry } from '../game/bindingRegistry.ts';
 import { playerTuning } from '../game/player.ts';
 import type { Engine } from '../presentation/engine.ts';

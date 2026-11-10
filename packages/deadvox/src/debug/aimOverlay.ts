@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type Scene } from 'three';
-import type { ActorAim } from '../core/actorSystem.ts';
+import type { ActorAim } from '../engine/sim.ts';
 
 const GREEN = 0x00_ff_50;
 const AMBER = 0xff_b5_00;

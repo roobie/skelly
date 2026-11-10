@@ -1,24 +1,21 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import type { ActorAim, MeleeResult } from '../core/actorSystem.ts';
-import { getBuildRevision } from '../core/buildInfo.ts';
-import { formatClock } from '../core/clock.ts';
-import { type ActorDef, requireDayCycle } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { crosshairTarget } from '../core/crosshairTarget.ts';
+import { type ActorDef, requireDayCycle, type WeatheringDef } from '../engine/content.ts';
+import { lookDefaultsOf, type ShadowState } from '../engine/look.ts';
+import { getBuildRevision } from '../engine/packs.ts';
 import {
+  type ActorAim,
+  crosshairTarget,
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroEffect,
   type FirearmsSkillZeroHandling,
-} from '../core/firearmsSkill.ts';
-import { lookDefaultsOf } from '../core/lookDefaults.ts';
-import type { ShadowState } from '../core/mood.ts';
-import { raycast } from '../core/raycast.ts';
-import type { WeatheringDef } from '../core/schema.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
-import { WEATHERING_RANGES } from '../core/weather.ts';
-import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
+  firearmsCombatTuning,
+  formatClock,
+  type MeleeResult,
+} from '../engine/sim.ts';
+import { WEATHERING_RANGES, type WeatheringUrlState } from '../engine/sky.ts';
+import { raycast, type Vec3 } from '../engine/world.ts';
 import type { DebugNoclipStep } from '../game/debugNoclipStep.ts';
 import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';

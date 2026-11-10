@@ -1,8 +1,8 @@
 // Records the current look (tone mapping, exposure, colour decode, mood pass, fogginess, game time) with where
 // and on what build it was seen, as a JSON file the operator can keep next to a screenshot.
 
-import type { Vec3 } from '../core/coords.ts';
-import type { MoodState, ShadowState } from '../core/mood.ts';
+import type { MoodState, ShadowState } from '../engine/look.ts';
+import type { Vec3 } from '../engine/world.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import { camValue } from './camUrl.ts';

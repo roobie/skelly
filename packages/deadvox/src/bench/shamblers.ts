@@ -1,25 +1,23 @@
 // The shambler mode of the shared ?bench= harness. It loads the forest, runs the
 // real fixed-step ActorSystem and player physics, and records frame/tick/render costs.
 
-import type { ActorFigureFiles } from '../core/actorFigureFiles.ts';
+import { type ActorFigureFiles, requireDayCycle } from '../engine/content.ts';
+import { claimed } from '../engine/inventory.ts';
+import { graphicsTuningOf, lookDefaultsOf } from '../engine/look.ts';
 import {
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
   BACKGROUND_ACTOR_SLICE_COUNT,
   BACKGROUND_ACTOR_SLICE_RATE,
-} from '../core/actorSystem.ts';
-import { claimed } from '../core/capabilities.ts';
-import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
-import { requireDayCycle } from '../core/content.ts';
-import { dayPhaseAt } from '../core/dayPhase.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { worldGravity } from '../core/gravity.ts';
-import { lookDefaultsOf } from '../core/lookDefaults.ts';
-import { type Body, stepBody } from '../core/physics.ts';
-import { reachTuning } from '../core/reach.ts';
-import { Simulation } from '../core/sim.ts';
-import { siteGenerationOf } from '../core/sitePalette.ts';
-import { skyAt } from '../core/sky.ts';
+  dayPhaseAt,
+  hourOfDay,
+  parseTimeOfDay,
+  reachTuning,
+  Simulation,
+  worldGravity,
+} from '../engine/sim.ts';
+import { skyAt } from '../engine/sky.ts';
+import { type Body, siteGenerationOf, stepBody } from '../engine/world.ts';
 import { type ActorRenderMode, actorRendererFromUrl } from '../game/config.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { PHYSICS_RATE } from '../game/session.ts';

@@ -1,5 +1,4 @@
-import { worldOpaque } from '../core/collision.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3, worldOpaque } from '../engine/world.ts';
 import type { Engine } from '../presentation/engine.ts';
 
 type Field = ReturnType<NonNullable<Engine['skylight']>['inspect']>[number];

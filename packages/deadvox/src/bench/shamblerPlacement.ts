@@ -1,8 +1,5 @@
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
-import type { Scale } from '../core/scale.ts';
+import type { Registry } from '../engine/content.ts';
+import { type Body, bodyOverlapsBlock, raycast, type Scale, type SolidAt, type Vec3 } from '../engine/world.ts';
 import { createPlayerBody, playerTuning } from '../game/player.ts';
 
 export interface ShamblerPlacementWorld {

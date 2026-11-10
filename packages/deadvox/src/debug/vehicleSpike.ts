@@ -22,33 +22,34 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { claimed } from '../core/capabilities.ts';
-import { requireDayCycle } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { BLOCK_SIZE } from '../core/scale.ts';
-import type { VehicleFittingDef } from '../core/schema.ts';
-import { skyAt } from '../core/sky.ts';
-import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
-import { productAssets } from '../product/assets.ts';
-import { buildBundledContent } from '../product/content.ts';
-import { ModelLibrary } from '../render/models.ts';
-import { PlayerMeshes } from '../render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
-import { applySky } from '../render/sky.ts';
-import { APC } from '../vehicles/apc.ts';
-import { BOX_VAN } from '../vehicles/boxVan.ts';
-import { CATALOGUE } from '../vehicles/catalogue.ts';
-import { MATERIALS } from '../vehicles/materials.ts';
 import {
+  assembledVehicle,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  requireDayCycle,
+  type VehicleFittingDef,
+} from '../engine/content.ts';
+import { claimed } from '../engine/inventory.ts';
+import { graphicsTuningOf } from '../engine/look.ts';
+import { skyAt } from '../engine/sky.ts';
+import {
+  APC,
   addFitting,
   type Blueprint,
+  BOX_VAN,
+  CATALOGUE,
   type Fitting,
   fittingById,
+  fittingWear,
+  gridBounds,
   isClearMaterial,
   latticeVoxels,
+  MATERIALS,
   type MassReport,
+  type MeshBuffers,
+  MOTORBIKE,
   measure,
+  meshGrid,
   newInstance,
   noiseRadius,
   PART_CELL,
@@ -56,18 +57,31 @@ import {
   type Paint,
   type PartLayer,
   PartLibrary,
+  PICKUP,
   partTypeOf,
+  quadColors,
+  RANGE_ROVER,
+  type Rgb,
   removeFitting,
+  SEDAN,
+  STRIPPED_REMOVED,
   type VehicleInstance,
   VOXEL,
   VOXELS_PER_CELL,
-} from '../vehicles/model.ts';
-import { MOTORBIKE } from '../vehicles/motorbike.ts';
-import { PICKUP } from '../vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
-import { SEDAN } from '../vehicles/sedan.ts';
-import { gridBounds, type MeshBuffers, meshGrid, quadColors, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
-import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
+  type VoxelGrid,
+  type WearSite,
+  wearGrid,
+  wearKey,
+  wearPalette,
+  wheel,
+} from '../engine/vehicles.ts';
+import { BLOCK_SIZE, type Vec3 } from '../engine/world.ts';
+import { productAssets } from '../product/assets.ts';
+import { buildBundledContent } from '../product/content.ts';
+import { ModelLibrary } from '../render/models.ts';
+import { PlayerMeshes } from '../render/playerFigure.ts';
+import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
+import { applySky } from '../render/sky.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
 
 const required = <T extends Element>(selector: string): T => {

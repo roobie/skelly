@@ -2,12 +2,16 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
-import { ActorSystem, BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT } from '../core/actorSystem.ts';
-import { claimed } from '../core/capabilities.ts';
-import { parseTimeOfDay } from '../core/clock.ts';
-import { buildRegistry, requireDayCycle } from '../core/content.ts';
-import { dayPhaseAt } from '../core/dayPhase.ts';
-import { siteGenerationOf } from '../core/sitePalette.ts';
+import { buildRegistry, requireDayCycle } from '../engine/content.ts';
+import { claimed } from '../engine/inventory.ts';
+import {
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  dayPhaseAt,
+  parseTimeOfDay,
+} from '../engine/sim.ts';
+import { siteGenerationOf } from '../engine/world.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';

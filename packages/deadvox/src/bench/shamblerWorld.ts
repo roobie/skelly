@@ -1,13 +1,19 @@
-import { BlockEntities } from '../core/blockEntities.ts';
-import { worldOpaque, worldSolid } from '../core/collision.ts';
-import type { Registry } from '../core/content.ts';
-import { CHUNK, toChunk } from '../core/coords.ts';
-import { Forest } from '../core/forest.ts';
-import { chunksFor, makeScale } from '../core/scale.ts';
-import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
-import { terrainShapeOf } from '../core/sitePalette.ts';
-import { World } from '../core/world.ts';
-import { generateColumn, worldGroundAt } from '../core/worldgen.ts';
+import type { Registry } from '../engine/content.ts';
+import {
+  BlockEntities,
+  CHUNK,
+  chunksFor,
+  Forest,
+  generateColumn,
+  makeScale,
+  TEMPLATE_BLOCK_SIZE,
+  terrainShapeOf,
+  toChunk,
+  World,
+  worldGroundAt,
+  worldOpaque,
+  worldSolid,
+} from '../engine/world.ts';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 

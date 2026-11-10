@@ -1,4 +1,4 @@
-import type { Vec3 } from '../core/coords.ts';
+import type { Vec3 } from '../engine/world.ts';
 import type { Skylight } from '../render/skylight.ts';
 
 export const SKY_ROUTE = { start: 430, end: 490, z: 523 };

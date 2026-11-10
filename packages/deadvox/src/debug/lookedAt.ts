@@ -1,12 +1,9 @@
 // "What am I looking at": names the block or furniture under the crosshair for the debug
 // readout, so colours and materials can be talked about by id.
 
-import type { BlockEntities, BlockEntity } from '../core/blockEntities.ts';
-import type { Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { crosshairTarget } from '../core/crosshairTarget.ts';
-import type { SolidAt } from '../core/raycast.ts';
-import type { World } from '../core/world.ts';
+import type { Registry } from '../engine/content.ts';
+import { crosshairTarget } from '../engine/sim.ts';
+import type { BlockEntities, BlockEntity, SolidAt, Vec3, World } from '../engine/world.ts';
 
 /** Metres: how far the readout looks. */
 const LOOK_REACH = 16;

@@ -1,12 +1,8 @@
 import { type PerspectiveCamera, Vector3 } from 'three';
-import { claimed } from '../core/capabilities.ts';
-import { requireDayCycle } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { HandlingQueue } from '../core/handling.ts';
-import { Inventory } from '../core/inventory.ts';
-import { toggleLight } from '../core/lights.ts';
-import { bindReach } from '../core/reach.ts';
-import { Simulation } from '../core/sim.ts';
+import { requireDayCycle } from '../engine/content.ts';
+import { claimed, HandlingQueue, Inventory, toggleLight } from '../engine/inventory.ts';
+import { bindReach, Simulation } from '../engine/sim.ts';
+import type { Vec3 } from '../engine/world.ts';
 import { Survival } from '../game/survival.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import type { HeldItems } from '../render/hands.ts';

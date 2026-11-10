@@ -4,26 +4,24 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { declaredFileReader, readBundledPacks } from '../../tools/readBundledPacks.ts';
 import {
+  actorFigureFileIssues,
   assetFileIssues,
+  buildRegistry,
+  CONTENT_SECTION_KEYS,
+  CONTENT_SECTIONS,
+  type ContentIssue,
+  type ContentSource,
+  checkStartReachability,
   cursorFileIssues,
   MANIFEST_PATH,
   modelFileIssues,
-  soundFileIssues,
-  validateManifest,
-} from '../core/assets.ts';
-import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
-import {
-  actorFigureFileIssues,
-  buildRegistry,
-  type ContentIssue,
-  type ContentSource,
+  modelPresentationAssetIssues,
   type Registry,
   requiredContentIssues,
-} from '../core/content.ts';
-import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
-import { admitPacks, type PackInput, packStartIssues } from '../core/packAdmission.ts';
-import { checkStartReachability } from '../core/reachability.ts';
-import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
+  soundFileIssues,
+  validateManifest,
+} from '../engine/content.ts';
+import { admitPacks, bundledModCatalogueIssues, type PackInput, packStartIssues } from '../engine/packs.ts';
 import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
 import { controlIssues } from './controlIssues.ts';
 

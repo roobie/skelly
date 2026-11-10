@@ -3,6 +3,7 @@
 // eye against the game's default look (the `look` content section), which play has already applied.
 
 import type { WebGLRenderer } from 'three';
+import type { WeatheringDef } from '../engine/content.ts';
 import {
   AUTO_TONE,
   bloomClipFor,
@@ -19,10 +20,14 @@ import {
   nextShadowDistance,
   type ShadowState,
   TORCH_STEP,
-} from '../core/mood.ts';
-import type { WeatheringDef } from '../core/schema.ts';
-import { clampFogginess, WEATHERING_RANGES, type Weather } from '../core/weather.ts';
-import { isWeatheringColor, type WeatheringUrlState } from '../core/weatheringUrl.ts';
+} from '../engine/look.ts';
+import {
+  clampFogginess,
+  isWeatheringColor,
+  WEATHERING_RANGES,
+  type Weather,
+  type WeatheringUrlState,
+} from '../engine/sky.ts';
 import { autoToneUniforms } from '../render/autoTone.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { hotCheckOn, setHotCheck } from '../render/hotCheck.ts';

@@ -1,4 +1,4 @@
-import { BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
+import { BACKGROUND_ACTOR_RATE } from '../engine/sim.ts';
 import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));

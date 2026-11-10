@@ -1,6 +1,6 @@
-import type { ActorSystem } from '../core/actorSystem.ts';
-import type { Registry } from '../core/content.ts';
-import type { Body } from '../core/physics.ts';
+import type { Registry } from '../engine/content.ts';
+import type { ActorSystem } from '../engine/sim.ts';
+import type { Body } from '../engine/world.ts';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 import { placeShamblerRing } from './shamblerPlacement.ts';

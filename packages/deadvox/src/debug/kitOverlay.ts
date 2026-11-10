@@ -1,7 +1,5 @@
 import { html, render } from 'lit-html';
-import type { Vec3 } from '../core/coords.ts';
-import { ownershipCell } from '../core/templateOwnership.ts';
-import { type Placement, placedPoint, type VoxelProvenance } from '../core/templates.ts';
+import { ownershipCell, type Placement, placedPoint, type Vec3, type VoxelProvenance } from '../engine/world.ts';
 
 export interface KitCell {
   readonly local: Vec3;
