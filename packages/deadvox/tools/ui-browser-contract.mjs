@@ -199,7 +199,7 @@ try {
   );
   discovery.phase = 'UI assertions';
   const keyBindings =
-    await evaluate(`Promise.all([import('/src/product/input.ts'), import('/src/game/bindingRegistry.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
+    await evaluate(`Promise.all([import('/src/product/input.ts'), import('/src/game/entries/input.ts')]).then(([{ inputBindings }, { NATIVE_INPUTS }]) => ({
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
   }))`);

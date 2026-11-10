@@ -9,7 +9,7 @@ import { claimed } from '@skelly/engine/inventory';
 import { admitPacks } from '@skelly/engine/packs';
 import { ActorSystem, dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
 import { makeScale, siteGenerationOf } from '@skelly/engine/world';
-import { physicsFor, playerTuning } from '../src/game/player.ts';
+import { physicsFor, playerTuning } from '../src/game/entries/sim.ts';
 import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
 
 const SEED = 1539;

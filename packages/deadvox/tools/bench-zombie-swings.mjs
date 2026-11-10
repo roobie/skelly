@@ -12,7 +12,7 @@ const server = await createStageServer({
 try {
   const { buildRegistry } = await server.ssrLoadModule('@skelly/engine/content');
   const { ActorSystem } = await server.ssrLoadModule('@skelly/engine/sim');
-  const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
+  const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/entries/sim.ts');
   const { makeScale } = await server.ssrLoadModule('@skelly/engine/world');
   const { readStackActorFigureFiles, readStackContentSources } =
     await server.ssrLoadModule('/tools/readBundledPacks.ts');
