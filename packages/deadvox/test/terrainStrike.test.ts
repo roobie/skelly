@@ -28,9 +28,9 @@ import {
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { BuildMode } from '../src/debug/build.ts';
-import type { Engine } from '../src/presentation/engine.ts';
+import type { Engine } from '../src/presentation/entries/play.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';

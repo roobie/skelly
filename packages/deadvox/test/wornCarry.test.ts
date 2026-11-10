@@ -6,10 +6,9 @@ import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '@skelly/engine/inv
 import { makeScale } from '@skelly/engine/world';
 import { Box3, Mesh, type Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../src/presentation/entries/render.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
+import type { PlayerFigurePose } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';

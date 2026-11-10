@@ -15,8 +15,9 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
-import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { HeldItems, type ModelLibrary } from '../src/presentation/entries/render.ts';
+import type { HeldHandlingFrame } from '../src/render/hands.ts';
+import { prepareModel } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

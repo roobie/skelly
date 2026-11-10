@@ -8,7 +8,7 @@ import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { CHUNK, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureLootPoint } from './economyFixtures.ts';

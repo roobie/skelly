@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { renderFreeFromUrl } from '../src/presentation/renderMode.ts';
+import { renderFreeFromUrl } from '../src/presentation/entries/play.ts';
 
 describe('development render-free selection', () => {
   it('requires the explicit render=0 opt-in', () => {

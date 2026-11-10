@@ -4,8 +4,9 @@
 import { FIGURE_LIMBS, type Registry } from '@skelly/engine/content';
 import { Group, type Object3D } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import type { ModelLibrary } from '../src/presentation/entries/render.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
-import { indexModelMaterials, type ModelLibrary } from '../src/render/models.ts';
+import { indexModelMaterials } from '../src/render/models.ts';
 import { modFileBytes } from './modFile.ts';
 
 export type FigureModels = Pick<ModelLibrary, 'has' | 'part' | 'partLook' | 'heldLook'>;

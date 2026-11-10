@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { Bone, Matrix4, type Object3D, SkinnedMesh, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ModelLibrary } from '../src/render/models.ts';
+import { ModelLibrary } from '../src/presentation/entries/render.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import modelEntry from './fixtures/skin/things/bend_strip.model.json' with { type: 'json' };
 

@@ -17,7 +17,7 @@ import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
-import type { Engine } from '../src/presentation/engine.ts';
+import type { Engine } from '../src/presentation/entries/play.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

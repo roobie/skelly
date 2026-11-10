@@ -12,10 +12,10 @@ import {
 } from '@skelly/engine/look';
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { Mood } from '../src/presentation/entries/render.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';
-import { Mood } from '../src/render/mood.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 

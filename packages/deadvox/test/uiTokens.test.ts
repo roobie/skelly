@@ -6,8 +6,8 @@ import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '@skelly/engine/internal/co
 import type { PackManifest } from '@skelly/engine/packs';
 import { expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { bundledAssetFiles } from '../src/presentation/bundledAssets.ts';
-import { applyUiTokens } from '../src/ui/uiTokens.ts';
+import { bundledAssetFiles } from '../src/presentation/entries/play.ts';
+import { applyUiTokens } from '../src/presentation/entries/ui.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const refusalSound = {

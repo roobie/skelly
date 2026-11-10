@@ -5,7 +5,7 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { ItemState } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const vessel: ItemDef = {

@@ -10,7 +10,7 @@ import { HandlingQueue, Inventory, type Item, toggleLight } from '@skelly/engine
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Survival } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';

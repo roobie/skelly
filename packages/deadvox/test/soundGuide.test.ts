@@ -5,8 +5,12 @@ import { type SoundId, soundVariantKey } from '@skelly/engine/sound';
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import { bundledCredits } from '../src/bundledCredits.ts';
+import {
+  buildHeartbeatSoundGuide,
+  buildSoundGuide,
+  renderHeartbeatSoundGuide,
+} from '../src/presentation/entries/ui.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
-import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from '../src/ui/soundGuide.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const heartbeatTuning = BODY_TUNING_FIXTURE.heartbeat;

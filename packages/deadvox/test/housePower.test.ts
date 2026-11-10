@@ -9,7 +9,7 @@ import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE, makeConfig } from '@skelly/engine/session';
 import { Chunk, createWorldSetup, makeScale, SitePower, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { ChunkMeshes } from '../src/render/chunks.ts';
+import { ChunkMeshes } from '../src/presentation/entries/render.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';

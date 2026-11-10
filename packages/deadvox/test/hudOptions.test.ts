@@ -1,8 +1,8 @@
 import type { InteractionTarget } from '@skelly/engine/sim';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PileMeshes } from '../src/presentation/entries/render.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { markInteractionTarget } from '../src/render/interactionMarker.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import {
   DEFAULT_HUD_OPTIONS,
   HUD_OPTION_KEYS,

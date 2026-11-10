@@ -37,12 +37,11 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../src/presentation/entries/render.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
-import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { FIGURE_PIVOT, firstPersonShoulder, PlayerMeshes } from '../src/render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { FIGURE_PIVOT, firstPersonShoulder } from '../src/render/playerFigure.ts';
+import { PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';

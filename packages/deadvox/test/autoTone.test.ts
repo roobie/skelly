@@ -1,13 +1,9 @@
 import { AUTO_TONE } from '@skelly/engine/look';
 import { CustomToneMapping, ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
-import {
-  autoToneUniforms,
-  installAutoToneMapping,
-  setAutoToneWeight,
-  withAutoToneMapping,
-} from '../src/render/autoTone.ts';
-import { TONE_MODES, toneKeyOf } from '../src/render/look.ts';
+import { autoToneUniforms, TONE_MODES } from '../src/presentation/entries/render.ts';
+import { installAutoToneMapping, setAutoToneWeight, withAutoToneMapping } from '../src/render/autoTone.ts';
+import { toneKeyOf } from '../src/render/look.ts';
 import { autoCurve, TONE_CURVES } from './toneCurves.ts';
 
 // three.js's own source is the thing under test: the patch must find the stub it replaces.

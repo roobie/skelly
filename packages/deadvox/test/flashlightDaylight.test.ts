@@ -4,7 +4,7 @@ import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
 import { dayPhaseAt } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
-import { flashlightDaylightScale } from '../src/render/flashlight.ts';
+import { flashlightDaylightScale } from '../src/presentation/entries/render.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 

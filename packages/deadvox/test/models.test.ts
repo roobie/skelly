@@ -21,8 +21,8 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { HeldItems, ModelLibrary, PileMeshes } from '../src/presentation/entries/render.ts';
 import { createCompass } from '../src/render/compass.ts';
-import { HeldItems } from '../src/render/hands.ts';
 import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import {
@@ -30,10 +30,8 @@ import {
   groundModelFrame,
   heldModelFrame,
   indexModelMaterials,
-  ModelLibrary,
   prepareModel,
 } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';

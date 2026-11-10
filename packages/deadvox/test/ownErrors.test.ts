@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { installErrorReportHandler, setErrorReportContext } from '../src/ui/errorReport.ts';
+import { installErrorReportHandler } from '../src/presentation/entries/ui.ts';
+import { setErrorReportContext } from '../src/ui/errorReport.ts';
 import { isOwnError } from '../src/ui/ownError.ts';
 
 const OWN = 'https://game.example';

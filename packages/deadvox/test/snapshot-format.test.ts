@@ -15,7 +15,7 @@ import { actorPoseInputFor } from '@skelly/engine/pose';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { CHUNK, chunksFor, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
+import { contentLookup as registryContentLookup } from '../src/presentation/entries/ui.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { bodyWithFixtureKind } from './fixtures/damageKinds.ts';

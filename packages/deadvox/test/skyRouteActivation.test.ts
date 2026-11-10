@@ -5,8 +5,8 @@ import type { SkyResult } from '@skelly/engine/sky';
 import { afterEach, expect, it, vi } from 'vitest';
 import { attachSkyRoute } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
-import type { Engine } from '../src/presentation/engine.ts';
-import type { Skylight } from '../src/render/skylight.ts';
+import type { Engine } from '../src/presentation/entries/play.ts';
+import type { Skylight } from '../src/presentation/entries/render.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));
 const inputFixture = vi.hoisted(() => ({ context: 'play', issued: [] as string[] }));

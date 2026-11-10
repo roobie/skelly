@@ -18,9 +18,8 @@ import { makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world'
 import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
+import { ModelLibrary, PlayerMeshes } from '../src/presentation/entries/render.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';

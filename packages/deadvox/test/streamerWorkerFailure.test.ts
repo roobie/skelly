@@ -3,8 +3,7 @@ import type { FromMesher, ToMesher } from '@skelly/engine/mesh';
 import { realTimestamp } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import type { Engine } from '../src/presentation/engine.ts';
-import { WorldLoading } from '../src/presentation/worldLoading.ts';
+import { type Engine, WorldLoading } from '../src/presentation/entries/play.ts';
 import { workerMesherPort } from '../src/worker/mesherPort.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 

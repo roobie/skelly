@@ -18,8 +18,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { applySky, type SkyTargets } from '../src/render/sky.ts';
+import { applySky, ChunkMeshes } from '../src/presentation/entries/render.ts';
+import type { SkyTargets } from '../src/render/sky.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 /** One upward face covering a chunk's bottom layer: a flat patch of ground. */

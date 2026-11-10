@@ -38,17 +38,19 @@ import {
   PerspectiveCamera,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  ActorMeshes,
+  ChunkMeshes,
+  MobActorMeshes as RenderMobActorMeshes,
+} from '../src/presentation/entries/render.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
-import { ActorMeshes } from '../src/render/actors.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
 import { type CrowdCellMaskLayout, isCellInMask } from '../src/render/crowd.ts';
 import { Gore } from '../src/render/gore.ts';
 import { LOOK_AT_REST } from '../src/render/lookAt.ts';
 import {
   fallDirectionAwayFromPlayer,
   perceptionLabelFor,
-  MobActorMeshes as RenderMobActorMeshes,
   hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
 import { initializeRagdollPhysics } from '../src/render/ragdoll.ts';

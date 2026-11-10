@@ -4,7 +4,7 @@ import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.
 import { decodeSave } from '@skelly/engine/save';
 import { CHUNK, Chunk, makeScale, type Terrain, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';

@@ -3,8 +3,8 @@ import type { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity
 import { configFromUrl as readConfig } from '@skelly/engine/session';
 import { createWorldSetup, makeScale, playerStartFromWorld, siteForReviewMap } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import { ChunkMeshes } from '../src/presentation/entries/render.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { composedFixture, fixtureStart, fixtureStartRow } from './fixtures/scenario.ts';

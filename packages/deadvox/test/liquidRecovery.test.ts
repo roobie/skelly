@@ -11,7 +11,7 @@ import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';

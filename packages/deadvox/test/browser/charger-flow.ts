@@ -3,12 +3,12 @@ import { BindingRegistry, type ReplayActionPayload } from '@skelly/engine/input'
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { batteryEnergy, toHands } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave } from '@skelly/engine/save';
-import { fetchActorFigureFiles } from '../../src/presentation/play.ts';
+import { fetchActorFigureFiles } from '../../src/presentation/entries/play.ts';
+import { contentLookup } from '../../src/presentation/entries/ui.ts';
 import { productAssets } from '../../src/product/assets.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { chargerPanel } from '../../src/ui/chargerPanel.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
-import { contentLookup } from '../../src/ui/saveController.ts';
 import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { createChargerSession } from '../fixtures/chargerSession.ts';
 

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
-import type { DebugHooks } from '../src/presentation/debugInterface.ts';
+import type { DebugHooks } from '../src/presentation/entries/debug.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

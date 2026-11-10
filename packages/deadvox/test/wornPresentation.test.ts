@@ -13,11 +13,10 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { HeldItems } from '../src/render/hands.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '../src/presentation/entries/render.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { FIGURE_PIVOT, type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
+import { FIGURE_PIVOT, type PlayerFigurePose } from '../src/render/playerFigure.ts';
 import { PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';

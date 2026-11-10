@@ -6,11 +6,11 @@ import { afterEach, expect, it, vi } from 'vitest';
 import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
 import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
-import { createEngine } from '../src/presentation/engine.ts';
+import { createEngine } from '../src/presentation/entries/play.ts';
+import { Mood } from '../src/presentation/entries/render.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
-import { Mood } from '../src/render/mood.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));

@@ -10,9 +10,9 @@ import { type Action, createDebugActions, dispatchDebugAction } from '../src/deb
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
-import type { DebugHooks } from '../src/presentation/debugInterface.ts';
+import type { DebugHooks } from '../src/presentation/entries/debug.ts';
+import { TONE_MODES } from '../src/presentation/entries/render.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { TONE_MODES } from '../src/render/look.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';

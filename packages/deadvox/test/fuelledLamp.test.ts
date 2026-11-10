@@ -5,7 +5,7 @@ import { fitsFuelledTool } from '@skelly/engine/internal/core/torch.ts';
 import { chargeShare, Inventory, toggleLight } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';

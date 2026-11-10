@@ -1,9 +1,8 @@
 import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { Group, Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { type ModelLibrary, PlayerMeshes } from '../src/presentation/entries/render.ts';
 import { AvatarMannequin, createAvatarMannequin } from '../src/render/avatarMannequin.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';

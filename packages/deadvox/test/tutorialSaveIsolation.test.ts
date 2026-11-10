@@ -1,11 +1,10 @@
 import { BindingRegistry } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import type { Engine } from '../src/presentation/engine.ts';
+import { type Engine, startPlay } from '../src/presentation/entries/play.ts';
+import type { SaveController } from '../src/presentation/entries/ui.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
-import { startPlay } from '../src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
-import type { SaveController } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('rejects a save-bound content-selected guide before runtime actions or save access', async () => {

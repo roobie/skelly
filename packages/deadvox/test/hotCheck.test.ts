@@ -1,7 +1,8 @@
 import type { WebGLProgramParametersWithUniforms } from 'three';
 import { describe, expect, it } from 'vitest';
+import { hotCheckOn, setHotCheck } from '../src/presentation/entries/render.ts';
 import { patchHeightFog } from '../src/render/heightFog.ts';
-import { HOT_CHECK_LIMIT, hotCheckOn, hotCheckUniform, patchHotCheck, setHotCheck } from '../src/render/hotCheck.ts';
+import { HOT_CHECK_LIMIT, hotCheckUniform, patchHotCheck } from '../src/render/hotCheck.ts';
 
 // A declaration not preceded by `centroid `.
 const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vHeightFogView;/;

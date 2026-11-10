@@ -1,7 +1,7 @@
 import { realTimestamp } from '@skelly/engine/sim';
 import { expect, it, vi } from 'vitest';
-import type { Engine } from '../src/presentation/engine.ts';
-import { finishLoadingFrame, WorldLoading } from '../src/presentation/worldLoading.ts';
+import { type Engine, WorldLoading } from '../src/presentation/entries/play.ts';
+import { finishLoadingFrame } from '../src/presentation/worldLoading.ts';
 
 function fixture(workUnits = 2) {
   let holes = 1;

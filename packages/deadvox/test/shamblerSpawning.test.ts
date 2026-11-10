@@ -5,7 +5,7 @@ import { type Body, bodyOverlapsBlock, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing, SHAMBLER_PROBE_BODY_METRES } from '../src/bench/shamblerPlacement.ts';
 import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
-import type { Engine } from '../src/presentation/engine.ts';
+import type { Engine } from '../src/presentation/entries/play.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

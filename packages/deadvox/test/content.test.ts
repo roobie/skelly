@@ -36,8 +36,8 @@ import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { controlIssues } from '../src/cli/controlIssues.ts';
+import { ChunkMeshes } from '../src/presentation/entries/render.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import {

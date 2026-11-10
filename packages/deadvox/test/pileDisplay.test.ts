@@ -4,8 +4,8 @@ import { Inventory, itemFlightPoint } from '@skelly/engine/inventory';
 import { reachTuning } from '@skelly/engine/sim';
 import { InstancedMesh, Matrix4, Mesh, Vector3 } from 'three';
 import { expect, it } from 'vitest';
+import { PileMeshes } from '../src/presentation/entries/render.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
 

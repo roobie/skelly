@@ -14,10 +14,10 @@ import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventor
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
+import { contentLookup } from '../src/presentation/entries/ui.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
 import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';

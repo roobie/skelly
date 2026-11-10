@@ -30,15 +30,14 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { ChunkMeshes } from '../src/render/chunks.ts';
+import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '../src/presentation/entries/render.ts';
 import { FrameTimes } from '../src/render/frameTimes.ts';
-import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import {
   beamMapDue,
   IDLE_REFRESH_EVERY,
   inFrustum,
   needsMap,
-  Shadows,
   SUN_MAP_SIZE,
   snapToTexels,
   sunMapDue,

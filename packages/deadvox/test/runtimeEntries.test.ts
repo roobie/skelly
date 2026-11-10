@@ -26,7 +26,7 @@ const cleanTree: Tree = {
   // Presentation source still in deadvox: product code reaches it through its entries; its files import each other.
   'packages/deadvox/src/render/glow.ts': 'export const glow = 1;\nexport const glowForTests = 2;\n',
   'packages/deadvox/src/ui/panel.ts': "import { glow } from '../render/glow.ts';\nexport const panel = glow;\n",
-  'packages/deadvox/src/presentation/entries/render.ts': "export { glow } from '../../render/glow.ts';\n",
+  'packages/deadvox/src/presentation/entries/render.ts': `export { glow } from '${'../'.repeat(2)}render/glow.ts';\n`,
   'packages/deadvox/src/main.ts':
     "import { glow } from './presentation/entries/render.ts';\nexport const page = glow;\n",
 };

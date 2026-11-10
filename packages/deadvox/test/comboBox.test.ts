@@ -3,7 +3,8 @@
 import { fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
 import { afterEach, expect, it, vi } from 'vitest';
-import { type ComboBoxOption, comboBox } from '../src/ui/comboBox.ts';
+import { comboBox } from '../src/presentation/entries/ui.ts';
+import type { ComboBoxOption } from '../src/ui/comboBox.ts';
 import { renderCrafting } from '../src/ui/crafting.ts';
 import type { CraftRow } from '../src/ui/craftReadout.ts';
 import { baseScreenText } from './baseRegistry.ts';

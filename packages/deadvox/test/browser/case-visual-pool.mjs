@@ -16,8 +16,7 @@ import { buildRegistry } from '@skelly/engine/content';
 import { Inventory } from '@skelly/engine/inventory';
 import { playerTuning } from '@skelly/engine/sim';
 import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
-import { PileMeshes } from '/src/render/piles.ts';
-import { ModelLibrary } from '/src/render/models.ts';
+import { ModelLibrary, PileMeshes } from '/src/presentation/entries/render.ts';
 import { productAssets } from '/src/product/assets.ts';
 import { SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
 const raw = {

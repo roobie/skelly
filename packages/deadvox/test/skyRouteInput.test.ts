@@ -3,7 +3,8 @@
 import type { Binding } from '@skelly/engine/input';
 import { BindingRegistry } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import { forwardedActionHolds, KeyboardInput } from '../src/presentation/inputBindings.ts';
+import { forwardedActionHolds } from '../src/presentation/entries/input.ts';
+import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 
 it('route movement forwards native modifier flags and retains a shared sprint key while reversing direction', () => {
   const fixture: Binding[] = [

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
+import { namedNodes } from '../packages/deadvox/src/presentation/entries/render.ts';
 import { packFileBytes, packFileOrigin, readAvailablePacks } from '../packages/deadvox/tools/readBundledPacks.ts';
 
 export const PACKAGE_ROOT = fileURLToPath(new URL('../packages/deadvox/', import.meta.url));

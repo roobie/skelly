@@ -34,15 +34,13 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../src/presentation/entries/render.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
-import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
 import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
 import { OpticLensRenderer } from '../src/render/opticLens.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
-import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { OPTIC_BODY_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';

@@ -24,7 +24,7 @@ const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const itemPicturesModule = '/src/render/itemPictures.ts';
-const modelsModule = '/src/render/models.ts';
+const modelsModule = '/src/presentation/entries/render.ts';
 const itemLookModule = '/src/render/itemLook.ts';
 const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
@@ -139,7 +139,7 @@ import { bindReach } from '/@stage/@skelly/engine/internal/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { inputBindings } from '/src/product/input.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
-import { applyUiTokens } from '/src/ui/uiTokens.ts';
+import { applyUiTokens } from '/src/presentation/entries/ui.ts';
 import { productAssets } from '/src/product/assets.ts';
 import { factDetail } from '/src/ui/factDetail.ts';
 import { render } from 'lit-html';

@@ -18,8 +18,8 @@ import { expect, it, vi } from 'vitest';
 import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { benchDraw } from '../src/bench/post.ts';
-import type { RenderedEngine } from '../src/presentation/engine.ts';
-import { Mood } from '../src/render/mood.ts';
+import type { RenderedEngine } from '../src/presentation/entries/play.ts';
+import { Mood } from '../src/presentation/entries/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
