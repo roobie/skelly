@@ -18,9 +18,8 @@ read_if:
 # Product and shared content packs
 
 This is the content-extraction plan for #637 within the single framework refactor
-owned by #1532. The product model, names, tier identities, consumer roster and
-execution gate belong to
-`docs/decisions/0009-content-defined-products.md`. Products share mechanisms
+owned by #1532. The product model, names, tier identities and consumer roster belong
+to `docs/decisions/0009-content-defined-products.md`. Products share mechanisms
 without inheriting Deadvox's setting, and reusable definitions must not carry a
 product's distribution policy.
 
