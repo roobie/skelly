@@ -1,5 +1,5 @@
+import { siteForReviewMap } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { siteForReviewMap } from '../../engine/src/game/entries/world.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
 
 it('preserves authored lake water when debug staging wraps the site', () => {

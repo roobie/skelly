@@ -3,6 +3,7 @@ import { type BrickOut, brickHas } from '@skelly/engine/internal/core/solidBrick
 import { spawnOverlappingSolidBlock } from '@skelly/engine/internal/core/spawnClearance.ts';
 import { VehicleOccupancy } from '@skelly/engine/internal/core/vehicleProjection.ts';
 import { Inventory } from '@skelly/engine/inventory';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import {
   BlockEntities,
@@ -14,7 +15,6 @@ import {
   worldSolid,
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

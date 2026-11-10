@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { RELOAD_GESTURE_MS } from '../../../engine/src/game/entries/input.ts';
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import { PLAYER } from '../playerFixture.ts';
 import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
@@ -1040,7 +1040,7 @@ try {
       caseType,
       casesBefore,
     };
-  }, '/src/game/entries/inventory.ts');
+  }, '/@stage/@skelly/engine/inventory');
   await pressAction(page, 'ui.inventory-toggle');
   await select(boltIds.round);
   await pressAction(page, 'inventory.best-pocket');

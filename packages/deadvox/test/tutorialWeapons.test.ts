@@ -2,13 +2,12 @@
 
 import type { GuidanceDef } from '@skelly/engine/content';
 import type { HandlingMechanism as PracticeGun } from '@skelly/engine/internal/core/guidanceFacts.ts';
-import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
+import { defOf, HandlingQueue, Inventory, spentCaseItemId } from '@skelly/engine/inventory';
 import { NEUTRAL_AIM } from '@skelly/engine/pose';
 import type { Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { spentCaseItemId } from '../../engine/src/game/entries/inventory.ts';
-import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
-import { Unpacking } from '../../engine/src/game/unpacking.ts';
 import { HandlingLessons } from '../src/presentation/handlingLessons.ts';
 import { handlingTracksFixture } from './fixtures/guidance.ts';
 import { content } from './fixtures/startupContent.ts';

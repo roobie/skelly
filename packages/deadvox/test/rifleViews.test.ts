@@ -3,10 +3,12 @@
 import type { Registry } from '@skelly/engine/content';
 import { AimController } from '@skelly/engine/internal/core/aim.ts';
 import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
-import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import type { FirearmBoreRay } from '@skelly/engine/internal/game/firearmAim.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { firearmHandlingFor, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
 import { heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
-import { dominantSide, firearmsCombatTuning } from '@skelly/engine/sim';
+import { dominantSide, firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
 import {
   Box3,
@@ -20,10 +22,6 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { firearmHandlingFor } from '../../engine/src/game/entries/inventory.ts';
-import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
-import type { FirearmBoreRay } from '../../engine/src/game/firearmAim.ts';
-import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';

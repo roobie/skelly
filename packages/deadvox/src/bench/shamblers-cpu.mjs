@@ -9,9 +9,10 @@ import {
   BACKGROUND_ACTOR_SLICE_COUNT,
   dayPhaseAt,
   parseTimeOfDay,
+  physicsFor,
+  playerTuning,
 } from '@skelly/engine/sim';
 import { siteGenerationOf } from '@skelly/engine/world';
-import { physicsFor, playerTuning } from '../../../engine/src/game/entries/sim.ts';
 import { readStackActorFigureFiles, readStackContentSources } from '../../tools/readBundledPacks.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';

@@ -1,5 +1,5 @@
-import type { BrowserMod } from '../../../engine/src/game/entries/packs.ts';
-import type { ModStore } from '../../../engine/src/game/entries/save.ts';
+import type { BrowserMod } from '@skelly/engine/packs';
+import type { ModStore } from '@skelly/engine/save';
 
 const DATABASE = 'skelly.browser-mods';
 const STORE = 'selection';

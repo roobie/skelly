@@ -1,8 +1,7 @@
 import type { ScreenText } from '@skelly/engine/content';
-import { bindingIsDebugOnly, contextsForRun } from '@skelly/engine/input';
+import { bindingIsDebugOnly, contextsForRun, NATIVE_EDITING, NATIVE_INPUTS } from '@skelly/engine/input';
 import { fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
-import { NATIVE_EDITING, NATIVE_INPUTS } from '../../../engine/src/game/entries/input.ts';
 import type { KeyboardInput } from '../presentation/inputBindings.ts';
 import { factDetail } from './factDetail.ts';
 

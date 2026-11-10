@@ -3,13 +3,13 @@ import { restorePlayerAudioState } from '@skelly/engine/internal/core/saveState.
 import type { Site } from '@skelly/engine/internal/core/site.ts';
 import { SoundPicker } from '@skelly/engine/internal/core/soundPicker.ts';
 import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
+import { IDLE } from '@skelly/engine/session';
 import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
 import { terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { IDLE } from '../../engine/src/game/entries/session.ts';
-import { planRealFrame } from '../../engine/src/game/frameDriver.ts';
 import {
   advance,
   capture,

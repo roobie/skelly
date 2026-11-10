@@ -1,8 +1,8 @@
 import { isDeepStrictEqual } from 'node:util';
+import { type BrowserMod, evaluateMods } from '@skelly/engine/packs';
+import { configFromUrl } from '@skelly/engine/session';
+import { createWorldSetup } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { type BrowserMod, evaluateMods } from '../../engine/src/game/entries/packs.ts';
-import { configFromUrl } from '../../engine/src/game/entries/session.ts';
-import { createWorldSetup } from '../../engine/src/game/entries/world.ts';
 import { productContent } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

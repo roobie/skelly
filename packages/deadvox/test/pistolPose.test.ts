@@ -1,5 +1,6 @@
 import type { Registry } from '@skelly/engine/content';
 import { nearestSightEyeOffset } from '@skelly/engine/internal/core/adsView.ts';
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { type HandSide, Inventory } from '@skelly/engine/inventory';
 import {
   adsCameraEye,
@@ -13,12 +14,11 @@ import {
   readyMeleePose,
   sightedFirearmModel,
 } from '@skelly/engine/pose';
+import { firearmBoreRay } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
 import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
-import { LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import {
   actionPartPaths,

@@ -2,7 +2,10 @@ import { type AimStep, assertAimState } from '@skelly/engine/internal/core/aim.t
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { pelletShot } from '@skelly/engine/internal/core/pellets.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { adjustLookPitch, LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import type { Item } from '@skelly/engine/inventory';
+import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '@skelly/engine/inventory';
 import {
   decodeSave,
   encodeSave,
@@ -10,17 +13,10 @@ import {
   type SaveSnapshot,
   type SaveVersionComponents,
 } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { reachTuning } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import {
-  type FirearmShotEffect,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../../engine/src/game/entries/inventory.ts';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import type { FirearmShotInput } from '../../engine/src/game/firearmHandling.ts';
-import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

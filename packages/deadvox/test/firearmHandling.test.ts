@@ -9,30 +9,28 @@ import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
 import type { PelletShot } from '@skelly/engine/internal/core/pellets.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import {
+  FirearmMechanics,
+  type FirearmShotInput,
+  type FirearmTrajectory,
+} from '@skelly/engine/internal/game/firearmHandling.ts';
+import { FirearmTrigger } from '@skelly/engine/internal/game/firearmTrigger.ts';
+import {
   actionCycleSeconds,
+  type FirearmShotEffect,
+  firearmHandlingFor,
   HandlingQueue,
   Inventory,
   type Item,
   pileScatterPlacements,
+  spentCaseItemId,
 } from '@skelly/engine/inventory';
 import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
+import { firearmBoreRay } from '@skelly/engine/sim';
 import type { SoundId } from '@skelly/engine/sound';
 import type { Vec3 } from '@skelly/engine/world';
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
-import {
-  type FirearmShotEffect,
-  firearmHandlingFor,
-  spentCaseItemId,
-} from '../../engine/src/game/entries/inventory.ts';
-import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
-import {
-  FirearmMechanics,
-  type FirearmShotInput,
-  type FirearmTrajectory,
-} from '../../engine/src/game/firearmHandling.ts';
-import { FirearmTrigger } from '../../engine/src/game/firearmTrigger.ts';
 import { CaseEffects } from '../src/render/caseEffects.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';

@@ -1,18 +1,17 @@
 import type { Registry } from '@skelly/engine/content';
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
 import { playerPockets } from '@skelly/engine/internal/core/options.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { itemActionsFor } from '@skelly/engine/internal/game/itemActions.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
+import { ReloadInput } from '@skelly/engine/internal/game/reloadInput.ts';
 import { HandlingQueue, Inventory, type Target } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
-import { Body } from '@skelly/engine/sim';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { Body, selectPrimaryAction } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { RELOAD_GESTURE_MS } from '../../engine/src/game/entries/input.ts';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { selectPrimaryAction } from '../../engine/src/game/entries/sim.ts';
-import { itemActionsFor } from '../../engine/src/game/itemActions.ts';
-import { MagazineHandling } from '../../engine/src/game/magazineHandling.ts';
-import { ReloadInput } from '../../engine/src/game/reloadInput.ts';
 import {
   createMagazineLoadFrame,
   createMagazinePress,

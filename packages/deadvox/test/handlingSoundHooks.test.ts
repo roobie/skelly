@@ -1,7 +1,7 @@
 import type { MoveStart } from '@skelly/engine/internal/core/handling.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { handlingMoveCompleteCue, handlingMoveStartCue } from '@skelly/engine/sound';
 import { describe, expect, it } from 'vitest';
-import { handlingMoveCompleteCue, handlingMoveStartCue } from '../../engine/src/game/entries/sound.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

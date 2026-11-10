@@ -7,7 +7,7 @@ import { guidanceFixture } from './fixtures/guidance.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { Survival } from '../../engine/src/game/entries/sim.ts';
+import { Survival } from '@skelly/engine/sim';
 import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,

@@ -1,3 +1,4 @@
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
 import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
@@ -5,8 +6,12 @@ import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
 import { type PelletShot, pelletSpreadRadians } from '@skelly/engine/internal/core/pellets.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
+import { FirearmMechanics, type FirearmTrajectory } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';
 import {
   defOf,
+  type FirearmShotEffect,
+  firearmHandlingFor,
   HandlingQueue,
   Inventory,
   type Item,
@@ -15,16 +20,11 @@ import {
   weightOf,
 } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
-import { dominantSide } from '@skelly/engine/sim';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dominantSide, firearmBoreRay } from '@skelly/engine/sim';
 import type { SoundId } from '@skelly/engine/sound';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { RELOAD_GESTURE_MS } from '../../engine/src/game/entries/input.ts';
-import { type FirearmShotEffect, firearmHandlingFor } from '../../engine/src/game/entries/inventory.ts';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
-import { FirearmMechanics, type FirearmTrajectory } from '../../engine/src/game/firearmHandling.ts';
-import { type ReloadBinding, ReloadInput, reloadTarget } from '../../engine/src/game/reloadInput.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';

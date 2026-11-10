@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
 import type { Binding } from '@skelly/engine/input';
+import { BindingRegistry } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import { forwardedActionHolds, KeyboardInput } from '../src/presentation/inputBindings.ts';
 
 it('route movement forwards native modifier flags and retains a shared sprint key while reversing direction', () => {

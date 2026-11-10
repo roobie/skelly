@@ -3,8 +3,8 @@
 // without hunting through the world's furniture.
 
 import type { Registry } from '@skelly/engine/content';
+import type { BindingRegistry } from '@skelly/engine/input';
 import { html, render, type TemplateResult } from 'lit-html';
-import type { BindingRegistry } from '../../../engine/src/game/entries/input.ts';
 
 const WHITESPACE = /\s+/;
 

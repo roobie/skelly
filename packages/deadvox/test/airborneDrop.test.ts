@@ -1,10 +1,10 @@
 import { planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
 import { playerPockets, quickMove, toHands } from '@skelly/engine/internal/core/options.ts';
 import { dropTarget, type Item, type Target } from '@skelly/engine/inventory';
+import { IDLE } from '@skelly/engine/session';
 import { dominantSide } from '@skelly/engine/sim';
 import { CHUNK, type Vec3, worldSolid } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { IDLE } from '../../engine/src/game/entries/session.ts';
 import type { MoveIntent } from './playerFixture.ts';
 import { advance, createRuntime, fixtureZombieColumn, type Runtime, registry, scale } from './snapshotTestSupport.ts';
 

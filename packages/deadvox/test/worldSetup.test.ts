@@ -1,9 +1,8 @@
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import type { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
-import { makeScale } from '@skelly/engine/world';
+import { configFromUrl as readConfig } from '@skelly/engine/session';
+import { createWorldSetup, makeScale, playerStartFromWorld, siteForReviewMap } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { configFromUrl as readConfig } from '../../engine/src/game/entries/session.ts';
-import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../../engine/src/game/entries/world.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';

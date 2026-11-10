@@ -2,6 +2,7 @@
 // Child-index paths carry the association into independent held clones without name lookup.
 
 import type { GunModelDef, ModelDef } from '@skelly/engine/content';
+import type { FirearmCycleFrame, RevolverFrame } from '@skelly/engine/inventory';
 import {
   actionCycleSeconds,
   type CylinderState,
@@ -12,7 +13,6 @@ import {
 import { heldAnchorOffset } from '@skelly/engine/pose';
 import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
-import type { FirearmCycleFrame, RevolverFrame } from '../../../engine/src/game/entries/inventory.ts';
 
 export type { FirearmAction, FirearmMode } from '@skelly/engine/inventory';
 

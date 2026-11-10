@@ -1,18 +1,3 @@
-import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
-import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
-import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/core/options.ts';
-import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
-import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
-import { type Item, SLING_SLOT } from '@skelly/engine/inventory';
-import { encodeSave, type SaveSnapshot } from '@skelly/engine/save';
-import {
-  BACKGROUND_ACTOR_SLICE_COUNT,
-  dominantSide,
-  practiceForNextLevel,
-  realSeconds as realDuration,
-} from '@skelly/engine/sim';
-import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
-import { describe, expect, it } from 'vitest';
 import {
   clearPendingInputReplay,
   createReplayPlayStateBinding,
@@ -32,9 +17,13 @@ import {
   type ReplayStartState,
   stashInputReplay,
   withReplayExportGuard,
-} from '../../engine/src/game/entries/input.ts';
-import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '../../engine/src/game/entries/session.ts';
-import { advanceLiveFrame } from '../../engine/src/game/frameDriver.ts';
+} from '@skelly/engine/input';
+import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/core/options.ts';
+import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import {
   DEFAULT_REPLAY_START_STATE,
   INPUT_REPLAY_SCHEMA_VERSION,
@@ -43,12 +32,23 @@ import {
   restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
-} from '../../engine/src/game/inputReplay.ts';
-import { routeDominantUse, toggleWalking } from '../../engine/src/game/inputReplayActions.ts';
-import { nextReplayInputSample } from '../../engine/src/game/inputReplayDriver.ts';
-import { applyReplayLook } from '../../engine/src/game/inputReplayPlayer.ts';
-import { type ReloadBinding, ReloadInput, reloadTarget } from '../../engine/src/game/reloadInput.ts';
-import { applyReplayActionPayload, isReplayActionPayload } from '../../engine/src/game/replayCommands.ts';
+} from '@skelly/engine/internal/game/inputReplay.ts';
+import { routeDominantUse, toggleWalking } from '@skelly/engine/internal/game/inputReplayActions.ts';
+import { nextReplayInputSample } from '@skelly/engine/internal/game/inputReplayDriver.ts';
+import { applyReplayLook } from '@skelly/engine/internal/game/inputReplayPlayer.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import { type Item, SLING_SLOT } from '@skelly/engine/inventory';
+import { encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '@skelly/engine/session';
+import {
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  dominantSide,
+  practiceForNextLevel,
+  realSeconds as realDuration,
+} from '@skelly/engine/sim';
+import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { inputReplayStatus } from '../src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

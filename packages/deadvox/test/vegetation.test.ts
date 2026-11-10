@@ -14,6 +14,7 @@ import {
   TreeIndex,
 } from '@skelly/engine/internal/core/vegetation.ts';
 import { actorPoseInputFor } from '@skelly/engine/pose';
+import { createSession, IDLE } from '@skelly/engine/session';
 import {
   BlockEntities,
   Chunk,
@@ -27,7 +28,6 @@ import {
   worldSolid,
 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

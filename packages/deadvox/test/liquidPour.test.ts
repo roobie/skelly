@@ -1,16 +1,15 @@
+import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '@skelly/engine/input';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { gameSeconds, gameToSimSeconds } from '@skelly/engine/internal/core/time.ts';
-import { HandlingQueue, Inventory, type Item, toggleLight } from '@skelly/engine/inventory';
-import { decodeSave } from '@skelly/engine/save';
-import { bindReach } from '@skelly/engine/sim';
-import { describe, expect, it } from 'vitest';
-import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../../engine/src/game/entries/input.ts';
-import { Survival } from '../../engine/src/game/entries/sim.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../../engine/src/game/replayCommands.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import { HandlingQueue, Inventory, type Item, toggleLight } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Survival } from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

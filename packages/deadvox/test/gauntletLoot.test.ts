@@ -1,10 +1,10 @@
 import { lootPointStream, lootPointsByColumn, rollLootParts } from '@skelly/engine/internal/core/loot.ts';
 import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
 import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
+import { firearmModelForType } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { magazineFits } from '@skelly/engine/inventory';
 import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { firearmModelForType } from '../../engine/src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

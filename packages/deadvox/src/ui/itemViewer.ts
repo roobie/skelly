@@ -2,10 +2,10 @@
 // and zoomed by the wheel. It only reads the item and draws it, so opening and closing it changes no game state.
 
 import type { GraphicsTuningDef } from '@skelly/engine/content';
+import type { BindingRegistry } from '@skelly/engine/input';
 import type { Item } from '@skelly/engine/inventory';
 import { html, nothing, render } from 'lit-html';
 import type { Object3D } from 'three';
-import type { BindingRegistry } from '../../../engine/src/game/entries/input.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';
 

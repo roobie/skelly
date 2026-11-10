@@ -1,10 +1,9 @@
 import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
-import { CHUNK, Chunk, toChunk } from '@skelly/engine/world';
+import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
+import { CHUNK, Chunk, columnArrival, createWorldSetup, toChunk, type WorldSetup } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
-import { configFromUrl, createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { columnArrival, createWorldSetup, type WorldSetup } from '../../engine/src/game/entries/world.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';

@@ -3,10 +3,10 @@
 
 import type { Registry } from '@skelly/engine/content';
 import { magazineSpec, magazineWellCalibre } from '@skelly/engine/internal/core/magazine.ts';
+import type { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
 import type { HandlingQueue, HandSide, Inventory, Item } from '@skelly/engine/inventory';
 import { dominantSide } from '@skelly/engine/sim';
-import type { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
-import { MagazineHandling } from '../../engine/src/game/magazineHandling.ts';
 
 export interface ChargedRifle {
   readonly rifle: Item;

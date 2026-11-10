@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ItemAction } from '../src/game/entries/inventory.ts';
 import { defaultItemAction, ItemActionSelection } from '../src/game/itemActions.ts';
+import type { ItemAction } from '../src/inventory.ts';
 
 const sameTier: readonly ItemAction[] = [
   { id: 'damaged-nonbleeding', label: 'nonbleeding', priority: { bleeding: 0, damage: 90 } },

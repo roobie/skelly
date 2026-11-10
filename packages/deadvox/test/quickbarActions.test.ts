@@ -1,10 +1,9 @@
 import type { ItemDef } from '@skelly/engine/content';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import { bestPocket, HandlingQueue, Inventory } from '@skelly/engine/inventory';
-import { bindReach, Character, dominantSide, offSide } from '@skelly/engine/sim';
+import { bindReach, Character, dominantSide, offSide, Survival } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { Survival } from '../../engine/src/game/entries/sim.ts';
-import { QuickbarActions } from '../../engine/src/game/quickbarActions.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

@@ -1,7 +1,7 @@
 import { claimed } from '@skelly/engine/inventory';
 import type { SoundId } from '@skelly/engine/sound';
+import { playerHeartbeat } from '@skelly/engine/sound';
 import { html, render } from 'lit-html';
-import { playerHeartbeat } from '../../engine/src/game/entries/sound.ts';
 import { bundledCredits } from './bundledCredits.ts';
 import { GameAudio } from './presentation/audio.ts';
 import { productAssets } from './product/assets.ts';

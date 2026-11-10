@@ -3,18 +3,18 @@ import { type ActorRegions, posedHumanoidRegionBoxes } from '@skelly/engine/inte
 import { HUMANOID_REGION_NAMES } from '@skelly/engine/internal/core/humanoidRegionNames.ts';
 import { type PelletShot, projectileShot } from '@skelly/engine/internal/core/pellets.ts';
 import { VehicleOccupancy } from '@skelly/engine/internal/core/vehicleProjection.ts';
-import { HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
-import { actorPoseInputFor, type HumanoidHitRegion } from '@skelly/engine/pose';
-import { projectVehicleParts } from '@skelly/engine/vehicles';
-import { makeScale, type Vec3, World } from '@skelly/engine/world';
-import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import {
   FirearmMechanics,
   type FirearmShotInput,
   type FirearmTrajectory,
-} from '../../engine/src/game/firearmHandling.ts';
-import type { ResolvedFirearmTrajectory } from '../../engine/src/game/session.ts';
+} from '@skelly/engine/internal/game/firearmHandling.ts';
+import type { ResolvedFirearmTrajectory } from '@skelly/engine/internal/game/session.ts';
+import { HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
+import { actorPoseInputFor, type HumanoidHitRegion } from '@skelly/engine/pose';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';

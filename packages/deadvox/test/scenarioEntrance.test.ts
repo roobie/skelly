@@ -8,7 +8,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { type MoveIntent, PLAYER } from './playerFixture.ts';
 

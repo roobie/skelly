@@ -14,9 +14,9 @@ import {
   compileTemplate,
   type PlacedPiece,
 } from '@skelly/engine/internal/core/templates.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { BlockEntities, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';

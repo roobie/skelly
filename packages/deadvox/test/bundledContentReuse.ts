@@ -1,5 +1,5 @@
+import type { StartupContent } from '@skelly/engine/packs';
 import { afterEach, beforeEach, vi } from 'vitest';
-import type { StartupContent } from '../../engine/src/game/entries/packs.ts';
 import { productContent } from '../src/product/content.ts';
 
 const build = productContent.buildBundledContent;

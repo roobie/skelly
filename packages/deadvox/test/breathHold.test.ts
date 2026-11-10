@@ -8,10 +8,10 @@ import {
 } from '@skelly/engine/internal/core/aim.ts';
 import type { PlayerStance } from '@skelly/engine/pose';
 import type { SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import type { SoundEmission } from '@skelly/engine/sound';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';

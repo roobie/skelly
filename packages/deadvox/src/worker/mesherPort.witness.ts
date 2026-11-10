@@ -1,5 +1,5 @@
 // Never imported: deadvox's typecheck compiles it so that a browser Worker, adapted, must stay a MesherPort.
-import type { MesherPort } from '../../../engine/src/game/entries/mesh.ts';
+import type { MesherPort } from '@skelly/engine/mesh';
 import { workerMesherPort } from './mesherPort.ts';
 
 export const adaptedWorkerIsMesherPort = (worker: Worker): MesherPort => {

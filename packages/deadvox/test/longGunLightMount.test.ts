@@ -1,13 +1,12 @@
 import type { Registry } from '@skelly/engine/content';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { chargeOf, inventoryLightSources } from '@skelly/engine/internal/core/lights.ts';
+import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
 import { CraftCommands, HandlingQueue, Inventory, LIGHT_MOUNT_SLOT, toggleLight } from '@skelly/engine/inventory';
-import { bindReach, Character } from '@skelly/engine/sim';
+import { bindReach, Character, Survival } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
 import { Group, Object3D, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Survival } from '../../engine/src/game/entries/sim.ts';
-import { FirearmAttachmentHandling } from '../../engine/src/game/firearmAttachmentHandling.ts';
 import { Flashlight } from '../src/render/flashlight.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LENS, type ModelLibrary } from '../src/render/models.ts';

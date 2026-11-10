@@ -1,4 +1,5 @@
 import { blockColors } from '@skelly/engine/content';
+import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
 import { buildingBounds } from '@skelly/engine/terrain';
 import {
   BLOCK_SIZE,
@@ -6,6 +7,7 @@ import {
   type Chunk,
   compassBearing,
   generateColumn,
+  siteForReviewMap,
   sitePalette,
   terrainShapeOf,
   toChunk,
@@ -13,8 +15,6 @@ import {
   WORLD_BOTTOM_M,
   worldGroundAt,
 } from '@skelly/engine/world';
-import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl, startForSite } from '../../engine/src/game/entries/session.ts';
-import { siteForReviewMap } from '../../engine/src/game/entries/world.ts';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from './presentation/mapSliceInput.ts';
 import { buildBundledContent } from './product/content.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';

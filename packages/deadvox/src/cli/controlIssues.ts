@@ -1,7 +1,7 @@
 // Default keys name input actions, which live in game code. The simulation graph under
 // packages/engine/src/core must not import them, so these checks run beside the validate CLI instead.
 import type { ContentIssue, Registry } from '@skelly/engine/content';
-import { type BindingMap, controlRowIssue, defaultKeySetIssues } from '../../../engine/src/game/entries/input.ts';
+import { type BindingMap, controlRowIssue, defaultKeySetIssues } from '@skelly/engine/input';
 
 /** `baseSources` are the sources of the base pack; the game reads default keys from nowhere else. */
 export const controlIssues = (

@@ -24,7 +24,7 @@ import {
   SaveCorruptionError,
   type SaveLoadResult,
   type SaveSlotPair,
-} from '../../engine/src/game/entries/save.ts';
+} from '@skelly/engine/save';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { contentLookup, SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';

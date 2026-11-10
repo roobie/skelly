@@ -1,9 +1,9 @@
 // A held-paper/sign reading surface. Authored text remains escaped Lit text nodes.
 
 import type { ScreenText } from '@skelly/engine/content';
+import type { BindingRegistry } from '@skelly/engine/input';
 import type { ReadRequest } from '@skelly/engine/inventory';
 import { html, render } from 'lit-html';
-import type { BindingRegistry } from '../../../engine/src/game/entries/input.ts';
 
 /** Meta progress embedded in the paper, because the optional HUD cannot explain a compressed reading action. */
 export interface ReadingProgress {

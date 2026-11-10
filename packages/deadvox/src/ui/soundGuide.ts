@@ -1,7 +1,6 @@
 import { type AssetSource, contentFilePack, type PackedManifest, type SoundDef } from '@skelly/engine/content';
-import { type SoundId, soundVariantKey } from '@skelly/engine/sound';
+import { type HeartbeatTuning, heartbeatForStamina, type SoundId, soundVariantKey } from '@skelly/engine/sound';
 import { html } from 'lit-html';
-import { type HeartbeatTuning, heartbeatForStamina } from '../../../engine/src/game/entries/sound.ts';
 
 interface SoundVariantGuide {
   readonly file: string;

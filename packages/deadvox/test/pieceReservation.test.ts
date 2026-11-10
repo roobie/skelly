@@ -1,7 +1,7 @@
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { decodeSave } from '@skelly/engine/save';
 import { BlockEntities } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { DOOR_ACTION } from '../../engine/src/game/doorAction.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -35,31 +35,14 @@ export interface RuntimeClosureViolation {
   readonly reason: string;
 }
 
-// The runtime leaves deadvox as its own package (#1532), so it may reach neither presentation code nor a
-// product's configuration, mods or pages; the forbidden entries name presentation even through a library.
-// `src/game` is the runtime still in deadvox; it reaches the runtime package as a library.
-export const RUNTIME_POLICY: RuntimeClosurePolicy = {
-  start: ['packages/deadvox/src/game'],
-  leaves: [],
-  manifest: 'packages/deadvox/package.json',
-  forbidden: [
-    'packages/deadvox/src/render',
-    'packages/deadvox/src/ui',
-    'packages/deadvox/src/presentation',
-    'packages/presentation',
-  ],
-  forbiddenPackages: ['three', 'lit', 'lit-html'],
-  viteRoot: 'packages/deadvox',
-  tsconfig: 'packages/deadvox/tsconfig.json',
-};
-
-// The runtime package itself: it reaches no product package and no presentation, by any route.
+// The runtime package (#1532): it reaches no product package and no presentation, by any route, and imports
+// neither three nor Lit even through a library.
 export const ENGINE_POLICY: RuntimeClosurePolicy = {
   start: ['packages/engine/src'],
   leaves: [],
   manifest: 'packages/engine/package.json',
   forbidden: ['packages/deadvox', 'packages/presentation'],
-  forbiddenPackages: RUNTIME_POLICY.forbiddenPackages,
+  forbiddenPackages: ['three', 'lit', 'lit-html'],
   viteRoot: 'packages/engine',
   tsconfig: 'packages/engine/tsconfig.json',
 };

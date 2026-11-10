@@ -4,6 +4,11 @@ import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '@skelly/engine/internal/core/items.ts';
 import { planLiquidDraw } from '@skelly/engine/internal/core/liquids.ts';
 import {
+  applyReplayActionPayload,
+  isReplayActionPayload,
+  type ReplayCommandOwners,
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import {
   CraftCommands,
   type CraftSources,
   HandlingQueue,
@@ -13,11 +18,6 @@ import {
 } from '@skelly/engine/inventory';
 import { bindReach, Character } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
-  type ReplayCommandOwners,
-} from '../../engine/src/game/replayCommands.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry, fixtureSources } from './economyFixtures.ts';

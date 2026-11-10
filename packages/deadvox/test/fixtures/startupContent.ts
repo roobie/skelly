@@ -2,7 +2,7 @@ import {
   makeConfig as buildConfig,
   configFromUrl as readConfig,
   siteFromUrl as readSite,
-} from '../../../engine/src/game/entries/session.ts';
+} from '@skelly/engine/session';
 import { ragdollSweepViewer } from '../../src/product/ragdoll.ts';
 import { startupContent } from '../baseRegistry.ts';
 

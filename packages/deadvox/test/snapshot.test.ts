@@ -4,13 +4,13 @@ import { disassemblyOutputs, disassemblyWorkTime } from '@skelly/engine/internal
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import type { Site } from '@skelly/engine/internal/core/site.ts';
 import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { QuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { Character, practiceForNextLevel, type RealSeconds, realSeconds } from '@skelly/engine/sim';
 import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { advanceLiveFrame } from '../../engine/src/game/frameDriver.ts';
-import { QuickbarActions } from '../../engine/src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';

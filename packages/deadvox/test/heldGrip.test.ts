@@ -1,15 +1,19 @@
 import type { ModelDef } from '@skelly/engine/content';
 import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
-import { HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import {
+  type FirearmShotEffect,
+  firearmHandlingFor,
+  HandlingQueue,
+  type HandSide,
+  Inventory,
+} from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
 import { heldFirearmTransform, heldHoldFrame, modelToView, NEUTRAL_AIM } from '@skelly/engine/pose';
-import { Character } from '@skelly/engine/sim';
+import { Character, firearmBoreRay } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { type FirearmShotEffect, firearmHandlingFor } from '../../engine/src/game/entries/inventory.ts';
-import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
-import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { chargedRifle } from './rifleFixture.ts';

@@ -1,8 +1,8 @@
+import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, expect, it } from 'vitest';
-import type { MesherPort, ToMesher } from '../../engine/src/game/entries/mesh.ts';
-import type { MesherHandlers } from '../../engine/src/game/mesherProtocol.ts';
-import { Streamer } from '../../engine/src/game/streamer.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 
 /** Answers every mesh request with a non-empty mesh when `drain` runs. */

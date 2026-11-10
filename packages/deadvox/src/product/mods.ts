@@ -1,4 +1,4 @@
-import { bundledModsFrom, type ModIntake } from '../../../engine/src/game/entries/packs.ts';
+import { bundledModsFrom, type ModIntake } from '@skelly/engine/packs';
 import browserModConfig from '../config/browser-mods.json' with { type: 'json' };
 import bundledModList from '../config/bundled-mods.json' with { type: 'json' };
 import { productContent } from './content.ts';

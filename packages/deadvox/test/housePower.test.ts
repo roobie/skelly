@@ -1,15 +1,14 @@
 import type { PlacedPowerDevice } from '@skelly/engine/internal/core/sitePower.ts';
-import { Inventory } from '@skelly/engine/inventory';
-import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
-import { Chunk, makeScale, SitePower, type Vec3, World } from '@skelly/engine/world';
-import { describe, expect, it, vi } from 'vitest';
-import { createSession, IDLE, makeConfig } from '../../engine/src/game/entries/session.ts';
-import { createWorldSetup } from '../../engine/src/game/entries/world.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../../engine/src/game/replayCommands.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE, makeConfig } from '@skelly/engine/session';
+import { Chunk, createWorldSetup, makeScale, SitePower, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it, vi } from 'vitest';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

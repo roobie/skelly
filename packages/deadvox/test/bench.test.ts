@@ -1,7 +1,7 @@
 import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { percentile } from '@skelly/engine/math';
+import { actorRendererFromUrl } from '@skelly/engine/session';
 import { describe, expect, it } from 'vitest';
-import { actorRendererFromUrl } from '../../engine/src/game/entries/session.ts';
 import {
   type BenchRecord,
   DEFAULT_PLAN,

@@ -12,6 +12,7 @@ import {
   stampPlacement,
   type Turn,
 } from '@skelly/engine/internal/core/templates.ts';
+import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/doorAction.ts';
 import { HandlingQueue, Inventory, ItemFactory, weightOf } from '@skelly/engine/inventory';
 import { reachTuning } from '@skelly/engine/sim';
 import {
@@ -26,7 +27,6 @@ import {
 } from '@skelly/engine/world';
 import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { DOOR_ACTION, registerDoorAction } from '../../engine/src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';

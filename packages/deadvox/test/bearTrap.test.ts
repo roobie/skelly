@@ -5,9 +5,9 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { WORLD_REGION_METRES } from '@skelly/engine/internal/core/worldRegion.ts';
 import { Inventory, type Item } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

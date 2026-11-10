@@ -1,6 +1,8 @@
 import { type ActorDef, requireDayCycle, type WeatheringDef } from '@skelly/engine/content';
+import { INPUT_REPLAY_MAX_BYTES } from '@skelly/engine/input';
 import { lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
 import { getBuildRevision } from '@skelly/engine/packs';
+import type { DebugNoclipStep } from '@skelly/engine/session';
 import {
   type ActorAim,
   crosshairTarget,
@@ -8,17 +10,17 @@ import {
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroEffect,
   type FirearmsSkillZeroHandling,
+  firearmBoreTarget,
   firearmsCombatTuning,
   formatClock,
   type MeleeResult,
+  playerTuning,
+  unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
 import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
 import { raycast, type Vec3 } from '@skelly/engine/world';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import { INPUT_REPLAY_MAX_BYTES } from '../../../engine/src/game/entries/input.ts';
-import type { DebugNoclipStep } from '../../../engine/src/game/entries/session.ts';
-import { firearmBoreTarget, playerTuning, unarmedMeleeWeapon } from '../../../engine/src/game/entries/sim.ts';
 import type {
   DebugHooks,
   DebugModule,

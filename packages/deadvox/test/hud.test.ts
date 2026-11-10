@@ -1,13 +1,12 @@
 // @vitest-environment happy-dom
 
+import { BindingRegistry } from '@skelly/engine/input';
 import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
-import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { HandlingQueue, Inventory, Quickbar } from '@skelly/engine/inventory';
 import { Character } from '@skelly/engine/sim';
 import { decimalText, fillText } from '@skelly/engine/text';
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
-import { Quickbar } from '../../engine/src/game/entries/inventory.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import {
   handlingViewModel,

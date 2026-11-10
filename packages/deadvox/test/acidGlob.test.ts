@@ -5,10 +5,10 @@ import * as meleeCombat from '@skelly/engine/internal/core/meleeCombat.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { BODY_REGIONS, type BodyRegion } from '@skelly/engine/sim';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

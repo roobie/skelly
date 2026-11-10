@@ -8,8 +8,13 @@ import {
   decodeSave,
   KNOWN_SCHEDULER_IDS,
   readSaveVersionMetadata,
+  type SaveBackendPreference,
   type SaveContentKind,
+  SaveCorruptionError,
+  type SaveLoadResult,
   type SaveSnapshot,
+  type SaveStorageStatus,
+  type SaveStore,
   type SaveVersionComponents,
   type SaveVersionIdentity,
   type SaveWorldIdentity,
@@ -18,13 +23,6 @@ import {
 import { assertFoodExposure, type HandedCharacter, type RealTimestamp, realTimestamp } from '@skelly/engine/sim';
 import { countText, fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
-import {
-  type SaveBackendPreference,
-  SaveCorruptionError,
-  type SaveLoadResult,
-  type SaveStorageStatus,
-  type SaveStore,
-} from '../../../engine/src/game/entries/save.ts';
 import { SaveStorage } from '../presentation/saveStorage.ts';
 import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';

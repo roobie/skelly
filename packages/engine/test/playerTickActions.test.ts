@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PlayerTickActions } from '../src/game/entries/sim.ts';
 import { applyToHeldItem } from '../src/game/playerTickActions.ts';
+import { PlayerTickActions } from '../src/sim.ts';
 
 describe('PlayerTickActions', () => {
   it('does not throw a different item drawn into the recorded hand', () => {

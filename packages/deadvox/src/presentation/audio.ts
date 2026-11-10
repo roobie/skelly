@@ -1,22 +1,20 @@
 import type { Registry, SenseDef, SoundDef, SoundRecipe } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
 import {
-  renderSoundRecipe,
-  type SoundEmission,
-  type SoundId,
-  soundRecipeFor,
-  soundVariantKey,
-} from '@skelly/engine/sound';
-import type { SolidAt, Vec3 } from '@skelly/engine/world';
-import {
   type HeardSound,
   Hearing,
   type HeartbeatTarget,
   type HeartbeatTuning,
   heartbeatForStamina,
   playerHeartbeat,
+  renderSoundRecipe,
+  type SoundEmission,
+  type SoundId,
+  soundRecipeFor,
+  soundVariantKey,
   VoiceCaps,
-} from '../../../engine/src/game/entries/sound.ts';
+} from '@skelly/engine/sound';
+import type { SolidAt, Vec3 } from '@skelly/engine/world';
 import { bundledAssetUrl, type PackAssetFiles } from './bundledAssets.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';

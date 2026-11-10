@@ -5,11 +5,11 @@ import { propCentre, type ShowroomProp, slotProps } from '@skelly/engine/interna
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
 import { cellsOf } from '@skelly/engine/internal/core/templates.ts';
 import { Inventory } from '@skelly/engine/inventory';
+import { selectBundledMods } from '@skelly/engine/packs';
+import { configFromUrl } from '@skelly/engine/session';
 import type { Vec3 } from '@skelly/engine/world';
+import { playerStartFromWorld } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { selectBundledMods } from '../../engine/src/game/entries/packs.ts';
-import { configFromUrl } from '../../engine/src/game/entries/session.ts';
-import { playerStartFromWorld } from '../../engine/src/game/entries/world.ts';
 import { availablePackInputs } from '../src/product/content.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

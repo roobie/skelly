@@ -1,20 +1,19 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
+import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
-import { getBuildRevision } from '@skelly/engine/packs';
-import { parseTimeOfDay } from '@skelly/engine/sim';
-import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '../../engine/src/game/entries/input.ts';
-import { bundledModIdsFromUrl, selectBundledMods } from '../../engine/src/game/entries/packs.ts';
-import type { SaveBackendPreference } from '../../engine/src/game/entries/save.ts';
+import { bundledModIdsFromUrl, getBuildRevision, selectBundledMods } from '@skelly/engine/packs';
+import type { SaveBackendPreference } from '@skelly/engine/save';
 import {
   applyWeatheringConfig,
   configFromUrl,
   DEFAULT_RADIUS_M,
   makeConfig,
   savingEnabledFromUrl,
-} from '../../engine/src/game/entries/session.ts';
-import type { StreamerStats } from '../../engine/src/game/entries/world.ts';
+} from '@skelly/engine/session';
+import { parseTimeOfDay } from '@skelly/engine/sim';
+import type { StreamerStats } from '@skelly/engine/world';
 import { loadRecord } from './bench/plan.ts';
 import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';

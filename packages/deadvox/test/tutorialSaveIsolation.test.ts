@@ -1,5 +1,5 @@
+import { BindingRegistry } from '@skelly/engine/input';
 import { expect, it } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { startPlay } from '../src/presentation/play.ts';

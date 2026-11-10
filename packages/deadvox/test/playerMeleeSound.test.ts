@@ -1,9 +1,9 @@
 import type { MeleeWeapon } from '@skelly/engine/internal/core/actorSystem.ts';
 import { SoundPicker } from '@skelly/engine/internal/core/soundPicker.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
 import type { SoundEmission, SoundId } from '@skelly/engine/sound';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

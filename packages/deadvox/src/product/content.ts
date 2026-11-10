@@ -1,4 +1,4 @@
-import { type BundledContent, createBundledContent } from '../../../engine/src/game/entries/packs.ts';
+import { type BundledContent, createBundledContent } from '@skelly/engine/packs';
 import { bundledPacks } from './packs.ts';
 
 // Glob keys are relative to this directory, as the pack roots of `src/product/packs.ts`, `bundledPacks`, are.

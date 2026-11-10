@@ -1,5 +1,5 @@
+import { actorVoiceLaw } from '@skelly/engine/internal/game/actorAudio.ts';
 import { describe, expect, it } from 'vitest';
-import { actorVoiceLaw } from '../../engine/src/game/actorAudio.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 // Fixture bodies: the law is calibrated on whatever pool it is given, so this file keeps its own.

@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 
+import { BindingRegistry } from '@skelly/engine/input';
 import { simSecondsPerHour } from '@skelly/engine/internal/core/clock.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { formatClock, type RestAction, realSeconds } from '@skelly/engine/sim';
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
-import { advanceLiveFrame } from '../../engine/src/game/frameDriver.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { SaveCommitDriver } from '../src/game/saveStorageProtocol.ts';
+import { openSaveSlot } from '../src/game/saveStorageRecord.ts';
 import {
   commitSavePayload,
   inspectSaveSlots,
@@ -9,9 +11,7 @@ import {
   type SaveSlotPair,
   SaveStorageError,
   sealSaveSlot,
-} from '../src/game/entries/save.ts';
-import type { SaveCommitDriver } from '../src/game/saveStorageProtocol.ts';
-import { openSaveSlot } from '../src/game/saveStorageRecord.ts';
+} from '../src/save.ts';
 
 const NAMESPACE = 'a'.repeat(64);
 const CHECKSUM_PATTERN = /^[0-9a-f]{64}$/;

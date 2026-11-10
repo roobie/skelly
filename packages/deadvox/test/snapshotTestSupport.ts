@@ -4,7 +4,9 @@ import type { MapEntityStore } from '@skelly/engine/internal/core/entities.ts';
 import { foodMillisecondsAt, projectFoodExposure } from '@skelly/engine/internal/core/food.ts';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import type { snapshotSession } from '@skelly/engine/internal/core/saveState.ts';
+import type { PlayerInputSample } from '@skelly/engine/internal/game/session.ts';
 import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { SkyFields } from '@skelly/engine/sky';
 import {
   BlockEntities,
@@ -19,8 +21,6 @@ import {
   World,
   worldSolid,
 } from '@skelly/engine/world';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import type { PlayerInputSample } from '../../engine/src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

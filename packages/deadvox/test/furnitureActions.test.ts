@@ -1,6 +1,5 @@
-import { reachTuning } from '@skelly/engine/sim';
+import { FurnitureActionSelection, furnitureActionsFor, reachTuning } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { FurnitureActionSelection, furnitureActionsFor } from '../../engine/src/game/entries/sim.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { AMOUNT, DURABILITY, PIECE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
 

@@ -20,6 +20,7 @@ import {
   skillActivityPractice,
 } from '@skelly/engine/internal/core/skillTraining.ts';
 import { compileTemplate, placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import {
   actorPoseInputFor,
   blendHeldFirearmTransforms,
@@ -30,11 +31,10 @@ import {
   playerLookPose,
 } from '@skelly/engine/pose';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
 import { BLOCK_SIZE, footprint, makeScale, type Placement, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { DOOR_ACTION } from '../../engine/src/game/doorAction.ts';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';

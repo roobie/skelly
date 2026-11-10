@@ -1,12 +1,12 @@
 import type { Registry, SoundDef } from '@skelly/engine/content';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { firearmShotSound } from '@skelly/engine/internal/game/audioPresentation.ts';
 import type { Item } from '@skelly/engine/inventory';
+import { createSession, IDLE } from '@skelly/engine/session';
 import type { SoundEmission } from '@skelly/engine/sound';
+import { createRefusalPresenter, heartbeatForStamina } from '@skelly/engine/sound';
 import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { firearmShotSound } from '../../engine/src/game/audioPresentation.ts';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { createRefusalPresenter, heartbeatForStamina } from '../../engine/src/game/entries/sound.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';

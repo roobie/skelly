@@ -1,9 +1,9 @@
 import { requireDayCycle } from '@skelly/engine/content';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
 import type { SoundEmission } from '@skelly/engine/sound';
 import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

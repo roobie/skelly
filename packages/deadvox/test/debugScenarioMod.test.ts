@@ -1,10 +1,9 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import { admitPacks } from '@skelly/engine/packs';
+import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { bundledModIdsFromUrl, selectBundledMods } from '../../engine/src/game/entries/packs.ts';
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
 import { bundledPackInputs } from '../src/product/content.ts';

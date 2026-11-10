@@ -1,10 +1,10 @@
+import { BindingRegistry } from '@skelly/engine/input';
 import { GRAPHICS_KNOBS } from '@skelly/engine/internal/core/graphics.ts';
 import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
 import { GRAPHICS_KEYS } from '@skelly/engine/look';
 import type { Weather } from '@skelly/engine/sky';
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';

@@ -1,19 +1,19 @@
-import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
-import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
-import { simSeconds } from '@skelly/engine/internal/core/time.ts';
-import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
-import { decodeSave } from '@skelly/engine/save';
-import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
-import { expect, it } from 'vitest';
 import {
   BindingRegistry,
   decodeInputReplay,
   encodeInputReplay,
   InputReplayRecorder,
   type ReplayActionPayload,
-} from '../../engine/src/game/entries/input.ts';
-import { planRealFrame } from '../../engine/src/game/frameDriver.ts';
-import { applyReplayActionPayload, isReplayActionPayload } from '../../engine/src/game/replayCommands.ts';
+} from '@skelly/engine/input';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
+import { expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
 import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';

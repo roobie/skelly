@@ -1,6 +1,11 @@
-import { bindingIsDebugOnly, contextsForRun, POINTER_ACTIONS } from '@skelly/engine/input';
+import {
+  type BindingRegistry,
+  bindingIsDebugOnly,
+  contextsForRun,
+  NATIVE_INPUTS,
+  POINTER_ACTIONS,
+} from '@skelly/engine/input';
 import { html, render } from 'lit-html';
-import { type BindingRegistry, NATIVE_INPUTS } from '../../../engine/src/game/entries/input.ts';
 
 export interface ControlsCardRow {
   readonly id: string;

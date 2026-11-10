@@ -91,6 +91,7 @@ import {
   voxelBounds,
 } from '@skelly/engine/pose';
 import {
+  ACTIVE_ACTOR_RATE,
   type Actor,
   actorAttackReachMetres,
   BACKGROUND_ACTOR_RATE,
@@ -122,7 +123,6 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { ACTIVE_ACTOR_RATE } from '../../../engine/src/game/entries/sim.ts';
 import { figureVariants } from './actorFigureVariants.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
 import { corpseFallPose, deathClip } from './corpsePose.ts';

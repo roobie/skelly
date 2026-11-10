@@ -6,7 +6,10 @@
 import { type ActorFigureFiles, type Registry, requireDayCycle } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
 import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
+import type { StartupContent } from '@skelly/engine/packs';
+import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '@skelly/engine/session';
 import {
+  ACTIVE_ACTOR_RATE,
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
   BACKGROUND_ACTOR_SLICE_COUNT,
@@ -14,6 +17,8 @@ import {
   dayPhaseAt,
   hourOfDay,
   parseTimeOfDay,
+  physicsFor,
+  playerTuning,
   reachTuning,
   Simulation,
   type StorageStats,
@@ -21,11 +26,8 @@ import {
   worldGravity,
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
+import type { StreamerStats } from '@skelly/engine/world';
 import { type Body, siteGenerationOf, type Vec3 } from '@skelly/engine/world';
-import type { StartupContent } from '../../../engine/src/game/entries/packs.ts';
-import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../../../engine/src/game/entries/session.ts';
-import { ACTIVE_ACTOR_RATE, physicsFor, playerTuning } from '../../../engine/src/game/entries/sim.ts';
-import type { StreamerStats } from '../../../engine/src/game/entries/world.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';

@@ -1,3 +1,4 @@
+import { BindingRegistry } from '@skelly/engine/input';
 import { CanonicalTerrain, installColumn } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
 import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
@@ -5,10 +6,15 @@ import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
 import { strikeTerrain } from '@skelly/engine/internal/core/terrainStrike.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { affectedChunks } from '@skelly/engine/internal/core/world.ts';
+import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { PILE_GRID } from '@skelly/engine/inventory';
+import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
 import { buildMesh } from '@skelly/engine/mesh';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import type { BlockBlow } from '@skelly/engine/sim';
+import { playerTuning } from '@skelly/engine/sim';
 import {
   CHUNK,
   generateColumn,
@@ -21,12 +27,6 @@ import {
 } from '@skelly/engine/world';
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
-import type { MesherPort, ToMesher } from '../../engine/src/game/entries/mesh.ts';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { playerTuning } from '../../engine/src/game/entries/sim.ts';
-import type { MesherHandlers } from '../../engine/src/game/mesherProtocol.ts';
-import { Streamer } from '../../engine/src/game/streamer.ts';
 import { BuildMode } from '../src/debug/build.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

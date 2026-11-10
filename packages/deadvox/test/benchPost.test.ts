@@ -1,6 +1,6 @@
+import { makeConfig } from '@skelly/engine/session';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { makeConfig } from '../../engine/src/game/entries/session.ts';
 import { benchFlareSourcesFromUrl } from '../src/bench/lightFixture.ts';
 import {
   applyBenchWeathering,

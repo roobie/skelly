@@ -1,6 +1,6 @@
 // Pointer-lock mouse listeners writing the player's controls; keyboard intents come from the shared semantic owner.
 
-import { PlayerControls } from '../../../engine/src/game/entries/input.ts';
+import { PlayerControls } from '@skelly/engine/input';
 import type { KeyboardInput } from './inputBindings.ts';
 
 export const nextMenuCursor = (

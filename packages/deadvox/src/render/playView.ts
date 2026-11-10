@@ -3,6 +3,7 @@
 import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
 import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
 import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
+import type { FromMesher } from '@skelly/engine/mesh';
 import {
   adsCameraEye,
   figureStancePose,
@@ -21,6 +22,7 @@ import {
   type BlockJolt,
   type EntityStore,
   hourOfDay,
+  playerTuning,
   reachTuning,
 } from '@skelly/engine/sim';
 import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
@@ -32,8 +34,6 @@ import {
   type SolidAt,
   type Vec3,
 } from '@skelly/engine/world';
-import type { FromMesher } from '../../../engine/src/game/entries/mesh.ts';
-import { playerTuning } from '../../../engine/src/game/entries/sim.ts';
 import type { PackAssetFiles } from '../presentation/bundledAssets.ts';
 import { cameraRotation, DamageFeedback } from '../presentation/damageFeedback.ts';
 import type { Engine } from '../presentation/engine.ts';

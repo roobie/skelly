@@ -1,5 +1,5 @@
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { describe, expect, it } from 'vitest';
-import { LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import {
   CAM_WRITE_INTERVAL_MS,
   type CamPose,

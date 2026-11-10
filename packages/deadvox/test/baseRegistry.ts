@@ -4,10 +4,10 @@ import { CONTENT_SECTION_KEYS, type ContentSource, type Registry, type ScreenTex
 import { schemaIssues } from '@skelly/engine/internal/core/content.ts';
 import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
 import type { TerrainShape } from '@skelly/engine/internal/core/worldgen.ts';
+import type { StartupContent } from '@skelly/engine/packs';
 import { terrainShapeOf } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { inject } from 'vitest';
-import type { StartupContent } from '../../engine/src/game/entries/packs.ts';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 
 declare module 'vitest' {

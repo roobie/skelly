@@ -1,6 +1,6 @@
+import { BindingRegistry } from '@skelly/engine/input';
 import { NoToneMapping } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';

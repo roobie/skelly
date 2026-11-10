@@ -6,11 +6,10 @@
 
 import { requireDayCycle } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
+import type { GameConfig } from '@skelly/engine/session';
 import { skyAt } from '@skelly/engine/sky';
-import { CHUNK } from '@skelly/engine/world';
+import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@skelly/engine/world';
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import type { GameConfig } from '../../../engine/src/game/entries/session.ts';
-import { createWorldSetup, type StreamerStats, type WorldSetup } from '../../../engine/src/game/entries/world.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';

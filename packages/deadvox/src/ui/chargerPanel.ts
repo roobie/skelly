@@ -1,9 +1,9 @@
 import type { FurnitureDef, ScreenText } from '@skelly/engine/content';
+import type { ReplayActionPayload } from '@skelly/engine/input';
 import { batteryCapacityMicrojoules, batteryEnergy, claimed } from '@skelly/engine/inventory';
 import type { ReachSnapshot } from '@skelly/engine/sim';
 import { decimalText, fillText } from '@skelly/engine/text';
 import type { BlockEntity, SitePower } from '@skelly/engine/world';
-import type { ReplayActionPayload } from '../../../engine/src/game/entries/input.ts';
 
 export interface ChargerPanel {
   /** Meta: an opened surface makes service and remaining powered work inspectable without a permanent HUD. */

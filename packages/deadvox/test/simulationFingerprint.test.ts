@@ -337,10 +337,7 @@ describe('simulation source fingerprint', () => {
       ...(await sourceFilesUnder(join(engineSource, 'core'))),
       ...(await sourceFilesUnder(join(engineSource, 'game'))),
     ];
-    // Curated entries only re-export modules classified here, like the engine package's own entries.
-    const modules = engineFiles
-      .map((path) => `engine/${relative(engineSource, path).split(sep).join('/')}`)
-      .filter((path) => !path.startsWith('engine/game/entries/'));
+    const modules = engineFiles.map((path) => `engine/${relative(engineSource, path).split(sep).join('/')}`);
     const scopedExclusions = SIMULATION_EXCLUSIONS.filter(
       (rule) => rule.startsWith('engine/core/') || rule.startsWith('engine/game/'),
     );

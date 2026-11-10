@@ -73,7 +73,7 @@ const THUMB_PRESS_WRIST: Vec3 = [-0.05, 0.012, 0.01];
 export interface HeldFirearmPose {
   readonly uid: number;
   readonly mode: FirearmMode | 'load' | 'magazine' | 'revolver';
-  readonly revolver?: import('../../../engine/src/game/entries/inventory.ts').RevolverFrame;
+  readonly revolver?: import('@skelly/engine/inventory').RevolverFrame;
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;

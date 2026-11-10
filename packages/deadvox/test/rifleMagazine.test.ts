@@ -1,11 +1,11 @@
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import type { InventoryState } from '@skelly/engine/internal/core/inventory.ts';
+import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
+import { type ReloadBinding, ReloadInput } from '@skelly/engine/internal/game/reloadInput.ts';
 import { HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { RELOAD_GESTURE_MS } from '../../engine/src/game/entries/input.ts';
-import { FirearmMechanics, type FirearmShotInput } from '../../engine/src/game/firearmHandling.ts';
-import { MagazineHandling } from '../../engine/src/game/magazineHandling.ts';
-import { type ReloadBinding, ReloadInput } from '../../engine/src/game/reloadInput.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { chargedRifle, rifleAmmunition, settle } from './rifleFixture.ts';
 

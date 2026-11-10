@@ -4,7 +4,9 @@
 import { type ActorFigureFiles, requireDayCycle } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
 import { graphicsTuningOf, lookDefaultsOf } from '@skelly/engine/look';
+import { type ActorRenderMode, actorRendererFromUrl, PHYSICS_RATE } from '@skelly/engine/session';
 import {
+  ACTIVE_ACTOR_RATE,
   ActorSystem,
   BACKGROUND_ACTOR_RATE,
   BACKGROUND_ACTOR_SLICE_COUNT,
@@ -12,14 +14,14 @@ import {
   dayPhaseAt,
   hourOfDay,
   parseTimeOfDay,
+  physicsFor,
+  playerTuning,
   reachTuning,
   Simulation,
   worldGravity,
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
-import { type ActorRenderMode, actorRendererFromUrl, PHYSICS_RATE } from '../../../engine/src/game/entries/session.ts';
-import { ACTIVE_ACTOR_RATE, physicsFor, playerTuning } from '../../../engine/src/game/entries/sim.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import { ActorMeshes } from '../render/actors.ts';
 import { type ActorRenderer, MobActorMeshes } from '../render/mobActors.ts';

@@ -1,10 +1,9 @@
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { openingTargetForHand } from '@skelly/engine/internal/game/canOpening.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
 import { HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
-import { bindReach } from '@skelly/engine/sim';
+import { bindReach, Survival, selectPrimaryAction } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { openingTargetForHand } from '../../engine/src/game/canOpening.ts';
-import { Survival, selectPrimaryAction } from '../../engine/src/game/entries/sim.ts';
-import { Unpacking } from '../../engine/src/game/unpacking.ts';
 import { GuidedSteps as Tutorial } from '../src/presentation/guidedSteps.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

@@ -1,6 +1,6 @@
 import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { siteFromUrl } from '@skelly/engine/session';
 import { expect, it } from 'vitest';
-import { siteFromUrl } from '../../engine/src/game/entries/session.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 
 it('admits a scene name only while its authored row is available', () => {

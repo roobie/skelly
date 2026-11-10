@@ -1,10 +1,8 @@
 import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
-import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
-import { bindReach } from '@skelly/engine/sim';
+import { applyReplayActionPayload, type ReplayCommandOwners } from '@skelly/engine/internal/game/replayCommands.ts';
+import { HandlingQueue, Inventory, Quickbar } from '@skelly/engine/inventory';
+import { bindReach, Survival } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Quickbar } from '../../engine/src/game/entries/inventory.ts';
-import { Survival } from '../../engine/src/game/entries/sim.ts';
-import { applyReplayActionPayload, type ReplayCommandOwners } from '../../engine/src/game/replayCommands.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';

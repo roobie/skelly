@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
+
+import type { ModIntake } from '@skelly/engine/packs';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import type { ModIntake } from '../../engine/src/game/entries/packs.ts';
 import { ModStorage } from '../src/presentation/modStorage.ts';
 import { chooseMods } from '../src/ui/modsPanel.ts';
 import { baseScreenText } from './baseRegistry.ts';

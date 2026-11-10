@@ -1,10 +1,10 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { damageToActor } from '@skelly/engine/internal/core/actorSystem.ts';
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
+import { meleeProfileForWeapon } from '@skelly/engine/internal/game/melee.ts';
 import { claimed } from '@skelly/engine/inventory';
 import { BODY_REGIONS, Body, type BodyRegion } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { meleeProfileForWeapon } from '../../engine/src/game/melee.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';

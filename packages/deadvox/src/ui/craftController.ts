@@ -1,9 +1,9 @@
 // UI preferences/control adapter; completed readouts and Lit views live on the F7 side.
 
+import type { ReplayActionPayload } from '@skelly/engine/input';
 import type { AlternativeRef, CraftPreference, CraftSources } from '@skelly/engine/inventory';
+import type { Session } from '@skelly/engine/session';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { ReplayActionPayload } from '../../../engine/src/game/entries/input.ts';
-import type { Session } from '../../../engine/src/game/entries/session.ts';
 import { renderCrafting } from './crafting.ts';
 import { craftingText, craftRows } from './craftReadout.ts';
 

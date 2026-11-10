@@ -1,4 +1,4 @@
-import type { SessionControls } from '../../../engine/src/game/entries/session.ts';
+import type { SessionControls } from '@skelly/engine/session';
 
 export type DebugGunPoseMode = 'relaxed' | 'hip' | 'ads';
 

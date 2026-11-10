@@ -1,6 +1,6 @@
 import type { Registry } from '@skelly/engine/content';
+import { createPlayerBody, playerTuning } from '@skelly/engine/sim';
 import { type Body, bodyOverlapsBlock, raycast, type Scale, type SolidAt, type Vec3 } from '@skelly/engine/world';
-import { createPlayerBody, playerTuning } from '../../../engine/src/game/entries/sim.ts';
 
 export interface ShamblerPlacementWorld {
   registry: Registry;

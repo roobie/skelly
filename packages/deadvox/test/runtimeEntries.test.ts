@@ -23,11 +23,6 @@ const cleanTree: Tree = {
     "import { rule } from '@skelly/engine/sim';\nimport type { rule as Rule } from '@skelly/engine/sim';\nexport const view = (r: typeof Rule) => [rule, r, import('@skelly/engine/sim')];\n",
   'packages/deadvox/tools/report.mjs': "export const report = () => import('@skelly/engine/sim');\n",
   'packages/deadvox/maps/extensions/map.mjs': `export { rule } from '${UP_TO_PACKAGES}engine/src/sim.ts';\n`,
-  'packages/deadvox/src/game/turn.ts': 'export const turn = 1;\nexport const turnForTests = 2;\n',
-  'packages/deadvox/src/game/step.ts': "import { turn } from './turn.ts';\nexport const step = turn;\n",
-  'packages/deadvox/src/game/entries/session.ts': "export { turn } from '../turn.ts';\n",
-  'packages/deadvox/src/ui/clock.ts':
-    "import { turn } from '../game/entries/session.ts';\nexport const clock = turn;\n",
 };
 
 function violationsIn(changes: Tree) {
@@ -70,28 +65,13 @@ describe('runtime entries', () => {
   it('fails a product file that imports a runtime file by path', () => {
     expect(
       violationsIn({
-        'packages/deadvox/src/game/step.ts': `import { rule } from '${UP_TO_PACKAGES}engine/src/core/rule.ts';\nexport const step = rule;\n`,
+        'packages/deadvox/src/presentation/step.ts': `import { rule } from '${UP_TO_PACKAGES}engine/src/core/rule.ts';\nexport const step = rule;\n`,
       }),
     ).toEqual([
       {
-        importer: 'packages/deadvox/src/game/step.ts',
+        importer: 'packages/deadvox/src/presentation/step.ts',
         specifier: `${UP_TO_PACKAGES}engine/src/core/rule.ts`,
         reason: 'imports a runtime file by path instead of by package name',
-      },
-    ]);
-  });
-
-  it('fails a product file that imports in-place runtime source other than through its entries', () => {
-    expect(
-      violationsIn({
-        'packages/deadvox/src/ui/clock.ts':
-          "import { turnForTests } from '../game/turn.ts';\nexport const clock = turnForTests;\n",
-      }),
-    ).toEqual([
-      {
-        importer: 'packages/deadvox/src/ui/clock.ts',
-        specifier: '../game/turn.ts',
-        reason: 'imports an in-place runtime file that is not an entry',
       },
     ]);
   });

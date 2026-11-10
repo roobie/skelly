@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { adsLimits } from '@skelly/engine/internal/core/adsView.ts';
 import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import {
   adsCameraEye,
@@ -33,7 +34,6 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';

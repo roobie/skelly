@@ -5,6 +5,14 @@ import type { MeleeClassDef } from '@skelly/engine/internal/core/content.ts';
 import { type MeleeProfile, meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
 import { stepStamina } from '@skelly/engine/internal/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
+import {
+  resolveMeleeWeapon,
+  resolvePlayerMeleeWeapon,
+  shouldEnterMeleeGuard,
+  shouldEnterMeleeReady,
+  startPlayerMelee,
+} from '@skelly/engine/internal/game/melee.ts';
+import { primaryMeleeAction } from '@skelly/engine/internal/game/primaryAction.ts';
 import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import {
   actorPoseInputFor,
@@ -16,14 +24,6 @@ import {
 import { type Actor, Body } from '@skelly/engine/sim';
 import { makeScale, type SolidAt, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import {
-  resolveMeleeWeapon,
-  resolvePlayerMeleeWeapon,
-  shouldEnterMeleeGuard,
-  shouldEnterMeleeReady,
-  startPlayerMelee,
-} from '../../engine/src/game/melee.ts';
-import { primaryMeleeAction } from '../../engine/src/game/primaryAction.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

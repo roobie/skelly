@@ -5,6 +5,7 @@
 // running. Furniture shows its contents once it has been searched.
 
 import type { ItemDef, Registry, ScreenText, WearSlot } from '@skelly/engine/content';
+import { type BindingRegistry, PressHoldInput, type ReplayActionPayload } from '@skelly/engine/input';
 import {
   batterySlotRefusal,
   bestPocket,
@@ -63,11 +64,6 @@ import {
 import { type BlockEntity, searchTime, type Vec3 } from '@skelly/engine/world';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import {
-  type BindingRegistry,
-  PressHoldInput,
-  type ReplayActionPayload,
-} from '../../../engine/src/game/entries/input.ts';
 import { blursFindField, type InputCommand } from '../presentation/inputBindings.ts';
 import { comboBox } from './comboBox.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';

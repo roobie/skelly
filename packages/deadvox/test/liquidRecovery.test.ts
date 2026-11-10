@@ -1,16 +1,16 @@
+import type { ReplayActionPayload } from '@skelly/engine/input';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { disassemblyLiquidOutputs, planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
-import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine/inventory';
-import { decodeSave } from '@skelly/engine/save';
-import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
-import { describe, expect, it } from 'vitest';
-import type { ReplayActionPayload } from '../../engine/src/game/entries/input.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../../engine/src/game/replayCommands.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

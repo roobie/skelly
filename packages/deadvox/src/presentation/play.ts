@@ -6,11 +6,29 @@ import { type ActorFigureFiles, type BodyTuningDef, loadActorFigureFiles } from 
 import {
   type ActionText,
   actionText,
+  CrouchProneInput,
+  createReplayPlayStateBinding,
+  encodeInputReplay,
   fillText,
   type InputContext,
+  InputReplayDriver,
+  type InputReplayDriverPorts,
+  InputReplayPlayer,
+  InputReplayRecorder,
   type inventoryTabForAction,
   isForwardButton,
+  joinInputReplayWindows,
   PressDedupe,
+  PressHoldInput,
+  RELOAD_GESTURE_MS,
+  type ReplayAction,
+  type ReplayActionPayload,
+  type ReplayControlSample,
+  type ReplayGeneratedColumn,
+  type ReplayInputData,
+  type ReplayStartState,
+  stashInputReplay,
+  withReplayExportGuard,
 } from '@skelly/engine/input';
 import {
   chargeShare,
@@ -19,10 +37,12 @@ import {
   defOf,
   doorOptions,
   doorPlan,
+  firearmHandlingFor,
   type HandSide,
   heldDoorBar,
   type Inventory,
   type Item,
+  type ItemAction,
   type Pile,
   pileScatterPlacements,
   wornNightVision,
@@ -40,55 +60,6 @@ import {
 } from '@skelly/engine/pose';
 import type { SaveSnapshot } from '@skelly/engine/save';
 import {
-  type Actor,
-  applyStartState,
-  type BodyRegion,
-  crosshairTarget,
-  discoveryForPlan,
-  dominantSide,
-  type EntityId,
-  firearmsCombatTuning,
-  formatClock,
-  type InteractionTarget,
-  interactionAffordance,
-  type LongJob,
-  nextTimeOfDay,
-  offSide,
-  type PinState,
-  PLAYER_CHEST_METRES,
-  pryPlan,
-  type RealSeconds,
-  type RealTimestamp,
-  reachTuning,
-  realSeconds as realDuration,
-  realTimestamp,
-  stageMarkArea,
-} from '@skelly/engine/sim';
-import { type SoundEmission, soundVariantKey } from '@skelly/engine/sound';
-import { fillText as fillScreenText } from '@skelly/engine/text';
-import { type BlockEntity, CitySite, raycast, type Vec3 } from '@skelly/engine/world';
-import {
-  CrouchProneInput,
-  createReplayPlayStateBinding,
-  encodeInputReplay,
-  InputReplayDriver,
-  type InputReplayDriverPorts,
-  InputReplayPlayer,
-  InputReplayRecorder,
-  joinInputReplayWindows,
-  PressHoldInput,
-  RELOAD_GESTURE_MS,
-  type ReplayAction,
-  type ReplayActionPayload,
-  type ReplayControlSample,
-  type ReplayGeneratedColumn,
-  type ReplayInputData,
-  type ReplayStartState,
-  stashInputReplay,
-  withReplayExportGuard,
-} from '../../../engine/src/game/entries/input.ts';
-import { firearmHandlingFor, type ItemAction } from '../../../engine/src/game/entries/inventory.ts';
-import {
   createCommandRouter,
   createSession,
   createSimulationStepper,
@@ -97,24 +68,58 @@ import {
   inputReplayStoppedStatus,
   observeRealFrame,
   requireStart,
-} from '../../../engine/src/game/entries/session.ts';
+} from '@skelly/engine/session';
 import {
+  type Actor,
+  applyStartState,
+  type BodyRegion,
+  crosshairTarget,
+  discoveryForPlan,
+  dominantSide,
+  type EntityId,
   FurnitureActionSelection,
   firearmBoreRay,
   firearmBoreTarget,
+  firearmsCombatTuning,
+  formatClock,
   furnitureActionsFor,
+  type InteractionTarget,
+  interactionAffordance,
+  type LongJob,
+  nextTimeOfDay,
+  offSide,
+  type PinState,
+  PLAYER_CHEST_METRES,
   PlayerTickActions,
   playerTuning,
+  pryPlan,
+  type RealSeconds,
+  type RealTimestamp,
+  reachTuning,
+  realSeconds as realDuration,
+  realTimestamp,
   restKindForFurniture,
   selectPrimaryAction,
+  stageMarkArea,
   unarmedMeleeWeapon,
-} from '../../../engine/src/game/entries/sim.ts';
+} from '@skelly/engine/sim';
 import {
   createRefusalPresenter,
   handlingMoveCompleteCue,
   handlingMoveStartCue,
-} from '../../../engine/src/game/entries/sound.ts';
-import { columnArrival, playerStartFromWorld, registerLayoutVehicles } from '../../../engine/src/game/entries/world.ts';
+  type SoundEmission,
+  soundVariantKey,
+} from '@skelly/engine/sound';
+import { fillText as fillScreenText } from '@skelly/engine/text';
+import {
+  type BlockEntity,
+  CitySite,
+  columnArrival,
+  playerStartFromWorld,
+  raycast,
+  registerLayoutVehicles,
+  type Vec3,
+} from '@skelly/engine/world';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';

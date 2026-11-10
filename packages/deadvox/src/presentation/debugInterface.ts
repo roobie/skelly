@@ -1,4 +1,5 @@
 import type { Inventory } from '@skelly/engine/inventory';
+import type { DebugNoclipStep, RealFrameObserver, Session } from '@skelly/engine/session';
 import type {
   ActorAim,
   ActorSystem,
@@ -8,9 +9,8 @@ import type {
   Simulation,
 } from '@skelly/engine/sim';
 import type { Weather } from '@skelly/engine/sky';
+import type { HeardSound } from '@skelly/engine/sound';
 import type { Body, Vec3 } from '@skelly/engine/world';
-import type { DebugNoclipStep, RealFrameObserver, Session } from '../../../engine/src/game/entries/session.ts';
-import type { HeardSound } from '../../../engine/src/game/entries/sound.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';

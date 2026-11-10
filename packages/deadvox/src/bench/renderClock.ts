@@ -1,5 +1,4 @@
-import { BACKGROUND_ACTOR_RATE } from '@skelly/engine/sim';
-import { ACTIVE_ACTOR_RATE } from '../../../engine/src/game/entries/sim.ts';
+import { ACTIVE_ACTOR_RATE, BACKGROUND_ACTOR_RATE } from '@skelly/engine/sim';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 

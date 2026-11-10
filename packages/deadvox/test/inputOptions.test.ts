@@ -1,9 +1,8 @@
-import { bindingIsDebugOnly, type InputContext } from '@skelly/engine/input';
+import { BindingRegistry, bindingIsDebugOnly, chordIssue, type InputContext } from '@skelly/engine/input';
 import { DEBUG_ONLY_CONTEXTS } from '@skelly/engine/internal/core/inputActions.ts';
+import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
-import { bindingConflict } from '../../engine/src/game/bindingRegistry.ts';
-import { BindingRegistry, chordIssue } from '../../engine/src/game/entries/input.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseScreenText } from './baseRegistry.ts';

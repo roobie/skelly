@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '@skelly/engine/content';
 import { pileLayout } from '@skelly/engine/internal/core/pileLayout.ts';
-import { Inventory, PILE_GRID, type Pile, toggleLight } from '@skelly/engine/inventory';
+import { Inventory, PILE_GRID, type Pile, spentCaseItemId, toggleLight } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 import {
   Box3,
@@ -21,7 +21,6 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { spentCaseItemId } from '../../engine/src/game/entries/inventory.ts';
 import { createCompass } from '../src/render/compass.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { presentHeldDisplay } from '../src/render/heldDisplay.ts';

@@ -1,14 +1,13 @@
 import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
 import { pieceSize } from '@skelly/engine/internal/core/templates.ts';
+import { applyToHeldItem } from '@skelly/engine/internal/game/playerTickActions.ts';
 import type { HandSide, Item } from '@skelly/engine/inventory';
 import type { SaveSnapshot } from '@skelly/engine/save';
-import { dominantSide, offSide } from '@skelly/engine/sim';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dominantSide, offSide, PlayerTickActions } from '@skelly/engine/sim';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { PlayerTickActions } from '../../engine/src/game/entries/sim.ts';
-import { applyToHeldItem } from '../../engine/src/game/playerTickActions.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { type MoveIntent, PLAYER } from './playerFixture.ts';

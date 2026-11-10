@@ -1,15 +1,15 @@
 import type { Registry } from '@skelly/engine/content';
+import type { ReplayActionPayload } from '@skelly/engine/input';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { legalAddonPlacements } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
 import type { Item } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { copyVehicleWorkPlacement, type VehicleWorkPlacement, type VehicleWorkTarget } from '@skelly/engine/vehicles';
 import { CHUNK } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { ReplayActionPayload } from '../../engine/src/game/entries/input.ts';
-import { applyReplayActionPayload, isReplayActionPayload } from '../../engine/src/game/replayCommands.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {

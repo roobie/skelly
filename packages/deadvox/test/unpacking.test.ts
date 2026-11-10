@@ -1,10 +1,10 @@
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { reach } from '@skelly/engine/internal/core/reach.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
 import { HandlingQueue, Inventory, options } from '@skelly/engine/inventory';
+import { selectPrimaryAction } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { selectPrimaryAction } from '../../engine/src/game/entries/sim.ts';
-import { Unpacking } from '../../engine/src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

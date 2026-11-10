@@ -1,17 +1,15 @@
 import {
   encodeSave,
+  SAVE_RECORD_HEADER_BYTES,
+  SAVE_RECORD_MAX_BYTES,
   type SaveSnapshot,
+  SaveStorageError,
+  type SaveStorageErrorKind,
   type SaveVersionComponents,
   type SaveWorldOptions,
   SHA256_HEX,
-} from '@skelly/engine/save';
-import {
-  SAVE_RECORD_HEADER_BYTES,
-  SAVE_RECORD_MAX_BYTES,
-  SaveStorageError,
-  type SaveStorageErrorKind,
   sealSaveSlot,
-} from '../../../engine/src/game/entries/save.ts';
+} from '@skelly/engine/save';
 import { createDurableWriteTransaction } from '../presentation/indexedDbCommit.ts';
 
 const DATABASE = 'skelly-save-slots';

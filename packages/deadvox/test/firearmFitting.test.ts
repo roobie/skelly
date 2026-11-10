@@ -1,10 +1,13 @@
 import type { FurnitureDef, GunModelDef, ItemDef, Registry } from '@skelly/engine/content';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import {
+  attachmentWorkSkill,
+  FirearmAttachmentHandling,
+} from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
 import { defOf, HandlingQueue, Inventory, type Item, SLING_SLOT } from '@skelly/engine/inventory';
 import { opticViewSettings } from '@skelly/engine/pose';
 import { bindReach, Character, type HandedCharacter } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { attachmentWorkSkill, FirearmAttachmentHandling } from '../../engine/src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';

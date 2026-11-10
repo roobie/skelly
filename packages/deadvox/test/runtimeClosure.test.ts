@@ -4,10 +4,28 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type ConfigEnv, loadConfigFromFile, type UserConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
-import { ENGINE_POLICY, RUNTIME_POLICY, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
+import { ENGINE_POLICY, type RuntimeClosurePolicy, runtimeClosureViolations } from '../tools/runtimeClosure.ts';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 type Tree = Record<string, string>;
+
+// The fixture's runtime set sits inside a product package, beside the render, configuration, mods and page
+// files it must not reach, so each witness can reach them by every route, short relative ones included. The
+// check reads only the policy, so the same checks guard the runtime package.
+const FIXTURE_POLICY: RuntimeClosurePolicy = {
+  start: ['packages/deadvox/src/game'],
+  leaves: [],
+  manifest: 'packages/deadvox/package.json',
+  forbidden: [
+    'packages/deadvox/src/render',
+    'packages/deadvox/src/ui',
+    'packages/deadvox/src/presentation',
+    'packages/presentation',
+  ],
+  forbiddenPackages: ENGINE_POLICY.forbiddenPackages,
+  viteRoot: 'packages/deadvox',
+  tsconfig: 'packages/deadvox/tsconfig.json',
+};
 
 // A fixture repository laid out like the real one, whose runtime reaches only allowed targets.
 const cleanTree: Tree = {
@@ -73,13 +91,14 @@ function violationsIn(changes: Tree, links: Tree = {}) {
     for (const [path, target] of Object.entries(links)) {
       symlinkSync(target, join(root, path));
     }
-    return runtimeClosureViolations(root, RUNTIME_POLICY);
+    return runtimeClosureViolations(root, FIXTURE_POLICY);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
-const viteRoot = join(repoRoot, RUNTIME_POLICY.viteRoot);
+// The product's Vite config bundles the runtime package's source, so it must resolve it as the check does.
+const viteRoot = join(repoRoot, 'packages/deadvox');
 const resolutionHooks = new Set(['config', 'configEnvironment', 'resolveId']);
 
 /** Vite awaits and flattens the plugin option; so does the gate before it reads hooks. */
@@ -156,10 +175,6 @@ const oddlyNamedRender: Tree = {
 };
 
 describe('runtime closure', () => {
-  it('keeps the runtime and the libraries it follows inside the runtime set and away from three and Lit', () => {
-    expect(runtimeClosureViolations(repoRoot, RUNTIME_POLICY)).toEqual([]);
-  });
-
   it('keeps the runtime package off deadvox, presentation, three and Lit, and on the packages it declares', () => {
     expect(runtimeClosureViolations(repoRoot, ENGINE_POLICY)).toEqual([]);
   });

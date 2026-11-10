@@ -1,3 +1,4 @@
+import type { ReplayActionPayload } from '@skelly/engine/input';
 import { claimed, conditionWord, type Inventory, type Item } from '@skelly/engine/inventory';
 import type { ReachSnapshot } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
@@ -7,7 +8,6 @@ import {
   type VehicleWorkTarget,
   vehicleSiteName,
 } from '@skelly/engine/vehicles';
-import type { ReplayActionPayload } from '../../../engine/src/game/entries/input.ts';
 
 export type VehicleWorkPayload = Extract<ReplayActionPayload, { kind: 'vehicle.work' }>;
 type VehicleWorkKind = VehicleWorkPayload['work'];

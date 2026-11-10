@@ -3,7 +3,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { PressHoldInput } from '../../engine/src/game/entries/input.ts';
+import { PressHoldInput } from '@skelly/engine/input';
 import { QuickbarInput } from '../src/presentation/quickbarInput.ts';
 
 const fixture = () => {

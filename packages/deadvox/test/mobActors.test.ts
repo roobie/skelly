@@ -28,7 +28,7 @@ import {
   severedBoneSet,
   transpose,
 } from '@skelly/engine/pose';
-import { type Actor, reachTuning } from '@skelly/engine/sim';
+import { ACTIVE_ACTOR_RATE, type Actor, reachTuning } from '@skelly/engine/sim';
 import { CHUNK, makeScale, type Vec3 } from '@skelly/engine/world';
 import {
   type BufferGeometry,
@@ -38,7 +38,6 @@ import {
   PerspectiveCamera,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { ACTIVE_ACTOR_RATE } from '../../engine/src/game/entries/sim.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

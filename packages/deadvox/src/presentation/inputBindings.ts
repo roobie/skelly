@@ -1,22 +1,20 @@
 import {
   type Binding,
+  BindingRegistry,
   type Chord,
+  chordIssue,
   INPUT_ACTIONS,
   INVENTORY_TAB_BINDINGS,
   type InputContext,
-  type Modifier,
-} from '@skelly/engine/input';
-import {
-  BindingRegistry,
-  chordIssue,
   isHeld,
   type KeyboardLayoutSource,
+  type Modifier,
   modifierCodes,
   modifierRefusal,
   modifiers,
   type PreferenceStorage,
   REFUSED_MODIFIERS,
-} from '../../../engine/src/game/entries/input.ts';
+} from '@skelly/engine/input';
 
 const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set(['inventory.previous', 'inventory.next']);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([

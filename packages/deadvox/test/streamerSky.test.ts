@@ -1,12 +1,12 @@
+import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { Inventory } from '@skelly/engine/inventory';
+import type { FromMesher, MesherPort, MesherSource, ToMesher } from '@skelly/engine/mesh';
 import { buildMesh } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { FromMesher, MesherPort, MesherSource, ToMesher } from '../../engine/src/game/entries/mesh.ts';
-import type { MesherHandlers } from '../../engine/src/game/mesherProtocol.ts';
-import { Streamer } from '../../engine/src/game/streamer.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { PileMeshes } from '../src/render/piles.ts';

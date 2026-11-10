@@ -3,11 +3,11 @@ import { SKILL_LEVEL_MAX, skillSaturation } from '@skelly/engine/internal/core/c
 import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
 import { skillActivityPractice } from '@skelly/engine/internal/core/skillTraining.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
 import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { Character, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
 import { searchTime, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { MagazineHandling } from '../../engine/src/game/magazineHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { levelSite } from './fixtures/levelSite.ts';

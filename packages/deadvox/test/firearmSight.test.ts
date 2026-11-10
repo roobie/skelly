@@ -1,6 +1,7 @@
 import { adsLimits } from '@skelly/engine/internal/core/adsView.ts';
 import { heldButtOffset } from '@skelly/engine/internal/core/heldPose.ts';
 import { leanFrame } from '@skelly/engine/internal/core/lean.ts';
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import {
   adsCameraEye,
@@ -10,10 +11,9 @@ import {
   playerLookPose,
   sightedFirearmModel,
 } from '@skelly/engine/pose';
+import { firearmBoreRay } from '@skelly/engine/sim';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
-import { LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame } from '../src/render/models.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';

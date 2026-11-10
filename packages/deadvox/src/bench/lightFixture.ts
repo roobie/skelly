@@ -1,9 +1,8 @@
 import { requireDayCycle } from '@skelly/engine/content';
 import { claimed, HandlingQueue, Inventory, toggleLight } from '@skelly/engine/inventory';
-import { bindReach, Simulation } from '@skelly/engine/sim';
+import { bindReach, Simulation, Survival } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { type PerspectiveCamera, Vector3 } from 'three';
-import { Survival } from '../../../engine/src/game/entries/sim.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import type { HeldItems } from '../render/hands.ts';
 import { LightPool } from '../render/lightPool.ts';

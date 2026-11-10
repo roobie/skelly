@@ -2,8 +2,8 @@
 // page reloads that separate runs (each run starts from a fresh page and GPU state).
 
 import type { ItemDef } from '@skelly/engine/content';
+import type { ActorRenderMode } from '@skelly/engine/session';
 import type { StorageStats } from '@skelly/engine/sim';
-import type { ActorRenderMode } from '../../../engine/src/game/entries/session.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 
 export interface BenchConfig {

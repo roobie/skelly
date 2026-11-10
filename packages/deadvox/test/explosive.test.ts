@@ -12,13 +12,12 @@ import {
   type SaveSnapshot,
   type SaveVersionComponents,
 } from '@skelly/engine/save';
-import { dominantSide } from '@skelly/engine/sim';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dominantSide, selectPrimaryAction } from '@skelly/engine/sim';
 import { makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
-import { selectPrimaryAction } from '../../engine/src/game/entries/sim.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';

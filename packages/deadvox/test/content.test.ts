@@ -7,6 +7,7 @@ import {
   ModelSchema,
   requiredContentIssues,
 } from '@skelly/engine/content';
+import { BindingRegistry } from '@skelly/engine/input';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
@@ -33,7 +34,6 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { controlIssues } from '../src/cli/controlIssues.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

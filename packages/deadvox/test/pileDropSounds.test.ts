@@ -1,9 +1,9 @@
 import type { MoveStart } from '@skelly/engine/internal/core/handling.ts';
 import { vehicleCells } from '@skelly/engine/internal/core/vehicleProjection.ts';
 import { Inventory } from '@skelly/engine/inventory';
+import { handlingMoveCompleteCue } from '@skelly/engine/sound';
 import { World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { handlingMoveCompleteCue } from '../../engine/src/game/entries/sound.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 
 import { buildFixtureRegistry } from './economyFixtures.ts';

@@ -14,12 +14,12 @@ import {
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { reachTuning } from '@skelly/engine/sim';
 import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { Box3, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { contentLookup } from '../src/ui/saveController.ts';

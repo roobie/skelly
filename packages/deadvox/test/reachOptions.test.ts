@@ -8,11 +8,11 @@ import {
   wieldOrPocket,
 } from '@skelly/engine/internal/core/options.ts';
 import type { ReachPlayer } from '@skelly/engine/internal/core/reach.ts';
+import { downedBodyPlan } from '@skelly/engine/internal/game/downedBody.ts';
 import { HandlingQueue, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
 import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { downedBodyPlan } from '../../engine/src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';

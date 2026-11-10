@@ -16,7 +16,7 @@ import {
   type SaveStorageErrorKind,
   type SaveStorageStatus,
   type SaveStore,
-} from '../../../engine/src/game/entries/save.ts';
+} from '@skelly/engine/save';
 
 const SAVE_WRITE_LOCK = 'skelly-save-storage';
 const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
