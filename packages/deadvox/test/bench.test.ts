@@ -49,7 +49,7 @@ describe('bench plan', () => {
     expect(defaults).toMatchObject({
       counts: [...DEFAULT_SHAMBLER_COUNTS],
       index: 0,
-      actors: actorRendererFromUrl(new URLSearchParams()),
+      actors: actorRendererFromUrl(undefined),
       post: benchPostFromUrl(new URLSearchParams()),
     });
     expect(Number.isInteger(defaults.seed)).toBe(true);

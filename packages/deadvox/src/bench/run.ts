@@ -100,7 +100,12 @@ export const benchRunFromUrl = (
     nightVision: benchNightVisionFromUrl(params),
     flareSources: benchFlareSourcesFromUrl(params),
     shamblers: shamblerValues?.length === 1 ? shamblerValues[0]! : undefined,
-    ...siteFromUrl(params, plan.some(({ blockSize }) => blockSize !== 0.5) ? 'forest' : 'testHouse', registry),
+    ...siteFromUrl(
+      params,
+      plan.some(({ blockSize }) => blockSize !== 0.5) ? 'forest' : 'testHouse',
+      registry,
+      params.get('debug') === '1',
+    ),
     ...(parseTimeOfDay(time) === undefined ? {} : { time }),
   };
 };

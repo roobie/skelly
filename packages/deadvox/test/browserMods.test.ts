@@ -140,7 +140,7 @@ describe('browser mod admission', () => {
     const actor = data.actors[0]!;
     expect(result.content.registry.actors.get(actor.id)?.speed).toEqual(actor.speed);
     expect(result.content.origins.get(`actors:${actor.id}`)?.source).toBe('fixture.json/content.json');
-    const config = configFromUrl(new URLSearchParams('site=testHouse'), result.content, ragdollSweepViewer);
+    const config = configFromUrl(new URLSearchParams('site=testHouse'), {}, result.content, ragdollSweepViewer);
     const meshes = new ChunkMeshes(config.scale.blockSize, result.content.registry);
     const world = createWorldSetup(config, meshes, quietMesherSource());
     expect(world.registry).toBe(result.content.registry);
@@ -167,7 +167,7 @@ describe('browser mod admission', () => {
     expect(disabled.admitted).toEqual([]);
     expect(disabled.issues.get(broken.source)?.length).toBeGreaterThan(0);
     expect(disabled.content.origins).toEqual(base.origins);
-    const config = configFromUrl(new URLSearchParams('site=testHouse'), disabled.content, ragdollSweepViewer);
+    const config = configFromUrl(new URLSearchParams('site=testHouse'), {}, disabled.content, ragdollSweepViewer);
     expect(config.content.registry).toBe(disabled.content.registry);
   });
 });

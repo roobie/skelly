@@ -1,5 +1,10 @@
-import { resolveWeatheringUrl } from '@skelly/engine/internal/core/weatheringUrl.ts';
-import { WEATHERING_RANGES, writeWeatheringParams } from '@skelly/engine/sky';
+import { resolveWeatheringUrl, type WeatheringTuning } from '@skelly/engine/internal/core/weatheringUrl.ts';
+import {
+  isWeatheringColor,
+  WEATHERING_RANGES,
+  WEATHERING_URL_PARAMS,
+  writeWeatheringParams,
+} from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId } from './fixtures/capabilityIds.ts';
@@ -17,12 +22,29 @@ describe('weathering profile URLs', () => {
       profile.variationScaleMetres < range.max - range.step
         ? profile.variationScaleMetres + range.step
         : profile.variationScaleMetres - range.step;
-    const params = new URLSearchParams(
-      `weatheringProfile=${profile.id}&weatheringScale=${changedScale}&weatheringMossColor=%23a1b2c3`,
-    );
-    const state = resolveWeatheringUrl(params, profiles, defaultProfile.id, true)!;
+    const state = resolveWeatheringUrl(
+      profile.id,
+      { weatheringScale: changedScale, weatheringMossColor: '#a1b2c3' },
+      profiles,
+      defaultProfile.id,
+      true,
+    )!;
     const written = writeWeatheringParams(new URLSearchParams('seed=73&weatheringSplit=0'), state, profiles);
-    const restored = resolveWeatheringUrl(written, profiles, defaultProfile.id, true)!;
+    // Read the written params back the way the page hash types them: colours as text, the rest as numbers.
+    const tuning: Record<string, number | string> = {};
+    for (const param of WEATHERING_URL_PARAMS) {
+      const value = written.get(param);
+      if (param !== 'weatheringProfile' && value !== null) {
+        tuning[param] = isWeatheringColor(value) ? value : Number(value);
+      }
+    }
+    const restored = resolveWeatheringUrl(
+      written.get('weatheringProfile'),
+      tuning as WeatheringTuning,
+      profiles,
+      defaultProfile.id,
+      true,
+    )!;
 
     expect(written.get('seed')).toBe('73');
     expect(written.get('weatheringSplit')).toBe('0');
@@ -31,7 +53,7 @@ describe('weathering profile URLs', () => {
 
   it('uses a site-assigned profile when its URL contains no profile override', () => {
     const siteProfile = [...profiles.values()].find(({ id }) => id !== defaultWeatheringId)!;
-    const state = resolveWeatheringUrl(new URLSearchParams(), profiles, siteProfile.id, false)!;
+    const state = resolveWeatheringUrl(undefined, {}, profiles, siteProfile.id, false)!;
     expect(state.profileId).toBe(siteProfile.id);
     expect(state.defaultProfileId).toBe(siteProfile.id);
     expect(state.settings).toEqual(siteProfile);
@@ -40,12 +62,7 @@ describe('weathering profile URLs', () => {
   it('does not accept profile or look overrides outside debug mode', () => {
     const profile = profiles.get(defaultWeatheringId)!;
     const other = [...profiles.values()].find(({ id }) => id !== profile.id)!;
-    const state = resolveWeatheringUrl(
-      new URLSearchParams(`weatheringProfile=${other.id}&weathering=0`),
-      profiles,
-      profile.id,
-      false,
-    )!;
+    const state = resolveWeatheringUrl(other.id, { weathering: 0 }, profiles, profile.id, false)!;
     expect(state.profileId).toBe(profile.id);
     expect(state.settings.strength).toBe(profile.strength);
   });

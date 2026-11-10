@@ -1,5 +1,5 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
-// results; otherwise the game starts (`?radius=` in metres, `?seed=`).
+// results; otherwise the game starts (hash `radius` in metres, `seed`).
 
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
@@ -41,6 +41,7 @@ import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { bundledCredits } from './bundledCredits.ts';
+import { writeHash } from './hashState.ts';
 import { pageUrl } from './pageUrl.ts';
 import { productAssets as assets } from './product/assets.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
@@ -49,7 +50,7 @@ import { ragdollConfig, ragdollSweepViewer } from './product/ragdoll.ts';
 
 document.getElementById('build-revision')!.textContent = `Build: ${getBuildRevision()}`;
 
-const params = pageUrl().query;
+const { query: params, hash } = pageUrl();
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
 installErrorReportHandler();
@@ -143,7 +144,7 @@ if (bench === null) {
     const radius = link.dataset.viewDistance;
     if (radius) {
       const target = new URL(location.href);
-      target.searchParams.set('radius', radius);
+      target.hash = writeHash({ ...hash, radius: Number(radius) });
       link.href = target.href;
     }
   }
@@ -158,7 +159,7 @@ if (bench === 'report') {
 } else if (bench === null) {
   keyboardInput.install();
   inputBindings.loadLayout();
-  let config = configFromUrl(params, content, ragdollSweepViewer);
+  let config = configFromUrl(params, hash, content, ragdollSweepViewer);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
   const replayStash = () => sessionStorage;
   let pendingReplay: Uint8Array | undefined;
@@ -195,7 +196,7 @@ if (bench === 'report') {
       replayConfig.site = identity.site;
       replayConfig.storeys = identity.storeys;
       replayConfig.density = identity.density;
-      applyWeatheringConfig(replayConfig, params);
+      applyWeatheringConfig(replayConfig, params, hash);
       const engine = createEngine(replayConfig, view, undefined, { render: !renderFree });
       const decoded = await decodeInputReplay(pendingReplay, {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
@@ -221,7 +222,11 @@ if (bench === 'report') {
   } else if (tutorialRequested(params)) {
     const practiceParams = new URLSearchParams(new URL(tutorialUrl(location.href, true)).search);
     practiceParams.set('site', 'tutorial');
-    const practiceConfig = configFromUrl(practiceParams, content, ragdollSweepViewer);
+    const practiceHash = {
+      ...(hash.radius === undefined ? {} : { radius: hash.radius }),
+      ...(hash.actors === undefined ? {} : { actors: hash.actors }),
+    };
+    const practiceConfig = configFromUrl(practiceParams, practiceHash, content, ragdollSweepViewer);
     const engine = createEngine(practiceConfig, view, undefined, { render: !renderFree });
     try {
       await startPlay(engine, undefined, { assets, keyboard: keyboardInput, ragdoll: ragdollConfig, tutorial: true });
@@ -241,7 +246,7 @@ if (bench === 'report') {
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
     const saveController = new SaveController(
       screenText,
-      { backend, savingEnabled: savingEnabledFromUrl(params) },
+      { backend, savingEnabled: savingEnabledFromUrl(hash) },
       {
         bundledMods: bundled.admitted,
         browserMods: browserSelection?.admitted ?? [],
@@ -281,7 +286,7 @@ if (bench === 'report') {
       resumed.site = savedWorld.site;
       resumed.storeys = savedWorld.storeys;
       resumed.density = savedWorld.density;
-      applyWeatheringConfig(resumed, params);
+      applyWeatheringConfig(resumed, params, hash);
       config = resumed;
     }
     const engine = createEngine(config, view, undefined, { render: !renderFree });

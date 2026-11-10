@@ -102,7 +102,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       observe = vi.fn();
     },
   );
-  const config = configFromUrl(new URLSearchParams('debug=1'), content, ragdollSweepViewer);
+  const config = configFromUrl(new URLSearchParams(), { debug: true }, content, ragdollSweepViewer);
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);

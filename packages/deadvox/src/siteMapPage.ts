@@ -39,7 +39,7 @@ const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
 const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
-Object.assign(config, siteFromUrl(params, 'playtest', registry));
+Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'));
 config.debug = true;
 if (registry.scenarios.has(config.site)) {
   // A scenario city is reviewed as its default start places it.

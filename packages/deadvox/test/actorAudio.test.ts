@@ -7,7 +7,6 @@ const bodies = [1.52, 1.61, 1.68, 1.74, 1.79, 1.86, 1.93, 2.01].map((height) => 
 const { pitchClamp, bodyPitch } = actorVoiceLaw(bodies, BASE_SENSE_TUNING.actorVoice);
 const smallest = bodies[0]!;
 const tallest = bodies.at(-1)!;
-const comparisonUrl = '?site=voice_size&debug=1';
 
 describe('shambler body-sized audio', () => {
   it('decreases monotonically with body height and keeps every body inside the clamp', () => {
@@ -25,20 +24,12 @@ describe('shambler body-sized audio', () => {
   });
 
   it('lets the debug knobs tune their respective endpoint anchors', () => {
-    const smallestPitch = bodyPitch(smallest, comparisonUrl);
-    const tallestPitch = bodyPitch(tallest, comparisonUrl);
-    expect(bodyPitch(smallest, `${comparisonUrl}&voicePitch=1.01`)).toBeGreaterThan(smallestPitch);
-    expect(bodyPitch(tallest, `${comparisonUrl}&voicePitchLarge=0.99`)).toBeLessThan(tallestPitch);
-    expect(bodyPitch(smallest, `${comparisonUrl}&voicePitchLarge=0.9`)).toBeCloseTo(smallestPitch, 12);
-    expect(bodyPitch(tallest, `${comparisonUrl}&voicePitch=1.1`)).toBeCloseTo(tallestPitch, 12);
-  });
-
-  it('ignores both pitch knobs outside the debug voice-size site', () => {
-    for (const body of bodies) {
-      const baseline = bodyPitch(body);
-      expect(bodyPitch(body, '?site=voice_size&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
-      expect(bodyPitch(body, '?site=gauntlet&debug=1&voicePitch=1.1&voicePitchLarge=0.9')).toBe(baseline);
-    }
+    const smallestPitch = bodyPitch(smallest);
+    const tallestPitch = bodyPitch(tallest);
+    expect(bodyPitch(smallest, { voicePitch: 1.01 })).toBeGreaterThan(smallestPitch);
+    expect(bodyPitch(tallest, { voicePitchLarge: 0.99 })).toBeLessThan(tallestPitch);
+    expect(bodyPitch(smallest, { voicePitchLarge: 0.9 })).toBeCloseTo(smallestPitch, 12);
+    expect(bodyPitch(tallest, { voicePitch: 1.1 })).toBeCloseTo(tallestPitch, 12);
   });
 
   it('gives an equal-height pool the midpoint pitch of a converging range', () => {

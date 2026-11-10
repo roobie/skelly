@@ -43,7 +43,7 @@ const version = {
 };
 
 const worldSetup = (): WorldSetup => {
-  const config = configFromUrl(new URLSearchParams('site=city'), content, ragdollSweepViewer);
+  const config = configFromUrl(new URLSearchParams('site=city'), {}, content, ragdollSweepViewer);
   return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
 };
 

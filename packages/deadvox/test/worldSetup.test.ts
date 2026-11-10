@@ -25,14 +25,14 @@ it('selects the active authored layout policy and supplies none for a rowless di
     starts: new Map([...original.content.registry.starts, [start.id, start]]),
   };
   const content = { ...original.content, registry };
-  const setup = (params: string) => {
-    const config = readConfig(new URLSearchParams(params), content, ragdollSweepViewer);
+  const setup = (params: string, debug = false) => {
+    const config = readConfig(new URLSearchParams(params), { debug }, content, ragdollSweepViewer);
     return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   };
   expect(setup(`site=${layout.id}`).attemptPolicy).toEqual(layout.attemptPolicy);
   registry.layouts.set(layout.id, { ...layout, attemptPolicy: undefined });
   expect(setup(`site=${layout.id}`).attemptPolicy).toBeUndefined();
-  expect(setup('site=weatheringTest&debug=1').attemptPolicy).toBeUndefined();
+  expect(setup('site=weatheringTest', true).attemptPolicy).toBeUndefined();
 });
 
 it('builds authored rows unchanged by a debug profile, including a fixture named testHouse', () => {
@@ -89,15 +89,15 @@ describe('player start from world setup', () => {
       spawn: { pos: [4, 7, 9] as [number, number, number], yaw: 0.25 },
       groundAt: (x: number, z: number) => x / 4 + z / 8,
     };
-    const debugConfig = configFromUrl(new URLSearchParams('debug=1&at=12.5,-7.25,90'));
+    const debugConfig = configFromUrl('', { debug: true, at: [12.5, -7.25, 90] });
     const start = playerStartFromWorld(setup, scale, debugConfig.debugStart);
     expect(start.position).toEqual([25, setup.groundAt(12.5, -7.25) / scale.blockSize + 0.01, -14.5]);
     expect(start.yaw).toBeCloseTo(Math.PI / 2);
 
-    const noYawConfig = configFromUrl(new URLSearchParams('debug=1&at=12.5,-7.25'));
+    const noYawConfig = configFromUrl('', { debug: true, at: [12.5, -7.25] });
     expect(playerStartFromWorld(setup, scale, noYawConfig.debugStart).yaw).toBe(setup.spawn.yaw);
 
-    const normalConfig = configFromUrl(new URLSearchParams('at=12.5,-7.25,90'));
+    const normalConfig = configFromUrl('', { at: [12.5, -7.25, 90] });
     expect(normalConfig.debugStart).toBeUndefined();
     const worldSpawn = { position: [8, 14.01, 18], yaw: 0.25 };
     expect(playerStartFromWorld(setup, scale, normalConfig.debugStart)).toEqual(worldSpawn);

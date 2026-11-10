@@ -19,7 +19,7 @@ it('refuses startup rather than inventing a run when rejected content removes th
   const { ragdollSweepViewer } = await import('../src/product/ragdoll.ts');
   const content = buildBundledContent();
   expect(content.issues.some(({ path }) => path === 'defaultStart')).toBe(true);
-  expect(() => configFromUrl(new URLSearchParams(), content, ragdollSweepViewer)).toThrow(
+  expect(() => configFromUrl(new URLSearchParams(), {}, content, ragdollSweepViewer)).toThrow(
     `No admitted playable start "${content.defaultStart}"`,
   );
 });

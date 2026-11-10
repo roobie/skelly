@@ -3,10 +3,10 @@ import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK } from '../core/coords.ts';
 import { GENERATED_SITES } from '../core/generatedSites.ts';
-import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
-import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
+import { resolveWeatheringUrl, type WeatheringTuning } from '../core/weatheringUrl.ts';
+import type { VoicePitchOverrides } from './actorAudio.ts';
 import type { StartupContent } from './bundledContent.ts';
 import { sweepFromUrl } from './ragdollConfig.ts';
 import { requireStart, startForSite } from './startSelection.ts';
@@ -32,19 +32,19 @@ export interface GameConfig {
   fogFarPlaneScale: number;
   /** Calendar seconds at the start (time of day on day 1). */
   start: number;
-  /** Debug keys are on (`?debug=1`). */
+  /** Debug keys are on (hash `debug`). */
   debug: boolean;
   ragdollSweep?: number;
-  /** Fresh debug games may override the start-card hand (`?handedness=left`). */
-  debugHandedness?: HandSide;
-  /** Debug-only walking-lune vertical/horizontal ratio (`?wobbleFlat=0..1`). */
+  /** Debug-only walking-lune vertical/horizontal ratio (hash `wobbleFlat`, 0 to 1). */
   debugWobbleFlat?: number;
-  /** Debug-only OU noise strength multiplier (`?wobbleNoiseScale=0..8`). */
+  /** Debug-only OU noise strength multiplier (hash `wobbleNoiseScale`, 0 to 8). */
   debugWobbleNoiseScale?: number;
-  /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
+  /** The voice-size probe's pitch multipliers, set only in a debug run of that site. */
+  debugVoicePitch?: VoicePitchOverrides;
+  /** Debug-only fresh-session start in metres (hash `at`, `[x,z]` or `[x,z,yawDegrees]`). */
   debugStart?: DebugStart;
   /**
-   * A fresh start facing a showroom prop of this furniture type (`?focus=<furniture>`), so a look request lands
+   * A fresh start facing a showroom prop of this furniture type (hash `focus`), so a look request lands
    * in front of the thing to look at. See `packages/deadvox/docs/test-house.md`, "Focus".
    */
   focus?: string;
@@ -65,10 +65,32 @@ export interface GameConfig {
   weathering: WeatheringDef | undefined;
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
   weatheringSplit?: number;
-  /** Zombies are drawn as full built figures (`packages/presentation/src/render/mobActors.ts`) by default; `?actors=boxes` draws
-   * ActorMeshes' six boxes instead. */
+  /** Zombies are drawn as full built figures (`packages/presentation/src/render/mobActors.ts`) by default; hash
+   * `actors:boxes` draws ActorMeshes' six boxes instead. */
   actors: ActorRenderMode;
 }
+
+/**
+ * The developer state a product reads from its page hash and passes in, so the engine never reads the page URL.
+ * Every key is optional and an absent key keeps the default. Why this is hash state:
+ * `docs/decisions/0006-url-mods-and-hash-state.md`, "Decision".
+ */
+export type DeveloperState = WeatheringTuning & {
+  readonly debug?: boolean;
+  readonly save?: boolean;
+  readonly seed?: number;
+  readonly radius?: number;
+  readonly actors?: string;
+  readonly decals?: boolean;
+  readonly at?: readonly number[];
+  readonly focus?: string;
+  readonly weatheringSplit?: number;
+  readonly wobbleFlat?: number;
+  readonly wobbleNoiseScale?: number;
+  readonly voicePitch?: number;
+  readonly voicePitchLarge?: number;
+  readonly ragdollSweep?: number;
+};
 
 export type ActorRenderMode = 'boxes' | 'detailed';
 
@@ -112,9 +134,9 @@ export const makeConfig = (
   };
 };
 
-/** `?actors=boxes`; anything else (including absent) is 'detailed'. */
-export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderMode =>
-  params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
+/** `boxes`; anything else (including absent) is 'detailed'. */
+export const actorRendererFromUrl = (actors: string | null | undefined): ActorRenderMode =>
+  actors === 'boxes' ? 'boxes' : 'detailed';
 
 export type SiteName = string;
 
@@ -124,82 +146,60 @@ export interface DebugStart {
   yawDegrees?: number;
 }
 
-const debugWobbleFlatFromUrl = (params: URLSearchParams): number | undefined => {
-  if (params.get('debug') !== '1') {
+/** A debug-only number inside its bounds; anything else keeps the default. */
+const debugNumber = (
+  hash: DeveloperState,
+  value: number | undefined,
+  min: number,
+  max: number,
+): number | undefined =>
+  hash.debug === true && value !== undefined && Number.isFinite(value) && value >= min && value <= max
+    ? value
+    : undefined;
+
+const debugWeatheringSplit = (hash: DeveloperState, site: SiteName): number | undefined => {
+  if (hash.debug !== true) {
     return undefined;
   }
-  const raw = params.get('wobbleFlat');
-  if (raw === null || raw.trim() === '') {
-    return undefined;
+  const split = debugNumber(hash, hash.weatheringSplit, -256, 256);
+  if (split === undefined && hash.weatheringSplit !== undefined) {
+    // biome-ignore lint/suspicious/noConsole: a malformed debug hash needs a visible fallback warning.
+    console.warn(
+      `Ignoring invalid weatheringSplit value "${hash.weatheringSplit}"; expected a number from -256 to 256 metres.`,
+    );
   }
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
+  return split ?? (site === 'weatheringTest' && hash.weatheringSplit === undefined ? 0 : undefined);
 };
 
-const debugWobbleNoiseScaleFromUrl = (params: URLSearchParams): number | undefined => {
-  if (params.get('debug') !== '1') {
+const debugStartOf = ({ debug, at }: DeveloperState): DebugStart | undefined => {
+  if (debug !== true || at === undefined) {
     return undefined;
   }
-  const raw = params.get('wobbleNoiseScale');
-  if (raw === null || raw.trim() === '') {
+  if (at.length !== 2 && at.length !== 3) {
+    // biome-ignore lint/suspicious/noConsole: a malformed debug hash needs a visible fallback warning.
+    console.warn(`Ignoring invalid debug start position [${at.join(',')}]; expected at:[x,z] or [x,z,yaw].`);
     return undefined;
   }
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 && value <= 8 ? value : undefined;
-};
-
-const debugWeatheringSplitFromUrl = (params: URLSearchParams, debug: boolean, site: SiteName): number | undefined => {
-  if (!debug) {
-    return undefined;
-  }
-  const raw = params.get('weatheringSplit');
-  const value = raw === null || raw.trim() === '' ? Number.NaN : Number(raw);
-  if (Number.isFinite(value) && value >= -256 && value <= 256) {
-    return value;
-  }
-  if (raw !== null && raw.trim() !== '') {
-    // biome-ignore lint/suspicious/noConsole: a malformed debug URL needs a visible fallback warning.
-    console.warn(`Ignoring invalid weatheringSplit value "${raw}"; expected a number from -256 to 256 metres.`);
-  }
-  return site === 'weatheringTest' && raw === null ? 0 : undefined;
-};
-
-const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
-  if (params.get('debug') !== '1') {
-    return undefined;
-  }
-  const raw = params.get('at');
-  if (raw === null) {
-    return undefined;
-  }
-  const fields = raw.split(',');
-  const values = fields.map((field) => (field.trim() === '' ? Number.NaN : Number(field)));
-  if ((values.length !== 2 && values.length !== 3) || values.some((value) => !Number.isFinite(value))) {
-    // biome-ignore lint/suspicious/noConsole: a malformed debug URL needs a visible fallback warning.
-    console.warn(`Ignoring invalid debug start position "${raw}"; expected at=x,z[,yaw] in metres/degrees.`);
-    return undefined;
-  }
-  const [x, z, yawDegrees] = values;
+  const [x, z, yawDegrees] = at;
   return { x: x!, z: z!, ...(yawDegrees === undefined ? {} : { yawDegrees }) };
 };
 
 const MAX_STOREYS = 20;
 
-/** A debug run is ephemeral, so it neither saves nor loads unless `?save=1` also asks for it. */
-export const savingEnabledFromUrl = (params: URLSearchParams): boolean =>
-  params.get('debug') !== '1' || params.get('save') === '1';
+/** A debug run is ephemeral, so it neither saves nor loads unless hash `save` also asks for it. */
+export const savingEnabledFromUrl = (hash: DeveloperState): boolean => hash.debug !== true || hash.save === true;
 
 /** Authored scene names require admitted rows; only generated-site selectors bypass that lookup. */
 export const siteFromUrl = (
   params: URLSearchParams,
   fallback: SiteName,
   registry: Pick<Registry, 'layouts' | 'scenarios'>,
+  debug = false,
 ): Pick<GameConfig, 'site' | 'storeys' | 'density'> => {
   const densityText = params.get('density');
   const density = densityText === null || densityText.trim() === '' ? null : Number(densityText);
   const storeys = Number(params.get('storeys') ?? 1);
   const requested = params.get('site');
-  const debug = params.get('debug') === '1';
   return {
     site:
       (requested !== null && GENERATED_SITES.has(requested) && (debug || requested !== 'weatheringTest')) ||
@@ -211,23 +211,31 @@ export const siteFromUrl = (
   };
 };
 
+/** The query still names the weathering profile; the hash carries the debug tuning. */
 export const applyWeatheringConfig = (
   config: GameConfig,
-  params: URLSearchParams,
+  query: URLSearchParams,
+  hash: WeatheringTuning,
   registry: Pick<Registry, 'layouts' | 'weathering'> = config.content.registry,
 ): void => {
   config.weatheringDefaultProfileId =
     registry.layouts.get(config.site)?.weatheringProfile ?? claimedId(registry.weathering, 'defaultWeathering');
-  const weathering = resolveWeatheringUrl(params, registry.weathering, config.weatheringDefaultProfileId, config.debug);
+  const weathering = resolveWeatheringUrl(
+    query.get('weatheringProfile'),
+    hash,
+    registry.weathering,
+    config.weatheringDefaultProfileId,
+    config.debug,
+  );
   config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
   config.weathering = weathering?.settings;
 };
 
-const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => {
+const applyStartConfig = (config: GameConfig, params: URLSearchParams, hash: DeveloperState): void => {
   const { content } = config;
   const requestedStart = params.get('start');
   const selected = requireStart(content, requestedStart ?? content.defaultStart, config.debug);
-  const siteSelection = siteFromUrl(params, selected.site, content.registry);
+  const siteSelection = siteFromUrl(params, selected.site, content.registry, config.debug);
   const start =
     requestedStart === null && params.has('site') ? startForSite(content, siteSelection.site, config.debug) : selected;
   if (requestedStart !== null && params.has('site') && params.get('site') !== start.site) {
@@ -235,9 +243,8 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => 
   }
   config.startId = start.id;
   config.site = siteSelection.site;
-  config.seed = params.has('seed')
-    ? Number(params.get('seed')) | 0
-    : (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!);
+  config.seed =
+    hash.seed === undefined ? (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!) : hash.seed | 0;
   config.storeys = params.has('storeys') ? siteSelection.storeys : (start.storeys ?? 1);
   config.density = params.has('density') ? siteSelection.density : (start.density ?? null);
   const requestedTime = params.get('time');
@@ -248,49 +255,52 @@ const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => 
 };
 
 /**
- * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in `packages/deadvox/src/debug/lookUrl.ts`.
+ * Reads the start, site and time the query still names, then the developer state the product read from its hash,
+ * falling back to defaults. A site uses its authored weathering profile or the default; a debug hash can tune its
+ * values, or set `weatheringSplit` to limit it to world x at or east of the split. The debug tools also read and
+ * write look state, documented in `packages/deadvox/src/debug/lookUrl.ts`.
  * The product supplies where its ragdoll sweep places the viewer.
  */
 export const configFromUrl = (
-  params: URLSearchParams,
+  query: URLSearchParams,
+  hash: DeveloperState,
   content: StartupContent,
   ragdollSweepViewer: DebugStart,
 ): GameConfig => {
-  const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
+  const radius = hash.radius ?? DEFAULT_RADIUS_M;
   const config = makeConfig(
-    Number(params.get('seed')) | 0,
+    (hash.seed ?? 0) | 0,
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
     content,
   );
-  config.debug = params.get('debug') === '1';
-  applyStartConfig(config, params);
-  config.authoredDecals = params.get('decals') !== '0';
-  Object.assign(config, sweepFromUrl(params, config, ragdollSweepViewer));
-  applyWeatheringConfig(config, params);
-  const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);
+  config.debug = hash.debug === true;
+  applyStartConfig(config, query, hash);
+  config.authoredDecals = hash.decals !== false;
+  Object.assign(config, sweepFromUrl(query, hash.ragdollSweep, config, ragdollSweepViewer));
+  applyWeatheringConfig(config, query, hash);
+  const weatheringSplit = debugWeatheringSplit(hash, config.site);
   if (weatheringSplit !== undefined) {
     config.weatheringSplit = weatheringSplit;
   }
-  const debugStart = debugStartFromUrl(params);
+  const debugStart = debugStartOf(hash);
   if (debugStart) {
     config.debugStart = debugStart;
   }
-  const focus = params.get('focus')?.trim();
+  const focus = hash.focus?.trim();
   if (focus) {
     config.focus = focus;
   }
-  if (config.debug && params.get('handedness') === 'left') {
-    config.debugHandedness = 'left';
-  }
-  const debugWobbleFlat = debugWobbleFlatFromUrl(params);
+  const debugWobbleFlat = debugNumber(hash, hash.wobbleFlat, 0, 1);
   if (debugWobbleFlat !== undefined) {
     config.debugWobbleFlat = debugWobbleFlat;
   }
-  const debugWobbleNoiseScale = debugWobbleNoiseScaleFromUrl(params);
+  const debugWobbleNoiseScale = debugNumber(hash, hash.wobbleNoiseScale, 0, 8);
   if (debugWobbleNoiseScale !== undefined) {
     config.debugWobbleNoiseScale = debugWobbleNoiseScale;
   }
-  config.actors = actorRendererFromUrl(params);
+  if (config.debug && config.site === 'voice_size') {
+    config.debugVoicePitch = { voicePitch: hash.voicePitch, voicePitchLarge: hash.voicePitchLarge };
+  }
+  config.actors = actorRendererFromUrl(hash.actors);
   return config;
 };

@@ -31,6 +31,11 @@ const COLOR_FIELDS = [
   ['weatheringMossColor', 'mossColor'],
 ] as const satisfies readonly (readonly [string, 'tintColor' | 'streakColor' | 'mossColor'])[];
 
+/** Debug weathering edits, keyed as the page hash names them; an absent key keeps the profile's value. */
+export type WeatheringTuning = { readonly [Param in (typeof NUMBER_FIELDS)[number][0]]?: number } & {
+  readonly [Param in (typeof COLOR_FIELDS)[number][0]]?: string;
+};
+
 export const WEATHERING_URL_PARAMS = [
   'weatheringProfile',
   ...NUMBER_FIELDS.map(([param]) => param),
@@ -41,32 +46,29 @@ const WEATHERING_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 export const isWeatheringColor = (text: string): boolean => WEATHERING_COLOR_PATTERN.test(text);
 
-const applyNumberOverrides = (params: URLSearchParams, settings: WeatheringDef): void => {
+const applyNumberOverrides = (tuning: WeatheringTuning, settings: WeatheringDef): void => {
   for (const [param, field] of NUMBER_FIELDS) {
-    const raw = params.get(param);
-    if (raw === null || raw.trim() === '') {
-      continue;
-    }
-    const value = Number(raw);
+    const value = tuning[param];
     const range = WEATHERING_RANGES[field];
-    if (Number.isFinite(value)) {
+    if (value !== undefined && Number.isFinite(value)) {
       settings[field] = Math.max(range.min, Math.min(range.max, value));
     }
   }
 };
 
-const applyColorOverrides = (params: URLSearchParams, settings: WeatheringDef): void => {
+const applyColorOverrides = (tuning: WeatheringTuning, settings: WeatheringDef): void => {
   for (const [param, field] of COLOR_FIELDS) {
-    const raw = params.get(param);
-    if (raw !== null && isWeatheringColor(raw)) {
-      settings[field] = raw;
+    const value = tuning[param];
+    if (value !== undefined && isWeatheringColor(value)) {
+      settings[field] = value;
     }
   }
 };
 
-/** Resolves the site profile, then applies only recognized, bounded debug URL edits. */
+/** Resolves the site profile, then applies only recognized, bounded debug edits. */
 export const resolveWeatheringUrl = (
-  params: URLSearchParams,
+  requestedProfile: string | null | undefined,
+  tuning: WeatheringTuning,
   profiles: ReadonlyMap<string, WeatheringDef>,
   defaultProfileId: string = claimedId(profiles, 'defaultWeathering'),
   debug = false,
@@ -75,12 +77,12 @@ export const resolveWeatheringUrl = (
   if (!siteProfile) {
     return undefined;
   }
-  const requested = debug ? (params.get('weatheringProfile') ?? defaultProfileId) : defaultProfileId;
+  const requested = debug ? (requestedProfile ?? defaultProfileId) : defaultProfileId;
   const profile = profiles.get(requested) ?? siteProfile;
   const settings: WeatheringDef = { ...profile };
   if (debug) {
-    applyNumberOverrides(params, settings);
-    applyColorOverrides(params, settings);
+    applyNumberOverrides(tuning, settings);
+    applyColorOverrides(tuning, settings);
   }
   return { profileId: profile.id, defaultProfileId, settings };
 };

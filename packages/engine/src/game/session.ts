@@ -142,7 +142,7 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
-import { actorVoiceLaw } from './actorAudio.ts';
+import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
 import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
@@ -577,8 +577,8 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
-  /** The page's URL query, for the debug actor voice-pitch overrides; a headless caller omits it and gets none. */
-  urlSearch?: string | undefined;
+  /** The voice-size probe's actor voice-pitch overrides; a headless caller omits them and gets none. */
+  voicePitchOverrides?: VoicePitchOverrides | undefined;
   /** Debug-only vertical/horizontal ratio override for the walking lune. */
   wobbleFlatOverride?: number | undefined;
   /** Debug-only multiplier for authored OU noise strength. */
@@ -1034,7 +1034,7 @@ export const createSession = (options: SessionOptions) => {
       return false;
     }
     const definition = registry.sounds.get(event)!;
-    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoiceFor().bodyPitch(mobBody, options.urlSearch) : 1);
+    const bodyPitch = soundPitchMultiplier ?? (mobBody ? actorVoiceFor().bodyPitch(mobBody, options.voicePitchOverrides) : 1);
     const pitch = selected.pitch * bodyPitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);

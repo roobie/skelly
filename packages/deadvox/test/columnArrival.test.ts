@@ -39,7 +39,7 @@ const cx = toChunk(crate.pos[0]);
 const cz = toChunk(crate.pos[2]);
 
 const worldSetup = (): WorldSetup => {
-  const config = configFromUrl(new URLSearchParams('site=testHouse'), content, ragdollSweepViewer);
+  const config = configFromUrl(new URLSearchParams('site=testHouse'), {}, content, ragdollSweepViewer);
   const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const chunk = new Chunk(cx, 0, cz);
   for (let z = 0; z < CHUNK; z++) {

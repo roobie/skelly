@@ -14,14 +14,14 @@ const bodyHeight = ({ height }: SizedBody): number => {
   return height;
 };
 
-const debugVoicePitch = (search: string, param: 'voicePitch' | 'voicePitchLarge'): number => {
-  const params = new URLSearchParams(search);
-  if (params.get('debug') !== '1' || params.get('site') !== 'voice_size') {
-    return 1;
-  }
-  const factor = Number(params.get(param));
-  return Number.isFinite(factor) && factor > 0 ? factor : 1;
-};
+/** The voice-size probe's multipliers on the smallest and the tallest body's pitch anchor. */
+export interface VoicePitchOverrides {
+  readonly voicePitch?: number | undefined;
+  readonly voicePitchLarge?: number | undefined;
+}
+
+const pitchFactor = (factor: number | undefined): number =>
+  factor !== undefined && Number.isFinite(factor) && factor > 0 ? factor : 1;
 
 /**
  * The humanoid voice-pitch law, calibrated on the plain humanoid bodies the session loaded:
@@ -45,12 +45,12 @@ export const actorVoiceLaw = (pool: readonly SizedBody[], tuning: ActorVoiceTuni
   const defaultTallestAnchor = oldLawPitch(tallestHeight);
   const clampPitch = (pitch: number): number => Math.max(pitchClamp[0], Math.min(pitchClamp[1], pitch));
 
-  const bodyPitch = (body: SizedBody, search = ''): number => {
+  const bodyPitch = (body: SizedBody, overrides: VoicePitchOverrides = {}): number => {
     const height = bodyHeight(body);
-    const smallestAnchor = clampPitch(defaultSmallestAnchor * debugVoicePitch(search, 'voicePitch'));
+    const smallestAnchor = clampPitch(defaultSmallestAnchor * pitchFactor(overrides.voicePitch));
     const tallestAnchor = Math.min(
       smallestAnchor,
-      clampPitch(defaultTallestAnchor * debugVoicePitch(search, 'voicePitchLarge')),
+      clampPitch(defaultTallestAnchor * pitchFactor(overrides.voicePitchLarge)),
     );
     if (tallestHeight === smallestHeight) {
       // An equal-height pool has no range to fall across, so every body takes the pitch a narrowing range

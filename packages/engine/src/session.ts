@@ -6,6 +6,7 @@ export {
   configFromUrl,
   DEFAULT_RADIUS_M,
   type DebugStart,
+  type DeveloperState,
   type GameConfig,
   makeConfig,
   type SiteName,

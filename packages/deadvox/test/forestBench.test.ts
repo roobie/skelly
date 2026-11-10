@@ -35,7 +35,11 @@ describe('forest benchmark workload identity', () => {
       post: true,
     });
     expect(next.get('seed')).toBe('7');
-    expect(configFromUrl(next)).toMatchObject({ site: 'forest', density: 0.75, seed: 7 });
+    expect(configFromUrl(next, { seed: Number(next.get('seed')) })).toMatchObject({
+      site: 'forest',
+      density: 0.75,
+      seed: 7,
+    });
     expect(benchSiteLabel(run)).toContain(String(run.density));
     const field = benchRunFromUrl(new URLSearchParams('site=forest&plan=0.5:64,0.5:96'), {
       layouts: new Map(),
