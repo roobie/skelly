@@ -10,6 +10,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { engineModule } from './engineModules.mjs';
 import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
@@ -908,14 +909,17 @@ try {
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
+    const lightsModuleUrl = engineModule('core/lights.ts');
     const seekHour = (hour) =>
-      page.evaluate(async (seconds) => {
-        const clockModule = '/src/core/clock.ts';
-        const { nextTimeOfDay } = await import(clockModule);
-        const { session, saveController } = globalThis.readingWitness;
-        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
-        saveController?.rearmAutosaveAfterTimeSeek?.();
-      }, hour * 3600);
+      page.evaluate(
+        async ({ seconds, clockModule }) => {
+          const { nextTimeOfDay } = await import(clockModule);
+          const { session, saveController } = globalThis.readingWitness;
+          session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
+          saveController?.rearmAutosaveAfterTimeSeek?.();
+        },
+        { seconds: hour * 3600, clockModule: engineModule('core/clock.ts') },
+      );
     const lightState = () =>
       page.evaluate(() => {
         const { session, reading, readCalls } = globalThis.readingWitness;
@@ -948,8 +952,7 @@ try {
       midnight.refusal,
     );
     await refusedRead(1);
-    const lamps = await page.evaluate(async () => {
-      const lightsModule = '/src/core/lights.ts';
+    const lamps = await page.evaluate(async (lightsModule) => {
       const { chargeOf } = await import(lightsModule);
       const { session } = globalThis.readingWitness;
       const { inventory } = session;
@@ -979,7 +982,7 @@ try {
         throw new Error('Could not arrange the book and lamp in hand');
       }
       return { type, full: full.uid };
-    });
+    }, lightsModuleUrl);
     // Busy hands refuse a hand use, so the switch waits for them as a player would; it lands on the next game frame.
     const switchLamp = async (uid, on) => {
       await page.waitForFunction(() => !globalThis.readingWitness.handsBusy);
@@ -997,35 +1000,37 @@ try {
     await page.locator('#reading').waitFor({ state: 'hidden' });
     await switchLamp(lamps.full, false);
     await refusedRead(2);
-    const lowLamp = await page.evaluate(async ({ type, full }) => {
-      const lightsModule = '/src/core/lights.ts';
-      const { chargeOf } = await import(lightsModule);
-      const { session } = globalThis.readingWitness;
-      const { inventory } = session;
-      const { registry } = inventory;
-      const fullLamp = inventory.itemByUid(full);
-      const { job } = session.sim.actions;
-      // Charge for half the book's remaining time, so the battery dies mid-read.
-      const remaining = job.duration - job.elapsed;
-      const share =
-        (registry.items.get(type).light.power.chargePerGameHour * remaining * 0.5) / chargeOf(registry, fullLamp);
-      const low = inventory.createRolled({ type, count: 1, condition: 1, charge: share });
-      if (
-        !(
-          inventory.move(fullLamp, { kind: 'pile', pos: inventory.dropFeet() }).ok &&
-          inventory.add(low, { kind: 'hand', side: 'left' })
-        )
-      ) {
-        throw new Error('Could not swap in the low lamp');
-      }
-      return {
-        uid: low.uid,
-        elapsed: job.elapsed,
-        remaining,
-        ratio: session.sim.clock.ratio,
-        from: session.sim.time,
-      };
-    }, lamps);
+    const lowLamp = await page.evaluate(
+      async ({ type, full, lightsModule }) => {
+        const { chargeOf } = await import(lightsModule);
+        const { session } = globalThis.readingWitness;
+        const { inventory } = session;
+        const { registry } = inventory;
+        const fullLamp = inventory.itemByUid(full);
+        const { job } = session.sim.actions;
+        // Charge for half the book's remaining time, so the battery dies mid-read.
+        const remaining = job.duration - job.elapsed;
+        const share =
+          (registry.items.get(type).light.power.chargePerGameHour * remaining * 0.5) / chargeOf(registry, fullLamp);
+        const low = inventory.createRolled({ type, count: 1, condition: 1, charge: share });
+        if (
+          !(
+            inventory.move(fullLamp, { kind: 'pile', pos: inventory.dropFeet() }).ok &&
+            inventory.add(low, { kind: 'hand', side: 'left' })
+          )
+        ) {
+          throw new Error('Could not swap in the low lamp');
+        }
+        return {
+          uid: low.uid,
+          elapsed: job.elapsed,
+          remaining,
+          ratio: session.sim.clock.ratio,
+          from: session.sim.time,
+        };
+      },
+      { ...lamps, lightsModule: lightsModuleUrl },
+    );
     await switchLamp(lowLamp.uid, true);
     assert.equal((await lightState()).refusal, undefined);
     await holdAction('quickbar.use.2', () => page.locator('#reading').waitFor({ state: 'visible' }));
@@ -1049,21 +1054,23 @@ try {
         record,
       },
     );
-    const drained = await page.evaluate(async (uid) => {
-      const lightsModule = '/src/core/lights.ts';
-      const { chargeOf } = await import(lightsModule);
-      const { session, reading } = globalThis.readingWitness;
-      const { job } = session.sim.actions;
-      const lamp = session.inventory.itemByUid(uid);
-      return {
-        elapsed: job.elapsed,
-        duration: job.duration,
-        charge: chargeOf(session.inventory.registry, lamp),
-        on: lamp.on,
-        open: reading.isOpen,
-        refusal: session.readingLight(),
-      };
-    }, lowLamp.uid);
+    const drained = await page.evaluate(
+      async ({ uid, lightsModule }) => {
+        const { chargeOf } = await import(lightsModule);
+        const { session, reading } = globalThis.readingWitness;
+        const { job } = session.sim.actions;
+        const lamp = session.inventory.itemByUid(uid);
+        return {
+          elapsed: job.elapsed,
+          duration: job.duration,
+          charge: chargeOf(session.inventory.registry, lamp),
+          on: lamp.on,
+          open: reading.isOpen,
+          refusal: session.readingLight(),
+        };
+      },
+      { uid: lowLamp.uid, lightsModule: lightsModuleUrl },
+    );
     assert.ok(drained.elapsed > 0 && drained.elapsed < drained.duration, JSON.stringify(drained));
     assert.equal(drained.charge, 0);
     assert.equal(drained.on, false);

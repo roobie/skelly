@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { bundledModCatalogueIssues } from '../packages/engine/src/modCatalogue.ts';
 import { tutorialRequested } from '../packages/deadvox/src/presentation/tutorialUrl.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
+import { bundledModCatalogueIssues } from '../packages/engine/src/modCatalogue.ts';
 import { loadPlaytestText } from '../site/playtestCatalog.js';
 import { applyPlaytestLanguage } from '../site/playtestLanguage.js';
 
@@ -225,7 +225,7 @@ describe('site launchers track the games’ URL parameters', () => {
       'packages/deadvox/src/main.ts',
       'packages/deadvox/src/game/config.ts',
       'packages/deadvox/src/game/ragdollConfig.ts',
-      'packages/deadvox/src/core/weatheringUrl.ts',
+      'packages/engine/src/core/weatheringUrl.ts',
       'packages/deadvox/src/bench/run.ts',
       'packages/deadvox/src/bench/shamblers.ts',
     ]);
@@ -246,7 +246,7 @@ describe('site launchers track the games’ URL parameters', () => {
       assert.match(page, new RegExp(`name="${parameter}" data-url-param="${parameter}"`));
     }
 
-    const gameMax = read('packages/deadvox/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
+    const gameMax = read('packages/engine/src/core/weather.ts').match(GAME_WEATHERING_MAX_PATTERN);
     const launcherMax = page.match(LAUNCHER_WEATHERING_MAX_PATTERN);
     assert.ok(gameMax, 'game weathering ceiling is declared');
     assert.ok(launcherMax, 'static launcher weathering ceiling is declared');

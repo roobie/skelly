@@ -1,8 +1,6 @@
-import { toHands } from '../../../engine/src/core/options.ts';
-import { SAVE_SCHEMA_VERSION } from '../../../engine/src/core/saveFormat.ts';
-import type { Registry } from '../../../engine/src/content.ts';
-import { batteryEnergy } from '../../../engine/src/inventory.ts';
-import { decodeSave, encodeSave } from '../../../engine/src/save.ts';
+import type { Registry } from '@skelly/engine/content';
+import { batteryEnergy, toHands } from '@skelly/engine/inventory';
+import { decodeSave, encodeSave } from '@skelly/engine/save';
 import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
 import { fetchActorFigureFiles } from '../../src/presentation/play.ts';
@@ -27,14 +25,15 @@ const queueMove = (
   return plan.ok ? undefined : plan.reason;
 };
 
-export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
+// The stage passes the save schema version: no engine entry carries it, and deadvox reaches the engine only as a package.
+export const mountChargerFlow = async (base: Registry, root: HTMLElement, schemaVersion: number) => {
   const figures = await fetchActorFigureFiles(base, productAssets.figures);
   let runtime = createChargerSession(base, figures);
   let screen: InventoryScreen;
   const refusals: string[] = [];
   const version = {
     simulationHash: 'a'.repeat(64),
-    schemaVersion: SAVE_SCHEMA_VERSION,
+    schemaVersion,
     generators: {
       worldgen: 'worldgen-v2',
       'bodyPlan.humanoid': 'humanoid-figure-v1',

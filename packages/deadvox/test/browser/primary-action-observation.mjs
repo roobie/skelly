@@ -1,8 +1,8 @@
 // biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
 import assert from 'node:assert/strict';
 import process from 'node:process';
+import { BLOCK_SIZE, CHUNK, chunksFor, makeScale } from '@skelly/engine/world';
 import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { BLOCK_SIZE, CHUNK, chunksFor, makeScale } from '../../../engine/src/world.ts';
 import { modFileBytes } from '../modFile.ts';
 
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));

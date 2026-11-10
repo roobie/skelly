@@ -11,6 +11,7 @@ import { resolve as resolvePath } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { launchChromium } from './chromium.mjs';
+import { engineModule } from './engineModules.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
 import { saveControllerServer } from './save-controller-fixture.mjs';
@@ -18,8 +19,15 @@ import { browserStageUrl } from './stage-mode.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
+const { decodeSave } = await import('@skelly/engine/save');
 const { metricsStorageKey } = await import(pathToFileURL(`${root}/src/presentation/playtestTools.ts`));
+const engineModules = {
+  inventory: engineModule('core/inventory.ts'),
+  handling: engineModule('core/handling.ts'),
+  character: engineModule('core/character.ts'),
+  reach: engineModule('core/reach.ts'),
+  stageMarks: engineModule('core/stageMarks.ts'),
+};
 const { server, address } = await saveControllerServer();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
 const url = browserStageUrl('save-controller-regressions', address);
@@ -126,13 +134,13 @@ try {
           throw new Error('Binding restoration failed');
         }
       }, binding);
-      const canHints = await page.evaluate(async () => {
+      const canHints = await page.evaluate(async (modules) => {
         const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
-        const { Inventory } = await import('/src/core/inventory.ts');
-        const { HandlingQueue } = await import('/src/core/handling.ts');
+        const { Inventory } = await import(modules.inventory);
+        const { HandlingQueue } = await import(modules.handling);
         const { Unpacking } = await import('/src/game/unpacking.ts');
-        const { dominantSide } = await import('/src/core/character.ts');
+        const { dominantSide } = await import(modules.character);
         const { inputBindings } = await import('/src/product/input.ts');
         // Own fixture inventory: no injected progress or inventory changes in the playing session.
         const inventory = new Inventory(gauntletWitness.engine.registry);
@@ -232,7 +240,7 @@ try {
         } finally {
           gauntletWitness.manual = false;
         }
-      });
+      }, engineModules);
       assert(canHints.loot.length > 0, 'open inventory offers loot actions');
       assert(
         canHints.loot.every((id) => canHints.lootCaps[id] === canHints.labels[id]),
@@ -242,14 +250,14 @@ try {
       assert(canHints.opened.includes('inventory.activate'), 'open inventory offers held-item activation');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.awaitingConsumption, true, 'opening and wielding alone are not consumption');
-      const weaponsHints = await page.evaluate(async () => {
+      const weaponsHints = await page.evaluate(async (modules) => {
         const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
-        const { Inventory } = await import('/src/core/inventory.ts');
-        const { HandlingQueue } = await import('/src/core/handling.ts');
+        const { Inventory } = await import(modules.inventory);
+        const { HandlingQueue } = await import(modules.handling);
         const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
         const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
-        const { bindReach } = await import('/src/core/reach.ts');
+        const { bindReach } = await import(modules.reach);
         const { fixtureIds } = await import('/test/fixtures/capabilityIds.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
         const { inputBindings } = await import('/src/product/input.ts');
@@ -395,19 +403,19 @@ try {
           inputBindings.rebind(id, original);
           gauntletWitness.manual = false;
         }
-      });
+      }, engineModules);
       assert(
         Object.values(weaponsHints).every(Boolean),
         'optional weapons branch retains completion, ammunition details and live reload keycaps',
       );
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
-      await page.evaluate(async () => {
+      await page.evaluate(async (modules) => {
         const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
         const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { engine, session } = gauntletWitness;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
-        const { stageMarkArea } = await import('/src/core/stageMarks.ts');
+        const { stageMarkArea } = await import(modules.stageMarks);
         const exit = stageMarkArea(engine.site.playtestMarks.beats, engine.site.practiceExitMark);
         const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.guidance);
         tutorial.opened('canned_beans');
@@ -455,7 +463,7 @@ try {
         if (observe() !== exitStage) {
           throw new Error('Exit fixture must begin with an unfinished escape lesson');
         }
-      });
+      }, engineModules);
       const releaseForward = await holdAction(page, 'movement.forward');
       try {
         await page.evaluate(() => {

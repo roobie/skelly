@@ -9,6 +9,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { engineModule } from './engineModules.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
@@ -27,19 +28,19 @@ const authoredStarts = JSON.parse(
 const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
 assert(houseStart, 'the product supplies an authored start for the existing house flow');
 const debugHouseStart = { id: 'primary_action_fixture_start' };
-const startStateModule = '/src/core/startState.ts';
+const startStateModule = engineModule('core/startState.ts', projectRoot);
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
-const firearmActionModule = '/src/core/firearmAction.ts';
+const firearmActionModule = engineModule('core/firearmAction.ts', projectRoot);
 const inputBindingsModule = '/src/product/input.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
 const reloadInputModule = '/src/game/reloadInput.ts';
-const magazineModule = '/src/core/magazine.ts';
-const heldPoseModule = '/src/core/heldPose.ts';
-const optionsModule = '/src/core/options.ts';
+const magazineModule = engineModule('core/magazine.ts', projectRoot);
+const heldPoseModule = engineModule('core/heldPose.ts', projectRoot);
+const optionsModule = engineModule('core/options.ts', projectRoot);
 const itemLookModule = '/src/render/itemLook.ts';
-const pileLayoutModule = '/src/core/pileLayout.ts';
-const vehicleProjectionModule = '/src/core/vehicleProjection.ts';
+const pileLayoutModule = engineModule('core/pileLayout.ts', projectRoot);
+const vehicleProjectionModule = engineModule('core/vehicleProjection.ts', projectRoot);
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -405,12 +406,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       {
         fixture: '/test/liquidCraftFixture.ts',
         economy: '/test/economyFixtures.ts',
-        inventory: '/src/core/inventory.ts',
-        character: '/src/core/character.ts',
-        reach: '/src/core/reach.ts',
+        inventory: engineModule('core/inventory.ts', projectRoot),
+        character: engineModule('core/character.ts', projectRoot),
+        reach: engineModule('core/reach.ts', projectRoot),
         readout: '/src/ui/craftReadout.ts',
         view: '/src/ui/crafting.ts',
-        numbers: '/src/core/numberText.ts',
+        numbers: engineModule('core/numberText.ts', projectRoot),
       },
     );
     assert(liquidRow.visible && liquidRow.picker, 'the crafting flow renders a liquid draw and its source picker');
@@ -1485,7 +1486,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       },
       {
         pileLayoutModuleUrl: pileLayoutModule,
-        playerLookPoseModuleUrl: '/src/core/playerLookPose.ts',
+        playerLookPoseModuleUrl: engineModule('core/playerLookPose.ts', projectRoot),
         inputModuleUrl: '/src/game/playerControls.ts',
         ground: placed,
       },
@@ -3422,56 +3423,57 @@ try {
     await pressAction(page, 'ui.inventory-toggle');
 
     // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
-    const firearm = await page.evaluate(async () => {
-      const moduleUrl = '/src/game/firearmHandling.ts';
-      const magazineUrl = '/src/core/magazine.ts';
-      const optionsUrl = '/src/core/options.ts';
-      const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
-      const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
-      const { stowTarget } = await import(optionsUrl);
-      const r = globalThis.primaryActionTest;
-      const { registry } = r.inventory;
-      const { firearms, magazines, queue, sim } = r.session;
-      const must = (refusal) => {
-        if (refusal) {
-          throw new Error(`Could not ready the fixture firearm: ${refusal}`);
-        }
-      };
-      const settle = () => {
-        for (let step = 0; queue.busy; step += 1) {
-          if (step > 600) {
-            throw new Error('Fixture firearm handling did not finish');
+    const firearm = await page.evaluate(
+      async ({ magazineUrl, optionsUrl }) => {
+        const moduleUrl = '/src/game/firearmHandling.ts';
+        const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
+        const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
+        const { stowTarget } = await import(optionsUrl);
+        const r = globalThis.primaryActionTest;
+        const { registry } = r.inventory;
+        const { firearms, magazines, queue, sim } = r.session;
+        const must = (refusal) => {
+          if (refusal) {
+            throw new Error(`Could not ready the fixture firearm: ${refusal}`);
           }
-          r.session.frame(1 / 20);
+        };
+        const settle = () => {
+          for (let step = 0; queue.busy; step += 1) {
+            if (step > 600) {
+              throw new Error('Fixture firearm handling did not finish');
+            }
+            r.session.frame(1 / 20);
+          }
+        };
+        const calibre = magazineWellCalibre(registry, r.types.gun);
+        const ids = [...registry.items.keys()].sort();
+        const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
+        r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
+        r.clearHand(r.off);
+        r.setHand(r.dominant, magazine);
+        must(magazines.loadNext(magazine.uid, sim.time));
+        settle();
+        const pocket = stowTarget(r.inventory, magazine, r.feet());
+        if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
+          throw new Error('Could not pocket the loaded fixture magazine');
         }
-      };
-      const calibre = magazineWellCalibre(registry, r.types.gun);
-      const ids = [...registry.items.keys()].sort();
-      const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
-      r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
-      r.clearHand(r.off);
-      r.setHand(r.dominant, magazine);
-      must(magazines.loadNext(magazine.uid, sim.time));
-      settle();
-      const pocket = stowTarget(r.inventory, magazine, r.feet());
-      if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
-        throw new Error('Could not pocket the loaded fixture magazine');
-      }
-      const gun = r.inventory.create(r.types.gun);
-      r.setHand(r.dominant, gun);
-      must(firearms.loadNext(gun.uid, sim.time));
-      settle();
-      must(firearms.cock(gun.uid, sim.time));
-      settle();
-      r.caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
-      return {
-        uid: gun.uid,
-        cases: [...r.inventory.piles.values()]
-          .flatMap((p) => p.items)
-          .filter(({ item }) => item.type === r.caseType)
-          .reduce((sum, { item }) => sum + item.count, 0),
-      };
-    });
+        const gun = r.inventory.create(r.types.gun);
+        r.setHand(r.dominant, gun);
+        must(firearms.loadNext(gun.uid, sim.time));
+        settle();
+        must(firearms.cock(gun.uid, sim.time));
+        settle();
+        r.caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
+        return {
+          uid: gun.uid,
+          cases: [...r.inventory.piles.values()]
+            .flatMap((p) => p.items)
+            .filter(({ item }) => item.type === r.caseType)
+            .reduce((sum, { item }) => sum + item.count, 0),
+        };
+      },
+      { magazineUrl: magazineModule, optionsUrl: optionsModule },
+    );
     await page.mouse.down({ button: 'right' });
     const raiseDuration = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;

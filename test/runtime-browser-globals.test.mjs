@@ -58,11 +58,11 @@ const SEEDED = [
 test('lint fails each Node-declared browser name in a runtime file, and only in the runtime set', () => {
   assert.deepEqual(
     restrictedGlobalLines({
-      'packages/deadvox/src/core/probe.ts': SEEDED,
+      'packages/engine/src/core/probe.ts': SEEDED,
       'packages/deadvox/src/render/probe.ts': SEEDED,
     }),
     {
-      'packages/deadvox/src/core/probe.ts': [1, 2, 3, 4, 6],
+      'packages/engine/src/core/probe.ts': [1, 2, 3, 4, 6],
       'packages/deadvox/src/render/probe.ts': [6],
     },
   );
@@ -79,11 +79,11 @@ const SEEDED_JAVASCRIPT = [
 test('lint fails DOM names in a JavaScript runtime file, which the typecheck does not read', () => {
   assert.deepEqual(
     restrictedGlobalLines({
-      'packages/deadvox/src/core/probe.mjs': SEEDED_JAVASCRIPT,
+      'packages/engine/src/core/probe.mjs': SEEDED_JAVASCRIPT,
       'packages/deadvox/src/render/probe.mjs': SEEDED_JAVASCRIPT,
     }),
     {
-      'packages/deadvox/src/core/probe.mjs': [1, 2, 3, 4],
+      'packages/engine/src/core/probe.mjs': [1, 2, 3, 4],
       'packages/deadvox/src/render/probe.mjs': [4],
     },
   );

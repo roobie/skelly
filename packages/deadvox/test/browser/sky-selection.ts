@@ -1,12 +1,13 @@
+import type * as SkySnapshot from '@skelly/engine/internal/core/skySnapshot.ts';
+import { sampleSky } from '@skelly/engine/sky';
+import type { Vec3 } from '@skelly/engine/world';
 import { Camera, Mesh, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer, WebGLRenderTarget } from 'three';
-import { growSky, SKY_HALO } from '../../../engine/src/core/skySnapshot.ts';
-import { sampleSky } from '../../../engine/src/sky.ts';
-import type { Vec3 } from '../../../engine/src/world.ts';
 import { skyFixture } from '../fixtures/sky.ts';
 import { buildSkylight } from '../fixtures/skyOracle.ts';
 import { fixtureBox } from '../fixtures/skyWorld.ts';
 
-export function runSkySelectionProof() {
+// The stage passes the sky snapshot helpers because no engine entry carries them.
+export function runSkySelectionProof({ growSky, SKY_HALO }: Pick<typeof SkySnapshot, 'growSky' | 'SKY_HALO'>) {
   const boxes = Array.from({ length: 5 }, (_, index) => ({
     min: fixtureBox.min.map((value, axis) => value + (axis === 0 ? index * 32 : 0)) as Vec3,
     max: fixtureBox.max.map((value, axis) => value + (axis === 0 ? index * 32 : 0)) as Vec3,

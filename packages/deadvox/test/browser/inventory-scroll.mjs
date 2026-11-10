@@ -7,6 +7,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { engineModule } from './engineModules.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -127,15 +128,15 @@ import uiFile from '/@fs${resolve(root, '../mods/skelly.ui/ui.json')}';
 import cursorFile from '/@fs${resolve(root, '../mods/skelly.ui/cursor.json')}';
 import progressionFile from '/@fs${resolve(root, '../mods/skelly.progression/progression.json')}';
 import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
-import { buildRegistry } from '/src/core/content.ts';
-import { Inventory } from '/src/core/inventory.ts';
-import { BODY_REGIONS, Body } from '/src/core/body.ts';
-import { HandlingQueue } from '/src/core/handling.ts';
-import { visibleGridName } from '/src/core/inventoryGridName.ts';
+import { buildRegistry } from '${engineModule('core/content.ts')}';
+import { Inventory } from '${engineModule('core/inventory.ts')}';
+import { BODY_REGIONS, Body } from '${engineModule('core/body.ts')}';
+import { HandlingQueue } from '${engineModule('core/handling.ts')}';
+import { visibleGridName } from '${engineModule('core/inventoryGridName.ts')}';
 import { buildBundledContent } from '/src/product/content.ts';
 const BUNDLED_CONTENT = buildBundledContent();
-import { requireDayCycle } from '/src/core/content.ts';
-import { bindReach } from '/src/core/reach.ts';
+import { requireDayCycle } from '${engineModule('core/content.ts')}';
+import { bindReach } from '${engineModule('core/reach.ts')}';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { inputBindings } from '/src/product/input.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -1674,10 +1675,14 @@ try {
     assert.ok(await isFocused(coveredFit), 'closing gives focus back to the control that had it');
     assert.deepEqual(await viewState(), beforeView, 'viewing and closing leave the inventory as it was');
     logPhase('item viewer');
-    await page.evaluate(async (moduleUrl) => {
-      const { statePixelFixture } = await import(moduleUrl);
-      globalThis.itemStatePixels = await statePixelFixture();
-    }, itemStatePixelsModule);
+    await page.evaluate(
+      async ({ moduleUrl, itemsModule }) => {
+        const { statePixelFixture } = await import(moduleUrl);
+        const { snapshotItem } = await import(itemsModule);
+        globalThis.itemStatePixels = await statePixelFixture(snapshotItem);
+      },
+      { moduleUrl: itemStatePixelsModule, itemsModule: engineModule('core/items.ts') },
+    );
     await page.waitForFunction(() => globalThis.itemStatePixels.ready());
     const statePixels = await page.evaluate(() => globalThis.itemStatePixels.capture());
     assert.ok(statePixels.full.blue > statePixels.lowFuel.blue, 'more fuel draws more fill through the clear shell');
@@ -1967,19 +1972,28 @@ try {
   await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
   for (const scenario of ['spill-all', 'lost-room']) {
     await page.evaluate(
-      async ({ recoveryModule, contentModule }) => {
+      async ({ recoveryModule, contentModule, itemsModule }) => {
         const original = document.querySelector('#inventory');
         globalThis.scrollFixture.screen.close();
         original.id = 'inventory-original';
         const { mountRecoveryProbe } = await import(recoveryModule);
         const { buildBundledContent } = await import(contentModule);
+        const items = await import(itemsModule);
         const { registry } = buildBundledContent();
-        globalThis.recoveryProbe = mountRecoveryProbe(registry, {
-          ratio: registry.dayCycle.clockRatio,
-          start: 0,
-        });
+        globalThis.recoveryProbe = mountRecoveryProbe(
+          registry,
+          {
+            ratio: registry.dayCycle.clockRatio,
+            start: 0,
+          },
+          items,
+        );
       },
-      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/product/content.ts' },
+      {
+        recoveryModule: '/test/browser/liquid-recovery-ui.ts',
+        contentModule: '/src/product/content.ts',
+        itemsModule: engineModule('core/items.ts'),
+      },
     );
     const recoveryRoot = page.locator('[data-recovery-probe]');
     const startButton = recoveryRoot.locator('button[data-work-operation="disassemble"]');
@@ -2098,16 +2112,22 @@ try {
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
   await page.evaluate(
-    async ({ chargerModule, contentModule }) => {
+    async ({ chargerModule, contentModule, saveFormatModule }) => {
       globalThis.scrollFixture.screen.close();
       const { mountChargerFlow } = await import(chargerModule);
       const { buildBundledContent } = await import(contentModule);
+      const { SAVE_SCHEMA_VERSION } = await import(saveFormatModule);
       globalThis.chargerFlow = await mountChargerFlow(
         buildBundledContent().registry,
         document.querySelector('#inventory'),
+        SAVE_SCHEMA_VERSION,
       );
     },
-    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/product/content.ts' },
+    {
+      chargerModule: '/test/browser/charger-flow.ts',
+      contentModule: '/src/product/content.ts',
+      saveFormatModule: engineModule('core/saveFormat.ts'),
+    },
   );
   const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
   await chargerButton('inventory.move').click();

@@ -105,7 +105,7 @@ const vite = await createServer({
           camo.patternWashout = 1;
           return JSON.stringify(content);
         }
-        if (mode !== 'traversal' && id.endsWith('/src/core/authoredSite.ts')) {
+        if (mode !== 'traversal' && id.endsWith('/engine/src/core/authoredSite.ts')) {
           const anchor = '    const s = scale.blockSize;';
           assert.equal(code.split(anchor).length, 2);
           const fixtureName = isLightingMode ? 'raisedCabin' : 'camoWitness';

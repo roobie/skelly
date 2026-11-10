@@ -6,6 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { engineModule } from './engineModules.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -102,7 +103,7 @@ try {
     const { decimalText } = await import(numberTextModule);
     globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
     return { damage: entry.damage, durability: material.durability, solid: block.solid };
-  }, '/src/core/numberText.ts');
+  }, engineModule('core/numberText.ts'));
   await page.waitForFunction(() => document.querySelector('#hud').textContent.includes(globalThis.d7ToolDamage.text));
   await pressAction(page, 'debug.build-destroy');
   await page.waitForFunction(() => globalThis.d7Review.engine.world.getBlock(...globalThis.d7ToolDamage.cell) === 0);

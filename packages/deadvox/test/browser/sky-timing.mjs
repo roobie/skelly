@@ -149,7 +149,7 @@ if(msg.__skyTiming) reply.__skyTiming={...msg.__skyTiming,workerStartAbsoluteRea
 postMessage(reply,`,
           );
       }
-      if (path.endsWith('/src/core/skyField.ts')) {
+      if (path.endsWith('/engine/src/core/skyField.ts')) {
         return code.replace(
           '    entry.request ??= { captured: this.capture(entry), submitted: false };',
           `

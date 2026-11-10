@@ -44,12 +44,12 @@ local batteryBay(tray, at, supportedBy=[]) = [
 ];
 local headlamps(x, y, z, supportedBy=[]) = pair('headlamp', 'car_headlamp', [x, y, z], on(supportedBy));
 // A factory cargo space: `at` is the centre of its footprint on the load floor, `cells` its size in inventory
-// cells along x, y and z (`packages/deadvox/src/core/cargoSpace.ts`).
+// cells along x, y and z (`packages/engine/src/core/cargoSpace.ts`).
 local cargoSpace(id, at, cells, floor) = fitting(id, 'cargo_space', at, [floor]) + { cargo: cells };
 // The hatchback's own panels are pressed for its body and authored where they sit on it, so they fit at
 // its origin; shared parts are placed by their own frames.
 local origin = [0, 0, 0];
-// `packages/deadvox/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
+// `packages/engine/src/core/inventoryScale.ts`, `PILE_GRID`. A body panel is larger than a floor pile; the cap costs
 // nothing until a carrying design gives oversized parts their own class.
 local pileSize = [12, 6];
 local hatchback = [

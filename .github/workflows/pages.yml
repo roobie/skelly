@@ -12,6 +12,7 @@ on:
       - 'tools/skelly-assets/**'
       - '.gitmodules'
       - 'packages/deadvox/**'
+      - 'packages/engine/**'
       - 'packages/mods/**'
       - 'tools/lit-check/**'
       - 'package.json'
@@ -23,6 +24,7 @@ on:
       - '.github/workflows/pages.yml'
       - '!**/*.md'
       - '!packages/deadvox/test/**'
+      - '!packages/engine/test/**'
   workflow_dispatch:
 
 permissions:

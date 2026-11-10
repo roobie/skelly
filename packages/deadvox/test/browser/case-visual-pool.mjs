@@ -12,14 +12,14 @@ const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../.
 const probePath = resolve(root, '__casePoolProbe.js');
 const probeSource = `
 import { Scene, PerspectiveCamera, WebGLRenderer } from 'three';
-import { buildRegistry } from '/src/core/content.ts';
-import { Inventory } from '/src/core/inventory.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { Inventory } from '@skelly/engine/inventory';
 import { playerTuning } from '/src/game/player.ts';
 import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
 import { PileMeshes } from '/src/render/piles.ts';
 import { ModelLibrary } from '/src/render/models.ts';
 import { productAssets } from '/src/product/assets.ts';
-import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
+import { SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
 const raw = {
   ...import.meta.glob('./mods/*/*.json', { eager: true, import: 'default' }),
   ...import.meta.glob('../mods/*/*.json', { eager: true, import: 'default' }),

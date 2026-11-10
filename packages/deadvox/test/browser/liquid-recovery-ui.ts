@@ -1,9 +1,8 @@
-import type { ClockSettings } from '../../../engine/src/core/clock.ts';
-import { craftActionHooks } from '../../../engine/src/core/craftWork.ts';
-import { restoreItem, snapshotItem } from '../../../engine/src/core/items.ts';
-import type { Registry } from '../../../engine/src/content.ts';
-import { CraftCommands, HandlingQueue, Inventory } from '../../../engine/src/inventory.ts';
-import { bindReach, Character, Simulation } from '../../../engine/src/sim.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { ClockSettings } from '@skelly/engine/internal/core/clock.ts';
+import type * as Items from '@skelly/engine/internal/core/items.ts';
+import { CraftCommands, craftActionHooks, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character, Simulation } from '@skelly/engine/sim';
 import { BindingRegistry } from '../../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
@@ -12,7 +11,12 @@ import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { FULL, RESULT, STOCK, VESSEL } from '../liquidCraftFixture.ts';
 import { liquidRecoveryData } from '../liquidRecoveryFixture.ts';
 
-export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
+// The stage passes the item snapshot functions because no engine entry carries them.
+export const mountRecoveryProbe = (
+  base: Registry,
+  clock: ClockSettings,
+  { restoreItem, snapshotItem }: Pick<typeof Items, 'restoreItem' | 'snapshotItem'>,
+) => {
   const built = buildFixtureRegistry([{ source: 'fixture-recovery-browser', data: liquidRecoveryData() }]);
   if (built.issues.length > 0) {
     throw new Error(JSON.stringify(built.issues));
