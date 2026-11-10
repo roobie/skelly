@@ -1,19 +1,13 @@
 import process from 'node:process';
 import { getDotPath, safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import type { RecipeDef, Registry } from '../src/core/content.ts';
-import {
-  admissionRefusal,
-  indexCraftReach,
-  planCraft,
-  requirementStatus,
-  type WorkPlan,
-} from '../src/core/crafting.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
+import { SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
+import { admissionRefusal, type WorkPlan } from '../src/core/crafting.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import type { RecipeDef, Registry } from '../src/engine/content.ts';
+import { Inventory, indexCraftReach, planCraft, requirementStatus } from '../src/engine/inventory.ts';
+import { bindReach, Character, practiceForNextLevel, type ReachSnapshot } from '../src/engine/sim.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';

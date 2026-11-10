@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
-import { ownershipCell } from '../src/core/templateOwnership.ts';
-import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint } from '../src/core/templates.ts';
+import { type CompiledTemplate, compileAssembly, type PlacedPiece } from '../src/core/templates.ts';
+import { buildRegistry, type ContentSource, type Registry } from '../src/engine/content.ts';
+import { ownershipCell, placedPoint } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';

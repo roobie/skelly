@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  canonicalJson,
-  canonicalJsonBytes,
-  decodeCanonicalNumbers,
-  NEGATIVE_ZERO_TAG,
-} from '../src/core/canonicalJson.ts';
+import { canonicalJsonBytes, decodeCanonicalNumbers, NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
+import { canonicalJson } from '../src/engine/save.ts';
 
 describe('canonical JSON', () => {
   it('sorts object keys and preserves ECMAScript number representations', () => {

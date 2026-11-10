@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { benchmarkCityGrid, cityGridOf } from '../src/core/cityPlan.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { scenarioSources } from '../src/core/scenarioComposition.ts';
 import type { ContentFile } from '../src/core/schema.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const EXCLUDED_ENTRY =

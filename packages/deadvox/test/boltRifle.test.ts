@@ -1,11 +1,10 @@
 import { expect, it } from 'vitest';
 import { actionOpenSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { decodeSave, encodeSave } from '../src/engine/save.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import { FirearmMechanics, type FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

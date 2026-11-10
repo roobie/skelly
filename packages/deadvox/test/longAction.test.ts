@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { bookReadingHooks } from '../src/core/bookReading.ts';
-import { Character } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import { planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
-import { dropSpots, Inventory } from '../src/core/inventory.ts';
-import { defOf, footprint } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
+import { dropSpots } from '../src/core/inventory.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
-import { realSeconds } from '../src/core/time.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { defOf, footprint, Inventory, planCraft } from '../src/engine/inventory.ts';
+import { bindReach, Character, realSeconds } from '../src/engine/sim.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { stopReadingOnClose } from '../src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';

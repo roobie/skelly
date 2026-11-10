@@ -1,11 +1,16 @@
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { FurnitureSpawn, Rect, Site } from '../src/core/site.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+import type { FurnitureSpawn, Site } from '../src/core/site.ts';
+import type { Registry } from '../src/engine/content.ts';
+import type { Rect } from '../src/engine/sim.ts';
+import {
+  CHUNK,
+  generateColumn,
+  makeScale,
+  sitePalette,
+  terrainShapeOf,
+  type Vec3,
+  World,
+} from '../src/engine/world.ts';
 
 /**
  * The authored test house at the template scale, with its blocks generated on demand. A caller may pass the site

@@ -1,13 +1,10 @@
 import { expect, it } from 'vitest';
-import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
-import { type Pose, rotatedSize, rotationOf } from '../src/core/orientation.ts';
-import { stepBody } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { type Pose, rotatedSize } from '../src/core/orientation.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { BLUEPRINTS } from '../src/engine/vehicles.ts';
+import { BlockEntities, type BlockEntity, makeScale, rotationOf, stepBody, type Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';

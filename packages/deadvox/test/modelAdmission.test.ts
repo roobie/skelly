@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import { buildRegistry } from '../src/core/content.ts';
-import type { ContentFile, ModelDef } from '../src/core/schema.ts';
+import type { ContentFile } from '../src/core/schema.ts';
+import { buildRegistry, type ModelDef } from '../src/engine/content.ts';
 
 const fixture = JSON.parse(compileJsonnetFile('packages/deadvox/test/fixtures/content/model-admission.libsonnet')) as {
   content: ContentFile;

@@ -1,8 +1,7 @@
 import { expect, it } from 'vitest';
-import { dominantSide, offSide } from '../src/core/character.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { applyStartKit } from '../src/core/startState.ts';
-import { World } from '../src/core/world.ts';
+import { dominantSide, offSide } from '../src/engine/sim.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { pumpStart } from './fixtures/debugStarts.ts';

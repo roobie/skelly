@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { RecipeDef } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { planCraft } from '../src/core/crafting.ts';
 import { FOOD_EXPOSURE_DENOMINATOR } from '../src/core/food.ts';
 import { ruinFurniture } from '../src/core/furnitureMove.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, type Location, type Target } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import type { RecipeDef } from '../src/engine/content.ts';
+import { HandlingQueue, Inventory, type Item, type Location, planCraft, type Target } from '../src/engine/inventory.ts';
+import { bindReach } from '../src/engine/sim.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

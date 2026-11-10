@@ -1,9 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
+import { authoredSkyBoxes } from '../src/core/skyField.ts';
+import { graphicsTuningOf } from '../src/engine/look.ts';
+import { SkyFields } from '../src/engine/sky.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { createEngine } from '../src/presentation/engine.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';

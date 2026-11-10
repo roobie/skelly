@@ -1,14 +1,12 @@
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { Body } from '../src/core/body.ts';
-import { claimed } from '../src/core/capabilities.ts';
-import { Character, SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { magazineSpec } from '../src/core/magazine.ts';
 import { type StartDef, StartSchema } from '../src/core/schema/starts.ts';
 import { startIssues } from '../src/core/startIssues.ts';
-import { applyStartState } from '../src/core/startState.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { claimed, Inventory } from '../src/engine/inventory.ts';
+import { applyStartState, Body, Character } from '../src/engine/sim.ts';
 import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';

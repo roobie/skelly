@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import type { PlaytestMarks } from '../src/core/site.ts';
 import { measureSessionSnapshot } from '../src/debug/snapshotMeasurement.ts';
+import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import type { PlaytestMarks } from '../src/engine/sim.ts';
 import type { Session } from '../src/game/session.ts';
 import { PlaytestObserver } from '../src/presentation/playtestObserver.ts';
 import { SessionMetrics } from '../src/presentation/playtestTools.ts';

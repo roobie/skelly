@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { validateContent } from '../src/core/content.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 import { type RecipeBrowserQuery, recipeBrowser } from '../src/ui/recipeBrowser.ts';
 import { fixtureSources } from './economyFixtures.ts';
 

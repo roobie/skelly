@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
-import type { HitImpulse } from '../src/core/actorSystem.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
+import { actorFigure } from '../src/engine/content.ts';
+import type { HumanoidHitRegion } from '../src/engine/pose.ts';
+import type { HitImpulse } from '../src/engine/sim.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { angularVelocity, type RigidBody } from '../src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

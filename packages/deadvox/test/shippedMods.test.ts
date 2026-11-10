@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import process from 'node:process';
 import { expect, it } from 'vitest';
-import type { PackInput } from '../src/core/packAdmission.ts';
+import type { PackInput } from '../src/engine/packs.ts';
 import { readAvailablePacks } from '../tools/readBundledPacks.ts';
 
 const folderIssues = (packs: readonly PackInput[]): string[] =>

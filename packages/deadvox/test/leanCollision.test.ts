@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
 import { createLeanGuard, guardLean } from '../src/core/lean.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 
 it('sweeps lean from the body rather than admitting a clear endpoint beyond a thin wall', () => {
   const boxesAt = (fraction: number) => [

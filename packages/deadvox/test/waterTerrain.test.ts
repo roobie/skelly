@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { profileHeight } from '../src/core/authoredTerrain.mjs';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { World } from '../src/core/world.ts';
-import { generateChunk, generateColumn, terrainHeight } from '../src/core/worldgen.ts';
+import { generateChunk, terrainHeight } from '../src/core/worldgen.ts';
+import { CHUNK, generateColumn, makeScale, sitePalette, terrainShapeOf, World } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const scale = makeScale(0.5);

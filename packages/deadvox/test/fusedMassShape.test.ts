@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
+import { actorFigure } from '../src/engine/content.ts';
+import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure, fusedMassTypeOf } from '../src/engine/pose.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

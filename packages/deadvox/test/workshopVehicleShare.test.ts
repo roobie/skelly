@@ -1,9 +1,8 @@
 import type { BufferAttribute, Mesh } from 'three';
 import { expect, it, vi } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
+import { BLUEPRINTS, meshGrid } from '../src/engine/vehicles.ts';
+import type { BlockEntity } from '../src/engine/world.ts';
 import { type VehicleLook, vehicleModel } from '../src/render/workshopVehicle.ts';
-import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
-import { meshGrid } from '../src/vehicles/voxels.ts';
 
 vi.mock('../src/vehicles/voxels.ts', async (original) => {
   const actual = await original<typeof import('../src/vehicles/voxels.ts')>();

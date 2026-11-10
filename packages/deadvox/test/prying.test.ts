@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { pryPlan } from '../src/core/prying.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import { SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { Character, practiceForNextLevel, pryPlan } from '../src/engine/sim.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import {

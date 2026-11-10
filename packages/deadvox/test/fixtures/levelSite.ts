@@ -1,5 +1,4 @@
-import { CHUNK } from '../../src/core/coords.ts';
-import type { World } from '../../src/core/world.ts';
+import { CHUNK, type World } from '../../src/engine/world.ts';
 import { scale } from '../snapshotTestSupport.ts';
 
 const groundTop = (world: World, x: number, z: number): number | undefined => {

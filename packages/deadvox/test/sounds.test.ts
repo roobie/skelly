@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { SoundDef } from '../src/core/content.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { simSeconds } from '../src/core/time.ts';
+import type { SoundDef } from '../src/engine/content.ts';
 
 const sound = (variants: string[]): SoundDef => ({
   id: 'player_hurt_light',

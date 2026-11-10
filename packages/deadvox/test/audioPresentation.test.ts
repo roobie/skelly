@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Registry, SoundDef } from '../src/core/content.ts';
-import type { Item } from '../src/core/items.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import type { Registry, SoundDef } from '../src/engine/content.ts';
+import type { Item } from '../src/engine/inventory.ts';
+import type { SoundEmission } from '../src/engine/sound.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import { createRefusalPresenter, firearmShotSound, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

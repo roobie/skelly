@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK_VOLUME } from '../src/core/coords.ts';
+import { Chunk } from '../src/engine/world.ts';
 import { farColumns } from '../src/game/streamer.ts';
 
 describe('Chunk', () => {

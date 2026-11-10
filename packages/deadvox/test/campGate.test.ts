@@ -1,18 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { stepBodyHorizontal } from '../src/core/physics.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
-import {
-  type CompiledTemplate,
-  cellsOf,
-  compileTemplate,
-  footprint,
-  placedBlockAt,
-  placedPieces,
-  type Placement as WorldPlacement,
-} from '../src/core/templates.ts';
+import { type CompiledTemplate, cellsOf, compileTemplate, placedBlockAt, placedPieces } from '../src/core/templates.ts';
+import { BLOCK_SIZE, footprint, type Placement as WorldPlacement } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 

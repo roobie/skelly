@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 import { bookReadingHooks } from '../src/core/bookReading.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { Character, practiceForNextLevel } from '../src/engine/sim.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 
 const fixture = (skill = 'crafting', level = 2, taughtRecipe = 'fixture_recipe') =>

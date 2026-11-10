@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { batteryEnergy } from '../src/core/battery.ts';
 import { BatteryChargers } from '../src/core/batteryChargers.ts';
 import { ruinFurniture } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { chargeOf, drainLight, fitsLight, swapBattery, toggleLight } from '../src/core/lights.ts';
+import { chargeOf, drainLight, fitsLight, swapBattery } from '../src/core/lights.ts';
 import type { PowerState } from '../src/core/power.ts';
-import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import { gameSeconds, simTimestamp } from '../src/core/time.ts';
+import { batteryEnergy, Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { decodeSave, encodeSave } from '../src/engine/save.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { deviceState, powerCycle } from './powerFixture.ts';

@@ -1,15 +1,19 @@
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { settleCell } from '../src/core/itemThrow.ts';
-import { bodyOverlapsTerrain } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { type BrickOut, brickHas, worldBricks } from '../src/core/solidBricks.ts';
+import { type BrickOut, brickHas } from '../src/core/solidBricks.ts';
 import { spawnOverlappingSolidBlock } from '../src/core/spawnClearance.ts';
-import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
-import { World } from '../src/core/world.ts';
+import { VehicleOccupancy } from '../src/core/vehicleProjection.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { projectVehicleParts } from '../src/engine/vehicles.ts';
+import {
+  BlockEntities,
+  bodyOverlapsTerrain,
+  makeScale,
+  type Vec3,
+  World,
+  worldBricks,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { massProperties, voxelBounds } from '../src/core/massProperties.ts';
+import { massProperties, voxelBounds } from '../src/engine/pose.ts';
 
 const SIZE = 0.1;
 const DENSITY = 1000;

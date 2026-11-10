@@ -1,29 +1,38 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { actionText } from '../src/core/actionText.ts';
-import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor } from '../src/core/actorState.ts';
-import { breathSteadying, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import type { EntityId } from '../src/core/entities.ts';
+import { breathSteadying } from '../src/core/aim.ts';
+import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { firearmStanceEffects, firearmsSkillEffects, steadinessTuning } from '../src/core/firearmsSkill.ts';
-import { blendHeldFirearmTransforms, heldFirearmTransform } from '../src/core/heldPose.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '../src/core/leanCollision.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { bodyDistance, reachTuning } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
-import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
+import { bodyDistance } from '../src/core/reach.ts';
+import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../src/core/skillTraining.ts';
-import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
+import { compileTemplate, placedBlockAt } from '../src/core/templates.ts';
+import type { ActorDef } from '../src/engine/content.ts';
+import { actionText } from '../src/engine/input.ts';
+import {
+  actorPoseInputFor,
+  blendHeldFirearmTransforms,
+  heldFirearmTransform,
+  NEUTRAL_AIM,
+  playerAdsPose,
+  playerEyePosition,
+  playerLookPose,
+} from '../src/engine/pose.ts';
+import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { type Actor, type EntityId, practiceForNextLevel, reachTuning } from '../src/engine/sim.ts';
+import {
+  BLOCK_SIZE,
+  footprint,
+  makeScale,
+  type Placement,
+  type SolidAt,
+  type Vec3,
+  World,
+} from '../src/engine/world.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';

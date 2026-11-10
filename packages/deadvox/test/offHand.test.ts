@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { offHandUse } from '../src/core/lights.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { Character, dominantSide, offSide } from '../src/engine/sim.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry, issues } = buildRegistry([

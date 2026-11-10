@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { buildSkyResult, sampleSky } from '../src/core/skyTransport.ts';
+import { buildSkyResult, sampleSky } from '../src/engine/sky.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { skyFixture } from './fixtures/sky.ts';
 

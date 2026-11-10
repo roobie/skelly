@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Registry } from '../src/core/content.ts';
-import { crosshairTarget } from '../src/core/crosshairTarget.ts';
-import type { World } from '../src/core/world.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { crosshairTarget } from '../src/engine/sim.ts';
+import { BlockEntities, type World } from '../src/engine/world.ts';
 
 const fixtureRegistry = (): Registry =>
   ({

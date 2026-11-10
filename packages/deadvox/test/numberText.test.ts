@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { actionText, fillText } from '../src/core/actionText.ts';
 import { coreMessage } from '../src/core/coreText.ts';
-import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '../src/core/numberText.ts';
+import { actionText, fillText } from '../src/engine/input.ts';
+import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '../src/engine/text.ts';
 import { fillHint } from '../src/ui/keyCap.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

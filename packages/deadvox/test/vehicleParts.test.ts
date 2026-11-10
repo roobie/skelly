@@ -1,37 +1,36 @@
 import { describe, expect, it, vi } from 'vitest';
 import { sizeFits } from '../src/core/items.ts';
-import { APC } from '../src/vehicles/apc.ts';
-import { pairAcross } from '../src/vehicles/authoring.ts';
-import { BOX_VAN } from '../src/vehicles/boxVan.ts';
-import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import {
+  APC,
   addFitting,
   type Blueprint,
-  catalogueOf,
+  BOX_VAN,
+  CATALOGUE,
   type Fitting,
-  newInstance,
-  noiseRadius,
-  PartLibrary,
-  type PartType,
-  partTypeOf,
-  removeFitting,
-  supportProblems,
-  VOXEL,
-} from '../src/vehicles/model.ts';
-import { MOTORBIKE } from '../src/vehicles/motorbike.ts';
-import { PICKUP } from '../src/vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/vehicles/rangeRover.ts';
-import { SEDAN } from '../src/vehicles/sedan.ts';
-import {
   GLASS,
   keyVoxel,
   type MeshBuffers,
+  MOTORBIKE,
   meshGrid,
-  rasterize,
+  newInstance,
+  noiseRadius,
+  PartLibrary,
+  PICKUP,
+  partTypeOf,
+  RANGE_ROVER,
+  removeFitting,
+  SEDAN,
+  STRIPPED_REMOVED,
+  VOXEL,
   type VoxelGrid,
   voxelKey,
-} from '../src/vehicles/voxels.ts';
-import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/vehicles/wear.ts';
+  wearGrid,
+  wearKey,
+} from '../src/engine/vehicles.ts';
+import { pairAcross } from '../src/vehicles/authoring.ts';
+import { catalogueOf, type PartType, supportProblems } from '../src/vehicles/model.ts';
+import { rasterize } from '../src/vehicles/voxels.ts';
+import { WEAR_MATERIALS } from '../src/vehicles/wear.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 

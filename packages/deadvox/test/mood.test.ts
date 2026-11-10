@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { BLOOM_CLIP_BY_TONE, MIN_BLOOM_CLIP } from '../src/core/mood.ts';
 import {
   AUTO_TONE,
-  BLOOM_CLIP_BY_TONE,
   bloomClipFor,
   bloomThreshold,
   clampBloomClip,
@@ -10,10 +10,9 @@ import {
   clampTorch,
   DEFAULT_TORCH,
   gradeParams,
-  MIN_BLOOM_CLIP,
   TORCH_STEP,
   targetColorScale,
-} from '../src/core/mood.ts';
+} from '../src/engine/look.ts';
 import { TONE_MODES } from '../src/render/look.ts';
 import { displayed, inputForDisplay } from './toneCurves.ts';
 

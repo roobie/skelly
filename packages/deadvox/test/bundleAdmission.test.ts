@@ -1,9 +1,11 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { beforeAll, expect, it, vi } from 'vitest';
-import { BundleAdmission, type BundleStamp, bundleSourceHash } from '../src/core/bundleAdmission.ts';
+import { BundleAdmission } from '../src/core/bundleAdmission.ts';
 // biome-ignore lint/performance/noNamespaceImport: the test spies on the live proof export used by admission.
 import * as cityPlan from '../src/core/cityPlan.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { validateContent } from '../src/core/content.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { type BundleStamp, bundleSourceHash } from '../src/engine/packs.ts';
 import { baseSources } from '../src/product/content.ts';
 import { stampBundle } from '../tools/stampBundle.ts';
 import { startupContent } from './baseRegistry.ts';

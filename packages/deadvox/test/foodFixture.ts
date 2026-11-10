@@ -1,5 +1,5 @@
-import type { ItemDef, Registry } from '../src/core/content.ts';
 import { gameSeconds, simSeconds } from '../src/core/time.ts';
+import type { ItemDef, Registry } from '../src/engine/content.ts';
 
 export const fixtureFood: ItemDef = {
   id: 'fixture_food',

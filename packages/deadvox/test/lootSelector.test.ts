@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { chargeShare } from '../src/core/lights.ts';
 import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
-import { Rng } from '../src/core/random.ts';
 import { gamePerHour, simSeconds } from '../src/core/time.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { chargeShare, Inventory } from '../src/engine/inventory.ts';
+import { Rng } from '../src/engine/math.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 

@@ -1,7 +1,6 @@
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import { makeScale } from '../src/core/scale.ts';
-import { realTimestamp } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import { realTimestamp } from '../src/engine/sim.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import type { FromMesher, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import type { Engine } from '../src/presentation/engine.ts';

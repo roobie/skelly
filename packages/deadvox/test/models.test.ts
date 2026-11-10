@@ -17,12 +17,10 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ContentSource } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory, type Pile } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
+import type { ContentSource } from '../src/engine/content.ts';
+import { Inventory, PILE_GRID, type Pile, toggleLight } from '../src/engine/inventory.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { createCompass } from '../src/render/compass.ts';
 import { HeldItems } from '../src/render/hands.ts';

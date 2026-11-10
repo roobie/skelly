@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { HandlingQueue, type HandSide, Inventory } from '../src/engine/inventory.ts';
+import { bindReach } from '../src/engine/sim.ts';
 import { openingTargetForHand } from '../src/game/canOpening.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';

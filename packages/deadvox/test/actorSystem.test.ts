@@ -1,49 +1,54 @@
 import process from 'node:process';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { decodeFrame, sampleClip, walkCursor } from '../src/core/actorClips.ts';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { figureVariantOf } from '../src/core/actorModels.ts';
-import {
-  actorCrawls,
-  actorHitFlinchDuration,
-  actorPoseInputFor,
-  gaitPhaseGain,
-  posedActor,
-} from '../src/core/actorPose.ts';
-import {
-  FIGURE_BOXES,
-  FIGURE_PARTS,
-  type HumanoidHitRegion,
-  posedHumanoidRegionBoxes,
-  posedRegionHit,
-  posedRegionHitDistance,
-} from '../src/core/actorRegions.ts';
-import type { PlayerSense } from '../src/core/actorSense.ts';
+import { actorHitFlinchDuration, gaitPhaseGain } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes, posedRegionHit, posedRegionHitDistance } from '../src/core/actorRegions.ts';
 import { ActorSpawner } from '../src/core/actorSpawns.ts';
-import type { Actor } from '../src/core/actorState.ts';
-import { type HitImpulse, lethalRegion, pickActorHitRegion, pickActorMove } from '../src/core/actorSystem.ts';
+import { lethalRegion, pickActorHitRegion, pickActorMove } from '../src/core/actorSystem.ts';
 import { hearPlayer, hearVocalNoise, perceivePlayer } from '../src/core/agentPerception.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { BodyRegion } from '../src/core/body.ts';
-import { mulMV, quatToMat3 } from '../src/core/boneMath.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { lightSenseSourceFor, toggleLight } from '../src/core/lights.ts';
-import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
-import { Rng } from '../src/core/random.ts';
-import { raycast, type SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { lightSenseSourceFor } from '../src/core/lights.ts';
 import type { PoseClip } from '../src/core/schema/actors.ts';
-import type { ActorDef, DoorLockDef } from '../src/core/schema.ts';
-import { Simulation } from '../src/core/sim.ts';
+import type { DoorLockDef } from '../src/core/schema.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
+import { type ActorDef, actorFigure, requireDayCycle } from '../src/engine/content.ts';
+import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { Rng } from '../src/engine/math.ts';
+import {
+  actorCrawls,
+  actorPoseInputFor,
+  decodeFrame,
+  FIGURE_BOXES,
+  FIGURE_PARTS,
+  figureVariantOf,
+  type HumanoidHitRegion,
+  mulMV,
+  posedActor,
+  quatToMat3,
+  sampleClip,
+  walkCursor,
+} from '../src/engine/pose.ts';
+import {
+  type Actor,
+  type BodyRegion,
+  dayPhaseAt,
+  type HitImpulse,
+  type PlayerSense,
+  Simulation,
+} from '../src/engine/sim.ts';
+import {
+  BlockEntities,
+  type Body,
+  bodyOverlapsBlock,
+  makeScale,
+  raycast,
+  type SolidAt,
+  stepBody,
+  type Vec3,
+} from '../src/engine/world.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';

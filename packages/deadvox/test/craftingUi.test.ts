@@ -1,12 +1,8 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { planCraft, requirementStatus } from '../src/core/crafting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { fillText } from '../src/core/textTemplate.ts';
+import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '../src/engine/inventory.ts';
+import { bindReach, Character } from '../src/engine/sim.ts';
+import { fillText } from '../src/engine/text.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/craftReadout.ts';

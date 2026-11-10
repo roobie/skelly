@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadActorFigureFiles, readActorFigureFiles } from '../src/core/actorFigureFiles.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, loadActorFigureFiles, readActorFigureFiles } from '../src/engine/content.ts';
 import { stackActorFigureFiles, startupContentSources } from './baseContentFiles.ts';
 
 const json = (value: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(value));

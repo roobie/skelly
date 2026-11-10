@@ -1,15 +1,9 @@
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Chunk } from '../src/core/chunk.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { SkyFields } from '../src/core/skyField.ts';
 import type { SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+import { buildSkyResult, SkyFields, type SkyResult } from '../src/engine/sky.ts';
+import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '../src/engine/world.ts';
 import type { MesherPort, MesherSource } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { Skylight } from '../src/render/skylight.ts';

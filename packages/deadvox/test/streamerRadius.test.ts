@@ -1,7 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+import { CHUNK, makeScale, World } from '../src/engine/world.ts';
 import type { MesherHandlers, MesherPort, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { baseTerrainShape } from './baseRegistry.ts';

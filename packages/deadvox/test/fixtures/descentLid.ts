@@ -1,5 +1,5 @@
-import type { BlockEntity } from '../../src/core/blockEntities.ts';
-import { doorPlan } from '../../src/core/options.ts';
+import { doorPlan } from '../../src/engine/inventory.ts';
+import type { BlockEntity } from '../../src/engine/world.ts';
 import { DOOR_ACTION } from '../../src/game/doorAction.ts';
 import type { Session } from '../../src/game/session.ts';
 

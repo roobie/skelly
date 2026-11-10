@@ -1,15 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
+import { validateContent } from '../src/core/content.ts';
 import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
+import { cellsOf, pieceSize } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import {
+  type BlockEntity,
+  footprint,
+  makeScale,
+  toChunk,
+  type Vec3,
+  World,
+  worldOpaque,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { EventQueue } from '../src/core/events.ts';
-import { Rng } from '../src/core/random.ts';
 import { Scheduler } from '../src/core/scheduler.ts';
+import { Rng } from '../src/engine/math.ts';
 
 describe('Scheduler', () => {
   it('ticks each system at its rate, in time order', () => {

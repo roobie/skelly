@@ -1,15 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues, servicePlacement } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { toChunk } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
 // biome-ignore lint/performance/noNamespaceImport: A module spy observes every scenario-source handoff.
 import * as lootSelection from '../src/core/loot.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { composeScenario } from '../src/core/scenarioComposition.ts';
-import { discoveryForPlan } from '../src/core/scenarioDiscovery.ts';
 import { startIssues } from '../src/core/startIssues.ts';
 import { compileTemplate, placedPieces } from '../src/core/templates.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { discoveryForPlan } from '../src/engine/sim.ts';
+import { CitySite, makeScale, toChunk } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

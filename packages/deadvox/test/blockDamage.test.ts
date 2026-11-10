@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { bashBlock } from '../src/core/blockDamage.ts';
 import { CanonicalTerrain } from '../src/core/canonicalTerrain.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import type { Terrain } from '../src/core/worldgen.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { CHUNK, Chunk, makeScale, type Terrain, type Vec3, World } from '../src/engine/world.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';

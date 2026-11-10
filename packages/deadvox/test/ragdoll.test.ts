@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { decodeFrame, sampleClip } from '../src/core/actorClips.ts';
-import type { ActorFigureFile } from '../src/core/actorFigureFiles.ts';
-import { quatToMat3 } from '../src/core/boneMath.ts';
-import { bodySkeleton } from '../src/core/bones.ts';
-import { severedBoneSet } from '../src/core/boneTree.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import type { Pose } from '../src/core/pose.ts';
-import { reachTuning } from '../src/core/reach.ts';
+import type { ActorFigureFile } from '../src/engine/content.ts';
+import { bodySkeleton, decodeFrame, type Pose, quatToMat3, sampleClip, severedBoneSet } from '../src/engine/pose.ts';
+import { reachTuning } from '../src/engine/sim.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';

@@ -1,19 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
+import { actorHitFlinchDuration, advanceStanceWeight, targetStanceWeight } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { type ActorBody, actorFigure } from '../src/engine/content.ts';
 import {
-  actorHitFlinchDuration,
   actorPoseInputFor,
-  advanceStanceWeight,
+  clampJointAngles,
+  type HumanoidHitRegion,
+  IDENTITY_M,
+  jointAngles,
   posedActor,
-  targetStanceWeight,
-} from '../src/core/actorPose.ts';
-import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor } from '../src/core/actorState.ts';
-import { IDENTITY_M } from '../src/core/boneMath.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { clampJointAngles, jointAngles } from '../src/core/joints.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ActorBody } from '../src/core/schema/actors.ts';
+} from '../src/engine/pose.ts';
+import type { Actor } from '../src/engine/sim.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

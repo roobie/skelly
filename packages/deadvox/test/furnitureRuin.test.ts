@@ -1,12 +1,10 @@
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import type { BashOutcome, BlockEntity } from '../src/core/blockEntities.ts';
-import type { Vec3 } from '../src/core/coords.ts';
+import type { BashOutcome } from '../src/core/blockEntities.ts';
 import { commitRuin, type FurnitureMover, planRuin, ruinFurniture } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import type { Body } from '../src/core/physics.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
+import { Inventory, PILE_GRID } from '../src/engine/inventory.ts';
+import type { BlockEntity, Body, Vec3 } from '../src/engine/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { createRuntime } from './snapshotTestSupport.ts';

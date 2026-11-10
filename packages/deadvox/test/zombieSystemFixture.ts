@@ -1,5 +1,6 @@
-import { type ActorSystemOptions, ActorSystem as CoreActorSystem } from '../src/core/actorSystem.ts';
-import { siteGenerationOf } from '../src/core/sitePalette.ts';
+import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
+import { ActorSystem as CoreActorSystem } from '../src/engine/sim.ts';
+import { siteGenerationOf } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const liveness = siteGenerationOf(baseRegistry());

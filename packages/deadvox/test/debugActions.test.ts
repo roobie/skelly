@@ -1,12 +1,13 @@
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { GRAPHICS_KEYS, GRAPHICS_KNOBS } from '../src/core/graphics.ts';
+import { GRAPHICS_KNOBS } from '../src/core/graphics.ts';
 import { SHADOW_DISTANCES } from '../src/core/mood.ts';
-import type { Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
+import { GRAPHICS_KEYS } from '../src/engine/look.ts';
+import type { Weather } from '../src/engine/sky.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { DebugGunPose } from '../src/presentation/debugGunPose.ts';
 import type { DebugHooks } from '../src/presentation/debugInterface.ts';

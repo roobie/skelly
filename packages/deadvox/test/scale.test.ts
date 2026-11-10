@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK_VOLUME } from '../src/core/coords.ts';
-import { chunksFor, makeScale } from '../src/core/scale.ts';
-import { paletteBits, storageStats } from '../src/core/storage.ts';
+import { paletteBits } from '../src/core/storage.ts';
 import { rasterize, stampChunk } from '../src/core/structure.ts';
+import { storageStats } from '../src/engine/sim.ts';
+import { Chunk, chunksFor, makeScale } from '../src/engine/world.ts';
 
 describe('scale', () => {
   it('covers −48 m to +80 m with whole chunks', () => {

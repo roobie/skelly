@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { simSecondsPerHour } from '../src/core/clock.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { chargeOf, drainBurnLight, toggleLight, wornNightVision } from '../src/core/lights.ts';
-import { bindReach } from '../src/core/reach.ts';
+import { chargeOf, drainBurnLight } from '../src/core/lights.ts';
+import { HandlingQueue, Inventory, toggleLight, wornNightVision } from '../src/engine/inventory.ts';
+import { bindReach } from '../src/engine/sim.ts';
 import { Survival } from '../src/game/survival.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

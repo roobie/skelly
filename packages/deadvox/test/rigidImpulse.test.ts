@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { rotateVector } from '../src/core/spatial.ts';
+import { rotateVector } from '../src/engine/math.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import {
   angularVelocity,
   applyImpulseAtClampedPoint,

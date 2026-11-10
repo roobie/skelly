@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { mergeManifests, validateManifest } from '../src/core/assets.ts';
+import { mergeManifests, validateManifest } from '../src/engine/content.ts';
 import { creditsViewModel, mountCredits } from '../src/ui/credits.ts';
 import { baseScreenText } from './baseRegistry.ts';
 

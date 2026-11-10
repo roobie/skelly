@@ -1,13 +1,10 @@
 import { Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { adsCameraEye } from '../src/core/adsView.ts';
 import { AimController } from '../src/core/aim.ts';
-import { sightedFirearmModel } from '../src/core/firearmSight.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { playerLookPose } from '../src/core/playerLookPose.ts';
-import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { adsCameraEye, heldFirearmTransform, playerLookPose, sightedFirearmModel } from '../src/engine/pose.ts';
+import { firearmsCombatTuning } from '../src/engine/sim.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { AIM } from './playerFixture.ts';

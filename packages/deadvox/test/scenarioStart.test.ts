@@ -1,10 +1,6 @@
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import type { Chunk } from '../src/core/chunk.ts';
 import { buildCityPlan, cityGridOf, scenarioPlanIssues } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate, scenarioStartCertificate } from '../src/core/scenarioCertificate.ts';
 import { type StartDescent, scenarioStartIssues } from '../src/core/scenarioStart.ts';
 import type { StartDef } from '../src/core/schema/starts.ts';
@@ -12,6 +8,7 @@ import { ContentFileSchema } from '../src/core/schema.ts';
 import { startIssues } from '../src/core/startIssues.ts';
 import { type BlockBox, stampChunk } from '../src/core/structure.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
+import { type Chunk, CitySite, makeScale, type Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

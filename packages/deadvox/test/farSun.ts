@@ -8,7 +8,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { Vec3 } from '../src/core/coords.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 

@@ -1,11 +1,16 @@
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import { LIGHT_MOUNT_SLOT } from '../src/core/firearmFitting.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { itemPresentationIssues, modelPresentationAssetIssues } from '../src/core/itemPresentation.ts';
-import { ItemFactory, snapshotItem } from '../src/core/items.ts';
-import { chargeShare, supplyShare, toggleLight } from '../src/core/lights.ts';
+import { itemPresentationIssues } from '../src/core/itemPresentation.ts';
+import { snapshotItem } from '../src/core/items.ts';
+import { buildRegistry, modelPresentationAssetIssues } from '../src/engine/content.ts';
+import {
+  chargeShare,
+  Inventory,
+  ItemFactory,
+  LIGHT_MOUNT_SLOT,
+  supplyShare,
+  toggleLight,
+} from '../src/engine/inventory.ts';
 import { type ItemLook, itemLook } from '../src/render/itemLook.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { applyItemStateLook, disposeItemStateMaterials, fittedStateGroup } from '../src/render/itemStateLook.ts';

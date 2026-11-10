@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import type { Vec3 } from '../src/core/coords.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { dropSpots, Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { defOf, type Item, typeWeightGrams, weightOf } from '../src/core/items.ts';
+import { dropSpots } from '../src/core/inventory.ts';
 import { type PelletShot, pelletSpreadRadians } from '../src/core/pellets.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundId } from '../src/core/soundEvents.ts';
+import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import { applyStartKit } from '../src/core/startState.ts';
-import { World } from '../src/core/world.ts';
+import {
+  defOf,
+  HandlingQueue,
+  Inventory,
+  type Item,
+  PILE_GRID,
+  typeWeightGrams,
+  weightOf,
+} from '../src/engine/inventory.ts';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '../src/engine/save.ts';
+import { dominantSide } from '../src/engine/sim.ts';
+import type { SoundId } from '../src/engine/sound.ts';
+import { makeScale, type Vec3, World } from '../src/engine/world.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,

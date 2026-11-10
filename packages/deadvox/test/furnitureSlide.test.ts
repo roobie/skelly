@@ -1,7 +1,5 @@
 import { Box3, Quaternion } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { FurnitureDef, Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import {
   advanceFloorLockedPlacement,
   type FurnitureMover,
@@ -14,18 +12,17 @@ import {
   tipCarried,
   turnCarried,
 } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import type { FurnitureDef, Registry } from '../src/engine/content.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { reachTuning } from '../src/engine/sim.ts';
+import { BLUEPRINTS } from '../src/engine/vehicles.ts';
+import { makeScale, type Vec3, World } from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
-import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
+import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { bindReach } from '../src/engine/sim.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { guidanceFixture } from './fixtures/guidance.ts';

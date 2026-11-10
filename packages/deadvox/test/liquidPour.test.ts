@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { type Item, snapshotItem } from '../src/core/items.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import { snapshotItem } from '../src/core/items.ts';
 import { gameSeconds, gameToSimSeconds } from '../src/core/time.ts';
+import { HandlingQueue, Inventory, type Item, toggleLight } from '../src/engine/inventory.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { bindReach } from '../src/engine/sim.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
   applyReplayActionPayload,

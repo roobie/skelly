@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor } from '../src/core/actorState.ts';
-import type { MeleeResult } from '../src/core/actorSystem.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { actorFigure } from '../src/engine/content.ts';
+import type { HumanoidHitRegion } from '../src/engine/pose.ts';
+import type { Actor, MeleeResult } from '../src/engine/sim.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

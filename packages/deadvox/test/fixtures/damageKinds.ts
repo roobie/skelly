@@ -1,5 +1,5 @@
-import type { BodyTuningDef } from '../../src/core/schema.ts';
 import { simSeconds } from '../../src/core/time.ts';
+import type { BodyTuningDef } from '../../src/engine/content.ts';
 
 const meleeKinds = ['blunt', 'cut', 'pierce'] as const;
 

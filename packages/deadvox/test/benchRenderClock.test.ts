@@ -1,9 +1,8 @@
 import { type InstancedMesh, Matrix4 } from 'three';
 import { expect, it } from 'vitest';
 import { syncClock } from '../src/bench/renderClock.ts';
-import type { PlayerSense } from '../src/core/actorSense.ts';
-import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/actorSystem.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT, type PlayerSense } from '../src/engine/sim.ts';
+import { makeScale } from '../src/engine/world.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

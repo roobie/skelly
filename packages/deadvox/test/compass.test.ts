@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { compassBearing, yawFromBearing } from '../src/core/coords.ts';
+import { compassBearing, yawFromBearing } from '../src/engine/world.ts';
 
 it('converts between counterclockwise camera yaw and clockwise map bearing, wrapping north', () => {
   for (const [yaw, bearing] of [

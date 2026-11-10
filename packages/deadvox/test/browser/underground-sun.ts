@@ -11,7 +11,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { MeshData } from '../../src/core/mesher.ts';
+import type { MeshData } from '../../src/engine/mesh.ts';
 import { ChunkMeshes } from '../../src/render/chunks.ts';
 import { Shadows } from '../../src/render/shadows.ts';
 import { skyWorldFixture } from '../fixtures/skyWorld.ts';

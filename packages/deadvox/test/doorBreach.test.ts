@@ -1,12 +1,8 @@
 import { expect, it } from 'vitest';
-import type { PlayerSense } from '../src/core/actorSense.ts';
-import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
-import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { buildRegistry, requireDayCycle } from '../src/engine/content.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { dayPhaseAt, type PlayerSense } from '../src/engine/sim.ts';
+import { BlockEntities, type BlockEntity, makeScale, type SolidAt, type Vec3 } from '../src/engine/world.ts';
 import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { physicsFor } from './playerFixture.ts';

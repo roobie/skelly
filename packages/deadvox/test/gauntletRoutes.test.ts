@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
+import { BLOCK_SIZE, makeScale } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

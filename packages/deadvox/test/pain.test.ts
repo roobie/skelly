@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Body } from '../src/core/body.ts';
 import type { Modifier } from '../src/core/modifiers.ts';
 import type { AnalgesicDef } from '../src/core/pain.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { Body } from '../src/engine/sim.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 

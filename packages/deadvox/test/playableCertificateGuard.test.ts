@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
-import type { CitySite } from '../src/core/citySite.ts';
 import {
   scenarioCertificate,
   scenarioLotResourceCertificate,
   scenarioStartCertificate,
 } from '../src/core/scenarioCertificate.ts';
+import type { CitySite } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 // The full city cases live in the slow certificate file; this stub keeps the fail-closed guard in the default run.

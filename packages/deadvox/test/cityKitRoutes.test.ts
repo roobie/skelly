@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
 import { cityGridOf } from '../src/core/cityPlan.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
-import { OWNERSHIP_AIR as OWNED_AIR, ownershipCell } from '../src/core/templateOwnership.ts';
+import { OWNERSHIP_AIR as OWNED_AIR } from '../src/core/templateOwnership.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, cellsOf, compileAssembly, kitSlotChoices } from '../src/core/templates.ts';
+import { ownershipCell, type Vec3 } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

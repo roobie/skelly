@@ -1,23 +1,6 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import {
-  BLOOM_CLIP_BY_TONE,
-  bloomClipFor,
-  clampBloomClip,
-  clampExposure,
-  clampShadowDistance,
-  clampTorch,
-  DEFAULT_SHADOWS,
-  DEFAULT_TORCH,
-  type LookDefaults,
-  lookOf,
-  MAX_EXPOSURE,
-  MIN_BLOOM_CLIP,
-  MIN_EXPOSURE,
-  moodOf,
-  SHADOW_DISTANCES,
-  TORCH_STEP,
-} from '../src/core/mood.ts';
+import { BLOOM_CLIP_BY_TONE, MAX_EXPOSURE, MIN_BLOOM_CLIP, MIN_EXPOSURE, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   defaultLookUrlState,
@@ -27,6 +10,19 @@ import {
   parseLookParams,
   writeLookParams,
 } from '../src/debug/lookUrl.ts';
+import {
+  bloomClipFor,
+  clampBloomClip,
+  clampExposure,
+  clampShadowDistance,
+  clampTorch,
+  DEFAULT_SHADOWS,
+  DEFAULT_TORCH,
+  type LookDefaults,
+  lookOf,
+  moodOf,
+  TORCH_STEP,
+} from '../src/engine/look.ts';
 import { setAutoToneWeight } from '../src/render/autoTone.ts';
 import { hotCheckUniform } from '../src/render/hotCheck.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';

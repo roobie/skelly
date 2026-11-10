@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioCitySite } from '../src/core/scenarioCity.ts';
+import { makeScale } from '../src/engine/world.ts';
 import { configFromUrl as readConfig } from '../src/game/config.ts';
 import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../src/game/worldSetup.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';

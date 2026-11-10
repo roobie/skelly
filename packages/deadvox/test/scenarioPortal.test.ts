@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildCityPlan, cityGridOf, servicePlacement } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { doorPlan } from '../src/core/options.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
+import { compileTemplate, placedPieces, type stampPlacement } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { doorPlan } from '../src/engine/inventory.ts';
 import {
-  compileTemplate,
+  BlockEntities,
+  CHUNK,
+  CitySite,
   type Facing,
+  generateColumn,
+  makeScale,
   type Placement,
-  placedPieces,
   placedPoint,
-  type stampPlacement,
-} from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+  World,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

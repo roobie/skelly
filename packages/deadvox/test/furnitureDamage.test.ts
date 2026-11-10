@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
-import { BlockEntities, type BlockEntityState } from '../src/core/blockEntities.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import type { BlockEntityState } from '../src/core/blockEntities.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { BlockEntities, type Vec3 } from '../src/engine/world.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, registry } from './snapshotTestSupport.ts';
 
 const CRATE = 'crate';

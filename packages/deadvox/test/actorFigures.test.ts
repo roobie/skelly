@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { actorFigureFileIssues, actorFigureIssues, validateContent } from '../src/core/content.ts';
-import { FUSED_MASS_FIGURE_SEED } from '../src/core/fusedMassFigure.ts';
-import { actorFigureKey } from '../src/core/schema/actors.ts';
+import { actorFigureIssues, validateContent } from '../src/core/content.ts';
 import type { ActorFigureDef } from '../src/core/schema.ts';
+import { actorFigure, actorFigureFileIssues, actorFigureKey } from '../src/engine/content.ts';
+import { FUSED_MASS_FIGURE_SEED } from '../src/engine/pose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

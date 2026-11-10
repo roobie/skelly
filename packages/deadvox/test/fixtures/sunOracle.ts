@@ -1,6 +1,6 @@
 import type { DayCycle } from '../../src/core/dayPhase.ts';
-import { raycast, type SolidAt } from '../../src/core/raycast.ts';
 import { sunDirection } from '../../src/core/sky.ts';
+import { raycast, type SolidAt } from '../../src/engine/world.ts';
 
 /** An uncached daylight sky-exposure test: the oracle `SunExposureCache` is checked against. */
 export const sunExposedAt = ({

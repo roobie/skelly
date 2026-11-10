@@ -9,11 +9,10 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry, type FigureDef, type ItemDef } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { readyMeleePose } from '../src/core/meleePose.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { buildRegistry, type FigureDef, type ItemDef } from '../src/engine/content.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { readyMeleePose } from '../src/engine/pose.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';

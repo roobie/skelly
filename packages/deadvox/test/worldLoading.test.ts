@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { realTimestamp } from '../src/core/time.ts';
+import { realTimestamp } from '../src/engine/sim.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { finishLoadingFrame, WorldLoading } from '../src/presentation/worldLoading.ts';
 

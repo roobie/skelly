@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
+import { buildRegistry, requiredContentIssues } from '../src/engine/content.ts';
 import { readBundledPacks } from '../tools/readBundledPacks.ts';
 
 /** Every core-tier mod's content files, as its manifest lists them, so a new core mod cannot skip this check. */

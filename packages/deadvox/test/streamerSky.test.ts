@@ -1,11 +1,9 @@
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { buildMesh } from '../src/core/mesher.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
-import { World } from '../src/core/world.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { buildMesh } from '../src/engine/mesh.ts';
+import { buildSkyResult } from '../src/engine/sky.ts';
+import { CHUNK, makeScale, World } from '../src/engine/world.ts';
 import type { FromMesher, MesherHandlers, MesherPort, MesherSource, ToMesher } from '../src/game/mesherProtocol.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

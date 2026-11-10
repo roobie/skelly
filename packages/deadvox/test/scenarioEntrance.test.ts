@@ -1,11 +1,8 @@
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN } from '../src/core/physics.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { ScenarioDiscovery } from '../src/core/scenarioDiscovery.ts';
-import { World } from '../src/core/world.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { BlockEntities, makeScale, type Vec3, World } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

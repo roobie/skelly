@@ -1,21 +1,22 @@
 import { Window } from 'happy-dom';
 import { Group } from 'three';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { Body } from '../src/core/body.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { coreLabel, coreMessage } from '../src/core/coreText.ts';
-import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
-import { planCraft } from '../src/core/crafting.ts';
-import { firearmSlotIds } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { inventoryTabForAction } from '../src/core/inputActions.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { swapBattery } from '../src/core/lights.ts';
-import { countText, decimalText } from '../src/core/numberText.ts';
 import { toHands, wieldOrPocket } from '../src/core/options.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { fillText } from '../src/core/textTemplate.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { inventoryTabForAction } from '../src/engine/input.ts';
+import {
+  firearmSlotIds,
+  HandlingQueue,
+  Inventory,
+  planCraft,
+  type WorkOperation,
+  type WorkOption,
+} from '../src/engine/inventory.ts';
+import { Body, bindReach, Character, practiceForNextLevel } from '../src/engine/sim.ts';
+import { coreLabel, countText, decimalText, fillText } from '../src/engine/text.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';

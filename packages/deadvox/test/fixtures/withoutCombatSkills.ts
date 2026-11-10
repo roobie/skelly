@@ -1,5 +1,5 @@
-import { buildRegistry } from '../../src/core/content.ts';
 import type { ContentFile } from '../../src/core/schema.ts';
+import { buildRegistry } from '../../src/engine/content.ts';
 import { baseSources } from '../../src/product/content.ts';
 
 // Admission is fixture setup, not baseline handling work; each caller still owns its mutable registry.

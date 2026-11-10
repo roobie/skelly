@@ -10,25 +10,34 @@ import {
   PerspectiveCamera,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { figureVariantOf } from '../src/core/actorModels.ts';
-import { actorHitFlinchDuration, actorPoseInputFor, flinchSideForId, posedActor } from '../src/core/actorPose.ts';
+import { actorHitFlinchDuration, flinchSideForId } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import type { Actor, AgentMode } from '../src/core/actorState.ts';
+import type { AgentMode } from '../src/core/actorState.ts';
 import type { ActorSystemOptions } from '../src/core/actorSystem.ts';
-import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '../src/core/boneMath.ts';
-import type { BodyAnchor, Bone } from '../src/core/bones.ts';
-import { severedBoneSet } from '../src/core/boneTree.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
+import { validateContent } from '../src/core/content.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
-import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { Rng } from '../src/core/random.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ActorBody } from '../src/core/schema/actors.ts';
+import { type ActorBody, actorFigure, buildRegistry } from '../src/engine/content.ts';
+import { Rng } from '../src/engine/math.ts';
+import {
+  actorPoseInputFor,
+  applyPoint,
+  type BodyAnchor,
+  type Bone,
+  boneTransforms,
+  FUSED_MASS_FIGURE_SEED,
+  figureVariantOf,
+  fusedMassTypeOf,
+  IDENTITY_M,
+  mulMV,
+  type Pose,
+  posedActor,
+  quatToMat3,
+  severedBoneSet,
+  transpose,
+} from '../src/engine/pose.ts';
+import { type Actor, reachTuning } from '../src/engine/sim.ts';
+import { CHUNK, makeScale, type Vec3 } from '../src/engine/world.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';

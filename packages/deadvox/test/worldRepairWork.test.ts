@@ -1,13 +1,10 @@
 import { expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { snapshotItem } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { realSeconds, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { bindReach, Character, realSeconds } from '../src/engine/sim.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';

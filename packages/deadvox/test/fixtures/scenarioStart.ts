@@ -1,7 +1,7 @@
-import type { Vec3 } from '../../src/core/coords.ts';
 import { ladderOutward } from '../../src/core/ladders.ts';
 import type { ScenarioRouteSpace } from '../../src/core/scenarioRoute.ts';
 import type { ScenarioStart } from '../../src/core/scenarioStart.ts';
+import type { Vec3 } from '../../src/engine/world.ts';
 import { IDLE, type Session } from '../../src/game/session.ts';
 
 function assert(condition: unknown, message = 'Roof traversal invariant failed'): asserts condition {

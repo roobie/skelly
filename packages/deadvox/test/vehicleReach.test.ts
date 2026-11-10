@@ -1,9 +1,10 @@
 import type { ModelBox } from '@skelly/thing-core/schema';
 import { expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { reachTuning, vehicleInReach } from '../src/core/reach.ts';
+import { vehicleInReach } from '../src/core/reach.ts';
+import { reachTuning } from '../src/engine/sim.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { blockId, createRuntime, registry, scale } from './snapshotTestSupport.ts';
 
 const s = scale.blockSize;

@@ -1,12 +1,10 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: fixture helpers run synchronously inside the tests.
 import { expect, it } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import type { HandlingMechanism as PracticeGun } from '../src/core/guidanceFacts.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf } from '../src/core/items.ts';
-import type { GuidanceDef } from '../src/core/schema/guidance.ts';
+import type { GuidanceDef } from '../src/engine/content.ts';
+import { defOf, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { NEUTRAL_AIM } from '../src/engine/pose.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { FirearmMechanics, spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { HandlingLessons } from '../src/presentation/handlingLessons.ts';

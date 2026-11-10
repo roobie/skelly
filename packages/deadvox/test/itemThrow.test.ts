@@ -1,18 +1,16 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { worldGravity } from '../src/core/gravity.ts';
-import type { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
 import {
   flightForItem,
   hasMetThrowMinimumHold,
-  itemFlightPoint,
   steppedItemFlight,
   throwDistanceForItem,
 } from '../src/core/itemThrow.ts';
 import { pileItemPosition } from '../src/core/pileLayout.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { type Inventory, type Item, itemFlightPoint } from '../src/engine/inventory.ts';
+import { worldGravity } from '../src/engine/sim.ts';
+import type { SolidAt } from '../src/engine/world.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';

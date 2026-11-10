@@ -1,6 +1,6 @@
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { realSeconds } from '../src/core/time.ts';
+import { realSeconds } from '../src/engine/sim.ts';
 import { LeverProps } from '../src/render/leverProps.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

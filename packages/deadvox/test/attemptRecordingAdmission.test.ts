@@ -1,8 +1,8 @@
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { SiteLayoutSchema } from '../src/core/schema/layouts.ts';
 import { ScenarioSchema } from '../src/core/schema/scenarios.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 import { makeAttemptLayout, makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 import { fixtureScenario } from './fixtures/scenario.ts';
 

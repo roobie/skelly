@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { throwStanceHandOffset, throwStanceWorldOffset } from '../src/core/heldPose.ts';
+import { throwStanceWorldOffset } from '../src/core/heldPose.ts';
+import { throwStanceHandOffset } from '../src/engine/pose.ts';
 
 describe('throw stance held pose', () => {
   it('raises and draws both held hands back, then restores their neutral offset on exit', () => {

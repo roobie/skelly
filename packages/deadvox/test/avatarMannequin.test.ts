@@ -1,7 +1,6 @@
 import { Group, Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { AvatarMannequin, createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';

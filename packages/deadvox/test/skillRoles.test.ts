@@ -1,17 +1,19 @@
 import { expect, it } from 'vitest';
-import { claimed } from '../src/core/capabilities.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { buildRegistry, type Registry, requiredContentIssues } from '../src/core/content.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { planCraft, requirementStatus } from '../src/core/crafting.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { planDisassembly } from '../src/core/disassembly.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { pryPlan } from '../src/core/prying.ts';
-import { bindReach } from '../src/core/reach.ts';
 import type { ContentFile } from '../src/core/schema.ts';
 import { firearmSteadinessSkill } from '../src/core/skillTraining.ts';
+import { buildRegistry, type Registry, requiredContentIssues } from '../src/engine/content.ts';
+import {
+  CraftCommands,
+  claimed,
+  HandlingQueue,
+  Inventory,
+  planCraft,
+  requirementStatus,
+} from '../src/engine/inventory.ts';
+import { bindReach, Character, practiceForNextLevel, pryPlan } from '../src/engine/sim.ts';
 import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

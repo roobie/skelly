@@ -1,14 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Character, type HandedCharacter } from '../src/core/character.ts';
-import type { FurnitureDef, ItemDef, Registry } from '../src/core/content.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf, type Item } from '../src/core/items.ts';
-import { opticViewSettings } from '../src/core/opticView.ts';
-import { bindReach } from '../src/core/reach.ts';
-import type { GunModelDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
+import type { FurnitureDef, GunModelDef, ItemDef, Registry } from '../src/engine/content.ts';
+import { defOf, HandlingQueue, Inventory, type Item, SLING_SLOT } from '../src/engine/inventory.ts';
+import { opticViewSettings } from '../src/engine/pose.ts';
+import { bindReach, Character, type HandedCharacter } from '../src/engine/sim.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/actorSystem.ts';
-import { parseTimeOfDay, resolveSpawnTime } from '../src/core/clock.ts';
-import { toChunk } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import { resolveSpawnTime } from '../src/core/clock.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
-import { realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '../src/engine/sim.ts';
+import { terrainShapeOf, toChunk } from '../src/engine/world.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {

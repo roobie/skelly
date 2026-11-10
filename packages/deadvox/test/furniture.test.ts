@@ -1,24 +1,25 @@
 import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, doorPanel, panelFor, poseKey, searchTime } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
+import { doorPanel } from '../src/core/blockEntities.ts';
+import type { TemplateDef } from '../src/core/content.ts';
 import { furnitureMoveStamina } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { handlingWeights, Inventory } from '../src/core/inventory.ts';
-import { couldFit, ItemFactory, weightOf } from '../src/core/items.ts';
-import type { Body } from '../src/core/physics.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
+import { handlingWeights } from '../src/core/inventory.ts';
+import { couldFit } from '../src/core/items.ts';
+import { cellsOf, compileTemplate, placedPieces, stampPlacement, type Turn } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { HandlingQueue, Inventory, ItemFactory, weightOf } from '../src/engine/inventory.ts';
+import { reachTuning } from '../src/engine/sim.ts';
 import {
-  cellsOf,
-  compileTemplate,
+  BLOCK_SIZE,
+  BlockEntities,
+  type Body,
+  Chunk,
   type Facing,
-  placedPieces,
-  stampPlacement,
-  type Turn,
-} from '../src/core/templates.ts';
+  panelFor,
+  poseKey,
+  searchTime,
+} from '../src/engine/world.ts';
 import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';

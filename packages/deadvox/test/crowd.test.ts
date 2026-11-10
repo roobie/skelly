@@ -3,9 +3,19 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { applyPoint, compose, rotation, rotY, type Transform, translation, type Vec3 } from '../src/core/boneMath.ts';
-import { type BuiltBone, bodySkeleton } from '../src/core/bones.ts';
-import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent, type Pose } from '../src/core/pose.ts';
+import { compose, rotation, translation } from '../src/core/boneMath.ts';
+import {
+  allocateBoneTransforms,
+  applyPoint,
+  type BuiltBone,
+  bodySkeleton,
+  boneTransformsInto,
+  indexBonesByParent,
+  type Pose,
+  rotY,
+  type Transform,
+  type Vec3,
+} from '../src/engine/pose.ts';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
   type CrowdCellMaskLayout,

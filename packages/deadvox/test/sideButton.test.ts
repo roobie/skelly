@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { isForwardButton, PressDedupe } from '../src/core/sideButton.ts';
 import { formatMouseDiag } from '../src/debug/mouseDiag.ts';
+import { isForwardButton, PressDedupe } from '../src/engine/input.ts';
 
 describe('isForwardButton', () => {
   it('recognises button 4', () => {

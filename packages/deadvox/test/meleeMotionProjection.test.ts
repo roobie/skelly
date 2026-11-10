@@ -1,8 +1,9 @@
 import { Box3, LoadingManager, PerspectiveCamera, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { type MeleeProfile, meleeContactTime } from '../src/core/meleePose.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { meleePoseAndContact, readyMeleePose } from '../src/engine/pose.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';

@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { PlayerSense } from '../src/core/actorSense.ts';
-import type { Actor } from '../src/core/actorState.ts';
-import { requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
+import { type ActorDef, requireDayCycle } from '../src/engine/content.ts';
+import { type Actor, dayPhaseAt, type PlayerSense } from '../src/engine/sim.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';

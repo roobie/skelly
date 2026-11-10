@@ -1,8 +1,8 @@
 import process from 'node:process';
 import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vitest';
-import { DEFAULT_MAX_PAYLOAD_BYTES, decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
+import { DEFAULT_MAX_PAYLOAD_BYTES, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '../src/engine/save.ts';
 import { columnArrival } from '../src/game/columnArrival.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

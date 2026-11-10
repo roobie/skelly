@@ -1,16 +1,22 @@
 import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { adsCameraEye, nearestSightEyeOffset } from '../src/core/adsView.ts';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Registry } from '../src/core/content.ts';
-import { sightedFirearmModel } from '../src/core/firearmSight.ts';
-import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { readyMeleePose } from '../src/core/meleePose.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { figureStancePose, playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { nearestSightEyeOffset } from '../src/core/adsView.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { type HandSide, Inventory } from '../src/engine/inventory.ts';
+import {
+  adsCameraEye,
+  figureStancePose,
+  heldFirearmTransform,
+  heldHoldFrame,
+  NEUTRAL_AIM,
+  playerAdsPose,
+  playerHeldSeatFrame,
+  playerLookPose,
+  readyMeleePose,
+  sightedFirearmModel,
+} from '../src/engine/pose.ts';
+import { makeScale } from '../src/engine/world.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';

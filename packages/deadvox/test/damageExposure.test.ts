@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Body } from '../src/core/body.ts';
 import { type DamageExposure, DamageExposures } from '../src/core/damageExposure.ts';
-import type { BodyTuningDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
+import type { BodyTuningDef } from '../src/engine/content.ts';
+import { Body } from '../src/engine/sim.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const tuning: BodyTuningDef = {

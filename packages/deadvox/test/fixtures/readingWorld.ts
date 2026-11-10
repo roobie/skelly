@@ -1,9 +1,8 @@
 import type { EntitySpec } from '../../src/core/blockEntities.ts';
-import { blockId, type Registry } from '../../src/core/content.ts';
-import { toChunk, type Vec3 } from '../../src/core/coords.ts';
 import { type LootPointSource, lootPointsByColumn } from '../../src/core/loot.ts';
-import type { Scale } from '../../src/core/scale.ts';
 import { fillFurnitureLoot, type Site, SupplyFootprints } from '../../src/core/site.ts';
+import { blockId, type Registry } from '../../src/engine/content.ts';
+import { type Scale, toChunk, type Vec3 } from '../../src/engine/world.ts';
 import fixture from './mods/reading-world.json' with { type: 'json' };
 
 export const readingWorld = (registry: Registry, seed: number, scale: Scale): Site => {

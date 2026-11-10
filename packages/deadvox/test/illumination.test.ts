@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { type IlluminationScene, litEnoughToRead } from '../src/core/illumination.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { chargeOf, drainLight, toggleLight } from '../src/core/lights.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { chargeOf, drainLight } from '../src/core/lights.ts';
 import type { DayCycleDef } from '../src/core/schema.ts';
 import { gameSeconds } from '../src/core/time.ts';
+import { requireDayCycle } from '../src/engine/content.ts';
+import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 

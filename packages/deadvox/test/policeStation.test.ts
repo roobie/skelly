@@ -1,10 +1,6 @@
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { ladderOutward } from '../src/core/ladders.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { MapAssemblyDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateWalkingRoute } from '../src/core/templateSpatial.ts';
@@ -15,7 +11,8 @@ import {
   compileTemplate,
   type PlacedPiece,
 } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { BlockEntities, makeScale, type Vec3, World } from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

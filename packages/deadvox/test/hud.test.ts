@@ -1,11 +1,10 @@
 // @vitest-environment happy-dom
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { Character, SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decimalText } from '../src/core/numberText.ts';
-import { fillText } from '../src/core/textTemplate.ts';
+import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
+import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { Character } from '../src/engine/sim.ts';
+import { decimalText, fillText } from '../src/engine/text.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

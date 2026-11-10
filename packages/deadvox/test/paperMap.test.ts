@@ -2,12 +2,13 @@ import { createHash } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import type { ItemDef } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { ItemFactory, restoreItem, snapshotItem } from '../src/core/items.ts';
-import { paperMapAt, paperMapBounds } from '../src/core/paperMap.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import { restoreItem, snapshotItem } from '../src/core/items.ts';
+import { paperMapAt } from '../src/core/paperMap.ts';
 import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
+import type { ItemDef } from '../src/engine/content.ts';
+import { Inventory, ItemFactory } from '../src/engine/inventory.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { paperMapBounds } from '../src/engine/world.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import {
   capture,

@@ -1,17 +1,27 @@
 import { expect, it } from 'vitest';
-import type { BlockEntities, BlockEntitiesState, BlockEntity } from '../src/core/blockEntities.ts';
-import { terrainSolid, worldOpaque, worldSolid } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
+import type { BlockEntitiesState } from '../src/core/blockEntities.ts';
+import { terrainSolid } from '../src/core/collision.ts';
 import { type FurnitureMover, removeFurniture } from '../src/core/furnitureMove.ts';
 import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
-import { raycast, type SolidAt } from '../src/core/raycast.ts';
-import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
+import { stepBodyHorizontal } from '../src/core/physics.ts';
+import type { ReachPlayer } from '../src/core/reach.ts';
 import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '../src/core/skySnapshot.ts';
-import { type BrickOut, brickHas, type SolidBricks, worldBricks } from '../src/core/solidBricks.ts';
+import { type BrickOut, brickHas, type SolidBricks } from '../src/core/solidBricks.ts';
 import { cellsOf } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { bindReach } from '../src/engine/sim.ts';
+import {
+  type BlockEntities,
+  type BlockEntity,
+  type Body,
+  raycast,
+  type SolidAt,
+  type Vec3,
+  World,
+  worldBricks,
+  worldOpaque,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { applyPoint, rotX, rotY, rotZ } from '../src/core/boneMath.ts';
-import type { Bone } from '../src/core/bones.ts';
+import { rotZ } from '../src/core/boneMath.ts';
 import {
   allocateBoneTransforms,
+  applyPoint,
+  type Bone,
   blendPose,
   boneTransforms,
   boneTransformsInto,
   indexBonesByParent,
   type Pose,
-} from '../src/core/pose.ts';
+  rotX,
+  rotY,
+} from '../src/engine/pose.ts';
 
 const bones: readonly Bone[] = [
   { id: 'a', parent: null, head: [0, 0, 0], tail: [0, 1, 0] },

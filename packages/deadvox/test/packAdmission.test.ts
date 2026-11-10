@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 import { BundleAdmission } from '../src/core/bundleAdmission.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { admitPacks, type PackInput, packContentHash, packStartIssues } from '../src/core/packAdmission.ts';
+import { validateContent } from '../src/core/content.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { admitPacks, type PackInput, packContentHash, packStartIssues } from '../src/engine/packs.ts';
 
 const pack = (id: string, dependencies: string[] = []): PackInput => ({
   source: `${id}/pack.json`,

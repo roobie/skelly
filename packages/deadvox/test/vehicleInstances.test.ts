@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { toChunk } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
-import type { Inventory } from '../src/core/inventory.ts';
 import { savedItemTree } from '../src/core/itemTree.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
+import type { Inventory } from '../src/engine/inventory.ts';
+import { decodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { terrainShapeOf, toChunk } from '../src/engine/world.ts';
 import { layoutVehiclePlacements, registerLayoutVehicles } from '../src/game/layoutVehicles.ts';
 import { IDLE } from '../src/game/session.ts';
 import {

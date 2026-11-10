@@ -1,10 +1,9 @@
 import { Group, type Object3D, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import type { FigureDef, Registry } from '../src/core/content.ts';
-import type { HandSide } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import type { PlayerStance } from '../src/core/playerStance.ts';
-import { makeScale } from '../src/core/scale.ts';
+import type { FigureDef, Registry } from '../src/engine/content.ts';
+import type { HandSide, Item } from '../src/engine/inventory.ts';
+import type { PlayerStance } from '../src/engine/pose.ts';
+import { makeScale } from '../src/engine/world.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import { heldItemPoses } from '../src/render/heldPresentation.ts';

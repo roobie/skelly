@@ -1,14 +1,10 @@
 import { Box3, BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { interactionAffordance } from '../src/core/interactionAffordance.ts';
 import { pickInteractionTarget } from '../src/core/interactionPick.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { PILE_DISPLAY_KIND } from '../src/core/schema.ts';
-import { World } from '../src/core/world.ts';
+import { PILE_DISPLAY_KIND } from '../src/engine/content.ts';
+import { Inventory, PILE_GRID } from '../src/engine/inventory.ts';
+import { interactionAffordance } from '../src/engine/sim.ts';
+import { type SolidAt, type Vec3, World, worldOpaque, worldSolid } from '../src/engine/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { markInteractionTarget } from '../src/render/interactionMarker.ts';
 import type { ModelLibrary } from '../src/render/models.ts';

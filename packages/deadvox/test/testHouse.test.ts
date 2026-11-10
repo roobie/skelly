@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { cellsOf, footprint, placedPieces } from '../src/core/templates.ts';
+import { cellsOf, placedPieces } from '../src/core/templates.ts';
 import { vehicleCells } from '../src/core/vehicleProjection.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { CHUNK, footprint, type Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { testHouseSite } from './testHouseSite.ts';
 

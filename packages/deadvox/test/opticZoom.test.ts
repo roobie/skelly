@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Item } from '../src/core/items.ts';
-import type { ItemDef, ModelDef } from '../src/core/schema.ts';
+import type { ItemDef, ModelDef } from '../src/engine/content.ts';
+import type { Item } from '../src/engine/inventory.ts';
 import { OpticZoom } from '../src/presentation/opticZoom.ts';
 
 const fixture = (rememberPerWeapon = true, fixed = false) => {

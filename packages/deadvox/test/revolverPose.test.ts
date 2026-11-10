@@ -1,11 +1,9 @@
 import { Box3, Matrix4, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import type { ModelDef } from '../src/core/content.ts';
-import type { CylinderState } from '../src/core/firearmState.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, SIDES } from '../src/core/inventory.ts';
-import { revolverChamberPoint } from '../src/core/revolverPose.ts';
+import type { ModelDef } from '../src/engine/content.ts';
+import { type CylinderState, HandlingQueue, Inventory, SIDES } from '../src/engine/inventory.ts';
+import { revolverChamberPoint } from '../src/engine/pose.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { actionPartPaths, cloneHeldModel, poseRevolverParts } from '../src/render/firearmModel.ts';

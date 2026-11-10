@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Compression, longActionLimits } from '../src/core/compression.ts';
-import { realSeconds, realTimestamp, simSeconds } from '../src/core/time.ts';
+import { simSeconds } from '../src/core/time.ts';
+import { realSeconds, realTimestamp } from '../src/engine/sim.ts';
 import { advanceLiveFrame, observeRealFrame, planRealFrame, RAMP_DOWN_SIM_SECONDS } from '../src/game/frameDriver.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, Simulation } from './simulationFixture.ts';
 

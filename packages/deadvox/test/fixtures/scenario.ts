@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { buildRegistry, type ContentSource, type Registry } from '../../src/core/content.ts';
 import type { StartPlacementDef } from '../../src/core/scenarioStart.ts';
 import type { StartDef } from '../../src/core/schema/starts.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
+import { buildRegistry, type ContentSource, type Registry } from '../../src/engine/content.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
 import {
   FIXTURE_BLOW_SOUND,

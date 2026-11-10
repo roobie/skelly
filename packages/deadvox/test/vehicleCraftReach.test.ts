@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
 import { reach } from '../src/core/reach.ts';
+import { Inventory } from '../src/engine/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('keeps a fitted vehicle part outside the generic crafting reach snapshot', () => {

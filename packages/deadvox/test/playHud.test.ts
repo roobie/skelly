@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { bodyRegionLabel } from '../src/core/body.ts';
-import { damageWord } from '../src/core/items.ts';
-import { fillText } from '../src/core/textTemplate.ts';
+import { damageWord } from '../src/engine/inventory.ts';
+import { bodyRegionLabel } from '../src/engine/sim.ts';
+import { fillText } from '../src/engine/text.ts';
+import { BlockEntities } from '../src/engine/world.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';

@@ -4,33 +4,26 @@ import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { buildingBounds } from '../src/core/authoredTerrain.mjs';
-import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { toChunk } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { doorPanel } from '../src/core/blockEntities.ts';
 import { lootPointStream, rollLoot } from '../src/core/loot.ts';
 import { magazineSpec } from '../src/core/magazine.ts';
-import { doorOptions } from '../src/core/options.ts';
-import { Rng } from '../src/core/random.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { planFlight, STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import {
   type CompiledTemplate,
   compileTemplate,
-  footprint,
   placedBlockAt,
   placedPieces,
-  placedPoint,
   placedSpawns,
 } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { doorOptions, Inventory } from '../src/engine/inventory.ts';
+import { Rng } from '../src/engine/math.ts';
+import type { buildingBounds } from '../src/engine/terrain.mjs';
+import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '../src/engine/vehicles.ts';
+import { BLOCK_SIZE, type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '../src/engine/world.ts';
 import { vehicleInstanceOf, vehicleModel, workshopLift } from '../src/render/workshopVehicle.ts';
-import { BLUEPRINTS, CATALOGUE } from '../src/vehicles/catalogue.ts';
-import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
-import { wheel } from '../src/vehicles/rangeRover.ts';
-import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 

@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { paperMapAt } from '../src/core/paperMap.ts';
-import { bindReach } from '../src/core/reach.ts';
+import { HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { bindReach, Character, dominantSide, offSide } from '../src/engine/sim.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';

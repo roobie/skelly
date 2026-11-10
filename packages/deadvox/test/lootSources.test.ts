@@ -2,17 +2,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { StressCity } from '../src/core/city.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { dropSpots } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
 import * as selection from '../src/core/loot.ts';
 import { placementLootIssues } from '../src/core/placementLoot.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { lootSourcesOf, type Site } from '../src/core/site.ts';
-import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
+import { compileTemplate, placedPieces } from '../src/core/templates.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { PILE_GRID } from '../src/engine/inventory.ts';
+import { CHUNK, makeScale, type Placement, toChunk, type Vec3, World } from '../src/engine/world.ts';
 import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';

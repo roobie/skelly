@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 
 const listener: Vec3 = [0.5, 1.5, 0.5];
 const source: Vec3 = [5.5, 1.5, 0.5];

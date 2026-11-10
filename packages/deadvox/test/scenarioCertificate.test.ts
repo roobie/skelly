@@ -1,14 +1,9 @@
 import { deepStrictEqual } from 'node:assert/strict';
 import { describe, expect, it, vi } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
-import type { Chunk } from '../src/core/chunk.ts';
 import { perimeterRouteIssues } from '../src/core/cityLots.ts';
 import { buildCityPlan, type CityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
 import { climbCertificate } from '../src/core/climbCertificate.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import {
   type CertificatePhase,
   scenarioCertificate,
@@ -19,17 +14,22 @@ import {
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import {
-  compileAssembly,
-  compileTemplate,
-  footprint,
-  type Placement,
-  placedBlockAt,
-  placedPieces,
-  placedPoint,
-} from '../src/core/templates.ts';
+import { compileAssembly, compileTemplate, placedBlockAt, placedPieces } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import {
+  CHUNK,
+  type Chunk,
+  CitySite,
+  footprint,
+  makeScale,
+  type Placement,
+  placedPoint,
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+} from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

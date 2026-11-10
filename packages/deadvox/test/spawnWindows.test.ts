@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveSpawnTime, SECONDS_PER_DAY, type SpawnTimeCycle, spawnWindowOpen } from '../src/core/clock.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { gameTimeOfDay } from '../src/core/time.ts';
+import { dayPhaseAt } from '../src/engine/sim.ts';
 
 // A cycle that differs from core content in every named time, so a test passes only by reading the cycle it is given.
 const cycle: SpawnTimeCycle = {

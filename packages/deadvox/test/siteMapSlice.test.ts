@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
-import { CHUNK } from '../src/core/coords.ts';
+import { CHUNK, Chunk } from '../src/engine/world.ts';
 import { topSolidAtOrBelow } from '../src/render/siteMap.ts';
 
 const SOLID = 1;

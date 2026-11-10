@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import type { Binding, Chord, InputContext } from '../src/core/inputActions.ts';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
+import type { Binding, Chord, InputContext } from '../src/engine/input.ts';
 import {
   BindingRegistry,
   bindingConflict,

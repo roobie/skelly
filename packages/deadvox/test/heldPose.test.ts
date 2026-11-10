@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { blendHeldFirearmTransforms, type HeldFirearmTransform } from '../src/core/heldPose.ts';
+import type { HeldFirearmTransform } from '../src/core/heldPose.ts';
 import { basisRotation, rotationBasis } from '../src/core/spatial.ts';
+import { blendHeldFirearmTransforms } from '../src/engine/pose.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 
 const zTurnColumns = (degrees: number): readonly [Vec3, Vec3, Vec3] => {
   const turn = (degrees * Math.PI) / 180;

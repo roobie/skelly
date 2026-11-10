@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRevisionFromGit } from '../src/core/buildRevision.ts';
+import { buildRevisionFromGit } from '../src/engine/packs.ts';
 
 describe('build revision', () => {
   it('uses the dirty-aware git describe identity, tested with a stubbed git command', () => {

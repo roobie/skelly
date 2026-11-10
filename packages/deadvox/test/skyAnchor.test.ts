@@ -1,12 +1,9 @@
 import { BoxGeometry, type Mesh, type MeshLambertMaterial } from 'three';
 import { expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { BLOCK_SIZE } from '../src/core/scale.ts';
-import type { FurnitureDef } from '../src/core/schema.ts';
 import type { SkyVolume } from '../src/core/skylight.ts';
-import { containsSky } from '../src/core/skySnapshot.ts';
-import { sampleSky } from '../src/core/skyTransport.ts';
+import type { FurnitureDef } from '../src/engine/content.ts';
+import { containsSky, sampleSky } from '../src/engine/sky.ts';
+import { BLOCK_SIZE, type BlockEntity, type Vec3 } from '../src/engine/world.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { FurnitureDef, Registry } from '../src/core/content.ts';
 import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
+import type { FurnitureDef, Registry } from '../src/engine/content.ts';
+import { BlockEntities } from '../src/engine/world.ts';
 
 const shape = [{ position: [0, 0, 0] as [number, number, number], size: [2, 4, 1] as [number, number, number] }];
 const door = { handlingSimSeconds: 0.3 };

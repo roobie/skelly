@@ -1,23 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { blockId } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf } from '../src/core/items.ts';
-import { type Body, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+import { blockId } from '../src/engine/content.ts';
+import { defOf, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { NEUTRAL_AIM } from '../src/engine/pose.ts';
+import {
+  BlockEntities,
+  type Body,
+  bodyOverlapsTerrain,
+  makeScale,
+  raycast,
+  stepBody,
+  type Vec3,
+  World,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
+import { firearmsCombatTuning } from '../src/engine/sim.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,

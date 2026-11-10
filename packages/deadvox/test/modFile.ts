@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import type { PackInput } from '../src/core/packAdmission.ts';
+import type { PackInput } from '../src/engine/packs.ts';
 import { packFileBytes, readAvailablePacks } from '../tools/readBundledPacks.ts';
 
 const PACKAGE_ROOT = resolve(import.meta.dirname, '..');

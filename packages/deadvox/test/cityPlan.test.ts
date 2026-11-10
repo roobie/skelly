@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
 import {
   buildCityPlan,
   cityGridOf,
@@ -7,22 +6,23 @@ import {
   scenarioPlanIssues,
   servicePlacement,
 } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite, scenarioCityPopulation } from '../src/core/scenarioCity.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
-import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import {
-  cellsOf,
-  compileAssembly,
-  compileTemplate,
-  footprint,
-  kitSlotChoices,
-  placedSpawns,
-} from '../src/core/templates.ts';
+import { cellsOf, compileAssembly, compileTemplate, kitSlotChoices, placedSpawns } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import {
+  CHUNK,
+  Chunk,
+  CitySite,
+  footprint,
+  makeScale,
+  siteGenerationOf,
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+} from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

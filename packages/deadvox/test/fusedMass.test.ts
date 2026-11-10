@@ -1,30 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
-import { actorPoseInputFor, posedActor, targetStanceWeight } from '../src/core/actorPose.ts';
+import { targetStanceWeight } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
-import type { PlayerSense } from '../src/core/actorSense.ts';
-import { activeFusedMassMembers, actorAttackReachMetres } from '../src/core/actorState.ts';
-import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { carveAround, missingFlesh, protectedCoreCell, worldPosition } from '../src/core/fusedMassCarving.ts';
-import {
-  FUSED_MASS_FIGURE_SEED,
-  type FusedMassFigure,
-  fusedMassCollisionEnvelope,
-  fusedMassStrikeOrigin,
-  fusedMassTypeOf,
-} from '../src/core/fusedMassFigure.ts';
+import { activeFusedMassMembers } from '../src/core/actorState.ts';
+import { aimBasis } from '../src/core/aim.ts';
+import { carveAround, protectedCoreCell } from '../src/core/fusedMassCarving.ts';
+import { fusedMassStrikeOrigin } from '../src/core/fusedMassFigure.ts';
 import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { actorFigureKey } from '../src/core/schema/actors.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import { actorFigure, actorFigureKey } from '../src/engine/content.ts';
+import {
+  actorPoseInputFor,
+  FUSED_MASS_FIGURE_SEED,
+  type FusedMassFigure,
+  fusedMassCollisionEnvelope,
+  fusedMassTypeOf,
+  missingFlesh,
+  NEUTRAL_AIM,
+  posedActor,
+  worldPosition,
+} from '../src/engine/pose.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { actorAttackReachMetres, PLAYER_CHEST_METRES, type PlayerSense } from '../src/engine/sim.ts';
+import { BlockEntities, makeScale, type Vec3, World } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

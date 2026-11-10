@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { yawFromBearing } from '../src/core/coords.ts';
+import { yawFromBearing } from '../src/engine/world.ts';
 import { marchingSquares, siteMapWorldToRaster } from '../src/render/siteMap.ts';
 
 const forwardFromBearing = (bearing: number): [number, number] => {

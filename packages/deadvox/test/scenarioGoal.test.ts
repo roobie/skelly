@@ -1,15 +1,9 @@
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { emptyDiscovery } from '../src/core/scenarioDiscovery.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
-import { World } from '../src/core/world.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '../src/engine/save.ts';
+import { BlockEntities, Chunk, makeScale, type Vec3, World, worldSolid } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';

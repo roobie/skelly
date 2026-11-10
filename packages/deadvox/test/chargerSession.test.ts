@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { batteryEnergy } from '../src/core/battery.ts';
 import { simTimestamp } from '../src/core/time.ts';
+import { batteryEnergy } from '../src/engine/inventory.ts';
 import { chargerPanel } from '../src/ui/chargerPanel.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

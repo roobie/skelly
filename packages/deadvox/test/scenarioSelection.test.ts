@@ -1,8 +1,7 @@
 import { expect, it } from 'vitest';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';

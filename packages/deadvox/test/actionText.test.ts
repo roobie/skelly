@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { fillParts } from '../src/core/textTemplate.ts';
+import { fillParts } from '../src/engine/text.ts';
 
 it('splits a template around every placeholder, repeated ones included, keeping the text between them', () => {
   const key = { cap: 'fixture key' };

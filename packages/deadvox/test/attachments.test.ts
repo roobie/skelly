@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf, typeWeightGrams, weightOf } from '../src/core/items.ts';
+import { defOf, Inventory, typeWeightGrams, weightOf } from '../src/engine/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

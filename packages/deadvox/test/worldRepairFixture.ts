@@ -1,10 +1,6 @@
-import { Character } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { bindReach, Character, Simulation } from '../src/engine/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

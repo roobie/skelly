@@ -1,12 +1,16 @@
 import { expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { World } from '../src/core/world.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
+import {
+  BlockEntities,
+  raycast,
+  sitePalette,
+  terrainShapeOf,
+  type Vec3,
+  World,
+  worldOpaque,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';

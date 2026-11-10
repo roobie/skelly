@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
-import { admitPacks } from '../src/core/packAdmission.ts';
+import { buildRegistry, requiredContentIssues } from '../src/engine/content.ts';
+import { admitPacks } from '../src/engine/packs.ts';
 import { readAvailablePacks, readBundledPacks } from '../tools/readBundledPacks.ts';
 
 // A mod that consumes a provider must declare it, so loading the mod with only its declared closure and the core mods

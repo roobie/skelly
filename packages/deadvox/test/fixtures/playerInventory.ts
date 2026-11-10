@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import type { ContentSource } from '../../src/core/content.ts';
 import type { ContentFile } from '../../src/core/schema.ts';
+import type { ContentSource } from '../../src/engine/content.ts';
 import { fixtureIds } from './capabilityIds.ts';
 
 const combatPolicyJson = () =>

@@ -1,9 +1,8 @@
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import { ItemFactory, weightOf } from '../src/core/items.ts';
 import { modelBodyMassKg } from '../src/core/modelMass.ts';
-import { type ModelDef, ModelSchema } from '../src/core/schema.ts';
+import { buildRegistry, type ModelDef, ModelSchema } from '../src/engine/content.ts';
+import { ItemFactory, weightOf } from '../src/engine/inventory.ts';
 
 const model = {
   id: 'mass_fixture',

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { actionText, fillText } from '../src/core/actionText.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { propCentre, type ShowroomProp, slotProps } from '../src/core/showroom.ts';
 import { rectsOverlap } from '../src/core/site.ts';
 import { cellsOf } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { actionText, fillText } from '../src/engine/input.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { selectBundledMods } from '../src/game/bundledMods.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { playerStartFromWorld } from '../src/game/worldSetup.ts';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { WEATHERING_RANGES } from '../src/core/weather.ts';
-import { resolveWeatheringUrl, writeWeatheringParams } from '../src/core/weatheringUrl.ts';
+import { resolveWeatheringUrl } from '../src/core/weatheringUrl.ts';
+import { WEATHERING_RANGES, writeWeatheringParams } from '../src/engine/sky.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultWeatheringId } from './fixtures/capabilityIds.ts';
 

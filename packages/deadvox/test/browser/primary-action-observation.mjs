@@ -2,8 +2,7 @@
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { CHUNK } from '../../src/core/coords.ts';
-import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
+import { BLOCK_SIZE, CHUNK, chunksFor, makeScale } from '../../src/engine/world.ts';
 import { modFileBytes } from '../modFile.ts';
 
 const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));

@@ -1,6 +1,6 @@
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CHUNK } from '../src/core/coords.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { CHUNK } from '../src/engine/world.ts';
 import type { GameConfig } from '../src/game/config.ts';
 
 export const houseScene = (config: GameConfig, registry: Registry) => {

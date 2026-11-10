@@ -1,10 +1,6 @@
-import type { ActorFigureFiles } from '../../src/core/actorFigureFiles.ts';
-import { Chunk } from '../../src/core/chunk.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { CHUNK } from '../../src/core/coords.ts';
-import type { SaveSnapshot } from '../../src/core/saveState.ts';
-import { makeScale } from '../../src/core/scale.ts';
-import { World } from '../../src/core/world.ts';
+import type { ActorFigureFiles, Registry } from '../../src/engine/content.ts';
+import type { SaveSnapshot } from '../../src/engine/save.ts';
+import { CHUNK, Chunk, makeScale, World } from '../../src/engine/world.ts';
 import { createSession, IDLE } from '../../src/game/session.ts';
 
 // The figure files come in from the caller, because this fixture also runs in the browser, which reads them by fetch.

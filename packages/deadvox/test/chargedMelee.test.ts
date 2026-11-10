@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { MeleeWeapon } from '../src/core/actorSystem.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeTargetResolver, PlayerCombat, type PlayerCombatState } from '../src/core/playerCombat.ts';
 import { simSeconds } from '../src/core/time.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 
 const DT = 1 / 60;
 const HANDS = { right: 7, left: null };

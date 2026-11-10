@@ -1,17 +1,17 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
+import { validateContent } from '../src/core/content.ts';
+import { GRAPHICS_KNOBS, writeGraphicsParams } from '../src/core/graphics.ts';
+import { buildRegistry, requiredContentIssues } from '../src/engine/content.ts';
 import {
+  drugVignetteShown,
   GRAPHICS_KEYS,
-  GRAPHICS_KNOBS,
   type GraphicsOptions,
   readGraphicsParams,
   resolveGraphics,
   setGraphicsSetting,
   validGraphicsSettings,
-  writeGraphicsParams,
-} from '../src/core/graphics.ts';
-import { drugVignetteShown } from '../src/core/mood.ts';
+} from '../src/engine/look.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';

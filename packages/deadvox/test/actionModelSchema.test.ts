@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 
 const SOURCE = 'test/fixtures/packs/lamp/lamp.json';
 const baseModel = {

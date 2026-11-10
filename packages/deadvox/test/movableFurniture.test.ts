@@ -10,8 +10,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import {
   type FurnitureMover,
   liftFurniture,
@@ -20,11 +18,12 @@ import {
   tipCarried,
   turnCarried,
 } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { LadderHold } from '../src/core/ladders.ts';
-import { type Pose, rotatedSize, rotationOf, turnPose } from '../src/core/orientation.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import { type Pose, rotatedSize, turnPose } from '../src/core/orientation.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { decodeSave } from '../src/engine/save.ts';
+import { reachTuning } from '../src/engine/sim.ts';
+import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '../src/engine/world.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { HeldItems } from '../src/render/hands.ts';

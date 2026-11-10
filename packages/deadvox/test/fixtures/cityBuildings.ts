@@ -1,12 +1,12 @@
 import type { CityGrid, CityPlan } from '../../src/core/cityPlan.ts';
-import type { Registry } from '../../src/core/content.ts';
 import { admittedCandidates, lootSpawnPoint } from '../../src/core/loot.ts';
-import { Rng } from '../../src/core/random.ts';
 import type { MapAssemblyDef } from '../../src/core/schema.ts';
 import { lootSourcesOf } from '../../src/core/site.ts';
 import { STAIR_BODY_HALF_WIDTH } from '../../src/core/stairFlight.ts';
 import { templateReachableStandingPositions } from '../../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileAssembly, kitSlotChoices } from '../../src/core/templates.ts';
+import type { Registry } from '../../src/engine/content.ts';
+import { Rng } from '../../src/engine/math.ts';
 
 export const cityBuildingDraws = (plan: CityPlan, grid: CityGrid, seed: number) => {
   const ordinals = new Map<string, number>();

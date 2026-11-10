@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { dominantSide, offSide } from '../src/core/character.ts';
 import { meleeContactTime } from '../src/core/meleePose.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveContentKind } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveContentKind } from '../src/engine/save.ts';
+import { dominantSide, offSide } from '../src/engine/sim.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';

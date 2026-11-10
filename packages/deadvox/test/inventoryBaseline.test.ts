@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
 import inventoryContent from '../../mods/skelly.inventory/inventory.json' with { type: 'json' };
-import { claimed } from '../src/core/capabilities.ts';
-import { Character } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { handlingWeights, Inventory } from '../src/core/inventory.ts';
+import { handlingWeights } from '../src/core/inventory.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { claimed, Inventory } from '../src/engine/inventory.ts';
+import { Character } from '../src/engine/sim.ts';
 
 it('handles inventory at its authored baseline without an inventory skill', () => {
   const { registry, issues } = buildRegistry([

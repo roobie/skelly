@@ -1,18 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { actorFigure } from '../src/core/actorFigureFiles.ts';
-import { figureVariantOf } from '../src/core/actorModels.ts';
 import type { ActorPoseInput } from '../src/core/actorPose.ts';
 import {
-  type HumanoidHitRegion,
   posedActorBoneVoxelCenters,
   posedFusedMassRegionBoxes,
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
 } from '../src/core/actorRegions.ts';
-import { type Vec3 as MobVec3, transpose } from '../src/core/boneMath.ts';
-import { FUSED_MASS_FIGURE_SEED, fusedMassTypeOf } from '../src/core/fusedMassFigure.ts';
 import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
-import type { ActorDef } from '../src/core/schema.ts';
+import { type ActorDef, actorFigure } from '../src/engine/content.ts';
+import {
+  FUSED_MASS_FIGURE_SEED,
+  figureVariantOf,
+  fusedMassTypeOf,
+  type HumanoidHitRegion,
+  type Vec3 as MobVec3,
+  transpose,
+} from '../src/engine/pose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

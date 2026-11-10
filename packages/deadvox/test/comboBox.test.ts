@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { html, render } from 'lit-html';
 import { afterEach, expect, it, vi } from 'vitest';
-import { fillText } from '../src/core/textTemplate.ts';
+import { fillText } from '../src/engine/text.ts';
 import { type ComboBoxOption, comboBox } from '../src/ui/comboBox.ts';
 import { renderCrafting } from '../src/ui/crafting.ts';
 import type { CraftRow } from '../src/ui/craftReadout.ts';

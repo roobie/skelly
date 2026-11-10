@@ -1,10 +1,9 @@
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldAnchorOffset } from '../src/core/heldPose.ts';
-import { Inventory, SIDES } from '../src/core/inventory.ts';
+import { HandlingQueue, Inventory, SIDES } from '../src/engine/inventory.ts';
+import { heldAnchorOffset } from '../src/engine/pose.ts';
+import { Character } from '../src/engine/sim.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';

@@ -1,9 +1,9 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 // biome-ignore lint/performance/noNamespaceImport: module namespace is required to spy on the synchronous build.
 import * as skyTransport from '../src/core/skyTransport.ts';
+import { graphicsTuningOf } from '../src/engine/look.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 

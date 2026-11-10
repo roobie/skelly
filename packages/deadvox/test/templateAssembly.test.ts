@@ -1,5 +1,4 @@
 import { expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
 import type { MapPieceDef } from '../src/core/schema.ts';
 import {
   type AssemblyContext,
@@ -10,6 +9,7 @@ import {
   type TemplateAssembly,
   type TemplateSlot,
 } from '../src/core/templates.ts';
+import { Chunk } from '../src/engine/world.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

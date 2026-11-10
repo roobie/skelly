@@ -9,12 +9,10 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { compassBearing } from '../src/core/coords.ts';
-import { actionCycleSeconds } from '../src/core/firearmAction.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { magazineWellCalibre } from '../src/core/magazine.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { actionCycleSeconds, HandlingQueue, Inventory } from '../src/engine/inventory.ts';
+import { compassBearing } from '../src/engine/world.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';

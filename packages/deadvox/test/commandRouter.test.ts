@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { dominantSide } from '../src/core/character.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import type { Simulation } from '../src/core/sim.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { dominantSide, type Simulation } from '../src/engine/sim.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { type CommandRouterPorts, createCommandRouter } from '../src/game/commandRouter.ts';
 import { type FirearmShotInput, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import type { ReplayControlSample } from '../src/game/inputReplay.ts';

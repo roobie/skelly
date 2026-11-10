@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  assertFoodExposure,
   foodMillisecondsAt,
   isRotten,
   projectFoodExposure,
@@ -8,9 +7,9 @@ import {
   settleFoodExposure,
   spoilage,
 } from '../src/core/food.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { ItemFactory, restoreItem, snapshotItem, stackRoom } from '../src/core/items.ts';
+import { restoreItem, snapshotItem, stackRoom } from '../src/core/items.ts';
+import { HandlingQueue, Inventory, ItemFactory } from '../src/engine/inventory.ts';
+import { assertFoodExposure } from '../src/engine/sim.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';

@@ -1,8 +1,8 @@
 import { Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { type ShotTrace, traceShot } from '../src/core/shotTrace.ts';
+import { traceShot } from '../src/core/shotTrace.ts';
+import type { ShotTrace } from '../src/engine/sim.ts';
+import type { SolidAt, Vec3 } from '../src/engine/world.ts';
 import { IMPACT_MARK_CAP, ImpactEffects, PING_SECONDS } from '../src/render/impactEffects.ts';
 
 const RANGE_BLOCKS = 12;

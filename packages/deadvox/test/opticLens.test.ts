@@ -9,8 +9,8 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
-import type { OpticLensFrame } from '../src/core/opticView.ts';
+import { graphicsTuningOf } from '../src/engine/look.ts';
+import type { OpticLensFrame } from '../src/engine/pose.ts';
 import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';

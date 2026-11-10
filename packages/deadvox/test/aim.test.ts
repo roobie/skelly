@@ -5,14 +5,14 @@ import {
   type AimWobbleNoiseTuning,
   advanceOrnsteinUhlenbeckAxis,
   aimBasis,
-  aimDirection,
   assertAimState,
-  NEUTRAL_AIM,
 } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
+import { firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '../src/core/footsteps.ts';
-import { Rng } from '../src/core/random.ts';
+import { Rng } from '../src/engine/math.ts';
+import { aimDirection, NEUTRAL_AIM } from '../src/engine/pose.ts';
+import type { FirearmsSkillShotKind } from '../src/engine/sim.ts';
 import { startupContent } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 

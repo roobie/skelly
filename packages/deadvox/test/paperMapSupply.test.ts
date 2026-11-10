@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
 import { type LootSpawnPoint, rollLoot } from '../src/core/loot.ts';
 import { paperMapAt } from '../src/core/paperMap.ts';
-import { Rng } from '../src/core/random.ts';
 import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { Rng } from '../src/engine/math.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

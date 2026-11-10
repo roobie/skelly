@@ -1,13 +1,13 @@
 import { ShaderLib } from 'three';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { BlockEntities, panelFor } from '../src/core/blockEntities.ts';
 import type { TemplateDef } from '../src/core/content.ts';
-import { DECAL_KINDS } from '../src/core/decalKinds.ts';
-import { type DecalDef, DecalSchema } from '../src/core/schema.ts';
+import { DecalSchema } from '../src/core/schema.ts';
 import { templateBodySpace } from '../src/core/templateSpatial.ts';
-import { compileTemplate, placedDecals, type Turn } from '../src/core/templates.ts';
+import { compileTemplate, type Turn } from '../src/core/templates.ts';
 import { gameHours } from '../src/core/time.ts';
+import type { DecalDef } from '../src/engine/content.ts';
+import { BlockEntities, DECAL_KINDS, panelFor, placedDecals } from '../src/engine/world.ts';
 import { AuthoredDecals } from '../src/render/decals.ts';
 import {
   buildFixtureRegistry as buildRegistry,

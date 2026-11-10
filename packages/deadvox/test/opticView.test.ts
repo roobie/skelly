@@ -1,15 +1,9 @@
 import type { OpticAperture } from '@skelly/thing-core/optic-aperture';
 import type { Reticle } from '@skelly/thing-core/reticle';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import {
-  insideLensAperture,
-  type LensAperture,
-  opticFieldOfView,
-  opticRendersWorld,
-  opticViewSettings,
-} from '../src/core/opticView.ts';
-import type { ItemDef, ModelDef } from '../src/core/schema.ts';
+import { insideLensAperture, type LensAperture } from '../src/core/opticView.ts';
+import { buildRegistry, type ItemDef, type ModelDef } from '../src/engine/content.ts';
+import { opticFieldOfView, opticRendersWorld, opticViewSettings } from '../src/engine/pose.ts';
 
 const aperture: OpticAperture = { aspectRatio: 1, exponent: 2 };
 const reticle: Reticle = {

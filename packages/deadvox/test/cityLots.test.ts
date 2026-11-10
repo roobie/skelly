@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots } from '../src/core/cityLots.ts';
 import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import { rectsOverlap } from '../src/core/site.ts';
-import { compileTemplate, footprint } from '../src/core/templates.ts';
+import { compileTemplate } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { CitySite, footprint, makeScale } from '../src/engine/world.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 
 const QUOTA_CANNOT_FIT = /quota cannot fit/;

@@ -1,22 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { perceivePlayer } from '../src/core/agentPerception.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
 import { footstepEventForBlock } from '../src/core/footsteps.ts';
-import { Forest } from '../src/core/forest.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { rectsOverlap } from '../src/core/site.ts';
-import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
-import { World } from '../src/core/world.ts';
+import { actorPoseInputFor } from '../src/engine/pose.ts';
+import {
+  BlockEntities,
+  Chunk,
+  Forest,
+  makeScale,
+  raycast,
+  siteGenerationOf,
+  sitePalette,
+  World,
+  worldOpaque,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

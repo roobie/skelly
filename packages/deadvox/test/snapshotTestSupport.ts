@@ -1,24 +1,24 @@
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
+import { localIndex } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { foodMillisecondsAt, projectFoodExposure } from '../src/core/food.ts';
+import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
+import type { snapshotSession } from '../src/core/saveState.ts';
+import type { BodyTuningDef, Registry } from '../src/engine/content.ts';
+import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '../src/engine/save.ts';
+import { SkyFields } from '../src/engine/sky.ts';
 import {
-  encodeSave,
-  SAVE_SCHEMA_VERSION,
-  type SaveContentKind,
-  type SaveVersionComponents,
-} from '../src/core/saveFormat.ts';
-import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { BodyTuningDef } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { SkyFields } from '../src/core/skyField.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+  BlockEntities,
+  CHUNK,
+  Chunk,
+  generateColumn,
+  makeScale,
+  type Terrain,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+  World,
+  worldSolid,
+} from '../src/engine/world.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';

@@ -1,8 +1,8 @@
 import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import type { ModelDef } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
+import type { ModelDef } from '../src/engine/content.ts';
+import { graphicsTuningOf } from '../src/engine/look.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 

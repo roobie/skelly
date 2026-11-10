@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import type { LootContext } from '../src/core/loot.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { placementOf } from '../src/engine/world.ts';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
 const mapsPath = join(process.cwd(), 'maps');

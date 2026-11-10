@@ -1,5 +1,4 @@
-import type { HandlingFact } from '../../src/core/guidanceFacts.ts';
-import type { GuidanceDef, GuidanceGate } from '../../src/core/schema/guidance.ts';
+import type { GuidanceDef, GuidanceGate, HandlingFact } from '../../src/engine/content.ts';
 
 export const handlingTracksFixture = (): GuidanceDef['handling'] => {
   const facts: HandlingFact[] = ['unpack', 'wield', 'inspect', 'partial', 'ready', 'reload', 'sighted', 'unload'];

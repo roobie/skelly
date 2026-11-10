@@ -1,7 +1,7 @@
 import { Euler, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { ModelDef } from '../src/core/content.ts';
-import type { HandSide } from '../src/core/inventory.ts';
+import type { ModelDef } from '../src/engine/content.ts';
+import type { HandSide } from '../src/engine/inventory.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();

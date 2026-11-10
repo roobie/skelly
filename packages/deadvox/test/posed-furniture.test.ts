@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
-import { rotationOf } from '../src/core/orientation.ts';
+import type { TemplateDef } from '../src/core/content.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { BlockEntities, rotationOf } from '../src/engine/world.ts';
 import {
   FIXTURE_MATERIAL,
   fixtureBreach,

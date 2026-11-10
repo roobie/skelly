@@ -1,18 +1,16 @@
 import { PerspectiveCamera, PointLight, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
 import {
   chargeOf,
   drainLight,
   inventoryLightSources,
   lightSenseSourceFor,
   SunExposureCache,
-  toggleLight,
 } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { gameSeconds } from '../src/core/time.ts';
+import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { makeScale, type SolidAt } from '../src/engine/world.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool } from '../src/render/lightPool.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

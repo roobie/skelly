@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { guardAdsCamera } from '../src/core/adsView.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { cross, normalize, sub } from '../src/core/spatial.ts';
+import { normalize } from '../src/core/spatial.ts';
+import { cross, sub } from '../src/engine/math.ts';
+import { guardAdsCamera } from '../src/engine/pose.ts';
+import { raycast, type Vec3 } from '../src/engine/world.ts';
 
 it('pulls the ADS camera back along its body-eye segment before crossing solid geometry', () => {
   const bodyEye: Vec3 = [0.75, 0.5, 0.5];

@@ -1,10 +1,7 @@
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldOpaque } from '../src/core/collision.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
-import { skyIndex } from '../src/core/skylight.ts';
-import { captureSky, containsSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
+import { captureSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
+import { buildSkyResult, containsSky, skyIndex } from '../src/engine/sky.ts';
+import { BlockEntities, toChunk, type Vec3, worldOpaque } from '../src/engine/world.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { buildSkylight } from './fixtures/skyOracle.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';

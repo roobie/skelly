@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import type { Binding } from '../src/core/inputActions.ts';
+import type { Binding } from '../src/engine/input.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { forwardedActionHolds, KeyboardInput } from '../src/presentation/inputBindings.ts';
 

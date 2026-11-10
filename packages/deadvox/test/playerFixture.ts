@@ -1,6 +1,6 @@
 import playerContent from '../../mods/skelly.body/player.json' with { type: 'json' };
-import type { PlayerDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
+import type { PlayerDef } from '../src/engine/content.ts';
 import {
   createPlayerBody as bodyFor,
   movementPace as paceWith,

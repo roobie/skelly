@@ -2,36 +2,39 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
-import { placementOf } from '../src/core/authoredPlacement.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import {
-  buildingBounds,
-  defaultFoundation,
   LOT_APRON_M,
   LOT_BLEND_M,
   layoutHeight,
-  lotOf,
   polylineDistance,
   profileHeight,
   rectDistance,
-  standingHeight,
 } from '../src/core/authoredTerrain.mjs';
-import { claimedId } from '../src/core/capabilities.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CHUNK, compassBearing, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { couldFit, ItemFactory } from '../src/core/items.ts';
+import { couldFit } from '../src/core/items.ts';
 import { lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { HORDE_MEMBERS } from '../src/core/settlementSpawns.ts';
 import { rectsOverlap } from '../src/core/site.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, footprint, placedBlockAt, placedSpawns } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+import { compileTemplate, placedBlockAt, placedSpawns } from '../src/core/templates.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { claimedId, ItemFactory } from '../src/engine/inventory.ts';
+import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '../src/engine/terrain.mjs';
+import {
+  CHUNK,
+  compassBearing,
+  footprint,
+  generateColumn,
+  HORDE_MEMBERS,
+  makeScale,
+  placementOf,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+  World,
+} from '../src/engine/world.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';

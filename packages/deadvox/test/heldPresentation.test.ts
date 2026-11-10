@@ -1,11 +1,10 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: helper assertions run only from the item-hold test.
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { dominantSide } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { readyMeleePose } from '../src/core/meleePose.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import { readyMeleePose } from '../src/engine/pose.ts';
+import { dominantSide } from '../src/engine/sim.ts';
+import { makeScale } from '../src/engine/world.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation, heldItemPoses, type ItemHoldPose } from '../src/render/heldPresentation.ts';

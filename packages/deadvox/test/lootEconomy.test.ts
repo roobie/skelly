@@ -1,7 +1,5 @@
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
 import {
   economyEligible,
   ItemEconomySchema,
@@ -18,9 +16,11 @@ import {
   selectLootType,
   type WeightedCandidate,
 } from '../src/core/loot.ts';
-import { Rng } from '../src/core/random.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
+import { buildRegistry, type Registry } from '../src/engine/content.ts';
+import { Rng } from '../src/engine/math.ts';
+import { placementOf } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 

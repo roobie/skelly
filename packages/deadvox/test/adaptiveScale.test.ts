@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import type { GraphicsOptions } from '../src/core/graphics.ts';
+import type { GraphicsOptions } from '../src/engine/look.ts';
 import { AdaptiveScale } from '../src/render/adaptiveScale.ts';
 
 const policy: GraphicsOptions['renderScale'] = {

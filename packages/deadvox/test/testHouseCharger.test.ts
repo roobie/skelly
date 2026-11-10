@@ -1,8 +1,6 @@
 import { expect, it } from 'vitest';
-import { batteryCapacityMicrojoules, batteryEnergy } from '../src/core/battery.ts';
-import { toChunk } from '../src/core/coords.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+import { batteryCapacityMicrojoules, batteryEnergy } from '../src/engine/inventory.ts';
+import { generateColumn, sitePalette, terrainShapeOf, toChunk } from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { createWorldSetup, playerStartFromWorld } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';

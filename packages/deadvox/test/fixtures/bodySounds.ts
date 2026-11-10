@@ -1,5 +1,5 @@
-import type { BodyTuningDef } from '../../src/core/schema.ts';
 import { simSeconds } from '../../src/core/time.ts';
+import type { BodyTuningDef } from '../../src/engine/content.ts';
 
 export const bodySoundIds = (
   body: Pick<BodyTuningDef, 'sounds'> & { heartbeat: Pick<BodyTuningDef['heartbeat'], 'sounds'> },

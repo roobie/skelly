@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { type Body, bodyOverlapsBlock, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
+import {
+  type Body,
+  bodyOverlapsBlock,
+  bodyOverlapsTerrain,
+  makeScale,
+  raycast,
+  stepBody,
+} from '../src/engine/world.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
 import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from './playerFixture.ts';
 

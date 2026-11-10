@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { MoveStart } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { vehicleCells } from '../src/core/vehicleProjection.ts';
-import { World } from '../src/core/world.ts';
+import { Inventory } from '../src/engine/inventory.ts';
+import { World } from '../src/engine/world.ts';
 import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 

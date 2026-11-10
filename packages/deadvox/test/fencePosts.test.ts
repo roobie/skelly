@@ -1,9 +1,8 @@
 import { expect, it } from 'vitest';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { deriveFencePosts, type FencePostDefs } from '../src/core/fencePosts.ts';
-import { buildMesh } from '../src/core/mesher.ts';
+import { deriveFencePosts } from '../src/core/fencePosts.ts';
 import { extractPadded, PADDED, paddedIndex } from '../src/core/meshInput.ts';
-import { World } from '../src/core/world.ts';
+import { buildMesh, type FencePostDefs } from '../src/engine/mesh.ts';
+import { CHUNK, type Vec3, World } from '../src/engine/world.ts';
 
 const definition = { widthBlocks: 0.2, spacingBlocks: 7 };
 const definitions: FencePostDefs = [undefined, definition];

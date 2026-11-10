@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { acidSpitWindupProgress } from '../src/core/actorPose.ts';
-import type { PlayerSense } from '../src/core/actorSense.ts';
 import type { AcidSpitRelease } from '../src/core/actorSystem.ts';
-import { requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { requireDayCycle } from '../src/engine/content.ts';
+import { acidSpitWindupProgress } from '../src/engine/pose.ts';
+import { dayPhaseAt, type PlayerSense } from '../src/engine/sim.ts';
+import { makeScale, type SolidAt, type Vec3 } from '../src/engine/world.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

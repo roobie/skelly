@@ -1,21 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import coreDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
-import { BODY_REGIONS } from '../src/core/body.ts';
-import {
-  calendarAt,
-  nextTimeOfDay,
-  parseTimeOfDay,
-  SECONDS_PER_DAY,
-  simSecondsPerHour,
-  skipTarget,
-} from '../src/core/clock.ts';
+import { SECONDS_PER_DAY, simSecondsPerHour, skipTarget } from '../src/core/clock.ts';
 import { SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { coreMessage } from '../src/core/coreText.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { awakeRates } from '../src/core/needs.ts';
 import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
-import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
-import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
+import type { TreatmentDef } from '../src/core/schema.ts';
+import { gameSeconds, gameToSimSeconds } from '../src/core/time.ts';
+import type { BodyTuningDef } from '../src/engine/content.ts';
+import { BODY_REGIONS, calendarAt, dayPhaseAt, nextTimeOfDay, parseTimeOfDay, realSeconds } from '../src/engine/sim.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';

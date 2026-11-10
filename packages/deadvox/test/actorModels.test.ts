@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { validateContent } from '../src/core/content.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
 
 // Shipped actor rows as authored, so each witness carries the fields its body plan requires.

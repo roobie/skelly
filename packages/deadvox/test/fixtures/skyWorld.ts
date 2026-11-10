@@ -1,11 +1,7 @@
 import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import siteGenerationFile from '../../mods/skelly.deadvox.site-generation/site-generation.json' with { type: 'json' };
-import { BlockEntities } from '../../src/core/blockEntities.ts';
-import { Chunk } from '../../src/core/chunk.ts';
-import { worldOpaque } from '../../src/core/collision.ts';
-import { CHUNK, toChunk, type Vec3 } from '../../src/core/coords.ts';
 import { SKY_LOSS, type SkyBounds } from '../../src/core/skylight.ts';
-import { World } from '../../src/core/world.ts';
+import { BlockEntities, CHUNK, Chunk, toChunk, type Vec3, World, worldOpaque } from '../../src/engine/world.ts';
 import { buildFixtureRegistry as buildRegistry } from '../economyFixtures.ts';
 import { fixtureIds } from './capabilityIds.ts';
 

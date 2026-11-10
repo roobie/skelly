@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('rejects dangling guidance fact gates instead of silently blocking a step', () => {

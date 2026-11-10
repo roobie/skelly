@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { declaredAsset, type PackLocation, resolvePhysical } from '../src/core/packFiles.ts';
+import { declaredAsset, type PackLocation, resolvePhysical } from '../src/engine/packs.ts';
 
 const EXTERNAL = 'fixture-built';
 const pack: PackLocation = {

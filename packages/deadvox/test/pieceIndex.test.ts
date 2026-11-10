@@ -1,10 +1,18 @@
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, type BlockEntitiesState, type BlockEntity, isBodyDoor } from '../src/core/blockEntities.ts';
-import type { FurnitureDef } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { type BrickOut, worldBricks } from '../src/core/solidBricks.ts';
-import { World } from '../src/core/world.ts';
+import type { BlockEntitiesState } from '../src/core/blockEntities.ts';
+import type { BrickOut } from '../src/core/solidBricks.ts';
+import type { FurnitureDef } from '../src/engine/content.ts';
+import {
+  BlockEntities,
+  type BlockEntity,
+  CHUNK,
+  isBodyDoor,
+  toChunk,
+  type Vec3,
+  World,
+  worldBricks,
+} from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

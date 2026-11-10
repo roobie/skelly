@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { lootPointStream, lootPointsByColumn, rollLootParts } from '../src/core/loot.ts';
-import { magazineFits } from '../src/core/magazine.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
+import { magazineFits } from '../src/engine/inventory.ts';
+import { BLOCK_SIZE, makeScale } from '../src/engine/world.ts';
 import { firearmModelForType } from '../src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

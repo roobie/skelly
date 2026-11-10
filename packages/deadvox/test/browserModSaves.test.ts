@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
-import { admitPacks, admitWithFolderPacks, packContentHash, selectFolderClosure } from '../src/core/packAdmission.ts';
-import { contentPackDifferences, currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
+import { admitWithFolderPacks, selectFolderClosure } from '../src/core/packAdmission.ts';
+import { admitPacks, packContentHash } from '../src/engine/packs.ts';
+import { contentPackDifferences, currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/engine/save.ts';
 import { availablePackInputs, bundledPackInputs } from '../src/product/content.ts';
 import { folderChain } from './fixtures/folderPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';

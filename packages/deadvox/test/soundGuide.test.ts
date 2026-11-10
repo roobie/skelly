@@ -2,10 +2,8 @@
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import { bundledCredits } from '../src/bundledCredits.ts';
-import { mergeManifests, type PackedManifest } from '../src/core/assets.ts';
-import type { SoundDef } from '../src/core/content.ts';
-import type { SoundId } from '../src/core/soundEvents.ts';
-import { soundVariantKey } from '../src/core/soundSynth.ts';
+import { mergeManifests, type PackedManifest, type SoundDef } from '../src/engine/content.ts';
+import { type SoundId, soundVariantKey } from '../src/engine/sound.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from '../src/ui/soundGuide.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';

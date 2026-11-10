@@ -1,9 +1,7 @@
-import type { Registry } from '../../src/core/content.ts';
-import { firearmSlotIds } from '../../src/core/firearmFitting.ts';
-import type { Inventory } from '../../src/core/inventory.ts';
-import { defOf, type Item } from '../../src/core/items.ts';
 import { magazineSpec } from '../../src/core/magazine.ts';
 import type { StartDef, StartKitEntry } from '../../src/core/schema/starts.ts';
+import type { Registry } from '../../src/engine/content.ts';
+import { defOf, firearmSlotIds, type Inventory, type Item } from '../../src/engine/inventory.ts';
 
 export const fixtureStart = (kit: StartKitEntry[], site = 'testHouse'): StartDef => ({
   id: 'fixture_start',

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { Inventory, type Target } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { findSpot, footprint, type Item, ItemFactory } from '../src/core/items.ts';
+import { findSpot } from '../src/core/items.ts';
+import type { Registry } from '../src/engine/content.ts';
+import { footprint, Inventory, type Item, ItemFactory, PILE_GRID, type Target } from '../src/engine/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const base = baseRegistry();

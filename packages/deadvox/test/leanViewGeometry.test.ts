@@ -1,17 +1,21 @@
 import { expect, it, vi } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { sightedFirearmModel } from '../src/core/firearmSight.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { guardLean, type LeanBox, leanFrame } from '../src/core/lean.ts';
 import { playerLeanBoxes } from '../src/core/leanCollision.ts';
 // biome-ignore lint/performance/noNamespaceImport: Observe expensive geometry preparation across the module boundary.
 import * as geometry from '../src/core/leanGeometry.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.ts';
-import type { PlayerStance } from '../src/core/playerStance.ts';
-import { add, axisRotation, multiplyRotation, rotateVector, sub } from '../src/core/spatial.ts';
+import { axisRotation, multiplyRotation } from '../src/core/spatial.ts';
+import { type HandSide, Inventory } from '../src/engine/inventory.ts';
+import { add, rotateVector, sub } from '../src/engine/math.ts';
+import {
+  heldFirearmTransform,
+  NEUTRAL_AIM,
+  type PlayerStance,
+  playerAdsPose,
+  playerHeldSeatFrame,
+  playerLookPose,
+  sightedFirearmModel,
+} from '../src/engine/pose.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 

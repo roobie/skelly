@@ -20,18 +20,22 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { leanFrame } from '../src/core/lean.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
-import { insideLensAperture, opticViewSettings } from '../src/core/opticView.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerEyePosition, playerLookLean } from '../src/core/playerLookPose.ts';
-import type { PlayerStance } from '../src/core/playerStance.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/core/schema.ts';
+import { meleeContactTime } from '../src/core/meleePose.ts';
+import { insideLensAperture } from '../src/core/opticView.ts';
+import { playerLookLean } from '../src/core/playerLookPose.ts';
+import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/engine/content.ts';
+import { Inventory, toggleLight } from '../src/engine/inventory.ts';
+import {
+  meleePoseAndContact,
+  NEUTRAL_AIM,
+  opticViewSettings,
+  type PlayerStance,
+  playerAdsPose,
+  playerEyePosition,
+  readyMeleePose,
+} from '../src/engine/pose.ts';
+import { makeScale, type Vec3 } from '../src/engine/world.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';

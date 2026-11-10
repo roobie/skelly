@@ -1,7 +1,7 @@
 import { Group } from 'three';
 import { describe, expect, it } from 'vitest';
 import { placeFitting } from '../src/core/vehicleBlueprint.ts';
-import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
+import { projectVehicleParts } from '../src/engine/vehicles.ts';
 import { VehicleMeshes } from '../src/render/vehicles.ts';
 import { createRuntime, registry, scale } from './snapshotTestSupport.ts';
 

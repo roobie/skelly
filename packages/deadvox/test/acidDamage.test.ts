@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { damageToActor } from '../src/core/actorSystem.ts';
-import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
+import { BODY_REGIONS, type BodyRegion } from '../src/engine/sim.ts';
 
 const BURN_KIND = 'fixture_burn';
 const resistance = (amount: number) =>

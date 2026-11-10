@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PlayerSense } from '../src/core/actorSense.ts';
-import type { Actor } from '../src/core/actorState.ts';
 import { ACTOR_FOOTSTEP_VOICE_CAP } from '../src/core/actorSystem.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {
   advanceActorFootsteps,
@@ -11,8 +8,8 @@ import {
   footstepSoundId,
   initialActorFootstepClock,
 } from '../src/core/footsteps.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
+import type { Actor, PlayerSense } from '../src/engine/sim.ts';
+import { makeScale, type SolidAt, type Vec3 } from '../src/engine/world.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

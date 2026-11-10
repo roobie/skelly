@@ -4,9 +4,8 @@ import { join, resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { validate } from '../src/cli/validate.ts';
-import { launcherModCatalogue } from '../src/core/bundledModCatalogue.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { admitPacks, launcherModCatalogue, packContentHash } from '../src/engine/packs.ts';
 import { declaredAssetGlobsPlugin } from '../tools/declaredAssetGlobsPlugin.ts';
 import {
   bundledPackDefines,

@@ -1,7 +1,7 @@
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from '../src/core/scatterPile.ts';
+import { spentCaseScatter } from '../src/core/scatterPile.ts';
+import { Inventory, SPENT_CASE_SCATTER_CAP } from '../src/engine/inventory.ts';
 import type { FirearmShotEffect } from '../src/game/firearmHandling.ts';
 import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
 import type { ModelLibrary } from '../src/render/models.ts';

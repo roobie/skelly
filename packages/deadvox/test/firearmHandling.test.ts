@@ -1,23 +1,26 @@
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { aimBasis } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
 import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
-import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
+import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
-import { pileScatterPlacements } from '../src/core/scatterPile.ts';
-import type { SoundId } from '../src/core/soundEvents.ts';
 import { simSeconds } from '../src/core/time.ts';
+import type { Registry } from '../src/engine/content.ts';
+import {
+  actionCycleSeconds,
+  HandlingQueue,
+  Inventory,
+  type Item,
+  pileScatterPlacements,
+} from '../src/engine/inventory.ts';
+import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '../src/engine/pose.ts';
+import type { SoundId } from '../src/engine/sound.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,

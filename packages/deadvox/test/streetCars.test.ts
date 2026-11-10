@@ -1,15 +1,10 @@
 import { expect, it } from 'vitest';
-import type { Chunk } from '../src/core/chunk.ts';
 import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { footprint } from '../src/core/templates.ts';
 import { generateChunk } from '../src/core/worldgen.ts';
-import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { BLUEPRINTS } from '../src/engine/vehicles.ts';
+import { CHUNK, type Chunk, CitySite, footprint, makeScale, terrainShapeOf, toChunk } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';

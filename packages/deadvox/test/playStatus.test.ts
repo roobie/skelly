@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyRegionLabel } from '../src/core/body.ts';
+import { bodyRegionLabel } from '../src/engine/sim.ts';
 import { bleedingStatusRows } from '../src/presentation/playStatus.ts';
 
 describe('play status projection', () => {

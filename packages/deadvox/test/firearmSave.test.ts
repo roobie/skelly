@@ -1,19 +1,18 @@
 import { expect, it } from 'vitest';
 import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import type { Item } from '../src/core/items.ts';
 import { pelletShot } from '../src/core/pellets.ts';
-import { reachTuning } from '../src/core/reach.ts';
+import { SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
+import type { Item } from '../src/engine/inventory.ts';
 import {
   decodeSave,
   encodeSave,
-  SAVE_SCHEMA_VERSION,
   type SaveContentKind,
+  type SaveSnapshot,
   type SaveVersionComponents,
-} from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
+} from '../src/engine/save.ts';
+import { reachTuning } from '../src/engine/sim.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import {
   type FirearmShotEffect,
   type FirearmShotInput,

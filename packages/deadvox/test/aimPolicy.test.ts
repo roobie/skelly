@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { claimed } from '../src/core/capabilities.ts';
+import { claimed } from '../src/engine/inventory.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('keeps aim feel policy keys disjoint from shared input and view control keys', () => {

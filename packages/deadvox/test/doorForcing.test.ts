@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import { decodeSave } from '../src/engine/save.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';

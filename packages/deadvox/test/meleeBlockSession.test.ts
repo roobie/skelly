@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ActorDef } from '../src/core/schema.ts';
 import { simRate } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import type { ActorDef } from '../src/engine/content.ts';
+import { makeScale, type SolidAt, World } from '../src/engine/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

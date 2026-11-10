@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { ActorSpawner } from '../src/core/actorSpawns.ts';
-import type { ActorSystem } from '../src/core/actorSystem.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
+import type { SiteLayoutDef } from '../src/core/schema.ts';
+import type { ActorDef } from '../src/engine/content.ts';
+import type { ActorSystem } from '../src/engine/sim.ts';
+import { CHUNK, makeScale, toChunk, type Vec3 } from '../src/engine/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

@@ -1,6 +1,5 @@
 import { type Object3D, Vector3 } from 'three';
-import type { FigureDef, Registry } from '../src/core/content.ts';
-import type { FigureLimb } from '../src/core/schema.ts';
+import type { FigureDef, FigureLimb, Registry } from '../src/engine/content.ts';
 import { FIGURE_PIVOT } from '../src/render/playerFigure.ts';
 
 export const figureAnchorAt = ({

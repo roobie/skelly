@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
 import { gameMinutes } from '../src/core/time.ts';
+import { CraftCommands, HandlingQueue, type HandSide, Inventory } from '../src/engine/inventory.ts';
+import { bindReach, Character } from '../src/engine/sim.ts';
 import { ItemActionSelection, itemActionsFor } from '../src/game/itemActions.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Sharpening, sharpeningTargetForHand } from '../src/game/sharpening.ts';

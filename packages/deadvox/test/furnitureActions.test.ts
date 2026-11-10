@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reachTuning } from '../src/core/reach.ts';
+import { reachTuning } from '../src/engine/sim.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from '../src/game/furnitureActions.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { AMOUNT, DURABILITY, PIECE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';

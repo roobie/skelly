@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
-import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
-import { World } from '../src/core/world.ts';
+import { SoundPicker } from '../src/core/soundPicker.ts';
+import type { Registry } from '../src/engine/content.ts';
+import type { SoundEmission } from '../src/engine/sound.ts';
+import { makeScale, World } from '../src/engine/world.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
 import { GameAudio } from '../src/presentation/audio.ts';
 import { productAssets } from '../src/product/assets.ts';

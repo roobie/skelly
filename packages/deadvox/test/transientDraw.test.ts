@@ -1,7 +1,7 @@
 import { type LineSegments, Scene } from 'three';
 import { expect, it, vi } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
 import { TransientDebugDraw } from '../src/debug/transientDraw.ts';
+import type { Vec3 } from '../src/engine/world.ts';
 
 it('keeps a default-lifetime primitive for one render frame', () => {
   const draw = new TransientDebugDraw(new Scene(), true);

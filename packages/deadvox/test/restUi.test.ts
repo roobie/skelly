@@ -1,9 +1,8 @@
 // @vitest-environment happy-dom
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { formatClock, simSecondsPerHour } from '../src/core/clock.ts';
-import type { RestAction } from '../src/core/longAction.ts';
-import { realSeconds } from '../src/core/time.ts';
+import { simSecondsPerHour } from '../src/core/clock.ts';
+import { formatClock, type RestAction, realSeconds } from '../src/engine/sim.ts';
 import { BindingRegistry } from '../src/game/bindingRegistry.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

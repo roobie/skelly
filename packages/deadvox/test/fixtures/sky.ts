@@ -1,10 +1,9 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
-import type { Vec3 } from '../../src/core/coords.ts';
-import { graphicsTuningOf } from '../../src/core/graphicsTuning.ts';
-import { SkyFields } from '../../src/core/skyField.ts';
 import type { SkyBounds } from '../../src/core/skylight.ts';
 import { type CapturedSky, captureSky, growSky, SKY_SHELL, type SkySnapshot } from '../../src/core/skySnapshot.ts';
-import { buildSkyResult, type SkyResult } from '../../src/core/skyTransport.ts';
+import { graphicsTuningOf } from '../../src/engine/look.ts';
+import { buildSkyResult, SkyFields, type SkyResult } from '../../src/engine/sky.ts';
+import type { Vec3 } from '../../src/engine/world.ts';
 import { Skylight } from '../../src/render/skylight.ts';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 

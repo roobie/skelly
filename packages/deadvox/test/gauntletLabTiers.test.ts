@@ -9,10 +9,10 @@ import {
   rollLoot,
   withLootDepth,
 } from '../src/core/loot.ts';
-import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
+import { BLOCK_SIZE, makeScale } from '../src/engine/world.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';

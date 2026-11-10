@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { realTimestamp } from '../src/core/time.ts';
+import { realTimestamp } from '../src/engine/sim.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
