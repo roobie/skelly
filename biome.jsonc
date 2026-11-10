@@ -166,10 +166,10 @@
       "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
     },
     {
-      // Deadvox tests reach runtime internals through the engine's test-only subpath, whose export condition
-      // Biome's resolver does not apply. tsc applies it (packages/deadvox/tsconfig.json, customConditions) and
-      // resolves every import in these files, so an unresolved one still fails the typecheck.
-      "includes": ["packages/deadvox/test/**/*.ts"],
+      // Deadvox and presentation tests reach package internals through the test-only subpaths, whose export
+      // condition Biome's resolver does not apply. tsc applies it (each package's tsconfig.json, customConditions)
+      // and resolves every import in these files, so an unresolved one still fails the typecheck.
+      "includes": ["packages/deadvox/test/**/*.ts", "packages/presentation/test/**/*.ts"],
       "linter": { "rules": { "correctness": { "noUnresolvedImports": "off" } } }
     },
     {
