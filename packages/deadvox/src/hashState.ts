@@ -34,6 +34,7 @@ const HASH_KEYS = {
   crackcheck: 'boolean',
   hotcheck: 'boolean',
   torchspill: 'boolean',
+  sky: 'string',
   weathering: 'number',
   weatheringTint: 'number',
   weatheringStreaks: 'number',

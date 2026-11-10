@@ -70,6 +70,8 @@ import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
+import { createSkyDome, skyStyleFromProbe } from './skybox.ts';
+import type { SkyDome } from './skyDome.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
@@ -206,6 +208,8 @@ export interface ViewProbes extends MannequinRequest {
   readonly torchspill?: boolean | undefined;
   /** Model ids the debug avatar study stands beside the player figure. */
   readonly avatarStudy?: readonly string[] | undefined;
+  /** The sky-dome spike to eyeball for issue #1505 (render/skybox.ts, createSkyDome). */
+  readonly sky?: string | undefined;
 }
 
 type PlayViewEngine = Readonly<
@@ -264,8 +268,10 @@ export const createPlayView = (
   const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
   const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
+  let skybox: SkyDome | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
+    skybox = createSkyDome(skyStyleFromProbe(probes.sky), scene, renderer, dayCycle);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,
     });
@@ -324,6 +330,7 @@ export const createPlayView = (
     acidEffects.group,
   );
   const dispose = () => {
+    skybox?.dispose();
     pictures?.dispose();
     piles.dispose();
     vehicles.dispose();
@@ -588,12 +595,14 @@ export const createPlayView = (
       actorMeshes.setPlayerChestPosition?.(playerChest);
       actorMeshes.setPerceptionLabels?.(perceptionLabels);
       actorMeshes.sync(actors, dt, alpha, frozen, backgroundAlpha, time);
-      return { sky };
+      return { sky, hour, time };
     },
-    prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
+    prepareLighting: ({ sky, hour, time }: { sky: ReturnType<typeof skyInWeather>; hour: number; time: number }) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
+      skybox?.update({ sky, hour, time, camera, skyVisibility });
+      skybox?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);

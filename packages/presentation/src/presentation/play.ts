@@ -2900,14 +2900,14 @@ const startPlayWith = (
     }
   };
 
-  const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
+  const finishDraw = (skyFrame: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
       skylight: () =>
         engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
-        view.prepareLighting(sky);
-        view.updateShadows(sky);
+        view.prepareLighting(skyFrame);
+        view.updateShadows(skyFrame.sky);
         renderMs = view.render();
       },
     });
@@ -2960,7 +2960,7 @@ const startPlayWith = (
     updateGuidance();
     observePlaytestFrame(elapsedReal, now);
     debugTools?.advanceRagdollSweep(dt);
-    const { sky } = view.syncWorld({
+    const skyFrame = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
@@ -3040,7 +3040,7 @@ const startPlayWith = (
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);
-    const continuing = finishDraw(sky, now);
+    const continuing = finishDraw(skyFrame, now);
     frameWork.record(now, realNow() - workStart);
     return continuing;
   };

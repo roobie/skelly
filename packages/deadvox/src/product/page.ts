@@ -62,6 +62,7 @@ export const playPage = (): PlayPage => {
       mannequin: hash.mannequin,
       mannequinWear: hash.mannequinWear,
       avatarStudy: hash.avatarStudy,
+      sky: hash.sky,
     },
   };
 };
