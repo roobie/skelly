@@ -13,7 +13,7 @@ local stone = numbered('footstep-stone', std.range(1, 6));
 local wood = numbered('footstep-wood', std.range(1, 3));
 local leaves = numbered('footstep-leaves', [1]);
 
-local spawnShamblers = "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.";
+local spawnShamblers = "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.";
 local shamblerStep(id, surface, variants) =
   sound(
     id,
@@ -36,7 +36,7 @@ local zombieVoices(type, descriptions, debugHint, tuning, scramble={}) = [
   ) + { debugHint: debugHint } + scramble
   for action in ['idle', 'alert', 'attack', 'hurt']
 ];
-local spawnType(type) = "?debug=1: Use the debug panel's %s action to spawn %ss nearby." % [type, type];
+local spawnType(type) = "#{debug:true}: Use the debug panel's %s action to spawn %ss nearby." % [type, type];
 local zombieEvents(subject) = {
   idle: subject + ' idles nearby.',
   alert: subject + ' notices you.',

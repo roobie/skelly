@@ -653,7 +653,7 @@ try {
   const testTitleAndAutosave = async (backend) => {
     const appUrl = browserStageUrl(
       stageId,
-      `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}&save-test=1`,
+      `http://127.0.0.1:${address.port}/?save-backend=${backend}&save-test=1#{seed:73}`,
     );
     const readGeneration = async (step) => {
       try {
@@ -953,10 +953,9 @@ try {
     const appUrl = new URL(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${address.port}/?seed=73&debug=1&save=1&save-backend=indexeddb&save-test=1`,
+        `http://127.0.0.1:${address.port}/?save-backend=indexeddb&save-test=1#{debug:true,save:true,seed:73,freeze:true}`,
       ),
     );
-    appUrl.searchParams.set('freeze', '1');
     await navigatePage('navigation-only initial goto', () =>
       page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
     );
@@ -1225,7 +1224,7 @@ try {
   if (busyLockOnly) {
     const appUrl = browserStageUrl(
       stageId,
-      `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`,
+      `http://127.0.0.1:${address.port}/?time=18%3A30&save-backend=indexeddb&save-test=1#{seed:73}`,
     );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
@@ -1252,7 +1251,7 @@ try {
     const holder = await withTimeout('busy-lock holder page creation', context.newPage());
     holder.on('pageerror', (error) => pageErrors.push(error.message));
     // The lock owner needs a same-origin document, not another renderer/world/worker.
-    const holderUrl = `http://127.0.0.1:${address.port}/?save-lock-holder=1`;
+    const holderUrl = `http://127.0.0.1:${address.port}/save-lock-holder.html`;
     await holder.route(holderUrl, (route) =>
       route.fulfill({ contentType: 'text/html', body: '<title>Save writer holder</title>' }),
     );

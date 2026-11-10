@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { build, preview } from 'vite';
+import { readHash, writeHash } from '../src/hashState.ts';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { traceCapture } from './perf-baseline-trace.mjs';
@@ -23,16 +24,12 @@ async function captureLook(page, directory, { route, mode, repeat }) {
     const seed = mood.frame;
     const url = new URL(location.href);
     url.searchParams.delete('skyRoute');
-    url.searchParams.set('freeze', '1');
-    url.searchParams.set(
-      'cam',
-      [
-        ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
-        (perf.input.controls.yaw * 180) / Math.PI,
-        (perf.input.controls.pitch * 180) / Math.PI,
-        0,
-      ].join(','),
-    );
+    const cam = [
+      ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
+      (perf.input.controls.yaw * 180) / Math.PI,
+      (perf.input.controls.pitch * 180) / Math.PI,
+      0,
+    ];
     const images = [mood.graphicsTuning.renderScale.max, settled].map((scale) => {
       mood.setRenderScale(scale);
       mood.frame = seed;
@@ -40,9 +37,13 @@ async function captureLook(page, directory, { route, mode, repeat }) {
       url.searchParams.set('renderscale', String(scale));
       return { scale, url: url.pathname + url.search, png: renderer.domElement.toDataURL('image/png').split(',')[1] };
     });
-    return { images, position: perf.engine.camera.position.toArray() };
+    return { images, hash: location.hash, cam, position: perf.engine.camera.position.toArray() };
   });
+  const hash = `#${writeHash({ ...readHash(look.hash).hash, cam: look.cam, freeze: true })}`;
+  look.hash = undefined;
+  look.cam = undefined;
   for (const [index, image] of look.images.entries()) {
+    image.url += hash;
     const path = `${route.id}-look-${index === 0 ? 'full' : 'settled'}.png`;
     await writeFile(resolve(directory, path), Buffer.from(image.png, 'base64'));
     image.png = undefined;

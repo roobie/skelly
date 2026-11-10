@@ -4,6 +4,7 @@ import type { SkyRouteAttachment } from '@skelly/presentation/debug';
 import { forwardedActionHolds } from '@skelly/presentation/input';
 import type { Engine } from '@skelly/presentation/play';
 import { createSkyRoutePanel } from '@skelly/presentation/ui';
+import { pageHref } from '../pageUrl.ts';
 import { collectSkyGeometry } from './skyRouteGeometry.ts';
 import {
   SKY_ROUTE,
@@ -15,21 +16,8 @@ import {
 import { observeSkyRoute, skyRendererIdentity } from './skyRouteObserver.ts';
 
 export function skyRouteUrl() {
-  const url = new URL(location.href);
-  url.search = '';
-  const params = {
-    site: 'playtest',
-    seed: '1',
-    radius: '48',
-    debug: '1',
-    at: `${SKY_ROUTE.start},${SKY_ROUTE.z},-90`,
-    skyRoute: '1',
-  };
-  for (const [name, value] of Object.entries(params)) {
-    url.searchParams.set(name, value);
-  }
-  url.searchParams.set('time', '13:00');
-  return url.href;
+  const query = new URLSearchParams({ site: 'playtest', skyRoute: '1', time: '13:00' });
+  return pageHref(location.href, query, { debug: true, seed: 1, radius: 48, at: [SKY_ROUTE.start, SKY_ROUTE.z, -90] });
 }
 function eligibleSkyFields(engine: Engine, metres: Vec3) {
   const blocks = metres.map((value) => value / engine.config.scale.blockSize);
@@ -116,7 +104,7 @@ export function attachSkyRoute({
         entityCount: [...engine.entities.all].length,
         fieldCount: engine.skylight!.inspect().length,
       },
-      pagePath: location.pathname + location.search,
+      pagePath: location.pathname + location.search + location.hash,
       hardware,
       attribution:
         'Lighting CPU service and owned GL submission, not GPU execution. Frame intervals include all scene and browser work. Forwarded input exercises the game owner, not native key delivery. Real-hardware evidence requires a completed route with useful jobs; no automatic gate verdict.',

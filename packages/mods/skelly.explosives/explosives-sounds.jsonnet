@@ -10,7 +10,7 @@
       minIntervalSimSeconds: 0,
       category: 'world',
       noise: { enabled: true, radiusMetres: 300 },
-      debugHint: '?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.',
+      debugHint: '#{debug:true}: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.',
     },
   ],
 }

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { readHash, writeHash } from '../packages/deadvox/src/hashState.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
 import { bundledModCatalogueIssues } from '../packages/engine/src/modCatalogue.ts';
 import { tutorialRequested } from '../packages/presentation/src/tutorialUrl.ts';
@@ -41,6 +42,11 @@ const RESOURCE_URL_PATTERNS = [
 const ROUND1_FALLBACK_PLAY_URL_PATTERN = /playtest-action|tutorial-action|\{\{PLAY_URL\}\}/;
 const TEXT_ASSET_PATTERN = /\.(?:html|css|js)$/;
 const ROBOTS_DISALLOW_PATTERN = /Disallow: \/\s*$/;
+const HASH_KEY_TABLE_PATTERN = /const HASH_KEYS = \{([\s\S]*?)\n\}/;
+const HASH_KEY_PATTERN = /^\s+(\w+): '/gm;
+const HASH_READ_PATTERN = /\bhash\??\.(\w+)/g;
+const DEVELOPER_STATE_PATTERN = /export type DeveloperState = [^{]*\{([\s\S]*?)\n\};/;
+const DEVELOPER_STATE_KEY_PATTERN = /^\s+readonly (\w+)\?:/gm;
 const resourceUrlsIn = (source) =>
   RESOURCE_URL_PATTERNS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1]));
 const filesUnder = (directory) =>
@@ -63,9 +69,11 @@ const intentionallyUnofferedDeadvoxParams = {
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
-  save: 'A debug-run opt-in to saving, meaningful only with debug=1; not a launcher gameplay option.',
+  save: 'A debug-run opt-in to saving, meaningful only with debug; not a launcher gameplay option.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
+  voicePitch: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
+  voicePitchLarge: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
   weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',
   weatheringTint: 'A debug-panel weathering look slider, not a launch-time site option.',
   weatheringTintColor: 'A debug-panel weathering colour picker, not a launch-time site option.',
@@ -81,23 +89,56 @@ const intentionallyUnofferedDeadvoxParams = {
   weatheringBlend: 'A debug-panel weathering look slider, not a launch-time site option.',
 };
 
+// Every key the game page's hash accepts, from the hash reader's own table.
+const hashKeys = () => {
+  const table = read('packages/deadvox/src/hashState.ts').match(HASH_KEY_TABLE_PATTERN)?.[1];
+  if (!table) {
+    throw new Error('the hash key table is declared');
+  }
+  return new Set([...table.matchAll(HASH_KEY_PATTERN)].map((match) => match[1]));
+};
+
+/** The parameters the readers take from the query, and the hash keys they read, each sorted. */
 const paramsReadBy = (sources) => {
-  const found = new Set();
+  const query = new Set();
+  const hash = new Set();
   for (const source of sources) {
     const text = read(source);
     for (const match of text.matchAll(
       /(?:\b(?:params|query|initialQuery)|new URLSearchParams\([^)]*\))\.(?:get|has)\(\s*['"]([^'"]+)['"]\s*\)/g,
     )) {
-      found.add(match[1]);
+      query.add(match[1]);
+    }
+    for (const match of text.matchAll(HASH_READ_PATTERN)) {
+      hash.add(match[1]);
+    }
+    // The developer state the engine takes from the hash, whether it is read by name or destructured.
+    const developerState = text.match(DEVELOPER_STATE_PATTERN)?.[1] ?? '';
+    for (const match of developerState.matchAll(DEVELOPER_STATE_KEY_PATTERN)) {
+      hash.add(match[1]);
     }
     if (source.endsWith('core/weatheringUrl.ts')) {
       for (const match of text.matchAll(/^\s*\['(weathering[^']*)',\s*'[^']+'\],?$/gm)) {
-        found.add(match[1]);
+        hash.add(match[1]);
       }
     }
   }
-  return [...found].sort();
+  const keys = hashKeys();
+  return { query: [...query].sort(), hash: [...hash].filter((key) => keys.has(key)).sort() };
 };
+
+// The bench pages keep their own query, so only the play readers say where a play link's parameter belongs.
+const PLAY_READERS = [
+  'packages/deadvox/src/main.ts',
+  'packages/engine/src/game/config.ts',
+  'packages/engine/src/game/ragdollConfig.ts',
+  'packages/engine/src/core/weatheringUrl.ts',
+];
+const DEADVOX_READERS = [
+  ...PLAY_READERS,
+  'packages/deadvox/src/bench/run.ts',
+  'packages/deadvox/src/bench/shamblers.ts',
+];
 
 const paramsOfferedBy = (formId) => {
   const form = page.match(new RegExp(`<form\\b[^>]*id="${formId}"[^>]*>([\\s\\S]*?)<\\/form>`))?.[1];
@@ -128,6 +169,10 @@ const extractDeclaration = (name) => {
   if (start < 0) {
     throw new Error(`${name} is declared in the launcher`);
   }
+  const statementEnd = page.indexOf(';', start);
+  if (statementEnd < page.indexOf('{', start)) {
+    return page.slice(start, statementEnd + 1);
+  }
   let depth = 0;
   for (let i = page.indexOf('{', start); i < page.length; i += 1) {
     if (page[i] === '{') {
@@ -143,7 +188,24 @@ const extractDeclaration = (name) => {
 };
 
 const makeDeadvoxForTest = () => {
-  const source = ['defaultTime', 'setDefault', 'siteOffered', 'setPlayOnlySite', 'addDebugParams', 'makeDeadvox']
+  const source = [
+    'visibility',
+    'visible',
+    'deadvoxControlVisibility',
+    'enabled',
+    'defaultTime',
+    'setDefault',
+    'BARE_HASH_TEXT',
+    'hashScalar',
+    'hashText',
+    'setHashNumber',
+    'atNumbers',
+    'playHash',
+    'siteOffered',
+    'setPlayOnlySite',
+    'addDebugParams',
+    'makeDeadvox',
+  ]
     .map(extractDeclaration)
     .join('\n');
   return new Function('location', `${source}\nreturn makeDeadvox;`)({ href: 'https://example.test/site/' });
@@ -221,19 +283,66 @@ describe('playtest language and catalog', () => {
 
 describe('site launchers track the games’ URL parameters', () => {
   it('offers every supported deadvox URL parameter except documented omissions', () => {
-    const supported = paramsReadBy([
-      'packages/deadvox/src/main.ts',
-      'packages/engine/src/game/config.ts',
-      'packages/engine/src/game/ragdollConfig.ts',
-      'packages/engine/src/core/weatheringUrl.ts',
-      'packages/deadvox/src/bench/run.ts',
-      'packages/deadvox/src/bench/shamblers.ts',
-    ]);
+    const reads = paramsReadBy(DEADVOX_READERS);
+    const supported = [...new Set([...reads.query, ...reads.hash])].sort();
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {
       assert.ok(supported.includes(name), `${name} has a documented omission reason`);
     }
     assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
+  });
+
+  it('composes each play parameter in the home the game reads it from, in the game hash form', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const reads = paramsReadBy(PLAY_READERS);
+    const debugFields = {
+      debug: true,
+      site: 'testHouse',
+      seed: '7',
+      radius: '64',
+      actors: 'boxes',
+      time: '08:00',
+      mods: ['fixture.mod'],
+      at: '1.5,-2,90',
+      focus: 'fixture prop',
+      wobbleFlat: '0.5',
+      weathering: '1',
+      weatheringVariation: '0.25',
+      weatheringSplit: '-3',
+    };
+    const debugPlay = { ...defaults, ...debugFields };
+    const homes = { query: new Set(), hash: new Set() };
+    for (const play of [debugPlay, { ...defaults, site: 'city' }, { ...defaults, site: 'forest', density: '0.5' }]) {
+      const url = makeDeadvox(play);
+      const parsed = readHash(url.hash);
+      assert.ok('hash' in parsed, `the game reads the composed hash ${url.hash}`);
+      assert.equal(
+        decodeURIComponent(url.hash.slice(1)),
+        writeHash(parsed.hash),
+        'the hash is in the form the game writes back',
+      );
+      for (const key of url.searchParams.keys()) {
+        homes.query.add(key);
+      }
+      for (const key of Object.keys(parsed.hash)) {
+        homes.hash.add(key);
+      }
+    }
+    assert.ok(homes.hash.size > 0, 'the composed links carry hash state');
+    assert.deepEqual(
+      [...homes.query].filter((key) => !reads.query.includes(key)),
+      [],
+      'query keys are read from the query',
+    );
+    assert.deepEqual(
+      [...homes.hash].filter((key) => !reads.hash.includes(key)),
+      [],
+      'hash keys are read from the hash',
+    );
+    for (const field of Object.keys(debugFields)) {
+      assert.ok(homes.query.has(field) || homes.hash.has(field), `the debug play link carries ${field}`);
+    }
   });
 
   it('offers weathering overrides only in debug play and matches the game strength ceiling', () => {

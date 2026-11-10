@@ -7,7 +7,7 @@
   "sounds": [
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over grass; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -29,7 +29,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over dirt or mud; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -49,7 +49,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over sand; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -71,7 +71,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over hard ground; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -93,7 +93,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over planks; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -112,7 +112,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A nearby shambler walks or chases over fabric or carpet; only the nearest moving shamblers are voiced.",
       "gain": 0.34000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -127,7 +127,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A shambler idles or strolls within hearing range and groans now and then.",
       "gain": 0.45000000000000001,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -146,7 +146,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A shambler notices you and starts investigating.",
       "gain": 0.71999999999999997,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -165,7 +165,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A shambler reaches you and attacks.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -184,7 +184,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
       "description": "A melee attack hits a shambler.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -204,7 +204,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
       "description": "An amalgam idles nearby.",
       "gain": 0.45000000000000001,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -223,7 +223,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
       "description": "An amalgam notices you.",
       "gain": 0.71999999999999997,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -242,7 +242,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
       "description": "An amalgam reaches you and attacks.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -261,7 +261,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
       "description": "An amalgam is hit by a melee attack.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -281,7 +281,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
       "description": "A runner idles nearby.",
       "gain": 0.41999999999999998,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -300,7 +300,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
       "description": "A runner notices you.",
       "gain": 0.71999999999999997,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -319,7 +319,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
       "description": "A runner reaches you and attacks.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -338,7 +338,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's runner action to spawn runners nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
       "description": "A runner is hit by a melee attack.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -358,7 +358,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
       "description": "A crawler idles nearby.",
       "gain": 0.52000000000000002,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -377,7 +377,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
       "description": "A crawler notices you.",
       "gain": 0.62,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -396,7 +396,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
       "description": "A crawler reaches you and attacks.",
       "gain": 0.69999999999999996,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -415,7 +415,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
       "description": "A crawler is hit by a melee attack.",
       "gain": 0.71999999999999997,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -435,7 +435,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
       "description": "An acid zombie idles nearby.",
       "gain": 0.45000000000000001,
       "gainJitter": [0.90000000000000002, 1.1000000000000001],
@@ -458,7 +458,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
       "description": "An acid zombie notices you.",
       "gain": 0.71999999999999997,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -481,7 +481,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
       "description": "An acid zombie reaches you and attacks.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],
@@ -504,7 +504,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
       "description": "An acid zombie is hit by a melee attack.",
       "gain": 0.80000000000000004,
       "gainJitter": [0.90000000000000002, 1.1200000000000001],

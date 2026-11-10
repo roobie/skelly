@@ -46,10 +46,11 @@ it('route activation excludes inactive rendered work without clearing startup jo
   vi.spyOn(performance, 'now').mockImplementation(() => clockRealMs);
   vi.spyOn(console, 'info').mockImplementation(() => undefined);
   vi.stubGlobal('location', {
-    href: 'https://example.invalid/?debug=1&skyRoute=1',
+    href: 'https://example.invalid/?skyRoute=1#{debug:true}',
     origin: 'https://example.invalid',
     pathname: '/',
-    search: '?debug=1&skyRoute=1',
+    search: '?skyRoute=1',
+    hash: '#{debug:true}',
   });
   vi.stubGlobal('devicePixelRatio', 1);
   vi.stubGlobal('navigator', { userAgent: 'owned-renderer-port' });
@@ -195,10 +196,11 @@ it('waits for the input owner to permit play before starting the route', () => {
   let active = false;
   const noop = () => undefined;
   vi.stubGlobal('location', {
-    href: 'https://example.invalid/?debug=1&skyRoute=1',
+    href: 'https://example.invalid/?skyRoute=1#{debug:true}',
     origin: 'https://example.invalid',
     pathname: '/',
-    search: '?debug=1&skyRoute=1',
+    search: '?skyRoute=1',
+    hash: '#{debug:true}',
   });
   vi.stubGlobal('devicePixelRatio', 1);
   vi.stubGlobal('navigator', { userAgent: 'owned-renderer-port' });

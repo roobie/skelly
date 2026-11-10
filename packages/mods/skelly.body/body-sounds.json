@@ -20,7 +20,7 @@
     },
     {
       "category": "body",
-      "debugHint": "?debug=1: Use the debug panel's damage action to apply damage.",
+      "debugHint": "#{debug:true}: Use the debug panel's damage action to apply damage.",
       "description": "Take heavy damage.",
       "gain": 0.90000000000000002,
       "gainJitter": [0.88, 1.1200000000000001],
@@ -85,7 +85,7 @@
     },
     {
       "category": "body",
-      "debugHint": "?debug=1: Use the debug panel's Noclip action to reach a ledge.",
+      "debugHint": "#{debug:true}: Use the debug panel's Noclip action to reach a ledge.",
       "description": "Land after a long drop.",
       "gain": 0.71999999999999997,
       "gainJitter": [0.88, 1.1200000000000001],

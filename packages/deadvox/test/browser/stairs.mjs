@@ -220,7 +220,7 @@ try {
     await page.goto(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00${mode === 'camo' ? '&skyRoute=1' : ''}`,
+        `http://127.0.0.1:${port}/?site=stair_demo&time=12:00${mode === 'camo' ? '&skyRoute=1' : ''}#{debug:true,seed:1,radius:32}`,
       ),
     );
     await page.waitForFunction(

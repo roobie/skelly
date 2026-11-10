@@ -75,7 +75,7 @@ try {
   await page.goto(
     browserStageUrl(
       'reading',
-      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0&save-test=1`,
+      `http://127.0.0.1:${port}/?site=testHouse&time=12:00&save-test=1#{seed:1,radius:16,post:false,sunshadow:false,torchshadow:false}`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -1235,7 +1235,7 @@ try {
     await page.goto(
       browserStageUrl(
         'reading',
-        `http://127.0.0.1:${port}/?site=forest&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=forest&time=12:00#{seed:1,radius:16,post:false,sunshadow:false,torchshadow:false}`,
       ),
       { waitUntil: 'domcontentloaded' },
     );

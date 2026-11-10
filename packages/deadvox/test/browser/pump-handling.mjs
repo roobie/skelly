@@ -192,7 +192,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&start=pump_handling_fixture_start&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&time=12%3A00&seed=7&radius=64`,
+      `http://127.0.0.1:${address.port}/?start=pump_handling_fixture_start&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&time=12%3A00#{debug:true,seed:7,radius:64}`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -1227,7 +1227,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&ragdollSweep=19&time=12%3A00&seed=7&radius=64`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&mods=skelly.deadvox.scenario.test-house.debug&time=12%3A00#{debug:true,seed:7,radius:64,ragdollSweep:19}`,
     ),
     { waitUntil: 'domcontentloaded' },
   );

@@ -39,7 +39,7 @@ const observation = {
       assert(code.includes(marker), 'scenario population fixture admission point exists');
       return code.replace(
         marker,
-        "const scenario = ((found) => found && new URLSearchParams(location.search).get('route-fixture') === '1' ? { ...found, population: { ...found.population, settlementPressure: false, authoredMarkers: false } } : found)(registry.scenarios.get(config.site));",
+        'const scenario = ((found) => found && globalThis.skellyRouteFixture === true ?{ ...found, population: { ...found.population, settlementPressure: false, authoredMarkers: false } } : found)(registry.scenarios.get(config.site));',
       );
     }
     if (id.endsWith('/src/ui/saveController.ts')) {
@@ -82,6 +82,6 @@ export const saveControllerServer = async () => {
   assert(address && typeof address !== 'string');
   return {
     server,
-    address: `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`,
+    address: `http://127.0.0.1:${address.port}/?site=testHouse&save-test=1&save-backend=indexeddb#{seed:73,radius:32,actors:boxes,post:false,sunshadow:false,torchshadow:false}`,
   };
 };

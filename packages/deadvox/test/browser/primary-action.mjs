@@ -102,7 +102,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=replay_fixture&radius=${cleanReplayRadiusM}&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=replay_fixture&time=12:00#{debug:true,seed:73,radius:${cleanReplayRadiusM},post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );
@@ -452,7 +452,7 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:64,post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );
@@ -571,7 +571,7 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );
@@ -699,7 +699,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );
@@ -979,7 +979,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );
@@ -1378,7 +1378,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:64,post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );
@@ -1886,7 +1886,7 @@ try {
       await page.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&start=${encodeURIComponent(debugHouseStart.id)}&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+          `http://127.0.0.1:${address.port}/?site=testHouse&start=${encodeURIComponent(debugHouseStart.id)}&time=12:00#{debug:true,seed:73,radius:64,post:false,sunshadow:false,torchshadow:false}`,
           renderOverride,
         ),
       );
@@ -3878,7 +3878,7 @@ try {
       await lockedPage.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=lock_test&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+          `http://127.0.0.1:${address.port}/?site=lock_test&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
           renderOverride,
         ),
       );
@@ -4167,7 +4167,7 @@ try {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${address.port}/?site=testHouse&time=12:00#{debug:true,seed:73,radius:32,post:false,sunshadow:false,torchshadow:false}`,
         renderOverride,
       ),
     );

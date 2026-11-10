@@ -42,7 +42,10 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(
-    browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&radius=16`),
+    browserStageUrl(
+      'melee-build-click',
+      `http://127.0.0.1:${address.port}/?site=testHouse#{debug:true,seed:73,radius:16}`,
+    ),
     {
       waitUntil: 'domcontentloaded',
     },

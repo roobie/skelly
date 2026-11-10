@@ -69,19 +69,13 @@ const page = (state) => html`  <main>
                 : ''
             }
             <label class="check" id="deadvox-debug-field" ?hidden=${!visible('deadvox-debug-field', state)}>
-              <input name="debug" data-url-param="debug" type="checkbox" data-state-key="debug" .checked=${state.deadvox.debug} .disabled=${!enabled('debug', state)}/> Enable development tools (?debug=1)
+              <input name="debug" data-url-param="debug" type="checkbox" data-state-key="debug" .checked=${state.deadvox.debug} .disabled=${!enabled('debug', state)}/> Enable development tools (#{debug:true})
             </label>
             <label id="deadvox-at-field" ?hidden=${!visible('deadvox-at-field', state)}>Debug start position (m): x,z[,yaw°]
               <input name="at" data-url-param="at" type="text" placeholder="x,z[,yaw]" autocomplete="off"  data-state-key="at" .value=${state.deadvox.at} .disabled=${!enabled('at', state)}/>
             </label>
             <label id="deadvox-focus-field" ?hidden=${!visible('deadvox-focus-field', state)}>Showroom focus (furniture id; blank: default spawn)
               <input name="focus" data-url-param="focus" type="text" placeholder="grinding_wheel" autocomplete="off" spellcheck="false" data-state-key="focus" .value=${state.deadvox.focus} .disabled=${!enabled('focus', state)}/>
-            </label>
-            <label id="deadvox-handedness-field" ?hidden=${!visible('deadvox-handedness-field', state)}>Debug dominant hand
-              <select name="handedness" data-url-param="handedness" data-state-key="handedness" .value=${state.deadvox.handedness} .disabled=${!enabled('handedness', state)}>
-                <option value="">Start-card choice</option>
-                <option value="left">Left</option>
-              </select>
             </label>
             <label id="deadvox-wobble-flat-field" ?hidden=${!visible('deadvox-wobble-flat-field', state)}>Debug wobble vertical/horizontal ratio (blank: content default)
               <input name="wobbleFlat" data-url-param="wobbleFlat" type="number" min="0" max="1" step="any" placeholder="content default"  data-state-key="wobbleFlat" .value=${state.deadvox.wobbleFlat} .disabled=${!enabled('wobbleFlat', state)}/>
@@ -184,7 +178,6 @@ const model = {
     debug: false,
     at: '',
     focus: '',
-    handedness: '',
     wobbleFlat: '',
     weathering: '',
     weatheringVariation: '',
@@ -217,7 +210,6 @@ const visibility = {
   'deadvox-at-field': (d) => d.bench === '' && d.debug,
   // Focus picks a showroom prop, and only the test house has a showroom.
   'deadvox-focus-field': (d) => d.bench === '' && d.debug && d.site === 'testHouse',
-  'deadvox-handedness-field': (d) => d.bench === '' && d.debug,
   'deadvox-wobble-flat-field': (d) => d.bench === '' && d.debug,
   'deadvox-weathering-field': (d) => d.bench === '' && d.debug,
   'deadvox-weathering-variation-field': (d) => d.bench === '' && d.debug,
@@ -238,7 +230,6 @@ const deadvoxControlVisibility = {
   debug: 'deadvox-debug-field',
   at: 'deadvox-at-field',
   focus: 'deadvox-focus-field',
-  handedness: 'deadvox-handedness-field',
   wobbleFlat: 'deadvox-wobble-flat-field',
   weathering: 'deadvox-weathering-field',
   weatheringVariation: 'deadvox-weathering-variation-field',
@@ -295,20 +286,55 @@ const setDefault = (p, k, v, d) => {
     p.set(k, v);
   }
 };
-const addDebugParams = (params, d) => {
-  params.set('debug', '1');
-  setDefault(params, 'at', d.at.trim(), '');
-  setDefault(params, 'handedness', d.handedness, '');
-  setDefault(params, 'wobbleFlat', d.wobbleFlat.trim(), '');
-  setDefault(params, 'weathering', d.weathering.trim(), '');
-  setDefault(params, 'weatheringVariation', d.weatheringVariation.trim(), '');
-  setDefault(params, 'weatheringSplit', d.weatheringSplit.trim(), '');
+// Developer state goes in the game's hash. The static launcher cannot import the game's writer, so this writes
+// the same form: see `packages/deadvox/src/hashState.ts`, `writeHash`. Callers add keys in `HASH_KEYS` order.
+const BARE_HASH_TEXT = /^[A-Za-z0-9_.+#-]+$/;
+const hashScalar = (value) =>
+  typeof value !== 'string' || BARE_HASH_TEXT.test(value) ? String(value) : JSON.stringify(value);
+const hashText = (hash) => {
+  const entries = Object.entries(hash).map(
+    ([key, value]) => `${key}:${Array.isArray(value) ? `[${value.map(hashScalar).join(',')}]` : hashScalar(value)}`,
+  );
+  return entries.length === 0 ? '' : `{${entries.join(',')}}`;
+};
+const setHashNumber = (hash, key, text) => {
+  if (text.trim() !== '') {
+    hash[key] = Number(text);
+  }
+};
+const atNumbers = (text) =>
+  text.trim() === '' ? [] : text.split(',').map((part) => (part.trim() === '' ? Number.NaN : Number(part)));
+const addDebugParams = (params, hash, d) => {
+  const at = atNumbers(d.at);
+  if (at.length > 0) {
+    hash.at = at;
+  }
+  if (enabled('focus', { deadvox: d }) && d.focus.trim() !== '') {
+    hash.focus = d.focus.trim();
+  }
+  setHashNumber(hash, 'weathering', d.weathering);
+  setHashNumber(hash, 'weatheringVariation', d.weatheringVariation);
+  setHashNumber(hash, 'weatheringSplit', d.weatheringSplit);
+  setHashNumber(hash, 'wobbleFlat', d.wobbleFlat);
   if (siteOffered(d, d.site) && (d.site === 'testHouse' || d.site === 'weatheringTest')) {
     params.set('site', d.site);
   }
-  if (enabled('focus', { deadvox: d })) {
-    setDefault(params, 'focus', d.focus.trim(), '');
+};
+const playHash = (params, d) => {
+  const hash = d.debug ? { debug: true } : {};
+  if (d.seed !== '1') {
+    hash.seed = Number(d.seed);
   }
+  if (d.radius !== '96') {
+    hash.radius = Number(d.radius);
+  }
+  if (d.actors !== '') {
+    hash.actors = d.actors;
+  }
+  if (d.debug) {
+    addDebugParams(params, hash, d);
+  }
+  return hash;
 };
 // Sites the game offers only in play compose into the URL only then, never with a benchmark.
 const setPlayOnlySite = (params, d) => {
@@ -328,15 +354,13 @@ const makeDeadvox = (d) => {
   if (m === 'report') {
     return u;
   }
-  setDefault(p, 'seed', d.seed, '1');
+  if (m !== '') {
+    setDefault(p, 'seed', d.seed, '1');
+  }
   setDefault(p, 'time', d.time, defaultTime(d));
   if (m === '') {
-    setDefault(p, 'radius', d.radius, '96');
-    setDefault(p, 'actors', d.actors, '');
     setDefault(p, 'mods', d.mods.join(','), '');
-    if (d.debug) {
-      addDebugParams(p, d);
-    }
+    u.hash = hashText(playHash(p, d));
   }
   if ((m === '' || m === '1') && d.site === 'city') {
     p.set('site', 'city');
@@ -372,10 +396,15 @@ const validWeatheringOverrides = (d) =>
   (!enabled('weathering', model) || validOptionalRange(d.weathering, 0, WEATHERING_STRENGTH_MAX)) &&
   (!enabled('weatheringVariation', model) || validOptionalRange(d.weatheringVariation, 0, 1)) &&
   (!enabled('weatheringSplit', model) || validOptionalRange(d.weatheringSplit, -256, 256));
+const validAt = (text) => {
+  const at = atNumbers(text);
+  return (at.length === 0 || at.length === 2 || at.length === 3) && at.every(Number.isFinite);
+};
 const validDeadvox = (d) => {
   const plan = parsePlan(d.plan);
   const counts = parseCounts(d.n);
   return (
+    (!enabled('at', model) || validAt(d.at)) &&
     (!enabled('seed', model) || inRange(d.seed, -2_147_483_648, 2_147_483_647)) &&
     (!enabled('time', model) || d.time !== '') &&
     (!enabled('radius', model) || inRange(d.radius, 32, 256)) &&

@@ -3,7 +3,7 @@
     {
       id: 'shotgun_blast',
       description: 'Fire a chambered pump shotgun; it needs racking before the next shot.',
-      debugHint: '?debug=1: use the spawn menu for a Pump shotgun and a Sealed shotshell box (20). Unpack the box, load the shells into the pump, then rack it.',
+      debugHint: '#{debug:true}: use the spawn menu for a Pump shotgun and a Sealed shotshell box (20). Unpack the box, load the shells into the pump, then rack it.',
       variants: ['assets/audio/shotgun-model12-01.ogg', 'assets/audio/shotgun-model12-02.ogg'],
       gain: 0.8,
       lowShelf: { frequencyHz: 240, gainDb: 7 },

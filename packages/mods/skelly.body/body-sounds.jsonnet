@@ -16,7 +16,7 @@ local sound(id, description, variants, gain, pitch, gainJitter, interval, catego
     sound(
       'player_hurt_heavy', 'Take heavy damage.',
       numbered('player-hurt-heavy', [2, 5, 8]), 0.9, [0.94, 1.06], [0.88, 1.12], 0.35, noise=heard(6),
-    ) + { debugHint: "?debug=1: Use the debug panel's damage action to apply damage." },
+    ) + { debugHint: "#{debug:true}: Use the debug panel's damage action to apply damage." },
     sound(
       'player_strain', 'Jump from the ground.',
       numbered('player-strain', [9, 12, 14]), 0.5, [0.96, 1.05], [0.9, 1.1], 0.6, noise=heard(5),
@@ -32,7 +32,7 @@ local sound(id, description, variants, gain, pitch, gainJitter, interval, catego
     sound(
       'player_landing_hard', 'Land after a long drop.',
       numbered('player-landing-hard', [1]), 0.72, [0.94, 1.04], [0.88, 1.12], 0.6,
-    ) + { debugHint: "?debug=1: Use the debug panel's Noclip action to reach a ledge." },
+    ) + { debugHint: "#{debug:true}: Use the debug panel's Noclip action to reach a ledge." },
     sound(
       'player_block_full',
       'Guard in en-garde with a melee weapon or fists, and fully block a zombie hit.',

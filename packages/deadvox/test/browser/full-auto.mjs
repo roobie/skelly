@@ -197,7 +197,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=regional_map-right-lowered&mannequinWear=jacket,jeans,rubber_boots,utility_vest,school_backpack&start=full_auto_fixture_start&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&start=full_auto_fixture_start&time=12:00#{debug:true,seed:73,radius:64,at:[43.5,0,-90],post:false,sunshadow:false,torchshadow:false,mannequin:regional_map-right-lowered,mannequinWear:[jacket,jeans,rubber_boots,utility_vest,school_backpack]}`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -844,7 +844,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&time=12:00#{seed:73,radius:64,at:[43.5,0,-90],post:false,sunshadow:false,torchshadow:false}`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

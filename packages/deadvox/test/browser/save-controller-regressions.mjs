@@ -10,6 +10,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readHash, writeHash } from '../../src/hashState.ts';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { auditModelLoads } from './model-load-audit.mjs';
@@ -750,13 +751,16 @@ try {
     await page.goto(url);
     await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-    const radiusLinks = await page.locator('[data-view-distance]').evaluateAll((links) =>
-      links.map((link) => {
-        const expected = new URL(location.href);
-        expected.searchParams.set('radius', link.dataset.viewDistance);
-        return new URL(link.href).href === expected.href;
-      }),
-    );
+    const pageAddress = new URL(page.url());
+    const radiusLinks = (
+      await page
+        .locator('[data-view-distance]')
+        .evaluateAll((links) => links.map((link) => ({ radius: link.dataset.viewDistance, href: link.href })))
+    ).map(({ radius, href }) => {
+      const expected = new URL(pageAddress);
+      expected.hash = writeHash({ ...readHash(pageAddress.hash).hash, radius: Number(radius) });
+      return href === expected.href;
+    });
     assert(radiusLinks.length > 0, 'view-distance links are present');
     assert(radiusLinks.every(Boolean), 'each view-distance link preserves the current URL parameters');
     await page.click('#show-credits');
@@ -983,7 +987,7 @@ try {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
         const { loadMetrics } = await import(modules.tools);
         const { decodeInputReplay } = await import(modules.replays);
-        const seed = Number(new URLSearchParams(location.search).get('seed'));
+        const { seed } = globalThis.worldLoadWitness.engine.config;
         const metricsText = new TextDecoder().decode(bytes(metrics));
         return {
           metrics:
@@ -1006,23 +1010,21 @@ try {
     rowless.on('pageerror', (error) => pageErrors.push(error.message));
     const rowlessUrl = new URL(url);
     rowlessUrl.searchParams.set('site', 'weatheringTest');
-    rowlessUrl.searchParams.set('debug', '1');
-    await rowless.addInitScript(
-      (key) => {
-        globalThis.metricsStorageCalls = [];
-        for (const method of ['getItem', 'setItem']) {
-          const original = Storage.prototype[method];
-          Storage.prototype[method] = function (...args) {
-            if (args[0] === key) {
-              globalThis.metricsStorageCalls.push(method);
-              throw new Error('rowless run accessed attempt metrics storage');
-            }
-            return original.apply(this, args);
-          };
-        }
-      },
-      metricsStorageKey(Number(rowlessUrl.searchParams.get('seed'))),
-    );
+    const rowlessHash = { ...readHash(rowlessUrl.hash).hash, debug: true };
+    rowlessUrl.hash = writeHash(rowlessHash);
+    await rowless.addInitScript((key) => {
+      globalThis.metricsStorageCalls = [];
+      for (const method of ['getItem', 'setItem']) {
+        const original = Storage.prototype[method];
+        Storage.prototype[method] = function (...args) {
+          if (args[0] === key) {
+            globalThis.metricsStorageCalls.push(method);
+            throw new Error('rowless run accessed attempt metrics storage');
+          }
+          return original.apply(this, args);
+        };
+      }
+    }, metricsStorageKey(rowlessHash.seed));
     await rowless.goto(rowlessUrl.href);
     await rowless.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await rowless.click('#go');
@@ -1174,12 +1176,10 @@ try {
     await context.close();
   });
 
-  await test('a debug run neither writes nor loads a save unless save=1 is also set', async () => {
-    const withParams = (extra) => {
+  await test('a debug run neither writes nor loads a save unless save is also set', async () => {
+    const withHash = (extra) => {
       const target = new URL(url);
-      for (const [key, value] of Object.entries(extra)) {
-        target.searchParams.set(key, value);
-      }
+      target.hash = writeHash({ ...readHash(target.hash).hash, ...extra });
       return target.href;
     };
     const enterAndCheckpoint = async (page) => {
@@ -1212,7 +1212,7 @@ try {
       const pageErrors = [];
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
-      await debugPage.goto(withParams({ debug: '1' }));
+      await debugPage.goto(withHash({ debug: true }));
       await debugPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
@@ -1236,7 +1236,7 @@ try {
 
       const savingPage = await context.newPage();
       savingPage.on('pageerror', (error) => pageErrors.push(error.message));
-      await savingPage.goto(withParams({ debug: '1', save: '1' }));
+      await savingPage.goto(withHash({ debug: true, save: true }));
       const saved = await enterAndCheckpoint(savingPage);
       assert.equal(saved.canSave, true);
       assert.equal(saved.namespaces.length, 1);
@@ -1246,7 +1246,7 @@ try {
       await refusedPage.addInitScript((namespace) => {
         sessionStorage.setItem(`skelly.restore-refusal:${namespace}`, 'Refused save fixture');
       }, saved.namespaces[0]);
-      await refusedPage.goto(withParams({ debug: '1', save: '1' }));
+      await refusedPage.goto(withHash({ debug: true, save: true }));
       await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
@@ -1276,7 +1276,7 @@ try {
 
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));
-      await reloaded.goto(withParams({ debug: '1' }));
+      await reloaded.goto(withHash({ debug: true }));
       await reloaded.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });

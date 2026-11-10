@@ -27,12 +27,12 @@
   routes: [
     {
       id: 'sky',
-      path: '/?site=playtest&seed=1&radius=48&debug=1&at=430,523,-90&skyRoute=1&time=13:00&cam=430,21.50,523,-90,0,0',
+      path: '/?site=playtest&skyRoute=1&time=13:00#{debug:true,seed:1,radius:48,at:[430,523,-90],cam:[430,21.5,523,-90,0,0]}',
       driver: 'sky',
     },
     {
       id: 'gauntlet-default-start',
-      path: '/?site=gauntlet&seed=1&debug=1&radius=96&time=19:30&storeys=1',
+      path: '/?site=gauntlet&time=19:30&storeys=1#{debug:true,seed:1,radius:96}',
       driver: 'orbit',
       yawAmplitudeDegrees: 0,
       yawCycles: 1,
@@ -40,7 +40,7 @@
     },
     {
       id: 'gauntlet-horde',
-      path: '/?site=gauntlet&seed=73&debug=1&radius=96&time=12:00',
+      path: '/?site=gauntlet&time=12:00#{debug:true,seed:73,radius:96}',
       driver: 'orbit',
       spawnCount: 40,
       liftMetres: 3,
@@ -50,7 +50,7 @@
     },
     {
       id: 'interior',
-      path: '/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00&cam=56,21.5,57.5,-90,0,0',
+      path: '/?site=stair_demo&time=12:00#{debug:true,seed:1,radius:32,cam:[56,21.5,57.5,-90,0,0]}',
       driver: 'orbit',
       yawAmplitudeDegrees: 35,
       yawCycles: 1,

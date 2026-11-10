@@ -473,7 +473,7 @@ const enterTestHouse = async (chromium, port) => {
         'primary-action-pixel',
         // The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle. It starts on the path's
         // open ground facing east, away from the showroom deck and its props, so the floor sample sees bare ground.
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=23:30&at=-4,-0.5,-90&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?site=testHouse&time=23:30#{debug:true,seed:73,radius:32,at:[-4,-0.5,-90],post:false,sunshadow:false,torchshadow:false}`,
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -924,12 +924,12 @@ const lakeSurfaceCheck = (chromium, port) =>
       );
       const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
       const [centreX, centreZ] = lakeLayout.terrain[0].centre;
-      const cam = `${centreX},${lakeLayout.water[0].level + 2},${centreZ},0,89,0`;
+      const cam = `[${centreX},${lakeLayout.water[0].level + 2},${centreZ},0,89,0]`;
       await timePhase('lake-menu', async () => {
         await lake.goto(
           browserStageUrl(
             'primary-action-pixel',
-            `http://127.0.0.1:${port}/?debug=1&seed=1&site=lake_demo&radius=16&time=12:00&freeze=1&crackcheck=1&post=0&sunshadow=0&torchshadow=0&cam=${cam}`,
+            `http://127.0.0.1:${port}/?site=lake_demo&time=12:00#{debug:true,seed:1,radius:16,cam:${cam},freeze:true,post:false,sunshadow:false,torchshadow:false,crackcheck:true}`,
           ),
         );
         await lake.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

@@ -510,7 +510,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     });
     await server.listen();
     const address = server.httpServer.address();
-    await page.goto(`http://127.0.0.1:${address.port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`);
+    await page.goto(`http://127.0.0.1:${address.port}/?site=stair_demo&time=12:00#{debug:true,seed:1,radius:32}`);
     await page.waitForFunction(
       () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
       undefined,

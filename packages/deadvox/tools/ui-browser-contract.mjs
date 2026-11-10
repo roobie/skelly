@@ -112,7 +112,7 @@ try {
   viteDiagnostics.port = port;
   stageUrl = browserStageUrl(
     'ui-browser-contract',
-    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
+    `http://127.0.0.1:${port}/#{debug:true,post:false,sunshadow:false,torchshadow:false}`,
   );
   discovery.phase = 'Vite ready';
   const viteResponse = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(30_000) });

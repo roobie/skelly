@@ -77,10 +77,10 @@ const sheet = html`
         selection jitter and cooldown are bypassed.
       </p>
       <p class="sound-debug-note">
-        Listed in content order. No event is debug-only; repeatable <code>?debug=1</code> shortcuts are listed
+        Listed in content order. No event is debug-only; repeatable <code>#{debug:true}</code> shortcuts are listed
         where useful.
       </p>
-      <nav><a href="./">Back to game</a> · <a href="./?debug=1">Open game with debug help</a></nav>
+      <nav><a href="./">Back to game</a> · <a href="./#{debug:true}">Open game with debug help</a></nav>
     </div>
     <div class="sound-count">${guide.length + 1} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
   </header>

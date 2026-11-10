@@ -3,9 +3,15 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract.
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
+import { readHash, writeHash } from '../../src/hashState.ts';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
+
+/** Turns on the scenario population fixture that `save-controller-fixture.mjs` injects. */
+const useRouteFixture = () => {
+  globalThis.skellyRouteFixture = true;
+};
 
 const gauntletLoading = async (browser, baseUrl) => {
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
@@ -16,10 +22,8 @@ const gauntletLoading = async (browser, baseUrl) => {
     page.on('pageerror', (error) => errors.push(error.message));
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
-    url.searchParams.set('debug', '1');
-    url.searchParams.set('save', '1');
     url.searchParams.set('time', '12:00');
-    url.searchParams.delete('actors');
+    url.hash = writeHash({ ...readHash(url.hash).hash, debug: true, save: true, actors: undefined });
     await page.goto(url.href);
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.evaluate(() => {
@@ -77,13 +81,11 @@ export const gauntletFlow = async (browser, baseUrl) => {
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   try {
     await context.addInitScript(installSaveStatusTrace);
+    await context.addInitScript(useRouteFixture);
     const page = await context.newPage();
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
-    url.searchParams.set('route-fixture', '1');
-    url.searchParams.set('debug', '1');
-    url.searchParams.set('save', '1');
-    url.searchParams.delete('actors');
+    url.hash = writeHash({ ...readHash(url.hash).hash, debug: true, save: true, actors: undefined });
     await page.goto(url.href);
     await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#go');
@@ -632,6 +634,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.deepEqual(await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun), journey.run);
     // A separate fresh attempt exercises the ordinary dead-survivor barrier, not a won-to-dead mutation.
     const deadContext = await browser.newContext();
+    await deadContext.addInitScript(useRouteFixture);
     try {
       const deadPage = await deadContext.newPage();
       await deadPage.goto(url.href);

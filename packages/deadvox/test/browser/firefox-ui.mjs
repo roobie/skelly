@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readHash } from '../../src/hashState.ts';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { assertFixtureMods, assertOptInModIdentity, selectFixtureMods } from './mods-startup.mjs';
@@ -20,7 +21,7 @@ const observation = {
   enforce: 'pre',
   transform(code, id) {
     if (id.endsWith('/src/debug/index.ts')) {
-      const marker = '  const initialLook = parseLookParams(new URLSearchParams(location.search), {';
+      const marker = '  const initialLook = parseLookParams(pageUrl().hash, {';
       assert(code.includes(marker), 'debug look observation point exists');
       return code.replace(marker, `  Object.assign(globalThis, { firefoxUiLook: look });\n${marker}`);
     }
@@ -88,13 +89,13 @@ try {
     };
     requestAnimationFrame(frame);
   });
-  await assertOptInModIdentity(page, (query) =>
-    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?${query}`),
+  await assertOptInModIdentity(page, (queryAndHash) =>
+    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?${queryAndHash}`),
   );
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?mods=1&debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?mods=1#{debug:true,seed:1,radius:64,actors:detailed,post:false,sunshadow:false,torchshadow:false}`,
     ),
   );
   const fixtureMod = await selectFixtureMods(page);
@@ -586,7 +587,7 @@ try {
     await page.goto(
       browserStageUrl(
         'firefox-ui',
-        `http://127.0.0.1:${address.port}/?debug=1&site=weatheringTest&seed=73&radius=64&post=0&time=12:00`,
+        `http://127.0.0.1:${address.port}/?site=weatheringTest&time=12:00#{debug:true,seed:73,radius:64,post:false}`,
         'pixel',
       ),
     );
@@ -747,7 +748,7 @@ try {
       return Number(input.value);
     });
     assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), alternateProfileId);
-    assert.equal(Number(new URL(page.url()).searchParams.get('weathering')), sliderNext);
+    assert.equal(readHash(new URL(page.url()).hash).hash?.weathering, sliderNext);
     assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
     assert.equal(
       await page.evaluate(() => {

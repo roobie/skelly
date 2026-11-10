@@ -381,7 +381,7 @@ packs.push({
   source: 'inventory-work-fixture',
   manifest: {
     id: 'fixture.inventory-work', version: '1', tier: 'theme', product: false,
-    dependencies: [...packs.map(({ manifest }) => manifest.id), ...(new URLSearchParams(location.search).has('refuse-fixture') ? ['fixture.missing'] : [])],
+    dependencies: [...packs.map(({ manifest }) => manifest.id), ...(globalThis.skellyRefuseFixture === true ? ['fixture.missing'] : [])],
     overrides: [], files: fixtureFiles.map(({ source }) => ({ path: source, kind: 'content' })),
   },
   files: fixtureFiles,
@@ -444,19 +444,30 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
-  const startupError = page.waitForEvent('pageerror').then((error) => {
+  // Its own page, because the fixture switch stays on for every navigation of the page it is added to.
+  const refusal = await browser.newPage();
+  const refusalErrors = [];
+  refusal.on('pageerror', (error) => refusalErrors.push(error.message));
+  await refusal.addInitScript(() => {
+    globalThis.skellyRefuseFixture = true;
+  });
+  const startupError = refusal.waitForEvent('pageerror').then((error) => {
     throw error;
   });
-  await page.goto(`http://127.0.0.1:${address.port}/?mods=1&refuse-fixture=1`);
+  await refusal.goto(`http://127.0.0.1:${address.port}/?mods=1`);
   await Promise.race([
     startupError,
-    page.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
+    refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
   ]);
-  assert.ok((await page.locator('#errors').textContent()).includes('fixture.inventory-work'), 'refused pack is named');
-  assert.equal(await page.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
-  assert.equal(await page.locator('#startup-screen').isVisible(), false, 'refusal retires the startup screen');
-  assert.equal(await page.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
-  assert.deepEqual(errors, [], 'refusal displays admission diagnostics without a page exception');
+  assert.ok(
+    (await refusal.locator('#errors').textContent()).includes('fixture.inventory-work'),
+    'refused pack is named',
+  );
+  assert.equal(await refusal.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
+  assert.equal(await refusal.locator('#startup-screen').isVisible(), false, 'refusal retires the startup screen');
+  assert.equal(await refusal.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
+  assert.deepEqual(refusalErrors, [], 'refusal displays admission diagnostics without a page exception');
+  await refusal.close();
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   try {
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
@@ -1360,7 +1371,7 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32`,
+        `http://127.0.0.1:${address.port}/?site=testHouse#{debug:true,seed:73,radius:32}`,
         // Only the isolated item still needs WebGL, not the world or attachment handling.
         'render-free',
       ),

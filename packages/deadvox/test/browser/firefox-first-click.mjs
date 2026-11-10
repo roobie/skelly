@@ -127,7 +127,9 @@ try {
       }
     };
   });
-  await page.goto(browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64`));
+  await page.goto(
+    browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/#{debug:true,seed:1,radius:64}`),
+  );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
   });
