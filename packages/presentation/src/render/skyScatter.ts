@@ -4,6 +4,12 @@
 // and a moon. All uniforms derive from the keyed sky (engine/core/sky.ts, skyAt), so the day
 // cycle's content still owns the look. The pano spike (render/skyPano.ts) reuses this dome,
 // with the sun disc off, as its bake source.
+//
+// Preetham scattering goes black once the sun is below the horizon, while the keyed fog stays
+// lit through twilight, so fogged terrain would stand pale against a black sky. Around a low
+// sun the scattering is therefore floored at the keyed gradient (render/skyDome.ts,
+// `setKeyedGradient`): the glow toward the sun stays, and nowhere is darker than the sky the
+// fog is drawn in.
 
 import type { Sky as SkyLook } from '@skelly/engine/sky';
 import { Color, type Mesh, type ShaderMaterial, Vector3 } from 'three';
@@ -13,15 +19,21 @@ import {
   type DomeOutputUniforms,
   domeMesh,
   domeOutputUniforms,
+  KEYED_GLSL,
+  type KeyedGradientUniforms,
+  keyedGradientUniforms,
   placeDome,
   type SkyDome,
   type SkyDomeFrame,
   setDomeFog,
+  setKeyedGradient,
   starWeightOf,
 } from './skyDome.ts';
 
 /** Dome uniforms the patch adds on top of the addon's own. */
-interface PatchUniforms extends DomeOutputUniforms {
+interface PatchUniforms extends DomeOutputUniforms, KeyedGradientUniforms {
+  /** 1 floors the scattering at the keyed gradient; 0 leaves pure Preetham. */
+  uKeyedFloor: { value: number };
   uExposure: { value: number };
   uMoonDir: { value: Vector3 };
   uMoonColor: { value: Color };
@@ -64,13 +76,16 @@ export const createScatterDome = ({ sunDisc, fogBlend }: { sunDisc: boolean; fog
       uniform vec3 uMoonDir;
       uniform vec3 uMoonColor;
       uniform float uStarWeight;
-      ${DOME_GLSL}`,
+      uniform float uKeyedFloor;
+      ${DOME_GLSL}
+      ${KEYED_GLSL}`,
   );
   material.fragmentShader = patched(
     declared,
     'gl_FragColor = vec4( texColor, 1.0 );',
     `vec3 domeDir = normalize( vWorldPosition - cameraPosition );
       vec3 scatterOut = texColor * uExposure;
+      scatterOut = mix( scatterOut, max( scatterOut, domeKeyed( domeDir ) ), uKeyedFloor );
       scatterOut += domeStars( domeDir, uStarWeight );
       scatterOut += domeSun( domeDir, uMoonDir, uMoonColor, 0.35 );
       gl_FragColor = domeOutput( scatterOut, domeDir );`,
@@ -78,6 +93,8 @@ export const createScatterDome = ({ sunDisc, fogBlend }: { sunDisc: boolean; fog
   const uniforms = material.uniforms as unknown as Record<string, { value: unknown }>;
   const patch: PatchUniforms = {
     ...domeOutputUniforms(),
+    ...keyedGradientUniforms(),
+    uKeyedFloor: { value: 0 },
     uExposure: { value: 0.35 },
     uMoonDir: { value: new Vector3(0, -1, 0) },
     uMoonColor: { value: new Color(0.7, 0.75, 0.85) },
@@ -105,6 +122,10 @@ export const createScatterDome = ({ sunDisc, fogBlend }: { sunDisc: boolean; fog
       material.uniforms.cloudDensity!.value = 0.4;
       material.uniforms.cloudElevation!.value = 0.5;
       material.uniforms.time!.value = time;
+      // Full floor from just above the horizon down; none once the sun stands high enough that
+      // the scattering outshines the keyed sky everywhere.
+      setKeyedGradient(patch, sky);
+      patch.uKeyedFloor.value = 1 - Math.min(1, Math.max(0, (sky.sunDirection[1] - 0.05) / 0.25));
     },
     dispose(): void {
       mesh.geometry.dispose();

@@ -1,9 +1,7 @@
-// Sky spike "layers" for issue #1505: an art-directed dome. A zenith-to-horizon gradient keyed
-// from the day cycle's own palette (the keyed sky colour, the height-mist colour that the
-// content already warms at dawn and dusk, and the hemisphere sky), a disc sun and moon, hash
-// stars, and three cloud layers drifting over generated tileable noise. Nothing new is
-// authored: every colour derives from the keyed sky (engine/core/sky.ts, skyAt), so content
-// still owns the look; a real implementation would author the stops directly.
+// Sky spike "layers" for issue #1505: an art-directed dome. The keyed gradient (render/skyDome.ts,
+// `setKeyedGradient`), a disc sun and moon, hash stars, and three cloud layers drifting over
+// generated tileable noise. Every colour derives from the keyed sky (engine/core/sky.ts, skyAt),
+// so content still owns the look.
 
 import type { Rgb } from '@skelly/engine/sky';
 import {
@@ -21,10 +19,13 @@ import {
   DOME_GLSL,
   domeMesh,
   domeOutputUniforms,
+  KEYED_GLSL,
+  keyedGradientUniforms,
   placeDome,
   type SkyDome,
   type SkyDomeFrame,
   setDomeFog,
+  setKeyedGradient,
   starWeightOf,
 } from './skyDome.ts';
 
@@ -41,11 +42,6 @@ const mulberry32 = (seed: number): (() => number) => {
 
 const smooth = (t: number): number => t * t * (3 - 2 * t);
 const between = (a: number, b: number, t: number): number => a + (b - a) * t;
-const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [
-  between(a[0], b[0], t),
-  between(a[1], b[1], t),
-  between(a[2], b[2], t),
-];
 
 /** One periodic value-noise octave sampled on [0, 1)², wrapping at `period`. */
 const latticeNoise = (period: number, random: () => number): ((x: number, y: number) => number) => {
@@ -120,9 +116,6 @@ const VERTEX_SHADER = /* glsl */ `
 
 const FRAGMENT_SHADER = /* glsl */ `
   varying vec3 vDir;
-  uniform vec3 uZenith;
-  uniform vec3 uMid;
-  uniform vec3 uHorizon;
   uniform vec3 uSunColor;
   uniform vec3 uSunDir;
   uniform vec3 uMoonColor;
@@ -136,10 +129,10 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform float uScale[3];
   uniform float uOpacity[3];
   ${DOME_GLSL}
+  ${KEYED_GLSL}
   void main () {
     vec3 dir = normalize( vDir );
-    vec3 col = mix( uMid, uZenith, smoothstep( 0.12, 0.55, dir.y ) );
-    col = mix( uHorizon, col, smoothstep( 0.015, 0.14, dir.y ) );
+    vec3 col = domeKeyed( dir );
     col += domeSun( dir, uSunDir, uSunColor, uSunGlow );
     col += domeSun( dir, uMoonDir, uMoonColor, 0.3 );
     col += domeStars( dir, uStarWeight );
@@ -173,34 +166,18 @@ const LAYERS = [
 
 const setSrgb = (into: Color, [r, g, b]: Rgb): Color => into.setRGB(r, g, b, SRGBColorSpace);
 
-/** The keyed palette drives the gradient: the sky colour at the horizon band, deepened toward the hemisphere sky above. */
-const gradientStops = (sky: {
-  sky: Rgb;
-  ambientSky: Rgb;
-  heightFogColor: Rgb;
-}): { zenith: Rgb; mid: Rgb; horizon: Rgb } => ({
-  zenith: [
-    between(sky.ambientSky[0], sky.sky[0], 0.35) * 0.75,
-    between(sky.ambientSky[1], sky.sky[1], 0.35) * 0.75,
-    between(sky.ambientSky[2], sky.sky[2], 0.35) * 0.75,
-  ],
-  mid: sky.sky,
-  horizon: mixRgb(sky.heightFogColor, sky.sky, 0.4),
-});
-
 /** The layered spike: the dome's mesh joins the scene; dispose removes it. */
 export const createLayeredSkyDome = (): SkyDome => {
   const textures = [cloudTexture(1), cloudTexture(2)];
   const output = domeOutputUniforms();
+  const keyed = keyedGradientUniforms();
   const material = new ShaderMaterial({
     side: BackSide,
     depthWrite: false,
     toneMapped: false,
     uniforms: {
       ...output,
-      uZenith: { value: new Color(0, 0, 0) },
-      uMid: { value: new Color(0, 0, 0) },
-      uHorizon: { value: new Color(0, 0, 0) },
+      ...keyed,
       uSunColor: { value: new Color(0, 0, 0) },
       uSunDir: { value: new Vector3(0, 1, 0) },
       uMoonColor: { value: new Color(0.65, 0.7, 0.8) },
@@ -220,10 +197,7 @@ export const createLayeredSkyDome = (): SkyDome => {
   const mesh = domeMesh(material);
   const update = ({ sky, simSeconds, camera, skyVisibility }: SkyDomeFrame): void => {
     const { uniforms } = material;
-    const stops = gradientStops(sky);
-    setSrgb(uniforms.uZenith!.value as Color, stops.zenith);
-    setSrgb(uniforms.uMid!.value as Color, stops.mid);
-    setSrgb(uniforms.uHorizon!.value as Color, stops.horizon);
+    setKeyedGradient(keyed, sky);
     setDomeFog(output, sky, skyVisibility);
     (uniforms.uSunDir!.value as Vector3).set(...sky.sunDirection);
     (uniforms.uMoonDir!.value as Vector3).set(-sky.sunDirection[0], -sky.sunDirection[1], -sky.sunDirection[2]);

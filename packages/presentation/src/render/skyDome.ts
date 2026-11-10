@@ -82,6 +82,46 @@ export const setDomeFog = (uniforms: DomeOutputUniforms, sky: Sky, skyVisibility
   uniforms.uSkyVisibility.value = skyVisibility;
 };
 
+const between = (low: number, high: number, weight: number): number => low + (high - low) * weight;
+const setSrgb = (into: Color, [r, g, b]: Sky['sky']): Color => into.setRGB(r, g, b, SRGBColorSpace);
+
+/** The keyed gradient's stops; `KEYED_GLSL`, `domeKeyed`, reads them. */
+export interface KeyedGradientUniforms {
+  uZenith: IUniform<Color>;
+  uMid: IUniform<Color>;
+  uHorizon: IUniform<Color>;
+}
+
+export const keyedGradientUniforms = (): KeyedGradientUniforms => ({
+  uZenith: { value: new Color(0, 0, 0) },
+  uMid: { value: new Color(0, 0, 0) },
+  uHorizon: { value: new Color(0, 0, 0) },
+});
+
+/**
+ * The day cycle's own palette as a sky: the sky colour at the horizon band, warmed by the height
+ * mist below it and deepened toward the hemisphere sky above. Nothing new is authored, so content
+ * owns the look; a real implementation would author the stops directly.
+ */
+export const setKeyedGradient = (uniforms: KeyedGradientUniforms, sky: Sky): void => {
+  const deep = (channel: 0 | 1 | 2): number => between(sky.ambientSky[channel], sky.sky[channel], 0.35) * 0.75;
+  const warm = (channel: 0 | 1 | 2): number => between(sky.heightFogColor[channel], sky.sky[channel], 0.4);
+  setSrgb(uniforms.uZenith.value, [deep(0), deep(1), deep(2)]);
+  setSrgb(uniforms.uMid.value, sky.sky);
+  setSrgb(uniforms.uHorizon.value, [warm(0), warm(1), warm(2)]);
+};
+
+/** The keyed gradient in GLSL: `domeKeyed( dir )` is the keyed sky in that direction. */
+export const KEYED_GLSL = /* glsl */ `
+  uniform vec3 uZenith;
+  uniform vec3 uMid;
+  uniform vec3 uHorizon;
+  vec3 domeKeyed ( vec3 dir ) {
+    vec3 col = mix( uMid, uZenith, smoothstep( 0.12, 0.55, dir.y ) );
+    return mix( uHorizon, col, smoothstep( 0.015, 0.14, dir.y ) );
+  }
+`;
+
 /** Star weight: the sun below the horizon brings the stars in. */
 export const starWeightOf = (sky: Sky): number => Math.min(1, Math.max(0, -sky.sunDirection[1] * 5));
 
