@@ -690,8 +690,9 @@ const autosaveTuning = (registry: Engine['registry']) => {
   return autosave;
 };
 
+/** A replay restores its own recorded world without a save, so it is the one restore practice admits. */
 const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): void => {
-  if (guided && (options.saveController || options.restore)) {
+  if (guided && (options.saveController || (options.restore && !options.replay))) {
     throw new Error('Practice cannot bind a save or restore a world');
   }
 };
