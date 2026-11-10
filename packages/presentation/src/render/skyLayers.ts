@@ -146,13 +146,21 @@ const FRAGMENT_SHADER = /* glsl */ `
     col += domeStars( dir, uStarWeight );
     float horizonFade = smoothstep( 0.02, 0.14, dir.y );
     vec3 cloudLight = uSunColor * uDaylight * 0.8 + vec3( 0.045, 0.055, 0.075 );
-    for ( int i = 0; i < 3; i++ ) {
-      vec2 uv = dir.xz / max( dir.y, 0.06 ) * uScale[i] + uDrift[i] * uTime;
-      vec2 noise = texture2D( uCloudNoise[i], uv ).rg;
-      float coverage = smoothstep( 0.45, 0.75, noise.r + ( noise.g - 0.5 ) * 0.35 );
-      float sunSide = 0.6 + 0.4 * clamp( dot( dir, uSunDir ), 0.0, 1.0 );
-      col = mix( col, cloudLight * sunSide, coverage * uOpacity[i] * horizonFade );
-    }
+    // GLSL ES 1.0 needs literal sampler indices, so the three layers are unrolled.
+    float sunSide = 0.6 + 0.4 * clamp( dot( dir, uSunDir ), 0.0, 1.0 );
+    vec3 litCloud = cloudLight * sunSide;
+    vec2 uv0 = dir.xz / max( dir.y, 0.06 ) * uScale[0] + uDrift[0] * uTime;
+    vec2 noise0 = texture2D( uCloudNoise[0], uv0 ).rg;
+    float coverage0 = smoothstep( 0.45, 0.75, noise0.r + ( noise0.g - 0.5 ) * 0.35 );
+    col = mix( col, litCloud, coverage0 * uOpacity[0] * horizonFade );
+    vec2 uv1 = dir.xz / max( dir.y, 0.06 ) * uScale[1] + uDrift[1] * uTime;
+    vec2 noise1 = texture2D( uCloudNoise[1], uv1 ).rg;
+    float coverage1 = smoothstep( 0.45, 0.75, noise1.r + ( noise1.g - 0.5 ) * 0.35 );
+    col = mix( col, litCloud, coverage1 * uOpacity[1] * horizonFade );
+    vec2 uv2 = dir.xz / max( dir.y, 0.06 ) * uScale[2] + uDrift[2] * uTime;
+    vec2 noise2 = texture2D( uCloudNoise[2], uv2 ).rg;
+    float coverage2 = smoothstep( 0.45, 0.75, noise2.r + ( noise2.g - 0.5 ) * 0.35 );
+    col = mix( col, litCloud, coverage2 * uOpacity[2] * horizonFade );
     col = mix( col * uSkyVisibility, uFogColor, 1.0 - smoothstep( 0.0, 0.06, dir.y ) );
     col = mix( uFogColor, col, smoothstep( -0.05, 0.0, dir.y ) );
     gl_FragColor = vec4( col, 1.0 );
@@ -174,9 +182,9 @@ const gradientStops = (sky: {
   heightFogColor: Rgb;
 }): { zenith: Rgb; mid: Rgb; horizon: Rgb } => ({
   zenith: [
-    between(sky.ambientSky[0], sky.sky[0], 0.35) * 0.5,
-    between(sky.ambientSky[1], sky.sky[1], 0.35) * 0.5,
-    between(sky.ambientSky[2], sky.sky[2], 0.35) * 0.5,
+    between(sky.ambientSky[0], sky.sky[0], 0.35) * 0.75,
+    between(sky.ambientSky[1], sky.sky[1], 0.35) * 0.75,
+    between(sky.ambientSky[2], sky.sky[2], 0.35) * 0.75,
   ],
   mid: sky.sky,
   horizon: mixRgb(sky.heightFogColor, sky.sky, 0.4),

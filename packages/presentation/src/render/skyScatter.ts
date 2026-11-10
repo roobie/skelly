@@ -46,8 +46,8 @@ export const createScatterDome = (withSunDisc: boolean): ScatterDome => {
   // shared stars, moon, horizon fog fade and visibility before the output.
   material.fragmentShader = material.fragmentShader
     .replace(
-      'uniform float mieCoefficient;',
-      `uniform float mieCoefficient;
+      'uniform float mieDirectionalG;',
+      `uniform float mieDirectionalG;
       uniform vec3 uFogColor;
       uniform float uSkyVisibility;
       uniform float uExposure;
@@ -70,7 +70,7 @@ export const createScatterDome = (withSunDisc: boolean): ScatterDome => {
   const patch: PatchUniforms = {
     uFogColor: { value: new Color(0, 0, 0) },
     uSkyVisibility: { value: 1 },
-    uExposure: { value: 0.5 },
+    uExposure: { value: 0.35 },
     uMoonDir: { value: new Vector3(0, -1, 0) },
     uMoonColor: { value: new Color(0.7, 0.75, 0.85) },
     uStarWeight: { value: 0 },
