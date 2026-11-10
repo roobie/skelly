@@ -1718,10 +1718,13 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
       await releaseHold();
     };
-    await openAlternatives();
-    for (const way of ['push', 'drag']) {
-      if (way === 'drag') {
-        await openAlternatives();
+    // The menu chooses nothing until stepped to: one step reaches push, the next steps clockwise to drag.
+    for (const [way, steps] of [
+      ['push', 1],
+      ['drag', 2],
+    ]) {
+      await openAlternatives();
+      for (let step = 0; step < steps; step += 1) {
         await page.mouse.wheel(0, 100);
       }
       await pressAction(page, 'world.interact');
