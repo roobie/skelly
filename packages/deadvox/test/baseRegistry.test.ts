@@ -19,21 +19,26 @@ it(
   FULL_BUILD_TIMEOUT_MS,
 );
 
+// The baselines are deep clones taken before any mutation, not further calls of the factory under test, so
+// copies that share nested arrays or maps cannot hide a mutation by changing the baseline with it.
 it('deserializes a fresh copy for each startup content and base registry call', () => {
-  const originalStartup = startupContent();
+  const earlierStartup = startupContent();
+  const pristineStartup = structuredClone(earlierStartup);
   const startup = startupContent();
   expect(startup.registry.blocks.length).toBeGreaterThan(0);
   startup.registry.blocks[0]!.name = 'fixture-mutated-startup-block';
   startup.registry.items.clear();
   (startup.origins as Map<string, unknown>).clear();
   startup.issues.push({ source: 'fixture', path: '', message: 'fixture mutation' });
-  expect(isDeepStrictEqual(startupContent(), originalStartup)).toBe(true);
+  deepStrictEqual(earlierStartup, pristineStartup);
+  deepStrictEqual(startupContent(), pristineStartup);
 
-  const originalRegistry = baseRegistry();
+  const earlierRegistry = baseRegistry();
+  const pristineRegistry = structuredClone(earlierRegistry);
   const registry = baseRegistry();
-  expect(registry).not.toBe(originalRegistry);
   registry.blocks[0]!.name = 'fixture-mutated-block';
   registry.blockIds.set('fixture-added-block', registry.blocks.length);
   registry.items.clear();
-  deepStrictEqual(baseRegistry(), originalRegistry);
+  deepStrictEqual(earlierRegistry, pristineRegistry);
+  deepStrictEqual(baseRegistry(), pristineRegistry);
 });

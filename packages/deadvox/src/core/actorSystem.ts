@@ -288,8 +288,8 @@ export interface HitImpulse {
   /** N·s. */
   readonly impulse: number;
 }
-/** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
-const ACTOR_FOOTSTEP_VOICE_CAP = 3;
+/** At most this many of the nearest moving shamblers emit footsteps in a simulation tick. */
+export const ACTOR_FOOTSTEP_VOICE_CAP = 3;
 
 export interface ActorSystemState {
   nextEntityId: number;

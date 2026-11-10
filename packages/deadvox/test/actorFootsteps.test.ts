@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerSense } from '../src/core/actorSense.ts';
 import type { Actor } from '../src/core/actorState.ts';
+import { ACTOR_FOOTSTEP_VOICE_CAP } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {
@@ -217,16 +218,15 @@ describe('actor footsteps', () => {
     ).toBeUndefined();
   });
 
-  it('caps footstep voices to the nearest moving walkers, never sounding a farther one over a nearer one', () => {
-    const walkers = 8;
+  it('sounds exactly the declared voice cap of nearest moving walkers when one more walks farther out', () => {
+    const walkers = ACTOR_FOOTSTEP_VOICE_CAP + 1;
     const { system, store, played } = makeWorld(sense([0, 1, 2], [1, 0, 0]));
     for (let i = 0; i < walkers; i++) {
       addWalker({ system, store, position: [2 + i * 8, 1, 2], mode: 'stroll' });
     }
     run(system, 2);
     const walkerZones = new Set(played.map((position) => Math.floor((position[0] - 2) / 8)));
-    expect(walkerZones.size).toBeGreaterThan(0);
-    expect(walkerZones.size).toBeLessThan(walkers);
-    expect(walkerZones).toEqual(new Set(Array.from({ length: walkerZones.size }, (_, zone) => zone)));
+    // Walkers are numbered by distance, so the nearest cap are zones 0 to cap - 1; the farthest stays silent.
+    expect(walkerZones).toEqual(new Set(Array.from({ length: ACTOR_FOOTSTEP_VOICE_CAP }, (_, zone) => zone)));
   });
 });
