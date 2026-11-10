@@ -12,6 +12,7 @@ import { startupContent } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { startedOn } from './fixtures/startupContent.ts';
 
 const content = startupContent();
 const { registry } = content;
@@ -39,7 +40,7 @@ const cx = toChunk(crate.pos[0]);
 const cz = toChunk(crate.pos[2]);
 
 const worldSetup = (): WorldSetup => {
-  const config = configFromUrl(new URLSearchParams('site=testHouse'), {}, content, ragdollSweepViewer);
+  const config = configFromUrl(new URLSearchParams(), {}, startedOn(content, 'testHouse'), ragdollSweepViewer);
   const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const chunk = new Chunk(cx, 0, cz);
   for (let z = 0; z < CHUNK; z++) {

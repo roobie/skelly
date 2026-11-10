@@ -8,7 +8,7 @@ import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { composedFixture, fixtureStart, fixtureStartRow } from './fixtures/scenario.ts';
-import { configFromUrl } from './fixtures/startupContent.ts';
+import { configFromUrl, startedOn } from './fixtures/startupContent.ts';
 
 it('selects the active authored layout policy and supplies none for a rowless diagnostic site', () => {
   const original = configFromUrl(new URLSearchParams());
@@ -25,14 +25,15 @@ it('selects the active authored layout policy and supplies none for a rowless di
     starts: new Map([...original.content.registry.starts, [start.id, start]]),
   };
   const content = { ...original.content, registry };
-  const setup = (params: string, debug = false) => {
-    const config = readConfig(new URLSearchParams(params), { debug }, content, ragdollSweepViewer);
+  const setup = (site: string, debug = false) => {
+    const config = readConfig(new URLSearchParams(), { debug }, startedOn(content, site, debug), ragdollSweepViewer);
+    expect(config.site).toBe(site);
     return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   };
-  expect(setup(`site=${layout.id}`).attemptPolicy).toEqual(layout.attemptPolicy);
+  expect(setup(layout.id).attemptPolicy).toEqual(layout.attemptPolicy);
   registry.layouts.set(layout.id, { ...layout, attemptPolicy: undefined });
-  expect(setup(`site=${layout.id}`).attemptPolicy).toBeUndefined();
-  expect(setup('site=weatheringTest', true).attemptPolicy).toBeUndefined();
+  expect(setup(layout.id).attemptPolicy).toBeUndefined();
+  expect(setup('weatheringTest', true).attemptPolicy).toBeUndefined();
 });
 
 it('builds authored rows unchanged by a debug profile, including a fixture named testHouse', () => {

@@ -13,12 +13,12 @@ import {
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
-import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
+import { configOnSite } from './fixtures/startupContent.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const practiceWorld = () => {
-  const config = configFromUrl(new URLSearchParams('site=tutorial'));
-  const { registry } = BUNDLED_CONTENT;
+  const config = configOnSite('tutorial');
+  const { registry } = config.content;
   const layout = registry.layouts.get(config.site)!;
   const site = new AuthoredSite(config.seed, registry, config.scale, layout);
   const world = new World();

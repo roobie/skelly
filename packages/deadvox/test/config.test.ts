@@ -1,9 +1,22 @@
 import { WEATHERING_STRENGTH_MAX } from '@skelly/engine/internal/core/weather.ts';
-import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '@skelly/engine/session';
+import {
+  applyWeatheringConfig,
+  makeConfig as makeContentConfig,
+  configFromUrl as readConfig,
+  savingEnabledFromUrl,
+  startForSite,
+} from '@skelly/engine/session';
 import { chunksFor } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
-import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
+import {
+  content as BUNDLED_CONTENT,
+  configFromUrl,
+  configOnSite,
+  makeConfig,
+  startedOn,
+} from './fixtures/startupContent.ts';
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
 
@@ -33,30 +46,35 @@ it('takes the ready ring from content and caps it at the requested view', () => 
   }
 });
 
-it("uses the day cycle's default start when the URL has no time for a site without its own start", () => {
-  expect(configFromUrl('site=city').start).toBe(dayCycle.defaultStartGameTimeOfDay);
+it("uses the day cycle's default start for a start row without its own time", () => {
+  const { startTimeGameTimeOfDay: _time, ...untimed } = startForSite(BUNDLED_CONTENT, 'city');
+  const starts = new Map(BUNDLED_CONTENT.registry.starts).set(untimed.id, untimed);
+  const content = startedOn({ ...BUNDLED_CONTENT, registry: { ...BUNDLED_CONTENT.registry, starts } }, 'city');
+  expect(readConfig(new URLSearchParams(), {}, content, ragdollSweepViewer).start).toBe(
+    dayCycle.defaultStartGameTimeOfDay,
+  );
 });
 
 it('requires explicit debug mod selection for ragdoll staging and viewer placement', () => {
   const mods = 'mods=skelly.deadvox.scenario.test-house.debug';
-  const selected = configFromUrl(`site=testHouse&${mods}`, { debug: true, ragdollSweep: 19 });
+  const selected = configOnSite('testHouse', { debug: true, ragdollSweep: 19 }, mods);
   expect(selected.ragdollSweep).toBe(19);
   expect(selected.debugStart).toBeDefined();
-  for (const [query, hash] of [
-    [`site=testHouse&${mods}`, { ragdollSweep: 19 }],
-    [mods, { debug: true, ragdollSweep: 19 }],
-    [`site=testHouse&${mods}`, { debug: true, ragdollSweep: 1.5 }],
-    ['site=testHouse', { debug: true, ragdollSweep: 19 }],
-  ] as const) {
-    expect(configFromUrl(query, hash).ragdollSweep).toBeUndefined();
+  for (const config of [
+    configOnSite('testHouse', { ragdollSweep: 19 }, mods),
+    configFromUrl(mods, { debug: true, ragdollSweep: 19 }),
+    configOnSite('testHouse', { debug: true, ragdollSweep: 1.5 }, mods),
+    configOnSite('testHouse', { debug: true, ragdollSweep: 19 }),
+  ]) {
+    expect(config.ragdollSweep).toBeUndefined();
   }
 });
 
 it('passes the voice-pitch knobs on only in a debug run of the voice-size site', () => {
   const knobs = { voicePitch: 1.1, voicePitchLarge: 0.9 };
-  expect(configFromUrl('site=voice_size', { debug: true, ...knobs }).debugVoicePitch).toEqual(knobs);
-  expect(configFromUrl('site=voice_size', knobs).debugVoicePitch).toBeUndefined();
-  expect(configFromUrl('site=gauntlet', { debug: true, ...knobs }).debugVoicePitch).toBeUndefined();
+  expect(configOnSite('voice_size', { debug: true, ...knobs }).debugVoicePitch).toEqual(knobs);
+  expect(configOnSite('voice_size', knobs).debugVoicePitch).toBeUndefined();
+  expect(configOnSite('gauntlet', { debug: true, ...knobs }).debugVoicePitch).toBeUndefined();
 });
 
 it('copies site-selected weathering into replay and resumed configurations', () => {
@@ -102,10 +120,9 @@ it('accepts bounded weathering splits only in debug runs and defaults the compar
   } finally {
     warning.mockRestore();
   }
-  const comparison = configFromUrl('site=weatheringTest', { debug: true });
+  const comparison = configOnSite('weatheringTest', { debug: true });
   expect(comparison.weatheringSplit).toBe(0);
   expect(comparison.start).toBe(dayCycle.noonGameTimeOfDay);
-  expect(configFromUrl('site=weatheringTest').site).toBe('gauntlet');
 });
 
 it('turns off only world-scale weathering variation through a debug override', () => {

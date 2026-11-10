@@ -11,6 +11,7 @@ import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { startedOn } from './fixtures/startupContent.ts';
 
 // Save size and save time are held to these bounds against explored area (`DESIGN.md`, "Edits persist").
 // A failing bound is not fixed by raising a constant: the round that crosses it raises a BR card that
@@ -43,7 +44,7 @@ const version = {
 };
 
 const worldSetup = (): WorldSetup => {
-  const config = configFromUrl(new URLSearchParams('site=city'), {}, content, ragdollSweepViewer);
+  const config = configFromUrl(new URLSearchParams(), {}, startedOn(content, 'city'), ragdollSweepViewer);
   return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
 };
 

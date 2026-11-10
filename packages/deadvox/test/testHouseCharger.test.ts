@@ -12,10 +12,10 @@ import { ChunkMeshes } from '@skelly/presentation/render';
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
-import { configFromUrl } from './fixtures/startupContent.ts';
+import { configOnSite } from './fixtures/startupContent.ts';
 
 it('lets a player charge a nearby rechargeable cell from the test-house spawn', () => {
-  const config = configFromUrl('site=testHouse', { debug: true });
+  const config = configOnSite('testHouse', { debug: true });
   const { registry } = config.content;
   const source = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
   const start = playerStartFromWorld(source, config.scale);

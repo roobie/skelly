@@ -5,22 +5,17 @@ import { propCentre, type ShowroomProp, slotProps } from '@skelly/engine/interna
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
 import { cellsOf } from '@skelly/engine/internal/core/templates.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import { selectBundledMods } from '@skelly/engine/packs';
-import { configFromUrl } from '@skelly/engine/session';
 import type { Vec3 } from '@skelly/engine/world';
 import { playerStartFromWorld } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { availablePackInputs } from '../src/product/content.ts';
-import { productModIntake } from '../src/product/mods.ts';
-import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
-import { withReusedBuilds } from './bundledContentReuse.ts';
+import { siteRun } from './fixtures/siteRun.ts';
 import { content as baseContent } from './fixtures/startupContent.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
 // The showroom host shows rows only from loaded mods, so the product debug mod brings rows to show.
 const debugMods = ['skelly.deadvox.scenario.test-house.debug', 'skelly.deadvox.scenario.debug'];
-const selected = withReusedBuilds(() => selectBundledMods(productModIntake, debugMods));
-const config = configFromUrl(new URLSearchParams('site=testHouse'), {}, selected.content, ragdollSweepViewer);
+const config = siteRun('testHouse', {}, { mods: debugMods });
 const { registry } = config.content;
 const area = (authored: AuthoredSite) => {
   const { bounds } = registry.layouts.get('testHouse')!;
@@ -97,9 +92,7 @@ describe('test house showroom', () => {
         overrides: [{ pack: 'fixture.rows-a', entry: 'catalogueRows:fixture_row_a' }],
       }),
     ];
-    const withRows = withReusedBuilds(() => selectBundledMods(productModIntake, debugMods, mods));
-    expect(withRows.issues).toEqual([]);
-    const rowsConfig = configFromUrl(new URLSearchParams('site=testHouse'), {}, withRows.content, ragdollSweepViewer);
+    const rowsConfig = siteRun('testHouse', {}, { mods: debugMods, additional: mods });
     const rowsRegistry = rowsConfig.content.registry;
     const authored = new AuthoredSite(7, rowsRegistry, rowsConfig.scale, rowsRegistry.layouts.get('testHouse')!);
     const shown = authored.catalogue!.props.map(({ furniture: type }) => type);
