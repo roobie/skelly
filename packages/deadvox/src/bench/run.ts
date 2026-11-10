@@ -22,10 +22,10 @@ import {
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import { type Body, siteGenerationOf, type Vec3 } from '@skelly/engine/world';
-import type { StartupContent } from '../game/entries/packs.ts';
-import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/entries/session.ts';
-import { ACTIVE_ACTOR_RATE, physicsFor, playerTuning } from '../game/entries/sim.ts';
-import type { StreamerStats } from '../game/entries/world.ts';
+import type { StartupContent } from '../../../engine/src/game/entries/packs.ts';
+import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../../../engine/src/game/entries/session.ts';
+import { ACTIVE_ACTOR_RATE, physicsFor, playerTuning } from '../../../engine/src/game/entries/sim.ts';
+import type { StreamerStats } from '../../../engine/src/game/entries/world.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';

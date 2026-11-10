@@ -5,7 +5,7 @@ import {
   applyWeatheringConfig,
   makeConfig as makeContentConfig,
   savingEnabledFromUrl,
-} from '../src/game/entries/session.ts';
+} from '../../engine/src/game/entries/session.ts';
 import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 

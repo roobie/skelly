@@ -3,7 +3,7 @@ import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
 import { parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
 import { CHUNK, terrainShapeOf } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { planRealFrame } from '../src/game/frameDriver.ts';
+import { planRealFrame } from '../../engine/src/game/frameDriver.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
 import { createRuntime, fixtureColumns, fixtureSite, registry, scale, seed, startRest } from './snapshotTestSupport.ts';

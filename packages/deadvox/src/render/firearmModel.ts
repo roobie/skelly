@@ -12,7 +12,7 @@ import {
 import { heldAnchorOffset } from '@skelly/engine/pose';
 import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
-import type { FirearmCycleFrame, RevolverFrame } from '../game/entries/inventory.ts';
+import type { FirearmCycleFrame, RevolverFrame } from '../../../engine/src/game/entries/inventory.ts';
 
 export type { FirearmAction, FirearmMode } from '@skelly/engine/inventory';
 

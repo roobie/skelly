@@ -6,8 +6,8 @@ import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { HandlingQueue, type Item, PILE_GRID } from '@skelly/engine/inventory';
 import { CHUNK, generateColumn, makeScale, type Terrain, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { handlingMoveCompleteCue } from '../src/game/entries/sound.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { handlingMoveCompleteCue } from '../../engine/src/game/entries/sound.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

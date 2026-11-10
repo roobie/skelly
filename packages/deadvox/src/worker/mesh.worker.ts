@@ -3,7 +3,7 @@
 import { buildMesh, type FencePostDefs, type MeshData, type WireMeshes } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, type Vec3 } from '@skelly/engine/world';
-import type { FromMesher, ToMesher } from '../game/entries/mesh.ts';
+import type { FromMesher, ToMesher } from '../../../engine/src/game/entries/mesh.ts';
 import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
 
 let wireMeshes: WireMeshes = [];

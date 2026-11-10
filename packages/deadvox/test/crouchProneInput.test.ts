@@ -3,8 +3,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { dispatchReplayStanceAction, type StanceReplayAction } from '../src/game/crouchProneInput.ts';
-import { BindingRegistry, CrouchProneInput } from '../src/game/entries/input.ts';
+import { dispatchReplayStanceAction, type StanceReplayAction } from '../../engine/src/game/crouchProneInput.ts';
+import { BindingRegistry, CrouchProneInput } from '../../engine/src/game/entries/input.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const holdMs = BUNDLED_CONTENT.registry.senses.get('player')!.crouchProneHoldRealSeconds * 1000;

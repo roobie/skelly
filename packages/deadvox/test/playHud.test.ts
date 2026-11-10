@@ -6,7 +6,7 @@ import { fillText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
 import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { BindingRegistry } from '../src/game/entries/input.ts';
+import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {

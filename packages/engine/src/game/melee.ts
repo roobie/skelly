@@ -1,0 +1,117 @@
+import type { MeleeWeapon } from '../core/actorSystem.ts';
+import { claimed } from '../core/capabilities.ts';
+import type { ItemDef, MeleeClassDef } from '../core/content.ts';
+import type { Needs } from '../core/needs.ts';
+import { spendStamina } from '../core/needs.ts';
+import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../core/playerCombat.ts';
+
+export const meleeProfileForWeapon = (classes: ReadonlyMap<string, MeleeClassDef>, kind: string) => {
+  const tuning = classes.get(kind);
+  if (!tuning || tuning.unarmed) {
+    throw new Error(`No weapon melee class "${kind}"`);
+  }
+  return tuning.pose;
+};
+
+export type MeleeStartResult = 'started' | 'too-tired' | 'busy';
+
+type ContentMeleeWeapon = NonNullable<NonNullable<ItemDef['weapon']>['melee']>;
+
+export const meleeWeaponFromContent = (weapon: ContentMeleeWeapon): MeleeWeapon =>
+  copyMeleeWeapon({
+    damage: weapon.damage,
+    reach: weapon.reach,
+    cooldown: weapon.cooldownSimSeconds,
+    contactFraction: weapon.contactFraction,
+    windupCapSimSeconds: weapon.windupCapSimSeconds,
+    stamina: weapon.stamina,
+    impulse: weapon.impulse,
+    ...(weapon.damageVariance === undefined ? {} : { damageVariance: weapon.damageVariance }),
+    ...(weapon.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: weapon.headDamageMultiplier }),
+    ...(weapon.limbDamageMultiplier === undefined ? {} : { limbDamageMultiplier: weapon.limbDamageMultiplier }),
+    ...(weapon.speedMultiplier === undefined ? {} : { speedMultiplier: weapon.speedMultiplier }),
+    ...(weapon.swingSound === undefined ? {} : { swingSound: weapon.swingSound }),
+    ...(weapon.hitSound === undefined ? {} : { hitSound: weapon.hitSound }),
+    ...(weapon.hitLayerSound === undefined ? {} : { hitLayerSound: weapon.hitLayerSound }),
+    ...(weapon.charge === undefined ? {} : { charge: weapon.charge }),
+    type: weapon.type,
+    motion: weapon.motion,
+  });
+
+/** The bare-handed attack from the unarmed claimant; its absence is a content error, never a code default. */
+export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassDef>): MeleeWeapon => {
+  const unarmed = claimed(meleeClasses, 'unarmed')?.unarmed;
+  if (unarmed === undefined) {
+    throw new Error('missing required capability "unarmed"');
+  }
+  return copyMeleeWeapon({
+    motion: unarmed.motion,
+    type: unarmed.damageKind,
+    damage: unarmed.damage,
+    reach: unarmed.reach,
+    cooldown: unarmed.cooldownSimSeconds,
+    contactFraction: unarmed.contactFraction,
+    windupCapSimSeconds: unarmed.windupCapSimSeconds,
+    stamina: unarmed.stamina,
+    impulse: unarmed.impulse,
+    swingSound: unarmed.swingSound,
+    hitSound: unarmed.hitSound,
+  });
+};
+
+export interface MeleeReadinessInput {
+  rightMouseHeld: boolean;
+  meleeWeaponHeld: boolean;
+  handsEmpty: boolean;
+  /** A firearm uses right mouse for aim, never for a melee guard. */
+  firearmHeld?: boolean;
+  debugBuild: boolean;
+  inputLocked: boolean;
+}
+
+/** En-garde is available for defence regardless of what occupies the player's hands. */
+export const shouldEnterMeleeGuard = (input: MeleeReadinessInput): boolean =>
+  input.rightMouseHeld && !input.firearmHeld && !input.debugBuild && !input.inputLocked;
+
+export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
+  shouldEnterMeleeGuard(input) && (input.meleeWeaponHeld || input.handsEmpty);
+
+/** Applies content class defaults and per-weapon overrides once, before the action is saved. */
+export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {
+  const speedMultiplier = weapon.speedMultiplier ?? defaults.speedMultiplier;
+  return {
+    ...weapon,
+    cooldown: weapon.cooldown / speedMultiplier,
+    damageVariance: weapon.damageVariance ?? defaults.damageVariance,
+    headDamageMultiplier: weapon.headDamageMultiplier ?? defaults.headDamageMultiplier,
+    limbDamageMultiplier: weapon.limbDamageMultiplier ?? defaults.limbDamageMultiplier,
+    speedMultiplier,
+  };
+};
+
+export const resolvePlayerMeleeWeapon = (
+  weapon: MeleeWeapon,
+  defaults: MeleeClassDef | undefined,
+  swingSlowdown: number,
+): MeleeWeapon => {
+  const resolved = defaults ? resolveMeleeWeapon(weapon, defaults) : weapon;
+  return { ...resolved, cooldown: resolved.cooldown * swingSlowdown };
+};
+
+/** Refuses without cost when tired/busy; every accepted swing spends stamina, including a miss. */
+export const startPlayerMelee = (
+  combat: PlayerCombat,
+  needs: Pick<Needs, 'stamina' | 'staminaRegenDelayRemainingSimSeconds'>,
+  swing: BeginMeleeSwing,
+  staminaRegenDelaySimSeconds = 0,
+): MeleeStartResult => {
+  const cost = swing.weapon.stamina;
+  if (needs.stamina <= 0 || needs.stamina < cost) {
+    return 'too-tired';
+  }
+  if (!combat.beginMeleeSwing(swing)) {
+    return 'busy';
+  }
+  spendStamina(needs, cost, staminaRegenDelaySimSeconds);
+  return 'started';
+};

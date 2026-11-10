@@ -10,7 +10,7 @@ import { restoreItem, snapshotItem, stackRoom } from '@skelly/engine/internal/co
 import { HandlingQueue, Inventory, ItemFactory } from '@skelly/engine/inventory';
 import { assertFoodExposure } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Unpacking } from '../src/game/unpacking.ts';
+import { Unpacking } from '../../engine/src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 

@@ -4,7 +4,7 @@ import type { ScreenText } from '@skelly/engine/content';
 import { claimed, type Inventory, type Item, type Location } from '@skelly/engine/inventory';
 import { countText, decimalText, fillText } from '@skelly/engine/text';
 import { html, render, type TemplateResult } from 'lit-html';
-import type { Quickbar } from '../game/entries/inventory.ts';
+import type { Quickbar } from '../../../engine/src/game/entries/inventory.ts';
 import { activityProgress } from './activityProgress.ts';
 import { fillHint, type HintText, type KeyLabels, keyCap } from './keyCap.ts';
 

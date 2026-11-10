@@ -22,8 +22,8 @@ import {
   shouldEnterMeleeGuard,
   shouldEnterMeleeReady,
   startPlayerMelee,
-} from '../src/game/melee.ts';
-import { primaryMeleeAction } from '../src/game/primaryAction.ts';
+} from '../../engine/src/game/melee.ts';
+import { primaryMeleeAction } from '../../engine/src/game/primaryAction.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

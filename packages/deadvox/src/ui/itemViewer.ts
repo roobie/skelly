@@ -5,7 +5,7 @@ import type { GraphicsTuningDef } from '@skelly/engine/content';
 import type { Item } from '@skelly/engine/inventory';
 import { html, nothing, render } from 'lit-html';
 import type { Object3D } from 'three';
-import type { BindingRegistry } from '../game/entries/input.ts';
+import type { BindingRegistry } from '../../../engine/src/game/entries/input.ts';
 import { fillHint, keyCap } from './keyCap.ts';
 import { wheelPixels } from './wheel.ts';
 

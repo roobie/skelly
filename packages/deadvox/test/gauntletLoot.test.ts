@@ -4,7 +4,7 @@ import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
 import { magazineFits } from '@skelly/engine/inventory';
 import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { firearmModelForType } from '../src/game/firearmHandling.ts';
+import { firearmModelForType } from '../../engine/src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 

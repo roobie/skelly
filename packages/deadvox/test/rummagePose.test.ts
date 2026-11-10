@@ -13,9 +13,9 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { firearmHandlingFor } from '../src/game/entries/inventory.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
+import { firearmHandlingFor } from '../../engine/src/game/entries/inventory.ts';
+import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
+import { Unpacking } from '../../engine/src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';

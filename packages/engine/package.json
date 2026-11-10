@@ -15,6 +15,7 @@
     "./packs": "./src/packs.ts",
     "./pose": "./src/pose.ts",
     "./save": "./src/save.ts",
+    "./session": "./src/session.ts",
     "./sim": "./src/sim.ts",
     "./sky": "./src/sky.ts",
     "./sound": "./src/sound.ts",

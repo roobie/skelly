@@ -4,23 +4,23 @@
 import { claimed } from '@skelly/engine/inventory';
 import { getBuildRevision } from '@skelly/engine/packs';
 import { parseTimeOfDay } from '@skelly/engine/sim';
-import { loadRecord } from './bench/plan.ts';
-import { applyBenchWeathering } from './bench/post.ts';
-import { showReport } from './bench/report.ts';
-import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
-import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
-import { bundledCredits } from './bundledCredits.ts';
-import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/entries/input.ts';
-import { bundledModIdsFromUrl, selectBundledMods } from './game/entries/packs.ts';
-import type { SaveBackendPreference } from './game/entries/save.ts';
+import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '../../engine/src/game/entries/input.ts';
+import { bundledModIdsFromUrl, selectBundledMods } from '../../engine/src/game/entries/packs.ts';
+import type { SaveBackendPreference } from '../../engine/src/game/entries/save.ts';
 import {
   applyWeatheringConfig,
   configFromUrl,
   DEFAULT_RADIUS_M,
   makeConfig,
   savingEnabledFromUrl,
-} from './game/entries/session.ts';
-import type { StreamerStats } from './game/entries/world.ts';
+} from '../../engine/src/game/entries/session.ts';
+import type { StreamerStats } from '../../engine/src/game/entries/world.ts';
+import { loadRecord } from './bench/plan.ts';
+import { applyBenchWeathering } from './bench/post.ts';
+import { showReport } from './bench/report.ts';
+import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
+import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import { bundledCredits } from './bundledCredits.ts';
 import { mountControlsCard } from './presentation/controls.ts';
 import { createEngine } from './presentation/engine.ts';
 import { requestInputLock } from './presentation/input.ts';

@@ -2,10 +2,10 @@ import { buildRegistry } from '@skelly/engine/content';
 import { resolveGraphics } from '@skelly/engine/look';
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
+import { configFromUrl } from '../../engine/src/game/entries/session.ts';
 import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
 import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
-import { configFromUrl } from '../src/game/entries/session.ts';
 import { createEngine } from '../src/presentation/engine.ts';
 import { GraphicsControls } from '../src/presentation/graphicsControls.ts';
 import { writeGraphicsSettings } from '../src/presentation/graphicsSettings.ts';
@@ -14,7 +14,7 @@ import { Mood } from '../src/render/mood.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
-vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
+vi.mock('@skelly/engine/internal/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
 afterEach(() => vi.unstubAllGlobals());
 
 const scale = { label: 'Fixture scale', min: 0.2, max: 1, default: 0.7 };

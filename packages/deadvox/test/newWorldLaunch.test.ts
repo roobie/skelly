@@ -24,7 +24,7 @@ import {
   SaveCorruptionError,
   type SaveLoadResult,
   type SaveSlotPair,
-} from '../src/game/entries/save.ts';
+} from '../../engine/src/game/entries/save.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { contentLookup, SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';

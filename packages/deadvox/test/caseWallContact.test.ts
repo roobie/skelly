@@ -20,9 +20,13 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { firearmsCombatTuning } from '@skelly/engine/sim';
-import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/entries/inventory.ts';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import {
+  type FirearmShotEffect,
+  firearmHandlingFor,
+  spentCaseItemId,
+} from '../../engine/src/game/entries/inventory.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
 import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer, WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';

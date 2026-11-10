@@ -10,7 +10,7 @@ import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from
 
 const BUNDLED_CONTENT = startupContent();
 
-import { createSession, IDLE } from '../src/game/entries/session.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { formatVersion } from './snapshotTestSupport.ts';
 
 const own = buildRegistry([

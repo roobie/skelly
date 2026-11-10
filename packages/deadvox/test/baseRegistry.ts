@@ -7,8 +7,8 @@ import type { TerrainShape } from '@skelly/engine/internal/core/worldgen.ts';
 import { terrainShapeOf } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { inject } from 'vitest';
+import type { StartupContent } from '../../engine/src/game/entries/packs.ts';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import type { StartupContent } from '../src/game/entries/packs.ts';
 
 declare module 'vitest' {
   export interface ProvidedContext {

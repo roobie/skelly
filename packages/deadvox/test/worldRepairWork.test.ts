@@ -11,9 +11,9 @@ import {
   encodeInputReplay,
   InputReplayRecorder,
   type ReplayActionPayload,
-} from '../src/game/entries/input.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
-import { applyReplayActionPayload, isReplayActionPayload } from '../src/game/replayCommands.ts';
+} from '../../engine/src/game/entries/input.ts';
+import { planRealFrame } from '../../engine/src/game/frameDriver.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '../../engine/src/game/replayCommands.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
 import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';

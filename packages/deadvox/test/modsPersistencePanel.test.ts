@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import type { ModIntake } from '../src/game/entries/packs.ts';
+import type { ModIntake } from '../../engine/src/game/entries/packs.ts';
 import { ModStorage } from '../src/presentation/modStorage.ts';
 import { chooseMods } from '../src/ui/modsPanel.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 // Admission is mocked below, so the panel reads only the byte bound.
 const intake = { maxModBytes: 100 } as ModIntake;
-vi.mock('../src/game/browserMods.ts', () => ({
+vi.mock('@skelly/engine/internal/game/browserMods.ts', () => ({
   evaluateMods: (_intake: ModIntake, mods: { source: string; enabled: boolean }[]) => ({
     content: {},
     issues: new Map(),

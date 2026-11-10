@@ -1,5 +1,5 @@
 import type { PackManifest } from '@skelly/engine/packs';
-import { type BundledPack, bundledPacksFrom } from '../game/entries/packs.ts';
+import { type BundledPack, bundledPacksFrom } from '../../../engine/src/game/entries/packs.ts';
 
 // Only the product names its mod roots. Pack roots are the glob keys relative to this directory, which the
 // content and asset globs beside it share, so asset keys resolve to their owning pack.

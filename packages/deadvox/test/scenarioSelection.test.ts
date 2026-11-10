@@ -2,7 +2,7 @@ import { buildRegistry } from '@skelly/engine/content';
 import { SECONDS_PER_HOUR } from '@skelly/engine/internal/core/clock.ts';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';

@@ -54,23 +54,23 @@ export const SIMULATION_ENTRIES = [
   'engine/core/vehicleWork.ts',
   'engine/core/storage.ts',
   'engine/core/soundPicker.ts',
-  'src/game/player.ts',
-  'src/game/rest.ts',
-  'src/game/survival.ts',
-  'src/game/streamer.ts',
-  'src/game/config.ts',
+  'engine/game/player.ts',
+  'engine/game/rest.ts',
+  'engine/game/survival.ts',
+  'engine/game/streamer.ts',
+  'engine/game/config.ts',
   // Worlds receive admitted content, so startup admission is no longer reachable from world setup. The product's
   // sources and tunables it is given are content, outside this fingerprint.
-  'src/game/browserMods.ts',
-  'src/game/bundledMods.ts',
-  'src/game/commandRouter.ts',
+  'engine/game/browserMods.ts',
+  'engine/game/bundledMods.ts',
+  'engine/game/commandRouter.ts',
   // Startup wiring that play.ts hands to the session and streamer, fingerprinted independently of that caller.
-  'src/game/layoutVehicles.ts',
-  'src/game/columnArrival.ts',
-  'src/game/quickbar.ts',
-  'src/game/session.ts',
-  'src/game/simulationStepper.ts',
-  'src/game/worldSetup.ts',
+  'engine/game/layoutVehicles.ts',
+  'engine/game/columnArrival.ts',
+  'engine/game/quickbar.ts',
+  'engine/game/session.ts',
+  'engine/game/simulationStepper.ts',
+  'engine/game/worldSetup.ts',
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
@@ -107,13 +107,13 @@ export const SIMULATION_EXCLUSIONS = [
   'engine/core/pileLayout.ts',
   // Its public-cartography types describe printable features, not simulation or saved state.
   'engine/core/publicCartography.ts',
-  'src/game/audioPresentation.ts',
-  'src/game/actorAudio.ts',
+  'engine/game/audioPresentation.ts',
+  'engine/game/actorAudio.ts',
   // Debug ragdoll staging and its tuning are presentation; corpse physics must not invalidate saves.
-  'src/game/ragdollConfig.ts',
-  'src/game/saveStorageErrors.ts',
-  'src/game/saveStorageRecord.ts',
-  'src/game/saveStorageProtocol.ts',
+  'engine/game/ragdollConfig.ts',
+  'engine/game/saveStorageErrors.ts',
+  'engine/game/saveStorageRecord.ts',
+  'engine/game/saveStorageProtocol.ts',
   'src/worker/save.worker.ts',
   'src/ui/audioOptions.ts',
   'src/ui/graphicsOptions.ts',
@@ -145,7 +145,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/crafting.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
-  // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
+  // Unsupported-item hint copy is presentation only; capability policy stays in packages/engine/src/game/primaryAction.ts.
   'src/ui/primaryActionHint.ts',
   // Paper text/focus/scroll/dismissal is presentation; readable admission/effects stay in core/game.
   'src/ui/reading.ts',
@@ -208,15 +208,8 @@ function assertSupportedDependencyDiscovery(path: string, source: string): void 
   if (importMetaUrlReferences.length !== workerUrls.length) {
     throw new Error(`Unclassified import.meta.url dependency in simulation source ${path}`);
   }
-  const normalizedPath = path.replaceAll('\\', '/');
-  if (
-    workerUrls.some(
-      (call) => normalizedPath.endsWith('/src/game/streamer.ts') && call[2] !== '../worker/mesh.worker.ts',
-    )
-  ) {
-    throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
-  }
-  if (workerUrls.length > 0 && !normalizedPath.endsWith('/src/game/streamer.ts')) {
+  // The streamer takes its mesher port from presentation, so no simulation source starts a worker.
+  if (workerUrls.length > 0) {
     throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
   }
 }

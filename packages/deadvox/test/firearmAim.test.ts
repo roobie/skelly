@@ -9,7 +9,7 @@ import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 const BUNDLED_CONTENT = startupContent();
 const PLAYER_VIEW_FOV_DEGREES = graphicsTuningOf(BUNDLED_CONTENT.registry).playerViewFovDegrees;
 
-import { firearmBoreRay, firearmBoreTarget } from '../src/game/entries/sim.ts';
+import { firearmBoreRay, firearmBoreTarget } from '../../engine/src/game/entries/sim.ts';
 import { playCrosshairFrame, projectCrosshairScreenPosition } from '../src/ui/playHud.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { FIXTURE_RANGE_BLOCKS, farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';

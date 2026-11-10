@@ -57,7 +57,7 @@ describe('deadvox stays independent of its sibling projects', () => {
   const files = ROOTS.flatMap(sourceFiles);
 
   it('scans the project source roots', () => {
-    expect(files).toContain('src/game/config.ts');
+    expect(files).toContain('src/product/content.ts');
     expect(files).toContain('test/importBoundary.test.ts');
   });
 

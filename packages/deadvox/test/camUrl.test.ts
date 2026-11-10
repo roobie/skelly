@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import {
   CAM_WRITE_INTERVAL_MS,
   type CamPose,
@@ -8,7 +9,6 @@ import {
   parseCamParam,
   poseChanged,
 } from '../src/debug/camUrl.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
 
 const pose: CamPose = { position: [12.345, 1.6, -7.891], yaw: 1, pitch: -0.25, roll: 0 };
 const params = (value: string) => new URLSearchParams({ cam: value });

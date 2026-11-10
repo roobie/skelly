@@ -7,7 +7,7 @@ import {
 import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
 import { defOf, HandlingQueue, Inventory, weightOf } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 

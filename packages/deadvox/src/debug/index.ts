@@ -16,9 +16,9 @@ import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
 import { raycast, type Vec3 } from '@skelly/engine/world';
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
-import { INPUT_REPLAY_MAX_BYTES } from '../game/entries/input.ts';
-import type { DebugNoclipStep } from '../game/entries/session.ts';
-import { firearmBoreTarget, playerTuning, unarmedMeleeWeapon } from '../game/entries/sim.ts';
+import { INPUT_REPLAY_MAX_BYTES } from '../../../engine/src/game/entries/input.ts';
+import type { DebugNoclipStep } from '../../../engine/src/game/entries/session.ts';
+import { firearmBoreTarget, playerTuning, unarmedMeleeWeapon } from '../../../engine/src/game/entries/sim.ts';
 import type {
   DebugHooks,
   DebugModule,

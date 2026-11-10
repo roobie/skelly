@@ -24,7 +24,7 @@ import {
   type SaveLoadResult,
   type SaveStorageStatus,
   type SaveStore,
-} from '../game/entries/save.ts';
+} from '../../../engine/src/game/entries/save.ts';
 import { SaveStorage } from '../presentation/saveStorage.ts';
 import { CheckpointSchedule } from './checkpointSchedule.ts';
 import { factDetail } from './factDetail.ts';

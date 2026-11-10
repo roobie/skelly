@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { siteForReviewMap } from '../src/game/entries/world.ts';
+import { siteForReviewMap } from '../../engine/src/game/entries/world.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
 
 it('preserves authored lake water when debug staging wraps the site', () => {

@@ -1,8 +1,8 @@
 import { batteryCapacityMicrojoules, batteryEnergy } from '@skelly/engine/inventory';
 import { generateColumn, sitePalette, terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { createWorldSetup, playerStartFromWorld } from '../src/game/entries/world.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { createWorldSetup, playerStartFromWorld } from '../../engine/src/game/entries/world.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';

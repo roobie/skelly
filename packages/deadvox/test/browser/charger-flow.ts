@@ -2,7 +2,7 @@ import type { Registry } from '@skelly/engine/content';
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import { batteryEnergy, toHands } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave } from '@skelly/engine/save';
-import { BindingRegistry, type ReplayActionPayload } from '../../src/game/entries/input.ts';
+import { BindingRegistry, type ReplayActionPayload } from '../../../engine/src/game/entries/input.ts';
 import { fetchActorFigureFiles } from '../../src/presentation/play.ts';
 import { productAssets } from '../../src/product/assets.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';

@@ -11,7 +11,7 @@
     "dev:https": "SKELLY_HTTPS=1 vite --host 0.0.0.0 --port 5173",
     "prebuild": "npm --prefix ../.. run content:compile",
     "build": "tsc && vite build && node tools/check-favicon.mjs",
-    "typecheck": "tsc && tsc -p tsconfig.runtime.json",
+    "typecheck": "tsc",
     "publish:playtest": "node tools/publish-playtest.mjs",
     "lint:time": "node tools/time-lint.mjs",
     "pretest": "npm --prefix ../.. run content:compile",

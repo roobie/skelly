@@ -33,7 +33,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { LOOK_PITCH_LIMIT } from '../src/game/playerControls.ts';
+import { LOOK_PITCH_LIMIT } from '../../engine/src/game/playerControls.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';

@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "lib": ["ES2023"],
-    "customConditions": [],
-    "types": ["node"]
-  },
-  "include": ["src/game"]
-}

@@ -1,8 +1,8 @@
 import { realTimestamp } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import type { FromMesher, ToMesher } from '../src/game/entries/mesh.ts';
-import { Streamer } from '../src/game/streamer.ts';
+import type { FromMesher, ToMesher } from '../../engine/src/game/entries/mesh.ts';
+import { Streamer } from '../../engine/src/game/streamer.ts';
 import type { Engine } from '../src/presentation/engine.ts';
 import { WorldLoading } from '../src/presentation/worldLoading.ts';
 import { workerMesherPort } from '../src/worker/mesherPort.ts';

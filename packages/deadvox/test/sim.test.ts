@@ -8,8 +8,8 @@ import type { TreatmentDef } from '@skelly/engine/internal/core/schema.ts';
 import { gameSeconds, gameToSimSeconds } from '@skelly/engine/internal/core/time.ts';
 import { BODY_REGIONS, calendarAt, dayPhaseAt, nextTimeOfDay, parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
+import { advanceLiveFrame } from '../../engine/src/game/frameDriver.ts';
 import coreDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 

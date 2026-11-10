@@ -1,8 +1,13 @@
 import type { ScreenText } from '@skelly/engine/content';
 import { countText, fillText } from '@skelly/engine/text';
 import { html, render } from 'lit-html';
-import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from '../game/entries/packs.ts';
-import type { ModStore } from '../game/entries/save.ts';
+import {
+  type BrowserMod,
+  evaluateMods,
+  type ModEvaluation,
+  type ModIntake,
+} from '../../../engine/src/game/entries/packs.ts';
+import type { ModStore } from '../../../engine/src/game/entries/save.ts';
 import { isInvalidModSelection, ModStorage } from '../presentation/modStorage.ts';
 import { factDetail } from './factDetail.ts';
 

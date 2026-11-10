@@ -86,8 +86,8 @@ import {
   type ReplayStartState,
   stashInputReplay,
   withReplayExportGuard,
-} from '../game/entries/input.ts';
-import { firearmHandlingFor, type ItemAction } from '../game/entries/inventory.ts';
+} from '../../../engine/src/game/entries/input.ts';
+import { firearmHandlingFor, type ItemAction } from '../../../engine/src/game/entries/inventory.ts';
 import {
   createCommandRouter,
   createSession,
@@ -97,7 +97,7 @@ import {
   inputReplayStoppedStatus,
   observeRealFrame,
   requireStart,
-} from '../game/entries/session.ts';
+} from '../../../engine/src/game/entries/session.ts';
 import {
   FurnitureActionSelection,
   firearmBoreRay,
@@ -108,9 +108,13 @@ import {
   restKindForFurniture,
   selectPrimaryAction,
   unarmedMeleeWeapon,
-} from '../game/entries/sim.ts';
-import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from '../game/entries/sound.ts';
-import { columnArrival, playerStartFromWorld, registerLayoutVehicles } from '../game/entries/world.ts';
+} from '../../../engine/src/game/entries/sim.ts';
+import {
+  createRefusalPresenter,
+  handlingMoveCompleteCue,
+  handlingMoveStartCue,
+} from '../../../engine/src/game/entries/sound.ts';
+import { columnArrival, playerStartFromWorld, registerLayoutVehicles } from '../../../engine/src/game/entries/world.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';

@@ -4,7 +4,7 @@ import { Character } from '@skelly/engine/sim';
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';

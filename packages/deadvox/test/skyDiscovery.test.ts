@@ -9,7 +9,7 @@ import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
-vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
+vi.mock('@skelly/engine/internal/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
 afterEach(() => vi.unstubAllGlobals());
 
 it('draws the shared cache for an above-ground authored placement without an indoor flag', () => {

@@ -1,7 +1,7 @@
 import type { ActorFigureFiles, Registry } from '@skelly/engine/content';
 import type { SaveSnapshot } from '@skelly/engine/save';
 import { CHUNK, Chunk, makeScale, World } from '@skelly/engine/world';
-import { createSession, IDLE } from '../../src/game/entries/session.ts';
+import { createSession, IDLE } from '../../../engine/src/game/entries/session.ts';
 
 // The figure files come in from the caller, because this fixture also runs in the browser, which reads them by fetch.
 export const createChargerSession = (

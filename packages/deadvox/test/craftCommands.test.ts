@@ -5,7 +5,7 @@ import { disassemblyOutputs } from '@skelly/engine/internal/core/disassembly.ts'
 import { CraftCommands, HandlingQueue, type HandSide, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
 import { bindReach, Character, dominantSide, offSide, practiceForNextLevel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { FirearmAttachmentHandling } from '../../engine/src/game/firearmAttachmentHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';

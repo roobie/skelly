@@ -33,9 +33,9 @@ import { ShaderLib, type Vector3, type WebGLProgramParametersWithUniforms, type 
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
+import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import rawBaseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { controlIssues } from '../src/cli/controlIssues.ts';
-import { BindingRegistry } from '../src/game/entries/input.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';

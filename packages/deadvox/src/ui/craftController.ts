@@ -2,8 +2,8 @@
 
 import type { AlternativeRef, CraftPreference, CraftSources } from '@skelly/engine/inventory';
 import type { BlockEntity } from '@skelly/engine/world';
-import type { ReplayActionPayload } from '../game/entries/input.ts';
-import type { Session } from '../game/entries/session.ts';
+import type { ReplayActionPayload } from '../../../engine/src/game/entries/input.ts';
+import type { Session } from '../../../engine/src/game/entries/session.ts';
 import { renderCrafting } from './crafting.ts';
 import { craftingText, craftRows } from './craftReadout.ts';
 

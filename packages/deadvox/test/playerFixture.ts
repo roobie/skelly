@@ -1,11 +1,11 @@
 import type { PlayerDef } from '@skelly/engine/content';
 import { simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { createPlayerBody as bodyFor, physicsFor as paramsFor } from '../../engine/src/game/entries/sim.ts';
+import { movementPace as paceWith, steer as steerWith } from '../../engine/src/game/player.ts';
 import playerContent from '../../mods/skelly.body/player.json' with { type: 'json' };
-import { createPlayerBody as bodyFor, physicsFor as paramsFor } from '../src/game/entries/sim.ts';
-import { movementPace as paceWith, steer as steerWith } from '../src/game/player.ts';
 
-export type { MoveIntent } from '../src/game/entries/sim.ts';
-export type { StanceToggle } from '../src/game/player.ts';
+export type { MoveIntent } from '../../engine/src/game/entries/sim.ts';
+export type { StanceToggle } from '../../engine/src/game/player.ts';
 
 export const PLAYER: PlayerDef = {
   id: 'player',

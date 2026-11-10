@@ -10,7 +10,7 @@ import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 
 const BUNDLE_STAMP_DEFINE = '__SKELLY_BUNDLE_STAMP__';
 const ADMISSION_FINGERPRINT_DEFINE = '__SKELLY_ADMISSION_FINGERPRINT__';
-export const ADMISSION_ENTRIES = ['src/game/browserMods.ts', 'src/game/bundledMods.ts'];
+export const ADMISSION_ENTRIES = ['engine/game/browserMods.ts', 'engine/game/bundledMods.ts'];
 export const UNSTAMPED_BUNDLE_DEFINES = {
   [BUNDLE_STAMP_DEFINE]: 'undefined',
   [ADMISSION_FINGERPRINT_DEFINE]: 'undefined',

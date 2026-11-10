@@ -18,8 +18,8 @@ import {
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
-import { type ActorRenderMode, actorRendererFromUrl, PHYSICS_RATE } from '../game/entries/session.ts';
-import { ACTIVE_ACTOR_RATE, physicsFor, playerTuning } from '../game/entries/sim.ts';
+import { type ActorRenderMode, actorRendererFromUrl, PHYSICS_RATE } from '../../../engine/src/game/entries/session.ts';
+import { ACTIVE_ACTOR_RATE, physicsFor, playerTuning } from '../../../engine/src/game/entries/sim.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import { ActorMeshes } from '../render/actors.ts';
 import { type ActorRenderer, MobActorMeshes } from '../render/mobActors.ts';

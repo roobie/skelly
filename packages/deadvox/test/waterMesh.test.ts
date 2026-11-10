@@ -3,8 +3,8 @@ import { OCCLUSION_RADIUS, WIDE, wideIndex } from '@skelly/engine/internal/core/
 import { buildMesh, type MeshData } from '@skelly/engine/mesh';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { MesherPort, ToMesher } from '../src/game/entries/mesh.ts';
-import { Streamer } from '../src/game/streamer.ts';
+import type { MesherPort, ToMesher } from '../../engine/src/game/entries/mesh.ts';
+import { Streamer } from '../../engine/src/game/streamer.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 import { unitFaces } from './meshFaces.ts';
 

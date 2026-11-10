@@ -34,7 +34,7 @@ if (args.length > 0) {
 }
 // The simulation entries load the shape, so they are imported only once the hook can substitute it.
 const { ActorSystem, dayPhaseAt } = await import('@skelly/engine/sim');
-const { physicsFor, playerTuning } = await import('../game/entries/sim.ts');
+const { physicsFor, playerTuning } = await import('../../../engine/src/game/entries/sim.ts');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }

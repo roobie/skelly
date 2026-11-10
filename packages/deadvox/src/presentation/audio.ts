@@ -16,7 +16,7 @@ import {
   heartbeatForStamina,
   playerHeartbeat,
   VoiceCaps,
-} from '../game/entries/sound.ts';
+} from '../../../engine/src/game/entries/sound.ts';
 import { bundledAssetUrl, type PackAssetFiles } from './bundledAssets.ts';
 
 const SETTINGS_KEY = 'skelly.audio.settings';

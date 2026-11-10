@@ -1,4 +1,4 @@
-import type { FromMesher, MesherPort, MesherSource } from '../game/entries/mesh.ts';
+import type { FromMesher, MesherPort, MesherSource } from '../../../engine/src/game/entries/mesh.ts';
 
 /** A module worker running the mesher, seen as the streamer's port. */
 export const workerMesherPort = (worker: Worker): MesherPort => ({

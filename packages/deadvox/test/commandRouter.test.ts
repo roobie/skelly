@@ -2,11 +2,11 @@ import { Inventory } from '@skelly/engine/inventory';
 import { dominantSide, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { CommandRouterPorts } from '../src/game/commandRouter.ts';
-import { PlayerControls, type ReplayControlSample } from '../src/game/entries/input.ts';
-import { firearmHandlingFor } from '../src/game/entries/inventory.ts';
-import { createCommandRouter, type Session } from '../src/game/entries/session.ts';
-import type { FirearmShotInput } from '../src/game/firearmHandling.ts';
+import type { CommandRouterPorts } from '../../engine/src/game/commandRouter.ts';
+import { PlayerControls, type ReplayControlSample } from '../../engine/src/game/entries/input.ts';
+import { firearmHandlingFor } from '../../engine/src/game/entries/inventory.ts';
+import { createCommandRouter, type Session } from '../../engine/src/game/entries/session.ts';
+import type { FirearmShotInput } from '../../engine/src/game/firearmHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

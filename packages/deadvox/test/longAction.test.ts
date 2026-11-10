@@ -6,8 +6,8 @@ import { craftingActivityTier } from '@skelly/engine/internal/core/skillTraining
 import { defOf, footprint, Inventory, planCraft } from '@skelly/engine/inventory';
 import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { stopReadingOnClose } from '../src/game/readingClose.ts';
+import { advanceLiveFrame } from '../../engine/src/game/frameDriver.ts';
+import { stopReadingOnClose } from '../../engine/src/game/readingClose.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

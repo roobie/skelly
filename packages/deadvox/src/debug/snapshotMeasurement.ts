@@ -1,4 +1,4 @@
-import type { Session } from '../game/entries/session.ts';
+import type { Session } from '../../../engine/src/game/entries/session.ts';
 import type {
   SnapshotMeasurement,
   SnapshotMeasurementOptions,

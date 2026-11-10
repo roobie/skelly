@@ -13,8 +13,8 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { Survival } from '../src/game/entries/sim.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { Survival } from '../../engine/src/game/entries/sim.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureBodySounds } from './fixtures/bodySounds.ts';

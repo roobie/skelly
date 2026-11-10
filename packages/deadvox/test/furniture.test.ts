@@ -26,7 +26,7 @@ import {
 } from '@skelly/engine/world';
 import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import { DOOR_ACTION, registerDoorAction } from '../../engine/src/game/doorAction.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';

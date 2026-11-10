@@ -3,13 +3,13 @@ import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { Chunk, makeScale, SitePower, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { createSession, IDLE, makeConfig } from '../src/game/entries/session.ts';
-import { createWorldSetup } from '../src/game/entries/world.ts';
+import { createSession, IDLE, makeConfig } from '../../engine/src/game/entries/session.ts';
+import { createWorldSetup } from '../../engine/src/game/entries/world.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
+} from '../../engine/src/game/replayCommands.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -17,7 +17,7 @@ import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { contentLookup, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
-vi.mock('../src/game/streamer.ts', () => {
+vi.mock('@skelly/engine/internal/game/streamer.ts', () => {
   class Streamer {}
   // biome-ignore lint/style/useNamingConvention: the mocked module exports this class name.
   return { Streamer };

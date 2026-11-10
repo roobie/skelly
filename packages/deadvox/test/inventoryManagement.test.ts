@@ -7,7 +7,7 @@ import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { Character, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
 import { searchTime, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { MagazineHandling } from '../src/game/magazineHandling.ts';
+import { MagazineHandling } from '../../engine/src/game/magazineHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { levelSite } from './fixtures/levelSite.ts';

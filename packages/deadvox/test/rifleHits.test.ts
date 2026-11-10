@@ -8,9 +8,13 @@ import { actorPoseInputFor, type HumanoidHitRegion } from '@skelly/engine/pose';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
-import type { ResolvedFirearmTrajectory } from '../src/game/session.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import {
+  FirearmMechanics,
+  type FirearmShotInput,
+  type FirearmTrajectory,
+} from '../../engine/src/game/firearmHandling.ts';
+import type { ResolvedFirearmTrajectory } from '../../engine/src/game/session.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';

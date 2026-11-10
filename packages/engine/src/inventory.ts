@@ -140,3 +140,15 @@ export { recipeSkillLevel, recipeSkillRequirements } from './core/recipeSkills.t
 export { type PileScatterPlacement, pileScatterPlacements, SPENT_CASE_SCATTER_CAP } from './core/scatterPile.ts';
 export { spendFuel, swapCanister } from './core/torch.ts';
 export { playerWearHooks, wearMeleeWeaponOnHit } from './core/wear.ts';
+export {
+  ammoMatchesCalibre,
+  type FirearmCycleFrame,
+  type FirearmOutcome,
+  type FirearmShotEffect,
+  firearmHandlingFor,
+  spentCaseItemId,
+} from './game/firearmHandling.ts';
+export type { ItemAction } from './game/itemActions.ts';
+export { MAGAZINE_LOAD_ACTION, MAGAZINE_STRIP_ACTION } from './game/magazineHandling.ts';
+export { Quickbar } from './game/quickbar.ts';
+export type { RevolverFrame } from './game/revolverHandling.ts';

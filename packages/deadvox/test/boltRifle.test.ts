@@ -5,9 +5,9 @@ import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave, encodeSave } from '@skelly/engine/save';
 import { makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { FirearmShotEffect } from '../src/game/entries/inventory.ts';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import type { FirearmShotEffect } from '../../engine/src/game/entries/inventory.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

@@ -79,3 +79,7 @@ export {
   terrainHeightMetres,
   worldGroundAt,
 } from './core/worldgen.ts';
+export { columnArrival } from './game/columnArrival.ts';
+export { registerLayoutVehicles } from './game/layoutVehicles.ts';
+export type { StreamerStats } from './game/streamer.ts';
+export { createWorldSetup, playerStartFromWorld, siteForReviewMap, type WorldSetup } from './game/worldSetup.ts';

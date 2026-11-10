@@ -5,7 +5,7 @@ import { doorOptions, doorPlan, HandlingQueue, Inventory } from '@skelly/engine/
 import { coreLabel } from '@skelly/engine/text';
 import { makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import { DOOR_ACTION, registerDoorAction } from '../../engine/src/game/doorAction.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 

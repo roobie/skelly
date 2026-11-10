@@ -17,7 +17,7 @@ import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
+} from '../../engine/src/game/replayCommands.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry, fixtureSources } from './economyFixtures.ts';

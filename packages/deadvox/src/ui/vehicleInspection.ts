@@ -7,7 +7,7 @@ import {
   type VehicleWorkTarget,
   vehicleSiteName,
 } from '@skelly/engine/vehicles';
-import type { ReplayActionPayload } from '../game/entries/input.ts';
+import type { ReplayActionPayload } from '../../../engine/src/game/entries/input.ts';
 
 export type VehicleWorkPayload = Extract<ReplayActionPayload, { kind: 'vehicle.work' }>;
 type VehicleWorkKind = VehicleWorkPayload['work'];

@@ -7,8 +7,8 @@ import { decimalText } from '@skelly/engine/text';
 import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '@skelly/engine/world';
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
-import type { BindingRegistry } from '../game/entries/input.ts';
-import { playerTuning } from '../game/entries/sim.ts';
+import type { BindingRegistry } from '../../../engine/src/game/entries/input.ts';
+import { playerTuning } from '../../../engine/src/game/entries/sim.ts';
 import type { Engine } from '../presentation/engine.ts';
 
 const hotbarTemplate = (

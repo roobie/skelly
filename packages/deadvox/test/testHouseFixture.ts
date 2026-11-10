@@ -1,7 +1,7 @@
 import type { Registry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { CHUNK } from '@skelly/engine/world';
-import type { GameConfig } from '../src/game/entries/session.ts';
+import type { GameConfig } from '../../engine/src/game/entries/session.ts';
 
 export const houseScene = (config: GameConfig, registry: Registry) => {
   const layout = registry.layouts.get(config.site)!;

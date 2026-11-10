@@ -3,7 +3,7 @@
 import { Rng } from '@skelly/engine/math';
 import type { Vec3 } from '@skelly/engine/world';
 import { Group, type Object3D, Vector3 } from 'three';
-import type { FirearmShotEffect } from '../game/entries/inventory.ts';
+import type { FirearmShotEffect } from '../../../engine/src/game/entries/inventory.ts';
 import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
 import type { ModelLibrary } from './models.ts';
 

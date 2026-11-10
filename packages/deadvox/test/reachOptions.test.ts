@@ -12,7 +12,7 @@ import { HandlingQueue, Inventory, options, SLING_SLOT } from '@skelly/engine/in
 import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { downedBodyPlan } from '../src/game/downedBody.ts';
+import { downedBodyPlan } from '../../engine/src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';

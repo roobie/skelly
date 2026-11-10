@@ -14,7 +14,7 @@ import { actorPoseInputFor } from '@skelly/engine/pose';
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { CHUNK, chunksFor, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
+import { meleeWeaponFromContent, startPlayerMelee } from '../../engine/src/game/melee.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

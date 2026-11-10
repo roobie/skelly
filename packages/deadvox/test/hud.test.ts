@@ -6,8 +6,8 @@ import { Character } from '@skelly/engine/sim';
 import { decimalText, fillText } from '@skelly/engine/text';
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
-import { BindingRegistry } from '../src/game/entries/input.ts';
-import { Quickbar } from '../src/game/entries/inventory.ts';
+import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
+import { Quickbar } from '../../engine/src/game/entries/inventory.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import {
   handlingViewModel,

@@ -20,10 +20,10 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { firearmHandlingFor } from '../src/game/entries/inventory.ts';
-import { firearmBoreRay } from '../src/game/entries/sim.ts';
-import type { FirearmBoreRay } from '../src/game/firearmAim.ts';
-import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { firearmHandlingFor } from '../../engine/src/game/entries/inventory.ts';
+import { firearmBoreRay } from '../../engine/src/game/entries/sim.ts';
+import type { FirearmBoreRay } from '../../engine/src/game/firearmAim.ts';
+import { FirearmMechanics } from '../../engine/src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';

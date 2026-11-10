@@ -19,8 +19,8 @@ import {
   World,
   worldSolid,
 } from '@skelly/engine/world';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import type { PlayerInputSample } from '../src/game/session.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import type { PlayerInputSample } from '../../engine/src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

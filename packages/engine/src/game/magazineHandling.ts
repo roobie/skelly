@@ -1,0 +1,231 @@
+// Each round is one handling job, so releasing the input loses no ammunition.
+// See `SLICE-3.md`, "Firearms for real".
+import { type ActionText, actionText, fillText } from '../core/actionText.ts';
+import type { Vec3 } from '../core/coords.ts';
+import type { HandlingQueue } from '../core/handling.ts';
+import type { Inventory } from '../core/inventory.ts';
+import { defOf, type Item } from '../core/items.ts';
+import { magazineSpec } from '../core/magazine.ts';
+import { countText } from '../core/numberText.ts';
+import { stowTarget } from '../core/options.ts';
+import type { SoundEventId } from '../core/soundEvents.ts';
+
+export const MAGAZINE_LOAD_ACTION = 'magazine.load';
+export const MAGAZINE_STRIP_ACTION = 'magazine.strip';
+
+export class MagazineHandling {
+  private readonly inventory: Inventory;
+  private readonly queue: HandlingQueue;
+  private readonly feet: () => Vec3;
+  /** The firearms skill's reload-duration factor (`DESIGN.md`, "Firearms"). */
+  private readonly reloadFactor: () => number;
+  private readonly onSound: (event: SoundEventId, time: number) => void;
+  private heldStripUid: number | undefined;
+  private readonly text: ActionText;
+
+  constructor(
+    inventory: Inventory,
+    queue: HandlingQueue,
+    {
+      feet,
+      reloadFactor,
+      onSound = () => undefined,
+    }: {
+      feet: () => Vec3;
+      reloadFactor: () => number;
+      onSound?: (event: SoundEventId, time: number) => void;
+    },
+  ) {
+    this.inventory = inventory;
+    this.queue = queue;
+    this.feet = feet;
+    this.reloadFactor = reloadFactor;
+    this.onSound = onSound;
+    this.text = actionText(inventory.registry);
+    queue.registerAction(MAGAZINE_LOAD_ACTION, (params) => this.completeLoad(params.uid, params.ammoUid));
+    queue.registerAction(MAGAZINE_STRIP_ACTION, (params) => this.completeStrip(params.uid));
+  }
+
+  /** A wielded magazine, which R loads; its strip item action unloads it. */
+  reloadableUid(): number | undefined {
+    return Object.values(this.inventory.hands).find((item) => item && magazineSpec(this.inventory.registry, item.type))
+      ?.uid;
+  }
+
+  /** Loose carried cartridges only; ascending UID makes the source order save-stable. */
+  loadNext(uid: number, time: number): string | undefined {
+    const { loading } = this.text;
+    const magazine = this.heldMagazine(uid);
+    if (!magazine) {
+      return this.text.common.notHeld;
+    }
+    const [round] = [...this.inventory.items()]
+      .map(({ item }) => item)
+      .filter((item) => item !== magazine && this.carried(item) && this.fits(magazine, item))
+      .sort((a, b) => a.uid - b.uid);
+    if (!round) {
+      return this.isFull(magazine) ? loading.full : loading.noRounds;
+    }
+    const reason = this.loadReason(magazine, round);
+    if (reason) {
+      return reason;
+    }
+    const spec = magazineSpec(this.inventory.registry, magazine.type)!;
+    this.queue.enqueueAction(
+      MAGAZINE_LOAD_ACTION,
+      fillText(loading.loadRound, {
+        count: countText(magazine.cartridges!.length + 1),
+        capacity: countText(spec.capacity),
+      }),
+      defOf(this.inventory.registry, round.type).ammo!.loadSimSeconds * this.reloadFactor(),
+      { uid: magazine.uid, ammoUid: round.uid },
+    );
+    this.onSound(defOf(this.inventory.registry, round.type).ammo!.loadSound, time);
+    return undefined;
+  }
+
+  /** Strips the top round into a pocket, or onto the ground at the player's feet. */
+  strip(uid: number, time: number, held = false): string | undefined {
+    const magazine = this.heldMagazine(uid);
+    if (!magazine) {
+      this.heldStripUid = undefined;
+      return this.text.common.notHeld;
+    }
+    if (this.queue.busy) {
+      return this.text.common.busy;
+    }
+    if (magazine.cartridges!.length === 0) {
+      this.heldStripUid = undefined;
+      return this.text.magazine.empty;
+    }
+    const { stripSimSeconds, stripSound } = defOf(this.inventory.registry, magazine.cartridges![0]!).ammo!;
+    this.queue.enqueueAction(
+      MAGAZINE_STRIP_ACTION,
+      this.text.itemActions.stripRound,
+      stripSimSeconds * this.reloadFactor(),
+      { uid: magazine.uid },
+    );
+    this.heldStripUid = held ? uid : undefined;
+    this.onSound(stripSound, time);
+    return undefined;
+  }
+
+  /** Queues the next round only after the previous simulated strip job has completed. */
+  advanceHeldStrip(uid: number | undefined, time: number, held: boolean): string | undefined {
+    if (!(held && uid !== undefined && uid === this.heldStripUid)) {
+      this.heldStripUid = undefined;
+      return undefined;
+    }
+    if (this.queue.busy) {
+      return undefined;
+    }
+    const magazine = this.heldMagazine(uid);
+    if (!magazine || magazine.cartridges!.length === 0) {
+      this.heldStripUid = undefined;
+      return undefined;
+    }
+    const reason = this.strip(uid, time, true);
+    if (reason) {
+      this.heldStripUid = undefined;
+    }
+    return reason;
+  }
+
+  cancelLoad(uid: number): void {
+    const job = this.queue.jobs.find(
+      (entry) => entry.kind === 'action' && entry.jobType === MAGAZINE_LOAD_ACTION && entry.params.uid === uid,
+    );
+    if (job) {
+      this.queue.cancelJob(job);
+    }
+  }
+
+  describe(item: Item): string[] {
+    const spec = magazineSpec(this.inventory.registry, item.type);
+    return spec
+      ? [
+          fillText(this.text.magazine.cartridgesDetail, {
+            count: countText(item.cartridges!.length),
+            capacity: countText(spec.capacity),
+          }),
+        ]
+      : [];
+  }
+
+  private loadReason(magazine: Item, round: Item, completing = false): string | undefined {
+    if (!completing && this.queue.busy) {
+      return this.text.common.busy;
+    }
+    if (!(this.inventory.itemByUid(round.uid) === round && this.carried(round))) {
+      return this.text.loading.roundsNotCarried;
+    }
+    if (!this.fits(magazine, round)) {
+      return this.text.loading.wrongRounds;
+    }
+    return this.isFull(magazine) ? this.text.loading.full : undefined;
+  }
+
+  private completeLoad(uid: unknown, ammoUid: unknown): string | undefined {
+    const magazine = typeof uid === 'number' ? this.heldMagazine(uid) : undefined;
+    const round = typeof ammoUid === 'number' ? this.inventory.itemByUid(ammoUid) : undefined;
+    if (!magazine) {
+      return this.text.common.notHeld;
+    }
+    if (!round) {
+      return this.text.loading.roundsNotCarried;
+    }
+    const reason = this.loadReason(magazine, round, true);
+    if (reason) {
+      return reason;
+    }
+    const { type } = round;
+    if (!this.inventory.consume(round, 1)) {
+      return this.text.loading.roundsNotCarried;
+    }
+    magazine.cartridges!.unshift(type);
+    return undefined;
+  }
+
+  private completeStrip(uid: unknown): string | undefined {
+    const magazine = typeof uid === 'number' ? this.heldMagazine(uid) : undefined;
+    if (!magazine) {
+      this.heldStripUid = undefined;
+      return this.text.common.notHeld;
+    }
+    const [type] = magazine.cartridges!;
+    if (type === undefined) {
+      this.heldStripUid = undefined;
+      return this.text.magazine.empty;
+    }
+    const round = this.inventory.create(type);
+    const target = stowTarget(this.inventory, round, this.feet());
+    if (!(target && this.inventory.add(round, target))) {
+      this.heldStripUid = undefined;
+      return this.text.loading.noRoomForRound;
+    }
+    magazine.cartridges!.shift();
+    return undefined;
+  }
+
+  private heldMagazine(uid: number): Item | undefined {
+    const item = Object.values(this.inventory.hands).find((held) => held?.uid === uid);
+    return item && magazineSpec(this.inventory.registry, item.type) ? item : undefined;
+  }
+
+  private fits(magazine: Item, round: Item): boolean {
+    const calibre = this.inventory.registry.items.get(round.type)?.ammo?.calibre;
+    return calibre !== undefined && calibre === magazineSpec(this.inventory.registry, magazine.type)?.calibre;
+  }
+
+  private isFull(magazine: Item): boolean {
+    return magazine.cartridges!.length >= magazineSpec(this.inventory.registry, magazine.type)!.capacity;
+  }
+
+  private carried(item: Item): boolean {
+    let location = this.inventory.locate(item);
+    while (location?.kind === 'pocket') {
+      location = this.inventory.locate(location.owner);
+    }
+    return location?.kind === 'hand' || location?.kind === 'worn';
+  }
+}

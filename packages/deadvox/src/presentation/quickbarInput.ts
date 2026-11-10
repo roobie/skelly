@@ -1,4 +1,4 @@
-import { PressHoldInput } from '../game/entries/input.ts';
+import { PressHoldInput } from '../../../engine/src/game/entries/input.ts';
 
 /** Presentation estimate separating a tap from a deliberate quickbar hold. */
 const QUICKBAR_HOLD_ESTIMATE_MS = 250;

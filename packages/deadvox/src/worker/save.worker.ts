@@ -11,7 +11,7 @@ import {
   SaveStorageError,
   type SaveStorageErrorKind,
   sealSaveSlot,
-} from '../game/entries/save.ts';
+} from '../../../engine/src/game/entries/save.ts';
 import { createDurableWriteTransaction } from '../presentation/indexedDbCommit.ts';
 
 const DATABASE = 'skelly-save-slots';

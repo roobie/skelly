@@ -8,8 +8,8 @@ import { decodeSave } from '@skelly/engine/save';
 import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
 import { terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { IDLE } from '../src/game/entries/session.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
+import { IDLE } from '../../engine/src/game/entries/session.ts';
+import { planRealFrame } from '../../engine/src/game/frameDriver.ts';
 import {
   advance,
   capture,

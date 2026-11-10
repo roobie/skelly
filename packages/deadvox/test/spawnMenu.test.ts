@@ -1,9 +1,9 @@
 import { NoToneMapping } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { BindingRegistry } from '../../engine/src/game/entries/input.ts';
 import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
-import { BindingRegistry } from '../src/game/entries/input.ts';
 import type { DebugHooks } from '../src/presentation/debugInterface.ts';
 import { KeyboardInput } from '../src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';

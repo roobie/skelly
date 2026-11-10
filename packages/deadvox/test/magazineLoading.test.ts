@@ -7,12 +7,12 @@ import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engi
 import { Body } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { RELOAD_GESTURE_MS } from '../src/game/entries/input.ts';
-import { createSession, IDLE } from '../src/game/entries/session.ts';
-import { selectPrimaryAction } from '../src/game/entries/sim.ts';
-import { itemActionsFor } from '../src/game/itemActions.ts';
-import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { ReloadInput } from '../src/game/reloadInput.ts';
+import { RELOAD_GESTURE_MS } from '../../engine/src/game/entries/input.ts';
+import { createSession, IDLE } from '../../engine/src/game/entries/session.ts';
+import { selectPrimaryAction } from '../../engine/src/game/entries/sim.ts';
+import { itemActionsFor } from '../../engine/src/game/itemActions.ts';
+import { MagazineHandling } from '../../engine/src/game/magazineHandling.ts';
+import { ReloadInput } from '../../engine/src/game/reloadInput.ts';
 import {
   createMagazineLoadFrame,
   createMagazinePress,

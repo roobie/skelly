@@ -9,7 +9,7 @@ import {
   moodOf,
 } from '@skelly/engine/look';
 import { skyAt, skyInWeather, sunShadowStrength } from '@skelly/engine/sky';
-import type { GameConfig } from '../game/entries/session.ts';
+import type { GameConfig } from '../../../engine/src/game/entries/session.ts';
 import type { RenderedEngine } from '../presentation/engine.ts';
 import { setHeightFogTuning } from '../render/heightFog.ts';
 import type { LightPool } from '../render/lightPool.ts';

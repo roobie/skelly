@@ -32,9 +32,9 @@ import {
   type ReplayStartState,
   stashInputReplay,
   withReplayExportGuard,
-} from '../src/game/entries/input.ts';
-import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '../src/game/entries/session.ts';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+} from '../../engine/src/game/entries/input.ts';
+import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '../../engine/src/game/entries/session.ts';
+import { advanceLiveFrame } from '../../engine/src/game/frameDriver.ts';
 import {
   DEFAULT_REPLAY_START_STATE,
   INPUT_REPLAY_SCHEMA_VERSION,
@@ -43,12 +43,12 @@ import {
   restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
-} from '../src/game/inputReplay.ts';
-import { routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
-import { nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
-import { applyReplayLook } from '../src/game/inputReplayPlayer.ts';
-import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
-import { applyReplayActionPayload, isReplayActionPayload } from '../src/game/replayCommands.ts';
+} from '../../engine/src/game/inputReplay.ts';
+import { routeDominantUse, toggleWalking } from '../../engine/src/game/inputReplayActions.ts';
+import { nextReplayInputSample } from '../../engine/src/game/inputReplayDriver.ts';
+import { applyReplayLook } from '../../engine/src/game/inputReplayPlayer.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '../../engine/src/game/reloadInput.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '../../engine/src/game/replayCommands.ts';
 import { inputReplayStatus } from '../src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
