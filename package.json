@@ -33,6 +33,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
     "@skelly/engine": "*",
+    "@skelly/presentation": "*",
     "github-slugger": "2.0.0",
     "knip": "6.34.0",
     "mdast-util-from-markdown": "2.0.3",

@@ -2,9 +2,9 @@ import { requireDayCycle } from '@skelly/engine/content';
 import { claimed, HandlingQueue, Inventory, toggleLight } from '@skelly/engine/inventory';
 import { bindReach, Simulation, Survival } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
+import type { RenderedEngine } from '@skelly/presentation/play';
+import { type HeldItems, LightPool, PileMeshes } from '@skelly/presentation/render';
 import { type PerspectiveCamera, Vector3 } from 'three';
-import type { RenderedEngine } from '../../../presentation/src/play.ts';
-import { type HeldItems, LightPool, PileMeshes } from '../../../presentation/src/render.ts';
 
 const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12 });
 const benchLightPool = (engine: Pick<RenderedEngine, 'registry' | 'scene'>): LightPool =>

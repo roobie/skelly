@@ -11,7 +11,6 @@ import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engi
 import { createSession, IDLE } from '@skelly/engine/session';
 import { Body, selectPrimaryAction } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
-import { describe, expect, it } from 'vitest';
 import {
   createMagazineLoadFrame,
   createMagazinePress,
@@ -20,7 +19,8 @@ import {
   magazinePress,
   readMagazineLoadFrame,
   stepMagazineRaise,
-} from '../../presentation/src/render/magazineLoadPose.ts';
+} from '@skelly/presentation/internal/render/magazineLoadPose.ts';
+import { describe, expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';

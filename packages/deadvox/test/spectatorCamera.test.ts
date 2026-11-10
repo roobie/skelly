@@ -1,9 +1,9 @@
 import { playerAdsPose, playerLookPose } from '@skelly/engine/pose';
 import { createSession, IDLE, type SessionControls } from '@skelly/engine/session';
 import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
+import { SpectatorCamera } from '@skelly/presentation/internal/presentation/spectatorCamera.ts';
 import { describe, expect, it, vi } from 'vitest';
-import { DebugGunPose } from '../../presentation/src/presentation/debugGunPose.ts';
-import { SpectatorCamera } from '../../presentation/src/presentation/spectatorCamera.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 

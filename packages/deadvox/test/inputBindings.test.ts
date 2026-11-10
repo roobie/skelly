@@ -9,8 +9,12 @@ import {
   REFUSED_MODIFIERS,
 } from '@skelly/engine/input';
 import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
+import {
+  capturedChord,
+  type InputCommand,
+  KeyboardInput,
+} from '@skelly/presentation/internal/presentation/inputBindings.ts';
 import { describe, expect, it } from 'vitest';
-import { capturedChord, type InputCommand, KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 

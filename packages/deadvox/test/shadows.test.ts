@@ -30,8 +30,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { FrameTimes } from '../../presentation/src/render/frameTimes.ts';
-import { PLAYER_SELF_MASK_LAYER } from '../../presentation/src/render/shadowFlags.ts';
+import { FrameTimes } from '@skelly/presentation/internal/render/frameTimes.ts';
+import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import {
   beamMapDue,
   IDLE_REFRESH_EVERY,
@@ -43,8 +43,8 @@ import {
   sunShadowBias,
   sunShadowTexelSize,
   withinRange,
-} from '../../presentation/src/render/shadows.ts';
-import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '../../presentation/src/render.ts';
+} from '@skelly/presentation/internal/render/shadows.ts';
+import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '@skelly/presentation/render';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
 

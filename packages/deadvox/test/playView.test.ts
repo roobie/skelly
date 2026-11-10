@@ -8,6 +8,11 @@ import { graphicsTuningOf } from '@skelly/engine/look';
 import type { Actor } from '@skelly/engine/sim';
 import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
 import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
+import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
+import { ITEM_POINT_LIGHTS } from '@skelly/presentation/internal/render/lightPool.ts';
+import { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
+import type { Engine } from '@skelly/presentation/play';
+import { flashlightDaylightScale, Skylight } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   DirectionalLight,
@@ -22,11 +27,6 @@ import {
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import type { Engine } from '../../presentation/src/play.ts';
-import { ThirdPersonOrbit } from '../../presentation/src/presentation/thirdPersonOrbit.ts';
-import { ITEM_POINT_LIGHTS } from '../../presentation/src/render/lightPool.ts';
-import { createPlayView } from '../../presentation/src/render/playView.ts';
-import { flashlightDaylightScale, Skylight } from '../../presentation/src/render.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -51,8 +51,8 @@ const withoutItemModels = {
   models: new Map([...registry.models].filter(([id]) => figureModels.has(id))),
 };
 // Node has no page to fetch model files from, so the library gets an empty pack and reports each model as missing.
-vi.mock('../../presentation/src/render/models.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../presentation/src/render/models.ts')>();
+vi.mock('@skelly/presentation/internal/render/models.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@skelly/presentation/internal/render/models.ts')>();
   class EmptyPackLibrary extends actual.ModelLibrary {
     constructor(...[content, report]: ConstructorParameters<typeof actual.ModelLibrary>) {
       super(content, report, {}, 1);

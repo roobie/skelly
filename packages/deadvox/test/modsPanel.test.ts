@@ -1,5 +1,5 @@
+import { readPaste } from '@skelly/presentation/internal/ui/modsPanel.ts';
 import { expect, test, vi } from 'vitest';
-import { readPaste } from '../../presentation/src/ui/modsPanel.ts';
 import browserModConfig from '../src/config/browser-mods.json' with { type: 'json' };
 import { baseScreenText } from './baseRegistry.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };

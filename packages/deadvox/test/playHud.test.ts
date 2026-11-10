@@ -5,9 +5,7 @@ import { damageWord } from '@skelly/engine/inventory';
 import { bodyRegionLabel } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
-import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
-import { expect, it } from 'vitest';
-import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../../presentation/src/ui/hudOptions.ts';
+import { DEFAULT_HUD_OPTIONS, hudVisibility } from '@skelly/presentation/internal/ui/hudOptions.ts';
 import {
   playCarryText,
   playCrosshairFrame,
@@ -16,8 +14,10 @@ import {
   playPromptText,
   projectCrosshairScreenPosition,
   renderPlayHud,
-} from '../../presentation/src/ui/playHud.ts';
-import { playReadout } from '../../presentation/src/ui/playReadout.ts';
+} from '@skelly/presentation/internal/ui/playHud.ts';
+import { playReadout } from '@skelly/presentation/internal/ui/playReadout.ts';
+import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

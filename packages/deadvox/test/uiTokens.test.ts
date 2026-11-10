@@ -4,10 +4,10 @@ import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '@skelly/engine/internal/core/coreText.ts';
 import type { PackManifest } from '@skelly/engine/packs';
+import { bundledAssetFiles } from '@skelly/presentation/play';
+import { applyUiTokens } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
 import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
-import { bundledAssetFiles } from '../../presentation/src/play.ts';
-import { applyUiTokens } from '../../presentation/src/ui.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const refusalSound = {

@@ -22,8 +22,8 @@ import {
 } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
 import { type Body, siteGenerationOf, stepBody } from '@skelly/engine/world';
-import type { RenderedEngine } from '../../../presentation/src/play.ts';
-import { ActorMeshes, type ActorRenderer, applySky, MobActorMeshes } from '../../../presentation/src/render.ts';
+import type { RenderedEngine } from '@skelly/presentation/play';
+import { ActorMeshes, type ActorRenderer, applySky, MobActorMeshes } from '@skelly/presentation/render';
 import { ragdollConfig } from '../product/ragdoll.ts';
 import {
   ACTIVE_SHAMBLER_TARGET,

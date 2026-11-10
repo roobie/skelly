@@ -1,13 +1,13 @@
 import { type MeleeProfile, meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { meleePoseAndContact, readyMeleePose } from '@skelly/engine/pose';
+import { ARM_NODE } from '@skelly/presentation/internal/render/armRig.ts';
+import type { ItemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary } from '@skelly/presentation/render';
 import { Box3, LoadingManager, PerspectiveCamera, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { ARM_NODE } from '../../presentation/src/render/armRig.ts';
-import type { ItemLook } from '../../presentation/src/render/itemLook.ts';
-import { indexModelMaterials, prepareModel } from '../../presentation/src/render/models.ts';
-import { HeldItems, type ModelLibrary } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

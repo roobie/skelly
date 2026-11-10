@@ -2,6 +2,11 @@ import { buildRegistry, type FigureDef, type ItemDef } from '@skelly/engine/cont
 import { Inventory } from '@skelly/engine/inventory';
 import { readyMeleePose } from '@skelly/engine/pose';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
+import type { ItemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { FIGURE_PIVOT, type PlayerFigurePose } from '@skelly/presentation/internal/render/playerFigure.ts';
+import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   Group,
@@ -13,11 +18,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { HeldPresentation } from '../../presentation/src/render/heldPresentation.ts';
-import type { ItemLook } from '../../presentation/src/render/itemLook.ts';
-import { FIGURE_PIVOT, type PlayerFigurePose } from '../../presentation/src/render/playerFigure.ts';
-import { PLAYER_SELF_MASK_LAYER } from '../../presentation/src/render/shadowFlags.ts';
-import { HeldItems, type ModelLibrary, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';

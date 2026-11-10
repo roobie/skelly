@@ -11,8 +11,8 @@ import {
   type Transform,
   transpose,
 } from '@skelly/engine/pose';
+import { LOOK_AT_REST, lookAtPose } from '@skelly/presentation/internal/render/lookAt.ts';
 import { describe, expect, it } from 'vitest';
-import { LOOK_AT_REST, lookAtPose } from '../../presentation/src/render/lookAt.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

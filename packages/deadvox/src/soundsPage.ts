@@ -1,14 +1,17 @@
+// The page's style sheets come from the presentation package, which a page link cannot name by package.
+import '@skelly/presentation/style.css';
+import '@skelly/presentation/sounds.css';
 import { claimed } from '@skelly/engine/inventory';
 import type { SoundId } from '@skelly/engine/sound';
 import { playerHeartbeat } from '@skelly/engine/sound';
-import { html, render } from 'lit-html';
-import { GameAudio } from '../../presentation/src/audio.ts';
+import { GameAudio } from '@skelly/presentation/audio';
 import {
   applyUiTokens,
   buildHeartbeatSoundGuide,
   buildSoundGuide,
   renderHeartbeatSoundGuide,
-} from '../../presentation/src/ui.ts';
+} from '@skelly/presentation/ui';
+import { html, render } from 'lit-html';
 import { bundledCredits } from './bundledCredits.ts';
 import { productAssets } from './product/assets.ts';
 import { buildSoundsPageContent } from './soundsPageContent.ts';

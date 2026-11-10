@@ -2,9 +2,9 @@ import { BindingRegistry } from '@skelly/engine/input';
 import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
 import { bindReach, Character } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
+import { craftingText, craftRows, runningCraftPresentation } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { craftingText, craftRows, runningCraftPresentation } from '../../presentation/src/ui/craftReadout.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -25,8 +25,8 @@ for (const key of [
 ] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
-const { renderCrafting } = await import('../../presentation/src/ui/crafting.ts');
-const { handlingViewModel, timedActionHandlingPresentation } = await import('../../presentation/src/ui/hud.ts');
+const { renderCrafting } = await import('@skelly/presentation/internal/ui/crafting.ts');
+const { handlingViewModel, timedActionHandlingPresentation } = await import('@skelly/presentation/internal/ui/hud.ts');
 afterAll(() => dom.happyDOM.abort());
 
 const ENTITY_REPAIR = 'fixture_entity_repair';

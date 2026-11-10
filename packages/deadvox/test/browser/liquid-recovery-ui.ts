@@ -4,7 +4,7 @@ import type { ClockSettings } from '@skelly/engine/internal/core/clock.ts';
 import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import { CraftCommands, craftActionHooks, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { bindReach, Character, Simulation } from '@skelly/engine/sim';
-import { InventoryScreen } from '../../../presentation/src/ui/inventoryScreen.ts';
+import { InventoryScreen } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
 import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
 import { fixtureIds } from '../fixtures/capabilityIds.ts';

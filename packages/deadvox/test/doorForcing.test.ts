@@ -1,6 +1,6 @@
 import { decodeSave } from '@skelly/engine/save';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { contentLookup } from '../../presentation/src/ui.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, FIXTURE_MATERIAL, fixtureSources } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';

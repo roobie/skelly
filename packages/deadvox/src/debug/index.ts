@@ -19,8 +19,6 @@ import {
 } from '@skelly/engine/sim';
 import { WEATHERING_RANGES, type WeatheringUrlState } from '@skelly/engine/sky';
 import { raycast, type Vec3 } from '@skelly/engine/world';
-import { html, nothing, render, type TemplateResult } from 'lit-html';
-import { live } from 'lit-html/directives/live.js';
 import {
   type DebugHooks,
   type DebugModule,
@@ -29,9 +27,11 @@ import {
   type InputReplayStatusState,
   replayFile,
   type SnapshotMeasurement,
-} from '../../../presentation/src/debug.ts';
-import { HOT_CATEGORIES, HOT_KINDS } from '../../../presentation/src/render.ts';
-import { comboBox, positionLookedAtReadout } from '../../../presentation/src/ui.ts';
+} from '@skelly/presentation/debug';
+import { HOT_CATEGORIES, HOT_KINDS } from '@skelly/presentation/render';
+import { comboBox, positionLookedAtReadout } from '@skelly/presentation/ui';
+import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';

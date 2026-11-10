@@ -189,8 +189,8 @@ const testFiles = runSweeps
   ? { include: [...new Set([...SLOW_TEST_FILES, ...sweepCaseFiles()])], testTimeout: 0 }
   : { include: ['test/**/*.test.ts'], exclude: [...configDefaults.exclude, ...SLOW_TEST_FILES] };
 
-// Tests that use shipped content reach runtime internals through the engine's test-only subpath, which resolves
-// only under this condition. Vitest sets VITEST before it loads this config; the product dev server and build never
+// Tests that use shipped content reach engine and presentation internals through the packages' test-only
+// subpaths, which resolve only under this condition. Vitest sets VITEST before it loads this config; the product dev server and build never
 // enable it, and browser stages add it to the servers they create. See
 // `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 // Vitest gives each of its environments (`__vitest__` runs global setup) its own resolve options.
@@ -222,11 +222,12 @@ export default defineConfig({
   base: './', // served from /skelly/deadvox/ on GitHub Pages
   server: {
     fs: {
-      // The runtime package, mods and built assets live outside this project's own root; Vite's dev server
+      // The runtime and presentation packages, mods and built assets live outside this project's own root; Vite's dev server
       // otherwise refuses to serve files from outside it.
       allow: [
         fileURLToPath(new URL('.', import.meta.url)),
         fileURLToPath(new URL('../engine', import.meta.url)),
+        fileURLToPath(new URL('../presentation', import.meta.url)),
         fileURLToPath(new URL('../mods', import.meta.url)),
         fileURLToPath(new URL('../skelly-assets/built', import.meta.url)),
       ],

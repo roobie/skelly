@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { SURFACE_PATTERN_GLSL } from '@skelly/presentation/internal/render/surfacePatterns.ts';
 import { describe, expect, it } from 'vitest';
-import { SURFACE_PATTERN_GLSL } from '../../presentation/src/render/surfacePatterns.ts';
 
 describe('surface pattern face coordinates', () => {
   it('keeps the shader in step with the mirror', () => {

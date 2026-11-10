@@ -1,5 +1,5 @@
+import type { Engine } from '@skelly/presentation/play';
 import type { IUniform, Texture, WebGLRenderer } from 'three';
-import type { Engine } from '../../../presentation/src/play.ts';
 import type { SkyRouteJob, SkyRoutePhase } from './skyRouteMetrics.ts';
 
 type Method = (...args: unknown[]) => unknown;

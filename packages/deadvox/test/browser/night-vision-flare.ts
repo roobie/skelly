@@ -1,5 +1,7 @@
 import type { NightVision } from '@skelly/engine/content';
 import { realSeconds } from '@skelly/engine/sim';
+import { createMoodOutputPass, setNightFlareUniforms } from '@skelly/presentation/internal/render/moodOutput.ts';
+import { NO_FLARE } from '@skelly/presentation/internal/render/nightVisionFlare.ts';
 import {
   DataTexture,
   FloatType,
@@ -10,8 +12,6 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
-import { createMoodOutputPass, setNightFlareUniforms } from '../../../presentation/src/render/moodOutput.ts';
-import { NO_FLARE } from '../../../presentation/src/render/nightVisionFlare.ts';
 
 const SIZE = 64;
 const VIEW: NightVision = {

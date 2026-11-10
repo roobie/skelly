@@ -1,7 +1,7 @@
 import { buildSkyResult, sampleSky } from '@skelly/engine/sky';
 import type { Vec3 } from '@skelly/engine/world';
+import { flashlightDaylightScale } from '@skelly/presentation/render';
 import { expect, it } from 'vitest';
-import { flashlightDaylightScale } from '../../presentation/src/render.ts';
 import { skyFixture } from './fixtures/sky.ts';
 
 /** The fixture room with a window in its west wall, and optionally a piece standing against the back wall. */

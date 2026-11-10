@@ -48,8 +48,8 @@ import {
   realSeconds as realDuration,
 } from '@skelly/engine/sim';
 import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
+import { inputReplayStatus } from '@skelly/presentation/internal/presentation/play.ts';
 import { describe, expect, it } from 'vitest';
-import { inputReplayStatus } from '../../presentation/src/presentation/play.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { levelSite } from './fixtures/levelSite.ts';

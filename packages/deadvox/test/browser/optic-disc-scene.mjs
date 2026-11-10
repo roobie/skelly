@@ -1,7 +1,8 @@
+// biome-ignore-all lint/correctness/noUnresolvedImports: this helper runs inside the Vite-served browser page.
+import { OpticHousingMask } from '@skelly/presentation/internal/render/opticHousingMask.ts';
+import { opticLensPass, setOpticLensUniforms } from '@skelly/presentation/internal/render/opticLens.ts';
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import { Color, Vector2, WebGLRenderTarget } from 'three';
-import { OpticHousingMask } from '../../../presentation/src/render/opticHousingMask.ts';
-import { opticLensPass, setOpticLensUniforms } from '../../../presentation/src/render/opticLens.ts';
 
 // An independent silhouette supplies real tube witnesses even when the production disc correctly ignores it.
 export const scopeDiscPixels = ({ engine, view }) => {

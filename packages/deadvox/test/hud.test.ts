@@ -5,15 +5,15 @@ import { SKILL_LEVEL_MAX } from '@skelly/engine/internal/core/character.ts';
 import { HandlingQueue, Inventory, Quickbar } from '@skelly/engine/inventory';
 import { Character } from '@skelly/engine/sim';
 import { decimalText, fillText } from '@skelly/engine/text';
-import { render } from 'lit-html';
-import { describe, expect, it } from 'vitest';
 import {
   handlingViewModel,
   quickbarKey,
   quickbarViewModel,
   type TimedActionPresentation,
   timedActionHandlingPresentation,
-} from '../../presentation/src/ui/hud.ts';
+} from '@skelly/presentation/internal/ui/hud.ts';
+import { render } from 'lit-html';
+import { describe, expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 

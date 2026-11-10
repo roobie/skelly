@@ -27,7 +27,6 @@ import {
   type Weather,
   type WeatheringUrlState,
 } from '@skelly/engine/sky';
-import type { WebGLRenderer } from 'three';
 import {
   applyLook,
   autoToneUniforms,
@@ -37,7 +36,8 @@ import {
   type Shadows,
   setHotCheck,
   TONE_MODES,
-} from '../../../presentation/src/render.ts';
+} from '@skelly/presentation/render';
+import type { WebGLRenderer } from 'three';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;

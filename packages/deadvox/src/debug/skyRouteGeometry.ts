@@ -1,5 +1,5 @@
 import { CHUNK, type Vec3, worldOpaque } from '@skelly/engine/world';
-import type { Engine } from '../../../presentation/src/play.ts';
+import type { Engine } from '@skelly/presentation/play';
 
 type Field = ReturnType<NonNullable<Engine['skylight']>['inspect']>[number];
 type Opaque = ReturnType<typeof worldOpaque>;

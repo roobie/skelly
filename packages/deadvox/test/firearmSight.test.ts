@@ -12,10 +12,10 @@ import {
   sightedFirearmModel,
 } from '@skelly/engine/pose';
 import { firearmBoreRay } from '@skelly/engine/sim';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { fittedPartFrame } from '@skelly/presentation/internal/render/models.ts';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { itemLook } from '../../presentation/src/render/itemLook.ts';
-import { fittedPartFrame } from '../../presentation/src/render/models.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 

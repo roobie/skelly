@@ -13,10 +13,10 @@ import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/
 import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
+import { runningCraftPresentation, workName } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { handlingViewModel, timedActionHandlingPresentation } from '@skelly/presentation/internal/ui/hud.ts';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { runningCraftPresentation, workName } from '../../presentation/src/ui/craftReadout.ts';
-import { handlingViewModel, timedActionHandlingPresentation } from '../../presentation/src/ui/hud.ts';
-import { contentLookup } from '../../presentation/src/ui.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';

@@ -2,9 +2,9 @@ import { blockColors } from '@skelly/engine/content';
 import { blockWeatherability, PADDED, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '@skelly/engine/internal/core/occlusion.ts';
 import { buildMesh } from '@skelly/engine/mesh';
+import { ChunkMeshes } from '@skelly/presentation/render';
 import type { WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
-import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { startupContent } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 

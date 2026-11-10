@@ -1,8 +1,8 @@
 import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT, type PlayerSense } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
+import { ActorMeshes } from '@skelly/presentation/render';
 import { type InstancedMesh, Matrix4 } from 'three';
 import { expect, it } from 'vitest';
-import { ActorMeshes } from '../../presentation/src/render.ts';
 import { syncClock } from '../src/bench/renderClock.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

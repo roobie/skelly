@@ -10,8 +10,8 @@ import {
 import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
+import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { contentLookup } from '../../presentation/src/ui.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';

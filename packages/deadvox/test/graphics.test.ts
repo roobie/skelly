@@ -10,12 +10,15 @@ import {
   setGraphicsSetting,
   validGraphicsSettings,
 } from '@skelly/engine/look';
+import { GraphicsControls } from '@skelly/presentation/internal/presentation/graphicsControls.ts';
+import {
+  readGraphicsSettings,
+  writeGraphicsSettings,
+} from '@skelly/presentation/internal/presentation/graphicsSettings.ts';
+import { Gore } from '@skelly/presentation/internal/render/gore.ts';
+import { Mood } from '@skelly/presentation/render';
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { GraphicsControls } from '../../presentation/src/presentation/graphicsControls.ts';
-import { readGraphicsSettings, writeGraphicsSettings } from '../../presentation/src/presentation/graphicsSettings.ts';
-import { Gore } from '../../presentation/src/render/gore.ts';
-import { Mood } from '../../presentation/src/render.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 

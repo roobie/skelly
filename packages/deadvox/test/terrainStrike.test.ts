@@ -25,10 +25,10 @@ import {
   World,
   worldSolid,
 } from '@skelly/engine/world';
+import type { Engine } from '@skelly/presentation/play';
+import { contentLookup } from '@skelly/presentation/ui';
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import type { Engine } from '../../presentation/src/play.ts';
-import { contentLookup } from '../../presentation/src/ui.ts';
 import { BuildMode } from '../src/debug/build.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';

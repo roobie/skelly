@@ -1,5 +1,5 @@
+import { DamageFeedback } from '@skelly/presentation/internal/presentation/damageFeedback.ts';
 import { describe, expect, it } from 'vitest';
-import { DamageFeedback } from '../../presentation/src/presentation/damageFeedback.ts';
 import { DAMAGE_FEEDBACK_TUNING_FIXTURE } from './presentationFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 

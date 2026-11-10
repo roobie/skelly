@@ -23,9 +23,9 @@ const logPhase = (name) => {
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const itemPicturesModule = '/src/render/itemPictures.ts';
-const modelsModule = '/src/presentation/entries/render.ts';
-const itemLookModule = '/src/render/itemLook.ts';
+const itemPicturesModule = '/@stage/@skelly/presentation/internal/render/itemPictures.ts';
+const modelsModule = '/@stage/@skelly/presentation/render';
+const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
@@ -122,7 +122,7 @@ const content = [
   },
 ];
 const fixture = `
-import '/src/ui/style.css';
+import '@skelly/presentation/style.css';
 import uiFile from '/@fs${resolve(root, '../mods/skelly.ui/ui.json')}';
 import cursorFile from '/@fs${resolve(root, '../mods/skelly.ui/cursor.json')}';
 import progressionFile from '/@fs${resolve(root, '../mods/skelly.progression/progression.json')}';
@@ -136,12 +136,12 @@ import { buildBundledContent } from '/src/product/content.ts';
 const BUNDLED_CONTENT = buildBundledContent();
 import { requireDayCycle } from '/@stage/@skelly/engine/internal/core/content.ts';
 import { bindReach } from '/@stage/@skelly/engine/internal/core/reach.ts';
-import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
+import { InventoryScreen } from '/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts';
 import { inputBindings } from '/src/product/input.ts';
-import { mountMenuPointer } from '/src/ui/menuPointer.ts';
-import { applyUiTokens } from '/src/presentation/entries/ui.ts';
+import { mountMenuPointer } from '/@stage/@skelly/presentation/internal/ui/menuPointer.ts';
+import { applyUiTokens } from '/@stage/@skelly/presentation/ui';
 import { productAssets } from '/src/product/assets.ts';
-import { factDetail } from '/src/ui/factDetail.ts';
+import { factDetail } from '/@stage/@skelly/presentation/internal/ui/factDetail.ts';
 import { render } from 'lit-html';
 const handlingSkills = progressionFile.skills.filter((skill) => skill.id === fixtureIds.inventoryManagement)
   .map((skill) => ({ ...skill, detail: 'Fixture handling effect.' }));

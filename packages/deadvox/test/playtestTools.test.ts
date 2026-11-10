@@ -1,14 +1,14 @@
 import { BindingRegistry } from '@skelly/engine/input';
 import { DEBUG_ONLY_CONTEXTS, INPUT_CONTEXTS } from '@skelly/engine/internal/core/inputActions.ts';
-import { describe, expect, it } from 'vitest';
-import { controlsCardRows, filterControlsCardRows } from '../../presentation/src/presentation/controls.ts';
+import { controlsCardRows, filterControlsCardRows } from '@skelly/presentation/internal/presentation/controls.ts';
 import {
   loadMetrics,
   metricsExportJson,
   metricsStorageKey,
   persistMetrics,
   SessionMetrics,
-} from '../../presentation/src/presentation/playtestTools.ts';
+} from '@skelly/presentation/internal/presentation/playtestTools.ts';
+import { describe, expect, it } from 'vitest';
 import { measureSnapshots, snapshotTimerQuantumForUserAgent } from '../src/debug/snapshotMeasurement.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry } from './baseRegistry.ts';

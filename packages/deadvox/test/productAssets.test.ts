@@ -1,8 +1,8 @@
 import { resolve } from 'node:path';
 import { buildRegistry } from '@skelly/engine/content';
 import { admitPacks } from '@skelly/engine/packs';
+import { bundledAssetUrl } from '@skelly/presentation/internal/presentation/bundledAssets.ts';
 import { expect, it } from 'vitest';
-import { bundledAssetUrl } from '../../presentation/src/presentation/bundledAssets.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { packFileOrigin, readBundledPacks } from '../tools/readBundledPacks.ts';
 

@@ -3,8 +3,8 @@ import { openingTargetForHand } from '@skelly/engine/internal/game/canOpening.ts
 import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
 import { HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
 import { bindReach, Survival, selectPrimaryAction } from '@skelly/engine/sim';
+import { GuidedSteps as Tutorial } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
 import { describe, expect, it, vi } from 'vitest';
-import { GuidedSteps as Tutorial } from '../../presentation/src/presentation/guidedSteps.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';

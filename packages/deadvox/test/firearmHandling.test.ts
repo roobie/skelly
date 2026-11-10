@@ -28,13 +28,17 @@ import { aimDirection, heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/
 import { firearmBoreRay } from '@skelly/engine/sim';
 import type { SoundId } from '@skelly/engine/sound';
 import type { Vec3 } from '@skelly/engine/world';
+import { CaseEffects } from '@skelly/presentation/internal/render/caseEffects.ts';
+import {
+  actionPartPaths,
+  cloneHeldModel,
+  sampleActionStroke,
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { PileMeshes } from '@skelly/presentation/render';
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { CaseEffects } from '../../presentation/src/render/caseEffects.ts';
-import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../../presentation/src/render/firearmModel.ts';
-import { prepareModel } from '../../presentation/src/render/models.ts';
-import { PileMeshes } from '../../presentation/src/render.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';

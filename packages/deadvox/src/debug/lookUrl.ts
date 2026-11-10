@@ -52,7 +52,7 @@ import {
   type WeatheringUrlState,
   writeWeatheringParams,
 } from '@skelly/engine/sky';
-import { TONE_MODES } from '../../../presentation/src/render.ts';
+import { TONE_MODES } from '@skelly/presentation/render';
 
 export interface LookUrlState extends LookState, MoodState {
   fogginess: number;

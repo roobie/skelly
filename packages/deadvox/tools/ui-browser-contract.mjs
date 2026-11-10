@@ -22,6 +22,8 @@ const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swift
 const cwd = process.cwd();
 /** The dev server reaches the shared mods root only by absolute path. */
 const sharedModUrl = (path) => `/@fs${resolve(cwd, '../mods', path)}`;
+// The game's style sheet as a plain file URL, for a probe document that links it.
+const styleSheetUrl = `/@fs${resolve(cwd, '../presentation/src/ui/style.css')}`;
 const renderMode = browserStageMode('ui-browser-contract');
 const launchExtraArgs = ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'];
 const launchArgs = browserStageArgs('ui-browser-contract', launchExtraArgs);
@@ -233,7 +235,7 @@ try {
   await assertSaveNote('title');
   assert.equal(
     await evaluate(`(async () => {
-      const { controlsCardRows } = await import('/src/presentation/controls.ts');
+      const { controlsCardRows } = await import('/@stage/@skelly/presentation/internal/presentation/controls.ts');
       const { inputBindings } = await import('/src/product/input.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
@@ -353,13 +355,13 @@ try {
   // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
   const uiTokens = await evaluate(`(async () => {
     const { buildRegistry } = await import('/@stage/@skelly/engine/content');
-    const { applyUiTokens } = await import('/src/presentation/entries/ui.ts');
+    const { applyUiTokens } = await import('/@stage/@skelly/presentation/ui');
     const { productAssets } = await import('/src/product/assets.ts');
     const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
     const { default: baseCursor } = await import('${sharedModUrl('skelly.ui/cursor.json')}');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 640px; height: 360px; visibility: hidden';
-    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="/src/ui/style.css"><button class="inv-option">Probe</button>';
+    frame.srcdoc = '<!doctype html><link rel="stylesheet" href="${styleSheetUrl}"><button class="inv-option">Probe</button>';
     const loaded = new Promise((done) => frame.addEventListener('load', done, { once: true }));
     document.body.append(frame);
     await loaded;
@@ -534,7 +536,7 @@ try {
   })()`);
   const emptyQuickbarReady = () =>
     evaluate(`(async () => {
-      const { quickbarViewModel } = await import('/src/ui/hud.ts');
+      const { quickbarViewModel } = await import('/@stage/@skelly/presentation/internal/ui/hud.ts');
       const { inputBindings } = await import('/src/product/input.ts');
       const { quickbar, inventory } = window.uiContractRuntime;
       const expected = quickbarViewModel(quickbar, inventory, inputBindings).slots;
@@ -646,7 +648,7 @@ try {
     'world volume is persisted to localStorage',
   );
   const restoredVolumes = await evaluate(`Promise.all([
-    import('/src/presentation/entries/audio.ts'), import('/src/product/content.ts')
+    import('/@stage/@skelly/presentation/audio'), import('/src/product/content.ts')
   ]).then(([{ GameAudio }, { buildBundledContent }]) => {
     const { ui, body } = buildBundledContent().registry;
     return new GameAudio({
@@ -668,7 +670,7 @@ try {
     'locked menu click changes the graphics preference',
   );
   const restoredGraphics = await evaluate(`Promise.all([
-    import('/src/presentation/graphicsSettings.ts'), import('${sharedModUrl('skelly.graphics/graphics.json')}')
+    import('/@stage/@skelly/presentation/internal/presentation/graphicsSettings.ts'), import('${sharedModUrl('skelly.graphics/graphics.json')}')
   ]).then(([{ readGraphicsSettings }, { default: content }]) => readGraphicsSettings(content.graphics[0]))`);
   assert.equal(restoredGraphics.fastCamo, !initialCamo, 'fresh graphics settings read the persisted machine choice');
   await clickAt('[data-graphics-key="fastCamo"] button');

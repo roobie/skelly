@@ -5,10 +5,10 @@ import type { FromMesher, MesherPort, MesherSource, ToMesher } from '@skelly/eng
 import { buildMesh } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
+import { ChunkMeshes, PileMeshes } from '@skelly/presentation/render';
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
-import { ChunkMeshes, PileMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { skyFixture } from './fixtures/sky.ts';

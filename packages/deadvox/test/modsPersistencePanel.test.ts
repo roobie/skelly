@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 
 import type { ModIntake } from '@skelly/engine/packs';
+import { ModStorage } from '@skelly/presentation/internal/presentation/modStorage.ts';
+import { chooseMods } from '@skelly/presentation/ui';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, expect, test, vi } from 'vitest';
-import { ModStorage } from '../../presentation/src/presentation/modStorage.ts';
-import { chooseMods } from '../../presentation/src/ui.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 // Admission is mocked below, so the panel reads only the byte bound.

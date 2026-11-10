@@ -4,6 +4,10 @@ import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.t
 import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
 import { actionCycleSeconds, firearmHandlingFor, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { compassBearing } from '@skelly/engine/world';
+import type { HeldHandlingFrame } from '@skelly/presentation/internal/render/hands.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { RUMMAGE_POSE, rummageFrame } from '@skelly/presentation/internal/render/rummagePose.ts';
+import { HeldItems, type ModelLibrary } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   CircleGeometry,
@@ -15,10 +19,6 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { HeldHandlingFrame } from '../../presentation/src/render/hands.ts';
-import { prepareModel } from '../../presentation/src/render/models.ts';
-import { RUMMAGE_POSE, rummageFrame } from '../../presentation/src/render/rummagePose.ts';
-import { HeldItems, type ModelLibrary } from '../../presentation/src/render.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';

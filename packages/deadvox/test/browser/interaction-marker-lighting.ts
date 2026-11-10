@@ -1,3 +1,4 @@
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import {
   AmbientLight,
   BoxGeometry,
@@ -12,7 +13,6 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import { FurnitureMeshes } from '../../../presentation/src/render/furniture.ts';
 
 /** Owned pixels isolate the selected marker from HUD and unrelated world geometry. */
 export function interactionMarkerLightingProof() {

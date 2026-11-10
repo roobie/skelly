@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 
 import { mergeManifests, validateManifest } from '@skelly/engine/content';
+import { creditsViewModel } from '@skelly/presentation/internal/ui/credits.ts';
+import { mountCredits } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { creditsViewModel } from '../../presentation/src/ui/credits.ts';
-import { mountCredits } from '../../presentation/src/ui.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 describe('creditsViewModel', () => {

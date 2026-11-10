@@ -10,6 +10,10 @@ import { Rng } from '@skelly/engine/math';
 import { heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
 import { dominantSide, firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { handlingRotation } from '@skelly/presentation/internal/render/handlingTurn.ts';
+import type { HeldHandlingFrame } from '@skelly/presentation/internal/render/hands.ts';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { HeldItems, ModelLibrary, PileMeshes, PlayerMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   type BufferGeometry,
@@ -22,10 +26,6 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { handlingRotation } from '../../presentation/src/render/handlingTurn.ts';
-import type { HeldHandlingFrame } from '../../presentation/src/render/hands.ts';
-import { itemLook } from '../../presentation/src/render/itemLook.ts';
-import { HeldItems, ModelLibrary, PileMeshes, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';
 import { AIM, createPlayerBody } from './playerFixture.ts';

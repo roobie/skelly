@@ -52,6 +52,7 @@ import {
   wheel,
 } from '@skelly/engine/vehicles';
 import { BLOCK_SIZE, type Vec3 } from '@skelly/engine/world';
+import { applySky, ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import { html, render } from 'lit-html';
 import {
   BoxGeometry,
@@ -76,7 +77,6 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { applySky, ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../../../presentation/src/render.ts';
 import { productAssets } from '../product/assets.ts';
 import { buildBundledContent } from '../product/content.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';

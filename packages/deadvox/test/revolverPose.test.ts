@@ -2,13 +2,17 @@ import type { ModelDef } from '@skelly/engine/content';
 import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { type CylinderState, HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
 import { revolverChamberPoint } from '@skelly/engine/pose';
+import { ARM_NODE } from '@skelly/presentation/internal/render/armRig.ts';
+import {
+  actionPartPaths,
+  cloneHeldModel,
+  poseRevolverParts,
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import { heldModelFrame, indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary } from '@skelly/presentation/render';
 import { Box3, Matrix4, Mesh, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { ARM_NODE } from '../../presentation/src/render/armRig.ts';
-import { actionPartPaths, cloneHeldModel, poseRevolverParts } from '../../presentation/src/render/firearmModel.ts';
-import { heldModelFrame, indexModelMaterials, prepareModel } from '../../presentation/src/render/models.ts';
-import { HeldItems, type ModelLibrary } from '../../presentation/src/render.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { content } from './fixtures/startupContent.ts';
 import { modFileBytes } from './modFile.ts';

@@ -37,7 +37,7 @@ const reloadInputModule = '/@stage/@skelly/engine/input';
 const magazineModule = '/@stage/@skelly/engine/internal/core/magazine.ts';
 const heldPoseModule = '/@stage/@skelly/engine/internal/core/heldPose.ts';
 const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
-const itemLookModule = '/src/render/itemLook.ts';
+const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const pileLayoutModule = '/@stage/@skelly/engine/internal/core/pileLayout.ts';
 const vehicleProjectionModule = '/@stage/@skelly/engine/internal/core/vehicleProjection.ts';
 const progressingSample = ({ start }) => {
@@ -408,8 +408,8 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         inventory: '/@stage/@skelly/engine/internal/core/inventory.ts',
         character: '/@stage/@skelly/engine/internal/core/character.ts',
         reach: '/@stage/@skelly/engine/internal/core/reach.ts',
-        readout: '/src/ui/craftReadout.ts',
-        view: '/src/ui/crafting.ts',
+        readout: '/@stage/@skelly/presentation/internal/ui/craftReadout.ts',
+        view: '/@stage/@skelly/presentation/internal/ui/crafting.ts',
         numbers: '/@stage/@skelly/engine/internal/core/numberText.ts',
       },
     );

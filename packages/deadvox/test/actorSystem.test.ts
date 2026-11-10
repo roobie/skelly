@@ -51,11 +51,11 @@ import {
   stepBody,
   type Vec3,
 } from '@skelly/engine/world';
+import type { RagdollWorld } from '@skelly/presentation/internal/render/ragdoll.ts';
+import type { RigidBody } from '@skelly/presentation/internal/render/rigidImpulse.ts';
+import { ActorMeshes } from '@skelly/presentation/render';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import type { RagdollWorld } from '../../presentation/src/render/ragdoll.ts';
-import type { RigidBody } from '../../presentation/src/render/rigidImpulse.ts';
-import { ActorMeshes } from '../../presentation/src/render.ts';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';

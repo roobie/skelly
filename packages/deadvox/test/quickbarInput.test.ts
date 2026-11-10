@@ -4,7 +4,7 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import { PressHoldInput } from '@skelly/engine/input';
-import { QuickbarInput } from '../../presentation/src/presentation/quickbarInput.ts';
+import { QuickbarInput } from '@skelly/presentation/internal/presentation/quickbarInput.ts';
 
 const fixture = () => {
   const taps: number[] = [];

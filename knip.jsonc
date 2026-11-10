@@ -12,6 +12,11 @@
       "entry": ["src/*.ts", "src/*.mjs"],
       "project": ["src/**/*.{mjs,ts}", "test/**/*.ts"]
     },
+    "packages/presentation": {
+      // The entries are the package's exports; the test-only subpath serves deadvox tests and stages.
+      "entry": ["src/*.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
     "packages/deadvox": {
       "ignore": ["vendor/rapier-f64/**"],
       // The measurement tool substitutes this package into the Rapier seam through a Vite transform.
@@ -26,12 +31,7 @@
       ],
       "ignoreUnresolved": [
         // Vite resolves this browser URL from the Deadvox root at runtime.
-        "/src/presentation/saveStorage.ts",
         "/src/product/input.ts",
-        "/src/presentation/controls.ts",
-        "/src/presentation/guidedSteps.ts",
-        "/src/ui/guidedSteps.ts",
-        "/src/ui/inventoryScreen.ts",
         "/test/fixtures/capabilityIds.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
@@ -55,7 +55,12 @@
         "/@stage/@skelly/engine/internal/game/unpacking.ts",
         "/@stage/@skelly/engine/internal/game/firearmHandling.ts",
         "/@stage/@skelly/engine/internal/game/doorAction.ts",
-        "/@stage/@skelly/engine/session"
+        "/@stage/@skelly/engine/session",
+        "/@stage/@skelly/presentation/internal/presentation/controls.ts",
+        "/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts",
+        "/@stage/@skelly/presentation/internal/presentation/saveStorage.ts",
+        "/@stage/@skelly/presentation/internal/ui/guidedSteps.ts",
+        "/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts"
       ],
       "entry": [
         "index.html!",
@@ -69,8 +74,6 @@
         "src/soundsPage.ts!",
         // Tiled loads the map extension, which takes the authored terrain evaluator from its runtime entry.
         "maps/extensions/*.mjs",
-        // A type-level witness compiled by typecheck, never imported.
-        "src/worker/mesherPort.witness.ts",
         "tools/police-item-models.mjs",
         "tools/item-fuel-models.mjs",
         "tools/rapier-f64/candidate.ts",

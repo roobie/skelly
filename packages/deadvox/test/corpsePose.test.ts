@@ -1,8 +1,8 @@
 import { actorFigure } from '@skelly/engine/content';
 import { actorHitFlinchDuration } from '@skelly/engine/internal/core/actorPose.ts';
 import { decodeFrame, type Pose, posedActor } from '@skelly/engine/pose';
+import { corpseFallPose, deathBlendSeconds, deathClip } from '@skelly/presentation/internal/render/corpsePose.ts';
 import { describe, expect, it } from 'vitest';
-import { corpseFallPose, deathBlendSeconds, deathClip } from '../../presentation/src/render/corpsePose.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

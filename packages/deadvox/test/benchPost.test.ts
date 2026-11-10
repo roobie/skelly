@@ -1,9 +1,9 @@
 import { makeConfig } from '@skelly/engine/session';
+import { heightFogUniforms } from '@skelly/presentation/internal/render/heightFog.ts';
+import type { RenderedEngine } from '@skelly/presentation/play';
+import { setHeightFogTuning } from '@skelly/presentation/render';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import type { RenderedEngine } from '../../presentation/src/play.ts';
-import { heightFogUniforms } from '../../presentation/src/render/heightFog.ts';
-import { setHeightFogTuning } from '../../presentation/src/render.ts';
 import { benchFlareSourcesFromUrl } from '../src/bench/lightFixture.ts';
 import {
   applyBenchWeathering,

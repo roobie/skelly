@@ -15,7 +15,6 @@ import {
   type Transform,
   type Vec3,
 } from '@skelly/engine/pose';
-import { describe, expect, it } from 'vitest';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
   type CrowdCellMaskLayout,
@@ -30,7 +29,8 @@ import {
   packCharge,
   packCrowdBoneMatrix,
   packSeveredMask,
-} from '../../presentation/src/render/crowd.ts';
+} from '@skelly/presentation/internal/render/crowd.ts';
+import { describe, expect, it } from 'vitest';
 
 const bones = bodySkeleton(
   JSON.parse(readFileSync(new URL('./fixtures/actors/fixture.body.json', import.meta.url), 'utf8')) as {

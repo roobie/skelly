@@ -16,6 +16,13 @@ import {
   readyMeleePose,
 } from '@skelly/engine/pose';
 import { makeScale } from '@skelly/engine/world';
+import { ARM_NODE, solveArmRig } from '@skelly/presentation/internal/render/armRig.ts';
+import { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
+import { createHeldViews } from '@skelly/presentation/internal/render/heldViews.ts';
+import { stepMagazineRaise } from '@skelly/presentation/internal/render/magazineLoadPose.ts';
+import { OpticLensRenderer } from '@skelly/presentation/internal/render/opticLens.ts';
+import { OPTIC_BODY_LAYER, PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   BoxGeometry,
@@ -34,13 +41,6 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { ARM_NODE, solveArmRig } from '../../presentation/src/render/armRig.ts';
-import { HeldPresentation } from '../../presentation/src/render/heldPresentation.ts';
-import { createHeldViews } from '../../presentation/src/render/heldViews.ts';
-import { stepMagazineRaise } from '../../presentation/src/render/magazineLoadPose.ts';
-import { OpticLensRenderer } from '../../presentation/src/render/opticLens.ts';
-import { OPTIC_BODY_LAYER, PLAYER_SELF_MASK_LAYER } from '../../presentation/src/render/shadowFlags.ts';
-import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
@@ -48,8 +48,8 @@ import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
-vi.mock('../../presentation/src/render/magazineLoadPose.ts', { spy: true });
-vi.mock('../../presentation/src/render/armRig.ts', { spy: true });
+vi.mock('@skelly/presentation/internal/render/magazineLoadPose.ts', { spy: true });
+vi.mock('@skelly/presentation/internal/render/armRig.ts', { spy: true });
 
 const fixture = async (
   firearm = true,

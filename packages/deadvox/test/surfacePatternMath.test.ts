@@ -1,6 +1,6 @@
+import { ChunkMeshes } from '@skelly/presentation/render';
 import { ShaderChunk, ShaderLib, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
-import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const INCLUDE = /^[ \t]*#include +<([\w./]+)>/gm;

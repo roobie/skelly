@@ -12,8 +12,8 @@ import {
   TORCH_STEP,
   targetColorScale,
 } from '@skelly/engine/look';
+import { TONE_MODES } from '@skelly/presentation/render';
 import { describe, expect, it } from 'vitest';
-import { TONE_MODES } from '../../presentation/src/render.ts';
 import { displayed, inputForDisplay } from './toneCurves.ts';
 
 // The shaders (grade pass, height fog, bloom) and shader warm-up can't be unit-tested here: there is

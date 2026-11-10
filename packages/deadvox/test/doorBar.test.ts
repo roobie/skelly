@@ -3,8 +3,8 @@ import { DOOR_ACTION, registerDoorAction } from '@skelly/engine/internal/game/do
 import { doorPlan, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import type { BlockEntity, Vec3 } from '@skelly/engine/world';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { contentLookup } from '../../presentation/src/ui.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';

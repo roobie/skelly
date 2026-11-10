@@ -3,6 +3,17 @@ import type { ContentSource } from '@skelly/engine/content';
 import { pileLayout } from '@skelly/engine/internal/core/pileLayout.ts';
 import { Inventory, PILE_GRID, type Pile, spentCaseItemId, toggleLight } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
+import { createCompass } from '@skelly/presentation/internal/render/compass.ts';
+import { presentHeldDisplay } from '@skelly/presentation/internal/render/heldDisplay.ts';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import {
+  fittedPartFrame,
+  groundModelFrame,
+  heldModelFrame,
+  indexModelMaterials,
+  prepareModel,
+} from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   BoxGeometry,
@@ -21,17 +32,6 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createCompass } from '../../presentation/src/render/compass.ts';
-import { presentHeldDisplay } from '../../presentation/src/render/heldDisplay.ts';
-import { itemLook } from '../../presentation/src/render/itemLook.ts';
-import {
-  fittedPartFrame,
-  groundModelFrame,
-  heldModelFrame,
-  indexModelMaterials,
-  prepareModel,
-} from '../../presentation/src/render/models.ts';
-import { HeldItems, ModelLibrary, PileMeshes } from '../../presentation/src/render.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -355,7 +355,7 @@ describe('piles with models', () => {
       version: 1,
       has: (id: string) => id === modelDefinition.id,
       groundLook: () => ground.clone(),
-    } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
+    } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
     const render = (on: boolean, withModel = true) => {
       const source = withModel
         ? registry
@@ -430,7 +430,7 @@ describe('piles with models', () => {
         version: 1,
         has: (id: string) => id === modelDefinition.id,
         groundLook: () => ground.clone(),
-      } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
+      } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
       const render = (on: boolean) => {
         const items = new Inventory(registry);
         const light = items.create(definition.id);

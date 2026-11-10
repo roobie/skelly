@@ -1,3 +1,6 @@
+import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
+import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   BoxGeometry,
@@ -14,9 +17,6 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { glowingCopy } from '../../presentation/src/render/itemEmissive.ts';
-import { applyModelMaterials, modelMaterialWarmUp } from '../../presentation/src/render/modelMaterials.ts';
-import { prepareModel } from '../../presentation/src/render/models.ts';
 import { thingModels } from './thingModels.ts';
 
 const table = {

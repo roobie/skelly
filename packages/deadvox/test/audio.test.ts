@@ -1,6 +1,6 @@
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { GameAudio } from '@skelly/presentation/audio';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GameAudio } from '../../presentation/src/audio.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 

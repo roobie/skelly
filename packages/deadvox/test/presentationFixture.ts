@@ -1,6 +1,6 @@
-import type { DamageFeedbackTuning } from '../../presentation/src/presentation/damageFeedback.ts';
-import type { PainCueTuning } from '../../presentation/src/presentation/painCue.ts';
-import type { GoreTuning } from '../../presentation/src/render/gore.ts';
+import type { DamageFeedbackTuning } from '@skelly/presentation/internal/presentation/damageFeedback.ts';
+import type { PainCueTuning } from '@skelly/presentation/internal/presentation/painCue.ts';
+import type { GoreTuning } from '@skelly/presentation/internal/render/gore.ts';
 
 export const GORE_TUNING_FIXTURE: GoreTuning = {
   dropletCap: 17,

@@ -1,9 +1,5 @@
 import type { Session } from '@skelly/engine/session';
-import type {
-  SnapshotMeasurement,
-  SnapshotMeasurementOptions,
-  SnapshotTimerQuantum,
-} from '../../../presentation/src/debug.ts';
+import type { SnapshotMeasurement, SnapshotMeasurementOptions, SnapshotTimerQuantum } from '@skelly/presentation/debug';
 
 const FIREFOX_USER_AGENT = /Firefox\//;
 const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;

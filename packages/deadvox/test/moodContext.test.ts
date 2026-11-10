@@ -1,6 +1,8 @@
 import type { NightVision } from '@skelly/engine/content';
 import { realSeconds } from '@skelly/engine/sim';
 import type { Sky } from '@skelly/engine/sky';
+import type { RenderedEngine } from '@skelly/presentation/play';
+import { Mood } from '@skelly/presentation/render';
 import {
   Color,
   Fog,
@@ -16,8 +18,6 @@ import type { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { expect, it, vi } from 'vitest';
 import graphics from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import type { RenderedEngine } from '../../presentation/src/play.ts';
-import { Mood } from '../../presentation/src/render.ts';
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { benchDraw } from '../src/bench/post.ts';
 import { baseRegistry } from './baseRegistry.ts';

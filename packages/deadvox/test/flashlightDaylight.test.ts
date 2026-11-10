@@ -3,8 +3,8 @@ import type { ItemDef } from '@skelly/engine/content';
 import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
 import { dayPhaseAt } from '@skelly/engine/sim';
 import { skyAt } from '@skelly/engine/sky';
+import { flashlightDaylightScale } from '@skelly/presentation/render';
 import { describe, expect, it } from 'vitest';
-import { flashlightDaylightScale } from '../../presentation/src/render.ts';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 

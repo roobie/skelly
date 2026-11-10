@@ -1,5 +1,5 @@
-import type { ActorAnimator } from '../../presentation/src/render/actorAnimator.ts';
-import type { HeldItems } from '../../presentation/src/render.ts';
+import type { ActorAnimator } from '@skelly/presentation/internal/render/actorAnimator.ts';
+import type { HeldItems } from '@skelly/presentation/render';
 
 /** Read-only inspection across the transitional adapter and its physical animation owner. */
 export const heldState = (held: HeldItems): object => {

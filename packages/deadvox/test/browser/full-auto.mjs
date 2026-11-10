@@ -30,7 +30,8 @@ const requireAnchor = (code, file, marker) => {
 // Vite reports transform failures asynchronously. Validate before starting it or a browser,
 // so an API change cannot masquerade as a later cold-audio wait timeout.
 for (const [file, marker] of anchors) {
-  requireAnchor(readFileSync(resolve(root, file), 'utf8'), file, marker);
+  // The anchored files are presentation sources, named relative to that package.
+  requireAnchor(readFileSync(resolve(root, '../presentation', file), 'utf8'), file, marker);
 }
 const vite = await createStageServer({
   root,

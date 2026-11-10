@@ -1,6 +1,6 @@
+import { ChunkMeshes } from '@skelly/presentation/render';
 import { LinearFilter, RepeatWrapping, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { expect, it } from 'vitest';
-import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { startupContent } from './baseRegistry.ts';
 
 it('selects cached noise only when enabled and reuses the lattice across shader recompiles', () => {

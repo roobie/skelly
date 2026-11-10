@@ -1,6 +1,8 @@
 // Entry point. `?bench=1` runs the milestone 1.0 benchmark, `?bench=report` shows its
 // results; otherwise the game starts (`?radius=` in metres, `?seed=`).
 
+// The page's style sheet comes from the presentation package, which a page link cannot name by package.
+import '@skelly/presentation/style.css';
 import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from '@skelly/engine/input';
 import { claimed } from '@skelly/engine/inventory';
 import { bundledModIdsFromUrl, getBuildRevision, selectBundledMods } from '@skelly/engine/packs';
@@ -21,8 +23,8 @@ import {
   requestInputLock,
   startPlay,
   WorldLoading,
-} from '../../presentation/src/play.ts';
-import { tutorialRequested, tutorialUrl } from '../../presentation/src/tutorialUrl.ts';
+} from '@skelly/presentation/play';
+import { tutorialRequested, tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import {
   applyUiTokens,
   chooseMods,
@@ -34,7 +36,7 @@ import {
   mountInputOptions,
   mountWorldLoading,
   SaveController,
-} from '../../presentation/src/ui.ts';
+} from '@skelly/presentation/ui';
 import { loadRecord } from './bench/plan.ts';
 import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';

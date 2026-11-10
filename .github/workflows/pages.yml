@@ -13,6 +13,7 @@ on:
       - '.gitmodules'
       - 'packages/deadvox/**'
       - 'packages/engine/**'
+      - 'packages/presentation/**'
       - 'packages/mods/**'
       - 'tools/lit-check/**'
       - 'package.json'
@@ -25,6 +26,7 @@ on:
       - '!**/*.md'
       - '!packages/deadvox/test/**'
       - '!packages/engine/test/**'
+      - '!packages/presentation/test/**'
   workflow_dispatch:
 
 permissions:

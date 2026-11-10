@@ -6,8 +6,8 @@ import { decodeSave, encodeSave, type SaveContentKind } from '@skelly/engine/sav
 import { createSession, IDLE } from '@skelly/engine/session';
 import { dominantSide, offSide } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { contentLookup as lookupSaveContent } from '../../presentation/src/ui.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

@@ -19,7 +19,7 @@ import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { decodeSave } = await import('@skelly/engine/save');
-const { metricsStorageKey } = await import(pathToFileURL(`${root}/src/presentation/playtestTools.ts`));
+const { metricsStorageKey } = await import(pathToFileURL(`${root}/../presentation/src/presentation/playtestTools.ts`));
 const { server, address } = await saveControllerServer();
 const browser = await launchChromium('save-controller-regressions', { headless: true });
 const url = browserStageUrl('save-controller-regressions', address);
@@ -101,7 +101,9 @@ try {
       await page.getByRole('button', { name: 'Practice controls', exact: true }).press('Enter');
       assert.equal(
         await page.evaluate(async () => {
-          const { controlsCardRows, filterControlsCardRows } = await import('/src/presentation/controls.ts');
+          const { controlsCardRows, filterControlsCardRows } = await import(
+            '/@stage/@skelly/presentation/internal/presentation/controls.ts'
+          );
           const { inputBindings } = await import('/src/product/input.ts');
           const { topics } = gauntletWitness.engine.site.guidance.steps[0];
           const search = document.querySelector('#controls-search');
@@ -127,8 +129,12 @@ try {
         }
       }, binding);
       const canHints = await page.evaluate(async () => {
-        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
-        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
+        const { GuidedSteps: Tutorial } = await import(
+          '/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts'
+        );
+        const { mountGuidance: mountTutorial } = await import(
+          '/@stage/@skelly/presentation/internal/ui/guidedSteps.ts'
+        );
         const { Inventory } = await import('/@stage/@skelly/engine/internal/core/inventory.ts');
         const { HandlingQueue } = await import('/@stage/@skelly/engine/internal/core/handling.ts');
         const { Unpacking } = await import('/@stage/@skelly/engine/internal/game/unpacking.ts');
@@ -243,12 +249,16 @@ try {
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
       assert.equal(canHints.awaitingConsumption, true, 'opening and wielding alone are not consumption');
       const weaponsHints = await page.evaluate(async () => {
-        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
-        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
+        const { GuidedSteps: Tutorial } = await import(
+          '/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts'
+        );
+        const { mountGuidance: mountTutorial } = await import(
+          '/@stage/@skelly/presentation/internal/ui/guidedSteps.ts'
+        );
         const { Inventory } = await import('/@stage/@skelly/engine/internal/core/inventory.ts');
         const { HandlingQueue } = await import('/@stage/@skelly/engine/internal/core/handling.ts');
         const { FirearmMechanics } = await import('/@stage/@skelly/engine/internal/game/firearmHandling.ts');
-        const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
+        const { InventoryScreen } = await import('/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts');
         const { bindReach } = await import('/@stage/@skelly/engine/internal/core/reach.ts');
         const { fixtureIds } = await import('/test/fixtures/capabilityIds.ts');
         const { Unpacking } = await import('/@stage/@skelly/engine/internal/game/unpacking.ts');
@@ -403,8 +413,12 @@ try {
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(async () => {
-        const { GuidedSteps: Tutorial } = await import('/src/presentation/guidedSteps.ts');
-        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
+        const { GuidedSteps: Tutorial } = await import(
+          '/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts'
+        );
+        const { mountGuidance: mountTutorial } = await import(
+          '/@stage/@skelly/presentation/internal/ui/guidedSteps.ts'
+        );
         const { engine, session } = gauntletWitness;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
         const { stageMarkArea } = await import('/@stage/@skelly/engine/internal/core/stageMarks.ts');
@@ -511,7 +525,7 @@ try {
       });
       await page.waitForFunction(() => !document.querySelector('#death').hidden);
       const after = await page.evaluate(async (namespace) => {
-        const { SaveStorage } = await import('/src/presentation/saveStorage.ts');
+        const { SaveStorage } = await import('/@stage/@skelly/presentation/internal/presentation/saveStorage.ts');
         const storage = new SaveStorage({ backend: 'indexeddb' });
         try {
           const record = await storage.load(namespace);
@@ -960,7 +974,10 @@ try {
       metrics: await handBack('#playtest-metrics-export'),
       replay: await handBack('#playtest-replay-export'),
     };
-    const pageModules = { tools: '/src/presentation/playtestTools.ts', replays: '/@stage/@skelly/engine/input' };
+    const pageModules = {
+      tools: '/@stage/@skelly/presentation/internal/presentation/playtestTools.ts',
+      replays: '/@stage/@skelly/engine/input',
+    };
     const kinds = await page.evaluate(
       async ({ metrics, replay, modules }) => {
         const bytes = (base64) => Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));

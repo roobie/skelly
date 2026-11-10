@@ -15,8 +15,8 @@ import { Scene, PerspectiveCamera, WebGLRenderer } from 'three';
 import { buildRegistry } from '@skelly/engine/content';
 import { Inventory } from '@skelly/engine/inventory';
 import { playerTuning } from '@skelly/engine/sim';
-import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
-import { ModelLibrary, PileMeshes } from '/src/presentation/entries/render.ts';
+import { CaseEffects, FLYING_CASE_CAP } from '@skelly/presentation/internal/render/caseEffects.ts';
+import { ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { productAssets } from '/src/product/assets.ts';
 import { SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
 const raw = {

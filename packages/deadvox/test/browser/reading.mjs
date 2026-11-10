@@ -96,7 +96,7 @@ try {
     throw new Error(`Reading title did not become ready: ${JSON.stringify({ readiness, errors })}`, { cause: error });
   }
   const ordinaryControlIds = await page.evaluate(
-    "Promise.all([import('/src/presentation/controls.ts'), import('/src/product/input.ts')]).then(([{ controlsCardRows }, { inputBindings }]) => controlsCardRows(inputBindings).map(({ id }) => id))",
+    "Promise.all([import('/@stage/@skelly/presentation/internal/presentation/controls.ts'), import('/src/product/input.ts')]).then(([{ controlsCardRows }, { inputBindings }]) => controlsCardRows(inputBindings).map(({ id }) => id))",
   );
   const renderedControlIds = await page
     .locator('#controls dt')
@@ -419,7 +419,7 @@ try {
       return entity.uid;
     });
     await page.evaluate(async () => {
-      const restUiModule = '/src/ui/rest.ts';
+      const restUiModule = '/@stage/@skelly/presentation/internal/ui/rest.ts';
       const inputModule = '/src/product/input.ts';
       globalThis.readingWitness.restViewModel = (await import(restUiModule)).restViewModel;
       globalThis.readingWitness.keys = (await import(inputModule)).inputBindings;

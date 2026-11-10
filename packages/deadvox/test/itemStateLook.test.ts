@@ -9,16 +9,16 @@ import {
   supplyShare,
   toggleLight,
 } from '@skelly/engine/inventory';
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
-import { expect, it, vi } from 'vitest';
-import { type ItemLook, itemLook } from '../../presentation/src/render/itemLook.ts';
-import { ItemPictures } from '../../presentation/src/render/itemPictures.ts';
+import { type ItemLook, itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
 import {
   applyItemStateLook,
   disposeItemStateMaterials,
   fittedStateGroup,
-} from '../../presentation/src/render/itemStateLook.ts';
-import { type ModelLibrary, PileMeshes } from '../../presentation/src/render.ts';
+} from '@skelly/presentation/internal/render/itemStateLook.ts';
+import { type ModelLibrary, PileMeshes } from '@skelly/presentation/render';
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
+import { expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 
 const fixture = () => {

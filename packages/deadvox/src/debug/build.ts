@@ -7,9 +7,9 @@ import type { BlockBlow } from '@skelly/engine/sim';
 import { playerTuning } from '@skelly/engine/sim';
 import { decimalText } from '@skelly/engine/text';
 import { type Body, bodyOverlapsBlock, raycast, type Vec3 } from '@skelly/engine/world';
+import type { Engine } from '@skelly/presentation/play';
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
-import type { Engine } from '../../../presentation/src/play.ts';
 
 const hotbarTemplate = (
   blocks: readonly { color: string; name: string }[],

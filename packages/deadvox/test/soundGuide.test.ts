@@ -2,9 +2,9 @@
 
 import { mergeManifests, type PackedManifest, type SoundDef } from '@skelly/engine/content';
 import { type SoundId, soundVariantKey } from '@skelly/engine/sound';
+import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from '@skelly/presentation/ui';
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
-import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from '../../presentation/src/ui.ts';
 import { bundledCredits } from '../src/bundledCredits.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';

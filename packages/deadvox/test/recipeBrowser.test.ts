@@ -1,8 +1,8 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { type RecipeBrowserQuery, recipeBrowser } from '@skelly/presentation/internal/ui/recipeBrowser.ts';
 import { describe, expect, it } from 'vitest';
-import { type RecipeBrowserQuery, recipeBrowser } from '../../presentation/src/ui/recipeBrowser.ts';
 import { fixtureSources } from './economyFixtures.ts';
 
 const categories = () => [

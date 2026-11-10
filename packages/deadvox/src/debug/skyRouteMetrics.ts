@@ -1,5 +1,5 @@
 import type { Vec3 } from '@skelly/engine/world';
-import type { Skylight } from '../../../presentation/src/render.ts';
+import type { Skylight } from '@skelly/presentation/render';
 
 export const SKY_ROUTE = { start: 430, end: 490, z: 523 };
 export type SkyRoutePhase = 'cold' | 'warm';

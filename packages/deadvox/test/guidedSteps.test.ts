@@ -1,8 +1,8 @@
 import type { GuidanceDef, GuidanceGate } from '@skelly/engine/content';
 import { Inventory } from '@skelly/engine/inventory';
+import { type GuidanceObservation, GuidedSteps } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
+import { selectedGuidanceHint } from '@skelly/presentation/internal/ui/guidedSteps.ts';
 import { expect, it } from 'vitest';
-import { type GuidanceObservation, GuidedSteps } from '../../presentation/src/presentation/guidedSteps.ts';
-import { selectedGuidanceHint } from '../../presentation/src/ui/guidedSteps.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const gate = (all: string[] = []) => ({ all, none: [] });

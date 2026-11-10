@@ -12,6 +12,9 @@ import { Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
 import { reachTuning } from '@skelly/engine/sim';
 import { type BlockEntity, CHUNK, rotationOf, toChunk, type Vec3 } from '@skelly/engine/world';
+import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
+import { HeldItems } from '@skelly/presentation/render';
 import {
   Box3,
   DirectionalLight,
@@ -24,9 +27,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { CarriedPiece } from '../../presentation/src/render/carriedPiece.ts';
-import { FurnitureMeshes } from '../../presentation/src/render/furniture.ts';
-import { HeldItems } from '../../presentation/src/render.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
   capture,

@@ -1,14 +1,14 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { resolveGraphics } from '@skelly/engine/look';
 import { configFromUrl } from '@skelly/engine/session';
+import { GraphicsControls } from '@skelly/presentation/internal/presentation/graphicsControls.ts';
+import { writeGraphicsSettings } from '@skelly/presentation/internal/presentation/graphicsSettings.ts';
+import { createEngine } from '@skelly/presentation/play';
+import { Mood } from '@skelly/presentation/render';
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
-import { createEngine } from '../../presentation/src/play.ts';
-import { GraphicsControls } from '../../presentation/src/presentation/graphicsControls.ts';
-import { writeGraphicsSettings } from '../../presentation/src/presentation/graphicsSettings.ts';
-import { Mood } from '../../presentation/src/render.ts';
 import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';

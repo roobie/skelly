@@ -4,9 +4,9 @@ import { DEFAULT_MAX_PAYLOAD_BYTES, SAVE_SCHEMA_VERSION } from '@skelly/engine/i
 import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
 import { columnArrival, createWorldSetup, type WorldSetup } from '@skelly/engine/world';
+import { ChunkMeshes } from '@skelly/presentation/render';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { ChunkMeshes } from '../../presentation/src/render.ts';
-import { contentLookup } from '../../presentation/src/ui.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';

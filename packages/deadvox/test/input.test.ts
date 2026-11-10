@@ -2,10 +2,13 @@ import type { ModelDef } from '@skelly/engine/content';
 import { BindingRegistry } from '@skelly/engine/input';
 import { firearmBoreRay } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
+import { Input, nextMenuCursor } from '@skelly/presentation/internal/presentation/input.ts';
+import {
+  KeyboardInput,
+  shouldCancelInputForViewerFocus,
+} from '@skelly/presentation/internal/presentation/inputBindings.ts';
+import { requestInputLock } from '@skelly/presentation/play';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { requestInputLock } from '../../presentation/src/play.ts';
-import { Input, nextMenuCursor } from '../../presentation/src/presentation/input.ts';
-import { KeyboardInput, shouldCancelInputForViewerFocus } from '../../presentation/src/presentation/inputBindings.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createPlayerBody, PLAYER, steer } from './playerFixture.ts';

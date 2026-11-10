@@ -1,12 +1,12 @@
 import { AttemptPolicySchema } from '@skelly/engine/internal/core/schema/attemptPolicy.ts';
-import { safeParse } from 'valibot';
-import { describe, expect, it, vi } from 'vitest';
-import { createAttemptRecording } from '../../presentation/src/presentation/playtestObserver.ts';
+import { createAttemptRecording } from '@skelly/presentation/internal/presentation/playtestObserver.ts';
 import {
   type HandBackFile,
   metricsStorageKey,
   SessionMetrics,
-} from '../../presentation/src/presentation/playtestTools.ts';
+} from '@skelly/presentation/internal/presentation/playtestTools.ts';
+import { safeParse } from 'valibot';
+import { describe, expect, it, vi } from 'vitest';
 import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
 const memoryStorage = () => {

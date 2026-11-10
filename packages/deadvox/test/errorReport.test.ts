@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
 import {
   errorDetails,
   errorReportText,
   errorText,
   feedbackUrlForError,
-} from '../../presentation/src/ui/errorReport.ts';
+} from '@skelly/presentation/internal/ui/errorReport.ts';
+import { describe, expect, it } from 'vitest';
 
 const handBack = (name: string, value: unknown) => ({
   blob: new Blob([JSON.stringify(value)], { type: 'application/json' }),

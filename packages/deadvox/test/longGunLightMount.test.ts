@@ -5,11 +5,11 @@ import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmA
 import { CraftCommands, HandlingQueue, Inventory, LIGHT_MOUNT_SLOT, toggleLight } from '@skelly/engine/inventory';
 import { bindReach, Character, Survival } from '@skelly/engine/sim';
 import { makeScale } from '@skelly/engine/world';
+import { Flashlight } from '@skelly/presentation/internal/render/flashlight.ts';
+import { LENS } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary, PileMeshes, PlayerMeshes } from '@skelly/presentation/render';
 import { Group, Object3D, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Flashlight } from '../../presentation/src/render/flashlight.ts';
-import { LENS } from '../../presentation/src/render/models.ts';
-import { HeldItems, type ModelLibrary, PileMeshes, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';

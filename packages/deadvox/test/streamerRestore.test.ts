@@ -3,10 +3,10 @@ import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, MesherSource } from '@skelly/engine/mesh';
 import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
 import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '@skelly/engine/world';
+import { Skylight } from '@skelly/presentation/render';
 import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
-import { Skylight } from '../../presentation/src/render.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 

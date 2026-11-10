@@ -11,8 +11,8 @@ import { Survival } from '@skelly/engine/sim';
 import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,
-} from '../../presentation/src/presentation/guidedSteps.ts';
-import { tutorialRequested, tutorialUrl } from '../../presentation/src/tutorialUrl.ts';
+} from '@skelly/presentation/internal/presentation/guidedSteps.ts';
+import { tutorialRequested, tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({

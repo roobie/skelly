@@ -1,4 +1,4 @@
-import { createKeyboardInput } from '../../../presentation/src/input.ts';
+import { createKeyboardInput } from '@skelly/presentation/input';
 import { INPUT_BINDINGS } from './controls.ts';
 
 /** The page's keyboard and key bindings; each entry passes them to the modules that read keys. */

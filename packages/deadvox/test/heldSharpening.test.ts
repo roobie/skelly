@@ -3,8 +3,8 @@ import { ItemActionSelection, itemActionsFor } from '@skelly/engine/internal/gam
 import { Sharpening, sharpeningTargetForHand } from '@skelly/engine/internal/game/sharpening.ts';
 import { CraftCommands, HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
 import { bindReach, Character, selectPrimaryAction } from '@skelly/engine/sim';
+import { craftRows } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { describe, expect, it } from 'vitest';
-import { craftRows } from '../../presentation/src/ui/craftReadout.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';

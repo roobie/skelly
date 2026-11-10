@@ -5,10 +5,10 @@ import { templateBodySpace } from '@skelly/engine/internal/core/templateSpatial.
 import { compileTemplate, type Turn } from '@skelly/engine/internal/core/templates.ts';
 import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { BlockEntities, DECAL_KINDS, panelFor, placedDecals } from '@skelly/engine/world';
+import { AuthoredDecals } from '@skelly/presentation/internal/render/decals.ts';
 import { ShaderLib } from 'three';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import { AuthoredDecals } from '../../presentation/src/render/decals.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

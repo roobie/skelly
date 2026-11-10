@@ -9,9 +9,9 @@ import { pileItemPosition } from '@skelly/engine/internal/core/pileLayout.ts';
 import { type Inventory, type Item, itemFlightPoint } from '@skelly/engine/inventory';
 import { worldGravity } from '@skelly/engine/sim';
 import type { SolidAt } from '@skelly/engine/world';
+import { ItemThrows } from '@skelly/presentation/internal/render/itemThrows.ts';
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
-import { ItemThrows } from '../../presentation/src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
 
@@ -196,14 +196,14 @@ describe('held-item throws', () => {
 
   it('uses the thrown item look, including its fitted magazine', () => {
     const rifleModel = new Group();
-    let requestedLook: import('../../presentation/src/render/itemLook.ts').ItemLook | undefined;
+    let requestedLook: import('@skelly/presentation/internal/render/itemLook.ts').ItemLook | undefined;
     const models = {
       has: () => true,
-      groundLook: (look: import('../../presentation/src/render/itemLook.ts').ItemLook) => {
+      groundLook: (look: import('@skelly/presentation/internal/render/itemLook.ts').ItemLook) => {
         requestedLook = look;
         return rifleModel;
       },
-    } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
+    } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
     const registry = testRegistry({ rifle: 4000, magazine: 200 });
     registry.items.set('rifle', { id: 'rifle', weight: 4000, size: [1, 4], model: 'rifle_model' } as never);
     registry.items.set('magazine', { id: 'magazine', weight: 200, size: [1, 2], model: 'magazine_model' } as never);
@@ -270,7 +270,7 @@ describe('held-item throws', () => {
     const models = {
       has: () => true,
       groundLook: () => model.clone(),
-    } as unknown as import('../../presentation/src/render/models.ts').ModelLibrary;
+    } as unknown as import('@skelly/presentation/internal/render/models.ts').ModelLibrary;
     const throws = new ItemThrows(registry, models, 1);
     const item = { ...testItem('glow'), on: true };
     throws.spawn({ origin: [0, 1, 0], item, flight: presentationFlight }, presentationInventory(item));

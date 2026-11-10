@@ -1,8 +1,8 @@
 import { actionText, fillText } from '@skelly/engine/input';
 import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
 import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '@skelly/engine/text';
+import { fillHint } from '@skelly/presentation/internal/ui/keyCap.ts';
 import { expect, it } from 'vitest';
-import { fillHint } from '../../presentation/src/ui/keyCap.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 /** A plain decimal with a short fraction: no exponent and no run of noise digits. */

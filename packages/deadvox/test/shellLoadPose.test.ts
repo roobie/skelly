@@ -2,12 +2,12 @@ import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.t
 import { HandlingQueue, Inventory, SIDES } from '@skelly/engine/inventory';
 import { heldAnchorOffset } from '@skelly/engine/pose';
 import { Character } from '@skelly/engine/sim';
+import { actionPartPaths, cloneHeldModel } from '@skelly/presentation/internal/render/firearmModel.ts';
+import { indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import { Box3, Group, Mesh, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
-import { actionPartPaths, cloneHeldModel } from '../../presentation/src/render/firearmModel.ts';
-import { indexModelMaterials, prepareModel } from '../../presentation/src/render/models.ts';
-import { HeldItems, type ModelLibrary, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';
 

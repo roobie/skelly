@@ -1,8 +1,8 @@
 import { BindingRegistry } from '@skelly/engine/input';
+import { MAP_SLICE_ACTIONS, mapSliceKeys } from '@skelly/presentation/input';
+import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
+import type { MapSliceAction } from '@skelly/presentation/internal/presentation/mapSliceInput.ts';
 import { describe, expect, it } from 'vitest';
-import { MAP_SLICE_ACTIONS, mapSliceKeys } from '../../presentation/src/input.ts';
-import { KeyboardInput } from '../../presentation/src/presentation/inputBindings.ts';
-import type { MapSliceAction } from '../../presentation/src/presentation/mapSliceInput.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const keyEvent = (code: string, extra: Partial<Record<'shiftKey' | 'ctrlKey', boolean>> = {}) => ({

@@ -3,9 +3,9 @@ import { posedHumanoidRegionBoxes, posedRegionHitDistance } from '@skelly/engine
 import type { HumanoidHitRegion } from '@skelly/engine/pose';
 import type { HitImpulse } from '@skelly/engine/sim';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { mobFigurePoolSizeThrough } from '@skelly/presentation/internal/render/mobActors.ts';
+import { angularVelocity, type RigidBody } from '@skelly/presentation/internal/render/rigidImpulse.ts';
 import { describe, expect, it } from 'vitest';
-import { mobFigurePoolSizeThrough } from '../../presentation/src/render/mobActors.ts';
-import { angularVelocity, type RigidBody } from '../../presentation/src/render/rigidImpulse.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';

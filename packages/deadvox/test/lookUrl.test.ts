@@ -18,10 +18,10 @@ import {
   moodOf,
   TORCH_STEP,
 } from '@skelly/engine/look';
+import { setAutoToneWeight } from '@skelly/presentation/internal/render/autoTone.ts';
+import { hotCheckUniform } from '@skelly/presentation/internal/render/hotCheck.ts';
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { setAutoToneWeight } from '../../presentation/src/render/autoTone.ts';
-import { hotCheckUniform } from '../../presentation/src/render/hotCheck.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   defaultLookUrlState,

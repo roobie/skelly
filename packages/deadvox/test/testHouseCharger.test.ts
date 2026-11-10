@@ -8,8 +8,8 @@ import {
   terrainShapeOf,
   toChunk,
 } from '@skelly/engine/world';
+import { ChunkMeshes } from '@skelly/presentation/render';
 import { expect, it } from 'vitest';
-import { ChunkMeshes } from '../../presentation/src/render.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';

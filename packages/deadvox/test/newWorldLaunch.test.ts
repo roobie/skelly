@@ -25,9 +25,9 @@ import {
   type SaveLoadResult,
   type SaveSlotPair,
 } from '@skelly/engine/save';
-import { shouldConfirmPageLeave } from '../../presentation/src/ui/leaveConfirmation.ts';
-import { showWin } from '../../presentation/src/ui/win.ts';
-import { contentLookup, SaveController } from '../../presentation/src/ui.ts';
+import { shouldConfirmPageLeave } from '@skelly/presentation/internal/ui/leaveConfirmation.ts';
+import { showWin } from '@skelly/presentation/internal/ui/win.ts';
+import { contentLookup, SaveController } from '@skelly/presentation/ui';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
 const { screenText } = saveFixtureRegistry.ui.get(fixtureIds.ui)!;

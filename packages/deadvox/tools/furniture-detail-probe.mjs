@@ -75,7 +75,9 @@ try {
       const Three = await import(new URL(threeModule, location.href).href);
       const { buildRegistry } = await import(new URL('/@stage/@skelly/engine/content', location.href).href);
       const { BlockEntities } = await import(new URL('/@stage/@skelly/engine/world', location.href).href);
-      const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
+      const { FurnitureMeshes } = await import(
+        new URL('/@stage/@skelly/presentation/internal/render/furniture.ts', location.href).href
+      );
       const files = await Promise.all(
         contentNames.map(async (file) => (await import(new URL(file, location.href).href)).default),
       );

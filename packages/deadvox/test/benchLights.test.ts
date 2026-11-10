@@ -1,6 +1,6 @@
+import type { RenderedEngine } from '@skelly/presentation/play';
 import { PerspectiveCamera, Scene } from 'three';
 import { expect, it } from 'vitest';
-import type { RenderedEngine } from '../../presentation/src/play.ts';
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { baseRegistry } from './baseRegistry.ts';
 

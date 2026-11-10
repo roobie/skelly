@@ -1,5 +1,5 @@
 import type { DebugStart } from '@skelly/engine/session';
-import type { RagdollConfig } from '../../../presentation/src/play.ts';
+import type { RagdollConfig } from '@skelly/presentation/play';
 import ragdoll from '../config/ragdoll.json' with { type: 'json' };
 
 /**

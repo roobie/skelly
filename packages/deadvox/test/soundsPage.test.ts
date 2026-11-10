@@ -1,7 +1,7 @@
 import { setImmediate } from 'node:timers/promises';
 import { soundVariantKey } from '@skelly/engine/sound';
+import { GameAudio } from '@skelly/presentation/audio';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GameAudio } from '../../presentation/src/audio.ts';
 import { productAssets } from '../src/product/assets.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
 import { baseRegistry } from './baseRegistry.ts';

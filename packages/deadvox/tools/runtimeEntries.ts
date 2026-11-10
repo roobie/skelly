@@ -1,5 +1,5 @@
-// The entry-only check keeps product code on the runtime package's curated entries, off its test-only
-// subpath and out of its files, and on the entries of presentation source still in deadvox; the reasons are in
+// The entry-only check keeps product code on the runtime and presentation packages' curated entries, off their
+// test-only subpaths and out of their files; the reasons are in
 // `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -7,10 +7,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { parseSync } from 'vite';
 
-/** How product code may reach the runtime package. Paths are repository-relative. */
+/** How product code may reach the framework packages. Paths are repository-relative. */
 export interface EntryPolicy {
-  /** The runtime package's directory; its `package.json` `exports` names the entries. */
-  readonly runtime: string;
+  /** The framework packages' directories; each `package.json` `exports` names that package's entries. */
+  readonly packages: readonly string[];
   /** Product files, and directories whose files are product code. */
   readonly product: readonly string[];
   /**
@@ -20,11 +20,6 @@ export interface EntryPolicy {
   readonly uninstalled: readonly string[];
   /** The Vite project root, where a specifier with a leading slash starts. */
   readonly viteRoot: string;
-  /**
-   * Source that is not yet its own package: a product file outside `dirs` reaches it only through the entry
-   * modules directly in `entries`.
-   */
-  readonly inPlace: { readonly dirs: readonly string[]; readonly entries: string };
 }
 
 export interface EntryViolation {
@@ -34,7 +29,7 @@ export interface EntryViolation {
 }
 
 export const ENTRY_POLICY: EntryPolicy = {
-  runtime: 'packages/engine',
+  packages: ['packages/engine', 'packages/presentation'],
   product: [
     'packages/deadvox/src',
     'packages/deadvox/tools',
@@ -49,36 +44,28 @@ export const ENTRY_POLICY: EntryPolicy = {
   // Tiled's script runtime has no package resolution, and the site-launcher CI job runs without an install.
   uninstalled: ['packages/deadvox/maps/extensions', 'test/site-launcher.test.mjs'],
   viteRoot: 'packages/deadvox',
-  inPlace: {
-    dirs: [
-      'packages/deadvox/src/render',
-      'packages/deadvox/src/ui',
-      'packages/deadvox/src/presentation',
-      'packages/deadvox/src/worker',
-    ],
-    entries: 'packages/deadvox/src/presentation/entries',
-  },
 };
 
-interface RuntimePackage {
+interface FrameworkPackage {
+  readonly dir: string;
   readonly name: string;
   /** Each curated entry's subpath (`./sim`), mapped to its file. */
   readonly entries: ReadonlyMap<string, string>;
 }
 
-/** The runtime package's name and its curated entries: every export whose target needs no condition. */
-function runtimePackage(repoRoot: string, policy: EntryPolicy): RuntimePackage {
-  const manifest = JSON.parse(readFileSync(join(repoRoot, policy.runtime, 'package.json'), 'utf8')) as {
+/** A framework package's name and its curated entries: every export whose target needs no condition. */
+function frameworkPackage(repoRoot: string, dir: string): FrameworkPackage {
+  const manifest = JSON.parse(readFileSync(join(repoRoot, dir, 'package.json'), 'utf8')) as {
     name: string;
     exports: Record<string, unknown>;
   };
   const entries = new Map<string, string>();
   for (const [subpath, target] of Object.entries(manifest.exports)) {
     if (typeof target === 'string') {
-      entries.set(subpath, posix.join(policy.runtime, target));
+      entries.set(subpath, posix.join(dir, target));
     }
   }
-  return { name: manifest.name, entries };
+  return { dir, name: manifest.name, entries };
 }
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
@@ -169,43 +156,35 @@ function targetOf(importer: string, specifier: string, viteRoot: string): string
 function violationOf(
   importer: string,
   specifier: string,
-  runtime: RuntimePackage,
+  packages: readonly FrameworkPackage[],
   policy: EntryPolicy,
 ): string | undefined {
-  if (specifier === runtime.name || specifier.startsWith(`${runtime.name}/`)) {
-    return runtime.entries.has(`.${specifier.slice(runtime.name.length)}`)
+  const named = packages.find(({ name }) => specifier === name || specifier.startsWith(`${name}/`));
+  if (named !== undefined) {
+    return named.entries.has(`.${specifier.slice(named.name.length)}`)
       ? undefined
-      : 'imports a runtime subpath that is not an entry';
+      : 'imports a package subpath that is not an entry';
   }
   const target = targetOf(importer, specifier, policy.viteRoot);
-  if (target === undefined) {
-    return undefined;
-  }
-  const { dirs, entries } = policy.inPlace;
-  const inPlace = (path: string) => dirs.some((dir) => within(path, dir));
-  if (inPlace(target) && !inPlace(importer)) {
-    return posix.dirname(target) === entries ? undefined : 'imports an in-place source file that is not an entry';
-  }
-  if (!within(target, policy.runtime)) {
+  const reached = target === undefined ? undefined : packages.find(({ dir }) => within(target, dir));
+  if (target === undefined || reached === undefined) {
     return undefined;
   }
   const uninstalled = policy.uninstalled.some((path) => within(importer, path));
-  if (uninstalled && [...runtime.entries.values()].includes(target)) {
+  if (uninstalled && [...reached.entries.values()].includes(target)) {
     return undefined;
   }
   return uninstalled
-    ? 'imports a runtime file that is not an entry'
-    : 'imports a runtime file by path instead of by package name';
+    ? 'imports a package file that is not an entry'
+    : 'imports a package file by path instead of by package name';
 }
 
 /**
- * Every import, type-only and dynamic ones included, by which a product file reaches the runtime package
+ * Every import, type-only and dynamic ones included, by which a product file reaches a framework package
  * other than through an entry by package name; a file that runs uninstalled may name an entry's file instead.
- * Also every import by which a product file outside the in-place source reaches it other than through one of
- * its entries.
  */
 export function entryViolations(repoRoot: string, policy: EntryPolicy): EntryViolation[] {
-  const runtime = runtimePackage(repoRoot, policy);
+  const packages = policy.packages.map((dir) => frameworkPackage(repoRoot, dir));
   const violations: EntryViolation[] = [];
   for (const importer of productFiles(repoRoot, policy)) {
     const specifiers = specifiersOf(importer, readFileSync(join(repoRoot, importer), 'utf8'));
@@ -214,7 +193,7 @@ export function entryViolations(repoRoot: string, policy: EntryPolicy): EntryVio
       continue;
     }
     for (const specifier of specifiers) {
-      const reason = violationOf(importer, specifier, runtime, policy);
+      const reason = violationOf(importer, specifier, packages, policy);
       if (reason !== undefined) {
         violations.push({ importer, specifier, reason });
       }

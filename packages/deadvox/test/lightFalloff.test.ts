@@ -1,6 +1,6 @@
+import { installNearFieldFalloff, withNearFieldFalloff } from '@skelly/presentation/internal/render/lightFalloff.ts';
 import { ShaderChunk } from 'three';
 import { describe, expect, it } from 'vitest';
-import { installNearFieldFalloff, withNearFieldFalloff } from '../../presentation/src/render/lightFalloff.ts';
 import { CALIBRATED_BEAM_INTENSITY, CALIBRATED_NEAR_FIELD_M as NEAR_FIELD_M } from './flashlightFixture.ts';
 
 // three.js's own source is the thing under test: the patch must find the line it replaces.

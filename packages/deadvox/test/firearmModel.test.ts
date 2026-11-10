@@ -2,11 +2,6 @@ import { type ModelDef, ModelSchema } from '@skelly/engine/content';
 import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
 import { simPerMinute, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { heldGripOffset } from '@skelly/engine/pose';
-import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { parse } from 'valibot';
-import { describe, expect, it } from 'vitest';
-import firearmContent from '../../mods/skelly.firearms/models-firearms.json' with { type: 'json' };
 import {
   actionPartPaths,
   cloneHeldModel,
@@ -15,8 +10,13 @@ import {
   poseActionParts,
   sampleActionStroke,
   sampleActionTurn,
-} from '../../presentation/src/render/firearmModel.ts';
-import { prepareModel } from '../../presentation/src/render/models.ts';
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { parse } from 'valibot';
+import { describe, expect, it } from 'vitest';
+import firearmContent from '../../mods/skelly.firearms/models-firearms.json' with { type: 'json' };
 import { baseRegistry } from './baseRegistry.ts';
 import { modFileBytes } from './modFile.ts';
 

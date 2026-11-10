@@ -15,7 +15,7 @@ import {
   WORLD_BOTTOM_M,
   worldGroundAt,
 } from '@skelly/engine/world';
-import { MAP_SLICE_ACTIONS, mapSliceKeys } from '../../presentation/src/input.ts';
+import { MAP_SLICE_ACTIONS, mapSliceKeys } from '@skelly/presentation/input';
 import {
   hillshade,
   marchingSquares,
@@ -24,7 +24,7 @@ import {
   siteMapRasterToWorld,
   siteMapWorldToRaster,
   topSolidAtOrBelow,
-} from '../../presentation/src/siteMap.ts';
+} from '@skelly/presentation/siteMap';
 import { buildBundledContent } from './product/content.ts';
 import { inputBindings, keyboardInput } from './product/input.ts';
 import { debugGameHref } from './siteMapGameLink.ts';

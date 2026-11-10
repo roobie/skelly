@@ -23,9 +23,9 @@ import { Rng } from '@skelly/engine/math';
 import type { buildingBounds } from '@skelly/engine/terrain';
 import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
 import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
+import { vehicleInstanceOf, vehicleModel, workshopLift } from '@skelly/presentation/internal/render/workshopVehicle.ts';
 import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { vehicleInstanceOf, vehicleModel, workshopLift } from '../../presentation/src/render/workshopVehicle.ts';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 

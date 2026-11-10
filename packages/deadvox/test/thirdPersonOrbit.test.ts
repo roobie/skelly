@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest';
 import {
   BACKQUOTE_DOUBLE_TAP_WINDOW_MS,
   BackquoteOrbitGesture,
-} from '../../presentation/src/presentation/backquoteOrbitGesture.ts';
-import { isOrbitResetMovementAction, ThirdPersonOrbit } from '../../presentation/src/presentation/thirdPersonOrbit.ts';
+} from '@skelly/presentation/internal/presentation/backquoteOrbitGesture.ts';
+import {
+  isOrbitResetMovementAction,
+  ThirdPersonOrbit,
+} from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
+import { describe, expect, it } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
 
 const hudHoldMs = INPUT_BINDINGS.find(({ id }) => id === 'hud.toggle')?.holdMs ?? 0;

@@ -4,11 +4,11 @@
 import type { ItemDef, WearSlot } from '@skelly/engine/content';
 import { Inventory, type Item, SLING_SLOT, wornSlotOf } from '@skelly/engine/inventory';
 import { makeScale } from '@skelly/engine/world';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import type { PlayerFigurePose } from '@skelly/presentation/internal/render/playerFigure.ts';
+import { type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import { Box3, Mesh, type Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { itemLook } from '../../presentation/src/render/itemLook.ts';
-import type { PlayerFigurePose } from '../../presentation/src/render/playerFigure.ts';
-import { type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '../../presentation/src/render.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';

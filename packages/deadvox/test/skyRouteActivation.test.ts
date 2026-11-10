@@ -2,15 +2,15 @@ import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
 import { observeRealFrame } from '@skelly/engine/session';
 import { realTimestamp } from '@skelly/engine/sim';
 import type { SkyResult } from '@skelly/engine/sky';
+import type { Engine } from '@skelly/presentation/play';
+import type { Skylight } from '@skelly/presentation/render';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { Engine } from '../../presentation/src/play.ts';
-import type { Skylight } from '../../presentation/src/render.ts';
 import { attachSkyRoute } from '../src/debug/skyRoute.ts';
 import { SKY_ROUTE, type SkyRouteFrame } from '../src/debug/skyRouteMetrics.ts';
 
 const witness = vi.hoisted(() => ({ json: '' }));
 const inputFixture = vi.hoisted(() => ({ context: 'play', issued: [] as string[] }));
-vi.mock('../../presentation/src/ui/skyRoutePanel.ts', () => ({
+vi.mock('@skelly/presentation/internal/ui/skyRoutePanel.ts', () => ({
   createSkyRoutePanel: () => ({
     progress: () => undefined,
     started: () => undefined,
@@ -24,7 +24,7 @@ const keyboard = {
   registry: { binding: () => ({ contexts: ['play', 'noclip', 'build'] }) },
 };
 // The input entry loads the rest of this module too, so only the forwarded holds are replaced.
-vi.mock('../../presentation/src/presentation/inputBindings.ts', async (importOriginal) => ({
+vi.mock('@skelly/presentation/internal/presentation/inputBindings.ts', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   forwardedActionHolds: () => (action: string) => {
     inputFixture.issued.push(action);
