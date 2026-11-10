@@ -34,7 +34,7 @@ const phaseSamples = (cycle: DayCycle): { phase: DayPhase; time: number }[] => {
   );
 };
 const lookFields = (sky: ReturnType<typeof skyAt>) => {
-  const { dayPhase: _dayPhase, light: _light, ...look } = sky;
+  const { dayPhase: _dayPhase, light: _light, sunDirection: _sunDirection, ...look } = sky;
   return look;
 };
 
