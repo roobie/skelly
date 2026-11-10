@@ -163,4 +163,16 @@ describe('committed scenario mods', () => {
     expect(practiceRun([practice!])).toBe(true);
     expect(practiceRun([])).toBe(false);
   });
+
+  it('starts from the last listed default whether it comes from a single-file mod or a folder pack', () => {
+    const practice = practiceModId(intake, startupContent().registry);
+    expect(practice).toBeDefined();
+    const practiceRun = (ids: string[]) => {
+      const selection = select(new URLSearchParams(), ids);
+      expect(selection.issues).toEqual([]);
+      return isPracticeStart(selection.content.registry, startOf(selection).startId);
+    };
+    expect(practiceRun([scenario.id, practice!])).toBe(true);
+    expect(practiceRun([practice!, scenario.id])).toBe(false);
+  });
 });

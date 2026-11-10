@@ -1,6 +1,6 @@
 import { safeParse } from 'valibot';
 import { type ContentIssue, validateContent } from '../core/content.ts';
-import { admitWithFolderPacks, type PackInput, PackManifestSchema } from '../core/packAdmission.ts';
+import { admitPacks, type PackInput, PackManifestSchema } from '../core/packAdmission.ts';
 import type { BundledContent, StartupContent } from './bundledContent.ts';
 import type { BundledMod } from './bundledMods.ts';
 
@@ -77,15 +77,19 @@ const readMod = (mod: BrowserMod, maxModBytes: number): IdentifiedSource | Conte
   }
 };
 
-/** Folder packs go through pack admission whole; only single-file mods are read as mod text. */
-export const evaluateMods = (
-  intake: ModIntake,
-  mods: readonly BrowserMod[],
-  folderPacks: readonly PackInput[] = [],
-): ModEvaluation => {
+const isFolderPack = (entry: BrowserMod | PackInput): entry is PackInput => 'manifest' in entry;
+
+/**
+ * Folder packs go through pack admission whole; only single-file mods are read as mod text. Both load in the order
+ * given, so a later default start wins whatever format either mod has.
+ */
+export const evaluateMods = (intake: ModIntake, entries: readonly (BrowserMod | PackInput)[]): ModEvaluation => {
   const { buildBundledContent, bundledPackInputs } = intake.content;
+  const mods = entries.filter((entry): entry is BrowserMod => !isFolderPack(entry));
+  const folderPacks = entries.filter(isFolderPack);
   const issues = new Map<string, ContentIssue[]>();
   const selected: IdentifiedSource[] = [];
+  const selectedFrom = new Map<BrowserMod, IdentifiedSource>();
   const disabled: IdentifiedSource[] = [];
   const identities = new Map<string, string>();
   const duplicateIssue = (source: IdentifiedSource): ContentIssue => ({
@@ -109,12 +113,14 @@ export const evaluateMods = (
     } else {
       identities.set(parsed.id, parsed.source);
       selected.push(parsed);
+      selectedFrom.set(mod, parsed);
     }
   }
-  const content = buildBundledContent(
-    [...folderPacks, ...selected],
-    folderPacks.length > 0 || mods.some((mod) => mod.enabled),
-  );
+  const ordered = entries.flatMap((entry): PackInput[] => {
+    const pack = isFolderPack(entry) ? entry : selectedFrom.get(entry);
+    return pack ? [pack] : [];
+  });
+  const content = buildBundledContent(ordered, folderPacks.length > 0 || mods.some((mod) => mod.enabled));
   const owningSource = (source: string) =>
     selected.find((pack) => source === `${pack.source}/content.json`)?.source ?? source;
   for (const issue of content.issues) {
@@ -129,7 +135,7 @@ export const evaluateMods = (
       issues.set(source.source, [duplicateIssue(source)]);
       return;
     }
-    const preview = buildBundledContent([...folderPacks, ...selected, source]);
+    const preview = buildBundledContent([...ordered, source]);
     issues.set(
       source.source,
       preview.issues.filter(
@@ -140,13 +146,13 @@ export const evaluateMods = (
   for (const source of disabled) {
     previewDisabled(source);
   }
-  const admission = admitWithFolderPacks(bundledPackInputs, folderPacks, selected);
+  const admission = admitPacks([...bundledPackInputs, ...ordered]);
   return {
     content,
     admitted: admission.packs
       .filter((pack): pack is IdentifiedSource => selected.includes(pack as IdentifiedSource))
       .map(({ id, version, manifest, data, source }) => ({ id, version, data: { manifest, content: data }, source })),
-    admittedFolderPacks: admission.folderPacks,
+    admittedFolderPacks: admission.packs.filter((pack) => folderPacks.includes(pack)),
     issues,
     canStart: content.issues.length === 0 && mods.every((mod) => !(mod.enabled && issues.get(mod.source)?.length)),
   };

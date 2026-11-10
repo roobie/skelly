@@ -1,7 +1,7 @@
 import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import { isPlainRecord } from '../core/canonicalJson.ts';
 import type { ContentIssue } from '../core/content.ts';
-import { selectFolderClosure } from '../core/packAdmission.ts';
+import { type PackInput, selectFolderClosure } from '../core/packAdmission.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
 import { type BrowserMod, evaluateMods, type ModEvaluation, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
@@ -102,8 +102,8 @@ const startRowIds = (content: unknown): string[] => {
 const identity = ({ id, version, data }: AdmittedMod) => ({ id, version, data });
 
 /**
- * Admits the named bundled mods: an opt-in folder pack with its closure through pack admission, a single-file mod
- * through the same intake as player mods. Unknown ids are issues. The start mod is admitted last, inline data through
+ * Admits the named bundled mods in the order given: an opt-in folder pack with its closure through pack admission, a
+ * single-file mod through the same intake as player mods. Unknown ids are issues. The start mod is admitted last, inline data through
  * the same intake and byte limit, and must supply exactly one start row, which begins the run.
  */
 export const selectBundledMods = (
@@ -115,12 +115,14 @@ export const selectBundledMods = (
   const { availablePackInputs, bundledPackInputs } = intake.content;
   const optInIds = availablePackInputs.filter(({ manifest }) => manifest.optIn).map(({ manifest }) => manifest.id);
   const issues: ContentIssue[] = [];
-  const mods: BrowserMod[] = [];
-  const roots: string[] = [];
+  const mods: (BrowserMod | PackInput)[] = [];
+  const folderPacks: PackInput[] = [];
   const select = (id: string, source: string) => {
     const found = intake.bundledMods.find((mod) => mod.id === id);
     if (optInIds.includes(id)) {
-      roots.push(id);
+      const closure = selectFolderClosure([id], availablePackInputs, [...bundledPackInputs, ...folderPacks]);
+      folderPacks.push(...closure);
+      mods.push(...closure);
       return;
     }
     if (!found) {
@@ -145,7 +147,7 @@ export const selectBundledMods = (
   } else if (startMod?.form === 'inline') {
     mods.push({ source: startSource!, text: startMod.text, enabled: true });
   }
-  const result = evaluateMods(intake, mods, selectFolderClosure(roots, availablePackInputs, bundledPackInputs));
+  const result = evaluateMods(intake, mods);
   for (const list of result.issues.values()) {
     issues.push(...list);
   }
