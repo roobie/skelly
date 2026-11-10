@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { CharacterState } from '../src/core/character.ts';
 import { buildRegistry } from '../src/content.ts';
+import type { CharacterState } from '../src/core/character.ts';
 import { Character } from '../src/sim.ts';
 
 const { registry } = buildRegistry([]);

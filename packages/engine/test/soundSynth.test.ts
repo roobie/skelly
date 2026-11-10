@@ -1,7 +1,7 @@
 // biome-ignore-all lint/style/useNamingConvention: fixtures spell jfxr's save fields as jfxr writes them.
 import { describe, expect, it } from 'vitest';
-import { jfxrPresetIssues } from '../src/core/soundSynth.ts';
 import { buildRegistry } from '../src/content.ts';
+import { jfxrPresetIssues } from '../src/core/soundSynth.ts';
 import { renderSoundRecipe } from '../src/sound.ts';
 
 // A partial save, as the editor accepts: jfxr fills every missing parameter with its default.

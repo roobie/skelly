@@ -1,7 +1,7 @@
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
-import { modelBodyMassKg } from '../src/core/modelMass.ts';
 import { buildRegistry, type ModelDef, ModelSchema } from '../src/content.ts';
+import { modelBodyMassKg } from '../src/core/modelMass.ts';
 import { ItemFactory, weightOf } from '../src/inventory.ts';
 
 const model = {

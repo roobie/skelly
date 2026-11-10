@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
 import type { FurnitureDef, Registry } from '../src/content.ts';
+import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
 import { BlockEntities } from '../src/world.ts';
 
 const shape = [{ position: [0, 0, 0] as [number, number, number], size: [2, 4, 1] as [number, number, number] }];

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, skillEffectLevel } from '../src/core/character.ts';
 import { buildRegistry, type Registry } from '../src/content.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, skillEffectLevel } from '../src/core/character.ts';
 import { Character, practiceForNextLevel } from '../src/sim.ts';
 
 const makeCharacter = (practicePerLevel = 10): { registry: Registry; character: Character } => {

@@ -964,7 +964,7 @@ class ClosureWalk {
       }
     } else if (this.policy.forbiddenPackages.includes(target.npm)) {
       this.violations.push({ importer, specifier, target: target.npm, reason: 'imports a forbidden package' });
-    } else if (shipped && !target.npm.startsWith('node:') && !this.dependencies.includes(target.npm)) {
+    } else if (shipped && !target.npm.startsWith('node:') && !this.declares(importer, target.npm)) {
       this.violations.push({
         importer,
         specifier,
@@ -972,6 +972,18 @@ class ClosureWalk {
         reason: 'imports a package its manifest does not name in dependencies',
       });
     }
+  }
+
+  /** Whether the package that owns a file, the runtime package or a followed library, names an npm package in `dependencies`. */
+  private declares(importer: string, npm: string): boolean {
+    const library = this.libraries.find((dir) => within(importer, dir));
+    if (library === undefined) {
+      return this.dependencies.includes(npm);
+    }
+    const manifest = JSON.parse(readFileSync(join(this.root, library, 'package.json'), 'utf8')) as {
+      dependencies?: Record<string, string>;
+    };
+    return Object.hasOwn(manifest.dependencies ?? {}, npm);
   }
 
   private reach(importer: string, specifier: string, target: string, library?: string): void {

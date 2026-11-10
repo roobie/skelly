@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
+import { buildRegistry } from '../src/content.ts';
 import { BundleAdmission } from '../src/core/bundleAdmission.ts';
 import { validateContent } from '../src/core/content.ts';
-import { buildRegistry } from '../src/content.ts';
 import { admitPacks, type PackInput, packContentHash, packStartIssues } from '../src/packs.ts';
 
 const pack = (id: string, dependencies: string[] = []): PackInput => ({
