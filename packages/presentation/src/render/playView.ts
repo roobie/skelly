@@ -70,6 +70,7 @@ import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
+import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
@@ -264,8 +265,13 @@ export const createPlayView = (
   const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
   const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
+  let skyDome: SkyDome | undefined;
+  /** The cloud clock: simulation seconds of the latest `syncWorld`. */
+  let simSeconds = 0;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
+    skyDome = createSkyDome(dayCycle.clouds);
+    scene.add(skyDome.mesh);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,
     });
@@ -324,6 +330,10 @@ export const createPlayView = (
     acidEffects.group,
   );
   const dispose = () => {
+    if (skyDome) {
+      scene.remove(skyDome.mesh);
+      skyDome.dispose();
+    }
     pictures?.dispose();
     piles.dispose();
     vehicles.dispose();
@@ -588,12 +598,15 @@ export const createPlayView = (
       actorMeshes.setPlayerChestPosition?.(playerChest);
       actorMeshes.setPerceptionLabels?.(perceptionLabels);
       actorMeshes.sync(actors, dt, alpha, frozen, backgroundAlpha, time);
+      simSeconds = time;
       return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
+      skyDome?.update({ sky, simSeconds, camera, skyVisibility });
+      skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
