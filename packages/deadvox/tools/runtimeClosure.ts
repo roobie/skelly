@@ -37,7 +37,12 @@ export interface RuntimeClosureViolation {
 // The runtime leaves deadvox as its own package (#1532), so it may reach neither presentation code nor a
 // product's configuration, mods or pages; the forbidden entries name presentation even through a library.
 export const RUNTIME_POLICY: RuntimeClosurePolicy = {
-  start: ['packages/deadvox/src/core', 'packages/deadvox/src/vehicles', 'packages/deadvox/src/game'],
+  start: [
+    'packages/deadvox/src/core',
+    'packages/deadvox/src/vehicles',
+    'packages/deadvox/src/game',
+    'packages/deadvox/src/engine',
+  ],
   leaves: [],
   manifest: 'packages/deadvox/package.json',
   forbidden: [

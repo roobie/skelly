@@ -31,6 +31,7 @@ const cleanTree: Tree = {
     "import { rule } from './rule.ts';\nimport { schema } from '@skelly/thing-core/schema';\nimport { join } from 'node:path';\nexport const tick = () => [rule, schema, join];\n",
   'packages/deadvox/src/core/rule.ts': 'export const rule = 1;\n',
   'packages/deadvox/src/vehicles/solid.ts': "import { rule } from '../core/rule.ts';\nexport const solid = rule;\n",
+  'packages/deadvox/src/engine/sim.ts': "export { tick } from '../core/sim.ts';\n",
   'packages/deadvox/src/game/session.ts': "import { tick } from '../core/sim.ts';\nexport const session = tick;\n",
   'packages/deadvox/src/render/view.ts':
     "import { session } from '../game/session.ts';\nexport const view = session;\n",

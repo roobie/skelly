@@ -174,12 +174,23 @@
       "linter": { "rules": { "style": { "useDestructuring": "off" } } }
     },
     {
+      // The runtime's curated entries are re-export modules by design: product code reaches the
+      // runtime only through them. See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
+      "includes": ["packages/deadvox/src/engine/**"],
+      "linter": { "rules": { "performance": { "noBarrelFile": "off" } } }
+    },
+    {
       // The runtime set's no-DOM typecheck (packages/deadvox/tsconfig.runtime.json) keeps Node types,
       // which declare navigator, MessageEvent, localStorage and sessionStorage, so the typecheck alone
       // lets them through. It also never reads JavaScript runtime files (src/core/authoredTerrain.mjs),
       // so document, window and requestAnimationFrame are banned here too. The paths are the ones that
       // tsconfig includes. `event` and `error` keep the rule's default ban.
-      "includes": ["packages/deadvox/src/core/**", "packages/deadvox/src/vehicles/**", "packages/deadvox/src/game/**"],
+      "includes": [
+        "packages/deadvox/src/core/**",
+        "packages/deadvox/src/vehicles/**",
+        "packages/deadvox/src/game/**",
+        "packages/deadvox/src/engine/**"
+      ],
       "linter": {
         "rules": {
           "style": {

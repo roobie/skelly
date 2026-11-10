@@ -4,5 +4,5 @@
     "lib": ["ES2023"],
     "types": ["node"]
   },
-  "include": ["src/core", "src/vehicles", "src/game"]
+  "include": ["src/core", "src/vehicles", "src/game", "src/engine"]
 }
