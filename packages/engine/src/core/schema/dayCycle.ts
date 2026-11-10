@@ -98,7 +98,7 @@ const CloudLayerSchema = strictObject({
 /** The cloud field's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
 const CloudsSchema = strictObject({
   warp: NonNegative,
-  /** The dome shader writes its layers out one by one, so four is its limit, not a design choice. */
+  /** The sky dome (#1505) draws its layers one by one in its shader, so four is that shader's limit, not a design choice. */
   layers: pipe(array(CloudLayerSchema), minLength(1), maxLength(4)),
 });
 
