@@ -105,6 +105,7 @@ describe('render ragdoll', () => {
     try {
       const corpse = world.spawn({
         body: figure.body,
+        model: figure.body.model,
         pose: restPose(figure),
         position: [0, 0, 0],
         yaw: 0,
