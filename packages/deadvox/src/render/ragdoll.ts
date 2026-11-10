@@ -41,7 +41,7 @@ interface RagdollGroupRule {
  * See `docs/decisions/0009-content-defined-products.md`, "Refactor gate".
  */
 export interface RagdollConfig {
-  readonly timestep: number;
+  readonly timestepRealSeconds: number;
   readonly maxStepsPerFrame: number;
   readonly stepBudget: number;
   readonly density: number;
@@ -69,13 +69,13 @@ export interface RagdollConfig {
     readonly angularDamping: number;
   };
   readonly crawlFall: {
-    readonly fallSeconds: number;
-    readonly blendSeconds: number;
+    readonly fallRealSeconds: number;
+    readonly blendRealSeconds: number;
     readonly motion: Partial<Motion>;
     readonly motionScale: Partial<Motion>;
   };
   /** The debug ragdoll sweep's corpse budget and how long its corpses lie. */
-  readonly sweep: { readonly capacity: number; readonly lieSeconds: number };
+  readonly sweep: { readonly capacity: number; readonly lieSimSeconds: number };
 }
 
 export function ragdollMotion(
@@ -245,7 +245,7 @@ export class RagdollWorld {
       .then(() => {
         if (!this.disposed) {
           this.world = new RAPIER.World({ x: 0, y: -gravityMetresPerSimSecondSquared, z: 0 });
-          this.world.timestep = this.config.timestep;
+          this.world.timestep = this.config.timestepRealSeconds;
         }
       })
       .catch((error: unknown) => {
@@ -526,9 +526,9 @@ export class RagdollWorld {
     }
     this.remainder += realDt;
     let steps = 0;
-    while (this.remainder >= this.config.timestep && steps < this.config.maxStepsPerFrame) {
+    while (this.remainder >= this.config.timestepRealSeconds && steps < this.config.maxStepsPerFrame) {
       this.world.step();
-      this.remainder -= this.config.timestep;
+      this.remainder -= this.config.timestepRealSeconds;
       steps += 1;
       for (const corpse of this.corpses) {
         this.finishStep(corpse);

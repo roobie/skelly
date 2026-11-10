@@ -553,7 +553,7 @@ describe('MobActorMeshes', () => {
         store,
         CORPSE_LIFECYCLE.lieSimSeconds +
           CORPSE_LIFECYCLE.sinkSimSeconds +
-          ragdollConfig.stepBudget * ragdollConfig.timestep,
+          ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds,
       );
       upload();
       const replacement = store.add(makeActor([8, 0, -5]));
@@ -1262,7 +1262,7 @@ describe('MobActorMeshes reactions', () => {
       expect(renderer.isTracked(id)).toBe(true);
       const step = 0.1;
       const lifetime =
-        ragdollConfig.stepBudget * ragdollConfig.timestep +
+        ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds +
         CORPSE_LIFECYCLE.lieSimSeconds +
         CORPSE_LIFECYCLE.sinkSimSeconds;
       for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
@@ -1293,7 +1293,7 @@ describe('MobActorMeshes reactions', () => {
       expect(actor.severed).toEqual([]);
       expect(corpse?.ragdoll?.parts.length).toBeGreaterThan(0);
       const before = renderer.boneMatrix(id, 'pelvis');
-      renderer.sync(store, ragdollConfig.timestep, 1, frozen);
+      renderer.sync(store, ragdollConfig.timestepRealSeconds, 1, frozen);
       expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(before);
     } finally {
       renderer.dispose();
@@ -1315,7 +1315,7 @@ describe('MobActorMeshes reactions', () => {
       });
       await renderer.whenCorpsesReady();
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        renderer.sync(system.store, ragdollConfig.timestep, 1);
+        renderer.sync(system.store, ragdollConfig.timestepRealSeconds, 1);
       }
       const before = renderer.boneMatrix(id, 'head');
       expect(before).toBeDefined();
@@ -1333,11 +1333,11 @@ describe('MobActorMeshes reactions', () => {
       const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
       expect(physics.counts().bodies).toBeGreaterThan(0);
       const horizon =
-        ragdollConfig.stepBudget * ragdollConfig.timestep +
+        ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds +
         CORPSE_LIFECYCLE.lieSimSeconds +
         CORPSE_LIFECYCLE.sinkSimSeconds;
-      for (let step = 0; step <= Math.ceil(horizon / ragdollConfig.timestep); step++) {
-        renderer.sync(system.store, ragdollConfig.timestep, 1);
+      for (let step = 0; step <= Math.ceil(horizon / ragdollConfig.timestepRealSeconds); step++) {
+        renderer.sync(system.store, ragdollConfig.timestepRealSeconds, 1);
       }
       expect(renderer.isTracked(id)).toBe(false);
       expect(renderer.debrisCountFor(id)).toBe(0);
@@ -1372,15 +1372,15 @@ describe('MobActorMeshes reactions', () => {
         await renderer.whenCorpsesReady();
         const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
         expect(physics.counts().bodies).toBeGreaterThan(0);
-        renderer.sync(store, ragdollConfig.timestep);
-        renderer.sync(store, ragdollConfig.timestep);
+        renderer.sync(store, ragdollConfig.timestepRealSeconds);
+        renderer.sync(store, ragdollConfig.timestepRealSeconds);
         expect(renderer.boneMatrix(id, 'chest')).not.toEqual(upright);
         const moved = makeActor([2, 0, 1], [1, 0, 0], cuts, { type, figureSeed: seed });
         store.replace(id, moved);
         const movedBefore = structuredClone(moved);
-        const horizon = ragdollConfig.crawlFall.fallSeconds + ragdollConfig.crawlFall.blendSeconds;
-        for (let time = 0; time <= horizon; time += ragdollConfig.timestep) {
-          renderer.sync(store, ragdollConfig.timestep);
+        const horizon = ragdollConfig.crawlFall.fallRealSeconds + ragdollConfig.crawlFall.blendRealSeconds;
+        for (let time = 0; time <= horizon; time += ragdollConfig.timestepRealSeconds) {
+          renderer.sync(store, ragdollConfig.timestepRealSeconds);
         }
         expect(moved).toEqual(movedBefore);
         reference.sync(store);
@@ -1405,8 +1405,8 @@ describe('MobActorMeshes reactions', () => {
       store.replace(id, crawling);
       renderer.sync(store);
       await renderer.whenCorpsesReady();
-      renderer.sync(store, ragdollConfig.timestep);
-      renderer.sync(store, ragdollConfig.timestep);
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
       const figure = actorFigure(FIGURES, crawling.type, crawling.figureSeed);
       const before = renderer.boneMatrix(id, 'hand.L')!;
       renderer.actorSevered(id, 'hand.L', undefined, crawling);
@@ -1451,7 +1451,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 0, 1);
       const upright = renderer.boneMatrix(id, 'pelvis');
       expect(upright).toBeDefined();
-      renderer.sync(store, ragdollConfig.stepBudget * ragdollConfig.timestep, 1);
+      renderer.sync(store, ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds, 1);
       expect(renderer.isTracked(id)).toBe(true);
       expect(renderer.boneMatrix(id, 'pelvis')).toEqual(upright);
     } finally {
@@ -1483,13 +1483,13 @@ describe('MobActorMeshes reactions', () => {
       expect(renderer.isTracked(ids[1]!)).toBe(false); // oldest ordinary corpse evicted; incapacitated row is protected
       await renderer.whenCorpsesReady();
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        renderer.sync(store, ragdollConfig.timestep, 1);
+        renderer.sync(store, ragdollConfig.timestepRealSeconds, 1);
       }
       const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
       expect(lying).toBeDefined();
       renderer.sync(
         store,
-        ragdollConfig.stepBudget * ragdollConfig.timestep +
+        ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds +
           CORPSE_LIFECYCLE.lieSimSeconds +
           CORPSE_LIFECYCLE.sinkSimSeconds +
           1,
@@ -1515,7 +1515,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 0, 1);
       await renderer.whenCorpsesReady();
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        renderer.sync(store, ragdollConfig.timestep, 1);
+        renderer.sync(store, ragdollConfig.timestepRealSeconds, 1);
       }
       renderer.sync(store, CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
       expect(damage.system.finishDowned(damage.id, false)).toBeUndefined();
@@ -1526,7 +1526,7 @@ describe('MobActorMeshes reactions', () => {
 
       renderer.sync(
         store,
-        ragdollConfig.stepBudget * ragdollConfig.timestep +
+        ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds +
           CORPSE_LIFECYCLE.lieSimSeconds +
           CORPSE_LIFECYCLE.sinkSimSeconds +
           1,
@@ -1617,7 +1617,8 @@ describe('MobActorMeshes dismemberment', () => {
       // One extra sample after the step budget distinguishes lying still from falling.
       for (
         let frame = 0;
-        frame <= Math.ceil((ragdollConfig.stepBudget * ragdollConfig.timestep) / step) + 1 && lying === undefined;
+        frame <= Math.ceil((ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds) / step) + 1 &&
+        lying === undefined;
         frame++
       ) {
         renderer.sync(store, step, 1, true);
@@ -1630,7 +1631,7 @@ describe('MobActorMeshes dismemberment', () => {
       expect(lying).toBeDefined();
       let sank = false;
       const lifetime =
-        ragdollConfig.stepBudget * ragdollConfig.timestep +
+        ragdollConfig.stepBudget * ragdollConfig.timestepRealSeconds +
         CORPSE_LIFECYCLE.lieSimSeconds +
         CORPSE_LIFECYCLE.sinkSimSeconds;
       for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
@@ -1658,7 +1659,7 @@ describe('MobActorMeshes dismemberment', () => {
       expect(renderer.debrisCountFor(id)).toBe(1);
       await renderer.whenCorpsesReady();
 
-      const step = ragdollConfig.timestep;
+      const step = ragdollConfig.timestepRealSeconds;
       const settlementBudget = ragdollConfig.stepBudget * step + step;
       const horizon = settlementBudget + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
       let observedSleep = false;
@@ -1700,7 +1701,7 @@ describe('MobActorMeshes dismemberment', () => {
         frame < ragdollConfig.stepBudget && ![...debrisEntries(renderer).values()][0]!.body.asleep;
         frame++
       ) {
-        renderer.sync(store, ragdollConfig.timestep, 1);
+        renderer.sync(store, ragdollConfig.timestepRealSeconds, 1);
       }
       const entries = debrisEntries(renderer);
       expect(entries.size).toBe(1);

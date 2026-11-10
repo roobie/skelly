@@ -3982,7 +3982,7 @@ describe('dismemberment', () => {
       const part = debrisKey.split(':')[2]!;
       try {
         for (let frame = 0; frame < ragdollConfig.stepBudget && !debris.body.asleep; frame++) {
-          renderer.sync(system.store, ragdollConfig.timestep, 1);
+          renderer.sync(system.store, ragdollConfig.timestepRealSeconds, 1);
           const r = quatToMat3(debris.body.orientation);
           const bottom = Math.min(...debris.body.corners.map((corner) => mulMV(r, corner)[1] + debris.body.center[1]));
           if (bottom <= 0.02 && firstTouchdownCenter === undefined) {

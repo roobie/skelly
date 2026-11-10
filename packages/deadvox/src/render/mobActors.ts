@@ -2076,8 +2076,8 @@ export class MobActorMeshes implements ActorRenderer {
   ): void {
     const fall = state.crawlFall!;
     const progress = clamp01(
-      (fall.elapsedRealSeconds - this.options.ragdoll.crawlFall.fallSeconds) /
-        this.options.ragdoll.crawlFall.blendSeconds,
+      (fall.elapsedRealSeconds - this.options.ragdoll.crawlFall.fallRealSeconds) /
+        this.options.ragdoll.crawlFall.blendRealSeconds,
     );
     const blend = progress * progress * (3 - 2 * progress);
     const yaw = rotY((posed.placement.yawRad * 180) / Math.PI);
@@ -2413,14 +2413,14 @@ export class MobActorMeshes implements ActorRenderer {
       fall.elapsedRealSeconds += realDt;
       if (
         !fall.released &&
-        (fall.physics.settled || fall.elapsedRealSeconds >= this.options.ragdoll.crawlFall.fallSeconds)
+        (fall.physics.settled || fall.elapsedRealSeconds >= this.options.ragdoll.crawlFall.fallRealSeconds)
       ) {
         this.ragdolls?.remove(fall.physics);
         fall.released = true;
       }
       if (
         fall.elapsedRealSeconds >=
-        this.options.ragdoll.crawlFall.fallSeconds + this.options.ragdoll.crawlFall.blendSeconds
+        this.options.ragdoll.crawlFall.fallRealSeconds + this.options.ragdoll.crawlFall.blendRealSeconds
       ) {
         state.crawlFall = undefined;
       }

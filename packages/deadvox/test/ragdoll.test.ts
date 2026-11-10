@@ -123,7 +123,7 @@ describe('render ragdoll', () => {
         false,
       );
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        world.advance(ragdollConfig.timestep);
+        world.advance(ragdollConfig.timestepRealSeconds);
       }
       expect(corpse.settled).toBe(true);
       for (const { body } of corpse.parts) {
@@ -181,7 +181,7 @@ describe('render ragdoll', () => {
       });
       await world.ready;
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        world.advance(ragdollConfig.timestep);
+        world.advance(ragdollConfig.timestepRealSeconds);
       }
       const trunk = corpse.parts[0]!.body.translation();
       expect(Math.hypot(trunk.x, trunk.z)).toBeLessThanOrEqual(reach);
@@ -271,7 +271,7 @@ describe('render ragdoll', () => {
       });
       await world.ready;
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        world.advance(ragdollConfig.timestep);
+        world.advance(ragdollConfig.timestepRealSeconds);
       }
       const trunk = corpse.parts[0]!.body.translation();
       expect(trunk.x).toBeGreaterThan(ragdollConfig.footprintMetres[0]!);
@@ -365,7 +365,7 @@ describe('render ragdoll', () => {
         const piece = world.spawnRigid(body, ground);
         await world.ready;
         for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-          world.advance(ragdollConfig.timestep);
+          world.advance(ragdollConfig.timestepRealSeconds);
         }
         if (travels) {
           expect(body.center[0]).toBeGreaterThan(ragdollConfig.footprintMetres[0]!);
@@ -390,8 +390,8 @@ describe('render ragdoll', () => {
       await Promise.all([a.ready, b.ready]);
       const initial = [...first.transforms.values()];
       for (let step = 0; step < ragdollConfig.stepBudget; step++) {
-        a.advance(ragdollConfig.timestep);
-        b.advance(ragdollConfig.timestep);
+        a.advance(ragdollConfig.timestepRealSeconds);
+        b.advance(ragdollConfig.timestepRealSeconds);
       }
       expect(first.parts.length).toBeGreaterThan(0);
       expect([...first.transforms.values()]).not.toEqual(initial);

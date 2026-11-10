@@ -83,7 +83,7 @@ const corpseBudget = (
   ragdoll,
   maxCorpses: seed === undefined ? maxCorpses : ragdoll.sweep.capacity,
   ragdollSeed: seed,
-  look: seed === undefined ? look : { ...look, corpseLieSimSeconds: ragdoll.sweep.lieSeconds },
+  look: seed === undefined ? look : { ...look, corpseLieSimSeconds: ragdoll.sweep.lieSimSeconds },
 });
 
 export interface PlayCameraFrame {
