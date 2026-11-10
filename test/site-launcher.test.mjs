@@ -70,6 +70,7 @@ const intentionallyUnofferedDeadvoxParams = {
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   save: 'A debug-run opt-in to saving, meaningful only with debug; not a launcher gameplay option.',
+  post: 'A debug-panel look switch that also selects the full-post bench workload, not a launcher option.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
   voicePitch: 'A debug-only voice pitch override for listening checks, not a launcher gameplay option.',
@@ -127,15 +128,11 @@ const paramsReadBy = (sources) => {
   return { query: [...query].sort(), hash: [...hash].filter((key) => keys.has(key)).sort() };
 };
 
-// The bench pages keep their own query, so only the play readers say where a play link's parameter belongs.
-const PLAY_READERS = [
+const DEADVOX_READERS = [
   'packages/deadvox/src/main.ts',
   'packages/engine/src/game/config.ts',
   'packages/engine/src/game/ragdollConfig.ts',
   'packages/engine/src/core/weatheringUrl.ts',
-];
-const DEADVOX_READERS = [
-  ...PLAY_READERS,
   'packages/deadvox/src/bench/run.ts',
   'packages/deadvox/src/bench/shamblers.ts',
 ];
@@ -201,6 +198,7 @@ const makeDeadvoxForTest = () => {
     'setHashNumber',
     'atNumbers',
     'playHash',
+    'benchHash',
     'siteOffered',
     'setPlayOnlySite',
     'addDebugParams',
@@ -292,10 +290,10 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
   });
 
-  it('composes each play parameter in the home the game reads it from, in the game hash form', () => {
+  it('composes each play and bench parameter in the home the game reads it from, in the game hash form', () => {
     const makeDeadvox = makeDeadvoxForTest();
     const defaults = launcherModelForTest().deadvox;
-    const reads = paramsReadBy(PLAY_READERS);
+    const reads = paramsReadBy(DEADVOX_READERS);
     const debugFields = {
       debug: true,
       site: 'testHouse',
@@ -312,8 +310,16 @@ describe('site launchers track the games’ URL parameters', () => {
       weatheringSplit: '-3',
     };
     const debugPlay = { ...defaults, ...debugFields };
+    const worldBench = { ...defaults, bench: '1', seed: '7', plan: '1:64,0.5:96', worldIndex: '1', quick: true };
+    const shamblerBench = { ...defaults, bench: 'shamblers', seed: '7', n: '10,25', shamblerIndex: '1' };
     const homes = { query: new Set(), hash: new Set() };
-    for (const play of [debugPlay, { ...defaults, site: 'city' }, { ...defaults, site: 'forest', density: '0.5' }]) {
+    for (const play of [
+      debugPlay,
+      { ...defaults, site: 'city' },
+      { ...defaults, site: 'forest', density: '0.5' },
+      worldBench,
+      shamblerBench,
+    ]) {
       const url = makeDeadvox(play);
       const parsed = readHash(url.hash);
       assert.ok('hash' in parsed, `the game reads the composed hash ${url.hash}`);
@@ -342,6 +348,30 @@ describe('site launchers track the games’ URL parameters', () => {
     );
     for (const field of Object.keys(debugFields)) {
       assert.ok(homes.query.has(field) || homes.hash.has(field), `the debug play link carries ${field}`);
+    }
+  });
+
+  it('carries every bench run setting it is given in the link hash', () => {
+    const makeDeadvox = makeDeadvoxForTest();
+    const defaults = launcherModelForTest().deadvox;
+    const links = {
+      world: [
+        { ...defaults, bench: '1', seed: '7', plan: '1:64,0.5:96', worldIndex: '1', quick: true },
+        ['seed', 'plan', 'i', 'quick', 'shamblers'],
+      ],
+      shambler: [
+        { ...defaults, bench: 'shamblers', seed: '7', n: '10,25', shamblerIndex: '1' },
+        ['seed', 'i', 'shamblers'],
+      ],
+    };
+    for (const [name, [bench, fields]] of Object.entries(links)) {
+      const parsed = readHash(makeDeadvox(bench).hash);
+      assert.ok('hash' in parsed, `the game reads the ${name} bench hash`);
+      assert.deepEqual(
+        Object.keys(parsed.hash).sort(),
+        [...fields].sort(),
+        `the ${name} bench link carries its fields`,
+      );
     }
   });
 

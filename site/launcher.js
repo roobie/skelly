@@ -116,7 +116,7 @@ const page = (state) => html`  <main>
             <h3>Shambler benchmark</h3>
             <div class="form-grid">
               <label>Shambler counts (unique integers, 1–500)
-                <input name="n" data-url-param="n" type="text" value="10,25,50,100" inputmode="numeric" autocomplete="off" required  data-state-key="n" .value=${state.deadvox.n} .disabled=${!enabled('n', state)}/>
+                <input name="shamblers" data-url-param="shamblers" type="text" value="10,25,50,100" inputmode="numeric" autocomplete="off" required  data-state-key="n" .value=${state.deadvox.n} .disabled=${!enabled('n', state)}/>
               </label>
               <label>Start at count entry
                 <input id="deadvox-shambler-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required  data-state-key="shamblerIndex" .value=${state.deadvox.shamblerIndex} .disabled=${!enabled('shamblerIndex', state)}/>
@@ -344,6 +344,31 @@ const setPlayOnlySite = (params, d) => {
     }
   }
 };
+// A bench run's settings, in the hash like the game's developer state.
+const benchHash = (d) => {
+  const hash = d.seed === '1' ? {} : { seed: Number(d.seed) };
+  if (d.bench === '1') {
+    if (d.plan !== '0.5:64,0.5:96,0.5:128') {
+      hash.plan = d.plan.replaceAll(':', ',').split(',').map(Number);
+    }
+    if (d.worldIndex !== '0') {
+      hash.i = Number(d.worldIndex);
+    }
+    if (d.quick) {
+      hash.quick = true;
+    }
+    hash.shamblers = [Number(d.shamblers)];
+  }
+  if (d.bench === 'shamblers') {
+    if (d.shamblerIndex !== '0') {
+      hash.i = Number(d.shamblerIndex);
+    }
+    if (d.n !== '10,25,50,100') {
+      hash.shamblers = d.n.split(',').map(Number);
+    }
+  }
+  return hash;
+};
 const makeDeadvox = (d) => {
   const u = new URL('deadvox/', location.href);
   const p = u.searchParams;
@@ -355,7 +380,7 @@ const makeDeadvox = (d) => {
     return u;
   }
   if (m !== '') {
-    setDefault(p, 'seed', d.seed, '1');
+    u.hash = hashText(benchHash(d));
   }
   setDefault(p, 'time', d.time, defaultTime(d));
   if (m === '') {
@@ -371,18 +396,6 @@ const makeDeadvox = (d) => {
     setDefault(p, 'density', d.density, '');
   }
   setPlayOnlySite(p, d);
-  if (m === '1') {
-    p.set('shamblers', d.shamblers);
-    setDefault(p, 'plan', d.plan, '0.5:64,0.5:96,0.5:128');
-    setDefault(p, 'i', d.worldIndex, '0');
-    if (d.quick) {
-      p.set('quick', '1');
-    }
-  }
-  if (m === 'shamblers') {
-    setDefault(p, 'n', d.n, '10,25,50,100');
-    setDefault(p, 'i', d.shamblerIndex, '0');
-  }
   return u;
 };
 const inRange = (value, min, max, integer = true) => {

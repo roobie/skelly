@@ -36,7 +36,7 @@ describe('browser stage rendering mode', () => {
   });
 
   it('a render-free stage leaves a bench URL rendering', () => {
-    const bench = 'http://localhost/?seed=1&bench=forest';
+    const bench = 'http://localhost/?bench=1&site=forest#{seed:1}';
     expect(browserStageUrl(stage, bench, 'render-free')).toBe(bench);
   });
 
