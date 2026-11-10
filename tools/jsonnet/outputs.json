@@ -137,6 +137,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.loot/loot-armoury.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.loot/loot-policy.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.loot/loot-policy.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.loot/loot.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.loot/loot.json"
     },
