@@ -1,7 +1,7 @@
 ---
 read_if:
-  - you plan or pick up work on the things suite or on retiring gungen
-  - you wonder which gungen names remain to retire
+  - you plan or pick up work on the things suite or on retiring the gun tool's old names
+  - you wonder which old gun-tool names remain to retire
   - you decide where a shared concept, consumer schema extension or tool UI part belongs
   - you change the recipe defining the gun tool's reproduction exit
   - you turn gun parts into Deadvox items
@@ -11,7 +11,7 @@ read_if:
 # WORK
 
 The plan to reach the goal in `things/README.md`: a shared core, a thing authoring tool and
-a gun authoring tool that together replace gungen. Delete this file at close-out.
+a gun authoring tool. Delete this file at close-out.
 
 ## Starting facts
 
@@ -25,8 +25,8 @@ Why each boundary matters, and where it is checked:
 - Shared fields need one owner so tool and consumer contracts cannot diverge. See
   `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
   `packages/engine/src/core/schema/models.ts`, `ModelSchema` and `GunModelSchema`.
-- The gun tool's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
-  "gungen exports satisfy deadvox model validation".
+- The gun tool's output must keep validating against deadvox's schema: `test/guns-deadvox-contract.test.mjs`,
+  "gun tool exports satisfy the Deadvox contract".
 
 ## To check before relying on it
 
@@ -47,8 +47,8 @@ into another.
 
 Settled:
 
-- A shared core serves two tools, a thing authoring tool and a gun authoring tool; the gun
-  tool succeeds gungen, and no gungen name survives retirement.
+- A shared core serves two tools, a thing authoring tool and a gun authoring tool; no old
+  gun-tool name survives retirement.
 - Neither authoring tool imports its peer, and lower packages and Deadvox cannot import
   the gun tool, so content ownership cannot reverse the shared dependency layers.
 - `thing-core` imports no package but construct, so the core stays free of gun modules and
@@ -144,7 +144,7 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    competing contracts. See
    `packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
    `packages/skelly-assets/tools/packages/thing-core/src/materials.ts`, `MATERIALS`; and
-   `test/gungen-deadvox-contract.test.mjs`, "gungen exports satisfy deadvox model validation".
+   `test/guns-deadvox-contract.test.mjs`, "gun tool exports satisfy the Deadvox contract".
 2. **Export package and physical model — complete.**
    Construct ends at assembly so the game can consume authored mass and placed centres
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
@@ -167,13 +167,13 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    see the gun tool's
    `packages/skelly-assets/tools/packages/gun-authoring-tool/exports/deadvox.jsonnet`,
    `packages/skelly-assets/tools/packages/gun-authoring-tool/src/cli/exportRecipe.ts`, `loadExportRecipe`, and
-   `test/gungen-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
-   Only residual gungen names remain for phase 6, none a second implementation; they,
+   `test/guns-deadvox-contract.test.mjs`, "registers every recipe export in the full base and keeps each gun companion inside the recipe".
+   Only residual old names remain for phase 6, none a second implementation; they,
    the retirement audit and the deferred ownership transfer are in
    `things/TASK-gun-tool.md`, "Phase 5: complete".
-6. **Retire gungen.** Retire residual names and references after the single phase 5 move;
-   rename the retained consumption contract atomically with its CI invocation so the gate
-   never disappears.
+6. **Retire the old gun-tool names.** The asset release renames the names it still writes,
+   and a pin bump moves skelly's readers with them, so the consumption gate never
+   disappears; see `things/TASK-gun-tool.md`, "Phase 6: retirement gate".
 7. **Close out.**
    - Add the standalone part view; it is not a phase 5 reproduction requirement.
    - Run the closing docs pass.
