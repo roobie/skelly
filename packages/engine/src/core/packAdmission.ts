@@ -38,6 +38,12 @@ export interface PackInput {
   files: ContentSource[];
 }
 
+/**
+ * The one order of pack manifest keys: by UTF-16 code unit, so locale and platform never reorder packs. The bundle
+ * stamp and the save identity list packs in this order, so the browser and the build must share it.
+ */
+export const comparePackKeys = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
+
 // An id in no inventory stays out of the closure, so admission reports it as a missing dependency.
 export const selectFolderClosure = (
   requested: readonly string[],
