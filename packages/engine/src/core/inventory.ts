@@ -663,11 +663,25 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, paperMap, fitted, charge, craftedLiquids, liquidContents }: Rolled): Item {
+  createRolled({
+    type,
+    count,
+    condition,
+    paperMap,
+    fitted,
+    charge,
+    craftedLiquids,
+    liquidContents,
+    cartridges,
+    fittedCartridges,
+  }: Rolled): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),
     });
+    if (cartridges !== undefined) {
+      item.cartridges = [...cartridges];
+    }
     if (craftedLiquids !== undefined) {
       item.craftedLiquids = craftedLiquids.map((amount) => ({ ...amount }));
     }
@@ -676,6 +690,9 @@ export class Inventory {
     }
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
+    }
+    for (const [slot, rounds] of Object.entries(fittedCartridges ?? {})) {
+      item.slots![slot]!.cartridges = [...rounds];
     }
     if (charge !== undefined) {
       for (const battery of [item, ...Object.values(item.slots ?? {})]) {

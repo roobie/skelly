@@ -16,7 +16,6 @@ import {
   SLING_SLOT,
 } from './firearmFitting.ts';
 import type { Item } from './items.ts';
-import { militaryOnlyEconomy } from './loot.ts';
 
 export const knownItemSlot = (registry: Registry, type: string, slot: string): boolean => {
   const def = registry.items.get(type);
@@ -59,9 +58,6 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
   const calibre = magazineWellCalibre(registry, firearmType);
   return calibre !== undefined && magazineSpec(registry, magazineType)?.calibre === calibre;
 };
-
-export const militaryLootItems = (registry: Registry): ReadonlySet<string> =>
-  new Set([...registry.itemEconomy.values()].filter(militaryOnlyEconomy).map((item) => item.id));
 
 interface FittedAttachment {
   readonly slotId: string;
