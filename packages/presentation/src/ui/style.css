@@ -365,6 +365,92 @@ body.unconscious::after {
   pointer-events: none;
 }
 
+#action-child-list {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: var(--ui-layer-inventory);
+}
+#action-child-list[hidden] {
+  display: none;
+}
+#action-child-list .card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: auto;
+  padding: calc(var(--ui-spacing) * 1rem);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.action-child-heading {
+  margin: 0;
+}
+
+#action-radial {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+#action-radial[hidden] {
+  display: none;
+}
+/* Transparent inside, so the target under the crosshair stays visible while choosing. */
+.radial-centre {
+  position: absolute;
+  width: calc(var(--radial-dead-zone) * 2);
+  height: calc(var(--radial-dead-zone) * 2);
+  transform: translate(-50%, -50%);
+  border: var(--radial-stroke) dashed var(--muted);
+  border-radius: 50%;
+}
+.radial-centre.selected {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.radial-pull {
+  position: absolute;
+  width: var(--radial-pull-size);
+  height: var(--radial-pull-size);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 var(--radial-stroke) var(--panel);
+}
+.radial-pointer {
+  position: absolute;
+  transform-origin: 0 0;
+}
+.radial-spoke {
+  position: absolute;
+  left: var(--radial-dead-zone);
+  width: max(0px, calc(var(--radial-radius) - var(--radial-dead-zone)));
+  height: var(--radial-stroke);
+  transform: translateY(-50%);
+  background: var(--accent);
+}
+.radial-entry {
+  position: absolute;
+  width: max-content;
+  padding: calc(var(--ui-spacing) * var(--radial-label-padding));
+  border: var(--radial-stroke) solid var(--line);
+  border-radius: var(--radial-label-radius);
+  background: var(--panel);
+  color: var(--muted);
+}
+.radial-entry.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--panel);
+  font-size: calc(1em * var(--radial-selected-label-scale));
+}
+
 /* A bound key shown beside its action; every hint draws it through `keyCap` in src/ui/keyCap.ts. */
 .keycap {
   display: inline-block;

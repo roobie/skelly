@@ -632,9 +632,12 @@ because rearranging a room should not require destroying its contents. See `pack
   it cannot move, so fitting does not silently change that kind's controls.
   An open list is a single confirmation, not a persistent interaction mode:
   returning from a pause or another target must not unexpectedly act instead of
-  offering choices. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/furnitureActions.ts`,
-  `FurnitureActionSelection`.
+  offering choices. Each action keeps one authored direction on the radial
+  menu, so muscle memory survives a piece gaining or losing actions, and
+  nothing is chosen until the pull leaves the dead zone toward an entry, so a
+  release without a clear lean does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
+  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
+  `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `packages/engine/src/core/furnitureMove.ts`, `turnCarried`,
