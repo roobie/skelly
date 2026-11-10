@@ -1,16 +1,15 @@
-import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
 import { PlayerControls, RELOAD_GESTURE_MS, type ReplayControlSample } from '@skelly/engine/input';
-import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
-import { realSeconds } from '@skelly/engine/sim';
-import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
+import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
 import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
 import { createCommandRouter, type Session } from '@skelly/engine/session';
-import { dominantSide, type Simulation } from '@skelly/engine/sim';
+import { dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
+import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 
