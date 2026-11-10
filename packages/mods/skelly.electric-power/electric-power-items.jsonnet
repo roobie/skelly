@@ -57,7 +57,7 @@ local batteryBeam = lights.batteryBeam;
       description: 'A battery-powered beam worn on the head, leaving both hands free.',
       disassembly: disassembly(5, [yield('flashlight', 1), yield('cloth_strip', 1)]),
       wearable: { slot: 'head', encumbrance: 0 },
-      figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.055, 0], turn: [0, 0, 0] }],
+      figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.055, 0], turn: [0, 180, 0] }],
       light: batteryBeam(
         radius=12,
         seenFrom=30,

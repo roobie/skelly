@@ -223,7 +223,7 @@ describe('production vehicle ownership', () => {
     }
     const invalid = structuredClone(capture(runtime));
     const cargo = invalid.world.vehicles.instances[0]!.vehicle.fittings.find(({ item }) => item.cargo)!;
-    cargo.item.pockets![0]![0]!.x = cargo.item.cargo![0];
+    cargo.item.pockets![0]![0]!.x = cargo.item.cargo![2];
     expect(() => createRuntime(invalid)).toThrow('Invalid item placement');
     const floating = structuredClone(capture(runtime));
     floating.world.vehicles.instances[0]!.vehicle.fittings.find(({ item }) => item.cargo)!.at[1] += 1;

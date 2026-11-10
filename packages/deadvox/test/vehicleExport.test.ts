@@ -178,17 +178,17 @@ describe('vehicle export contract', () => {
   it('reflects a mirrored fitting’s datums, collision and centre of mass with its geometry', () => {
     const near = fittingOf(base.registry, 'hatchback', 'headlamp_near');
     const far = fittingOf(base.registry, 'hatchback', 'headlamp_far');
-    const reflect = ([x, y, z]: readonly number[]) => [x, y, -z!];
+    const reflect = ([x, y, z]: readonly number[]) => [-x!, y, z];
     const datums = Object.keys(near.datums);
-    expect(datums.some((id) => near.datums[id]![2] !== -near.datums[id]![2])).toBe(true);
+    expect(datums.some((id) => near.datums[id]![0] !== -near.datums[id]![0])).toBe(true);
     for (const id of datums) {
       expect(far.datums[id]).toEqual(reflect(near.datums[id]!));
     }
     expect(far.centreOfMass).toEqual(reflect(near.centreOfMass));
     expect(far.collision).toEqual(
       near.collision.map(({ min, max }) => ({
-        min: reflect([min[0], min[1], max[2]]),
-        max: reflect([max[0], max[1], min[2]]),
+        min: reflect([max[0], min[1], min[2]]),
+        max: reflect([min[0], max[1], max[2]]),
       })),
     );
     for (const placed of [near, far]) {

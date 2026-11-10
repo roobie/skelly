@@ -185,9 +185,9 @@ export interface LoadedVehicle {
 }
 
 const place = ({ at, mirror }: VehicleFittingDef, [x, y, z]: Vec3): Vec3 => [
-  at[0] + x,
+  mirror ? at[0] - x : at[0] + x,
   at[1] + y,
-  mirror ? at[2] - z : at[2] + z,
+  at[2] + z,
 ];
 
 const placeBox = (fitting: VehicleFittingDef, { min, max }: ModelBox): ModelBox => {

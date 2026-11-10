@@ -1383,7 +1383,7 @@ describe('player figure', () => {
       )!;
       const source = registry.models.get(def.model!)!;
       // An asymmetric fixture: both holds off the gun's centre plane, the support fingers across it, no turn or roll,
-      // so the expected placement is the plain forward-hold mapping of model x, y, z onto view -z, y, x.
+      // so the expected placement is the plain forward-hold mapping of model x, y, z onto view -x, y, -z.
       const model = {
         ...source,
         roll: undefined,
@@ -1391,11 +1391,11 @@ describe('player figure', () => {
         grip: { ...source.grip!, turn: undefined },
         hands: {
           ...source.hands!,
-          firing: { ...source.hands!.firing, at: [-0.2, -0.03, 0.03] as Vec3 },
+          firing: { ...source.hands!.firing, at: [-0.03, -0.03, -0.2] as Vec3 },
           support: {
-            at: [0.2, -0.05, -0.04] as Vec3,
+            at: [0.04, -0.05, 0.2] as Vec3,
             palm: [0, 1, 0] as Vec3,
-            fingers: [0.6, 0, 0.8] as Vec3,
+            fingers: [-0.8, 0, 0.6] as Vec3,
             pose: 'forend' as const,
           },
         },
@@ -1405,7 +1405,7 @@ describe('player figure', () => {
       const inventory = new Inventory({ ...registry, models });
       expect(inventory.add(inventory.create(def.id), { kind: 'hand', side })).toBe(true);
       const mirrored = ([x, y, z]: Vec3): Vector3 =>
-        new Vector3(z, y, -x).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
+        new Vector3(-x, y, -z).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
       const held = new HeldItems(inventory, figureOnlyModels, playerFigure, {
         nearPlaneMetres: 0.01,
         playerViewFovDegrees: 75,

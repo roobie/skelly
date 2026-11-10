@@ -8,7 +8,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
 // at the sling's foot (`packages/skelly-assets/models/worn-carry.libsonnet`, `sling`), so every gun hangs from the
 // strap whatever its length.
 local slung(model) = [{
-  model: model.id, frame: 'torso', pivot: [model.grip.at[0], 0, 0], at: [-0.25, 0.26, -0.19], turn: [90, -90, 0],
+  model: model.id, frame: 'torso', pivot: [0, 0, model.grip.at[2]], at: [-0.25, 0.26, -0.19], turn: [90, 0, 0],
 }];
 
 {
@@ -18,7 +18,7 @@ local slung(model) = [{
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
       model: 'rifle_hunting', size: [2, 11], twoHanded: true,
       figureModels: slung(import 'packages/skelly-assets/built/skelly.firearms/gungen/rifle_hunting.model.json'),
-      lightMountSite: { kind: 'strap', at: [0.42, -0.03, 0], turn: [0, 0, 0] },
+      lightMountSite: { kind: 'strap', at: [0, -0.03, 0.42], turn: [0, 0, 0] },
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2, roundInsertSound: 'shotgun_insert',
         recoilKickRadians: 0.025, dispersionRadians: 0.006, pelletSpreadScale: 1,
@@ -53,7 +53,7 @@ local slung(model) = [{
         }
       },
       "id": "pump_shotgun",
-      "lightMountSite": { "kind": "strap", "at": [0.34, -0.045, 0], "turn": [0, 0, 0] },
+      "lightMountSite": { "kind": "strap", "at": [0, -0.045, 0.34], "turn": [0, 0, 0] },
       "model": "shotgun_pump",
       "figureModels": slung(import 'packages/skelly-assets/built/skelly.firearms/gungen/shotgun_pump.model.json'),
       "name": "Pump shotgun",

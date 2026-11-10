@@ -22,7 +22,7 @@ const shambler = registry.actors.get('shambler')!;
 const bones = bodySkeleton(actorFigure(stackActorFigureFiles(registry), shambler, shambler.figureSeeds![0]!).body);
 const restPose: Pose = { root: [0, 0, 0], rotations: {} };
 const baseTransforms = boneTransforms(bones, restPose);
-const forward = (rotation: Mat3): readonly [number, number, number] => mulMV(rotation, [0, 0, -1]);
+const forward = (rotation: Mat3): readonly [number, number, number] => mulMV(rotation, [0, 0, 1]);
 const angleTo = (a: readonly number[], b: readonly number[]): number =>
   Math.acos(
     Math.max(-1, Math.min(1, dot(normalize(a as [number, number, number]), normalize(b as [number, number, number])))),
@@ -35,7 +35,7 @@ const profile = {
 
 describe('look-at pose', () => {
   it('turns the neck and head toward the target eye point', () => {
-    const target = [2, 1, -6] as const;
+    const target = [-2, 1, 6] as const;
     const result = lookAtPose({
       bones,
       pose: restPose,
@@ -62,7 +62,7 @@ describe('look-at pose', () => {
       head: { yawDeg: 9, pitchDeg: 8 },
       turnRateDegPerRealSecond: 360,
     } as const;
-    const target = [8, 4, -1] as const;
+    const target = [-8, 4, 1] as const;
     const result = lookAtPose({
       bones,
       pose: restPose,
@@ -77,7 +77,7 @@ describe('look-at pose', () => {
     const headDelta = mulMM(result.transforms.get('head')!.r, transpose(headBaseAfterNeck));
     const correctionAngles = (rotation: Mat3): readonly [number, number] => {
       const [x, y, z] = forward(rotation);
-      return [Math.atan2(-x, -z) * (180 / Math.PI), Math.atan2(y, Math.hypot(x, z)) * (180 / Math.PI)];
+      return [Math.atan2(x, z) * (180 / Math.PI), Math.atan2(y, Math.hypot(x, z)) * (180 / Math.PI)];
     };
     const [neckYaw, neckPitch] = correctionAngles(neckDelta);
     const [headYaw, headPitch] = correctionAngles(headDelta);
@@ -101,7 +101,7 @@ describe('look-at pose', () => {
 
     const totalCorrection = mulMM(result.transforms.get('head')!.r, transpose(baseTransforms.get('head')!.r));
     const [totalYaw] = correctionAngles(totalCorrection);
-    expect(totalYaw * target[0]).toBeLessThan(0);
+    expect(totalYaw * target[0]).toBeGreaterThan(0);
 
     const limitGap = Math.min(
       Math.abs(narrow.neck.yawDeg - Math.abs(neckYaw)),

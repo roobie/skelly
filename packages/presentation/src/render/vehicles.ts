@@ -73,7 +73,7 @@ export class VehicleMeshes {
       const holder = new Group();
       holder.position.set(...part.transform.position);
       holder.rotation.y = part.transform.yaw;
-      holder.scale.z = part.transform.mirror ? -1 : 1;
+      holder.scale.x = part.transform.mirror ? -1 : 1;
       holder.add(model);
       group.add(holder);
     }

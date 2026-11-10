@@ -601,13 +601,14 @@ describe('fused-mass body and combat seam', () => {
     const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const start: Vec3 = [0.5, 1, 8];
     // A wall at z = 0, open in each block row half a block beyond the flesh that crosses it facing -z (the
-    // flesh above and below the row by that margin too, since the body stands a skin above the floor).
+    // flesh above and below the row by that margin too, since the body stands a skin above the floor). The rest
+    // grid faces +z, so facing -z turns it a half turn and its x runs the other way.
     const { voxel, centres } = fleshVoxels(figure);
     const rows = new Map<number, [number, number]>();
     for (const [x, y] of centres) {
       for (let row = Math.floor(start[1] + y - voxel / 2 - 0.5); row < start[1] + y + voxel / 2 + 0.5; row++) {
         const [low, high] = rows.get(row) ?? [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-        rows.set(row, [Math.min(low, start[0] + x - voxel / 2), Math.max(high, start[0] + x + voxel / 2)]);
+        rows.set(row, [Math.min(low, start[0] - x - voxel / 2), Math.max(high, start[0] - x + voxel / 2)]);
       }
     }
     const wall = (x: number, y: number): boolean => {
@@ -1226,11 +1227,11 @@ describe('fused-mass flesh carving', () => {
       return shape;
     };
     // A small box at the centre of every voxel of flesh the figure was built with, turned off the axes as the
-    // posed figure turns: by its core box's turn from facing -z.
+    // posed figure turns: by its core box's turn from facing +z, the rest grid's facing.
     const facing: Vec3 = [Math.sin(0.7), 0, -Math.cos(0.7)];
     const coreTurn = (toward: Vec3) =>
       posedFusedMassRegionBoxes(fusedMassPoseInput([0, 0, 0], toward))['core.trunk']![0]!.rotation;
-    const [turned, unturned] = [coreTurn(facing), coreTurn([0, 0, -1])];
+    const [turned, unturned] = [coreTurn(facing), coreTurn([0, 0, 1])];
     const turn = (row: number, column: number): number =>
       [0, 1, 2].reduce((sum, k) => sum + turned[row * 3 + k]! * unturned[column * 3 + k]!, 0);
     const centres = fleshVoxels(figure).centres.map((point) =>

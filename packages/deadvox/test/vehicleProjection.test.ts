@@ -27,8 +27,8 @@ describe('production vehicle projection', () => {
     const { inventory } = createRuntime();
     const id = inventory.registerVehicle(spec('projection.east', 'e'));
     const vehicle = inventory.vehicles.get(id)!;
-    const mirrored = vehicle.fittings.find((fitting) => fitting.mirror && fitting.at[2] !== 0)!;
-    expect(mirrored.at[2]).not.toBe(0);
+    const mirrored = vehicle.fittings.find((fitting) => fitting.mirror && fitting.at[0] !== 0)!;
+    expect(mirrored.at[0]).not.toBe(0);
     const loaded = placeFitting(registry, {
       id: mirrored.id,
       at: mirrored.at,
@@ -45,27 +45,28 @@ describe('production vehicle projection', () => {
     const holder =
       rendered.groupFor(id)!.children[parts.slice(0, partIndex + 1).filter((part) => part.model).length - 1]!;
     const [x, y, z] = loaded.lattice!.origin;
+    // Facing east turns the vehicle's forward, +z, onto world -z.
     const anchor = [
-      vehicle.origin[0] * scale.blockSize + z,
+      vehicle.origin[0] * scale.blockSize - x,
       vehicle.origin[1] * scale.blockSize + y,
-      vehicle.origin[2] * scale.blockSize - x,
+      vehicle.origin[2] * scale.blockSize - z,
     ];
 
     expect(projected.transform.mirror).toBe(true);
-    expect(projected.transform.yaw).toBeCloseTo(Math.PI / 2);
+    expect(projected.transform.yaw).toBeCloseTo(Math.PI);
     expect(holder.position.toArray()).toEqual(anchor);
     expect(projected.transform.position).toEqual(anchor);
     expect(projected.boxes).toEqual(
       loaded.collision.map(({ min, max }) => ({
         min: [
-          vehicle.origin[0] * scale.blockSize + min[2],
+          vehicle.origin[0] * scale.blockSize - max[0],
           vehicle.origin[1] * scale.blockSize + min[1],
-          vehicle.origin[2] * scale.blockSize - max[0],
+          vehicle.origin[2] * scale.blockSize - max[2],
         ],
         max: [
-          vehicle.origin[0] * scale.blockSize + max[2],
+          vehicle.origin[0] * scale.blockSize - min[0],
           vehicle.origin[1] * scale.blockSize + max[1],
-          vehicle.origin[2] * scale.blockSize - min[0],
+          vehicle.origin[2] * scale.blockSize - min[2],
         ],
       })),
     );

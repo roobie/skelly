@@ -162,8 +162,8 @@ describe('actual-slot held placement', () => {
 
   it('cups the support palm under the bore with the bore running across it from the heel to the thumb-index gap', () => {
     const model = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
-    // A gun authoring tool export runs its bore along the model's +x through the origin.
-    const bore = modelToView(model, [1, 0, 0]);
+    // A gun authoring tool export runs its bore along the model's +z through the origin.
+    const bore = modelToView(model, [0, 0, 1]);
     const boreFromGrip = modelToView(model, model.grip!.at.map((value) => -value) as Vec3);
     for (const side of ['right', 'left'] as const) {
       const { at, palm, fingers, thumbSide } = heldHoldFrame(model, side, 'support');
@@ -191,8 +191,8 @@ describe('actual-slot held placement', () => {
     const fixture = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
     const models = [fixture, ...[...registry.models.values()].filter((model) => model.hands?.butt)];
     for (const model of models) {
-      expect(model.hands!.support!.at.slice(0, 2), `${model.id} support contact comes from the export`).toEqual(
-        model.anchors!.support!.slice(0, 2),
+      expect(model.hands!.support!.at.slice(1), `${model.id} support contact comes from the export`).toEqual(
+        model.anchors!.support!.slice(1),
       );
     }
   });
