@@ -5,7 +5,22 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';
 import { skyAt } from '../src/core/sky.ts';
 
-const look = ({ colour, lit }: { colour: string; lit: boolean }) => ({
+const NIGHT_DOME = {
+  zenith: '#102030',
+  horizonGlow: '#304050',
+  physical: { weight: 0.1, turbidity: 2, rayleigh: 1, mie: 0.004, mieDirectional: 0.2 },
+  clouds: { cover: 0.2, opacity: 0.4 },
+  stars: 0.9,
+};
+const DAY_DOME = {
+  zenith: '#a0b0c0',
+  horizonGlow: '#d0e0f0',
+  physical: { weight: 0.7, turbidity: 6, rayleigh: 3, mie: 0.012, mieDirectional: 0.6 },
+  clouds: { cover: 0.8, opacity: 1 },
+  stars: 0.1,
+};
+
+const look = (dome: typeof NIGHT_DOME) => ({
   sky: '#808080',
   lightColor: '#ffffff',
   lightIntensity: 1,
@@ -18,13 +33,7 @@ const look = ({ colour, lit }: { colour: string; lit: boolean }) => ({
   heightFogColor: '#808080',
   bloom: 0.1,
   tone: 0.5,
-  dome: {
-    zenith: colour,
-    horizonGlow: colour,
-    physical: { weight: Number(lit), turbidity: 2, rayleigh: 1, mie: 0.004, mieDirectional: 0.5 },
-    clouds: { cover: Number(lit), opacity: 1 },
-    stars: Number(!lit),
-  },
+  dome,
 });
 
 const cycle: DayCycleDef = parse(DayCycleSchema, {
@@ -40,11 +49,11 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     { phase: 'day', at: 0, look: 'day' },
   ],
   looks: {
-    night: look({ colour: '#000000', lit: false }),
-    deepNight: look({ colour: '#000000', lit: false }),
-    dawn: look({ colour: '#000000', lit: false }),
-    day: look({ colour: '#ffffff', lit: true }),
-    dusk: look({ colour: '#000000', lit: false }),
+    night: look(NIGHT_DOME),
+    deepNight: look(NIGHT_DOME),
+    dawn: look(NIGHT_DOME),
+    day: look(DAY_DOME),
+    dusk: look(NIGHT_DOME),
   },
   weather: { defaultFogginess: 0.2, nearTighten: 0.5, farTighten: 0.5 },
   clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5 }] },
@@ -53,21 +62,25 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
 const state = dayPhaseAt(cycle, 0);
 const hourOf = (seconds: number): number => seconds / 3600;
 
+const leaves = (value: unknown, path = ''): [string, number][] =>
+  typeof value === 'number'
+    ? [[path, value]]
+    : Object.entries(value as object).flatMap(([key, child]) => leaves(child, `${path}.${key}`));
+
 describe('sky dome blend', () => {
   it('takes a key look unchanged at its key and blends every dome field halfway between two keys', () => {
-    const atNight = skyAt(hourOf(state.nightfall), cycle).dome;
-    expect(atNight).toEqual(cycle.looks.night.dome);
-
-    const atDay = skyAt(hourOf(state.sunrise), cycle).dome;
-    expect(atDay).toEqual(cycle.looks.day.dome);
+    expect(skyAt(hourOf(state.nightfall), cycle).dome).toEqual(cycle.looks.night.dome);
+    expect(skyAt(hourOf(state.sunrise), cycle).dome).toEqual(cycle.looks.day.dome);
 
     const nightToDaySeconds = (state.sunrise - state.nightfall + SECONDS_PER_DAY) % SECONDS_PER_DAY;
     const midway = skyAt(hourOf((state.nightfall + nightToDaySeconds / 2) % SECONDS_PER_DAY), cycle).dome;
-    expect(midway.zenith[0]).toBeCloseTo(0.5, 8);
-    expect(midway.horizonGlow[2]).toBeCloseTo(0.5, 8);
-    expect(midway.physical.weight).toBeCloseTo(0.5, 8);
-    expect(midway.physical.turbidity).toBeCloseTo(2, 8);
-    expect(midway.clouds.cover).toBeCloseTo(0.5, 8);
-    expect(midway.stars).toBeCloseTo(0.5, 8);
+
+    const night = new Map(leaves(cycle.looks.night.dome));
+    const actual = new Map(leaves(midway));
+    const fields = leaves(cycle.looks.day.dome);
+    expect(actual.size).toBe(fields.length);
+    for (const [path, day] of fields) {
+      expect(actual.get(path)).toBeCloseTo((night.get(path)! + day) / 2, 8);
+    }
   });
 });
