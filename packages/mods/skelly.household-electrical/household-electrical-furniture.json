@@ -55,6 +55,7 @@
         "light": {
           "color": "#ffdea5",
           "intensity": 24,
+          "offset": [0, 2, 0],
           "radius": 8
         }
       },

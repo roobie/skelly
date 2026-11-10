@@ -2693,6 +2693,12 @@ so it counts for nothing. A lit candle held alone is enough to read by at night.
 `packages/engine/src/core/illumination.ts`, `illuminationAt`, and `packages/presentation/src/render/lightFalloff.ts`,
 `installNearFieldFalloff`.
 
+A powered fixture's light position has one owner, which the renderer and the rules both read, so a room cannot look
+lit from one place and count as lit from another. A fixture with no authored offset shines from the centre of its origin
+cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such as a ceiling strip or a lamp's shade,
+authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
+`packages/engine/src/core/schema/furniture.ts`, `offset`.
+
 Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
 transport therefore belongs ahead of reveal on workers; synchronous completion at
 reveal is a last resort, not the scheduling strategy. Edge fields need priority
