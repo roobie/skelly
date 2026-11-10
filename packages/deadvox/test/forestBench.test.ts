@@ -86,7 +86,7 @@ describe('forest benchmark workload identity', () => {
       const config = benchStartConfig(selection.content, 1, 64);
       expect({ site: config.site, time: timeOfDayText(config.start) }).toEqual({
         site: BENCH_WORKLOADS[name].site,
-        time: BENCH_WORKLOADS[name].time,
+        time: BENCH_WORKLOADS[name].startTimeGameTimeOfDay,
       });
     },
   );

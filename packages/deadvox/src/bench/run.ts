@@ -119,15 +119,16 @@ export const benchStartConfig = (
  * bare `?bench=` link takes the shared start order.
  */
 export const BENCH_WORKLOADS = {
-  world: { bench: '1', site: 'testHouse', time: '12:00' },
-  shamblers: { bench: 'shamblers', site: 'forest', time: '23:30' },
+  world: { bench: '1', site: 'testHouse', startTimeGameTimeOfDay: '12:00' },
+  shamblers: { bench: 'shamblers', site: 'forest', startTimeGameTimeOfDay: '23:30' },
 } as const;
 
 /** The game page's link that runs the `name` benchmark on its own workload. */
 export const benchHref = (content: StartupContent, name: keyof typeof BENCH_WORKLOADS): string => {
-  const { bench, site, time } = BENCH_WORKLOADS[name];
+  const { bench, site, startTimeGameTimeOfDay } = BENCH_WORKLOADS[name];
   const start = { ...startForSite(content, site), id: `bench_${name}_start` };
-  return `?${new URLSearchParams({ bench, 'start-mod': linkStartMod(`link.bench-${name}`, start, time) })}`;
+  const startMod = linkStartMod(`link.bench-${name}`, start, startTimeGameTimeOfDay);
+  return `?${new URLSearchParams({ bench, 'start-mod': startMod })}`;
 };
 
 const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
