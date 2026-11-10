@@ -225,7 +225,7 @@ it('invalidates a warmed opaque channel after a fitting disappears', () => {
   expect(sight.isSolid(...cell)).toBe(false);
 });
 
-it('leaves a player body standing in exported vehicle space with no collision box', () => {
+it('leaves a player body clear in an empty cell of vehicle space beside a solid part cell', () => {
   const inventory = new Inventory(registry);
   const id = inventory.registerVehicle({
     blueprint: 'hatchback',
@@ -248,17 +248,36 @@ it('leaves a player body standing in exported vehicle space with no collision bo
     vehicles: inventory.vehicles,
     blockSize: scale.blockSize,
   });
+  const occupied = new Set(allCells.map((cell) => cell.join(',')));
+  const bodyAt = ([x, y, z]: Readonly<Vec3>) => createPlayerBody(scale, x + 0.5, y, z + 0.5);
   const [minX, minY, minZ] = min;
   const [maxX, maxY, maxZ] = max;
-  const clear = [] as Vec3[];
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let z = minZ; z <= maxZ; z += 1) {
-      for (let x = minX; x <= maxX; x += 1) {
-        if (!bodyOverlapsTerrain(createPlayerBody(scale, x + 0.5, y, z + 0.5), solid)) {
-          clear.push([x, y, z]);
+  // The cells just outside a body's footprint, one per horizontal direction, at its feet, with the one-cell step toward each.
+  const besideFootprint = (cell: Readonly<Vec3>): { part: Vec3; step: Vec3 }[] => {
+    const { pos, halfWidth } = bodyAt(cell);
+    const [x, y, z] = cell;
+    const lo = (axis: 0 | 2) => Math.floor(pos[axis] - halfWidth) - 1;
+    const hi = (axis: 0 | 2) => Math.ceil(pos[axis] + halfWidth);
+    return [
+      { part: [lo(0), y, z], step: [x - 1, y, z] },
+      { part: [hi(0), y, z], step: [x + 1, y, z] },
+      { part: [x, y, lo(2)], step: [x, y, z - 1] },
+      { part: [x, y, hi(2)], step: [x, y, z + 1] },
+    ];
+  };
+  let found: { clear: Vec3; part: Vec3; step: Vec3 } | undefined;
+  for (let y = minY; y <= maxY && !found; y += 1) {
+    for (let z = minZ; z <= maxZ && !found; z += 1) {
+      for (let x = minX; x <= maxX && !found; x += 1) {
+        const clear: Vec3 = [x, y, z];
+        const beside = besideFootprint(clear).find(({ part }) => occupied.has(part.join(',')));
+        if (beside && !occupied.has(clear.join(',')) && !bodyOverlapsTerrain(bodyAt(clear), solid)) {
+          found = { clear, ...beside };
         }
       }
     }
   }
-  expect(clear.length).toBeGreaterThan(0);
+  expect(found, 'an empty cell in vehicle space with room for a player beside a part').toBeDefined();
+  expect(solid(...found!.part)).toBe(true);
+  expect(bodyOverlapsTerrain(bodyAt(found!.step), solid)).toBe(true);
 });

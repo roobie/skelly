@@ -12,7 +12,7 @@ import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { rectsOverlap } from '../src/core/site.ts';
-import { siteGenerationOf } from '../src/core/sitePalette.ts';
+import { siteGenerationOf, sitePalette } from '../src/core/sitePalette.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
@@ -229,10 +229,15 @@ describe('passable but opaque vegetation', () => {
     expect(hits).toEqual([1]);
   });
 
-  it('rustles on entry and cooldown only while moving, with faster content cadence', () => {
+  it('rustles on entry and after its content cooldown only while moving, with the gait content event', () => {
+    const foliage = registry.blocks.findIndex((block) => block?.rustle !== undefined);
+    expect(foliage).toBeGreaterThan(0);
+    const { gentle, fast: fastEvent } = registry.blocks[foliage]!.rustle!;
+    const interval = (event: string) => registry.sounds.get(event)!.minIntervalSimSeconds;
+    expect(interval(gentle)).toBeGreaterThan(0);
     const world = new World();
-    world.setBlock(2, 2, 2, registry.blockIds.get('leaves')!);
-    world.setBlock(3, 2, 2, registry.blockIds.get('leaves')!);
+    world.setBlock(2, 2, 2, foliage);
+    world.setBlock(3, 2, 2, foliage);
     const body = {
       pos: [2.5, 2, 2.5] as [number, number, number],
       vel: [0, 0, 0] as [number, number, number],
@@ -242,17 +247,20 @@ describe('passable but opaque vegetation', () => {
     };
     const sample = { body, world, registry, gait: 'walking' as const, moving: true, time: 0 };
     const entry = foliageRustle(initialRustleClock(), sample);
-    expect(entry.sound?.event).toBe('foliage_rustle');
-    expect(foliageRustle(entry.clock, { ...sample, time: 0.2 }).sound).toBeUndefined();
-    expect(foliageRustle(entry.clock, { ...sample, time: 0.5, moving: false }).sound).toBeUndefined();
-    expect(foliageRustle(entry.clock, { ...sample, time: 0.5 }).sound?.event).toBe('foliage_rustle');
+    expect(entry.sound?.event).toBe(gentle);
+    expect(entry.clock.nextSimTimestamp).toBe(interval(gentle));
+    const due = interval(gentle);
+    expect(foliageRustle(entry.clock, { ...sample, time: due / 2 }).sound).toBeUndefined();
+    expect(foliageRustle(entry.clock, { ...sample, time: due, moving: false }).sound).toBeUndefined();
+    expect(foliageRustle(entry.clock, { ...sample, time: due }).sound?.event).toBe(gentle);
     body.pos[0] = 3.5;
-    const fast = foliageRustle(entry.clock, { ...sample, gait: 'sprinting', time: 0.3 });
-    expect(fast.sound?.event).toBe('foliage_rustle_fast');
-    expect(fast.clock.nextSimTimestamp - 0.3).toBeLessThan(entry.clock.nextSimTimestamp);
-    expect(foliageRustle(fast.clock, { ...sample, gait: 'sprinting', time: 0.5 }).sound?.event).toBe(
-      'foliage_rustle_fast',
-    );
+    const enteredAt = due / 2;
+    const fast = foliageRustle(entry.clock, { ...sample, gait: 'sprinting', time: enteredAt });
+    expect(fast.sound?.event).toBe(fastEvent);
+    expect(fast.clock.nextSimTimestamp).toBe(enteredAt + interval(fastEvent));
+    expect(
+      foliageRustle(fast.clock, { ...sample, gait: 'sprinting', time: fast.clock.nextSimTimestamp }).sound?.event,
+    ).toBe(fastEvent);
   });
 
   it('admits brushing sound and positioned hearing together during actual player movement even without output', () => {
@@ -335,46 +343,19 @@ describe('passable but opaque vegetation', () => {
     }
   });
 
-  it('maps wood and foliage surfaces to their registered player and shambler sounds', () => {
-    const eventForAsset = (category: 'body' | 'world', asset: string) => {
-      const sound = [...registry.sounds.values()].find(
-        (definition) =>
-          definition.category === category &&
-          definition.variants.some((variant) => typeof variant === 'string' && variant.includes(asset)),
-      );
-      expect(sound, `${category} sound for ${asset}`).toBeDefined();
-      return sound!.id;
+  it('resolves every tree and litter surface to a registered player and shambler footstep sound', () => {
+    const { trees, leafLitter } = sitePalette(registry);
+    const families = {
+      player: [...registry.senses.values()][0]!.footsteps.family,
+      shambler: [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
     };
-    const playerWood = eventForAsset('body', 'footstep-wood-');
-    const playerFoliage = eventForAsset('body', 'footstep-leaves-');
-    const shamblerWood = eventForAsset('world', 'footstep-wood-');
-    const shamblerFoliage = eventForAsset('world', 'footstep-leaves-');
-
-    for (const name of ['tree_trunk', 'tree_branch']) {
-      const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(registry, block, [...registry.senses.values()][0]!.footsteps.family)).toBe(
-        playerWood,
-      );
-      expect(
-        footstepEventForBlock(
-          registry,
-          block,
-          [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
-        ),
-      ).toBe(shamblerWood);
-    }
-    for (const name of ['leaves', 'leaf_litter']) {
-      const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(registry, block, [...registry.senses.values()][0]!.footsteps.family)).toBe(
-        playerFoliage,
-      );
-      expect(
-        footstepEventForBlock(
-          registry,
-          block,
-          [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
-        ),
-      ).toBe(shamblerFoliage);
+    for (const id of [trees.trunk, trees.branch, trees.leaves, leafLitter]) {
+      const block = registry.blocks[id]!;
+      for (const [agent, family] of Object.entries(families)) {
+        const event = footstepEventForBlock(registry, block, family);
+        expect(event, `${agent} footstep on ${block.id}`).toBeDefined();
+        expect(registry.sounds.has(event!), `${agent} footstep sound ${event} on ${block.id}`).toBe(true);
+      }
     }
   });
 

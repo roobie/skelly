@@ -157,9 +157,33 @@ describe('practice objectives', () => {
   });
 
   it('remembers out-of-order supplies instead of requiring already consumed items again', () => {
-    const { tutorial, state, observe } = fixture();
+    const { registry } = BUNDLED_CONTENT;
+    const definitions = [...registry.items.values()];
+    const wearable = definitions.find((def) => def.wearable && def.container?.pockets.length)!;
+    const fitsPocket = (type: string): boolean => {
+      const scratch = new Inventory(registry);
+      const owner = scratch.create(wearable.id);
+      return (
+        scratch.add(owner, { kind: 'worn' }) && scratch.add(scratch.create(type), { kind: 'pocket', owner, pocket: 0 })
+      );
+    };
+    const consumable = (category: string) =>
+      definitions.find(
+        (def) => def.category === category && def.food && !def.unpack && !def.vessel && fitsPocket(def.id),
+      )!.id;
+    const food = consumable('food');
+    const drink = consumable('drink');
+    const guidance = guidanceFixture(lightKit.light);
+    const consumedItems: Record<string, string> = { eaten: food, drunk: drink };
+    guidance.rules = guidance.rules.map((rule) => {
+      const item = consumedItems[rule.id];
+      return item ? { ...rule, when: { kind: 'consumed' as const, item } } : rule;
+    });
+    const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, guidance);
+    const state = observation();
+    const observe = () => tutorial.observe(state);
     tutorial.opened('canned_beans');
-    const inventory = new Inventory(BUNDLED_CONTENT.registry);
+    const inventory = new Inventory(registry);
     const queue = new HandlingQueue(inventory);
     const survival = new Survival(new Simulation({ seed: 1 }), inventory, queue, {
       reach: bindReach({ inventory, position: state.position, blockSize: 1, clock: BASE_CLOCK }),
@@ -169,20 +193,20 @@ describe('practice objectives', () => {
       read: vi.fn(),
       consumed: (type) => tutorial.consumed(type),
     });
-    const jeans = inventory.create('jeans');
-    expect(inventory.add(jeans, { kind: 'worn' })).toBe(true);
-    for (const type of ['beans', 'beans']) {
+    const worn = inventory.create(wearable.id);
+    expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
+    for (const type of [food, food]) {
       const item = inventory.create(type);
-      expect(inventory.add(item, { kind: 'pocket', owner: jeans, pocket: 0 })).toBe(true);
+      expect(inventory.add(item, { kind: 'pocket', owner: worn, pocket: 0 })).toBe(true);
       expect(survival.useFromQuickbar(item)).toBeUndefined();
-      state.wielded = Object.values(inventory.hands).some((held) => held?.type === 'beans');
+      state.wielded = Object.values(inventory.hands).some((held) => held?.type === food);
       observe();
       expect(tutorial.stage).toBe('move');
       queue.tick(queue.remaining);
       expect(inventory.itemByUid(item.uid)).toBeUndefined();
     }
     expect(Object.values(inventory.hands).every((item) => item === undefined)).toBe(true);
-    const water = inventory.create('water_bottle');
+    const water = inventory.create(drink);
     expect(inventory.add(water, { kind: 'hand', side: 'right' })).toBe(true);
     expect(survival.useFromQuickbar(water)).toBeUndefined();
     queue.tick(queue.remaining);

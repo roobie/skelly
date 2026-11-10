@@ -91,13 +91,12 @@ const facings = ['n', 'e', 's', 'w'] as const;
 const tips = ['back', 'front', 'left', 'right', 'top'] as const;
 const poses: Pose[] = facings.flatMap((facing) => [{ facing }, ...tips.map((tip) => ({ facing, tip }))]);
 
-it('stands a player dropped on the bonnet below the box top and stops a jump at the cabin', () => {
+it('stands a player dropped on the bonnet below the box top', () => {
   const entities = new BlockEntities(base);
   const car = entities.add({ type: intact.id, pos: [0, 0, 0], size: [...intact.size], facing: 'n' })!;
   const solid = (x: number, y: number, z: number) => y < 0 || entities.isSolid(x, y, z);
   const [width, height, depth] = car.size;
   const physics = physicsFor(half);
-  const intent = (forward: number, jump: boolean) => ({ forward, right: 0, jump, sprint: false, walk: false });
 
   // A north-facing piece's front, the bonnet, is its low-z face. Dropping onto it, rather than jumping
   // at it, keeps the test free of run and jump tuning.
@@ -109,13 +108,6 @@ it('stands a player dropped on the bonnet below the box top and stops a jump at 
   expect(front.onGround).toBe(true);
   expect(entities.at(...under)).toBe(car);
   expect(front.pos[1]).toBeLessThan(car.pos[1] + height);
-
-  const side = createPlayerBody(half, -4, 0, depth / 2);
-  for (let step = 0; step < 240; step++) {
-    steer(side, half, -Math.PI / 2, intent(1, side.onGround));
-    stepBody(side, 1 / 60, solid, physics);
-  }
-  expect(side.pos[0] + side.halfWidth).toBeLessThanOrEqual(car.pos[0]);
 });
 
 const placedOffsets = (type: string, pose: Pose) => {

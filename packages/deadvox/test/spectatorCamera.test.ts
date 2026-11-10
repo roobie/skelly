@@ -168,6 +168,9 @@ describe('spectator camera', () => {
     reference.frames();
     const spectator = new SpectatorCamera();
     const attached = runtime(spectator.guard(hostileControls().controls));
+    spectator.toggle(attached.session.body, eyeOf(attached.session), 0.4, 0.1);
+    spectator.toggle(attached.session.body, eyeOf(attached.session), 0.4, 0.1);
+    expect(spectator.body).toBeUndefined();
     attached.frames();
     expect(observed(attached.session).pos).not.toEqual(observed(reference.session).pos);
   });

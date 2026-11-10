@@ -62,9 +62,24 @@ const carriedItem: ItemDef = {
   workInProgress: false,
   figureModels: [segment],
 };
+/** A worn item on the head frame whose figure model shares its id. */
+const headWorn = (id: string, slot: 'head' | 'eyes'): ItemDef => ({
+  ...carriedItem,
+  id,
+  name: id,
+  category: 'clothing',
+  wearable: { slot, encumbrance: 0 },
+  figureModels: [{ ...segment, model: id, frame: 'head' }],
+});
+const headItem = headWorn('fixture_head', 'head');
+const otherHeadItem = headWorn('fixture_other_head', 'head');
+const eyesItem = headWorn('fixture_eyes', 'eyes');
 const registry = {
   ...base,
-  items: new Map([...base.items, [fixtureItem.id, fixtureItem], [carriedItem.id, carriedItem]]),
+  items: new Map([
+    ...base.items,
+    ...[fixtureItem, carriedItem, headItem, otherHeadItem, eyesItem].map((item) => [item.id, item] as const),
+  ]),
 };
 const pose = (inventory?: Inventory): PlayerFigurePose => ({
   body: createPlayerBody(makeScale(0.5), 2, 0, 3),
@@ -78,7 +93,7 @@ const pose = (inventory?: Inventory): PlayerFigurePose => ({
   ...(inventory ? { inventory } : {}),
 });
 const library = () => {
-  const available = new Set(['fixture_worn', 'baseball_cap', 'headlamp', 'night_vision_goggles', 'riot_helmet']);
+  const available = new Set([segment.model, headItem.id, otherHeadItem.id, eyesItem.id]);
   const models = {
     ...bodyModels,
     version: 1,
@@ -165,22 +180,22 @@ describe('shared worn presentation', () => {
     const { models, available } = library();
     available.clear();
     const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
-    const cap = inventory.create('baseball_cap');
+    const cap = inventory.create(headItem.id);
     expect(inventory.add(cap, { kind: 'worn' })).toBe(true);
     meshes.sync(pose(inventory));
     expect(meshes.group.getObjectByName('worn-head')).toBeUndefined();
     expect(inventory.move(cap, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    const lamp = inventory.create('headlamp');
-    const goggles = inventory.create('night_vision_goggles');
+    const lamp = inventory.create(otherHeadItem.id);
+    const goggles = inventory.create(eyesItem.id);
     expect(inventory.add(lamp, { kind: 'worn' })).toBe(true);
     expect(inventory.add(goggles, { kind: 'worn' })).toBe(true);
-    available.add('baseball_cap');
-    available.add('night_vision_goggles');
+    available.add(headItem.id);
+    available.add(eyesItem.id);
     models.version += 1;
     meshes.sync(pose(inventory));
     expect(meshes.group.getObjectByName('worn-head')).toBeUndefined();
     expect(meshes.group.getObjectByName('worn-eyes')).toBeDefined();
-    available.add('headlamp');
+    available.add(otherHeadItem.id);
     models.version += 1;
     meshes.sync(pose(inventory));
     const eyes = meshes.group.getObjectByName('worn-eyes')!;
@@ -217,7 +232,7 @@ describe('shared worn presentation', () => {
 
   it('waits for the figure frame as well as the worn model', () => {
     const inventory = new Inventory(registry);
-    expect(inventory.add(inventory.create('baseball_cap'), { kind: 'worn' })).toBe(true);
+    expect(inventory.add(inventory.create(headItem.id), { kind: 'worn' })).toBe(true);
     const { models } = library();
     let ready = false;
     const delayed = { ...models, has: (id: string) => ready && bodyModels.has(id) } as ModelLibrary;

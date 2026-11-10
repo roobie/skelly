@@ -169,10 +169,14 @@ describe('test house showroom', () => {
     }
   });
 
-  it('fits every staged surface item on its furniture', () => {
+  it('furnishes every staged piece with its surface items', () => {
     const inventory = new Inventory(registry);
+    expect(furniture.some(({ surfaceLoot }) => (surfaceLoot?.length ?? 0) > 0)).toBe(true);
     for (const spawn of furniture) {
-      inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot, spawn.fixedCount);
+      expect(
+        inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot, spawn.fixedCount),
+        `${spawn.spec.type} is furnished`,
+      ).toBeDefined();
     }
   });
 

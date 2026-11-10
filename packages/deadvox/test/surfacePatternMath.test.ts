@@ -1,24 +1,55 @@
-import { readFileSync } from 'node:fs';
+import { ShaderChunk, ShaderLib, type WebGLProgramParametersWithUniforms, type WebGLRenderer } from 'three';
 import { describe, expect, it } from 'vitest';
+import { ChunkMeshes } from '../src/render/chunks.ts';
+import { startupContent } from './baseRegistry.ts';
+
+const INCLUDE = /^[ \t]*#include +<([\w./]+)>/gm;
+const DECLARATION = /^(?:\w+\s+)?varying\s/;
+const NAME = /varying\s+\w+\s+(\w+)/;
+const PLAIN = /^varying\s/;
+const CENTROID = /^centroid varying /;
+
+const chunks = ShaderChunk as unknown as Record<string, string>;
+const resolveIncludes = (source: string): string =>
+  source.replace(INCLUDE, (_, name: string) => resolveIncludes(chunks[name] ?? ''));
+
+const varyings = (source: string): string[] =>
+  resolveIncludes(source)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => DECLARATION.test(line));
+
+const nameOf = (declaration: string): string => NAME.exec(declaration)![1]!;
 
 describe('surface shader interpolation contracts', () => {
-  it('insets the per-block cell along the normalised face normal', () => {
-    const chunks = readFileSync(new URL('../src/render/chunks.ts', import.meta.url), 'utf8');
-    expect(chunks).toContain('position - normalize(normal) * 0.5');
-  });
-
-  it('declares the shading varyings centroid (vColor included) and the pattern id flat', () => {
-    const chunks = readFileSync(new URL('../src/render/chunks.ts', import.meta.url), 'utf8');
-    for (const decl of [
-      'centroid varying vec4 vColor;',
-      'centroid varying vec3 vCell;',
-      'centroid varying vec3 vWorld;',
-      'centroid varying vec3 vFaceN;',
-      'flat varying float vPattern;',
-      "'#include <color_pars_vertex>'",
-      "'#include <color_pars_fragment>'",
-    ]) {
-      expect(chunks).toContain(decl);
+  it('declares every varying the chunk material adds or replaces centroid, except the flat pattern id', () => {
+    const { material } = new ChunkMeshes(0.5, startupContent().registry);
+    const { lambert } = ShaderLib;
+    const shader = {
+      uniforms: {},
+      vertexShader: lambert.vertexShader,
+      fragmentShader: lambert.fragmentShader,
+    } as WebGLProgramParametersWithUniforms;
+    material.onBeforeCompile(shader, {} as WebGLRenderer);
+    for (const [patched, stock] of [
+      [shader.vertexShader, lambert.vertexShader],
+      [shader.fragmentShader, lambert.fragmentShader],
+    ] as const) {
+      const stockDeclarations = new Set(varyings(stock));
+      const declarations = varyings(patched);
+      const own = declarations.filter((declaration) => !stockDeclarations.has(declaration));
+      const ownNames = new Set(own.map(nameOf));
+      expect(ownNames).toContain('vColor');
+      expect(ownNames).toContain('vPattern');
+      for (const declaration of own) {
+        if (nameOf(declaration) === 'vPattern') {
+          expect(declaration).toBe('flat varying float vPattern;');
+        } else {
+          expect(declaration).toMatch(CENTROID);
+        }
+      }
+      const plain = declarations.filter((declaration) => PLAIN.test(declaration));
+      expect(plain.filter((declaration) => ownNames.has(nameOf(declaration)))).toEqual([]);
     }
   });
 });

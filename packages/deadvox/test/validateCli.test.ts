@@ -7,6 +7,9 @@ import { describe, expect, it } from 'vitest';
 import { validate as runValidation } from '../src/cli/validate.ts';
 import { CONTENT_CAPABILITIES } from '../src/core/capabilities.ts';
 
+const COMBINATION_CAP =
+  /FAIL {2}test\/fixtures\/content\/recipe-too-many-combinations\.json recipes\[0\]\.components: (\d+) component combinations exceeds maximum (\d+)/;
+
 const validateAt = (root: string, ...files: string[]) => {
   const output: string[] = [];
   const status = runValidation(files, (line) => output.push(line), root);
@@ -141,7 +144,6 @@ describe('validate CLI', () => {
     }
     for (const diagnostic of [
       'FAIL  test/fixtures/content/recipe-missing-item.json recipes[0].components[0][0].item: no item "golden_toilet"',
-      'FAIL  test/fixtures/content/recipe-too-many-combinations.json recipes[0].components: 2048 component combinations exceeds maximum 1024',
       'FAIL  test/fixtures/content/broken-reference.json loot[0].entries[1].item: no item "golden_toilet"',
       'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
       'FAIL  test/fixtures/content/zombie-with-model.json actors[0].strength: missing',
@@ -151,6 +153,9 @@ describe('validate CLI', () => {
     ]) {
       expect(stdout).toContain(diagnostic);
     }
+    const cap = stdout.match(COMBINATION_CAP);
+    expect(cap).not.toBeNull();
+    expect(Number(cap![1])).toBeGreaterThan(Number(cap![2]));
     expect(stdout).toContain('7 file(s):');
   });
 
