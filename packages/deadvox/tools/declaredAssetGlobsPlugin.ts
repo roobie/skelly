@@ -1,7 +1,7 @@
 // biome-ignore lint/correctness/noNodejsModules: Vite build-time plugin, never imported by the product.
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
-import type { PackInput } from '../src/core/packAdmission.ts';
+import type { PackInput } from '../src/engine/packs.ts';
 import { EXTERNAL_ASSET_ROOT } from '../src/product/externalRoot.ts';
 import { packFileOrigin } from './readBundledPacks.ts';
 

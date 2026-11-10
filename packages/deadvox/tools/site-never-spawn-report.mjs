@@ -4,8 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { buildRegistry } from '../src/core/content.ts';
-import { checkStartReachability } from '../src/core/reachability.ts';
+import { buildRegistry, checkStartReachability } from '../src/engine/content.ts';
 import { readStackContentSources } from './readBundledPacks.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');

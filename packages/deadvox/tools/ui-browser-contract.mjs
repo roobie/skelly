@@ -352,7 +352,7 @@ try {
   // The tokens go to a document of the probe's own (an iframe with the game's style sheet), so the live game's root
   // and HUD stay untouched. Spacing and scale are measured apart, so neither passes on the other's change.
   const uiTokens = await evaluate(`(async () => {
-    const { buildRegistry } = await import('/src/core/content.ts');
+    const { buildRegistry } = await import('/src/engine/content.ts');
     const { applyUiTokens } = await import('/src/ui/uiTokens.ts');
     const { productAssets } = await import('/src/product/assets.ts');
     const { default: baseUi } = await import('${sharedModUrl('skelly.ui/ui.json')}');
@@ -440,7 +440,7 @@ try {
   );
   await action('debug.panel-toggle');
   const requestedCalendar = await evaluate(`(async () => {
-    const { nextTimeOfDay, parseTimeOfDay } = await import('/src/core/clock.ts');
+    const { nextTimeOfDay, parseTimeOfDay } = await import('/src/engine/sim.ts');
     const sim = window.uiContractRuntime.sim;
     const expected = nextTimeOfDay(sim.calendar, parseTimeOfDay('08:00'));
     document.querySelector('#debug-time').value = '08:00';
@@ -454,7 +454,7 @@ try {
   );
   await waitFor(
     () =>
-      evaluate(`import('/src/core/clock.ts').then(({ formatClock }) =>
+      evaluate(`import('/src/engine/sim.ts').then(({ formatClock }) =>
       document.querySelector('#debug-readout').textContent.includes(formatClock(window.uiContractRuntime.sim.calendar)))`),
     'debug readout follows the owner clock',
   );

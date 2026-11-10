@@ -6,25 +6,27 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
 import {
+  ActorBodySchema,
+  ActorClipsSchema,
+  actorClipIssues,
+  actorFigureFileIssues,
+  buildRegistry,
+  clipBoneIssues,
+  JointDeltaClipSchema,
+  PoseClipSchema,
+} from '../packages/deadvox/src/engine/content.ts';
+import {
   applyOverlay,
+  applyPoint,
+  boneTransforms,
   decodeFrame,
   groundFit,
   idleBase,
   sampleClip,
+  slerpQuat,
   standingFit,
   walkCursor,
-} from '../packages/deadvox/src/core/actorClips.ts';
-import { applyPoint, slerpQuat } from '../packages/deadvox/src/core/boneMath.ts';
-import { actorFigureFileIssues, buildRegistry } from '../packages/deadvox/src/core/content.ts';
-import { boneTransforms } from '../packages/deadvox/src/core/pose.ts';
-import {
-  ActorBodySchema,
-  ActorClipsSchema,
-  actorClipIssues,
-  clipBoneIssues,
-  JointDeltaClipSchema,
-  PoseClipSchema,
-} from '../packages/deadvox/src/core/schema/actors.ts';
+} from '../packages/deadvox/src/engine/pose.ts';
 import {
   packFileBytes,
   packFileOrigin,

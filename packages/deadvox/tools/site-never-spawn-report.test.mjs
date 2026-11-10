@@ -1,7 +1,7 @@
 // biome-ignore-all lint/correctness/noNodejsModules: This exercises a Node-only CLI.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry } from '../src/engine/content.ts';
 import { runReport } from './site-never-spawn-report.mjs';
 
 const fixture = () => {

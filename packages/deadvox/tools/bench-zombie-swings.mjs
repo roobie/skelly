@@ -10,10 +10,10 @@ const server = await createServer({
   appType: 'custom',
 });
 try {
-  const { buildRegistry } = await server.ssrLoadModule('/src/core/content.ts');
-  const { ActorSystem } = await server.ssrLoadModule('/src/core/actorSystem.ts');
+  const { buildRegistry } = await server.ssrLoadModule('/src/engine/content.ts');
+  const { ActorSystem } = await server.ssrLoadModule('/src/engine/sim.ts');
   const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
-  const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
+  const { makeScale } = await server.ssrLoadModule('/src/engine/world.ts');
   const { readStackActorFigureFiles, readStackContentSources } =
     await server.ssrLoadModule('/tools/readBundledPacks.ts');
   const { registry } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));

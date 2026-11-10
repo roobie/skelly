@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { bundledModCatalogueIssues } from '../packages/deadvox/src/core/bundledModCatalogue.ts';
+import { bundledModCatalogueIssues } from '../packages/deadvox/src/engine/packs.ts';
 import { tutorialRequested } from '../packages/deadvox/src/presentation/tutorialUrl.ts';
 import { gitEnvironment, playtestRound, publishPlaytest } from '../packages/deadvox/tools/publish-playtest.mjs';
 import { loadPlaytestText } from '../site/playtestCatalog.js';

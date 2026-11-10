@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { describe, it } from 'node:test';
-import { buildRegistry } from '../packages/deadvox/src/core/content.ts';
-import { typeWeightGrams } from '../packages/deadvox/src/core/items.ts';
-import { ARM_SEGMENTS, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src/core/schema.ts';
+import { ARM_SEGMENTS, buildRegistry, LEG_SEGMENTS, ModelSchema } from '../packages/deadvox/src/engine/content.ts';
+import { typeWeightGrams } from '../packages/deadvox/src/engine/inventory.ts';
 import { namedNodes } from '../packages/deadvox/src/render/firearmModel.ts';
 import { readStackContentSources } from '../packages/deadvox/tools/readBundledPacks.ts';
 import { modelMassKg } from '../packages/skelly-assets/tools/packages/thing-core/src/mass.ts';

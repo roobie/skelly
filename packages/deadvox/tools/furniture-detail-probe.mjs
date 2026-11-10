@@ -73,8 +73,8 @@ try {
   const cost = await page.evaluate(
     async ({ threeModule, contentNames, ids, withPlain }) => {
       const Three = await import(new URL(threeModule, location.href).href);
-      const { buildRegistry } = await import(new URL('/src/core/content.ts', location.href).href);
-      const { BlockEntities } = await import(new URL('/src/core/blockEntities.ts', location.href).href);
+      const { buildRegistry } = await import(new URL('/src/engine/content.ts', location.href).href);
+      const { BlockEntities } = await import(new URL('/src/engine/world.ts', location.href).href);
       const { FurnitureMeshes } = await import(new URL('/src/render/furniture.ts', location.href).href);
       const files = await Promise.all(
         contentNames.map(async (file) => (await import(new URL(file, location.href).href)).default),

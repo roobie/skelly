@@ -2,11 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { claimedId } from '../src/core/capabilities.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from '../src/core/settlementSpawns.ts';
-import { footprint } from '../src/core/templates.ts';
+import { buildRegistry } from '../src/engine/content.ts';
+import { claimedId } from '../src/engine/inventory.ts';
+import { footprint, HORDE_MEMBERS, placementOf, TEMPLATE_BLOCK_SIZE } from '../src/engine/world.ts';
 import { readStackContentSources } from './readBundledPacks.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');

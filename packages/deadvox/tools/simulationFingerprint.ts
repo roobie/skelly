@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { init, parse } from 'es-module-lexer';
 import { transformWithOxc } from 'vite';
-import { canonicalJson } from '../src/core/canonicalJson.ts';
+import { canonicalJson } from '../src/engine/save.ts';
 
 export interface SimulationModuleGraphHost {
   resolve: (specifier: string, importer?: string) => Promise<string | undefined>;

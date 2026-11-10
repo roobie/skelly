@@ -4,14 +4,11 @@
 import { createHash } from 'node:crypto';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import type { PlayerSense } from '../src/core/actorSense.ts';
-import { ActorSystem } from '../src/core/actorSystem.ts';
-import { claimed } from '../src/core/capabilities.ts';
-import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { admitPacks } from '../src/core/packAdmission.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { siteGenerationOf } from '../src/core/sitePalette.ts';
+import { buildRegistry, requireDayCycle } from '../src/engine/content.ts';
+import { claimed } from '../src/engine/inventory.ts';
+import { admitPacks } from '../src/engine/packs.ts';
+import { ActorSystem, dayPhaseAt, type PlayerSense } from '../src/engine/sim.ts';
+import { makeScale, siteGenerationOf } from '../src/engine/world.ts';
 import { physicsFor, playerTuning } from '../src/game/player.ts';
 import { readBundledPacks, readStackActorFigureFiles } from './readBundledPacks.ts';
 
