@@ -4,26 +4,25 @@ import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { firearmSteadinessSkill } from '@skelly/engine/internal/core/skillTraining.ts';
-import {
-  CraftCommands,
-  claimed,
-  HandlingQueue,
-  Inventory,
-  planCraft,
-  requirementStatus,
-} from '@skelly/engine/inventory';
+import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
 import { bindReach, Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
-import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import {
+  fixtureCraftingSkill,
+  fixtureMechanicsSkill,
+  fixtureRoleItemsSource,
+  fixtureSkillsSource,
+} from './fixtures/roleContent.ts';
+import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { Simulation } from './simulationFixture.ts';
 import { advance, createRuntime } from './snapshotTestSupport.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const roleRecipe = {
   id: 'fixture_role_recipe',
-  category: 'supplies',
+  category: 'fixture_category',
   tags: [],
   searchTerms: [],
   result: { item: 'wax', count: 1 },
@@ -92,9 +91,12 @@ sweepGroup('validates and runs an alternative stack with no skills or progressio
   });
 });
 
+// The role cases below build on the fixture stack; they name their providers in fixture sources.
+const fixtureRoleBase = () => [...fixtureScenarioSources(), fixtureRoleItemsSource()];
+
 it('a recipe role without a provider adds neither a skill gate nor an unlock requirement', () => {
   const { registry, issues } = buildRegistry([
-    ...sourcesWithoutSkills(),
+    ...fixtureRoleBase(),
     { source: 'fixture-role', data: { recipes: [roleRecipe] } },
   ]);
   expect(issues).toEqual([]);
@@ -107,22 +109,16 @@ it('a recipe role without a provider adds neither a skill gate nor an unlock req
   expect(requirementStatus(recipe, snapshot, character).skills).toEqual([]);
   expect(planCraft(recipe, snapshot, character)).toHaveProperty('plan');
   expectCompleteRecipe(inventory, character);
-  expect(character.snapshotState().practice).toEqual({});
+  // The fixture stack's inventory skill may already hold a practice entry; the crafting role gets none.
+  expect(character.snapshotState().practice).not.toHaveProperty(fixtureCraftingSkill.id);
 });
 
 it('recipe gates and unlocks follow a renamed provider, not the role spelling as an id', () => {
-  const base = baseRegistry();
-  const provider = { ...claimed(base.skills, 'crafting')!, id: 'fixture_provider' };
+  const provider = { ...fixtureCraftingSkill, id: 'fixture_provider' };
   const { registry, issues } = buildRegistry([
-    ...sourcesWithoutSkills(),
-    {
-      source: 'fixture-role',
-      data: {
-        skills: [provider],
-        skillProgression: [...base.skillProgression.values()],
-        recipes: [roleRecipe],
-      },
-    },
+    ...fixtureRoleBase(),
+    fixtureSkillsSource([provider]),
+    { source: 'fixture-role', data: { recipes: [roleRecipe] } },
   ]);
   expect(issues).toEqual([]);
   const character = new Character(registry);
@@ -171,12 +167,7 @@ it('rejects unrelated providers of the same optional skill role with the role na
 });
 
 it('admits firearms without a long-gun steadiness provider', () => {
-  const { registry, issues } = buildRegistry(
-    baseSources.map(({ source, data }) => {
-      const file = data as ContentFile;
-      return { source, data: { ...file, skills: file.skills?.filter((skill) => !skill.steadiness) } };
-    }),
-  );
+  const { registry, issues } = buildRegistry([...fixtureRoleBase(), fixtureSkillsSource()]);
   expect(issues).toEqual([]);
   const longGun = [...registry.items.values()].find((item) => item.firearm && item.twoHanded);
   expect(longGun).toBeDefined();
@@ -205,48 +196,8 @@ const practiceTo = (registry: Registry, character: Character, id: string, target
 };
 
 it('recovery and door forcing follow their role provider, and a provider-less role adds no requirement', () => {
-  const curve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
-  const partFixture = {
-    id: 'fixture_part',
-    workInProgress: false,
-    name: 'Fixture part',
-    category: 'material',
-    weight: 1,
-    size: [1, 1],
-  };
-  const takeApartFixture = {
-    id: 'fixture_take_apart',
-    workInProgress: false,
-    name: 'Fixture take apart',
-    category: 'material',
-    weight: 1,
-    size: [1, 1],
-    disassembly: {
-      skill: 'crafting',
-      timeGameMinutes: 1,
-      yields: [{ item: partFixture.id, count: 1, fractions: [0.5, 1], rounding: 'floor' as const }],
-    },
-  };
-  const recoveryProvider = {
-    id: 'fixture_recovery_skill',
-    capability: 'crafting',
-    name: 'Fixture recovery',
-    curve,
-    training: { craftingTierOffset: 1 },
-  };
-  const forcingProvider = {
-    id: 'fixture_forcing_skill',
-    capability: 'mechanics',
-    name: 'Fixture forcing',
-    curve,
-    training: { craftingTierOffset: 1 },
-  };
-
   // With no providers at all, both mechanisms still plan at their unskilled baseline.
-  const bare = buildRegistry([
-    ...sourcesWithoutSkills(),
-    { source: 'fixture-role-mechanisms', data: { items: [takeApartFixture, partFixture] } },
-  ]);
+  const bare = buildRegistry(fixtureRoleBase());
   expect(bare.issues).toEqual([]);
   const bareCase = forcingCase(bare.registry);
   const bareCharacter = new Character(bare.registry);
@@ -265,7 +216,7 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
     throw new Error(barePry.reason);
   }
   expect(barePry.time).toBe(bareCase.tuning.timeSimSeconds);
-  const bareSource = bareInventory.create(takeApartFixture.id);
+  const bareSource = bareInventory.create('fixture_take_apart');
   expect(bareInventory.add(bareSource, { kind: 'hand', side: 'left' })).toBe(true);
   const bareReach = bindReach({ inventory: bareInventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
   const barePlan = planDisassembly(bareSource, bareReach(), bareCharacter);
@@ -273,17 +224,7 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
   expect(barePlan!.skillLevel).toBe(SKILL_LEVEL_MIN);
 
   // With providers whose ids differ from the role spellings, levels and times follow the mapped skills.
-  const provided = buildRegistry([
-    ...sourcesWithoutSkills(),
-    {
-      source: 'fixture-role-mechanisms',
-      data: {
-        skills: [recoveryProvider, forcingProvider],
-        skillProgression: [...baseRegistry().skillProgression.values()],
-        items: [takeApartFixture, partFixture],
-      },
-    },
-  ]);
+  const provided = buildRegistry([...fixtureRoleBase(), fixtureSkillsSource()]);
   expect(provided.issues).toEqual([]);
   const providedCase = forcingCase(provided.registry);
   const character = new Character(provided.registry);
@@ -297,17 +238,17 @@ it('recovery and door forcing follow their role provider, and a provider-less ro
   })!;
   const tool = inventory.create(providedCase.toolId);
   expect(inventory.add(tool, { kind: 'hand', side: 'left' })).toBe(true);
-  practiceTo(provided.registry, character, forcingProvider.id, SKILL_LEVEL_MAX);
+  practiceTo(provided.registry, character, fixtureMechanicsSkill.id, SKILL_LEVEL_MAX);
   const pry = pryPlan(inventory, door, { toolUid: tool.uid }, character);
   if (!pry.ok) {
     throw new Error(pry.reason);
   }
   expect(pry.time).toBe(providedCase.tuning.fastestTimeSimSeconds);
   expect(pry.time).toBeLessThan(barePry.time);
-  const source = inventory.create(takeApartFixture.id);
+  const source = inventory.create('fixture_take_apart');
   expect(inventory.add(source, { kind: 'hand', side: 'right' })).toBe(true);
   const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
-  practiceTo(provided.registry, character, recoveryProvider.id, 3);
+  practiceTo(provided.registry, character, fixtureCraftingSkill.id, 3);
   const plan = planDisassembly(source, reach(), character);
   expect(plan).toBeDefined();
   expect(plan!.skillLevel).toBe(3);
