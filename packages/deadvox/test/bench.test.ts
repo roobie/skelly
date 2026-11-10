@@ -1,7 +1,7 @@
 import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { percentile } from '@skelly/engine/math';
 import { actorRendererFromUrl } from '@skelly/engine/session';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   type BenchRecord,
   DEFAULT_PLAN,
@@ -21,7 +21,7 @@ import {
   shamblerResultRow,
   shamblerSummary,
 } from '../src/bench/report.ts';
-import { benchRunFromUrl, nextRunHash } from '../src/bench/run.ts';
+import { benchRunFromUrl, loadNextRun } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats } from '../src/bench/stats.ts';
 import { readPageUrl } from '../src/pageUrl.ts';
@@ -36,6 +36,7 @@ const benchPage = (address: string) => {
   return page;
 };
 const registry = { layouts: new Map(), scenarios: new Map() };
+afterEach(() => vi.unstubAllGlobals());
 const worldRun = (address: string) => {
   const { query, hash } = benchPage(address);
   return benchRunFromUrl(query, hash, registry);
@@ -120,14 +121,39 @@ describe('bench plan', () => {
     expect(worldRun('?bench=1#{shamblers:[7,8]}').shamblers).toBeUndefined();
   });
 
-  it('steps to the next run in the hash alone, keeping the rest of the hash, and stops after the last', () => {
-    const { query, hash } = benchPage('?bench=1#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}');
-    const run = benchRunFromUrl(query, hash, registry);
-    expect(run).toMatchObject({ site: 'forest', seed: 7, post: true, shamblers: 7 });
-    const next = nextRunHash(hash, run.index, run.plan.length)!;
-    expect(next).toEqual({ ...hash, i: 1 });
-    expect(benchRunFromUrl(query, next, registry)).toEqual({ ...run, index: 1 });
-    expect(nextRunHash(next, 1, run.plan.length)).toBeUndefined();
+  it('reloads the next run with its query and hash, bar the run index, and shows the report after the last', () => {
+    const start = new URL(
+      '?bench=1&nightVision=1&flareSources=[[1,2,3]]#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}',
+      'https://example.test/deadvox/',
+    );
+    const written: string[] = [];
+    const navigation: string[] = [];
+    vi.stubGlobal('location', {
+      href: start.href,
+      search: start.search,
+      hash: start.hash,
+      reload: () => navigation.push('reload'),
+      replace: (url: string) => navigation.push(`replace ${url}`),
+    });
+    vi.stubGlobal('history', {
+      state: null,
+      replaceState: (_state: unknown, _title: string, url: string) => written.push(url),
+    });
+    const first = benchPage(start.href);
+    const run = benchRunFromUrl(first.query, first.hash, registry);
+    expect(run).toMatchObject({ site: 'forest', seed: 7, post: true, shamblers: 7, nightVision: true });
+    expect(run.flareSources).toEqual([[1, 2, 3]]);
+    loadNextRun(run.index, run.plan.length);
+    expect(navigation).toEqual(['reload']);
+    expect(written).toHaveLength(1);
+    const next = benchPage(written[0]!);
+    expect([...next.query]).toEqual([...first.query]);
+    expect(next.hash).toEqual({ ...first.hash, i: 1 });
+    expect(benchRunFromUrl(next.query, next.hash, registry)).toEqual({ ...run, index: 1 });
+    navigation.length = 0;
+    loadNextRun(1, run.plan.length);
+    expect(navigation).toEqual(['replace ?bench=report']);
+    expect(written).toHaveLength(1);
   });
 
   it('reads a plan as block size and radius pairs and rejects nonsense', () => {
