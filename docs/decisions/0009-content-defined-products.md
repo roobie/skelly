@@ -276,6 +276,10 @@ script runtime has no package resolution, and the site-launcher CI job runs
 `test/site-launcher.test.mjs` uninstalled. Such a consumer gets an entry that loads no npm
 dependency, because a re-export loads its whole module even when the consumer takes one
 name, so the mod catalogue has its own entry; see `packages/engine/src/modCatalogue.ts`.
+Until `packages/deadvox/src/game` joins the package (#1532), it has curated entries of its
+own in `packages/deadvox/src/game/entries`, one per domain and named after the package
+entry each joins, and product code outside it imports it only through them. Tests import
+the game modules no entry carries by their path, the place the test-only subpath takes over.
 
 Tests that use shipped content stay in deadvox, yet need runtime internals no entry
 carries. They import those through the package's one test-only subpath,
@@ -287,8 +291,10 @@ servers browser stages create. Browser stages are test runs too, so their fixtur
 page code share the unit tests' test-only surface; all of them create their server in one
 place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. The
 product dev server and the product build never enable it, so they cannot resolve the
-subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a product file that imports a non-entry subpath or reaches the
-package's files by path; see `packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
+subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a
+product file that imports a non-entry subpath, reaches the package's files by path, or
+reaches the game source other than through its entries; see
+`packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
 It reads import syntax with a literal target; a module path a browser stage or the dev
 server loads from a string is not checked.
 
