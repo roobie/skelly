@@ -5,7 +5,8 @@ import { expect, it } from 'vitest';
 import { compileJsonnetFile } from '../../../tools/jsonnet/index.mjs';
 import { validate } from '../src/cli/validate.ts';
 import { buildRegistry } from '../src/engine/content.ts';
-import { admitPacks, launcherModCatalogue, packContentHash } from '../src/engine/packs.ts';
+import { launcherModCatalogue } from '../src/engine/modCatalogue.ts';
+import { admitPacks, packContentHash } from '../src/engine/packs.ts';
 import { declaredAssetGlobsPlugin } from '../tools/declaredAssetGlobsPlugin.ts';
 import {
   bundledPackDefines,

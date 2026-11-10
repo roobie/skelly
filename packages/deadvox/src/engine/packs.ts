@@ -1,7 +1,6 @@
 export { getBuildRevision } from '../core/buildInfo.ts';
 export { buildRevisionFromGit } from '../core/buildRevision.ts';
 export { type BundleStamp, bundleSourceHash } from '../core/bundleAdmission.ts';
-export { bundledModCatalogueIssues, launcherModCatalogue } from '../core/bundledModCatalogue.ts';
 export {
   admitPacks,
   type PackInput,

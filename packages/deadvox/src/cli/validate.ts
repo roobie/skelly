@@ -21,7 +21,8 @@ import {
   soundFileIssues,
   validateManifest,
 } from '../engine/content.ts';
-import { admitPacks, bundledModCatalogueIssues, type PackInput, packStartIssues } from '../engine/packs.ts';
+import { bundledModCatalogueIssues } from '../engine/modCatalogue.ts';
+import { admitPacks, type PackInput, packStartIssues } from '../engine/packs.ts';
 import { EXTERNAL_ASSET_ROOT } from '../product/externalRoot.ts';
 import { controlIssues } from './controlIssues.ts';
 

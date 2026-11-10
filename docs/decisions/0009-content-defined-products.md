@@ -271,7 +271,10 @@ than every file it holds. Product code (deadvox source outside the runtime set, 
 its Vite config, the Tiled extension and the root deadvox contract tests) reaches
 `packages/deadvox/src/core` and `packages/deadvox/src/vehicles` only through the entry
 modules in `packages/deadvox/src/engine`, one per domain, and an entry carries only what
-product code uses. Tests that use shipped content stay in deadvox, yet need runtime
+product code uses. A consumer that runs without an npm install gets an entry that loads no
+npm dependency, because a re-export loads its whole module even when the consumer takes one
+name: the site-launcher CI job runs `test/site-launcher.test.mjs` uninstalled, so the mod
+catalogue has its own entry; see `packages/deadvox/src/engine/modCatalogue.ts`. Tests that use shipped content stay in deadvox, yet need runtime
 internals no entry carries. They import those internals by module path, the test-only
 surface; when the runtime becomes its own package, that surface becomes one test-only
 subpath export under an export condition that only the deadvox Vitest config enables.
