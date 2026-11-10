@@ -253,8 +253,8 @@ for that name are in its
 matches the runtime and presentation packages the refactor adds.
 
 Runtime code (`packages/deadvox/src/core`, `packages/deadvox/src/vehicles`,
-`packages/deadvox/src/game` and the workspace libraries the deadvox package depends on)
-reaches nothing outside that set, not even for types: no presentation, render or UI code
+`packages/deadvox/src/game`, the entries in `packages/deadvox/src/engine` and the workspace
+libraries the deadvox package depends on) reaches nothing outside that set, not even for types: no presentation, render or UI code
 and no product configuration, mods or pages, whether by import or by glob. The runtime
 then moves out as its own package with nothing left behind to import, and the presentation
 side moves out whole. See `packages/deadvox/tools/runtimeClosure.ts`, `RUNTIME_POLICY`.
@@ -265,6 +265,23 @@ typecheck alone lets those through; a lint ban on the runtime set fails them. Se
 `biome.jsonc`, `noRestrictedGlobals`. The checks guard
 honest edits, not deliberate bypasses; what they do not check is in
 `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
+
+The runtime package exports curated entry points only, so its surface is chosen rather
+than every file it holds. Product code (deadvox source outside the runtime set, its tools,
+its Vite config, the Tiled extension and the root deadvox contract tests) reaches
+`packages/deadvox/src/core` and `packages/deadvox/src/vehicles` only through the entry
+modules in `packages/deadvox/src/engine`, one per domain, and an entry carries only what
+product code uses. Tests that use shipped content stay in deadvox, yet need runtime
+internals no entry carries. They import those internals by module path, the test-only
+surface; when the runtime becomes its own package, that surface becomes one test-only
+subpath export under an export condition that only the deadvox Vitest config enables.
+Tests also take a name from an entry when the entry carries it. A separate test-only
+surface keeps product code on the curated entries without growing the entries to serve
+tests. The entry-only check fails a product file that imports past an entry, so neither
+product code nor a product build reaches the test-only surface; see
+`packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`. It reads import syntax
+with a literal target; a module path a browser stage or the dev server loads from a
+string is not checked.
 
 Runtime and presentation code name no product path. The product globs its own mod roots
 and reads its own configuration, then passes the maps in, so the runtime carries neither a
