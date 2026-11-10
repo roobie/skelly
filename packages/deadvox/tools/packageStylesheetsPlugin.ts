@@ -5,11 +5,9 @@ import type { IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
 const PACKAGE_STYLESHEET = /<link rel="stylesheet" href="(@skelly\/[^"]+)" \/>/g;
 
 /**
- * Pages link the presentation package's style sheets by package specifier, so each sheet stays the package's file
- * and still blocks the first paint: a style sheet imported from the page's module waits for the module graph in the
- * dev server, and the page paints unstyled until then. Neither the dev server nor the build resolves a package
- * specifier in a link, so this rewrites it to the resolved file, which the dev server serves through its
- * file-system route and the build bundles as the page's own style sheet.
+ * Neither the dev server nor the build resolves a package specifier in a page's style sheet link, so this rewrites
+ * it to the resolved file: the dev server serves it through its file-system route, and the build bundles it once as
+ * the page's own style sheet. Why pages link rather than import: `packages/presentation/PROJECT.md`, "Entry points".
  */
 export function packageStylesheetsPlugin(): Plugin {
   let resolveFile: (specifier: string, importer: string) => Promise<string | undefined>;

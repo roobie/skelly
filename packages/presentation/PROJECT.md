@@ -26,7 +26,10 @@ own entries, for the reason `packages/engine/PROJECT.md`, "Entry points" gives. 
 
 Other packages import presentation only through the curated entries that the `exports` field of
 `package.json` names, one per domain, plus the two stylesheets. An entry carries only what code outside the
-package uses. `tutorialUrl` has its own entry because it loads no npm package, so a consumer that runs without
+package uses. A page links the stylesheets by package name rather than importing them from its module, so they
+block the first paint: in the dev server an imported stylesheet waits for the module graph, and the page paints
+unstyled until then. See `packages/deadvox/tools/packageStylesheetsPlugin.ts`, `packageStylesheetsPlugin`.
+`tutorialUrl` has its own entry because it loads no npm package, so a consumer that runs without
 an install can load its file.
 
 The `./internal/*` subpath is the test-only surface, under the same export condition as the engine's; see
