@@ -115,18 +115,8 @@ const ACTION_IDS = [
   ]),
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
-// Debug spawn ids come from content, so they join the in-memory index on first use; the wire carries ids, not indices.
 const isReplayAction = (action: string): boolean =>
   ACTION_INDEX.has(action) || debugSpawnActorType(action) !== undefined;
-const actionIndex = (action: string): number => {
-  const known = ACTION_INDEX.get(action);
-  if (known !== undefined) {
-    return known;
-  }
-  const index = ACTION_IDS.push(action) - 1;
-  ACTION_INDEX.set(action, index);
-  return index;
-};
 // Derive contexts from the actions so adding a binding context cannot make recording throw.
 const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_ACTIONS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));
@@ -402,6 +392,10 @@ export class InputReplayRecorder {
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionContexts = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPayloads: (string | undefined)[] = new Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  // Debug spawn ids come from content, so each recorder numbers its own after the fixed ids. A window holds at most
+  // INPUT_REPLAY_ACTIONS_PER_WINDOW actions, which keeps every index inside `actionIds`' range.
+  private readonly spawnActionIds: string[] = [];
+  private readonly spawnActionIndex = new Map<string, number>();
   private pending: {
     action: string;
     phase: 'down' | 'up';
@@ -511,6 +505,20 @@ export class InputReplayRecorder {
     );
   }
 
+  private actionIndex(action: string): number {
+    const known = ACTION_INDEX.get(action) ?? this.spawnActionIndex.get(action);
+    if (known !== undefined) {
+      return known;
+    }
+    const index = ACTION_IDS.length + this.spawnActionIds.push(action) - 1;
+    this.spawnActionIndex.set(action, index);
+    return index;
+  }
+
+  private actionAt(index: number): string {
+    return ACTION_IDS[index] ?? this.spawnActionIds[index - ACTION_IDS.length]!;
+  }
+
   queueAction(
     action: string,
     phase: 'down' | 'up',
@@ -560,7 +568,7 @@ export class InputReplayRecorder {
         const index = this.actionCount;
         this.actionCount += 1;
         this.actionTicks[index] = this.frameCount;
-        this.actionIds[index] = actionIndex(pending.action);
+        this.actionIds[index] = this.actionIndex(pending.action);
         this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
         this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
         if (pending.payload !== undefined) {
@@ -602,7 +610,7 @@ export class InputReplayRecorder {
       const index = this.actionCount;
       this.actionCount += 1;
       this.actionTicks[index] = this.frameCount;
-      this.actionIds[index] = actionIndex(pending.action);
+      this.actionIds[index] = this.actionIndex(pending.action);
       this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
       this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
       if (pending.payload !== undefined) {
@@ -640,7 +648,7 @@ export class InputReplayRecorder {
     ]);
     const actions: ReplayAction[] = Array.from({ length: this.actionCount }, (_, index) => ({
       tick: this.actionTicks[index]!,
-      action: ACTION_IDS[this.actionIds[index]!]!,
+      action: this.actionAt(this.actionIds[index]!),
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
       ...(this.actionPayloads[index] === undefined
@@ -958,6 +966,10 @@ export async function decodeInputReplay(
   const actions: ReplayAction[] = value.actions.map((candidate, index) => {
     if (!isReplayActionRecord(candidate, lastTick, frames.length)) {
       throw new Error(`Invalid or out-of-order replay action ${index}`);
+    }
+    const spawned = debugSpawnActorType(candidate.action);
+    if (spawned !== undefined && !options.contentLookup('actor', spawned)) {
+      throw new Error(`Replay action ${index} spawns an actor type absent from the content: ${spawned}`);
     }
     if (Object.hasOwn(candidate, 'payload')) {
       actionPayloadBytes += canonicalJsonBytes(candidate.payload).byteLength;

@@ -66,6 +66,7 @@ import {
   fixtureZombieColumn,
   formatVersion,
   formatWorldOptions,
+  registry,
   removeFixtureColumn,
 } from './snapshotTestSupport.ts';
 
@@ -93,6 +94,15 @@ const replaySample = {
   descending: false,
   worldReady: true,
 } as const;
+
+/** A one-tick recording holding one press of the given debug spawn action. */
+const spawnReplayBytes = (id: string): Promise<Uint8Array> => {
+  const start = capture(createRuntime());
+  const recorder = new InputReplayRecorder(start);
+  recorder.queueAction(id, 'down', 'play');
+  recorder.recordTick(replaySample);
+  return encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+};
 
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
@@ -713,14 +723,36 @@ describe('input replay', () => {
   });
 
   it('round-trips a content-derived debug spawn action through a recording', async () => {
-    const { id } = debugSpawnActorRow('fixture_roamer', 'Fixture roamer');
-    const start = capture(createRuntime());
-    const recorder = new InputReplayRecorder(start);
-    recorder.queueAction(id, 'down', 'play');
-    recorder.recordTick(replaySample);
-    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const [actor] = registry.actors.values();
+    const { id } = debugSpawnActorRow(actor!.id, actor!.name);
+    const bytes = await spawnReplayBytes(id);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     expect(decoded.inputs.actions).toMatchObject([{ action: id, phase: 'down', context: 'play' }]);
+  });
+
+  it('refuses a decoded debug spawn action whose actor is absent from the content', async () => {
+    const absent = 'fixture_absent_actor';
+    expect(registry.actors.has(absent)).toBe(false);
+    const bytes = await spawnReplayBytes(debugSpawnActorRow(absent, absent).id);
+    await expect(decodeInputReplay(bytes, { contentLookup })).rejects.toThrow(absent);
+  });
+
+  it('keeps each debug spawn id exact past the range of a stored action index', () => {
+    const start = capture(createRuntime());
+    const indexRange = 2 ** 16;
+    let recorded = 0;
+    while (recorded <= indexRange) {
+      const recorder = new InputReplayRecorder(start, 1);
+      const expected: string[] = [];
+      while (!recorder.full) {
+        const { id } = debugSpawnActorRow(`fixture_${recorded + expected.length}`, 'Fixture');
+        expected.push(id);
+        recorder.queueAction(id, 'down', 'play');
+      }
+      recorder.recordTick(replaySample);
+      expect(recorder.copyInputs().actions.map(({ action }) => action)).toEqual(expected);
+      recorded += expected.length;
+    }
   });
 
   it('reports the supplied stop reason instead of an idle recording', () => {
