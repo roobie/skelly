@@ -49,7 +49,7 @@ Demo mods are ordinary mod JSON with a top-level `id`, authored in Jsonnet under
 
 `?mods=` takes a comma-separated list of bundled and demo mod ids, loaded in the order given. It never fetches a file; arbitrary files go through mod intake. An unknown id stops startup with the usual diagnostics. A direct `?modpanel` entry may remain, but it is not the only way to reach mod selection: selection belongs in the ordinary start flow, under `docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow". URL handoff from the tool is a separate intake contract, not an extension of this bundled-id selector.
 
-URL mods and panel mods combine, so a demo can be tried with a player's own mods. Load order is the bundled packs, then URL mods in URL order, then enabled panel mods in panel order. Conflicts between them follow `docs/decisions/0007-typed-field-patches.md`, "Decision". Saves record every admitted pack in that order, through `packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. A world started under a demo only resumes with the same mods, the rule `content.md`, "Browser mod identity" sets.
+URL mods and panel mods combine, so a demo can be tried with a player's own mods. Load order is the bundled packs, then URL mods in URL order, then enabled panel mods in panel order. Conflicts between them follow `docs/decisions/0007-typed-field-patches.md`, "Decision". Saves record every admitted pack in that order, single-file mods and folder packs alike, because a reordered stack can start a different run; see `packages/engine/src/core/saveFormat.ts`, `currentSaveVersionIdentity`. A world started under a demo only resumes with the same mods, the rule `content.md`, "Browser mod identity" sets.
 
 ## Start mod
 
