@@ -644,6 +644,44 @@ describe('authored fixed loot', () => {
       expect(spawned(withSpread([1, 1]), { item: magazine, cartridge: named!.id }).cartridges).toHaveLength(capacity);
     });
 
+    it('fills an unset type from the row odds that fit, and leaves a row without odds empty', () => {
+      const [fits] = cartridges;
+      const other = [...result.registry.items.values()].find(
+        (def) => def.ammo !== undefined && def.ammo.calibre !== calibre,
+      )!;
+      const odds = [
+        { item: other.id, weight: 1 },
+        { item: fits!.id, weight: 1 },
+      ];
+      const full = withSpread([1, 1]);
+      const filled = spawned(full, { item: magazine, cartridgeOdds: odds });
+      expect(filled.cartridges).toEqual(Array.from({ length: capacity }, () => fits!.id));
+      expect(spawned(full, { item: magazine }).cartridges ?? []).toEqual([]);
+    });
+
+    it('refuses a row naming both a cartridge and cartridge odds', () => {
+      const buildingIndex = layout.buildings.findIndex((candidate) => candidate.fixedLoot?.length);
+      const building = layout.buildings[buildingIndex]!;
+      const [first, ...rest] = building.fixedLoot!;
+      const issuesFor = (item: FixedOverride['items'][number]) =>
+        authoredLayoutIssues(
+          {
+            ...layout,
+            buildings: layout.buildings.with(buildingIndex, {
+              ...building,
+              fixedLoot: [{ ...first!, items: [...first!.items, item] }, ...rest],
+            }),
+          },
+          result.registry,
+        ).filter(([, message]) => !message.includes('loot context'));
+      const named = cartridges[0]!.id;
+      expect(issuesFor({ item: magazine, cartridgeOdds: [{ item: named, weight: 1 }] })).toEqual([]);
+      expect(issuesFor({ item: magazine, cartridge: named })).toEqual([]);
+      expect(issuesFor({ item: magazine, cartridge: named, cartridgeOdds: [{ item: named, weight: 1 }] })).not.toEqual(
+        [],
+      );
+    });
+
     it('refuses a named load past capacity or a cartridge of another calibre', () => {
       const buildingIndex = layout.buildings.findIndex((candidate) => candidate.fixedLoot?.length);
       const building = layout.buildings[buildingIndex]!;

@@ -1273,7 +1273,9 @@ alike. How full it is is the product's policy, not the theme's, so the loot-poli
 sets one share-of-capacity spread and theme packs stay free of distribution rules. One
 rule serves every looted magazine, loose or fitted, and the loads are drawn after all
 item selection so adding a magazine never shifts what else a source rolls. An authored
-spawn that needs exact contents names its cartridge and load on the fixed row. See
+spawn that needs exact contents names its cartridge and load on the fixed row. Fixed
+loot has no table, so a fixed row takes its odds from its own list, never with a named
+cartridge; an explicit list per row keeps "no list means empty". See
 `packages/engine/src/core/loot.ts`, `rollLootParts` and `magazineContents`;
 `packages/engine/src/core/schema/loot.ts`, `LootTableSchema` and `LootPolicySchema`; and
 `mods/skelly.deadvox.loot/loot-policy.jsonnet`.

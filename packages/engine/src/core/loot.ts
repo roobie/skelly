@@ -335,7 +335,7 @@ interface RollContext {
 /** An item chosen but not yet loaded; a magazine's load is drawn only after every choice is made. */
 interface Selection {
   readonly rolled: Rolled;
-  /** The dropping table's cartridge odds. */
+  /** The dropping table's cartridge odds, or those of the fixed row. */
   readonly odds: CartridgeOdds;
   /** What an authored fixed row names for its magazine, and so does not draw. */
   readonly authored?: FixedLootItemDef;
@@ -367,7 +367,7 @@ const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], cont
         ...(craftedLiquids === undefined ? {} : { craftedLiquids: craftedLiquids.map((amount) => ({ ...amount })) }),
         ...(liquidContents === undefined ? {} : { liquidContents: { ...liquidContents } }),
       },
-      odds: undefined,
+      odds: row.cartridgeOdds,
       authored: row,
     }));
   });

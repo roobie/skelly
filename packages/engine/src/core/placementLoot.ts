@@ -47,8 +47,15 @@ const fixedLiquidIssue = (registry: Registry, fixed: FixedLootItemDef): string |
 
 /** A named cartridge or load belongs to the row's magazine, or the one fitted in it, and must fit that magazine. */
 const fixedContentsIssue = (registry: Registry, fixed: FixedLootItemDef): string | undefined => {
-  if (fixed.cartridge === undefined && fixed.load === undefined) {
+  if (fixed.cartridge === undefined && fixed.load === undefined && fixed.cartridgeOdds === undefined) {
     return undefined;
+  }
+  if (fixed.cartridge !== undefined && fixed.cartridgeOdds !== undefined) {
+    return 'names both a cartridge and cartridge odds';
+  }
+  const notCartridge = fixed.cartridgeOdds?.find(({ item }) => registry.items.get(item)?.ammo === undefined);
+  if (notCartridge !== undefined) {
+    return `"${notCartridge.item}" is not a cartridge`;
   }
   const magazine = [fixed.item, fixed.fitted?.magazine].find(
     (type) => type !== undefined && magazineSpec(registry, type) !== undefined,

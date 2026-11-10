@@ -21,7 +21,7 @@ const LootEntrySchema = pipe(
   ),
 );
 
-const CartridgeOddsSchema = pipe(
+export const CartridgeOddsSchema = pipe(
   array(strictObject({ item: Id, weight: Positive })),
   nonEmpty('needs at least one cartridge'),
   check((odds) => new Set(odds.map(({ item }) => item)).size === odds.length, 'cartridges must be distinct'),
