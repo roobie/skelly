@@ -125,6 +125,13 @@ downrange of the authored rack so the sample stays out of domestic space. See
 `src/debug/ragdollSweep.ts`, `stageRagdollSweep`; `packages/engine/src/game/ragdollConfig.ts`, `sweepFromUrl`;
 and `src/config/ragdoll.jsonnet`, `sweep`.
 
+The prepared action-menu start is evaluation staging, chosen only by naming its start mod.
+Its full skills, wounds and gathered tools let a reviewer reach every menu path at once,
+which would be a privileged head start in ordinary play. It is a separate pack, not a
+second row in the debug mod, because a start mod supplies exactly one start row; see
+`docs/url-mods.md`, "Start mod". It is not the site's default start, so admitting the
+pack changes no other start. See `mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet`.
+
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker
