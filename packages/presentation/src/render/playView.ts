@@ -23,6 +23,7 @@ import {
   type EntityStore,
   hourOfDay,
   playerTuning,
+  type RealTimestamp,
   reachTuning,
 } from '@skelly/engine/sim';
 import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
@@ -628,12 +629,12 @@ export const createPlayView = (
       simSeconds = time;
       return { sky };
     },
-    prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
+    prepareLighting: (sky: ReturnType<typeof skyInWeather>, now: RealTimestamp) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
-      skyEnvironment?.refresh(sky, performance.now() / 1000);
+      skyEnvironment?.refresh(sky, now);
       lightWithSky(skyVisibility);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);

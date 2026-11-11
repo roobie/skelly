@@ -1,5 +1,6 @@
 // The sky's reflection on models; the why is in `packages/deadvox/GRAPHICS.md`, "Look decisions".
 
+import { type RealSeconds, type RealTimestamp, realSeconds } from '@skelly/engine/sim';
 import type { Sky, SkyEnvironmentTuning } from '@skelly/engine/sky';
 import {
   CubeCamera,
@@ -45,19 +46,20 @@ const largestChange = (a: unknown, b: unknown): number => {
 };
 
 /**
- * Where the sun and the light that follows its arc point. Below the horizon the sun draws nothing on the dome: its disc
- * and glow are hidden by the ground fog, the physical sky is off and the sun's own brightness is out of the looks. What
- * remains, the moon and the clouds' lit side, is too dim and too small for the blurred reflection to show it move.
+ * Where the sun and the light that follows its arc point. Below the horizon the sun's disc is under the ground fog and
+ * the physical sky is off, but the wide glow still lights the twilight sky above it, so these count whenever the sun is
+ * up or either sky has glow. What remains at night, the moon and the clouds' lit side, is judged too dim and small for
+ * the blurred reflection to show it move.
  */
 const SUN_BORNE: readonly (keyof Sky)[] = ['sunDirection', 'light'];
 
-const sunUp = (sky: Sky): boolean => sky.sunDirection[1] > 0;
+const sunShows = (sky: Sky): boolean => sky.sunDirection[1] > 0 || sky.dome.sun.glow > 0;
 
 /** How far the drawn sky has moved between two skies: the largest change in any value the dome draws from. */
 const drawnSkyChange = (a: Sky, b: Sky): number =>
   Math.max(
     ...DRAWN.map((key) => largestChange(a[key], b[key])),
-    ...(sunUp(a) || sunUp(b) ? SUN_BORNE.map((key) => largestChange(a[key], b[key])) : []),
+    ...(sunShows(a) || sunShows(b) ? SUN_BORNE.map((key) => largestChange(a[key], b[key])) : []),
   );
 
 /**
@@ -66,7 +68,10 @@ const drawnSkyChange = (a: Sky, b: Sky): number =>
  * the last bake, and then records it as baked. A fast-forwarded clock moves the sky every frame, so the interval, not
  * the sky, bounds the bake rate; a held-back change is baked as soon as the interval allows.
  */
-export const skyBakeSchedule = (threshold: number, minInterval: number): ((sky: Sky, now: number) => boolean) => {
+export const skyBakeSchedule = (
+  threshold: number,
+  minInterval: RealSeconds,
+): ((sky: Sky, now: RealSeconds) => boolean) => {
   let baked: { sky: Sky; at: number } | undefined;
   return (sky, now) => {
     if (baked && (now - baked.at < minInterval || drawnSkyChange(baked.sky, sky) <= threshold)) {
@@ -84,8 +89,8 @@ const takesEnvironment = (material: Material): boolean =>
   'isMeshStandardMaterial' in material || 'isMeshLambertMaterial' in material || 'isMeshPhongMaterial' in material;
 
 export interface SkyEnvironment {
-  /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. `now` is real seconds. */
-  refresh: (sky: Sky, now: number) => boolean;
+  /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. */
+  refresh: (sky: Sky, now: RealTimestamp) => boolean;
   /** Keeps the environment out of the diffuse light of a scene's materials now, for a scene the shared patches do not walk. */
   patchNow: (scene: Scene) => void;
   /** Gives a scene the reflection at `exposure`, the sky exposure the scene does not apply per fragment itself. */
@@ -108,7 +113,7 @@ export const createSkyEnvironment = (
   const faces = new WebGLCubeRenderTarget(faceSize, { type: HalfFloatType, generateMipmaps: false });
   const camera = new CubeCamera(0.1, 10, faces);
   const prefilter = new PMREMGenerator(renderer);
-  const due = skyBakeSchedule(rebakeChange, rebakeRealSeconds);
+  const due = skyBakeSchedule(rebakeChange, realSeconds(rebakeRealSeconds));
   const bake = (target?: WebGLRenderTarget): WebGLRenderTarget => {
     camera.update(renderer, scene);
     return prefilter.fromCubemap(faces.texture, target);
@@ -136,7 +141,7 @@ export const createSkyEnvironment = (
   return {
     patchNow: (served) => own.apply(served),
     refresh(sky, now) {
-      if (!due(sky, now)) {
+      if (!due(sky, realSeconds(now / 1000))) {
         return false;
       }
       bake(prefiltered);
