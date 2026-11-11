@@ -997,13 +997,14 @@ const openLake = async (chromium, port, hash) => {
   return { page, errors };
 };
 
-// Installs `globalThis.lakeLook(eyeAt, pitch)` in the page: puts the camera at a height over the basin centre,
-// looking at a pitch, and resolves with the centre pixel and chunk depth of the second frame after the move
+// Installs `globalThis.lakeLook(eyeAt, pitch, yaw)` in the page: puts the camera at a height over the basin centre,
+// looking at a pitch (and a yaw, when given), and resolves with the centre pixel, the pixel `BESIDE_PIXELS` to its
+// right and the chunk depth of the second frame after the move
 // (so the camera has followed the body). The game is frozen, so a placed body stays put. The software renderer
 // draws a frame or two a second, so every view is read inside one render hook, not awaited. It reads the drawing
 // buffer right after the mood pass, the frame's last draw, so post on and off are both read as the player sees
 // them; the HUD is DOM, not in it.
-const installLakeLook = async () => {
+const installLakeLook = async (beside) => {
   // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
   const { centreDepth } = await import('/test/browser/water-depth.ts');
   const r = globalThis.primaryActionTest;
@@ -1014,11 +1015,27 @@ const installLakeLook = async () => {
   const [x, z] = layout.terrain[0].centre;
   const eye = engine.camera.position.y - body.pos[1] * s;
   const gl = engine.renderer.getContext();
-  globalThis.lakeLook = (eyeAt, pitch) =>
+  const pixelAt = (dx) => {
+    const pixel = new Uint8Array(4);
+    gl.readPixels(
+      (gl.drawingBufferWidth >> 1) + dx,
+      gl.drawingBufferHeight >> 1,
+      1,
+      1,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixel,
+    );
+    return { r: pixel[0], g: pixel[1], b: pixel[2] };
+  };
+  globalThis.lakeLook = (eyeAt, pitch, yaw) =>
     new Promise((done) => {
       body.pos = [x / s, (eyeAt - eye) / s, z / s];
       body.vel = [0, 0, 0];
       r.input.controls.pitch = pitch;
+      if (yaw !== undefined) {
+        r.input.controls.yaw = yaw;
+      }
       const { mood } = engine;
       const { render } = mood;
       let renders = 0;
@@ -1029,10 +1046,12 @@ const installLakeLook = async () => {
           return;
         }
         mood.render = render;
-        const pixel = new Uint8Array(4);
-        gl.readPixels(gl.drawingBufferWidth >> 1, gl.drawingBufferHeight >> 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
-        const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
-        done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
+        done({
+          cameraY: engine.camera.position.y,
+          colour: pixelAt(0),
+          beside: pixelAt(beside),
+          depth: centreDepth(engine),
+        });
       };
     });
   return layout.water[0].level;
@@ -1069,6 +1088,7 @@ const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
 const HORIZON_PITCH = 0;
 const HIGH_PITCH = 0.7;
 const horizonTolerance = 3;
+const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
 const skyHorizonCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
     async ({ surface, horizonPitch, highPitch }) => {
@@ -1099,7 +1119,6 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
     { surface: level, horizonPitch: HORIZON_PITCH, highPitch: HIGH_PITCH },
   );
   process.stdout.write(`Sky dome horizon views: ${JSON.stringify(views)}\n`);
-  const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
   for (const [mode, { dome, flat }] of Object.entries(views)) {
     assert.equal(dome.horizon.depth, 1, `${mode}: nothing covers the horizon pixel, so it shows the sky`);
     assert.ok(
@@ -1114,6 +1133,41 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
   assert.deepEqual(lakeErrors, []);
 };
 
+// The sun is a very bright body in the physical sky. Unmapped it is far past the bloom threshold, which at ACES
+// is the clip over the exposure, and would glow into its neighbours; mapped it stays at or under 1 and does not.
+// So a sky pixel beside the sun's disc reads the same with bloom on and off, and the centre, which holds the
+// disc, is brighter than it, or the sun is not in frame and the check proves nothing.
+const BESIDE_PIXELS = 24;
+const skySunGlowCheck = async (lake, level, lakeErrors) => {
+  const views = await lake.evaluate(async (surface) => {
+    const { engine } = globalThis.primaryActionTest;
+    engine.mood.setCrackCheck(false);
+    engine.mood.setFilm(false);
+    engine.mood.setPost(true);
+    const [x, y, z] = engine.scene.getObjectByName('skyDome').material.uniforms.uSunDir.value.toArray();
+    // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
+    const pitch = Math.asin(y);
+    const yaw = Math.atan2(-x, -z);
+    const byBloom = {};
+    for (const bloom of [false, true]) {
+      engine.mood.setBloom(bloom);
+      byBloom[bloom ? 'bloom' : 'plain'] = await globalThis.lakeLook(surface + 2, pitch, yaw);
+    }
+    return byBloom;
+  }, level);
+  process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
+  const brightness = ({ r, g, b }) => r + g + b;
+  assert.ok(
+    brightness(views.plain.colour) > brightness(views.plain.beside) + 3 * horizonTolerance,
+    'the sun disc is in frame, brighter than the sky beside it',
+  );
+  assert.ok(
+    apart(views.bloom.beside, views.plain.beside) <= horizonTolerance,
+    'the sky beside the sun gains no glow from bloom',
+  );
+  assert.deepEqual(lakeErrors, []);
+};
+
 const lakeChecks = (chromium, port) =>
   timePhase('lake-pixels', async () => {
     const { page: lake, errors } = await openLake(chromium, port, {
@@ -1124,9 +1178,10 @@ const lakeChecks = (chromium, port) =>
       bloom: true,
     });
     try {
-      const level = await lake.evaluate(installLakeLook);
+      const level = await lake.evaluate(installLakeLook, BESIDE_PIXELS);
       await timePhase('underwater-surface-pixels', () => lakeSurfaceCheck(lake, level, errors));
       await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, level, errors));
+      await timePhase('sky-sun-glow-pixels', () => skySunGlowCheck(lake, level, errors));
     } finally {
       await lake.close();
     }
