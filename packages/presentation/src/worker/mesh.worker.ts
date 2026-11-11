@@ -1,11 +1,12 @@
 // Builds chunk meshes off the main thread. Buffers are transferred, not copied.
 
 import type { FromMesher, MesherInit, ToMesher } from '@skelly/engine/mesh';
-import { buildRequestedMesh, type MeshData } from '@skelly/engine/mesh';
+import { buildRequestedMesh, HeldChunks, type MeshData } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
 
 let init: MesherInit | undefined;
+const held = new HeldChunks();
 
 globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   if (msg.type === 'init') {
@@ -37,7 +38,7 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
     if (!init) {
       throw new Error('Mesh request before init');
     }
-    mesh = buildRequestedMesh(init, msg);
+    mesh = buildRequestedMesh(init, held.receive(msg));
   } catch (error) {
     // An uncaught throw reaches the owner without the key, which would then wait on it forever.
     const failed: FromMesher = {

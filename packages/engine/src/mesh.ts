@@ -19,6 +19,8 @@ export type {
   MesherPort,
   MesherSource,
   MeshRequest,
+  ReceivedMeshRequest,
+  SentNeighbourhood,
   ToMesher,
 } from './game/mesherProtocol.ts';
-export { buildRequestedMesh } from './game/meshRequest.ts';
+export { buildRequestedMesh, HeldChunks } from './game/meshRequest.ts';

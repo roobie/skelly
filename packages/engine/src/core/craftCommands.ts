@@ -3,7 +3,12 @@ import { type CraftCharacter, dominantSide } from './character.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
 import { entityRepairRefusal } from './craftWork.ts';
-import { planDisassembly, type RecoveryOperation } from './disassembly.ts';
+import {
+  type PieceDisassemblyPlan,
+  planDisassembly,
+  planPieceDisassembly,
+  type RecoveryOperation,
+} from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { Inventory, Plan } from './inventory.ts';
 import { damageWord, type Item } from './items.ts';
@@ -143,7 +148,11 @@ export class CraftCommands {
     const result = repair?.entity ? planCraft(recipe!, snapshot, this.character, { prefer, sources }) : undefined;
     const skill = repair ? recipeSkillLevel(registry, this.character, repair.skill) : 0;
     const targetRefusal = repair?.entity
-      ? entityRepairRefusal(this.inventory, entityUid, repair.entity, repair.amount + repair.perSkill * skill)
+      ? entityRepairRefusal(this.inventory, {
+          uid: entityUid,
+          entityType: repair.entity,
+          amount: repair.amount + repair.perSkill * skill,
+        })
       : coreMessage(registry, 'noRepairTarget');
     return {
       targetUid: entityUid,
@@ -179,6 +188,30 @@ export class CraftCommands {
     const amount = recipe.repair.amount + recipe.repair.perSkill * skill;
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'entity', uid: entityUid }, amount });
   }
+  /** The yield taking a piece apart gives now, with why it can't start; the work's admission owns the piece checks. */
+  previewTakeApartEntity(entityUid: number): {
+    plan: PieceDisassemblyPlan | undefined;
+    refusal: string | undefined;
+  } {
+    const { registry } = this.inventory;
+    const entity = this.inventory.entities.byUid(entityUid);
+    if (!entity) {
+      return { plan: undefined, refusal: coreMessage(registry, 'gone') };
+    }
+    const plan = planPieceDisassembly(entity, this.reach(), this.character);
+    if (!plan) {
+      return { plan: undefined, refusal: coreMessage(registry, 'cantTakeApart') };
+    }
+    const { craft } = this.sim.actions;
+    return { plan, refusal: this.startReason() ?? (craft ? craft.admit(plan) : 'Missing craft action owner') };
+  }
+  takeApartEntity(entityUid: number): string | undefined {
+    const { plan, refusal } = this.previewTakeApartEntity(entityUid);
+    if (refusal || !plan) {
+      return refusal;
+    }
+    return this.sim.actions.beginCraft(plan);
+  }
   private repairTarget(type: string): Item | undefined {
     return this.reach()
       .entries.map(({ item }) => item)
@@ -191,7 +224,28 @@ export class CraftCommands {
     if (!item?.work) {
       return coreMessage(registry, 'gone');
     }
-    return this.reach().entries.some((entry) => entry.item === item) ? undefined : coreMessage(registry, 'outOfReach');
+    const at = this.inventory.locate(item);
+    const reachable =
+      at?.kind === 'pieceWork'
+        ? this.inventory.canReachEntity(at.entity)
+        : this.reach().entries.some((entry) => entry.item === item);
+    return reachable ? undefined : coreMessage(registry, 'outOfReach');
+  }
+  private workName(work: NonNullable<Item['work']>): string {
+    const { registry } = this.inventory;
+    switch (work.kind) {
+      case 'craft': {
+        const recipe = registry.recipes.get(work.recipe)!;
+        const entity = recipe.repair?.entity;
+        return (entity ? registry.furniture.get(entity)! : registry.items.get(recipe.result.item)!).name;
+      }
+      case 'disassembly':
+        return registry.items.get(work.source)!.name;
+      case 'pieceDisassembly':
+        return registry.furniture.get(work.furniture)!.name;
+      default:
+        throw new Error('Unknown work kind');
+    }
   }
   private disassemblyOption(item: Item, choices: RecoveryChoices): WorkOption[] {
     const { registry } = this.inventory;
@@ -234,13 +288,7 @@ export class CraftCommands {
       (crafting && job.workUid !== uid ? coreMessage(registry, 'otherCraft') : undefined) ??
       (crafting ? coreMessage(registry, 'alreadyWorking') : undefined) ??
       this.sim.actions.craft?.validate(uid);
-    const name =
-      work.kind === 'craft'
-        ? (registry.recipes.get(work.recipe)!.repair?.entity
-            ? registry.furniture.get(registry.recipes.get(work.recipe)!.repair!.entity!)!.name
-            : registry.items.get(registry.recipes.get(work.recipe)!.result.item)!.name
-          ).toLowerCase()
-        : registry.items.get(work.source)!.name.toLowerCase();
+    const name = this.workName(work).toLowerCase();
     const apart = this.reachable(uid);
     return [
       {
@@ -257,7 +305,7 @@ export class CraftCommands {
   }
   recovery(uid: number, choices: RecoveryChoices = {}): RecoveryProjection | undefined {
     const item = this.inventory.itemByUid(uid);
-    if (!item || item.work?.kind === 'craft') {
+    if (!item || (item.work && item.work.kind !== 'disassembly')) {
       return undefined;
     }
     const work = item.work?.kind === 'disassembly' ? item.work : undefined;

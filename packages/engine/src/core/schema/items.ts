@@ -630,12 +630,17 @@ const DisassemblyYieldSchema = strictObject({
   ...LiquidRecoverySchema.entries,
 });
 
-const DisassemblySchema = strictObject({
+/** Taking a whole thing apart, an item or a furniture piece, so both scale their yields by one rule. */
+export const RecoveryWorkSchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   /** Mechanism role; the provider's skill scales the yields, and a role with no provider adds no requirement. */
   skill: capabilitySelection('skills'),
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
+});
+
+const DisassemblySchema = strictObject({
+  ...RecoveryWorkSchema.entries,
   liquidRecovery: optional(LiquidRecoverySchema),
 });
 

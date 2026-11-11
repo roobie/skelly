@@ -169,7 +169,7 @@ describe('food exposure across ownership changes', () => {
     expect([stack.count, input.count]).toEqual([1, 2]);
     expect(input.foodExposure).toMatchObject({ gameMilliseconds: 500, settledAtGameMilliseconds: 2000 });
     clock.now = 3000;
-    inventory.releaseWork(work!, false, WARM, 3);
+    inventory.releaseWork(work!, false, { feet: WARM, calendar: 3 });
     expect(inventory.locate(input)).toMatchObject({ kind: 'pile' });
     expect(input.foodExposure).toMatchObject({ gameMilliseconds: 1500, settledAtGameMilliseconds: 3000 });
     expect(exposure(stack)).toBe(750);

@@ -40,9 +40,10 @@ interface RecordedLiquidDraw {
   volumeMicrolitres: number;
   sources: { uid: number; volumeMicrolitres: number }[];
 }
-const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> =>
-  work.kind === 'craft'
-    ? {
+const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> => {
+  switch (work.kind) {
+    case 'craft':
+      return {
         ...work,
         ...repairTargetFields(work),
         ...(work.liquids === undefined
@@ -53,8 +54,9 @@ const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> =>
                 sources: draw.sources.map((source) => ({ ...source })),
               })),
             }),
-      }
-    : {
+      };
+    case 'disassembly':
+      return {
         ...work,
         ...repairTargetFields(work),
         liquids: work.liquids.map((liquid) => ({ ...liquid })),
@@ -63,6 +65,17 @@ const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> =>
         outputs: work.outputs.map((output) => ({ ...output })),
         toolLevels: { ...work.toolLevels },
       };
+    case 'pieceDisassembly':
+      return {
+        ...work,
+        ...repairTargetFields(work),
+        outputs: work.outputs.map((output) => ({ ...output })),
+        toolLevels: { ...work.toolLevels },
+      };
+    default:
+      throw new Error('Unknown work kind');
+  }
+};
 const craftedLiquidFields = (item: { craftedLiquids?: { liquid: string; volumeMicrolitres: number }[] }) =>
   item.craftedLiquids === undefined ? {} : { craftedLiquids: item.craftedLiquids.map((liquid) => ({ ...liquid })) };
 
@@ -78,6 +91,14 @@ type CraftWork<Node> =
       skillLevel: number;
       toolLevels: Record<string, number>;
       gather: number;
+      outputs: { item: string; count: number }[];
+    })
+  /** Taking apart the piece that hosts this work; it has no inputs, since the piece itself is the source. */
+  | (WorkProgress<Node> & {
+      kind: 'pieceDisassembly';
+      furniture: string;
+      skillLevel: number;
+      toolLevels: Record<string, number>;
       outputs: { item: string; count: number }[];
     });
 

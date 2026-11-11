@@ -5,6 +5,7 @@ import { getBuildRevision } from '@skelly/engine/packs';
 import type { DebugNoclipStep } from '@skelly/engine/session';
 import {
   type ActorAim,
+  type ActorSystem,
   crosshairTarget,
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
@@ -57,6 +58,7 @@ import { stepNoclip } from './noclip.ts';
 import { stageRagdollSweep } from './ragdollSweep.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import {
+  type SpawnContext,
   spawnActorType,
   spawnShamblers,
   spawnUnawareShambler as spawnUnawareShamblerBehindWall,
@@ -1300,6 +1302,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     drawShell();
   };
   const metresPerBlock = hooks.engine.config.scale.blockSize;
+  const spawnContext = (actors: ActorSystem): SpawnContext => ({
+    engine: hooks.engine,
+    queries: hooks.solidity,
+    player: hooks.body,
+    actors,
+  });
   /** Reused each call: the pose is read a few times a second, so no per-call allocation worth noticing. */
   const camNow: CamPose = { position: [0, 0, 0], yaw: 0, pitch: 0, roll: 0 };
   let camWritten: CamPose | undefined;
@@ -1347,7 +1355,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     spawnUnawareShambler: () => {
       const actors = hooks.actors();
-      const placed = actors ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, actors) : false;
+      const placed = actors ? spawnUnawareShamblerBehindWall(spawnContext(actors)) : false;
       spawnStatus = placed ? 'Placed an unaware shambler behind a wall' : 'No nearby wall could hide a shambler';
       if (placed) {
         hooks.showNotice('An unaware shambler is nearby');
@@ -1375,7 +1383,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     spawnShambler: (count) => {
       const actors = hooks.actors();
-      const placed = actors ? spawnShamblers(hooks.engine, hooks.body, actors, count) : 0;
+      const placed = actors ? spawnShamblers(spawnContext(actors), count) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
@@ -1383,7 +1391,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     spawnActor: (typeId, count) => {
       const actors = hooks.actors();
-      const placed = actors ? spawnActorType(hooks.engine, hooks.body, actors, { typeId, count }) : 0;
+      const placed = actors ? spawnActorType(spawnContext(actors), { typeId, count }) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         const name = hooks.engine.registry.actors.get(typeId)?.name ?? typeId;
@@ -1482,7 +1490,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
             world: engine.world,
             registry: engine.registry,
             entities: engine.entities,
-            isSolid: engine.isSolid,
+            isSolid: hooks.solidity.isSolid,
             blockSize: engine.config.scale.blockSize,
           },
           ray.eye,
@@ -1898,7 +1906,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
                   world: engine.world,
                   registry: engine.registry,
                   entities: engine.entities,
-                  isSolid: engine.isSolid,
+                  isSolid: hooks.solidity.isSolid,
                   blockSize: engine.config.scale.blockSize,
                 },
                 eye,
@@ -1953,7 +1961,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (!(transientDraw.enabled && interactionRayEnabled)) {
         return;
       }
-      const opaqueHit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.engine.isOpaque);
+      const opaqueHit = raycast(origin, direction, reachMetres / metresPerBlock, hooks.solidity.isOpaque);
       const opaqueDistance = opaqueHit?.distance;
       const distanceBlocks = Math.min(
         reachMetres / metresPerBlock,

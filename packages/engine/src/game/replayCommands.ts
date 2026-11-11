@@ -54,6 +54,7 @@ export type ReplayActionPayload =
       preference: CraftPreference;
       sources?: CraftSources;
     }
+  | { kind: 'craft.take-apart-entity'; entityUid: number }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -207,6 +208,24 @@ const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
           new Set(uids).size === uids.length,
       )));
 
+const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
+  switch (payload.kind) {
+    case 'craft.start':
+      return isCraftStartPayload(payload);
+    case 'craft.repair-entity':
+      return (
+        isUid(payload.entityUid) &&
+        payload.preference !== undefined &&
+        isCraftStartPayload(payload) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference', 'sources'].includes(key))
+      );
+    case 'craft.take-apart-entity':
+      return isUid(payload.entityUid) && Object.keys(payload).length === 2;
+    default:
+      return false;
+  }
+};
+
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
     return false;
@@ -290,14 +309,9 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.distance as number) <= 10_000
       );
     case 'craft.start':
-      return isCraftStartPayload(payload);
     case 'craft.repair-entity':
-      return (
-        isUid(payload.entityUid) &&
-        payload.preference !== undefined &&
-        isCraftStartPayload(payload) &&
-        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference', 'sources'].includes(key))
-      );
+    case 'craft.take-apart-entity':
+      return isCraftCommandPayload(payload);
     default:
       return false;
   }
@@ -347,6 +361,8 @@ export interface ReplayCommandOwners {
     preference: CraftPreference,
     sources?: CraftSources,
   ) => string | undefined;
+  /** Starts taking a world piece apart where it stands, as work hosted on the piece. */
+  craftTakeApartEntity: (entityUid: number) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -451,6 +467,8 @@ export const applyReplayActionPayload = (
       return owners.craftStart(payload.recipeId, payload.preference, payload.sources);
     case 'craft.repair-entity':
       return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
+    case 'craft.take-apart-entity':
+      return owners.craftTakeApartEntity(payload.entityUid);
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':

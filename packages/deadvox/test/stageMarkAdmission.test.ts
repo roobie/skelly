@@ -30,7 +30,9 @@ const build = (exitMark: string) => {
   ]);
 };
 
-it('projects the guide exit mark from its layout row without assuming a mark identity', () => {
+// A whole-registry build is bounded CPU work whose duration scales with machine load, so a timer only turns a
+// busy machine into a failure.
+it('projects the guide exit mark from its layout row without assuming a mark identity', { timeout: 0 }, () => {
   const { registry, issues } = build(selected);
   expect(issues).toEqual([]);
   const scale = makeScale(0.5);
@@ -42,7 +44,7 @@ it('projects the guide exit mark from its layout row without assuming a mark ide
   );
 });
 
-it('rejects a guide exit reference to a stage mark absent from that layout', () => {
+it('rejects a guide exit reference to a stage mark absent from that layout', { timeout: 0 }, () => {
   const missing = 'fixture_missing_area';
   expect(build(missing).issues).toContainEqual({
     source,

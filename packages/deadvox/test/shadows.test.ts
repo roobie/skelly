@@ -189,23 +189,21 @@ describe('choosing shadow casters', () => {
     expect(near(box(5.5, 0))).toBe(false);
   });
 
-  it('makes only the selected chunk meshes cast, shows them for the pass, and lets every chunk receive', () => {
+  it("makes only the selected chunks cast, leaves the camera's chunks to the main pass, and lets every chunk receive", () => {
     const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
     const versionBefore = meshes.version;
     meshes.set('near', [0, 0, 0], floor);
     meshes.set('far', [400, 0, 0], floor); // 200 m away
     expect(meshes.version).toBeGreaterThan(versionBefore);
-    const chunks = meshes.group.children.filter((child) => child.visible);
-    expect(chunks.every((child) => child.receiveShadow)).toBe(true);
-    expect(chunks).toHaveLength(2);
+    expect(meshes.batch.receiveShadow).toBe(true);
+    expect(meshes.origins('main')).toHaveLength(2);
 
     // The camera culled both (nothing in view); the shadow pass still gets the one in range.
     meshes.cull(new PerspectiveCamera(75, 1, 0.05, 1));
     const cast = meshes.selectShadowCasters(withinRange(new Vector3(0, 1, 0), 40), BackSide);
     expect(cast).toBe(1);
-    const casting = meshes.group.children.filter((child) => child.castShadow);
-    expect(casting.map((child) => child.position.x)).toEqual([0]);
-    expect(casting.every((child) => child.visible)).toBe(true);
+    expect(meshes.origins('shadow')).toEqual([[0, 0, 0]]);
+    expect(meshes.origins('main')).toEqual([]);
 
     const before = meshes.version;
     meshes.remove('far');
@@ -248,7 +246,7 @@ describe('Shadows', () => {
     rig.add(light, light.target);
     scene.add(rig);
     const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
-    scene.add(meshes.group);
+    scene.add(meshes.batch);
     meshes.set('under', [-4, 0, -4], floor);
     meshes.set('behind', [-4, 0, 60], floor); // 30 m away, behind a player looking down -z
     meshes.set('far', [-4, 0, 600], floor); // 300 m away
@@ -364,7 +362,7 @@ describe('Shadows', () => {
     const { frame, shadows, meshes } = setup();
     frame(1);
     expect(shadows.casters.sun).toBe(2);
-    const casting = meshes.group.children.filter((child) => child.castShadow).map((child) => child.position.z);
+    const casting = meshes.origins('shadow').map(([, , z]) => z);
     expect(casting.sort((a, b) => a - b)).toEqual([-4, 60]);
   });
 

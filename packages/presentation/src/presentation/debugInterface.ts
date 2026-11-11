@@ -10,7 +10,7 @@ import type {
 } from '@skelly/engine/sim';
 import type { Weather } from '@skelly/engine/sky';
 import type { HeardSound } from '@skelly/engine/sound';
-import type { Body, Vec3 } from '@skelly/engine/world';
+import type { Body, SolidAt, Vec3 } from '@skelly/engine/world';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
@@ -45,6 +45,8 @@ export interface DebugHooks {
   readonly weather: Weather;
   /** The held light's beam; the debug look controls set its strength multiplier. */
   readonly flashlight: { strength: number };
+  /** The session's solid and sight rule, which counts parked vehicles; the engine's own queries do not. */
+  readonly solidity: { readonly isSolid: SolidAt; readonly isOpaque: SolidAt };
   readonly body: Body;
   readonly inventory: Inventory;
   readonly character: Character;

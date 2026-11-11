@@ -517,6 +517,77 @@ describe('MobActorMeshes', () => {
     }
   });
 
+  it('redraws a kept row as a fresh renderer draws it once any pose or row input changes', () => {
+    let bloodiness = 0;
+    const options = { actors: registry.actors, poolSize: 1, bloodiness: () => bloodiness };
+    const kept = new MobActorMeshes(0.5, 1, options);
+    const store = new MapEntityStore<Actor>();
+    const actor = makeActor([0, 0, -5]);
+    const id = store.add(actor);
+    const drawnRow = (renderer: MobActorMeshes): Float32Array => {
+      const { texture, states } = renderer as unknown as {
+        texture: DataTexture;
+        states: Map<number, { globalRow: number }>;
+      };
+      const width = texture.image.width * 4;
+      const start = states.get(id)!.globalRow * width;
+      return (texture.image.data as Float32Array).slice(start, start + width);
+    };
+    const changes: readonly (readonly [string, () => void])[] = [
+      [
+        'placement',
+        () => {
+          actor.body.pos[0] += 0.25;
+          actor.renderPrevious = { ...actor.renderPrevious, pos: [...actor.body.pos] };
+        },
+      ],
+      [
+        'yaw',
+        () => {
+          actor.facing = [1, 0, 0];
+          actor.renderPrevious = { ...actor.renderPrevious, facing: [...actor.facing] };
+        },
+      ],
+      [
+        'clip',
+        () => {
+          actor.horizontalSpeed = 1;
+          actor.gaitPhase += 0.5;
+        },
+      ],
+      ['severed parts', () => actor.severed.push('hand.L')],
+      [
+        'bloodiness',
+        () => {
+          bloodiness = 1;
+        },
+      ],
+    ];
+    try {
+      for (const [input, change] of changes) {
+        kept.sync(store, 1 / 60);
+        kept.sync(store, 1 / 60);
+        const before = drawnRow(kept);
+        change();
+        kept.sync(store, 1 / 60);
+        const fresh = new MobActorMeshes(0.5, 1, options);
+        try {
+          const freshStore = new MapEntityStore<Actor>();
+          // The pose reads the entity id, so both renderers must see the same one.
+          expect(freshStore.add(actor)).toBe(id);
+          fresh.sync(freshStore, 1 / 60);
+          const after = drawnRow(kept);
+          expect(after, input).not.toEqual(before);
+          expect(after, input).toEqual(drawnRow(fresh));
+        } finally {
+          fresh.dispose();
+        }
+      }
+    } finally {
+      kept.dispose();
+    }
+  });
+
   it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
     const canvas = new EventTarget() as HTMLCanvasElement;
     const renderer = new MobActorMeshes(0.5, 3, {
@@ -1623,7 +1694,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('re-derives hidden bones from zombie.severed every sync (source of truth, e.g. after a save/load)', () => {
+  it('re-derives hidden bones from zombie.severed when it grows (source of truth, e.g. after a save/load)', () => {
     const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       const store = new MapEntityStore<Actor>();

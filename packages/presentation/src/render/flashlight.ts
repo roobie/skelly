@@ -129,7 +129,7 @@ export class Flashlight {
     inventory: Inventory;
     piles?: Pick<PileMeshes, 'beamPoseOf'>;
   }): void {
-    const sources = [...inventoryLightEntries(inventory)]
+    const sources = inventoryLightEntries(inventory)
       .filter(
         ({ item, location, path }) =>
           defOf(registry, item.type).light?.beam !== undefined &&

@@ -16,7 +16,7 @@ import type { DayCycle } from './dayPhase.ts';
 import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
-import { isInHeldItemSlotTree, itemRoots, walkItemTree } from './itemTree.ts';
+import { isInHeldItemSlotTree, itemRoots, type TreeEntry, walkItemTree } from './itemTree.ts';
 import { vesselFillShare } from './liquids.ts';
 import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
@@ -27,23 +27,59 @@ export type LightExposure = 'carried' | 'world';
 const WORN_SLOT_TREE_PATH = /^inventory\.worn\.[^.]+\.slots\./;
 const PILE_SLOT_TREE_PATH = /^inventory\.piles\[\d+\]\.items\[\d+\]\.item(?:\.slots\.[^.]+)+$/;
 
-/** Exposed world attachments use their root's pile location, never a container's contents. */
-export function* inventoryLightEntries(inventory: Inventory) {
-  yield* inventory.carriedTree();
+type LightEntry = TreeEntry<Item, Pile, BlockEntity>;
+
+interface LightEntries {
+  readonly version: number;
+  /** Every light where it sits in the carried and piled trees. */
+  readonly placed: readonly LightEntry[];
+  /** The lights that can reach the world: a pile's fittings at their root's pile, never what a piled container holds. */
+  readonly exposed: readonly LightEntry[];
+}
+
+/**
+ * Furniture and vehicle trees never expose a light, and the carried and piled trees change only with the
+ * inventory's version, so the world-sized walk reruns only then. On, off and charge change without a version,
+ * so callers read `lightExposureFor` on each use.
+ */
+const lightEntriesByInventory = new WeakMap<Inventory, LightEntries>();
+
+const lightEntries = (inventory: Inventory): LightEntries => {
+  const cached = lightEntriesByInventory.get(inventory);
+  if (cached?.version === inventory.version) {
+    return cached;
+  }
+  const { registry } = inventory;
+  const placed: LightEntry[] = [];
+  const exposed: LightEntry[] = [];
   for (const root of itemRoots<Item, Pile, BlockEntity>({
-    hands: {},
-    worn: {},
+    hands: inventory.hands,
+    worn: inventory.worn,
     piles: inventory.piles.values(),
     entities: [],
   })) {
-    yield root;
     for (const entry of walkItemTree([root])) {
-      if (entry.location.kind === 'slot' && PILE_SLOT_TREE_PATH.test(entry.path)) {
-        yield { ...entry, location: root.location };
+      if (!registry.items.get(entry.item.type)?.light) {
+        continue;
+      }
+      placed.push(entry);
+      if (entry === root || root.location.kind !== 'pile') {
+        exposed.push(entry);
+      } else if (entry.location.kind === 'slot' && PILE_SLOT_TREE_PATH.test(entry.path)) {
+        exposed.push({ ...entry, location: root.location });
       }
     }
   }
-}
+  const entries = { version: inventory.version, placed, exposed };
+  lightEntriesByInventory.set(inventory, entries);
+  return entries;
+};
+
+/** Lights as they sit in the carried and piled trees, in tree order. */
+export const placedLightEntries = (inventory: Inventory): readonly LightEntry[] => lightEntries(inventory).placed;
+
+/** Exposed world attachments use their root's pile location, never a container's contents. */
+export const inventoryLightEntries = (inventory: Inventory): readonly LightEntry[] => lightEntries(inventory).exposed;
 
 export interface LightSenseSource {
   pos: Vec3;

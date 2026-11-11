@@ -29,6 +29,21 @@ local flimsyPry = woodDoor.door.methods.pry + {
   level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
 };
 local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pry.timeSimSeconds;
+// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a pry bar saves more nails.
+local recovered = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
+local pryBonus = { quality: 'prying', bonusByLevel: [0.1, 0.2] };
+local takeApart(minutes, offcuts, nails) = {
+  takeApart: {
+    yield: {
+      timeGameMinutes: minutes,
+      skill: 'crafting',
+      yields: [
+        { item: 'wood_offcut', count: offcuts, fractions: recovered, rounding: 'floor' },
+        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor', toolModifier: pryBonus },
+      ],
+    },
+  },
+};
 local rail = function(x) { position: [x, 0, 0.55], size: [0.12, 1, 0.12] };
 local rung = function(y) { position: [0.1, y, 0.6], size: [1.8, 0.08, 0.08] };
 local basics = shape.colliding({
@@ -125,7 +140,7 @@ local basics = shape.colliding({
         { position: [0.12, 2.8, 0], size: [1.76, 0.1, 0.88] },
       ],
       container: { pockets: [{ grid: [9, 18], handlingSimSeconds: 0.8 }] },
-    },
+    } + takeApart(20, 6, 12),
     {
       id: 'workbench',
       name: 'Workbench',
@@ -194,7 +209,7 @@ local basics = shape.colliding({
         { position: [0, 1.84, 0], size: [2, 0.16, 2] },
       ],
       container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
-    },
+    } + takeApart(15, 4, 16),
     {
       id: 'wood_stove', name: 'Wood stove', size: [2, 3, 2], color: '#343536', material: 'steel',
       shape: [
@@ -243,7 +258,7 @@ local basics = shape.colliding({
         { position: [0.06, 1.06, 0.83], size: [0.88, 0.88, 0.11] },
       ],
       rest: { quality: 1 },
-    },
+    } + takeApart(10, 3, 6),
     {
       id: 'sofa',
       name: 'Sofa',

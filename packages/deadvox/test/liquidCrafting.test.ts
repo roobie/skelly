@@ -235,7 +235,7 @@ it('drop-placement refusal precedes every liquid balance change', () => {
   expect(r.inventory.move(work, { kind: 'pile', pos: origin }).ok).toBe(true);
   r.inventory.landing = () => undefined;
   const before = contents(r);
-  expect(() => r.inventory.releaseWork(work, true, origin)).toThrow();
+  expect(() => r.inventory.releaseWork(work, true, { feet: origin })).toThrow();
   expect(contents(r)).toEqual(before);
   expect(work.work).toBeDefined();
 });
@@ -292,7 +292,7 @@ it('replayed default selection debits the same uid for tied vessels across a sav
 it('solid and liquid route results never stack and a split preserves per-unit records through restore', () => {
   const r = setup([40]);
   const liquid = r.inventory.beginWork(recorded(r))!;
-  r.inventory.releaseWork(liquid, true, origin);
+  r.inventory.releaseWork(liquid, true, { feet: origin });
   const result = r.inventory.hands.right!;
   expect(r.inventory.move(result, { kind: 'pile', pos: origin }).ok).toBe(true);
   const solidRecipe = r.definitions.recipes.get(SOLID_RECIPE)!;
@@ -301,7 +301,7 @@ it('solid and liquid route results never stack and a split preserves per-unit re
     throw new Error(solidPlan.missing.reason);
   }
   const solid = r.inventory.beginWork(solidPlan.plan)!;
-  r.inventory.releaseWork(solid, true, origin);
+  r.inventory.releaseWork(solid, true, { feet: origin });
   const solidResult = r.inventory.hands.right!;
   expect(stackRoom(r.definitions, solidResult, result)).toBe(0);
   expect(stackRoom(r.definitions, result, solidResult)).toBe(0);

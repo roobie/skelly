@@ -247,6 +247,38 @@ describe('made-light point pool', () => {
     expect(actors.store.get(id)!.agent!.lastPerceived).toEqual(source?.pos);
   });
 
+  it('follows a light switched on, dropped, moved and picked up between frames of one pool', () => {
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+    const update = () =>
+      pool.update(inventory, {
+        held: { lightPositionOf: () => false },
+        camera: new PerspectiveCamera(),
+        blockSize: SCALE.blockSize,
+        daylightScale: 1,
+      });
+    const carried = () => pool.lights[0]!;
+    const dropped = () => pool.lights[4]!;
+    update();
+    expect(pool.lights.every((light) => light.intensity === 0)).toBe(true);
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    update();
+    expect(carried().intensity).toBeGreaterThan(0);
+    for (const x of [3, 6]) {
+      expect(inventory.move(glowstick, { kind: 'pile', pos: [x, 1, 0] }).ok).toBe(true);
+      update();
+      expect(carried().intensity).toBe(0);
+      expect(dropped().intensity).toBeGreaterThan(0);
+      expect(dropped().position.x).toBeCloseTo((x + 0.5) * SCALE.blockSize);
+    }
+    expect(inventory.move(glowstick, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    update();
+    expect(carried().intensity).toBeGreaterThan(0);
+    expect(dropped().intensity).toBe(0);
+  });
+
   it('shines a set-down light from the flame its pile draws', () => {
     const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
     const inventory = new Inventory(registry);

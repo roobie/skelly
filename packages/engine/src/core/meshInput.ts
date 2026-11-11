@@ -37,35 +37,32 @@ export interface Neighbourhood {
   readonly onFloor: boolean;
 }
 
+/** The coordinates of the 27 chunks around `coords`, ordered by `neighbourIndex`. */
+export const neighbourCoords = ([cx, cy, cz]: Vec3): Vec3[] => {
+  const coords: Vec3[] = [];
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let oz = -1; oz <= 1; oz++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        coords[neighbourIndex(ox, oy, oz)] = [cx + ox, cy + oy, cz + oz];
+      }
+    }
+  }
+  return coords;
+};
+
+/** Whether the layer below the chunk at `cy` is under the world's floor, `bottomCy` being its lowest layer. */
+export const isOnFloor = (cy: number, bottomCy: number): boolean => cy - 1 < bottomCy;
+
 /**
  * The chunks around `coords` as the world holds them, without copying. Missing chunks read as air;
  * `bottomCy` is the world's lowest layer.
  */
-export const neighbourhoodOf = (
-  world: World,
-  [cx, cy, cz]: Vec3,
-  bottomCy = Number.NEGATIVE_INFINITY,
-): Neighbourhood => {
-  const chunks: ChunkBlocks[] = [];
-  for (let oy = -1; oy <= 1; oy++) {
-    for (let oz = -1; oz <= 1; oz++) {
-      for (let ox = -1; ox <= 1; ox++) {
-        const chunk = world.getChunk(cx + ox, cy + oy, cz + oz);
-        chunks[neighbourIndex(ox, oy, oz)] = chunk ? (chunk.raw() ?? chunk.uniformId ?? 0) : 0;
-      }
-    }
-  }
-  return { chunks, onFloor: cy - 1 < bottomCy };
-};
-
-/**
- * A copy of `neighbourhood` that the world's later edits cannot reach, with the buffers to transfer
- * it: a mesh request is built from the blocks as they were when it was made, so its version stamp holds.
- */
-export const detachNeighbourhood = (neighbourhood: Neighbourhood): [Neighbourhood, ArrayBuffer[]] => {
-  const chunks = neighbourhood.chunks.map((blocks) => (typeof blocks === 'number' ? blocks : blocks.slice()));
-  const transfer = chunks.flatMap((blocks) => (typeof blocks === 'number' ? [] : [blocks.buffer]));
-  return [{ chunks, onFloor: neighbourhood.onFloor }, transfer];
+export const neighbourhoodOf = (world: World, coords: Vec3, bottomCy = Number.NEGATIVE_INFINITY): Neighbourhood => {
+  const chunks = neighbourCoords(coords).map((at): ChunkBlocks => {
+    const chunk = world.getChunk(...at);
+    return chunk ? (chunk.raw() ?? chunk.uniformId ?? 0) : 0;
+  });
+  return { chunks, onFloor: isOnFloor(coords[1], bottomCy) };
 };
 
 /**

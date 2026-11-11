@@ -2,13 +2,20 @@ import { FUSED_MASS_FIGURE_SEED } from '@skelly/engine/pose';
 import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '@skelly/engine/sim';
 import { type Body, raycast, type Vec3 } from '@skelly/engine/world';
 import type { Engine } from '@skelly/presentation/play';
-import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
+import { placementWorldOf } from '../bench/placementWorld.ts';
+import { type PlacementQueries, placeShamblerRing } from '../bench/shamblerPlacement.ts';
+
+/** What a debug spawn needs: the engine's content, the session's solid rule, the player to keep clear of and the actors to join. */
+export interface SpawnContext {
+  readonly engine: Omit<Engine, 'isSolid' | 'isOpaque'>;
+  readonly queries: PlacementQueries;
+  readonly player: Body;
+  readonly actors: ActorSystem;
+}
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
 export const spawnActorType = (
-  engine: Engine,
-  player: Body,
-  actors: ActorSystem,
+  { engine, queries, player, actors }: SpawnContext,
   options: { readonly typeId: string; readonly count: number },
 ): number => {
   const { typeId, count } = options;
@@ -22,7 +29,7 @@ export const spawnActorType = (
     count,
     seed: engine.config.seed + actors.store.size,
     player,
-    engine,
+    engine: placementWorldOf(engine, queries),
     occupied: [...actors.store.entries()].map(([, actor]) => actor.body),
     bodyDimensions: actorBodyDimensions(type, engine.config.scale.blockSize),
     minRadiusMetres: Math.max(8, actorAttackReachForDef(type, figure.body) + 1),
@@ -34,11 +41,11 @@ export const spawnActorType = (
   return positions.length;
 };
 
-export const spawnShamblers = (engine: Engine, player: Body, actors: ActorSystem, count: number): number =>
-  spawnActorType(engine, player, actors, { typeId: 'shambler', count });
+export const spawnShamblers = (context: SpawnContext, count: number): number =>
+  spawnActorType(context, { typeId: 'shambler', count });
 
 /** Debug-only fixture: place one close shambler behind solid geometry so it starts unaware. */
-export const spawnUnawareShambler = (engine: Engine, player: Body, actors: ActorSystem): boolean => {
+export const spawnUnawareShambler = ({ engine, queries, player, actors }: SpawnContext): boolean => {
   const type = engine.registry.actors.get('shambler');
   if (!type) {
     return false;
@@ -50,7 +57,7 @@ export const spawnUnawareShambler = (engine: Engine, player: Body, actors: Actor
       count: 1,
       seed: engine.config.seed + actors.store.size + attempt,
       player,
-      engine,
+      engine: placementWorldOf(engine, queries),
       occupied: [...actors.store.entries()].map(([, actor]) => actor.body),
       allowPartial: true,
       minRadiusMetres: 1.5,
@@ -64,7 +71,7 @@ export const spawnUnawareShambler = (engine: Engine, player: Body, actors: Actor
     const delta = [rayTarget[0] - rayOrigin[0], rayTarget[1] - rayOrigin[1], rayTarget[2] - rayOrigin[2]];
     const distance = Math.hypot(...delta);
     const direction = delta.map((coordinate) => coordinate / distance) as [number, number, number];
-    if (raycast(rayOrigin, direction, distance, engine.isSolid) === undefined) {
+    if (raycast(rayOrigin, direction, distance, queries.isSolid) === undefined) {
       continue;
     }
     actors.add(type, position, [player.pos[0] - position[0], 0, player.pos[2] - position[2]]);
