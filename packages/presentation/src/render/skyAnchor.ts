@@ -4,6 +4,9 @@ import { BufferAttribute, type BufferGeometry, type Material, Matrix3, type Matr
 /** Vertex attribute holding where a surface samples the sky from; the sky receiver patch reads it when `SKY_ANCHOR` is defined. */
 export const SKY_ANCHOR_ATTRIBUTE = 'skyAnchor';
 
+/** How far, in blocks, the receiver steps out along a surface's normal from its anchor before it samples the sky. */
+export const SKY_RECEIVER_STEP = 0.5;
+
 /**
  * Gives a shaped piece's geometry a sky anchor per vertex: the vertex pushed along its normal to the face of the
  * piece's envelope (`size` in blocks, x and z centred, y from 0). The sky field counts every cell of the envelope
@@ -39,10 +42,10 @@ const CELL_EXIT_REACH = 2;
 const CELL_EXIT_STEP = 0.25;
 
 /**
- * Gives a placed model's geometry a sky anchor per vertex: the vertex carried along its normal out of the cells the
- * sky field counts as blocked, as `addSkyAnchors` does for an envelope, so a body that blocks sky light doesn't
- * shade its own skin. `toWorld` places the geometry; `blocked` takes a cell in blocks. A surface with no open cell
- * within reach keeps its own position and reads as enclosed.
+ * Gives a placed model's geometry a sky anchor per vertex: the vertex carried along its normal until the receiver's
+ * step past it lands in a cell the sky field counts as open, as `addSkyAnchors` does for an envelope, so a body that
+ * blocks sky light doesn't shade its own skin. `toWorld` places the geometry; `blocked` takes a cell in blocks. A
+ * surface with no open cell within reach keeps its own position and reads as enclosed.
  */
 export const addSkyCellAnchors = (
   geometry: BufferGeometry,
@@ -64,9 +67,13 @@ export const addSkyCellAnchors = (
     point.fromBufferAttribute(position, vertex).applyMatrix4(toWorld).divideScalar(blockSize);
     direction.fromBufferAttribute(normal, vertex).applyMatrix3(normalToWorld).normalize();
     for (let reach = 0; reach <= CELL_EXIT_REACH; reach += CELL_EXIT_STEP) {
-      probe.copy(direction).multiplyScalar(reach).add(point);
+      probe
+        .copy(direction)
+        .multiplyScalar(reach + SKY_RECEIVER_STEP)
+        .add(point);
       if (!blocked(Math.floor(probe.x), Math.floor(probe.y), Math.floor(probe.z))) {
-        point.copy(probe);
+        // The first open probe can sit on the boundary it crossed; half a step on keeps the sample inside the cell.
+        point.addScaledVector(direction, reach > 0 ? reach + CELL_EXIT_STEP / 2 : 0);
         break;
       }
     }
