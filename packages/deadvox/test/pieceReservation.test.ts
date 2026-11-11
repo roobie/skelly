@@ -1,6 +1,7 @@
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import type { Item } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { BlockEntities } from '@skelly/engine/world';
+import type { BlockEntity } from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
@@ -11,11 +12,14 @@ import { capture, createRuntime, encodeFixture, formatVersion, type Runtime } fr
 const base = baseContentSources();
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
+// A take-apart route lets a test reserve each fixture piece the way a player does: with a paused job on it.
+const { takeApart } = baseRegistry().furniture.get('chair')!;
 const door = (id: string) => ({
   id,
   name: 'Fixture door',
   size: [2, 4, 1],
   color: '#777777',
+  takeApart,
   door: {
     handlingSimSeconds: 0.5,
     methods: {
@@ -52,7 +56,9 @@ const { registry, issues } = buildFixtureRegistry([
           size: [1, 1, 1],
           color: '#ffffff',
           container: { pockets: [{ grid: [2, 2], handlingSimSeconds: 0.5 }] },
+          takeApart,
         },
+        { ...baseRegistry().furniture.get('ladder')!, id: 'fixture_ladder', takeApart },
       ],
       sounds: [{ ...[...baseRegistry().sounds.values()].find((sound) => sound.noise.enabled)!, id: 'fixture_strike' }],
       items: [
@@ -81,11 +87,16 @@ const placeFloor = (runtime: Runtime) => {
   }
 };
 
-/** The player at the origin, within reach of a locked door, an open one, a searched crate and a ladder. */
-const site = () => {
+/** The player at the origin with empty hands, within reach of a locked door, an open one, two crates and a ladder. */
+const bareSite = () => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
   placeFloor(runtime);
   const { inventory } = runtime;
+  for (const held of [inventory.hands.left, inventory.hands.right]) {
+    if (held && !inventory.consume(held)) {
+      throw new Error('Fixture hands did not empty');
+    }
+  }
   const locked = inventory.furnish({
     type: 'fixture_door',
     pos: [0, 1, 1],
@@ -97,14 +108,34 @@ const site = () => {
   const crate = inventory.furnish({ type: 'fixture_crate', pos: [-2, 1, -1], size: [1, 1, 1], facing: 'n' })!;
   runtime.entities.markSearched(crate);
   const chest = inventory.furnish({ type: 'fixture_crate', pos: [-2, 1, -2], size: [1, 1, 1], facing: 'n' })!;
-  const ladderSize = registry.furniture.get('ladder')!.size;
-  const ladder = inventory.furnish({ type: 'ladder', pos: [1, 1, -2], size: [...ladderSize], facing: 's' })!;
-  const tool = inventory.create('fixture_tool');
-  if (!(inventory.consume(inventory.hands.left!) && inventory.add(tool, { kind: 'hand', side: 'left' }))) {
+  const ladderSize = registry.furniture.get('fixture_ladder')!.size;
+  const ladder = inventory.furnish({ type: 'fixture_ladder', pos: [1, 1, -2], size: [...ladderSize], facing: 's' })!;
+  return { runtime, locked, plain, crate, chest, ladder, tool: inventory.create('fixture_tool') };
+};
+
+const arm = (runtime: Runtime, tool: Item) => {
+  if (!runtime.inventory.add(tool, { kind: 'hand', side: 'left' })) {
     throw new Error('Fixture tool did not reach the left hand');
   }
-  return { runtime, locked, plain, crate, chest, ladder, tool };
 };
+
+/** The bare site with the tool in the left hand. */
+const site = () => {
+  const placed = bareSite();
+  arm(placed.runtime, placed.tool);
+  return placed;
+};
+
+/** Starts and pauses taking each piece apart, the way a player reserves a piece; returns each job's work uid. */
+const pauseTakingApart = (runtime: Runtime, pieces: readonly BlockEntity[]): number[] =>
+  pieces.map((piece) => {
+    const refusal = runtime.session.crafting.takeApartEntity(piece.uid);
+    if (refusal) {
+      throw new Error(`Fixture job did not start: ${refusal}`);
+    }
+    runtime.sim.actions.stop();
+    return piece.work!.uid;
+  });
 
 const decodeInto = async (runtime: Runtime) => {
   const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
@@ -149,13 +180,13 @@ it('lets go of a grabbed ladder it removes, so the save encodes and decodes', as
   expect(loaded.session.ladderHold.snapshotState()).toBeNull();
 });
 
-it('refuses every use of a reserved piece, and allows each again once released', () => {
-  const { runtime, locked, plain, crate, chest, ladder, tool } = site();
+it('refuses every use of a piece a paused job holds, and allows each again once the job is cancelled', () => {
+  const { runtime, locked, plain, crate, chest, ladder, tool } = bareSite();
   const { session, inventory, entities } = runtime;
+  const pieces = [locked, plain, crate, chest, ladder];
+  const jobs = pauseTakingApart(runtime, pieces);
+  arm(runtime, tool);
   const item = inventory.create('fixture_tool');
-  if (inventory.hands.right) {
-    expect(inventory.consume(inventory.hands.right)).toBe(true);
-  }
   expect(inventory.add(item, { kind: 'hand', side: 'right' })).toBe(true);
   const doorOutcome = () => {
     session.queue.enqueueAction(DOOR_ACTION, 'Open the door', 0, { entityUid: plain.uid });
@@ -174,18 +205,14 @@ it('refuses every use of a reserved piece, and allows each again once released',
     ['search', () => session.search(chest)],
     ['lift', () => session.liftFurniture(crate.uid)],
   ];
-  const pieces = [locked, plain, crate, chest, ladder];
-  for (const piece of pieces) {
-    entities.reserve(piece);
-  }
   const reserved = entities.useRefusal(crate);
   expect(reserved).toBeDefined();
   for (const [use, run] of uses) {
     expect(run(), use).toBe(reserved);
   }
 
-  for (const piece of pieces) {
-    entities.release(piece);
+  for (const uid of jobs) {
+    expect(session.crafting.act(uid, 'apart')).toBeUndefined();
   }
   for (const [use, run] of uses) {
     if (use === 'lift') {
@@ -202,24 +229,24 @@ it('refuses every use of a reserved piece, and allows each again once released',
   expect(entities.carrying()).toBe(crate);
 });
 
-it('keeps the reserved set through a save, and forgets a piece once it is removed', async () => {
-  const { runtime, crate, plain } = site();
-  runtime.entities.reserve(crate);
-  runtime.entities.reserve(plain);
+it('keeps a paused job on its piece through a save, still holding it, and frees it once cancelled', async () => {
+  const { runtime, crate, plain } = bareSite();
+  const [crateJob] = pauseTakingApart(runtime, [crate, plain]);
 
   const loaded = await decodeInto(runtime);
-  expect(loaded.entities.snapshotState().reserved).toEqual(runtime.entities.snapshotState().reserved);
   const restored = loaded.entities.byUid(crate.uid)!;
-  expect(loaded.entities.useRefusal(restored)).toBeDefined();
+  expect(restored.work).toEqual(crate.work);
+  expect(loaded.entities.useRefusal(restored)).toBe(runtime.entities.useRefusal(crate));
 
-  loaded.entities.remove(restored);
-  expect(loaded.entities.snapshotState().reserved).toEqual([plain.uid]);
+  expect(loaded.session.crafting.act(crateJob!, 'apart')).toBeUndefined();
+  expect(loaded.entities.useRefusal(restored)).toBeUndefined();
+  expect(loaded.entities.useRefusal(loaded.entities.byUid(plain.uid)!)).toBeDefined();
 });
 
-it('refuses a saved reservation of a piece that is not there', () => {
-  const { runtime, crate } = site();
-  const state = runtime.entities.snapshotState();
-  const missing = state.nextUid;
-  expect(() => BlockEntities.restoreState(registry, { ...state, reserved: [crate.uid, missing] })).toThrow();
-  expect(() => BlockEntities.restoreState(registry, { ...state, reserved: [crate.uid] })).not.toThrow();
+it('refuses removing a piece that holds a world job, so the job never outlives its piece', () => {
+  const { runtime, crate } = bareSite();
+  pauseTakingApart(runtime, [crate]);
+  expect(() => runtime.entities.remove(crate)).toThrow();
+  expect(runtime.session.removeFurniture(crate)).toBe(runtime.entities.useRefusal(crate));
+  expect(runtime.entities.byUid(crate.uid)).toBe(crate);
 });

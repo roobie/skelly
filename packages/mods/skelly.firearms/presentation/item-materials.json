@@ -11,8 +11,8 @@
   "assets/models/barrel_pump_medium.glb": { "materials": ["steel-blued"] },
   "assets/models/barrel_sporter_long.glb": { "materials": ["steel-blued"] },
   "assets/models/bolt_carrier_ak.glb": { "materials": ["steel-blued"] },
-  "assets/models/bolt_carrier_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/bolt_carrier_ar.glb": { "materials": ["alu-anodized-black"] },
+  "assets/models/bolt_carrier_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/bolt_carrier_bolt.glb": { "materials": ["steel-blued"] },
   "assets/models/bolt_carrier_pipe.glb": { "materials": ["scrap-rusted"] },
   "assets/models/bolt_carrier_pump.glb": { "materials": ["steel-blued"] },
@@ -30,8 +30,8 @@
   "assets/models/case_5_d_56x45.glb": { "materials": ["brass"] },
   "assets/models/case_7_d_62x39.glb": { "materials": ["brass"] },
   "assets/models/case_9x19.glb": { "materials": ["brass"] },
-  "assets/models/charging_handle_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/charging_handle_ar.glb": { "materials": ["alu-anodized-black"] },
+  "assets/models/charging_handle_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/foregrip.glb": { "materials": ["polymer-black"] },
   "assets/models/forend_pump.glb": { "materials": ["wood-walnut"] },
   "assets/models/front_bead.glb": { "materials": ["steel-blued"] },
@@ -56,8 +56,8 @@
   "assets/models/improvised_suppressor.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/integral_magazine.glb": { "materials": ["steel-blued"] },
   "assets/models/lower_ak.glb": { "materials": ["steel-blued"] },
-  "assets/models/lower_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/lower_ar.glb": { "materials": ["alu-anodized-black"] },
+  "assets/models/lower_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/lower_pipe.glb": { "materials": ["scrap-rusted"] },
   "assets/models/lower_pump.glb": { "materials": ["steel-blued"] },
   "assets/models/lower_sporter.glb": { "materials": ["steel-blued"] },
@@ -85,13 +85,16 @@
   "assets/models/rear_sight_ak.glb": { "materials": ["steel-blued"] },
   "assets/models/rear_sight_sporter.glb": { "materials": ["steel-blued"] },
   "assets/models/receiver_ak.glb": { "materials": ["steel-blued"] },
-  "assets/models/receiver_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/receiver_ar.glb": { "materials": ["alu-anodized-black"] },
+  "assets/models/receiver_ar_large.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/receiver_pipe.glb": { "materials": ["scrap-rusted"] },
   "assets/models/receiver_pump.glb": { "materials": ["steel-blued"] },
   "assets/models/receiver_sporter.glb": { "materials": ["steel-blued"] },
   "assets/models/recoilless_round_container.glb": {
     "materials": ["paint-charcoal", "paint-olive", "plastic-yellow", "steel", "plastic-black"]
+  },
+  "assets/models/revolver.glb": {
+    "materials": ["steel-stainless", "steel-stainless", "steel-stainless", "wood-walnut"]
   },
   "assets/models/revolver_barrel.glb": { "materials": ["steel-stainless"] },
   "assets/models/revolver_crane.glb": { "materials": ["steel-stainless"] },
@@ -101,9 +104,6 @@
   "assets/models/revolver_grip.glb": { "materials": ["wood-walnut"] },
   "assets/models/revolver_hammer.glb": { "materials": ["steel-stainless"] },
   "assets/models/revolver_trigger.glb": { "materials": ["steel-stainless"] },
-  "assets/models/revolver.glb": {
-    "materials": ["steel-stainless", "steel-stainless", "steel-stainless", "wood-walnut"]
-  },
   "assets/models/rifle_ak.glb": {
     "materials": [
       "steel-blued",
@@ -199,7 +199,7 @@
   },
   "assets/models/three_clip_ammunition_carton.glb": { "materials": ["paperboard-brown", "paint-charcoal"] },
   "assets/models/tube_magazine.glb": { "materials": ["steel-blued"] },
-  "assets/models/weapon_sling_worn_jacket.glb": { "materials": ["cord-olive", "steel-grey"] },
+  "assets/models/weapon_sling.glb": { "materials": ["cord-olive", "steel-grey"] },
   "assets/models/weapon_sling_worn.glb": { "materials": ["cord-olive", "steel-grey"] },
-  "assets/models/weapon_sling.glb": { "materials": ["cord-olive", "steel-grey"] }
+  "assets/models/weapon_sling_worn_jacket.glb": { "materials": ["cord-olive", "steel-grey"] }
 }

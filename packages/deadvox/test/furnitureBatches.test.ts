@@ -2,7 +2,15 @@ import type { FurnitureDef } from '@skelly/engine/content';
 import type { ColumnReveal } from '@skelly/engine/mesh';
 import { BLOCK_SIZE, BlockEntities, type BlockEntity, CHUNK, type Facing, type Vec3 } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
-import { type EventDispatcher, InstancedMesh, type Material, Matrix4, type Mesh } from 'three';
+import {
+  type EventDispatcher,
+  InstancedMesh,
+  type Material,
+  Matrix4,
+  type Mesh,
+  Mesh as MeshClass,
+  type MeshLambertMaterial,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
@@ -24,10 +32,16 @@ const shaped = {
   ],
   solidFill: 0.01,
 };
+const door = {
+  ...plain,
+  id: 'fixture_batched_door',
+  size: [2, 3, 1],
+  door: { handlingSimSeconds: 0.5, methods: {} },
+};
 
 function fixture() {
   const { registry, issues } = buildFixtureRegistry([
-    { source: 'batched-fixture.json', data: { furniture: [plain, shaped] } },
+    { source: 'batched-fixture.json', data: { furniture: [plain, shaped, door] } },
   ]);
   if (issues.length > 0) {
     throw new Error(JSON.stringify(issues));
@@ -77,6 +91,34 @@ const drawsOf = (furniture: FurnitureMeshes, entity: BlockEntity, def: Furniture
       drawn.material === alone.material &&
       sameMatrix(drawn.matrix, alone.matrixWorld),
   );
+};
+
+/** What a view draws, as geometry, look and world transforms, in a form two views' own resources compare by. */
+const drawnState = (furniture: FurnitureMeshes) => {
+  furniture.group.updateMatrixWorld(true);
+  const look = ({ geometry, material }: Mesh) => {
+    const { color, vertexColors, defines } = material as MeshLambertMaterial;
+    return `${geometry.getAttribute('position').count}:${color.getHexString()}:${vertexColors}:${'SKY_ANCHOR' in (defines ?? {})}`;
+  };
+  const batches: string[] = [];
+  const loose: string[] = [];
+  for (const child of furniture.group.children) {
+    if (child instanceof InstancedMesh) {
+      const instances = Array.from({ length: child.count }, (_, index) => {
+        const instance = new Matrix4();
+        child.getMatrixAt(index, instance);
+        return instance.premultiply(child.matrixWorld).toArray().join(',');
+      });
+      batches.push(`${look(child)}|${instances.join(';')}`);
+      continue;
+    }
+    child.traverseVisible((part) => {
+      if (part instanceof MeshClass) {
+        loose.push(`${look(part)}|${part.matrixWorld.toArray().join(',')}`);
+      }
+    });
+  }
+  return { batches: batches.sort(), loose: loose.sort() };
 };
 
 describe('furniture batches', () => {
@@ -131,6 +173,50 @@ describe('furniture batches', () => {
     expect(drawsOf(furniture, still, def)).toHaveLength(1);
     expect(drawsOf(furniture, slid, def)).toHaveLength(1);
     expect(drawnInstances(furniture).filter(({ matrix }) => sameMatrix(matrix, before.matrixWorld))).toEqual([]);
+  });
+
+  it('draws after each change only what a fresh view looking at every piece draws', () => {
+    const { registry, entities } = fixture();
+    const reveal = revealUpTo(CHUNK);
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, 1);
+    const synced = () => {
+      furniture.sync(entities);
+      const fresh = new FurnitureMeshes(BLOCK_SIZE, reveal, undefined, 1);
+      fresh.sync(entities);
+      expect(drawnState(furniture)).toEqual(drawnState(fresh));
+      fresh.dispose();
+    };
+    const spec = (id: string, pos: Vec3) => ({
+      type: id,
+      size: registry.furniture.get(id)!.size,
+      pos,
+      facing: 'n' as const,
+    });
+    const kept = entities.add(spec(plain.id, [1, 1, 1]))!;
+    const slid = entities.add(spec(plain.id, [1, 1, 3]))!;
+    const removed = entities.add(spec(shaped.id, [4, 1, 6]))!;
+    const leaf = entities.add(spec(door.id, [CHUNK + 1, 1, 1]))!;
+    synced();
+
+    entities.slide(slid, [4, 1, 3]);
+    synced();
+    entities.setOpen(leaf, true);
+    synced();
+    reveal.revealedBelowX = 2 * CHUNK;
+    reveal.revealVersion += 1;
+    synced();
+    entities.lift(kept);
+    synced();
+    entities.place(kept, [CHUNK + 4, 1, 4]);
+    entities.remove(removed);
+    synced();
+
+    const saved = entities.snapshotState();
+    entities.slide(slid, [6, 1, 3]);
+    entities.setOpen(leaf, false);
+    synced();
+    entities.restoreState(saved);
+    synced();
   });
 
   it('frees a replaced batch alone, and on teardown frees each batch and shared resource once', () => {

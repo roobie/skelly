@@ -1,4 +1,9 @@
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
+import { BlockEntities, makeScale, registerLayoutVehicles, type Vec3, World, worldSolid } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import { withLayoutVehicles } from '../src/bench/placementWorld.ts';
 import {
   bodyIsClear,
   findShamblerBenchPlayer,
@@ -39,5 +44,44 @@ describe('shared shambler benchmark placement', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('rejects a body overlapping only a parked vehicle through the benchmark wiring, where the engine query accepts it', () => {
+    const blockSize = 0.5;
+    const site = 'vehicleFixture';
+    const fixture = {
+      ...registry,
+      layouts: new Map([
+        [
+          site,
+          {
+            id: site,
+            vehicles: [{ blueprint: 'hatchback', placementKey: 'fixture', position: [0, 0, 0], facing: 'n' }],
+          } as unknown as SiteLayoutDef,
+        ],
+      ]),
+    };
+    const world = new World();
+    const entities = new BlockEntities(fixture);
+    const inventory = new Inventory(fixture);
+    registerLayoutVehicles(inventory, fixture, site, blockSize);
+    const [id, vehicle] = [...inventory.vehicles.records][0]!;
+    const { min, max } = projectVehicleParts(fixture, id, vehicle, blockSize).flatMap(({ boxes }) => boxes)[0]!;
+    const [x, y, z] = min.map((low, axis) => Math.floor((low + max[axis]!) / 2 / blockSize));
+    const body = createPlayerBody(makeScale(blockSize), x! + 0.5, y!, z! + 0.5);
+    body.halfWidth = 0.1;
+    body.height = 0.1;
+    const engine = {
+      registry: fixture,
+      config: { scale: makeScale(blockSize), site },
+      spawn: { pos: [0, 0, 0] as Vec3 },
+      groundAt: () => 0,
+      world,
+      entities,
+    };
+    const blind = worldSolid(world, fixture, entities);
+
+    expect(bodyIsClear(body, blind)).toBe(true);
+    expect(bodyIsClear(body, withLayoutVehicles(engine).isSolid)).toBe(false);
   });
 });

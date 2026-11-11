@@ -1,4 +1,11 @@
-import { claimed, type Inventory, type Item, type Location, lightExposureFor } from '@skelly/engine/inventory';
+import {
+  claimed,
+  type Inventory,
+  type Item,
+  type Location,
+  lightExposureFor,
+  placedLightEntries,
+} from '@skelly/engine/inventory';
 import type { PoweredLight } from '@skelly/engine/world';
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
 import type { HeldItems } from './hands.ts';
@@ -143,7 +150,7 @@ export class LightPool {
     const tuning = claimed(inventory.registry.senses, 'player')!.light;
     const groundLiftMetres = tuning.groundLight.renderLiftMetres;
     const { pointDecay } = tuning.illumination;
-    const entries = [...inventory.items()]
+    const entries = placedLightEntries(inventory)
       .map((entry, order) => ({
         ...entry,
         order,

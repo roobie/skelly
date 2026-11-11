@@ -66,6 +66,7 @@ import {
   type ModelDef,
   type RecipeCategoryDef,
   type RecipeDef,
+  type RecoveryWork,
   type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
@@ -405,25 +406,33 @@ const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySe
   }
 };
 
+const checkRecoveryYields = (
+  { section, id, path, yields }: { section: ContentSection; id: string; path: string; yields: RecoveryWork['yields'] },
+  registry: Registry,
+  qualities: ReadonlySet<string>,
+  report: Report,
+) => {
+  yields.forEach((yieldItem, index) => {
+    if (!registry.items.has(yieldItem.item)) {
+      report(section, id, `${path}[${index}].item`, `no item "${yieldItem.item}"`);
+    } else if (section === 'items' && yieldItem.item === id) {
+      report(section, id, `${path}[${index}].item`, 'disassembly cannot yield the input item itself');
+    }
+    const quality = yieldItem.toolModifier?.quality;
+    if (quality !== undefined && !qualities.has(quality)) {
+      report(section, id, `${path}[${index}].toolModifier.quality`, `no tool quality "${quality}"`);
+    }
+  });
+};
+
 const checkDisassembly = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
-  const { disassembly } = item;
-  if (disassembly) {
-    disassembly.yields.forEach((yieldItem, index) => {
-      if (!registry.items.has(yieldItem.item)) {
-        report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
-      } else if (yieldItem.item === item.id) {
-        report(
-          'items',
-          item.id,
-          `.disassembly.yields[${index}].item`,
-          'disassembly cannot yield the input item itself',
-        );
-      }
-      const quality = yieldItem.toolModifier?.quality;
-      if (quality !== undefined && !qualities.has(quality)) {
-        report('items', item.id, `.disassembly.yields[${index}].toolModifier.quality`, `no tool quality "${quality}"`);
-      }
-    });
+  if (item.disassembly) {
+    checkRecoveryYields(
+      { section: 'items', id: item.id, path: '.disassembly.yields', yields: item.disassembly.yields },
+      registry,
+      qualities,
+      report,
+    );
   }
   item.salvage?.forEach((output, index) => {
     if (!registry.items.has(output.item)) {
@@ -1288,6 +1297,7 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   checkMaterialSounds(registry, report);
+  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const furniture of registry.furniture.values()) {
     if (liftableFurniture(furniture) && furniture.massKg === undefined) {
       report('furniture', furniture.id, '.massKg', 'liftable furniture needs an estimated mass');
@@ -1305,6 +1315,15 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    const takeApart = furniture.takeApart?.yield;
+    if (takeApart) {
+      checkRecoveryYields(
+        { section: 'furniture', id: furniture.id, path: '.takeApart.yield.yields', yields: takeApart.yields },
+        registry,
+        qualities,
+        report,
+      );
+    }
     furniture.ruin?.debris.forEach(({ item }, index) => {
       if (!registry.items.has(item)) {
         report('furniture', furniture.id, `.ruin.debris[${index}].item`, `no item "${item}"`);

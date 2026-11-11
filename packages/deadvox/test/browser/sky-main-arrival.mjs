@@ -66,6 +66,9 @@ export const mainSourceOverlays = [
   'presentation:presentation/painCue.ts',
   'presentation:presentation/worldLoading.ts',
   'presentation:render/playView.ts',
+  // The engine adds the chunk meshes' scene object and play reads its drawn chunks, so the chunk owner stays with
+  // them. The shadows keep the branch: they use only the caster selection both revisions share.
+  'presentation:render/chunks.ts',
   // Keep the view and figure together: their constructor and per-frame pose contracts change together. The
   // view builds the held items, whose arms hang from the figure's shoulders and whose displays sit on its
   // palm, so hands and held display stay on the figure's revision too.
@@ -313,8 +316,26 @@ function assertOverlayBoundary(packageSources, overlays, branchPaths) {
   }
 }
 
-/** Measurement hooks added to a served base startup source: engine readiness and first mesh delivery. */
+// Base startup reads one default fogginess from the branch's day-cycle content and one fogginess from the
+// branch's look controls; both became whole weather states (#1543). Content selectors and object members are
+// beyond export shims, so the base callers read the branch's weather instead. Drop once the base carries it.
+export function adaptMainWeather(source) {
+  return source
+    .replaceAll('{ fogginess: dayCycle.weather.defaultFogginess }', '{ ...dayCycle.weather.defaults }')
+    .replace(
+      'const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;',
+      'const defaultWeather = requireDayCycle(hooks.engine.registry).weather.defaults;',
+    )
+    .replaceAll('defaultFogginess,', 'defaultWeather,')
+    .replaceAll('fogginess: look.fogginess,', 'weather: look.weatherState,')
+    .replaceAll('look.fogginess', 'look.weatherState.fogginess');
+}
+
+/** Measurement hooks and contract adapters applied to a served base startup source. */
 const OVERLAY_ADAPTERS = {
+  'deadvox:bench/post.ts': adaptMainWeather,
+  'deadvox:debug/index.ts': adaptMainWeather,
+  'presentation:render/playView.ts': adaptMainWeather,
   'presentation:presentation/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',

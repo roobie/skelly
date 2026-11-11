@@ -25,6 +25,9 @@ local dome(zenith, horizonGlow, weight, cloudOpacity, stars, moon, sunLook) = {
   sun: sunLook,
 };
 
+// The looks' own clouds show at this cloudiness, and sessions start there.
+local fairCloudiness = 0.2;
+
 local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
 
 {
@@ -127,9 +130,23 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       },
     },
     weather: {
-      defaultFogginess: 0.2,
-      nearTighten: 0.85,
-      farTighten: 0.6,
+      defaults: { fogginess: 0.2, cloudiness: fairCloudiness, rain: 0 },
+      fog: { nearTighten: 0.85, farTighten: 0.6 },
+      cloudiness: {
+        fair: fairCloudiness,
+        clouds: { cover: 0.65, opacity: 1 },
+        physicalWeight: 0.15,
+        sun: 0.1,
+        light: 0.45,
+        skyColour: { saturation: 0.45, brightness: 0.9 },
+      },
+      rain: {
+        clouds: { cover: 1, opacity: 1 },
+        physicalWeight: 0,
+        sun: 0,
+        light: 0.6,
+        skyColour: { saturation: 0.6, brightness: 0.7 },
+      },
     },
     domeShape: {
       horizonBand: [0.015, 0.14],
@@ -150,6 +167,11 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       },
       cloudLight: { light: 0.8, ambient: 0.25, facing: 0.4 },
       cloudShape: { coverGain: 1.2, edgeSoftness: 0.3, horizonFade: [0.02, 0.14] },
+    },
+    environment: {
+      faceSize: 64,
+      rebakeChange: 0.02,
+      strength: 1,
     },
     clouds: {
       warp: 0.6,

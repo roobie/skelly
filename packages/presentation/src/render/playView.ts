@@ -71,6 +71,7 @@ import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { createSkyDome, type SkyDome } from './skyDome.ts';
+import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
@@ -224,6 +225,7 @@ type PlayViewEngine = Readonly<
     | 'isSolid'
     | 'entities'
     | 'skylight'
+    | 'materialPatches'
     | 'site'
     | 'scenario'
   >
@@ -266,12 +268,14 @@ export const createPlayView = (
   const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics);
   let pictures: ItemPictures | undefined;
   let skyDome: SkyDome | undefined;
+  let skyEnvironment: SkyEnvironment | undefined;
   /** The cloud clock: simulation seconds of the latest `syncWorld`. */
   let simSeconds = 0;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
     skyDome = createSkyDome(dayCycle.clouds, dayCycle.domeShape);
     scene.add(skyDome.mesh);
+    skyEnvironment = createSkyEnvironment(renderer, skyDome.openSky, dayCycle.environment, engine.materialPatches);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,
     });
@@ -286,7 +290,7 @@ export const createPlayView = (
     mood.restore(moodOf(look));
     shadows.restore(DEFAULT_SHADOWS);
   }
-  const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
+  const weather: Weather = { ...dayCycle.weather.defaults };
   const playerFigure = claimed(registry.figures, 'player')!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
@@ -320,6 +324,15 @@ export const createPlayView = (
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
     sunSource: engine.sky.light,
   });
+  /**
+   * Sky exposure dims the play scene's reflection per fragment (`src/render/skylight.ts`, `Skylight`); held items
+   * sit at the camera, so theirs takes the camera's, as their ambient light does.
+   */
+  const lightWithSky = (cameraSkyVisibility: number) => {
+    skyEnvironment?.light(scene, 1);
+    skyEnvironment?.light(held.warmUpTarget.scene, cameraSkyVisibility);
+    skyEnvironment?.patchNow(held.warmUpTarget.scene);
+  };
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -329,8 +342,12 @@ export const createPlayView = (
     leverProps.group,
     acidEffects.group,
   );
+  // The terrain stays: pagehide is not the end of the view's life. A save checkpoint fires it and play goes on, and
+  // the browser can restore the page from bfcache, so freeing the terrain here would leave the view using it freed. A
+  // real unload frees the GL context anyway; `ChunkMeshes.dispose` is for a real end of the view.
   const dispose = () => {
     models.dispose();
+    skyEnvironment?.dispose();
     if (skyDome) {
       scene.remove(skyDome.mesh);
       skyDome.dispose();
@@ -338,6 +355,7 @@ export const createPlayView = (
     pictures?.dispose();
     piles.dispose();
     furniture.dispose();
+    corpses.dispose();
     vehicles.dispose();
     caseEffects.dispose();
     gore.dispose();
@@ -608,6 +626,8 @@ export const createPlayView = (
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
+      skyEnvironment?.refresh(sky);
+      lightWithSky(skyVisibility);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
@@ -760,6 +780,8 @@ export const createPlayView = (
       if (!shadows) {
         return Promise.resolve();
       }
+      lightWithSky(1);
+      engine.materialPatches.apply(scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

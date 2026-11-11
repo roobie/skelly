@@ -109,7 +109,7 @@ describe('debug action dispatch', () => {
       ['debug.exposure-increase', 'debug.exposure-decrease', () => look.exposure],
       ['debug.grade-decrease', 'debug.grade-increase', () => -look.moodState.grade],
       ['debug.torch-increase', 'debug.torch-decrease', () => look.torch],
-      ['debug.fog-increase', 'debug.fog-decrease', () => look.fogginess],
+      ['debug.fog-increase', 'debug.fog-decrease', () => look.weatherState.fogginess],
       ['debug.bloom-clip-increase', 'debug.bloom-clip-decrease', () => look.bloomClip],
     ] as const;
     for (const [increase, decrease, value] of pairs) {
@@ -187,7 +187,7 @@ const makeActions = (
   let patterns = true;
   let occlusion = true;
   const mood = new FakeMood();
-  const weather: Weather = { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess };
+  const weather: Weather = { ...BASE_DAY_CYCLE.weather.defaults };
   const shadows = new FakeShadows();
   const flashlight = { strength: 1 };
   const look = new LookControls(

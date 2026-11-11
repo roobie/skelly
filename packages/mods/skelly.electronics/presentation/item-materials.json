@@ -1,5 +1,16 @@
 {
   "assets/models/aa_battery.glb": { "materials": ["steel-grey", "steel-stainless", "paint-charcoal"] },
+  "assets/models/amplifier.glb": {
+    "materials": [
+      "plastic-green",
+      "alu-bare",
+      "plastic-black",
+      "steel-stainless",
+      "plastic-blue",
+      "steel-grey",
+      "paint-cream"
+    ]
+  },
   "assets/models/amplifier_head.glb": {
     "materials": [
       "polymer-black",
@@ -10,17 +21,6 @@
       "leather-brown",
       "plastic-black",
       "rubber-black"
-    ]
-  },
-  "assets/models/amplifier.glb": {
-    "materials": [
-      "plastic-green",
-      "alu-bare",
-      "plastic-black",
-      "steel-stainless",
-      "plastic-blue",
-      "steel-grey",
-      "paint-cream"
     ]
   },
   "assets/models/antenna.glb": { "materials": ["brass", "copper"] },
@@ -481,6 +481,17 @@
       "steel-stainless"
     ]
   },
+  "assets/models/oven.glb": {
+    "materials": [
+      "rubber-black",
+      "paint-white",
+      "paint-charcoal",
+      "glass-grey",
+      "steel-stainless",
+      "glass-lens-green",
+      "plastic-black"
+    ]
+  },
   "assets/models/oven_cabinet.glb": {
     "materials": ["rubber-black", "paint-white", "paint-charcoal", "steel-galvanised", "plastic-red", "plastic-blue"]
   },
@@ -499,17 +510,6 @@
   "assets/models/oven_door.glb": { "materials": ["paint-charcoal", "glass-grey", "steel-stainless", "steel-grey"] },
   "assets/models/oven_stovetop.glb": {
     "materials": ["enamel-white", "steel-stainless", "paint-charcoal", "ceramic-white", "plastic-red", "plastic-blue"]
-  },
-  "assets/models/oven.glb": {
-    "materials": [
-      "rubber-black",
-      "paint-white",
-      "paint-charcoal",
-      "glass-grey",
-      "steel-stainless",
-      "glass-lens-green",
-      "plastic-black"
-    ]
   },
   "assets/models/panoramic_night_vision_goggles.glb": {
     "materials": ["plastic-matte-black", "plastic-charcoal", "glass-lens-green", "rubber-black", "alu-anodized-black"]
@@ -600,6 +600,9 @@
       "steel-stainless"
     ]
   },
+  "assets/models/radio.glb": {
+    "materials": ["plastic-charcoal", "alu-bare", "plastic-black", "paper-white", "plastic-red", "steel-stainless"]
+  },
   "assets/models/radio_repeater_module.glb": {
     "materials": [
       "alu-bare",
@@ -622,9 +625,6 @@
       "circuit-green",
       "plastic-black"
     ]
-  },
-  "assets/models/radio.glb": {
-    "materials": ["plastic-charcoal", "alu-bare", "plastic-black", "paper-white", "plastic-red", "steel-stainless"]
   },
   "assets/models/ram_stick.glb": { "materials": ["circuit-green", "foil-gold", "paper-white", "plastic-black"] },
   "assets/models/receiver.glb": {

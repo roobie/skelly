@@ -97,7 +97,8 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
       await decoded.decode();
       const x = Math.round(((point.x + 1) / 2) * decoded.naturalWidth);
       const y = Math.round(((1 - point.y) / 2) * decoded.naturalHeight);
-      const radius = 6;
+      // Sized for the test house's 640x360 viewport: a software-rendered frame costs time in proportion to its pixels.
+      const radius = 3;
       if (x < radius || y < radius || x + radius >= decoded.naturalWidth || y + radius >= decoded.naturalHeight) {
         throw new Error(`Floor sample projects outside the canvas: ${x},${y}`);
       }
@@ -518,11 +519,20 @@ const fakePointerLock = () => {
   };
 };
 
-// Returns the parts of world readiness once all hold or loading has failed, or always when asked,
-// so a failed or timed-out wait names the part that stayed false.
-const worldReadiness = (always) => {
+// Every wait in this stage follows a page load or a software-rendered frame, whose duration scales with machine
+// load, so a Playwright timer only turns a busy runner into a failure. A hung wait ends at the CI step's
+// `timeout-minutes` (`.github/workflows/deadvox-browser.yml`) or, run through `test:ui-browser`, at its `timeout`
+// (`packages/deadvox/package.json`, "test:ui-browser"). `timePhase` logs each phase's start and `enterWorld` each
+// readiness change, so the last lines before a kill name the stuck phase and the part that stayed false.
+const newStagePage = async (chromium, viewport) => {
+  const page = await chromium.newPage({ viewport });
+  page.setDefaultTimeout(0);
+  return page;
+};
+
+const readinessParts = () => {
   const mask = document.querySelector('#world-loading');
-  const parts = {
+  return {
     testHook: Boolean(globalThis.primaryActionTest),
     overlayHidden: document.querySelector('#overlay')?.hidden === true,
     pointerLocked: Boolean(document.pointerLockElement),
@@ -530,37 +540,49 @@ const worldReadiness = (always) => {
     loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
     maskHidden: mask?.hidden === true,
   };
-  const ready =
-    parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
-  return always || ready || parts.worldLoading === 'failed' ? parts : false;
 };
 
+const isEntered = (parts) =>
+  parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
+
+const READINESS_POLL_MS = 250;
+
+// Polls until the world is entered or its load has failed, logging each change of the parts.
 const enterWorld = async (page) => {
   await page.locator('#go').click();
   let parts;
-  try {
-    parts = await (await page.waitForFunction(worldReadiness, false)).jsonValue();
-  } catch (error) {
-    if (error.name !== 'TimeoutError') {
-      throw error;
+  let logged;
+  do {
+    parts = await page.evaluate(readinessParts);
+    const line = JSON.stringify(parts);
+    if (line !== logged) {
+      process.stdout.write(`WORLD_READINESS ${line}\n`);
+      logged = line;
     }
-    parts = await page.evaluate(worldReadiness, true);
-  }
+    if (!isEntered(parts) && parts.worldLoading !== 'failed') {
+      await new Promise((done) => setTimeout(done, READINESS_POLL_MS));
+    }
+  } while (!isEntered(parts) && parts.worldLoading !== 'failed');
   assert.equal(parts.worldLoading, 'ready', `the world becomes ready: ${JSON.stringify(parts)}`);
-  assert.ok(
-    parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.maskHidden,
-    `the ready world is entered: ${JSON.stringify(parts)}`,
-  );
+  assert.ok(isEntered(parts), `the ready world is entered: ${JSON.stringify(parts)}`);
 };
 
 const enterTestHouse = async (chromium, port) => {
-  const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
+  const page = await newStagePage(chromium, { width: 640, height: 360 });
   const pageErrors = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
     process.stdout.write(`PAGE_ERROR ${error.stack}\n`);
   });
   await page.addInitScript(fakePointerLock);
+  // At this viewport the HUD's quickbar covers the floor sample, and its pixels would drown the glow.
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const hudless = document.createElement('style');
+      hudless.textContent = '#hud, #quickbar, #prompt { visibility: hidden }';
+      document.head.append(hudless);
+    });
+  });
   await timePhase('testHouse-pixel-boot', async () => {
     await page.goto(
       browserStageUrl(
@@ -1022,7 +1044,7 @@ const opticZoomCheck = async (chromium, port) => {
 // Opens the lake scenario with the camera over the basin centre, so the small startup ring is the lake, and
 // enters the world. `hash` adds to the stage's own settings.
 const openLake = async (chromium, port, hash) => {
-  const page = await chromium.newPage({ viewport: { width: 640, height: 400 } });
+  const page = await newStagePage(chromium, { width: 640, height: 400 });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(fakePointerLock);

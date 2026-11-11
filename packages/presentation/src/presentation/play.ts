@@ -1676,6 +1676,7 @@ const startPlayWith = (
     keyboard: keyboardInput,
     weather,
     flashlight,
+    solidity: { isSolid: session.physicalSolid, isOpaque: session.isOpaque },
     body,
     inventory,
     character: session.character,
@@ -1702,7 +1703,7 @@ const startPlayWith = (
         cancelHeldInput();
         spectator.toggle(body, eye(), input.controls.yaw, input.controls.pitch);
       },
-      teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, engine.isSolid),
+      teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, session.physicalSolid),
     },
     thirdPerson,
     gunPose: { mode: () => debugGunPose.mode, toggle: (mode) => debugGunPose.toggle(mode) },
@@ -2649,7 +2650,7 @@ const startPlayWith = (
         blockSize: s,
         calendar: displayCalendar(),
         chunks: engine.world.chunks.values(),
-        drawn: engine.meshes.group.children,
+        drawn: [engine.meshes.batch],
         revealedPositions: revealActors
           ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],
@@ -3042,8 +3043,7 @@ const startPlayWith = (
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
-      skylight: () =>
-        engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]),
+      skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
         view.prepareLighting(sky);
         view.updateShadows(sky);

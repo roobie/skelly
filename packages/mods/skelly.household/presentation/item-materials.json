@@ -101,14 +101,14 @@
   "assets/models/fork.glb": { "materials": ["steel-stainless"] },
   "assets/models/funnel.glb": { "materials": ["plastic-orange"] },
   "assets/models/gasoline_cooker.glb": { "materials": ["brass", "brass-dull", "steel-grey"] },
+  "assets/models/glass.glb": { "materials": ["glass-clear"] },
   "assets/models/glass_bowl.glb": { "materials": ["glass-clear"] },
   "assets/models/glass_pipe.glb": { "materials": ["glass-clear", "glass-lens-green", "coal-black"] },
-  "assets/models/glass.glb": { "materials": ["glass-clear"] },
   "assets/models/hair_curler.glb": { "materials": ["foam-orange", "plastic-pink"] },
+  "assets/models/hair_dye.glb": { "materials": ["plastic-white", "plastic-black", "plastic-charcoal", "cloth-brown"] },
   "assets/models/hair_dye_kit.glb": {
     "materials": ["paper-white", "plastic-pink", "leather-chestnut", "body-skin-player"]
   },
-  "assets/models/hair_dye.glb": { "materials": ["plastic-white", "plastic-black", "plastic-charcoal", "cloth-brown"] },
   "assets/models/hairbrush.glb": {
     "materials": ["plastic-charcoal", "rubber-black", "plastic-white", "plastic-black"]
   },
@@ -161,6 +161,7 @@
     ]
   },
   "assets/models/makeshift_wire_sieve.glb": { "materials": ["steel-bright", "steel-grey", "steel-stainless"] },
+  "assets/models/mannequin.glb": { "materials": ["plastic-gloss-white", "steel-grey"] },
   "assets/models/mannequin_decoy.glb": {
     "materials": [
       "leather-patent",
@@ -176,7 +177,6 @@
       "steel-grey"
     ]
   },
-  "assets/models/mannequin.glb": { "materials": ["plastic-gloss-white", "steel-grey"] },
   "assets/models/mess_kit.glb": { "materials": ["alu-bare", "steel-grey", "paint-charcoal", "rubber-black"] },
   "assets/models/metal_butcher_rack.glb": {
     "materials": ["steel-galvanised", "steel-grey", "webbing-black", "steel-bright", "rubber-black"]

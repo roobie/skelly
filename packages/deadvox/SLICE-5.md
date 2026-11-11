@@ -358,11 +358,9 @@ lane the order is a dependency; across lanes only the joins named here hold.
   as on movable pieces (`DESIGN.md`, "Moving furniture"). Player-facing
   world work, repair and take apart alike, is one design and queues behind the #1469
   crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
-  the take-apart command over the existing reservation and yield contract (see
-  `packages/engine/src/core/disassembly.ts`, `planDisassembly`, and
-  `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`), bulk-stock
-  pieces and rubble clearing under "Settled base-building playtest rules", then cell
-  repair, placement and the kit content.
+  bulk-stock pieces and rubble clearing under "Settled base-building playtest rules",
+  over the take-apart command (`packages/engine/src/core/craftCommands.ts`,
+  `CraftCommands.takeApartEntity`), then cell repair, placement and the kit content.
 - **Built systems.** Appliance controls and processes after placement; brute
   knockback and displacement independently, since nothing above needs it; fire last,
   under "Settled fire and exposure rules".
@@ -376,20 +374,7 @@ lane the order is a dependency; across lanes only the joins named here hold.
 
 The next rounds, in dispatch order:
 
-1. **Take a world piece apart through work, engine only.** A recorded player command
-   that runs disassembly on a world piece under the existing work, reservation and
-   yield contract, so no second ownership path appears; see
-   `packages/engine/src/game/commandRouter.ts`, `craftRepairEntity`, and
-   `packages/engine/src/core/disassembly.ts`, `planDisassembly`. The menu offers no
-   Take apart entry yet: its review is the same world-work view as repair's, and that
-   view is one design with the #1469 crafting view, so the entry, the review and Start
-   arrive together with repair's; see `DESIGN.md`, "World repair selection". The
-   definition's take-apart route is an authored yield, or a parts blueprint for a kind
-   that authors one, never both; the yield lands in a pile where the actor stood, and
-   a paused job lives on its reserved piece. Those rules and their reasons are in
-   `DESIGN.md`, "World repair selection"; the command's own reasons go in `DESIGN.md`,
-   "Edits persist".
-2. **Adopt the first wave in a base-building scenario pack.** A committed scenario
+1. **Adopt the first wave in a base-building scenario pack.** A committed scenario
    pack on an existing authored site with buildings, so the other lanes have a
    shipped scenario to test in before the new site exists; see `docs/url-mods.md`,
    "Committed scenarios", and `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`,

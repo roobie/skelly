@@ -5,6 +5,14 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';
 import { skyAt } from '../src/core/sky.ts';
 
+const OVERCAST = {
+  clouds: { cover: 1, opacity: 1 },
+  physicalWeight: 0,
+  sun: 0,
+  light: 0.5,
+  skyColour: { saturation: 0.5, brightness: 0.8 },
+};
+
 const NIGHT_DOME = {
   zenith: '#102030',
   horizonGlow: '#304050',
@@ -59,7 +67,12 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     day: look(DAY_DOME),
     dusk: look(NIGHT_DOME),
   },
-  weather: { defaultFogginess: 0.2, nearTighten: 0.5, farTighten: 0.5 },
+  weather: {
+    defaults: { fogginess: 0.2, cloudiness: 0.2, rain: 0 },
+    fog: { nearTighten: 0.5, farTighten: 0.5 },
+    cloudiness: { ...OVERCAST, fair: 0.2 },
+    rain: OVERCAST,
+  },
   domeShape: {
     horizonBand: [0.02, 0.1],
     glowBand: [0.1, 0.5],
@@ -81,6 +94,7 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     cloudShape: { coverGain: 1, edgeSoftness: 0.25, horizonFade: [0.03, 0.12] },
   },
   clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5 }] },
+  environment: { faceSize: 32, rebakeChange: 0.05, strength: 1 },
 });
 
 const state = dayPhaseAt(cycle, 0);

@@ -29,7 +29,7 @@ describe('debug weathering controls', () => {
     };
     const look = new LookControls(undefined, meshes, new FakeMood(), {
       defaults: LOOK_FIXTURE,
-      weather: { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess },
+      weather: { ...BASE_DAY_CYCLE.weather.defaults },
       flashlight: { strength: 1 },
       weathering: {
         state: { profileId: defaultProfile.id, settings: { ...defaultProfile } },

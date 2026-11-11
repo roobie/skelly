@@ -1,5 +1,6 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
 
+import type { BlockEntity } from './blockEntities.ts';
 import { BODY_REGIONS, type BodyRegion } from './body.ts';
 import type { Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
@@ -821,13 +822,17 @@ export class LongActions {
       }
     }
   }
-  /** Cancels the job that names a piece of furniture: a door it forces, or what it rests on. */
-  cancelNaming(entityUid: number): void {
+  /** Cancels the job that names a piece of furniture: a door it forces, what it rests on, or the work it holds. */
+  cancelNaming(entity: BlockEntity): void {
     const job = this.current;
-    const names =
-      job?.jobType === 'forceDoor'
-        ? job.entityUid === entityUid
-        : (job?.jobType === 'rest' || job?.jobType === 'sleep') && job.rest.furnitureUid === entityUid;
+    let names = false;
+    if (job?.jobType === 'forceDoor') {
+      names = job.entityUid === entity.uid;
+    } else if (job?.jobType === 'rest' || job?.jobType === 'sleep') {
+      names = job.rest.furnitureUid === entity.uid;
+    } else if (job?.jobType === 'craft') {
+      names = job.workUid === entity.work?.uid;
+    }
     if (names) {
       this.cancel();
     }

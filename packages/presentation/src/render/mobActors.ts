@@ -32,8 +32,9 @@
 //
 // Dismemberment: packages/engine/src/core/actorState.ts's Actor.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live actor,
-// just re-expands actor.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
-// "just work": a restored actor's severed list is already exactly right). A severed bone is hidden by
+// just re-expands actor.severed via severedBoneSet whenever that list grows (the simulation only appends
+// to it), which is what makes save/load "just work": a restored actor's severed list is already exactly
+// right. A severed bone is hidden by
 // writing an all-zero 3x4 matrix for it in the shared texture (packZeroBone) — a zero matrix collapses
 // every one of that bone's vertices to the origin, degenerate, so hiding it needs no shader logic at all.
 // The severed-bone bitmask (crowd.ts's packSeveredMask) exists only for the *gore* effect: a survivor
@@ -297,9 +298,15 @@ interface ActorRenderState extends SlotHolder {
   crawlFall?: { physics: Ragdoll; elapsedRealSeconds: number; released: boolean } | undefined;
   drawnFall?: Map<number, Transform> | undefined;
   lastPose: Pose | undefined;
+  /** `lastPose`'s bone transforms at the body's scale, in bone order: what the row is drawn from. */
+  readonly bodyTransforms: MutableTransform[];
   lastPlacement: CrowdPlacement | undefined;
-  /** Every input the last full pose pack read; equal inputs and a resting gaze draw the same row again. */
+  /** Every input `lastPose` read; equal inputs and a resting gaze pose the same body again. */
   poseStamp: readonly (number | string)[] | undefined;
+  /** Bone indices `actor.severed` hides, kept until the list grows. */
+  severed: SeveredBones | undefined;
+  /** What the row holds besides `bodyTransforms`; undefined once the pose or row changes underneath it. */
+  row: RowInputs | undefined;
   /** The simulation actor last drawn in this slot. */
   actor: Actor | undefined;
   lastSeenFrame: number;
@@ -482,6 +489,30 @@ const gazeAtRest = (state: LookAtState): boolean =>
 
 const sameStamp = (a: readonly (number | string)[], b: readonly (number | string)[]): boolean =>
   a.length === b.length && a.every((value, index) => value === b[index]);
+
+/** The simulation only appends to `actor.severed`, so the list and its length identify what it hides. */
+interface SeveredBones {
+  readonly parts: readonly string[];
+  readonly count: number;
+  readonly indices: ReadonlySet<number>;
+}
+
+/** Everything a skeleton row packs besides its bone transforms. */
+interface RowInputs {
+  readonly placement: CrowdPlacement;
+  readonly severedIndices: ReadonlySet<number>;
+  readonly bloodiness: number;
+  readonly charge: number;
+}
+
+const sameRow = (a: RowInputs, b: RowInputs): boolean =>
+  a.placement.x === b.placement.x &&
+  a.placement.y === b.placement.y &&
+  a.placement.z === b.placement.z &&
+  a.placement.yawRad === b.placement.yawRad &&
+  a.severedIndices === b.severedIndices &&
+  a.bloodiness === b.bloodiness &&
+  a.charge === b.charge;
 
 /** The sac's emission multiplier: idle at rest, rising to charged across the spit wind-up. */
 const acidCharge = (actor: Actor): number => {
@@ -1078,8 +1109,11 @@ export class MobActorMeshes implements ActorRenderer {
       instanceIndex,
       crawling: actorCrawls(actor, variant.body),
       lastPose: undefined,
+      bodyTransforms: allocateBoneTransforms(variant.bones.length),
       lastPlacement: undefined,
       poseStamp: undefined,
+      severed: undefined,
+      row: undefined,
       actor: undefined,
       lastSeenFrame: this.frameCounter,
     };
@@ -1543,9 +1577,7 @@ export class MobActorMeshes implements ActorRenderer {
     }
     const variant = this.variants[state.variantIndex]!;
     if (actor && !state.drawnFall && !(actorCrawls(actor, variant.body) && !state.crawling && state.lastPose)) {
-      const posed = this.posedFrame(state, actor, this.currentRenderPlacement(actor));
-      state.lastPose = posed.pose;
-      state.lastPlacement = posed.placement;
+      this.keepPose(state, variant, this.posedFrame(state, actor, this.currentRenderPlacement(actor)));
     }
     if (!(state.lastPose && state.lastPlacement)) {
       return undefined;
@@ -1866,33 +1898,17 @@ export class MobActorMeshes implements ActorRenderer {
     }
   }
 
-  /** FK from `pose`, then packs every bone at `globalRow`: severed bones get a zero matrix (hidden — see
-   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask and the
-   * bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared by
-   * packPose (a live actor) and packCorpse; packDebris packs its own inverse (only the carried subtree is
+  /** Packs every bone of `transforms` (scaled, in bone order) at `globalRow`: severed bones get a zero matrix
+   * (hidden — see packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask
+   * and the bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared
+   * by packPlaced (a live actor) and packCorpse; packDebris packs its own inverse (only the carried subtree is
    * real) directly, since the two cases share little beyond "call packCrowdBoneMatrix or packZeroBone". */
   private packSkeleton(
     globalRow: number,
     variant: Variant,
-    frame: {
-      pose: Pose;
-      placement: CrowdPlacement;
-      severedIndices: ReadonlySet<number>;
-      bloodiness: number;
-      charge: number;
-      transforms?: ReadonlyMap<string, Transform>;
-    },
+    transforms: readonly MutableTransform[],
+    { placement, severedIndices, bloodiness, charge }: RowInputs,
   ): void {
-    const { pose, placement, severedIndices, bloodiness, charge, transforms } = frame;
-    if (transforms) {
-      for (let bone = 0; bone < variant.bones.length; bone++) {
-        const source = transforms.get(variant.bones[bone]!.id)!;
-        copyScaledTransform(source, variant.scratch[bone]!, variant.scale);
-      }
-    } else {
-      boneTransformsInto(variant.bones, pose, variant.parentIndex, variant.scratch);
-      scaleTransformsInPlace(variant.scratch, variant.scale);
-    }
     for (let bone = 0; bone < variant.bones.length; bone++) {
       if (severedIndices.has(bone)) {
         this.packZeroBone(globalRow, bone);
@@ -1900,7 +1916,7 @@ export class MobActorMeshes implements ActorRenderer {
         packCrowdBoneMatrix(
           this.textureData,
           { layout: this.layout, slot: globalRow, bone },
-          variant.scratch[bone]!,
+          transforms[bone]!,
           placement,
         );
       }
@@ -1996,37 +2012,53 @@ export class MobActorMeshes implements ActorRenderer {
     };
   }
 
-  /** Packs the shared simulation pose and its FK into the texture, hiding whatever actor.severed currently
-   * covers (actor.severed is the only source of truth, re-expanded every call). */
-  private packPose(
-    state: ActorRenderState,
-    variant: Variant,
-    actor: Actor,
-    frame: {
-      placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number };
-      gazeFrameDelta: number;
-      presentationSimSeconds: number;
-    },
-  ): void {
-    const posed = this.posedFrame(state, actor, frame.placement, {
-      dt: frame.gazeFrameDelta,
-      presentationSimSeconds: frame.presentationSimSeconds,
-    });
-    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
-    if (state.crawlFall) {
-      this.packCrawlFall(state, variant, actor, { posed, severedIndices });
-    } else {
-      state.drawnFall = undefined;
-      this.packSkeleton(state.globalRow, variant, {
-        ...posed,
-        severedIndices,
-        bloodiness: this.bloodiness(actor),
-        charge: acidCharge(actor),
-      });
+  /** Keeps `posed` as the actor's pose, which neither its stamp nor its packed row describes yet. */
+  private keepPose(state: ActorRenderState, variant: Variant, posed: ReturnType<MobActorMeshes['posedFrame']>): void {
+    for (let bone = 0; bone < variant.bones.length; bone++) {
+      copyScaledTransform(posed.transforms.get(variant.bones[bone]!.id)!, state.bodyTransforms[bone]!, variant.scale);
     }
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
-    state.actor = actor;
+    state.poseStamp = undefined;
+    state.row = undefined;
+  }
+
+  /** Bone indices `actor.severed` hides (it is the only source of truth), re-expanded only when it grows. */
+  private severedIndicesOf(state: ActorRenderState, variant: Variant, actor: Actor): ReadonlySet<number> {
+    const { severed } = state;
+    if (severed?.parts === actor.severed && severed.count === actor.severed.length) {
+      return severed.indices;
+    }
+    const indices = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
+    state.severed = { parts: actor.severed, count: actor.severed.length, indices };
+    return indices;
+  }
+
+  /** Draws the kept pose at this frame's placement, leaving a row that already holds exactly that untouched. */
+  private packPlaced(
+    state: ActorRenderState,
+    variant: Variant,
+    actor: Actor,
+    placement: { worldPos: Vec3; yaw: number },
+  ): void {
+    state.drawnFall = undefined;
+    const row: RowInputs = {
+      placement: {
+        x: placement.worldPos[0],
+        y: placement.worldPos[1],
+        z: placement.worldPos[2],
+        yawRad: placement.yaw,
+      },
+      severedIndices: this.severedIndicesOf(state, variant, actor),
+      bloodiness: this.bloodiness(actor),
+      charge: acidCharge(actor),
+    };
+    state.lastPlacement = row.placement;
+    if (state.row && sameRow(state.row, row)) {
+      return;
+    }
+    this.packSkeleton(state.globalRow, variant, state.bodyTransforms, row);
+    state.row = row;
   }
 
   private releaseCrawlFall(state: ActorRenderState): void {
@@ -2054,7 +2086,7 @@ export class MobActorMeshes implements ActorRenderer {
           direction: -1,
           seed: this.options.ragdollSeed ?? state.id ^ actor.figureSeed,
           ground: this.rigidWorld(),
-          excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, actor.severed))),
+          excluded: this.severedIndicesOf(state, variant, actor),
           ...(state.fallHit ? { launch: state.fallHit } : {}),
           motion: this.options.ragdoll.crawlFall.motion,
           motionScale: this.options.ragdoll.crawlFall.motionScale,
@@ -2062,7 +2094,7 @@ export class MobActorMeshes implements ActorRenderer {
       };
     }
     if (state.crawlFall && !state.crawlFall.released) {
-      const excluded = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
+      const excluded = this.severedIndicesOf(state, variant, actor);
       if ([...excluded].some((index) => !state.crawlFall!.physics.excluded.has(index))) {
         this.ragdolls?.sever(state.crawlFall.physics, variant.body, excluded);
       }
@@ -2139,31 +2171,6 @@ export class MobActorMeshes implements ActorRenderer {
     }
   }
 
-  private packCachedPose(
-    state: ActorRenderState,
-    variant: Variant,
-    actor: Actor,
-    placement: { worldPos: Vec3; yaw: number },
-  ): void {
-    state.drawnFall = undefined;
-    const crowdPlacement: CrowdPlacement = {
-      x: placement.worldPos[0],
-      y: placement.worldPos[1],
-      z: placement.worldPos[2],
-      yawRad: placement.yaw,
-    };
-    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
-    this.packSkeleton(state.globalRow, variant, {
-      pose: state.lastPose!,
-      placement: crowdPlacement,
-      severedIndices,
-      bloodiness: this.bloodiness(actor),
-      charge: acidCharge(actor),
-    });
-    state.lastPlacement = crowdPlacement;
-    state.actor = actor;
-  }
-
   /** No LOD/frustum culling: the shared corpse cap bounds presentation work regardless of camera distance. */
   private corpsePose(corpse: Corpse, variant: Variant): Pose {
     if (corpse.settledPose) {
@@ -2232,8 +2239,9 @@ export class MobActorMeshes implements ActorRenderer {
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
-    this.packSkeleton(corpse.globalRow, variant, {
-      pose,
+    boneTransformsInto(variant.bones, pose, variant.parentIndex, variant.scratch);
+    scaleTransformsInPlace(variant.scratch, variant.scale);
+    this.packSkeleton(corpse.globalRow, variant, variant.scratch, {
       placement: crowdPlacement,
       severedIndices,
       bloodiness: corpse.bloodiness,
@@ -2315,30 +2323,39 @@ export class MobActorMeshes implements ActorRenderer {
       presentationSimSeconds: number;
     },
   ): void {
+    state.actor = actor;
     const bounds = this.actorPoseBounds(actor, frame.placement);
-    if (!state.crawlFall && this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
-      state.poseStamp = undefined;
-      this.packCachedPose(state, variant, actor, frame.placement);
-      return;
+    const keepsPose = !state.crawlFall && state.lastPose && this.shouldSkipPose(bounds.center, bounds.radius);
+    if (!keepsPose) {
+      const stamp = this.poseStampOf(state, variant, actor, frame.placement);
+      if (!(stamp && state.poseStamp && sameStamp(stamp, state.poseStamp))) {
+        const posed = this.posedFrame(state, actor, frame.placement, {
+          dt: frame.gazeFrameDelta,
+          presentationSimSeconds: frame.presentationSimSeconds,
+        });
+        this.keepPose(state, variant, posed);
+        state.poseStamp = stamp;
+        if (state.crawlFall) {
+          this.packCrawlFall(state, variant, actor, {
+            posed,
+            severedIndices: this.severedIndicesOf(state, variant, actor),
+          });
+          return;
+        }
+      }
     }
-    const stamp = this.poseStampOf(state, variant, actor, frame.placement);
-    if (stamp && state.poseStamp && sameStamp(stamp, state.poseStamp)) {
-      state.actor = actor;
-      return;
-    }
-    this.packPose(state, variant, actor, frame);
-    state.poseStamp = stamp;
+    this.packPlaced(state, variant, actor, frame.placement);
   }
 
   /**
-   * The numbers a full pose pack reads, or undefined when the pose also depends on something else (a fall in
-   * progress, a gaze that is turning or following the player, a cached pose from a skipped frame).
+   * The numbers posing the body reads, or undefined when the pose also depends on something else (a fall in
+   * progress, a gaze that is turning or following the player). Placement is not among them: the pose is root-local.
    */
   private poseStampOf(
     state: ActorRenderState,
     variant: Variant,
     actor: Actor,
-    placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number },
+    placement: { headYaw: number },
   ): (number | string)[] | undefined {
     if (state.crawlFall || state.drawnFall || actor.spitWindup > 0) {
       return undefined;
@@ -2351,15 +2368,7 @@ export class MobActorMeshes implements ActorRenderer {
     ) {
       return undefined;
     }
-    const { worldPos, position } = placement;
     return [
-      worldPos[0],
-      worldPos[1],
-      worldPos[2],
-      position[0],
-      position[1],
-      position[2],
-      placement.yaw,
       placement.headYaw,
       actor.gaitPhase,
       actor.horizontalSpeed,
@@ -2369,8 +2378,6 @@ export class MobActorMeshes implements ActorRenderer {
       actor.wanderClock,
       actor.stanceWeight ?? -1,
       actor.hitFlinchTime ?? -1,
-      this.bloodiness(actor),
-      acidCharge(actor),
       actor.regions.head!,
       actor.regions.leftLeg!,
       actor.regions.rightLeg!,

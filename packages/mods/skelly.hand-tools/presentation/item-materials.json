@@ -352,10 +352,10 @@
   "assets/models/rifle_maintenance_kit.glb": {
     "materials": ["nylon-black", "webbing-black", "steel-grey", "webbing-olive-dark", "plastic-grey", "paint-charcoal"]
   },
+  "assets/models/ring_stand.glb": { "materials": ["paint-oxblood", "steel-stainless", "iron-dull"] },
   "assets/models/ring_stand_clamps.glb": {
     "materials": ["paper-butcher", "cardboard-corrugated", "steel-bright", "alu-bare", "plastic-red", "tape-silver"]
   },
-  "assets/models/ring_stand.glb": { "materials": ["paint-oxblood", "steel-stainless", "iron-dull"] },
   "assets/models/sand_bath.glb": { "materials": ["iron-dull", "brick-buff", "glass-clear"] },
   "assets/models/sandpaper.glb": { "materials": ["rust-red", "paper-butcher"] },
   "assets/models/saw.glb": { "materials": ["wood-pine", "steel-bright", "steel-grey", "brass"] },
@@ -364,12 +364,12 @@
   },
   "assets/models/scissor_jack.glb": { "materials": ["steel-parkerized", "steel-grey", "paint-terracotta"] },
   "assets/models/scissors.glb": { "materials": ["steel-stainless", "plastic-black", "steel-grey"] },
+  "assets/models/screwdriver.glb": { "materials": ["plastic-yellow", "steel-blued"] },
   "assets/models/screwdriver_set.glb": {
     "materials": ["plastic-charcoal", "plastic-matte-black", "plastic-red", "steel-stainless", "plastic-yellow"]
   },
-  "assets/models/screwdriver.glb": { "materials": ["plastic-yellow", "steel-blued"] },
-  "assets/models/scythe_blade.glb": { "materials": ["steel", "steel-blued", "steel-stainless"] },
   "assets/models/scythe.glb": { "materials": ["wood-oak", "steel-grey", "wood-birch", "steel-heat-tint"] },
+  "assets/models/scythe_blade.glb": { "materials": ["steel", "steel-blued", "steel-stainless"] },
   "assets/models/separating_funnel.glb": { "materials": ["glass-clear"] },
   "assets/models/sewing_kit.glb": { "materials": [null, null, null, null] },
   "assets/models/sewing_repair_kit.glb": {

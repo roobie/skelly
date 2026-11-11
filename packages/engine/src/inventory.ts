@@ -91,6 +91,7 @@ export {
   lightExposureFor,
   lightInHands,
   offHandUse,
+  placedLightEntries,
   SunExposureCache,
   supplyShare,
   swapBattery,

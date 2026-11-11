@@ -1,8 +1,8 @@
 import { BundleAdmission, type BundleStamp } from '../core/bundleAdmission.ts';
+import { compareCodeUnits } from '../core/codeUnitOrder.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
 import {
   admitPacks,
-  comparePackKeys,
   type PackInput,
   type PackManifest,
   packStartIssues,
@@ -27,7 +27,7 @@ export interface BundledPack {
 /** The product's shipped packs, ordered by root, from manifests keyed by `<root>/pack/manifest.json`. */
 export const bundledPacksFrom = (manifests: Readonly<Record<string, PackManifest>>): readonly BundledPack[] =>
   Object.entries(manifests)
-    .sort(([left], [right]) => comparePackKeys(left, right))
+    .sort(([left], [right]) => compareCodeUnits(left, right))
     .map(([path, manifest]) => ({ root: path.slice(0, -MANIFEST_SUFFIX.length), manifest }));
 
 /** The product's shipped packs and their content, read by the product; this module names no pack root. */

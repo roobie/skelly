@@ -31,11 +31,11 @@
     "materials": ["steel-grey", "plastic-black", "ceramic-white", "steel-stainless", "crystal-glow-blue"]
   },
   "assets/models/ember_carrier.glb": { "materials": ["steel-galvanised", "steel-grey", "steel-bright", "coal-black"] },
-  "assets/models/everburning_torch_candelabra.glb": {
-    "materials": ["wood-oak", "iron-dull", "wood-walnut", "brass-dull", "cloth-charred", "glow-flame"]
-  },
   "assets/models/everburning_torch.glb": {
     "materials": ["wood-oak", "brass-dull", "glow-flame", "cloth-yellow", "wood-walnut"]
+  },
+  "assets/models/everburning_torch_candelabra.glb": {
+    "materials": ["wood-oak", "iron-dull", "wood-walnut", "brass-dull", "cloth-charred", "glow-flame"]
   },
   "assets/models/everburning_wall_sconce.glb": {
     "materials": ["wood-oak", "iron-dull", "wood-walnut", "brass-dull", "cloth-charred", "glow-flame"]
@@ -47,8 +47,8 @@
     "materials": ["alu-bare", "steel-stainless", "plastic-black", "cloth-cream", "steel-grey"]
   },
   "assets/models/gasoline_lantern.glb": { "materials": ["paint-red", "steel-grey", "brass", "glass-clear"] },
-  "assets/models/glow_light_covered.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
   "assets/models/glow_light.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
+  "assets/models/glow_light_covered.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
   "assets/models/glowstick.glb": { "materials": ["chemical-light tube", "end caps"] },
   "assets/models/headlamp.glb": {
     "materials": ["cord-olive", "plastic-red", "steel-grey", "glass-grey", "paint-charcoal"]

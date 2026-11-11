@@ -1,8 +1,15 @@
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import type { FromMesher, MesherInit, MesherPort, MesherSource, ToMesher } from '@skelly/engine/mesh';
-import { buildRequestedMesh } from '@skelly/engine/mesh';
+import type {
+  FromMesher,
+  MesherInit,
+  MesherPort,
+  MesherSource,
+  ReceivedMeshRequest,
+  ToMesher,
+} from '@skelly/engine/mesh';
+import { buildRequestedMesh, HeldChunks } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
@@ -16,9 +23,10 @@ import { skyFixture } from './fixtures/sky.ts';
 class OwnedWorker implements MesherPort {
   static instances: OwnedWorker[] = [];
   handlers: MesherHandlers | undefined;
-  readonly waiting: Exclude<ToMesher, { type: 'init' }>[] = [];
+  readonly waiting: (Exclude<ToMesher, { type: 'init' | 'mesh' }> | ReceivedMeshRequest)[] = [];
   readonly posted: string[] = [];
   init: MesherInit | undefined;
+  private readonly held = new HeldChunks();
   constructor() {
     OwnedWorker.instances.push(this);
   }
@@ -31,7 +39,7 @@ class OwnedWorker implements MesherPort {
       this.init = copy;
       return;
     }
-    this.waiting.push(copy);
+    this.waiting.push(copy.type === 'mesh' ? this.held.receive(copy) : copy);
     this.posted.push(copy.type);
   }
   replyNext(index = 0) {
@@ -214,16 +222,14 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     }
     expect(inventory.snapshotState()).toEqual(snapshot);
     meshes.selectShadowCasters(() => true, DoubleSide);
-    const shadows = meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray());
+    const shadows = meshes.origins('shadow');
     const camera = new OrthographicCamera(-200, 200, 200, -200, 0.1, 1000);
     camera.position.set(0, 100, 100);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld();
     meshes.cull(camera);
-    expect(meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray())).toEqual(
-      shadows,
-    );
-    return shadows.map(([x, , z]) => `${x! / CHUNK},${z! / CHUNK}`);
+    expect(meshes.origins('main')).toEqual(shadows);
+    return shadows.map(([x, , z]) => `${x / CHUNK},${z / CHUNK}`);
   };
   drain(missing);
   expect(worker.waiting.some((message) => message.type === 'mesh' && message.key === missing)).toBe(true);

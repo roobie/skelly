@@ -54,11 +54,7 @@ export const benchDraw = (engine: RenderedEngine, options: BenchDrawOptions): ((
   mood.restore(BENCH_MOOD);
   shadows.restore(DEFAULT_SHADOWS);
   const dayCycle = requireDayCycle(engine.registry);
-  const sky = skyInWeather(
-    skyAt(options.skyAngle, dayCycle),
-    { fogginess: dayCycle.weather.defaultFogginess },
-    dayCycle.weather,
-  );
+  const sky = skyInWeather(skyAt(options.skyAngle, dayCycle), dayCycle.weather.defaults, dayCycle.weather);
   mood.setSky(sky);
   const sunStrength = sunShadowStrength(sky.lightIntensity);
   return () => {

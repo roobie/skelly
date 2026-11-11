@@ -12,6 +12,7 @@
   "assets/models/antifungal.glb": { "materials": ["paper-white", "plastic-green"] },
   "assets/models/antihistamine.glb": { "materials": ["alu-bare", "plastic-clear-red"] },
   "assets/models/antiparasitic.glb": { "materials": ["plastic-white", "plastic-green", "paint-olive"] },
+  "assets/models/antiseptic.glb": { "materials": ["paperboard-brown", "plastic-red", "plastic-white"] },
   "assets/models/antiseptic_cotton_balls.glb": {
     "materials": ["plastic-bag", "plastic-blue", "cloth-bright-white", "cloth-cream"]
   },
@@ -19,7 +20,6 @@
     "materials": ["plastic-yellow", "paper-white", "plastic-white", "plastic-black"]
   },
   "assets/models/antiseptic_rag.glb": { "materials": ["cloth-rag", "cloth-saffron"] },
-  "assets/models/antiseptic.glb": { "materials": ["paperboard-brown", "plastic-red", "plastic-white"] },
   "assets/models/bandage.glb": { "materials": ["plastic-white", "paperboard-tan"] },
   "assets/models/blood_draw_kit.glb": {
     "materials": ["paper-white", "plastic-blue", "plastic-frosted", "glass-clear", "plastic-red", "plastic-green"]
@@ -31,12 +31,12 @@
   "assets/models/caffeine_gum.glb": { "materials": ["plastic-black", "plastic-yellow", "alu-bare"] },
   "assets/models/caffeine_pills.glb": { "materials": ["plastic-white", "plastic-yellow", "plastic-black"] },
   "assets/models/calcium_tablets.glb": { "materials": ["plastic-white", "paint-police-blue"] },
-  "assets/models/cannabis_oil.glb": { "materials": ["glass-clear", "fuel-amber", "plastic-black"] },
-  "assets/models/cannabis_shatter.glb": { "materials": ["paper-white", "fuel-amber"] },
-  "assets/models/cannabis_wax.glb": { "materials": ["glass-clear", "plastic-yellow", "plastic-black"] },
   "assets/models/cannabis.glb": {
     "materials": ["plastic-bag", "plastic-red", "plant-dried", "leaf-green", "paperboard-tan"]
   },
+  "assets/models/cannabis_oil.glb": { "materials": ["glass-clear", "fuel-amber", "plastic-black"] },
+  "assets/models/cannabis_shatter.glb": { "materials": ["paper-white", "fuel-amber"] },
+  "assets/models/cannabis_wax.glb": { "materials": ["glass-clear", "plastic-yellow", "plastic-black"] },
   "assets/models/chewing_tobacco.glb": { "materials": ["plastic-black", "steel-grey", "plastic-green"] },
   "assets/models/chlorpromazine.glb": { "materials": ["alu-bare", "paint-charcoal", "paint-terracotta"] },
   "assets/models/cigar.glb": { "materials": ["leather-brown", "paint-red"] },
@@ -194,7 +194,7 @@
   },
   "assets/models/trauma_shears.glb": { "materials": ["plastic-blue", "steel-stainless", "steel-grey"] },
   "assets/models/used_heat_pack.glb": { "materials": ["plastic-grey", "paint-oxblood"] },
-  "assets/models/vitamin_c_fragment.glb": { "materials": ["enamel-white"] },
   "assets/models/vitamin_c.glb": { "materials": ["plastic-white", "paint-terracotta", "plastic-yellow"] },
+  "assets/models/vitamin_c_fragment.glb": { "materials": ["enamel-white"] },
   "assets/models/wintergreen_ointment.glb": { "materials": ["enamel-white", "paper-white", "plastic-green"] }
 }
