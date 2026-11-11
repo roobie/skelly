@@ -10,6 +10,13 @@
 // packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile at the
 // <begin_vertex>/<beginnormal_vertex> chunks (checked against three r186's meshlambert.glsl.js).
 //
+// Those bone-placed instances are invisible to frustum culling (identity instance matrices; see
+// `frustumCulled = false`), so three.js would draw every figure in the world into every shadow map.
+// Each variant therefore draws shadows through a selection-only twin on SHADOW_CROWD_LAYER whose
+// instance slots and count selectShadowCasters sets per light, per map — the same per-light caster
+// selection chunks.ts makes for its boxes; the crowd mesh itself never casts. A light's map draws only
+// the figures whose placement is near the map's volume, and the same bone texture poses both twins.
+//
 // Known simplification: each drawn figure variant owns a block of `capacity` bone-texture rows. The figures
 // are those the `actors` option's types author (`drawnSeeds`), and types that bake the same figure share one
 // variant (`src/render/actorFigureVariants.ts`, `figureVariants`);
@@ -102,7 +109,8 @@ import {
 } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import {
-  type BufferGeometry,
+  Box3,
+  BufferGeometry,
   type Camera,
   Color,
   CylinderGeometry,
@@ -112,6 +120,7 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
+  type Material,
   Matrix4,
   Mesh,
   MeshDepthMaterial,
@@ -156,7 +165,7 @@ import { LOOK_AT_REST, type LookAtState, lookAtPose } from './lookAt.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { type Ragdoll, type RagdollConfig, RagdollWorld } from './ragdoll.ts';
 import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
-import { castsAndReceives } from './shadowFlags.ts';
+import { castsAndReceives, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ActorMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`actorDied` are optional: ActorMeshes has none of them (see
@@ -189,6 +198,9 @@ export interface ActorRenderer {
   actorSevered?: (id: EntityId, part: string, hit?: HitImpulse, actor?: Actor) => Vec3 | undefined;
   /** Called when a hit knocks flesh out of a fused-mass body (packages/engine/src/core/actorSystem.ts's onCarve, forwarded by play.ts). */
   actorCarved?: (id: EntityId, actor: Actor) => void;
+  /** Picks the instanced figures each shadow pass draws, per light (render/shadows.ts): the crowd twin's
+   * selection, or a no-op where three.js already culls (ActorMeshes' boxes). */
+  selectShadowCasters: (casts: (box: Box3) => boolean) => void;
 }
 
 const DEFAULT_CAPACITY = 64; // matches ActorMeshes' own default
@@ -266,6 +278,14 @@ interface Variant {
   readonly geometry: BufferGeometry;
   readonly mesh: InstancedMesh;
   readonly crowdSlotAttr: InstancedBufferAttribute;
+  /** The pass-through twin `mesh`'s shadow passes draw instead of drawing every figure: same geometry
+   * and materials, its own slots (`shadowSlotAttr`) and a per-light count set by selectShadowCasters.
+   * On SHADOW_CROWD_LAYER, so no main view draws it. `mesh` itself never casts. */
+  readonly shadowMesh: InstancedMesh;
+  readonly shadowSlotAttr: InstancedBufferAttribute;
+  /** Every pose keeps a figure's points within this distance of its placement (crowd.ts's packing rotates
+   * bones about their parents, and a bind-pose point sits at most 2·boundingSphere.radius from the root). */
+  readonly casterRadius: number;
   /** Reused every frame for every actor of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps. */
   readonly scratch: MutableTransform[];
@@ -603,6 +623,43 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
 };
 
 /**
+ * Builds a variant's selection-only shadow twin (see the module header): the crowd geometry's vertex
+ * buffers with the twin's own crowd slots, identity instance matrices, and the crowd's materials — on
+ * SHADOW_CROWD_LAYER so no main view draws it. `geometry` must have its bounding sphere computed.
+ */
+const shadowCrowdTwin = (
+  geometry: BufferGeometry,
+  material: Material,
+  depthMaterial: Material,
+  capacity: number,
+): { shadowMesh: InstancedMesh; shadowSlotAttr: InstancedBufferAttribute } => {
+  const shadowSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
+  const shadowGeometry = new BufferGeometry();
+  for (const [name, attribute] of Object.entries(geometry.attributes)) {
+    shadowGeometry.setAttribute(name, attribute);
+  }
+  shadowGeometry.setIndex(geometry.index);
+  shadowGeometry.setAttribute('crowdSlot', shadowSlotAttr);
+  shadowGeometry.boundingBox = geometry.boundingBox;
+  shadowGeometry.boundingSphere = geometry.boundingSphere;
+  const shadowMesh = new InstancedMesh(shadowGeometry, material, capacity);
+  shadowMesh.customDepthMaterial = depthMaterial;
+  shadowMesh.castShadow = true;
+  shadowMesh.frustumCulled = false; // instances are bone-placed, like the crowd mesh's (module header)
+  shadowMesh.count = 0;
+  const shadowInstances = shadowMesh.instanceMatrix.array as Float32Array;
+  for (let k = 0; k < capacity; k++) {
+    shadowInstances[k * 16] = 1;
+    shadowInstances[k * 16 + 5] = 1;
+    shadowInstances[k * 16 + 10] = 1;
+    shadowInstances[k * 16 + 15] = 1;
+  }
+  shadowMesh.instanceMatrix.needsUpdate = true;
+  shadowMesh.layers.set(SHADOW_CROWD_LAYER);
+  return { shadowMesh, shadowSlotAttr };
+};
+
+/**
  * The crowd's colour and shadow materials over the shared bone texture; with `cells`, they also hide the carved
  * cells that mask holds. The shadow pass draws with a depth material, which would leave every actor in its bind
  * pose: this one fetches the same bone matrices (the gore varying it declares is simply unused).
@@ -780,6 +837,16 @@ export class MobActorMeshes implements ActorRenderer {
       const crowdSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
       mesh.geometry.setAttribute('crowdSlot', crowdSlotAttr);
       this.group.add(mesh);
+      mesh.castShadow = false; // the passes draw the twin's selected instances instead
+      geometry.computeBoundingSphere();
+      // three.js would otherwise draw every instance of the un-cullable crowd into every shadow map.
+      const { shadowMesh, shadowSlotAttr } = shadowCrowdTwin(
+        geometry,
+        cells?.material ?? this.material,
+        cells?.depthMaterial ?? this.depthMaterial,
+        capacity,
+      );
+      this.group.add(shadowMesh);
 
       const freeLocalSlots: number[] = [];
       for (let k = capacity - 1; k >= 0; k--) {
@@ -806,6 +873,9 @@ export class MobActorMeshes implements ActorRenderer {
         geometry,
         mesh,
         crowdSlotAttr,
+        shadowMesh,
+        shadowSlotAttr,
+        casterRadius: 2 * (geometry.boundingSphere?.radius ?? 1) * body.scale + 0.3,
         scratch: allocateBoneTransforms(bones.length),
         freeLocalSlots,
         liveIds: [],
@@ -2629,6 +2699,68 @@ export class MobActorMeshes implements ActorRenderer {
     }
   }
 
+  /**
+   * Makes each shadow pass draw only the figures that can cast into the volume `casts` accepts —
+   * shadows.ts calls this per light, before that light's map is drawn. Every pose keeps a figure within
+   * `casterRadius` of its placement, so a box `casts` rejects cannot shadow the volume; holders whose
+   * position is not yet known (first sync pending) stay selected rather than lose a shadow. The twin
+   * reads the same revealed row the crowd mesh draws (`crowdSlotAttr` at the holder's live instance),
+   * so hidden figures stay hidden here too.
+   */
+  selectShadowCasters(casts: (box: Box3) => boolean): void {
+    for (const variant of this.variants) {
+      const rows = variant.shadowSlotAttr.array as Float32Array;
+      let count = 0;
+      for (const key of variant.liveIds) {
+        const holder = typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+        if (holder) {
+          const box = this.holderCasterBox(key, variant);
+          if (!box || casts(box)) {
+            rows[count] = variant.crowdSlotAttr.getX(holder.instanceIndex);
+            count += 1;
+          }
+        }
+      }
+      variant.shadowMesh.count = count;
+      variant.shadowMesh.visible = count > 0;
+      variant.shadowSlotAttr.needsUpdate = true;
+    }
+  }
+
+  private readonly casterBox = new Box3();
+  private readonly casterPoint = new Vector3();
+
+  /** The world box a holder's drawn figure occupies: `casterRadius` around its placement, or — for a
+   * physics-driven corpse, whose parts have left the death point — around every part. Reused per call. */
+  private holderCasterBox(key: SlotKey, variant: Variant): Box3 | undefined {
+    const radius = variant.casterRadius;
+    const box = this.casterBox;
+    if (typeof key === 'number') {
+      const ragdoll = this.corpses.get(key)?.ragdoll;
+      if (ragdoll) {
+        box.makeEmpty();
+        for (const { t } of ragdoll.transforms.values()) {
+          box.expandByPoint(this.casterPoint.set(t[0], t[1], t[2]));
+        }
+        return box.isEmpty() ? undefined : box.expandByScalar(radius);
+      }
+      const placement = this.states.get(key)?.lastPlacement;
+      if (placement) {
+        box.min.set(placement.x - radius, placement.y - radius, placement.z - radius);
+        box.max.set(placement.x + radius, placement.y + radius, placement.z + radius);
+        return box;
+      }
+      return undefined;
+    }
+    const center = this.debris.get(key)?.body.center;
+    if (!center) {
+      return undefined;
+    }
+    box.min.set(center[0] - radius, center[1] - radius, center[2] - radius);
+    box.max.set(center[0] + radius, center[1] + radius, center[2] + radius);
+    return box;
+  }
+
   /** Adds `headYawRad` as an extra yaw on the head bone, innermost (applied before whatever sway/tilt
    * walkPose already gave it) — same "yaw innermost" convention walkPose itself uses for the pelvis (see
    * mob/gait.ts's own pelvisR composition). Cheap and clean since Pose.rotations is just one matrix per
@@ -2647,6 +2779,9 @@ export class MobActorMeshes implements ActorRenderer {
     this.material.dispose();
     this.depthMaterial.dispose();
     for (const variant of this.variants) {
+      // The twin's geometry shares the crowd's vertex buffers, so both must go together (nothing renders
+      // between the two disposals) or a later disposal would free buffers a remaining geometry still uses.
+      variant.shadowMesh.geometry.dispose();
       variant.geometry.dispose();
       for (const walls of variant.cells?.walls ?? []) {
         walls?.geometry.dispose();
