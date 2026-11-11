@@ -71,6 +71,7 @@ import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { createSkyDome, type SkyDome } from './skyDome.ts';
+import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
@@ -266,12 +267,14 @@ export const createPlayView = (
   const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics);
   let pictures: ItemPictures | undefined;
   let skyDome: SkyDome | undefined;
+  let skyEnvironment: SkyEnvironment | undefined;
   /** The cloud clock: simulation seconds of the latest `syncWorld`. */
   let simSeconds = 0;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
     skyDome = createSkyDome(dayCycle.clouds, dayCycle.domeShape);
     scene.add(skyDome.mesh);
+    skyEnvironment = createSkyEnvironment(renderer, skyDome.openSky, dayCycle.environment);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,
     });
@@ -320,6 +323,14 @@ export const createPlayView = (
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
     sunSource: engine.sky.light,
   });
+  /**
+   * Sky exposure dims the play scene's reflection per fragment (render/skylight.ts, `Skylight`); held items sit at
+   * the camera, so theirs takes the camera's, as their ambient light does.
+   */
+  const lightWithSky = (cameraSkyVisibility: number) => {
+    skyEnvironment?.light(scene, 1);
+    skyEnvironment?.light(held.warmUpTarget.scene, cameraSkyVisibility);
+  };
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -331,6 +342,7 @@ export const createPlayView = (
   );
   const dispose = () => {
     models.dispose();
+    skyEnvironment?.dispose();
     if (skyDome) {
       scene.remove(skyDome.mesh);
       skyDome.dispose();
@@ -608,6 +620,8 @@ export const createPlayView = (
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
+      skyEnvironment?.refresh(sky);
+      lightWithSky(skyVisibility);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
       held.setSkyVisibility(skyVisibility);
@@ -760,6 +774,7 @@ export const createPlayView = (
       if (!shadows) {
         return Promise.resolve();
       }
+      lightWithSky(1);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

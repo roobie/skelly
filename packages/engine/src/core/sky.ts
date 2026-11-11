@@ -39,6 +39,8 @@ export interface Dome {
 /** The cloud field's shape and the dome's other fixed shape, which the cycle holds once for every look. */
 export type Clouds = DayCycleDef['clouds'];
 export type DomeShape = DayCycleDef['domeShape'];
+/** How the sky's reflection on models is baked and how strong it is. */
+export type SkyEnvironmentTuning = DayCycleDef['environment'];
 
 export interface Sky {
   dayPhase: DayPhase;

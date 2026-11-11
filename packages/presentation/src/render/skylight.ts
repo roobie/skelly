@@ -582,7 +582,12 @@ ${ShaderChunk.lights_fragment_begin
         )
         .replace(
           '#include <lights_fragment_end>',
-          'irradiance *= receiverSkyVisibility;\n#include <lights_fragment_end>',
+          `irradiance *= receiverSkyVisibility;
+#if defined( RE_IndirectSpecular )
+radiance *= receiverSkyVisibility;
+clearcoatRadiance *= receiverSkyVisibility;
+#endif
+#include <lights_fragment_end>`,
         );
       if (shaderStartedRealMs !== undefined) {
         this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
