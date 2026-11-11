@@ -154,7 +154,7 @@ const UiScreenTextSchema = strictObject({
     drag: [],
     lift: [],
   }),
-  /** The radial menu entry that gathers a held item's treatments, and the child list's way back to the ring. */
+  /** The radial menu entry that gathers a held item's treatments, and the centre label of its child ring, which returns to the parent ring. */
   actionMenu: slottedTable({ treat: [], back: [] }),
   crafting: slottedTable({
     heading: [],

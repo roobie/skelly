@@ -384,8 +384,8 @@ The first three rounds, in dispatch order:
    tap keeps the ordinary action; release at centre cancels; each action has a fixed
    direction that never moves when entries appear, so muscle memory holds; only the
    hemisphere holding an entry can select it, with a direction indicator; a one-action
-   held item holds its own repeat or charge instead of a menu; Treat opens a list, not
-   a wheel; every movable piece opens the menu even with Lift alone; no keyboard aim.
+   held item holds its own repeat or charge instead of a menu; Treat opens a child ring
+   (see `packages/deadvox/INTERFACE.md`, "HUD"); every movable piece opens the menu even with Lift alone; no keyboard aim.
    Directions for repair, continue and take-apart are authored now so later rounds
    add no layout change, but this round offers none of them: take-apart arrives with
    round 2, and Repair waits on the #1469 view. Its reasons go in `DESIGN.md`,
