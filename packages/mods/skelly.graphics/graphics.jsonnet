@@ -17,6 +17,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     modelFetchRetry: { retries: 3, backoffRealSeconds: 0.5 },
     skyJobsInFlight: 3,
     skyPreloadRings: 1,
+    columnsPerFrame: 2,
     unbuiltSkyCap: 0.5,
     itemViewer: {
       framing: 1.1,

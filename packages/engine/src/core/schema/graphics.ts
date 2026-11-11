@@ -49,6 +49,8 @@ export const GraphicsTuningSchema = strictObject({
   modelFetchRetry: strictObject({ retries: Count, backoffRealSeconds: NonNegative }),
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
   skyPreloadRings: Count,
+  /** Terrain columns generated on the main thread per frame while streaming (`packages/engine/src/game/streamer.ts`, `update`). */
+  columnsPerFrame: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
