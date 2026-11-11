@@ -1,13 +1,12 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { buildCityPlan, cityGridOf, servicePlacement } from '@skelly/engine/internal/core/cityPlan.ts';
-import { compileTemplate, placedPieces, type stampPlacement } from '@skelly/engine/internal/core/templates.ts';
+import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { doorPlan } from '@skelly/engine/inventory';
 import {
   BlockEntities,
   CHUNK,
-  CitySite,
+  createTerrainEvaluator,
   type Facing,
-  generateColumn,
   makeScale,
   type Placement,
   placedPoint,
@@ -23,6 +22,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
+import { terrainPlacements } from '@skelly/engine/internal/core/terrainPlan.ts';
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
@@ -54,7 +54,6 @@ describe('owned hatch/ladder portal fixtures', () => {
     const grid = { ...cityGridOf(registry, profile.city), street: CHUNK - profile.city.pad - 2 };
     const basePlan = buildCityPlan({ seed: 73, registry, floor, grid, scenario: profile });
     const placement: Placement = servicePlacement({ template, floor, grid, cell: turn < 2 ? [0, -1] : [-1, 0], turn });
-    const site = new CitySite(73, registry, scale, { ...basePlan, placements: [placement], service: placement });
     const upper = placedPoint(placement, profile.portal.upper);
     const lower = placedPoint(placement, profile.portal.lower);
     const pieces = placedPieces(placement);
@@ -69,17 +68,31 @@ describe('owned hatch/ladder portal fixtures', () => {
     const bottom = ladders.reduce((a, b) => (a.pos[1] < b.pos[1] ? a : b));
     const world = new World();
     const solidId = registry.blockIds.get('fixture_solid')!;
-    const terrain = {
+    const terrain = createTerrainEvaluator({
       seed: 73,
       shape: terrainShapeOf(registry),
       scale,
       blocks: { grass: solidId, dirt: solidId, rock: solidId, sand: solidId, water: solidId },
-      surface: { height: () => floor, top: () => solidId },
-      stamp: (chunk: Parameters<typeof stampPlacement>[0]) => site.stamp(chunk),
-    };
+      structures: basePlan.structures,
+      site: {
+        kind: 'forest-flat',
+        data: {
+          floor,
+          bounds: {
+            x0: Number.NEGATIVE_INFINITY,
+            x1: Number.POSITIVE_INFINITY,
+            z0: Number.NEGATIVE_INFINITY,
+            z1: Number.POSITIVE_INFINITY,
+          },
+          trees: [],
+          litter: solidId,
+        },
+        stamps: [{ kind: 'placements', placements: terrainPlacements([placement]) }],
+      },
+    });
     for (let cz = toChunk(placement.origin[2] - 2); cz <= toChunk(placement.origin[2] + template.size[2] + 2); cz++) {
       for (let cx = toChunk(placement.origin[0] - 2); cx <= toChunk(placement.origin[0] + template.size[0] + 2); cx++) {
-        for (const chunk of generateColumn(terrain, cx, cz)) {
+        for (const chunk of terrain.generateColumn(cx, cz)) {
           world.addChunk(chunk);
         }
       }

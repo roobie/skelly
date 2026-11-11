@@ -23,6 +23,7 @@ import {
   type EntityStore,
   hourOfDay,
   playerTuning,
+  type RealTimestamp,
   reachTuning,
 } from '@skelly/engine/sim';
 import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
@@ -395,7 +396,14 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, vehicles.group, furniture.group, corpses.group, playerMeshes.group, modelMaterialWarmUp(true));
+  scene.add(
+    piles.group,
+    vehicles.group,
+    furniture.group,
+    corpses.group,
+    playerMeshes.group,
+    modelMaterialWarmUp({ instanced: true, skyAnchored: true }),
+  );
   const avatarStudy = createAvatarStudy(scene, s, models, config.debug ? probes.avatarStudy : []);
   const avatarMannequin = createAvatarMannequin(
     scene,
@@ -623,12 +631,12 @@ export const createPlayView = (
       simSeconds = time;
       return { sky };
     },
-    prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
+    prepareLighting: (sky: ReturnType<typeof skyInWeather>, now: RealTimestamp) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
-      skyEnvironment?.refresh(sky);
+      skyEnvironment?.refresh(sky, now);
       lightWithSky(skyVisibility);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);

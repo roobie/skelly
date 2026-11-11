@@ -5,7 +5,8 @@ import { CHUNK, toChunk } from './coords.ts';
 import { simplexNoise2 } from './random.ts';
 import type { ContentFile, SiteLayoutDef } from './schema.ts';
 import { rectDistance as floorDistance, type Rect } from './site.ts';
-import { type Placement, stampPlacement } from './templates.ts';
+import { stampPlacement } from './templates.ts';
+import type { TerrainPlacement } from './terrainPlan.ts';
 import { leafLitterAt, stampTrees, TreeIndex, type TreePlacement } from './vegetation.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -174,7 +175,7 @@ export function createAuthoredTerrain(data: {
   readonly trees: readonly TreePlacement[];
   readonly litter: number;
   readonly sand: number;
-  readonly placements: readonly Placement[];
+  readonly placements: readonly TerrainPlacement[];
 }) {
   const { ground, catalogue, trees, litter, sand, placements } = data;
   const index = new TreeIndex(trees);

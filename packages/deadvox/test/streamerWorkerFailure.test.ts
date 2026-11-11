@@ -5,7 +5,7 @@ import { makeScale, World } from '@skelly/engine/world';
 import { workerMesherPort } from '@skelly/presentation/internal/worker/mesherPort.ts';
 import { type Engine, WorldLoading } from '@skelly/presentation/play';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import { baseTerrainShape } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 const replies: FromMesher[] = [];
 let workerHandler: (event: { data: ToMesher }) => void;
@@ -53,19 +53,15 @@ const loadedStreamer = () => {
     meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
     // The browser adapter around the relay, so its failure strings are the ones streaming reports.
     mesher: { count: 1, create: () => workerMesherPort(new RelayWorker() as unknown as Worker) },
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 4 }),
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
     columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 4, top: () => undefined },
   });
   const engine = { streamer, skylight: undefined, config: { readyRadiusChunks: 1, scale } };
   const loading = new WorldLoading(engine as unknown as Engine);

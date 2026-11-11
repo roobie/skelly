@@ -1,5 +1,5 @@
 import type { Clouds, DomeShape, Rgb, Sky } from '@skelly/engine/sky';
-import { Color, PerspectiveCamera, type ShaderMaterial, SRGBColorSpace } from 'three';
+import { Color, LessEqualDepth, PerspectiveCamera, type ShaderMaterial, SRGBColorSpace } from 'three';
 import { describe, expect, it } from 'vitest';
 import { createSkyDome, physicalShare, preethamTerms } from '../src/render/skyDome.ts';
 
@@ -32,6 +32,30 @@ describe('the physical sky terms', () => {
   });
 });
 
+describe('the dome against the opaque geometry', () => {
+  it('draws after the opaque geometry, writing no depth and passing only the cleared far plane', () => {
+    const dome = createSkyDome(
+      { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1 }] } as Clouds,
+      {
+        horizonBand: [0, 0.2],
+        glowBand: [0.2, 0.8],
+        physicalBand: [0.05, 0.3],
+        starField: { density: 0.1, size: 0.3, twinkle: 0.5 },
+        moon: { disc: [0.9, 0.99], discGain: 1, tightHalo: { power: 8, gain: 1 }, wideHalo: { power: 2, gain: 1 } },
+        sun: { disc: [0.9, 0.99], discGain: 1, tightHalo: { power: 8, gain: 1 }, wideHalo: { power: 2, gain: 1 } },
+        cloudLight: { light: 1, ambient: 1, facing: 0.5 },
+        cloudShape: { coverGain: 1, edgeSoftness: 0.1, horizonFade: [0, 0.2] },
+      } as DomeShape,
+    );
+    const material = dome.mesh.material as ShaderMaterial;
+    expect(dome.mesh.renderOrder).toBeGreaterThan(0);
+    expect(material.depthWrite).toBe(false);
+    expect(material.depthTest).toBe(true);
+    expect(material.depthFunc).toBe(LessEqualDepth);
+    dome.dispose();
+  });
+});
+
 describe('the dome driven by a sky', () => {
   const colour: Rgb = [0.5, 0.5, 0.5];
   const ground: Rgb = [0.1, 0.2, 0.3];
@@ -43,10 +67,10 @@ describe('the dome driven by a sky', () => {
     starField: { density: 0.1, size: 0.3, twinkle: 0.5 },
     moon: body,
     sun: body,
-    cloudLight: { light: 1, ambient: 1, facing: 0.5 },
+    cloudLight: { light: 1, ambient: 1, facing: 0.5, deckLight: 0.5 },
     cloudShape: { coverGain: 1, edgeSoftness: 0.1, horizonFade: [0, 0.2] },
   } as DomeShape;
-  const clouds = { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1 }] } as Clouds;
+  const clouds = { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1, shade: 0 }] } as Clouds;
   const skyWithSunAt = (height: number): Sky =>
     ({
       sky: colour,
@@ -87,6 +111,30 @@ describe('the dome driven by a sky', () => {
   it("draws half the look's physical weight with the sun midway through the physical band", () => {
     const [from, to] = physicalBand;
     expect(physicalWeightWithSunAt((from + to) / 2)).toBeCloseTo(physical.weight / 2, 12);
+  });
+
+  const cloudLightsUnder = (lightIntensity: number): { tops: Color; deck: Color } => {
+    const dome = createSkyDome(clouds, shape);
+    dome.update({
+      sky: { ...skyWithSunAt(1), lightIntensity },
+      simSeconds: 0,
+      camera: new PerspectiveCamera(),
+      skyVisibility: 1,
+    });
+    const { uniforms } = dome.mesh.material as ShaderMaterial;
+    const lights = { tops: uniforms.uCloudLight!.value as Color, deck: uniforms.uCloudDeckLight!.value as Color };
+    dome.dispose();
+    return lights;
+  };
+
+  it('lights the deck less than the tops under a light above its cap, so the tops keep their contrast', () => {
+    const { tops, deck } = cloudLightsUnder(1);
+    expect(deck.r).toBeLessThan(tops.r);
+  });
+
+  it('lights deck and tops alike under a light below its cap, so an overcast is no brighter or darker', () => {
+    const { tops, deck } = cloudLightsUnder(shape.cloudLight.deckLight / 2);
+    expect(deck.equals(tops)).toBe(true);
   });
 
   it('shows the ambient ground colour below the horizon in the open sky the reflection bakes, not the fog colour', () => {

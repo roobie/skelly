@@ -129,6 +129,8 @@ const DomeShapeSchema = strictObject({
     ambient: FiniteNonNegative,
     /** The share of the main light that depends on facing it; the rest lights a cloud evenly. */
     facing: UnitFraction,
+    /** The most main-light intensity a deck layer takes; the tops take up to 1. */
+    deckLight: UnitFraction,
   }),
   cloudShape: strictObject({
     /** How fast the cloud threshold falls as cover rises. */
@@ -166,6 +168,8 @@ const CloudLayerSchema = strictObject({
   /** Texture-space drift per second along x and y. */
   drift: tuple([FiniteNumber, FiniteNumber]),
   opacity: UnitFraction,
+  /** How much of the layer takes the deck's main light rather than the tops'. */
+  shade: UnitFraction,
 });
 
 /** The cloud field's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
@@ -246,6 +250,8 @@ const SkyEnvironmentSchema = strictObject({
   ),
   /** How far the drawn sky moves, as its largest change in any value, before the reflection is redrawn: smaller follows twilight closer for more bakes. */
   rebakeChange: FinitePositive,
+  /** The fewest real seconds between two bakes, so a fast-forwarded clock cannot bake every frame. */
+  rebakeRealSeconds: FiniteNonNegative,
   /** How strongly models reflect the open sky; sky exposure dims it where the sky cannot reach. */
   strength: FiniteNonNegative,
 });

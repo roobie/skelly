@@ -6,6 +6,7 @@ import { buildMesh, buildRequestedMesh, HeldChunks, type MeshData, wideFrom } fr
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 import { unitFaces } from './meshFaces.ts';
 
 const ROCK = 3;
@@ -36,24 +37,25 @@ describe('liquid enclosure', () => {
       world,
       meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
       mesher: { count: 1, create: () => new RecordingWorker() },
-      seed: 17,
-      terrain: { grass: 1, dirt: 2, rock: ROCK, sand: 4, water: WATER },
-      shape: { ...baseTerrainShape(), dirtDepthMetres: 0 },
+      terrain: fixtureTerrain({
+        scale: makeScale(0.5),
+        floor: top === 'water' ? 2 * CHUNK - 1 : 3 * CHUNK - 1,
+        blocks: { grass: ROCK, dirt: ROCK, rock: ROCK, sand: ROCK, water: WATER },
+        shape: { ...baseTerrainShape(), dirtDepthMetres: 0 },
+        structures:
+          top === 'water'
+            ? [{ min: [-2 * CHUNK, 2 * CHUNK, -2 * CHUNK], max: [2 * CHUNK, 3 * CHUNK, 2 * CHUNK], block: WATER }]
+            : [],
+      }),
       colors: new Uint8Array(256 * 3),
       patterns: new Uint8Array(256),
       weatherable: new Uint8Array(256),
       liquids,
       scale: makeScale(0.5),
-      structures: [],
       radius: 0,
       preloadRings: 0,
       columnsPerFrame: 2,
       hysteresis: 1,
-      surface: {
-        height: () => (top === 'water' ? 2 * CHUNK - 1 : 3 * CHUNK - 1),
-        top: () => ROCK,
-        water: () => (top === 'water' ? 3 * CHUNK : undefined),
-      },
     });
     for (let attempt = 0; attempt < 32 && !streamer.isReady(0, 0); attempt += 1) {
       streamer.update(0, 0);

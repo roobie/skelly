@@ -1,7 +1,7 @@
 ---
 read_if:
-  - extracting terrain evaluation from Site implementations during terrain-plan work
-  - changing city surface or stamp evaluation
+  - changing Site terrain contributions or shared terrain evaluation
+  - changing terrain worker boundaries, admission or canonical save ownership
   - separating terrain computation from gameplay ownership
 ---
 
@@ -9,17 +9,16 @@ read_if:
 
 ## Decision
 
-As each Site terrain mechanism is extracted, it must have one data-parameterized
-implementation shared by Site queries and generation. Terrain-plan work is the
-trigger for extracting the remaining mechanisms. City meets this rule: see
-`src/core/terrainEvaluator.ts`, `createCitySurface` and `stampCityTerrain`;
-`src/core/citySite.ts`, `CitySite` delegates city evaluation while retaining
-planning and gameplay metadata.
+A Site contributes resolved terrain data rather than evaluating terrain itself.
+The plan is cloneable and function-free so a worker can receive it without
+rebuilding gameplay state. One evaluator serves every caller, preventing separate
+synchronous and asynchronous terrain formulas. See `src/core/terrainPlan.ts`,
+`TerrainPlan`; `src/core/site.ts`, `Site`; and `src/core/terrainEvaluator.ts`,
+`createTerrainEvaluator`.
 
-Separating evaluation from Site ownership allows background computation without
-rebuilding gameplay state or maintaining a second terrain formula. Extraction
-proceeds by mechanism so arithmetic and stamp ordering can be checked independently
-before changing generation ownership. Content remains the owner of tuning.
+Planning and gameplay ownership remain on the main thread. Content owns tuning;
+the plan carries the admitted content's resolved terrain choices. The plan is
+derived runtime data, not a second save format.
 
 Rectangle-distance predicates and ground-query sampling are not interchangeable:
 sharing evaluation must not erase their distinct coordinate and boundary semantics.

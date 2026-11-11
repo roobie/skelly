@@ -1,4 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
+
 import { readFileSync } from 'node:fs';
 import { buildRegistry } from '@skelly/engine/content';
 import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayout.ts';
@@ -28,6 +29,7 @@ import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 
 const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
@@ -207,9 +209,10 @@ const expectGroundedPlacement = (site: AuthoredSite, placement: AuthoredSite['pl
         continue;
       }
       foundationCells += 1;
-      expect(site.surface.height(x, z, layout.ground / scale.blockSize), `${placement.template.id} at ${x},${z}`).toBe(
-        groundY,
-      );
+      expect(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, layout.ground / scale.blockSize),
+        `${placement.template.id} at ${x},${z}`,
+      ).toBe(groundY);
     }
   }
   expect(foundationCells, `${placement.template.id} has ground-layer support`).toBeGreaterThan(0);

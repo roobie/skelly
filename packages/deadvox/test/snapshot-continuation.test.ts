@@ -10,6 +10,7 @@ import { IDLE } from '@skelly/engine/session';
 import { BACKGROUND_ACTOR_SLICE_COUNT, parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
 import { terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import { terrainFor } from './fixtures/terrain.ts';
 import {
   advance,
   capture,
@@ -117,15 +118,14 @@ describe('fixture save/load continuation', () => {
     const [cx, cz] = fixtureZombieColumn;
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
     const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: dusk } };
-    const timedSite = {
-      surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
+    const timedSite: Site = {
+      terrain: { kind: 'natural' },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
-      stamp: () => undefined,
       supplySourcesIn: () => [],
       lootPointsIn: () => [],
       furnitureIn: () => [],
       actorsIn: () => [marker],
-    } as Site;
+    };
     const original = createRuntime(undefined, false, [fixtureZombieColumn], { start });
     original.session.onColumn(cx, cz, timedSite);
     const key = `shambler:${pos.join(',')}`;
@@ -172,7 +172,7 @@ describe('fixture save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureSite.surface.height(
+    const ground = terrainFor(fixtureSite, registry, scale, seed).surface!.height(
       x,
       startZ,
       terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),
@@ -277,7 +277,7 @@ describe('fixture save/load continuation', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureSite.surface.height(
+    const ground = terrainFor(fixtureSite, registry, scale, seed).surface!.height(
       x,
       startZ,
       terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),

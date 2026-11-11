@@ -2,7 +2,15 @@ import { buildRegistry } from '@skelly/engine/content';
 import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
 import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { decodeSave } from '@skelly/engine/save';
-import { CHUNK, Chunk, makeScale, type Terrain, type Vec3, World } from '@skelly/engine/world';
+import {
+  CHUNK,
+  Chunk,
+  createTerrainEvaluator,
+  makeScale,
+  type TerrainPlan,
+  type Vec3,
+  World,
+} from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -43,7 +51,7 @@ const fixture = (world = new World()) => {
   const wall = registry.blockIds.get('fixture_wall')!;
   const rubble = registry.blockIds.get('fixture_rubble')!;
   const scale = makeScale(0.5);
-  const terrain: Terrain = {
+  const terrain: TerrainPlan = {
     seed: 5,
     scale,
     blocks: { grass: wall, dirt: wall, rock: wall, sand: wall, water: wall },
@@ -55,16 +63,23 @@ const fixture = (world = new World()) => {
       featureSizeMetres: 1,
       octaves: 1,
     },
-    stamp: (chunk) => {
-      if (chunk.cx === 0 && chunk.cy === 0 && chunk.cz === 0) {
-        chunk.set(...cell, wall);
-        chunk.set(...stampCell, rubble);
-      }
+    structures: [{ min: structureCell, max: structureCell.map((value) => value + 1) as Vec3, block: wall }],
+    site: {
+      kind: 'weathering-pad',
+      data: {
+        blockSize: scale.blockSize,
+        padTop: 0,
+        heightPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        materialPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        concrete: wall,
+        structures: [
+          { min: cell, max: cell.map((value) => value + 1) as Vec3, block: wall },
+          { min: stampCell, max: stampCell.map((value) => value + 1) as Vec3, block: rubble },
+        ],
+      },
     },
   };
-  const canonical = new CanonicalTerrain(world, terrain, [
-    { min: structureCell, max: structureCell.map((value) => value + 1) as Vec3, block: wall },
-  ]);
+  const canonical = new CanonicalTerrain(world, createTerrainEvaluator(terrain));
   return { world, registry, canonical, wall, rubble, material: data.blockMaterials[0]! };
 };
 
@@ -119,19 +134,25 @@ describe('block damage foundation', () => {
         registry.blockMaterials.set(id, material);
       }
       const runtime = createRuntime(undefined, false, [[8, 8]], { registry });
-      const terrain: Terrain = {
-        ...f.canonical.terrain,
+      const { plan } = f.canonical.terrain;
+      if (plan.site.kind !== 'weathering-pad') {
+        throw new Error('Expected fixture pad');
+      }
+      const terrain: TerrainPlan = {
+        ...plan,
         blocks: Object.fromEntries(
-          Object.entries(f.canonical.terrain.blocks).map(([key, id]) => [key, id + offset]),
-        ) as Terrain['blocks'],
-        stamp: (chunk) => {
-          if (chunk.cx === 0 && chunk.cy === 0 && chunk.cz === 0) {
-            chunk.set(...cell, registry.blockIds.get('fixture_wall')!);
-            chunk.set(...stampCell, registry.blockIds.get('fixture_rubble')!);
-          }
+          Object.entries(plan.blocks).map(([key, id]) => [key, id + offset]),
+        ) as TerrainPlan['blocks'],
+        structures: [],
+        site: {
+          ...plan.site,
+          data: {
+            ...plan.site.data,
+            structures: plan.site.data.structures.map((box) => ({ ...box, block: box.block + offset })),
+          },
         },
       };
-      const canonical = new CanonicalTerrain(runtime.world, terrain);
+      const canonical = new CanonicalTerrain(runtime.world, createTerrainEvaluator(terrain));
       const damage = amount === 'partial' ? f.material.minimumStrength : f.material.durability;
       const entry = runtime.world.blockDamage.record(canonical, registry, cell, damage);
       runtime.world.blockDamage.record(canonical, registry, cell, damage);

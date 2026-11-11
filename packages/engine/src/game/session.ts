@@ -932,6 +932,7 @@ export const createSession = (options: SessionOptions) => {
   const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
   // Rebuilt from restored world state and never saved, so a reload answers the same at the same position.
   const skyFields = sessionSkyFields(options.skyFields, { world, entities, registry }, scale, skyTop);
+  skyFields.setOccluders(vehicleLight);
   let cachedWorldVersion = world.version;
   let cachedEntityVersion = entities.version;
   let cachedVehicleVersion = inventory.vehicles.version;

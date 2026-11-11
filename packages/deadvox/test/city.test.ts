@@ -5,6 +5,7 @@ import { makeScale, sitePalette } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { fixtureScenarioSources } from './fixtures/scenario.ts';
 import { content as BUNDLED_CONTENT, siteFromUrl } from './fixtures/startupContent.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 
 const { registry } = BUNDLED_CONTENT;
 const scale = makeScale(0.5);
@@ -14,7 +15,9 @@ describe('the stress-test city', () => {
     const city = new StressCity(2, registry, scale);
     expect(city.placements.length).toBeGreaterThan(0);
     const [x, , z] = city.spawn.pos.map((m) => m / scale.blockSize);
-    expect(city.surface.top(Math.floor(x!), Math.floor(z!))).toBe(sitePalette(registry).paving);
+    expect(terrainFor(city, city.registry, scale, city.seed).surface!.top(Math.floor(x!), Math.floor(z!))).toBe(
+      sitePalette(registry).paving,
+    );
     expect((city.bounds.x1 - city.bounds.x0) * scale.blockSize).toBeGreaterThanOrEqual(
       2 * [...registry.cityBenchmarks.values()][0]!.reachMetres,
     );
