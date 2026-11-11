@@ -21,8 +21,6 @@ import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 
-const COLUMNS_PER_FRAME = 2;
-
 /** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
 const withinRadius = (dx: number, dz: number, radius: number): boolean => dx * dx + dz * dz <= radius * radius;
 
@@ -93,6 +91,8 @@ export interface StreamerOptions {
   stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
+  /** Terrain columns generated per frame while streaming; from graphics tuning. */
+  columnsPerFrame: number;
   /** Extra terrain rings for sky prebuilding, without expanding mesh/reveal admission. */
   preloadRings: number;
   /** Chunks beyond the rings that meshes and chunk data stay, so a column on the edge does not churn. */
@@ -381,7 +381,7 @@ export class Streamer {
     }
 
     let worked = moved;
-    let budget = COLUMNS_PER_FRAME;
+    let budget = this.opts.columnsPerFrame;
     for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
       if (this.generationFailed || budget === 0) {
         worked = true; // columns may remain

@@ -154,18 +154,35 @@ export class FurnitureMeshes {
     this.drawn = entities.standing;
     this.drawnReveal = revealVersion;
     const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
-    this.group.clear();
     for (const entity of entities.all) {
-      const pose = poseKey(entity, entities.wearOf(entity));
-      const kept = this.pieces.get(entity);
-      const piece =
-        kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
-      piece.mesh.visible = this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true;
-      pieces.set(entity, piece);
-      this.group.add(piece.mesh);
+      pieces.set(entity, this.pieceFor(entity, entities));
+    }
+    for (const [entity, gone] of this.pieces) {
+      if (!pieces.has(entity)) {
+        this.group.remove(gone.mesh);
+      }
     }
     this.pieces = pieces;
-    this.group.add(this.marker);
+    if (this.group.children.at(-1) !== this.marker) {
+      this.group.add(this.marker);
+    }
+  }
+
+  /** The entity's piece: kept while its pose is unchanged, else rebuilt in place of the old mesh. */
+  private pieceFor(entity: BlockEntity, entities: BlockEntities): { pose: string; mesh: Group | Mesh } {
+    const pose = poseKey(entity, entities.wearOf(entity));
+    const kept = this.pieces.get(entity);
+    let piece = kept;
+    if (!kept || kept.pose !== pose) {
+      piece = { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
+      if (kept) {
+        this.group.remove(kept.mesh);
+      }
+      this.group.add(piece.mesh);
+    }
+    const { mesh } = piece!;
+    mesh.visible = this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true;
+    return piece!;
   }
 
   /** A piece built as it would stand, for drawing it away from the world; it shares this owner's geometry and materials. */
