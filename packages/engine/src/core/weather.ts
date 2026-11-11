@@ -85,6 +85,7 @@ const underSky = (sky: Sky, state: WeatherTuning['rain'], level: number): Sky =>
     sky: greyed(sky.sky),
     heightFogColor: greyed(sky.heightFogColor),
     lightIntensity: scaled(sky.lightIntensity, state.light, level),
+    ambientIntensity: scaled(sky.ambientIntensity, state.ambient, level),
     dome: {
       ...dome,
       zenith: greyed(dome.zenith),
