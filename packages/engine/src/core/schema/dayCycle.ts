@@ -41,14 +41,18 @@ const SkyColour = pipe(
 const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
 
 /** The dome's physical (Preetham) sky model in its own terms, so hazier air at a low sun is content, not code. */
+const FiniteNonNegative = pipe(NonNegative, finite('must be finite'));
+
 const PhysicalSkySchema = strictObject({
-  /** 0 draws the keyed gradient only, 1 the physical sky. */
+  /** Scales the model's radiance before it is mapped into display range; the model's own units are arbitrary. */
+  exposure: FiniteNonNegative,
+  /** 0 draws the keyed gradient only, 1 the physical sky; the dome scales it by the sun's height in `physicalBand`, so a low sun draws the gradient at any weight. */
   weight: UnitFraction,
-  turbidity: NonNegative,
-  rayleigh: NonNegative,
-  mie: NonNegative,
+  turbidity: FiniteNonNegative,
+  rayleigh: FiniteNonNegative,
+  mie: FiniteNonNegative,
   /** The model's Henyey-Greenstein asymmetry, which is undefined at 1. */
-  mieDirectional: pipe(NonNegative, ltValue(1, 'must be below 1')),
+  mieDirectional: pipe(FiniteNonNegative, ltValue(1, 'must be below 1')),
 });
 
 /** The sky dome of one look: the gradient between the fog colour and the zenith, the physical sky, clouds and stars. */
@@ -65,6 +69,75 @@ const DomeLookSchema = strictObject({
   }),
   /** Star brightness. */
   stars: UnitFraction,
+  /** The moon, which the dome draws opposite the sun. */
+  moon: strictObject({ colour: SkyColour, brightness: FiniteNonNegative }),
+  /** The sun, painted over the sky whatever the physical sky's weight. */
+  sun: strictObject({
+    /** The disc and the air right round it. */
+    colour: SkyColour,
+    /** Scales the disc. */
+    brightness: FiniteNonNegative,
+    /** The air further out. */
+    glowColour: SkyColour,
+    /** Scales the halos, so a low sun can be wrapped in haze and a high one left clean. */
+    glow: FiniteNonNegative,
+  }),
+});
+
+/** The two edges, low to high, between which a smoothstep eases; reversed edges are undefined in GLSL. */
+const Band = pipe(
+  tuple([UnitFraction, UnitFraction]),
+  check(([from, to]) => from < to, 'must rise from a lower to a higher edge'),
+);
+
+const FinitePositive = pipe(Positive, finite('must be finite'));
+
+/** A lobe of light round a direction: `cos(angle) ** power * gain`. */
+const Lobe = strictObject({ power: FinitePositive, gain: FiniteNonNegative });
+
+/** A body drawn on the dome: a disc with a tight halo and a wide one. */
+const BodyShapeSchema = strictObject({
+  /** The cosines of the angle from the body's centre between which the disc eases in; the body's size. */
+  disc: Band,
+  discGain: FiniteNonNegative,
+  tightHalo: Lobe,
+  wideHalo: Lobe,
+});
+
+/** The dome's shape that does not change over the day: how its gradient, stars, bodies and cloud light are built from the looks. */
+const DomeShapeSchema = strictObject({
+  /** Where the look's fog colour eases into the horizon glow, as the sine of the elevation. */
+  horizonBand: Band,
+  /** Where the horizon glow eases into the zenith, as the sine of the elevation. */
+  glowBand: Band,
+  /** The sun heights between which the physical sky comes in over the keyed gradient: none below the first, all of it above the second. */
+  physicalBand: Band,
+  starField: strictObject({
+    /** The fraction of the field's cells that hold a star. */
+    density: UnitFraction,
+    /** A star's radius as a fraction of its cell. */
+    size: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+    /** How far a star's brightness dips below full: 0 is steady. */
+    twinkle: UnitFraction,
+  }),
+  moon: BodyShapeSchema,
+  sun: BodyShapeSchema,
+  cloudLight: strictObject({
+    /** How much of the main light's colour a cloud takes. */
+    light: FiniteNonNegative,
+    /** How much of the ambient sky colour a cloud takes. */
+    ambient: FiniteNonNegative,
+    /** The share of the main light that depends on facing it; the rest lights a cloud evenly. */
+    facing: UnitFraction,
+  }),
+  cloudShape: strictObject({
+    /** How fast the cloud threshold falls as cover rises. */
+    coverGain: FiniteNonNegative,
+    /** How wide the cloud edge is in noise units. */
+    edgeSoftness: FinitePositive,
+    /** Where clouds fade in above the horizon, as the sine of the elevation. */
+    horizonFade: Band,
+  }),
 });
 
 /** One sky look: the keyframe values the time of day blends between (core/sky.ts owns the blend). */
@@ -98,7 +171,7 @@ const CloudLayerSchema = strictObject({
 /** The cloud field's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
 const CloudsSchema = strictObject({
   warp: NonNegative,
-  /** The sky dome (#1505) draws its layers one by one in its shader, so four is that shader's limit, not a design choice. */
+  /** The sky dome (#1505) samples every layer on every sky pixel, so the count is capped to bound that cost. */
   layers: pipe(array(CloudLayerSchema), minLength(1), maxLength(4)),
 });
 
@@ -162,6 +235,7 @@ export const DayCycleSchema = strictObject({
   keys: SkyKeysSchema,
   weather: WeatherTuningSchema,
   clouds: CloudsSchema,
+  domeShape: DomeShapeSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,
   /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */
