@@ -1,12 +1,10 @@
-import { smoothstep } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
-import { type CityPlan, cityRowStart } from './cityPlan.ts';
+import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
-import { CHUNK, toChunk, type Vec3 } from './coords.ts';
+import { toChunk, type Vec3 } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import type { Scale } from './scale.ts';
-import { cityRowDepth } from './settlementPools.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   type ActorSpawn,
@@ -14,16 +12,13 @@ import {
   furnitureOf,
   lootSourcesOf,
   type Rect,
-  rectDistance,
   type Site,
   SupplyFootprints,
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
-import { stampChunk } from './structure.ts';
-import { footprint, type Placement, placedPieces, stampPlacement } from './templates.ts';
+import { footprint, type Placement, placedPieces } from './templates.ts';
+import { createCitySurface, stampCityTerrain } from './terrainEvaluator.ts';
 import type { Surface } from './worldgen.ts';
-
-const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 export class CitySite implements Site {
   readonly seed: number;
@@ -110,51 +105,11 @@ export class CitySite implements Site {
   }
 
   get surface(): Surface {
-    const { grid, bounds, core, floor } = this.plan;
-    const alleys = Array.from(
-      { length: grid.rows / 2 - 1 },
-      (_, pair) => cityRowStart(grid, pair * 2) + 2 * cityRowDepth(grid),
-    );
-    return {
-      height: (x, z, natural) => {
-        const distance = rectDistance(bounds, x, z);
-        if (distance === 0) {
-          return floor;
-        }
-        if (grid.flatSurroundings) {
-          return floor;
-        }
-        if (distance >= grid.blend) {
-          return natural;
-        }
-        return Math.round(natural + smoothstep(1 - distance / grid.blend) * (floor - natural));
-      },
-      top: (x, z) => {
-        if (rectDistance(bounds, x, z) !== 0) {
-          return;
-        }
-        if (grid.paving) {
-          return grid.paving.some((rect) => rect.x0 <= x && x < rect.x1 && rect.z0 <= z && z < rect.z1)
-            ? this.paving
-            : undefined;
-        }
-        const central = (0 <= x && x < grid.street) || (0 <= z && z < grid.street);
-        const localZ = mod(z, grid.street + grid.blockZ);
-        const alley = alleys.some((start) => localZ >= start && localZ < start + grid.street);
-        const street = mod(x, grid.street + grid.blockX) < grid.street || localZ < grid.street || alley;
-        return central || (rectDistance(core, x, z) === 0 && street) ? this.paving : undefined;
-      },
-    };
+    return createCitySurface(this.plan, this.paving);
   }
 
   stamp(chunk: Chunk): void {
-    stampChunk(chunk, this.plan.structures);
-    const y0 = chunk.cy * CHUNK;
-    for (const placement of this.byColumn.get(`${chunk.cx},${chunk.cz}`) ?? []) {
-      if (placement.origin[1] < y0 + CHUNK && placement.origin[1] + placement.template.size[1] > y0) {
-        stampPlacement(chunk, placement);
-      }
-    }
+    stampCityTerrain(chunk, this.plan.structures, this.byColumn.get(`${chunk.cx},${chunk.cz}`) ?? []);
   }
 
   supplySourcesIn(area: Rect) {
