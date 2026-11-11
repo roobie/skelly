@@ -1,4 +1,4 @@
-import { BEDROCK, neighbourhoodOf, PADDED } from '@skelly/engine/internal/core/meshInput.ts';
+import { BEDROCK, type Neighbourhood, neighbourhoodOf, PADDED } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '@skelly/engine/internal/core/occlusion.ts';
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { SentChunks } from '@skelly/engine/internal/game/sentChunks.ts';
@@ -37,6 +37,19 @@ const cube = <T extends Uint8Array | Uint16Array>(
   }
   return out;
 };
+
+const base64 = (array: ArrayBufferView): string =>
+  Buffer.from(array.buffer, array.byteOffset, array.byteLength).toString('base64');
+
+/** A mesh as one string per array: element-wise equality on whole meshes would cost more than meshing them. */
+const meshBytes = (mesh: MeshData): Record<string, string> =>
+  Object.fromEntries(Object.entries(mesh).map(([name, array]: [string, ArrayBufferView]) => [name, base64(array)]));
+
+/** Each neighbour slot's blocks as a number (uniform or missing) or a string of its bytes. */
+const neighbourBytes = ({ chunks, onFloor }: Neighbourhood) => ({
+  onFloor,
+  chunks: chunks.map((blocks) => (typeof blocks === 'number' ? blocks : base64(blocks))),
+});
 
 /** The mesh of a chunk built from per-block world reads, independent of how a mesh request carries its blocks. */
 const referenceMesh = (world: World, [cx, cy, cz]: Vec3, bottomCy: number, init: MesherInit): MeshData => {
@@ -146,10 +159,10 @@ it.each([
   const [request] = sendRequest(chunkLink(), world, [0, 0, 0], bottomCy);
   const mesh = buildRequestedMesh(init, request);
   expect(mesh.indices.length).toBeGreaterThan(0);
-  expect(mesh).toEqual(referenceMesh(world, [0, 0, 0], bottomCy, init));
+  expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, [0, 0, 0], bottomCy, init)));
 });
 
-it('meshes requests that rely on kept blocks as uncached requests of the same world', () => {
+it('hands the mesher the blocks the world holds when requests rely on kept blocks', () => {
   const bottomCy = -1;
   const world = new World();
   const scattered = (cx: number, cy: number, cz: number, salt: number) => {
@@ -190,15 +203,18 @@ it('meshes requests that rely on kept blocks as uncached requests of the same wo
     [() => world.addChunk(scattered(1, 1, 0, 3)), east],
   ];
   let kept = 0;
+  let last: ReceivedMeshRequest | undefined;
   for (const [change, coords] of steps) {
     change();
     const [request, keptNeighbours] = sendRequest(link, world, coords, bottomCy);
     kept += keptNeighbours;
-    const uncached = buildRequestedMesh(init, { ...request, neighbourhood: neighbourhoodOf(world, coords, bottomCy) });
-    expect(uncached.indices.length).toBeGreaterThan(0);
-    expect(buildRequestedMesh(init, request)).toEqual(uncached);
+    expect(neighbourBytes(request.neighbourhood)).toEqual(neighbourBytes(neighbourhoodOf(world, coords, bottomCy)));
+    last = request;
   }
   expect(kept).toBeGreaterThan(0);
+  const mesh = buildRequestedMesh(init, last!);
+  expect(mesh.indices.length).toBeGreaterThan(0);
+  expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, east, bottomCy, init)));
 });
 
 it('draws the blocks as they are after an edit lands while their chunk is being meshed', () => {
@@ -240,7 +256,7 @@ it('draws the blocks as they are after an edit lands while their chunk is being 
   expect(current.key).toBe('0,0,0');
   const mesh = mesher.reply(current);
   const expected = referenceMesh(world, [0, 0, 0], scale.minCy, mesher.init!);
-  expect(expected).not.toEqual(staleMesh);
-  expect(mesh).toEqual(expected);
+  expect(meshBytes(expected)).not.toEqual(meshBytes(staleMesh));
+  expect(meshBytes(mesh)).toEqual(meshBytes(expected));
   expect(meshes.set).toHaveBeenCalledExactlyOnceWith('0,0,0', [0, 0, 0], mesh);
 });
