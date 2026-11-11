@@ -292,7 +292,7 @@ export interface PieceDisassemblyPlan {
   outputs: DisassemblyOutput[];
   skillLevel: number;
   toolLevels: Record<string, number>;
-  duration: number;
+  timeGameMinutes: number;
 }
 
 /** A piece's authored take-apart yield; a piece taken apart into a parts blueprint has none. */
@@ -324,14 +324,14 @@ export const planPieceDisassembly = (
     outputs: pieceDisassemblyOutputs(work, skillLevel, toolLevels),
     skillLevel,
     toolLevels,
-    duration: work.timeGameMinutes,
+    timeGameMinutes: work.timeGameMinutes,
   };
 };
 
 export const samePieceDisassembly = (left: PieceDisassemblyPlan, right: PieceDisassemblyPlan): boolean =>
   left.entity === right.entity &&
   left.skillLevel === right.skillLevel &&
-  left.duration === right.duration &&
+  left.timeGameMinutes === right.timeGameMinutes &&
   Object.keys(left.toolLevels).length === Object.keys(right.toolLevels).length &&
   Object.entries(left.toolLevels).every(([quality, level]) => right.toolLevels[quality] === level) &&
   sameDisassemblyOutputs(left.outputs, right.outputs);

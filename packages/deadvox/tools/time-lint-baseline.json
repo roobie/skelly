@@ -60,8 +60,8 @@
       "elapsed": 3
     },
     "core/inventory.ts": {
-      "duration": 2,
-      "elapsed": 2,
+      "duration": 1,
+      "elapsed": 1,
       "time": 10
     },
     "core/items.ts": {
@@ -93,8 +93,8 @@
     "core/saveFormat.ts": {
       "attackWindup": 1,
       "cooldown": 2,
-      "duration": 5,
-      "elapsed": 6,
+      "duration": 4,
+      "elapsed": 5,
       "expiresAt": 1,
       "hitFlinchTime": 1,
       "idleSoundTimer": 1,

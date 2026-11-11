@@ -191,6 +191,12 @@ export interface VehicleTransfer {
   output?: Target;
 }
 
+/** Every work kind starts its progress the same way; `length` is the work payload's full duration. */
+const unstarted = (length: number): Pick<NonNullable<Item['work']>, 'elapsed' | 'duration'> => ({
+  elapsed: 0,
+  duration: length,
+});
+
 /** Where a released job's things land; `retirePiece` is the world's remover for a finished take-apart's piece. */
 export interface WorkRelease {
   feet: Vec3;
@@ -1539,8 +1545,7 @@ export class Inventory {
         skillLevel: plan.skillLevel,
         toolLevels: { ...plan.toolLevels },
         outputs: plan.outputs.map((output) => ({ ...output })),
-        elapsed: 0,
-        duration: plan.duration,
+        ...unstarted(plan.timeGameMinutes),
         components,
       };
     }
@@ -1556,8 +1561,7 @@ export class Inventory {
         toolLevels: { ...plan.toolLevels },
         gather: plan.gather,
         outputs: plan.outputs.map((output) => ({ ...output })),
-        elapsed: 0,
-        duration: plan.duration,
+        ...unstarted(plan.duration),
         components,
       };
     }
@@ -1570,8 +1574,7 @@ export class Inventory {
         volumeMicrolitres: draw.volumeMicrolitres,
         sources: draw.sources.map((source) => ({ uid: source.item.uid, volumeMicrolitres: source.volumeMicrolitres })),
       })),
-      elapsed: 0,
-      duration: plan.gather + plan.work,
+      ...unstarted(plan.gather + plan.work),
       components,
       ...(repair ? { repairTarget: { ...repair.target }, repairAmount: repair.amount } : {}),
     };

@@ -358,6 +358,8 @@ const simulationFields = {
 };
 const simulation = obj({ seed: safeInt, clock, ...simulationFields });
 const simulationWithoutWorldIdentity = obj(simulationFields);
+/** Progress every work kind shares (`items.ts`, `WorkProgress`). */
+const workProgress = { elapsed: nonNegative, duration: positive };
 let itemSchema: Schema;
 let placedSchema: Schema;
 itemSchema = obj({
@@ -472,8 +474,7 @@ itemSchema = obj({
             }),
           ),
         ),
-        elapsed: nonNegative,
-        duration: positive,
+        ...workProgress,
         repairTarget: opt(obj({ kind: enumeration(['item', 'entity']), uid: positiveInt })),
         repairAmount: opt(positive),
         components: arr(lazy(() => itemSchema)),
@@ -489,8 +490,7 @@ itemSchema = obj({
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
         gather: nonNegative,
-        elapsed: nonNegative,
-        duration: positive,
+        ...workProgress,
         components: arr(
           lazy(() => itemSchema),
           1,
@@ -502,8 +502,7 @@ itemSchema = obj({
         skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
-        elapsed: nonNegative,
-        duration: positive,
+        ...workProgress,
         components: arr(lazy(() => itemSchema)),
       }),
     ),
