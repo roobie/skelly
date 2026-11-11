@@ -1133,37 +1133,55 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
   assert.deepEqual(lakeErrors, []);
 };
 
-// The sun is a very bright body in the physical sky. Unmapped it is far past the bloom threshold, which at ACES
-// is the clip over the exposure, and would glow into its neighbours; mapped it stays at or under 1 and does not.
-// So a sky pixel beside the sun's disc reads the same with bloom on and off, and the centre, which holds the
-// disc, is brighter than it, or the sun is not in frame and the check proves nothing.
+// The sun's disc is in frame, brighter than the sky beside it, or the check below proves nothing.
+//
+// The sky stays out of bloom through `toDisplay`, whatever radiance the physical sky has. The second look is
+// test-owned and drawn only inside this page: full physical weight at an exposure far past the bloom threshold,
+// so an unmapped sky would glow and a mapped one cannot. A sky pixel beside the sun then reads the same with
+// bloom on and off.
+const BRIGHT_SKY_EXPOSURE = 1000;
 const BESIDE_PIXELS = 24;
 const skySunGlowCheck = async (lake, level, lakeErrors) => {
-  const views = await lake.evaluate(async (surface) => {
-    const { engine } = globalThis.primaryActionTest;
-    engine.mood.setCrackCheck(false);
-    engine.mood.setFilm(false);
-    engine.mood.setPost(true);
-    const [x, y, z] = engine.scene.getObjectByName('skyDome').material.uniforms.uSunDir.value.toArray();
-    // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
-    const pitch = Math.asin(y);
-    const yaw = Math.atan2(-x, -z);
-    const byBloom = {};
-    for (const bloom of [false, true]) {
-      engine.mood.setBloom(bloom);
-      byBloom[bloom ? 'bloom' : 'plain'] = await globalThis.lakeLook(surface + 2, pitch, yaw);
-    }
-    return byBloom;
-  }, level);
+  const views = await lake.evaluate(
+    async ({ surface, exposure }) => {
+      const { engine } = globalThis.primaryActionTest;
+      engine.mood.setCrackCheck(false);
+      engine.mood.setFilm(false);
+      engine.mood.setPost(true);
+      const dome = engine.scene.getObjectByName('skyDome');
+      const { uniforms } = dome.material;
+      const [x, y, z] = uniforms.uSunDir.value.toArray();
+      // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
+      const pitch = Math.asin(y);
+      const yaw = Math.atan2(-x, -z);
+      const look = () => globalThis.lakeLook(surface + 2, pitch, yaw);
+      engine.mood.setBloom(false);
+      const disc = await look();
+      // Runs at the draw, after the frame's own update has set the uniforms.
+      const { onBeforeRender } = dome;
+      dome.onBeforeRender = () => {
+        uniforms.uPhysicalWeight.value = 1;
+        uniforms.uPhysicalExposure.value = exposure;
+      };
+      const byBloom = {};
+      for (const bloom of [false, true]) {
+        engine.mood.setBloom(bloom);
+        byBloom[bloom ? 'bloom' : 'plain'] = await look();
+      }
+      dome.onBeforeRender = onBeforeRender;
+      return { disc, ...byBloom };
+    },
+    { surface: level, exposure: BRIGHT_SKY_EXPOSURE },
+  );
   process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
   const brightness = ({ r, g, b }) => r + g + b;
   assert.ok(
-    brightness(views.plain.colour) > brightness(views.plain.beside) + 3 * horizonTolerance,
+    brightness(views.disc.colour) > brightness(views.disc.beside) + 3 * horizonTolerance,
     'the sun disc is in frame, brighter than the sky beside it',
   );
   assert.ok(
     apart(views.bloom.beside, views.plain.beside) <= horizonTolerance,
-    'the sky beside the sun gains no glow from bloom',
+    'the bright sky beside the sun gains no glow from bloom',
   );
   assert.deepEqual(lakeErrors, []);
 };
