@@ -100,7 +100,7 @@ export interface SkyEnvironment {
 export const createSkyEnvironment = (
   renderer: WebGLRenderer,
   openSky: Mesh,
-  { faceSize, rebakeChange, rebakeInterval, strength }: SkyEnvironmentTuning,
+  { faceSize, rebakeChange, rebakeRealSeconds, strength }: SkyEnvironmentTuning,
   patches: MaterialPatches,
 ): SkyEnvironment => {
   const scene = new Scene();
@@ -108,7 +108,7 @@ export const createSkyEnvironment = (
   const faces = new WebGLCubeRenderTarget(faceSize, { type: HalfFloatType, generateMipmaps: false });
   const camera = new CubeCamera(0.1, 10, faces);
   const prefilter = new PMREMGenerator(renderer);
-  const due = skyBakeSchedule(rebakeChange, rebakeInterval);
+  const due = skyBakeSchedule(rebakeChange, rebakeRealSeconds);
   const bake = (target?: WebGLRenderTarget): WebGLRenderTarget => {
     camera.update(renderer, scene);
     return prefilter.fromCubemap(faces.texture, target);
