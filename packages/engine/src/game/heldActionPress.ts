@@ -10,6 +10,34 @@ export type HeldActionTrigger = 'dominant' | 'off' | 'forward';
 /** A lone action keeps its own hold, such as a weapon's charge or a magazine's stripping, so only a choice opens. */
 export const heldMenuOpens = (actions: readonly ItemAction[]): boolean => actions.length >= 2;
 
+/** What else may own a use press at the moment it is made. */
+export interface HeldUseState {
+  replaying: boolean;
+  throwingStance: boolean;
+  inputLocked: boolean;
+  actionRefused: boolean;
+  building: boolean;
+  /** The melee guard is held, so the dominant hold is the power attack. */
+  enGarde: boolean;
+  /** The off hand has a use the forward button reaches. */
+  offHandUse: boolean;
+}
+
+/**
+ * Whether a use press goes to the held item's action press rather than its other owner. En-garde keeps the dominant
+ * hold for the power attack, so a fighter's press never opens a menu.
+ */
+export const heldUsePressTaken = (trigger: HeldActionTrigger, state: HeldUseState): boolean =>
+  !(
+    state.replaying ||
+    state.throwingStance ||
+    state.inputLocked ||
+    state.actionRefused ||
+    state.building ||
+    (trigger === 'dominant' && state.enGarde) ||
+    (trigger === 'forward' && !state.offHandUse)
+  );
+
 export interface HeldActionPressPorts {
   menu: ActionMenu;
   item: (hand: HandSide) => Item | undefined;

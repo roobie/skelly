@@ -1,5 +1,5 @@
 import type { Item } from '@skelly/engine/inventory';
-import { ActionMenu, HeldActionPress, radialEntries } from '@skelly/engine/sim';
+import { ActionMenu, HeldActionPress, type HeldUseState, heldUsePressTaken, radialEntries } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 
 const HOLD_MS = 300;
@@ -117,5 +117,24 @@ describe('held item action press', () => {
     press.release('off', HOLD_MS * 2);
     expect(acts).toEqual([]);
     expect(menu.isOpen('held', 5)).toBe(true);
+  });
+});
+
+describe('held use press owner', () => {
+  const free: HeldUseState = {
+    replaying: false,
+    throwingStance: false,
+    inputLocked: false,
+    actionRefused: false,
+    building: false,
+    enGarde: false,
+    offHandUse: true,
+  };
+
+  it('leaves the dominant press to the power attack while en-garde, and only that press', () => {
+    const enGarde = { ...free, enGarde: true };
+    expect(heldUsePressTaken('dominant', free)).toBe(true);
+    expect(heldUsePressTaken('dominant', enGarde)).toBe(false);
+    expect(heldUsePressTaken('forward', enGarde)).toBe(true);
   });
 });

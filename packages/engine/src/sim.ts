@@ -142,7 +142,13 @@ export {
 } from './game/actionMenu.ts';
 export { firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
 export { furnitureActionsFor } from './game/furnitureActions.ts';
-export { HeldActionPress, type HeldActionTrigger, heldMenuOpens } from './game/heldActionPress.ts';
+export {
+  HeldActionPress,
+  type HeldActionTrigger,
+  type HeldUseState,
+  heldMenuOpens,
+  heldUsePressTaken,
+} from './game/heldActionPress.ts';
 export { unarmedMeleeWeapon } from './game/melee.ts';
 export { createPlayerBody, type MoveIntent, physicsFor, playerTuning } from './game/player.ts';
 export { PlayerTickActions } from './game/playerTickActions.ts';

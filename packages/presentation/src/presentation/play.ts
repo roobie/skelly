@@ -88,6 +88,7 @@ import {
   HeldActionPress,
   type HeldActionTrigger,
   heldMenuActions,
+  heldUsePressTaken,
   type InteractionTarget,
   interactionAffordance,
   type LongJob,
@@ -1959,14 +1960,16 @@ const startPlayWith = (
   });
   /** Hands a use press to the held item's action press, unless something else owns the hands or the input. */
   const pressHeldUse = (trigger: HeldActionTrigger, at: number): boolean => {
-    if (
-      replayPlayer ||
-      router.throwingStance() ||
-      compression.locksInput ||
-      sim.body.actionRefusal ||
-      debugTools?.buildOn ||
-      (trigger === 'forward' && !offHandUse(registry, inventory))
-    ) {
+    const taken = heldUsePressTaken(trigger, {
+      replaying: Boolean(replayPlayer),
+      throwingStance: router.throwingStance(),
+      inputLocked: compression.locksInput,
+      actionRefused: Boolean(sim.body.actionRefusal),
+      building: Boolean(debugTools?.buildOn),
+      enGarde: router.readiness.shouldPlayerBlock(),
+      offHandUse: Boolean(offHandUse(registry, inventory)),
+    });
+    if (!taken) {
       return false;
     }
     const hand = trigger === 'dominant' ? dominantSide(inventory.character) : offSide(inventory.character);
