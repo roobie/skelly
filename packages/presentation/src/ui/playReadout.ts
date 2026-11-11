@@ -5,7 +5,10 @@ import type { Vec3 } from '@skelly/engine/world';
 import type { Object3D } from 'three';
 import type { DebugReadout } from '../presentation/debugInterface.ts';
 
-type Measurements = Omit<DebugReadout, 'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors'>;
+type Measurements = Omit<
+  DebugReadout,
+  'movement' | 'position' | 'clock' | 'memoryBytes' | 'revealedActors' | 'meshingDone'
+>;
 
 export interface PlayReadoutSource {
   readonly measurements: Measurements;
@@ -38,6 +41,7 @@ export const playReadout = (source: PlayReadoutSource): DebugReadout => {
     position: [positionBlocks[0] * s, positionBlocks[1] * s, positionBlocks[2] * s],
     clock: formatClock(calendar),
     memoryBytes,
+    meshingDone: measurements.holes === 0,
     revealedActors: Array.from(revealedPositions, (pos) => pos.map((v) => (v * s).toFixed(1)).join(',')).slice(0, 40),
   };
 };
