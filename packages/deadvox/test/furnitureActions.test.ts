@@ -92,6 +92,13 @@ describe('action menu directions in content', () => {
     ).toContain('ui[0].actionMenu.directions.held.sharpen');
   });
 
+  it('refuses a dead zone that reaches the entry radius, which would leave every entry unreachable', () => {
+    const { radiusPixels } = baseTuning.actionMenu;
+    expect(withActionMenu({ ...baseTuning.actionMenu, deadZonePixels: radiusPixels })).toContain(
+      'ui[0].actionMenu.deadZonePixels',
+    );
+  });
+
   it('refuses a menu action with no direction', () => {
     const { push: _, ...furniture } = baseTuning.actionMenu.directions.furniture;
     expect(

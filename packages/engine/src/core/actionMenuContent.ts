@@ -47,10 +47,14 @@ const angularGapDegrees = (a: number, b: number): number => {
 
 /**
  * Two directions closer than two half-angles would share pointer positions, so one entry could never be picked
- * there; more directions than the cap would not fit on one ring.
+ * there; more directions than the cap would not fit on one ring. A dead zone reaching the entry radius would leave
+ * every entry unreachable, so no pull could ever choose.
  */
 export const actionMenuIssues = (tuning: ActionMenuTuning, path: string): [string, string][] => {
   const out: [string, string][] = [];
+  if (tuning.deadZonePixels >= tuning.radiusPixels) {
+    out.push([`${path}.deadZonePixels`, `must be less than radiusPixels ${tuning.radiusPixels}`]);
+  }
   for (const [menu, directions] of Object.entries(tuning.directions)) {
     const entries = Object.entries(directions);
     entries.forEach(([action, degrees], index) => {
