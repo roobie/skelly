@@ -42,7 +42,7 @@ const models = new ModelLibrary(
   { ...registry, models: new Map([[modelDef.id, modelDef]]) },
   (message) => modelErrors.push(message),
   { packAssets: productAssets.models },
-  1,
+  { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
 );
 const waitFor = async (condition) => {
   const deadline = performance.now() + 20000;
