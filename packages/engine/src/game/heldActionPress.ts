@@ -76,12 +76,16 @@ export class HeldActionPress {
     this.pressed = undefined;
   }
 
-  /** Forgets the press and closes its menu, as losing focus or a refusal does. */
+  /**
+   * Forgets the press and closes the ring it holds open, as losing focus or a refusal does. A child list its release
+   * opened is a menu of its own, closed by Back or Escape, so the input context change it causes cannot close it.
+   */
   cancel(): void {
+    const ringHeld = this.menuTrigger !== undefined;
     this.gesture.cancel();
     this.pressed = undefined;
     this.menuTrigger = undefined;
-    if (this.ports.menu.opened?.source === 'held') {
+    if (ringHeld && this.ports.menu.opened?.source === 'held') {
       this.ports.menu.close();
     }
   }

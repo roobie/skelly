@@ -10,7 +10,7 @@ const choices = [
 ];
 const entries = radialEntries(choices, { own: 0, sharpen: 90 });
 
-const fixture = (actions: readonly { id: string; label: string }[] = choices) => {
+const fixture = (actions: readonly { id: string; label: string }[] = choices, menuEntries = entries) => {
   const menu = new ActionMenu();
   const hands: { right: Item | undefined } = { right: { uid: 5 } as Item };
   const taps: string[] = [];
@@ -19,7 +19,7 @@ const fixture = (actions: readonly { id: string; label: string }[] = choices) =>
     menu,
     item: (hand) => (hand === 'right' ? hands.right : undefined),
     actions: () => actions,
-    menuActions: () => entries,
+    menuActions: () => menuEntries,
     holdRealMs: HOLD_MS,
     tap: (hand, trigger) => taps.push(`${hand}:${trigger}`),
     act: (item, id) => acts.push(`${item.uid}:${id}`),
@@ -73,6 +73,25 @@ describe('held item action press', () => {
     hands.right = { uid: 6 } as Item;
     press.release('dominant', HOLD_MS * 2);
     expect([...taps, ...acts]).toEqual([]);
+  });
+
+  it('closes the held ring on cancel but keeps the child list its release opened', () => {
+    const treat = [...choices, { id: 'treat', label: 'Treat', children: [{ id: 'arm', label: 'Arm' }] }];
+    const treatEntries = radialEntries(treat, { own: 0, sharpen: 180, treat: 90 });
+    const held = fixture(treat, treatEntries);
+    held.press.press('right', 'dominant', 0);
+    held.press.update(HOLD_MS);
+    held.press.cancel();
+    expect(held.menu.opened).toBeUndefined();
+
+    const { press, menu } = fixture(treat, treatEntries);
+    press.press('right', 'dominant', 0);
+    press.update(HOLD_MS);
+    menu.point(treatEntries, { x: tuning.radiusPixels, y: 0 }, tuning);
+    press.release('dominant', HOLD_MS * 2);
+    expect(menu.childOpen).toBe(true);
+    press.cancel();
+    expect(menu.childOpen).toBe(true);
   });
 
   it('ignores the release of a press it did not take', () => {
