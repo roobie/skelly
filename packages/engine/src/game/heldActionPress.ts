@@ -26,7 +26,8 @@ export interface HeldActionPressPorts {
 
 /**
  * Owns the use press of a held item with a choice of actions: a tap keeps the ordinary use, a hold opens the item's
- * action menu, and the release confirms what the menu points at. Releasing at the centre chooses nothing.
+ * action menu, and the release confirms what the menu points at. Releasing at the centre chooses nothing. A ring
+ * already open, as Back from a child list leaves it, is confirmed by the next press's release.
  */
 export class HeldActionPress {
   private readonly ports: HeldActionPressPorts;
@@ -50,8 +51,13 @@ export class HeldActionPress {
     if (this.pressed || !item || !heldMenuOpens(this.ports.actions(item))) {
       return false;
     }
-    this.ports.menu.close();
     this.pressed = { hand, uid: item.uid, trigger };
+    if (this.ports.menu.isOpen('held', item.uid) && !this.ports.menu.childOpen) {
+      // Back from a child list leaves the ring open, so this press confirms it rather than starting a new gesture.
+      this.menuTrigger = trigger;
+      return true;
+    }
+    this.ports.menu.close();
     this.gesture.keyDown(trigger, at);
     return true;
   }

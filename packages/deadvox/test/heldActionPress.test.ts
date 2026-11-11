@@ -94,6 +94,21 @@ describe('held item action press', () => {
     expect(menu.childOpen).toBe(true);
   });
 
+  it('confirms the ring Back left open with the next press, without a new hold', () => {
+    const treat = [...choices, { id: 'treat', label: 'Treat', children: [{ id: 'arm', label: 'Arm' }] }];
+    const treatEntries = radialEntries(treat, { own: 0, sharpen: 180, treat: 90 });
+    const { press, menu, acts } = fixture(treat, treatEntries);
+    press.press('right', 'dominant', 0);
+    press.update(HOLD_MS);
+    menu.point(treatEntries, { x: tuning.radiusPixels, y: 0 }, tuning);
+    press.release('dominant', HOLD_MS * 2);
+    menu.chooseChild(undefined, menu.childList(treatEntries)!);
+    expect(press.press('right', 'dominant', HOLD_MS * 3)).toBe(true);
+    menu.point(treatEntries, { x: 0, y: tuning.radiusPixels }, tuning);
+    press.release('dominant', HOLD_MS * 3 + 1);
+    expect(acts).toEqual(['5:sharpen']);
+  });
+
   it('ignores the release of a press it did not take', () => {
     const { press, menu, acts } = fixture();
     press.press('right', 'dominant', 0);
