@@ -5,7 +5,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { type ActorFigureFiles, type Registry, readActorFigureFiles } from '@skelly/engine/content';
 import {
   admitPacks,
-  comparePackKeys,
+  compareCodeUnits,
   logicalKey,
   type PackFileEntry,
   type PackInput,
@@ -49,7 +49,7 @@ export const readAvailablePacks = (packageRoot: string, external: string = EXTER
     })
     // The save identity lists packs in this order, so it follows the game's: `packages/engine/src/game/bundledContent.ts`,
     // `createBundledContent`.
-    .sort((left, right) => comparePackKeys(`${left}/pack/manifest.json`, `${right}/pack/manifest.json`));
+    .sort((left, right) => compareCodeUnits(`${left}/pack/manifest.json`, `${right}/pack/manifest.json`));
   const inputs = roots.map((root) => {
     const manifest = parse(
       PackManifestSchema,
