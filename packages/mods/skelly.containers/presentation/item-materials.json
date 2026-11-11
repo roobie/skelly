@@ -9,8 +9,8 @@
   "assets/models/apothecary_jar.glb": {
     "materials": ["ceramic-white", "paint-armour-blue", "paper-pages-cream", "paper-butcher", "cord-cotton"]
   },
-  "assets/models/aquarium_medium_drying.glb": { "materials": ["glass-clear", "plastic-white", "paint-cream"] },
   "assets/models/aquarium_medium.glb": { "materials": ["plastic-black", "glass-clear"] },
+  "assets/models/aquarium_medium_drying.glb": { "materials": ["glass-clear", "plastic-white", "paint-cream"] },
   "assets/models/armband_pouch.glb": { "materials": ["webbing-black", "plastic-matte-black", "cloth-canvas"] },
   "assets/models/backpack.glb": { "materials": ["cloth-navy", "plastic-matte-black", "nylon-black"] },
   "assets/models/bedsheet_sling_bag.glb": { "materials": ["cloth-cream", "cloth-white"] },
@@ -144,11 +144,11 @@
   },
   "assets/models/gym_bag.glb": { "materials": ["cloth-navy", "webbing-black", "plastic-matte-black"] },
   "assets/models/handgun_case.glb": { "materials": ["polymer-black", "plastic-grey", "rubber-black"] },
-  "assets/models/heavy_load_bearing_vest_with_sling.glb": {
-    "materials": ["cloth-olive-drab", "plastic-black", "cord-olive", "polymer-black", "steel-grey"]
-  },
   "assets/models/heavy_load_bearing_vest.glb": {
     "materials": ["cloth-olive-drab", "plastic-black", "webbing-olive-dark"]
+  },
+  "assets/models/heavy_load_bearing_vest_with_sling.glb": {
+    "materials": ["cloth-olive-drab", "plastic-black", "cord-olive", "polymer-black", "steel-grey"]
   },
   "assets/models/heavy_machine_gun_belt_pouch.glb": {
     "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black"]
@@ -162,8 +162,8 @@
   },
   "assets/models/javelin_bag.glb": { "materials": ["leather-brown", "leather-black", "skin-rawhide"] },
   "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "steel-grey", "paint-charcoal"] },
-  "assets/models/jerrycan_backpack.glb": { "materials": ["plastic-red", "plastic-matte-black", "cloth-khaki"] },
   "assets/models/jerrycan.glb": { "materials": ["plastic-red", "plastic-black"] },
+  "assets/models/jerrycan_backpack.glb": { "materials": ["plastic-red", "plastic-matte-black", "cloth-khaki"] },
   "assets/models/keg.glb": { "materials": ["alu-bare", "steel-stainless"] },
   "assets/models/lamp_oil_bottle.glb": { "materials": [null, null, null, "fuel"] },
   "assets/models/large_belt_loop.glb": { "materials": ["cloth-olive-drab", "plastic-black"] },
@@ -199,10 +199,10 @@
   "assets/models/leather_rifle_case.glb": { "materials": ["leather-tan", "leather-chestnut", "brass-dull"] },
   "assets/models/leather_stone_pouch.glb": { "materials": ["leather-brown", "leather-black", "brass"] },
   "assets/models/light_load_bearing_vest.glb": { "materials": ["cloth-olive-drab", "cord-olive", "plastic-black"] },
+  "assets/models/load_bearing_vest.glb": { "materials": ["cloth-olive-drab", "plastic-black", "cord-olive"] },
   "assets/models/load_bearing_vest_with_sling.glb": {
     "materials": ["cloth-olive-drab", "plastic-black", "cord-olive", "polymer-black", "steel-grey"]
   },
-  "assets/models/load_bearing_vest.glb": { "materials": ["cloth-olive-drab", "plastic-black", "cord-olive"] },
   "assets/models/long_leather_rifle_case.glb": { "materials": ["leather-oxblood", "leather-black", "brass-dull"] },
   "assets/models/longarm_bag.glb": { "materials": ["cloth-canvas", "leather-brown", "steel-grey", "cloth-khaki"] },
   "assets/models/lunchbox.glb": { "materials": ["plastic-blue", "plastic-white"] },

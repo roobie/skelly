@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { basename, dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 import { formatJson } from './jsonnet/compile.mjs';
 
 const METADATA_PATH = 'presentation/item-materials.json';
@@ -38,7 +39,7 @@ const modelMetadata = (base, repositoryRoot) => {
   const external = resolve(repositoryRoot, EXTERNAL_ROOT, packId(base), 'assets/models');
   const owned = glbFiles(local).map((file) => ({ file, directory: local }));
   const built = glbFiles(external).map((file) => ({ file, directory: external }));
-  const files = [...owned, ...built].sort((left, right) => left.file.localeCompare(right.file));
+  const files = [...owned, ...built].sort((left, right) => compareCodeUnits(left.file, right.file));
   const metadata = {};
   for (const { file, directory } of files) {
     const key = `assets/models/${file}`;

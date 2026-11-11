@@ -13,10 +13,10 @@
   },
   "assets/models/hard_rind_fruit.glb": { "materials": ["chitin-brown", "bark", "plant-dried", "plant-purple"] },
   "assets/models/jelly_fruit.glb": { "materials": ["jelly-teal", "verdigris", "plant-dried", "crystal-glow-white"] },
+  "assets/models/koji_rice.glb": { "materials": ["paint-cream", "cloth-sage"] },
   "assets/models/koji_rice_parcel.glb": {
     "materials": ["straw-pale", "jute", "cloth-cream", "plant-dried", "fleece-pale", "cloth-sage"]
   },
-  "assets/models/koji_rice.glb": { "materials": ["paint-cream", "cloth-sage"] },
   "assets/models/mouldy_soy_wheat_cake.glb": { "materials": ["mushroom-pale", "fleece-pale", "cloth-sage"] },
   "assets/models/pale_bush_berries.glb": { "materials": ["pearl", "plant-purple", "verdigris"] },
   "assets/models/ration_dessert_pouch.glb": { "materials": ["polymer-fde", "paint-red"] },
