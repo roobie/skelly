@@ -481,6 +481,42 @@ describe('feet at body.pos.y (built pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('repacks only the actors whose pose inputs changed since the last sync', () => {
+    const renderer = new MobActorMeshes(0.5, 3, { actors: registry.actors });
+    const packed: number[] = [];
+    const internals = renderer as unknown as {
+      packSkeleton: (globalRow: number, ...rest: unknown[]) => void;
+    };
+    const original = internals.packSkeleton.bind(renderer);
+    internals.packSkeleton = (globalRow, ...rest) => {
+      packed.push(globalRow);
+      original(globalRow, ...rest);
+    };
+    const store = new MapEntityStore<Actor>();
+    const still = makeActor([0, 0, -5]);
+    const mover = makeActor([4, 0, -5]);
+    const stillId = store.add(still);
+    const moverId = store.add(mover);
+    const { states } = renderer as unknown as { states: Map<number, { globalRow: number }> };
+    try {
+      renderer.sync(store, 1 / 60);
+      const stillRow = states.get(stillId)!.globalRow;
+      const moverRow = states.get(moverId)!.globalRow;
+      packed.length = 0;
+
+      renderer.sync(store, 1 / 60);
+      expect(packed).toEqual([]);
+
+      mover.body.pos[0] += 0.5;
+      mover.renderPrevious = { ...mover.renderPrevious, pos: [...mover.body.pos] };
+      renderer.sync(store, 1 / 60);
+      expect(packed).toContain(moverRow);
+      expect(packed).not.toContain(stillRow);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
     const canvas = new EventTarget() as HTMLCanvasElement;
     const renderer = new MobActorMeshes(0.5, 3, {
