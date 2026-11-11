@@ -6,11 +6,12 @@ import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
 import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
 import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
 import { templateReachableStandingPositions } from '@skelly/engine/internal/core/templateSpatial.ts';
-import { type Chunk, CitySite, makeScale, type Vec3 } from '@skelly/engine/world';
+import { type Chunk, CitySite, makeScale, type SiteTerrainPlan, type Vec3 } from '@skelly/engine/world';
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
+import { withTerrainBoxes } from './fixtures/terrain.ts';
 
 const registry = baseRegistry();
 const profile = [...registry.scenarios.values()].find((row) => row.composition)!;
@@ -32,10 +33,12 @@ const obstruction = (at: Readonly<Vec3>) => ({
   block: registry.blockIds.get('stone')!,
 });
 class ObstructedStartSite extends CitySite {
+  declare readonly terrain: SiteTerrainPlan;
   readonly obstructions: readonly BlockBox[];
   constructor(obstructions: readonly BlockBox[], ownPlan = plan) {
     super(9, registry, scale, ownPlan);
     this.obstructions = obstructions;
+    this.terrain = withTerrainBoxes(this, obstructions).terrain;
   }
   override stamp(chunk: Chunk): void {
     super.stamp(chunk);

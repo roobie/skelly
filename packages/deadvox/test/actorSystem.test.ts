@@ -157,6 +157,7 @@ const normalized = (v: Vec3): Vec3 => {
   return magnitude ? [v[0] / magnitude, v[1] / magnitude, v[2] / magnitude] : [0, 0, 0];
 };
 const spawnSite = (spawn: ActorSpawn): Site => ({
+  terrain: { kind: 'natural' },
   surface: { height: (_x, _z, natural) => natural, top: () => undefined },
   spawn: { pos: [0, 0, 0], yaw: 0 },
   stamp: () => undefined,

@@ -15,7 +15,13 @@ export interface TerrainPlacement {
   readonly turn: Turn;
 }
 
-export type SiteTerrainPlan =
+export type TerrainStamp =
+  | { readonly kind: 'boxes'; readonly boxes: readonly BlockBox[] }
+  | { readonly kind: 'placements'; readonly placements: readonly TerrainPlacement[] };
+
+export type SiteTerrainPlan = SiteTerrainMechanism & { readonly stamps?: readonly TerrainStamp[] };
+
+type SiteTerrainMechanism =
   | { readonly kind: 'natural' }
   | {
       readonly kind: 'city';

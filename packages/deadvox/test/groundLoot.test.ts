@@ -142,6 +142,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
   };
   const points = lootPointsByColumn(lootSourcesOf(registry, 'fixture_site', placement));
   const site: Site = {
+    terrain: { kind: 'natural' },
     surface: { height: () => 0, top: () => registry.blockIds.get(floor.id) },
     spawn: { pos: [2.5, 1, 3.5], yaw: 0 },
     stamp: () => undefined,

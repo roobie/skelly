@@ -69,6 +69,8 @@ export {
   placedPoint,
   type VoxelProvenance,
 } from './core/templates.ts';
+export { createTerrainEvaluator, type TerrainEvaluator } from './core/terrainEvaluator.ts';
+export type { SiteTerrainPlan, TerrainPlan } from './core/terrainPlan.ts';
 export { isEnclosed, World } from './core/world.ts';
 export {
   generateColumn,

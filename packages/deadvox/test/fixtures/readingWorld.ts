@@ -30,6 +30,27 @@ export const readingWorld = (registry: Registry, seed: number, scale: Scale): Si
   );
   return {
     spawn: { pos: fixture.spawn.pos as Vec3, yaw: fixture.spawn.yaw },
+    terrain: {
+      kind: 'weathering-pad',
+      data: {
+        blockSize: scale.blockSize,
+        padTop: fixture.floor / scale.blockSize - 1,
+        heightPad: {
+          x0: Number.NEGATIVE_INFINITY,
+          x1: Number.POSITIVE_INFINITY,
+          z0: Number.NEGATIVE_INFINITY,
+          z1: Number.POSITIVE_INFINITY,
+        },
+        materialPad: {
+          x0: Number.NEGATIVE_INFINITY,
+          x1: Number.POSITIVE_INFINITY,
+          z0: Number.NEGATIVE_INFINITY,
+          z1: Number.POSITIVE_INFINITY,
+        },
+        concrete: blockId(registry, fixture.ground),
+        structures: [],
+      },
+    },
     surface: {
       height: () => fixture.floor / scale.blockSize - 1,
       top: () => blockId(registry, fixture.ground),

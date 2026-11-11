@@ -106,9 +106,28 @@ export function createTerrainEvaluator(plan: TerrainPlan) {
     default:
       throw new Error(`Unknown terrain mechanism: ${String((site as { kind: unknown }).kind)}`);
   }
-  const terrain = { ...plan, ...evaluated };
+  const stamp = (chunk: Chunk): void => {
+    evaluated.stamp?.(chunk);
+    for (const stage of site.stamps ?? []) {
+      switch (stage.kind) {
+        case 'boxes':
+          stampChunk(chunk, stage.boxes);
+          break;
+        case 'placements':
+          for (const placement of stage.placements) {
+            stampPlacement(chunk, placement);
+          }
+          break;
+        default:
+          throw new Error(`Unknown terrain stamp: ${String((stage as { kind: unknown }).kind)}`);
+      }
+    }
+  };
+  const terrain = { ...plan, ...evaluated, stamp };
   const { surface } = evaluated;
   return {
+    plan,
+    surface,
     scale: plan.scale,
     height: (x: number, z: number) => {
       const natural = terrainHeight(plan.seed, plan.shape, plan.scale, x, z);
@@ -121,7 +140,7 @@ export function createTerrainEvaluator(plan: TerrainPlan) {
     generateChunk: (cell: Vec3) => {
       const chunk = generateChunk(terrain, cell);
       stampChunk(chunk, plan.structures);
-      evaluated.stamp?.(chunk);
+      stamp(chunk);
       return chunk;
     },
     generateColumn: (cx: number, cz: number) => generateColumn(terrain, cx, cz, plan.structures),

@@ -118,6 +118,7 @@ describe('fixture save/load continuation', () => {
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
     const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: dusk } };
     const timedSite = {
+      terrain: { kind: 'natural' },
       surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
       stamp: () => undefined,

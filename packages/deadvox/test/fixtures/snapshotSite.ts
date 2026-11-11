@@ -1,10 +1,12 @@
 import type { Registry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
-import { CHUNK, type Chunk, type Scale } from '@skelly/engine/world';
+import { CHUNK, type Chunk, type Scale, type SiteTerrainPlan } from '@skelly/engine/world';
+import { withTerrainBoxes } from './terrain.ts';
 
 /** A small authored world with independent furniture, zombie and foliage columns. */
 export class SnapshotSite extends AuthoredSite {
+  declare readonly terrain: SiteTerrainPlan;
   readonly bounds = { x0: 192, z0: -32, x1: 448, z1: 96 };
   readonly hedges: readonly BlockBox[];
   constructor(seed: number, registry: Registry, scale: Scale) {
@@ -26,6 +28,7 @@ export class SnapshotSite extends AuthoredSite {
       tracks: [],
     });
     this.hedges = [{ min: [224, 41, 0], max: [225, 44, 1], block: registry.blockIds.get('leaves')! }];
+    this.terrain = withTerrainBoxes(this, this.hedges).terrain;
   }
   override actorsIn(cx: number, cz: number) {
     return cz === 0 && (cx === 8 || cx === 9)

@@ -994,6 +994,7 @@ describe('input replay', () => {
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
     const site: Site = {
+      terrain: fixtureSite.terrain,
       surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
       stamp: (chunk) => fixtureSite.stamp(chunk),
@@ -1262,6 +1263,7 @@ describe('input replay', () => {
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
     };
     const site: Site = {
+      terrain: fixtureSite.terrain,
       surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
       stamp: (chunk) => fixtureSite.stamp(chunk),
