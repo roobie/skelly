@@ -35,6 +35,7 @@ const overcastSigns = (sky: Sky): number[] => [
   -sky.dome.sun.brightness,
   -sky.dome.sun.glow,
   -sky.lightIntensity,
+  -sky.ambientIntensity,
   -chroma(sky.dome.zenith),
   -chroma(sky.dome.horizonGlow),
   -chroma(sky.sky),
@@ -51,7 +52,7 @@ const outOfRange = (sky: Sky): number[] => {
     ...sky.dome.zenith,
     ...sky.dome.horizonGlow,
   ];
-  const brightnesses = [sky.dome.sun.brightness, sky.dome.sun.glow, sky.lightIntensity];
+  const brightnesses = [sky.dome.sun.brightness, sky.dome.sun.glow, sky.lightIntensity, sky.ambientIntensity];
   return [...fractions.filter((value) => value < 0 || value > 1), ...brightnesses.filter((value) => value < 0)];
 };
 
@@ -163,21 +164,23 @@ describe('cloudiness and rain in the sky', () => {
     }
   });
 
-  it('turns a fair noon overcast: more cloud, less physical sky and sun, a dimmer light and a greyer zenith', () => {
+  it('turns a fair noon overcast: more cloud, less physical sky and sun, dimmer lights and a greyer zenith', () => {
     const clear = skyInWeather(skyAt(NOON), {});
     const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
     expect(overcast.dome.clouds.cover).toBeGreaterThan(clear.dome.clouds.cover);
     expect(overcast.dome.physical.weight).toBeLessThan(clear.dome.physical.weight);
     expect(overcast.dome.sun.brightness).toBeLessThan(clear.dome.sun.brightness);
     expect(overcast.lightIntensity).toBeLessThan(clear.lightIntensity);
+    expect(overcast.ambientIntensity).toBeLessThan(clear.ambientIntensity);
     expect(chroma(overcast.dome.zenith)).toBeLessThan(chroma(clear.dome.zenith));
   });
 
-  it('darkens a noon overcast further when it rains: a dimmer light and a darker zenith', () => {
+  it('darkens a noon overcast further when it rains: dimmer lights and a darker zenith', () => {
     const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
     const rain = skyInWeather(skyAt(NOON), { rain: 1 });
     const sum = (colour: Rgb) => colour[0] + colour[1] + colour[2];
     expect(rain.lightIntensity).toBeLessThan(overcast.lightIntensity);
+    expect(rain.ambientIntensity).toBeLessThan(overcast.ambientIntensity);
     expect(sum(rain.dome.zenith)).toBeLessThan(sum(overcast.dome.zenith));
   });
 
@@ -203,6 +206,7 @@ describe('cloudiness and rain in the sky', () => {
       physicalWeight: 0,
       sun: 0,
       light: 0,
+      ambient: 0,
       skyColour: { saturation: 0, brightness: 0 },
     };
     const tunings = [
