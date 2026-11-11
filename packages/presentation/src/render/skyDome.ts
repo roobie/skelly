@@ -115,11 +115,14 @@ const VERTEX_SHADER = /* glsl */ `
   }
 `;
 
-/** Layer `index` of the cloud field over `col`. Literal indices keep sampler use legal in GLSL ES 1.0. */
+/**
+ * Layer `index` of the cloud field over `col`, lit between the tops' light and the deck's by its shade. Literal indices
+ * keep sampler use legal in GLSL ES 1.0.
+ */
 const layerGlsl = (index: number): string => /* glsl */ `
     if ( uLayerOpacity[${index}] > 0.0 ) {
-      col = mix( col, litCloud, cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] )
-        * uLayerOpacity[${index}] * cloudOpacity );
+      col = mix( col, mix( litTops, litDeck, uLayerShade[${index}] ),
+        cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * cloudOpacity );
     }`;
 
 const fragmentShader = (layers: number): string => /* glsl */ `
@@ -168,11 +171,13 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uSimSeconds;
   uniform vec3 uLightDir;
   uniform vec3 uCloudLight;
+  uniform vec3 uCloudDeckLight;
   uniform vec3 uCloudAmbient;
   uniform sampler2D uCloudA;
   uniform sampler2D uCloudB;
   uniform vec4 uLayer[${layers}];
   uniform float uLayerOpacity[${layers}];
+  uniform float uLayerShade[${layers}];
 
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
@@ -288,7 +293,12 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     // Clouds cover the stars, the moon and the sun's disc behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
     if ( cloudOpacity > 0.0 && uCover > 0.0 ) {
-      vec3 litCloud = uCloudAmbient + uCloudLight * ( 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
+      // A layer's deck share takes the main light only up to the deck's lower cap while the tops take it up to 1; with
+      // one light for every layer a closing cover reads as a flat sheet. A light already under the deck's cap lights
+      // deck and tops alike.
+      float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
+      vec3 litTops = uCloudAmbient + uCloudLight * facing;
+      vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
       vec2 plane = dir.xz / max( dir.y, 0.06 );
       ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
     }
@@ -363,11 +373,13 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uSimSeconds: { value: 0 },
     uLightDir: { value: new Vector3(0, 1, 0) },
     uCloudLight: { value: new Color() },
+    uCloudDeckLight: { value: new Color() },
     uCloudAmbient: { value: new Color() },
     uCloudA: { value: textures[0]! },
     uCloudB: { value: textures[1]! },
     uLayer: { value: clouds.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
     uLayerOpacity: { value: clouds.layers.map((layer) => layer.opacity) },
+    uLayerShade: { value: clouds.layers.map((layer) => layer.shade) },
   };
   const domeMaterial = (domeUniforms: typeof uniforms): ShaderMaterial =>
     new ShaderMaterial({
@@ -436,6 +448,9 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       uniforms.uLightDir.value.set(...sky.light);
       setSrgb(uniforms.uCloudLight.value, sky.lightColor).multiplyScalar(
         clamp01(sky.lightIntensity) * shape.cloudLight.light,
+      );
+      setSrgb(uniforms.uCloudDeckLight.value, sky.lightColor).multiplyScalar(
+        Math.min(clamp01(sky.lightIntensity), shape.cloudLight.deckLight) * shape.cloudLight.light,
       );
       setSrgb(uniforms.uCloudAmbient.value, sky.ambientSky).multiplyScalar(
         clamp01(sky.ambientIntensity) * shape.cloudLight.ambient,

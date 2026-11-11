@@ -167,7 +167,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
         tightHalo: { power: 900, gain: 0.6 },
         wideHalo: { power: 16, gain: 0.9 },
       },
-      cloudLight: { light: 0.8, ambient: 0.25, facing: 0.4 },
+      cloudLight: { light: 0.8, ambient: 0.25, facing: 0.4, deckLight: 0.5 },
       cloudShape: { coverGain: 1.2, edgeSoftness: 0.3, horizonFade: [0.02, 0.14] },
     },
     environment: {
@@ -179,9 +179,9 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
     clouds: {
       warp: 0.6,
       layers: [
-        { scale: 0.35, angle: 0, drift: [0.0006, 0.00013], opacity: 0.32 },
-        { scale: 0.83, angle: 2.1, drift: [-0.0011, 0.0004], opacity: 0.5 },
-        { scale: 2.07, angle: 4.0, drift: [0.0028, -0.0019], opacity: 0.42 },
+        { scale: 0.35, angle: 0, drift: [0.0006, 0.00013], opacity: 0.32, shade: 1 },
+        { scale: 0.83, angle: 2.1, drift: [-0.0011, 0.0004], opacity: 0.5, shade: 1 },
+        { scale: 2.07, angle: 4.0, drift: [0.0028, -0.0019], opacity: 0.42, shade: 0 },
       ],
     },
   },

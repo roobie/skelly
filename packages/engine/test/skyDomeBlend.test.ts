@@ -91,10 +91,10 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
       tightHalo: { power: 500, gain: 0.5 },
       wideHalo: { power: 20, gain: 0.4 },
     },
-    cloudLight: { light: 0.7, ambient: 0.3, facing: 0.5 },
+    cloudLight: { light: 0.7, ambient: 0.3, facing: 0.5, deckLight: 0.5 },
     cloudShape: { coverGain: 1, edgeSoftness: 0.25, horizonFade: [0.03, 0.12] },
   },
-  clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5 }] },
+  clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5, shade: 0 }] },
   environment: { faceSize: 32, rebakeChange: 0.05, rebakeRealSeconds: 0.5, strength: 1 },
 });
 
