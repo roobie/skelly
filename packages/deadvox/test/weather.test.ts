@@ -38,6 +38,21 @@ const overcastSigns = (sky: Sky): number[] => [
   -chroma(sky.sky),
 ];
 
+/** The values outside their range: fractions and colour channels outside [0, 1], brightnesses below 0. */
+const outOfRange = (sky: Sky): number[] => {
+  const fractions = [
+    sky.dome.clouds.cover,
+    sky.dome.clouds.opacity,
+    sky.dome.physical.weight,
+    ...sky.sky,
+    ...sky.heightFogColor,
+    ...sky.dome.zenith,
+    ...sky.dome.horizonGlow,
+  ];
+  const brightnesses = [sky.dome.sun.brightness, sky.dome.sun.glow, sky.lightIntensity];
+  return [...fractions.filter((value) => value < 0 || value > 1), ...brightnesses.filter((value) => value < 0)];
+};
+
 describe('fogginess in the sky', () => {
   it('is a light mist by default, at which the height fog is the keyframes own', () => {
     for (const hour of HOURS) {
@@ -105,7 +120,13 @@ describe('cloudiness and rain in the sky', () => {
       const sky = skyAt(hour);
       const dry = skyInWeather(sky, {});
       const wet = skyInWeather(sky, { cloudiness: 1, rain: 1 });
-      const unmoved = ({ fogNear, fogFar, heightFog, tone, bloom }: Sky) => ({ fogNear, fogFar, heightFog, tone, bloom });
+      const unmoved = ({ fogNear, fogFar, heightFog, tone, bloom }: Sky) => ({
+        fogNear,
+        fogFar,
+        heightFog,
+        tone,
+        bloom,
+      });
       expect(unmoved(wet)).toEqual(unmoved(dry));
     }
   });
@@ -155,25 +176,11 @@ describe('cloudiness and rain in the sky', () => {
       skyColour: { saturation: 0, brightness: 0 },
     };
     const tunings = [BASE_DAY_CYCLE.weather, { ...BASE_DAY_CYCLE.weather, cloudiness: strongest, rain: strongest }];
-    const unit = (value: number) => {
-      expect(value).toBeGreaterThanOrEqual(0);
-      expect(value).toBeLessThanOrEqual(1);
-    };
-    for (const tuning of tunings) {
-      for (const hour of HOURS) {
-        for (const level of [...STEPS, -3, 7]) {
-          const sky = skyInWeather(skyAt(hour), { cloudiness: level, rain: level }, tuning);
-          unit(sky.dome.clouds.cover);
-          unit(sky.dome.clouds.opacity);
-          unit(sky.dome.physical.weight);
-          for (const colour of [sky.sky, sky.heightFogColor, sky.dome.zenith, sky.dome.horizonGlow]) {
-            colour.forEach(unit);
-          }
-          for (const value of [sky.dome.sun.brightness, sky.dome.sun.glow, sky.lightIntensity]) {
-            expect(value).toBeGreaterThanOrEqual(0);
-          }
-        }
-      }
+    const cases = tunings.flatMap((tuning) =>
+      HOURS.flatMap((hour) => [...STEPS, -3, 7].map((level) => ({ tuning, hour, level }))),
+    );
+    for (const { tuning, hour, level } of cases) {
+      expect(outOfRange(skyInWeather(skyAt(hour), { cloudiness: level, rain: level }, tuning))).toEqual([]);
     }
   });
 });

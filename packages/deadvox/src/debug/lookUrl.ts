@@ -27,8 +27,8 @@ import {
 } from '@skelly/engine/look';
 import {
   clampWeatherLevel,
-  type Weather,
   WEATHERING_TUNING_KEYS,
+  type Weather,
   type WeatheringUrlState,
   writeWeatheringParams,
 } from '@skelly/engine/sky';
