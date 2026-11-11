@@ -423,7 +423,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
 
 // Puts a helmet on and takes it off, reading the edge/centre ratio of the frames either side. The reads sit a few
 // frames apart because reads seconds apart can see a different daylit scene, and they use the drawing buffer because
-// a page screenshot costs seconds on CI's software renderer.
+// a page screenshot costs seconds on CI's software renderer. Each read runs once the frame's draws have finished:
+// below render scale 1 the scene is drawn into a sub-viewport that only a later upscale covers
+// (render/screenScale.ts, ScreenScale.render), so a read on the held layer's stack would measure the unrendered
+// strips, and the adaptive scale's step changes between reads would pass for a scene change.
 const visorRatios = (page) =>
   page.evaluate(async () => {
     const r = globalThis.primaryActionTest;
@@ -459,7 +462,11 @@ const visorRatios = (page) =>
         held.render = (...args) => {
           render.apply(held, args);
           held.render = render;
-          drawn(ratio());
+          // A microtask, not this stack: it runs once the frame callback (the upscale included)
+          // has returned, and still before any other task can touch the buffer.
+          queueMicrotask(() => {
+            drawn(ratio());
+          });
         };
       });
     // The frame after the visor's state is seen, so the read cannot land before it is drawn.
