@@ -42,10 +42,10 @@ const testEngine = (isSolid: (x: number, y: number, z: number) => boolean, seed 
 
 const contextFor = (
   engine: Engine,
-  player: Body,
+  body: Body,
   actors: ActorSystem,
   queries: PlacementQueries = engine,
-): SpawnContext => ({ engine, queries, player, actors });
+): SpawnContext => ({ engine, queries, player: body, actors });
 
 const actorsFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: number, z: number) => boolean) =>
   new ActorSystem({
