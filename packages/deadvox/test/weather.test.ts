@@ -115,6 +115,13 @@ describe('fogginess in the sky', () => {
 });
 
 describe('cloudiness and rain in the sky', () => {
+  it('leaves a saturated sky exactly as it is when both are 0', () => {
+    const saturated: Rgb = [0.8, 0.35, 0.15];
+    const base = skyAt(NOON);
+    const sky: Sky = { ...base, sky: saturated, dome: { ...base.dome, zenith: saturated, horizonGlow: saturated } };
+    expect(withoutFog(skyInWeather(sky, {}))).toEqual(withoutFog(sky));
+  });
+
   it('never moves the fog, the tone or the bloom', () => {
     for (const hour of HOURS) {
       const sky = skyAt(hour);

@@ -61,8 +61,11 @@ const inFog = (sky: Sky, fogginess: number, { fog, defaults }: WeatherTuning): S
   heightFog: sky.heightFog * fogginess * (1 / defaults.fogginess),
 });
 
-/** One weather state's sky at `level` of its strength. */
+/** One weather state's sky at `level` of its strength; at 0 the very sky, since greying round-trips colours inexactly. */
 const underSky = (sky: Sky, state: WeatherTuning['cloudiness'], level: number): Sky => {
+  if (level === 0) {
+    return sky;
+  }
   const saturation = scaled(1, state.skyColour.saturation, level);
   const brightness = scaled(1, state.skyColour.brightness, level);
   const greyed = (colour: Rgb): Rgb => {
