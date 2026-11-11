@@ -5,7 +5,7 @@ import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
 import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
-import type { Actor } from '@skelly/engine/sim';
+import { type Actor, realTimestamp } from '@skelly/engine/sim';
 import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
 import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
 import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
@@ -292,7 +292,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const updateFrame = () => {
     syncActor(view, camera);
     view.updateHeld(0, restingHands, flashlight);
-    view.prepareLighting(daylight);
+    view.prepareLighting(daylight, realTimestamp(0));
     view.updateHeld(0, restingHands, flashlight);
   };
   updateFrame();

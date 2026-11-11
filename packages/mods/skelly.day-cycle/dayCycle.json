@@ -76,6 +76,7 @@
     "environment": {
       "faceSize": 64,
       "rebakeChange": 0.02,
+      "rebakeRealSeconds": 0.5,
       "strength": 1
     },
     "keys": [

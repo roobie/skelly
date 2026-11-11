@@ -1,5 +1,6 @@
 // The sky's reflection on models; the why is in `packages/deadvox/GRAPHICS.md`, "Look decisions".
 
+import { type RealSeconds, type RealTimestamp, realSeconds } from '@skelly/engine/sim';
 import type { Sky, SkyEnvironmentTuning } from '@skelly/engine/sky';
 import {
   CubeCamera,
@@ -17,8 +18,6 @@ import { MaterialPatches, materialPatch } from './materialPatches.ts';
 /** The parts of a sky the dome draws from; fog distance, bloom and tone change nothing in it. */
 const DRAWN: readonly (keyof Sky)[] = [
   'sky',
-  'sunDirection',
-  'light',
   'lightColor',
   'lightIntensity',
   'ambientSky',
@@ -46,20 +45,39 @@ const largestChange = (a: unknown, b: unknown): number => {
   return 0;
 };
 
+/**
+ * Where the sun and the light that follows its arc point. Below the horizon the sun's disc is under the ground fog and
+ * the physical sky is off, but the wide glow still lights the twilight sky above it, so these count whenever the sun is
+ * up or either sky has glow. What remains at night, the moon and the clouds' lit side, is judged too dim and small for
+ * the blurred reflection to show it move.
+ */
+const SUN_BORNE: readonly (keyof Sky)[] = ['sunDirection', 'light'];
+
+const sunShows = (sky: Sky): boolean => sky.sunDirection[1] > 0 || sky.dome.sun.glow > 0;
+
 /** How far the drawn sky has moved between two skies: the largest change in any value the dome draws from. */
-const drawnSkyChange = (a: Sky, b: Sky): number => Math.max(...DRAWN.map((key) => largestChange(a[key], b[key])));
+const drawnSkyChange = (a: Sky, b: Sky): number =>
+  Math.max(
+    ...DRAWN.map((key) => largestChange(a[key], b[key])),
+    ...(sunShows(a) || sunShows(b) ? SUN_BORNE.map((key) => largestChange(a[key], b[key])) : []),
+  );
 
 /**
  * Decides when the reflection is stale, measured against the sky last baked so slow drift adds up to a bake. The
- * returned check is true when the sky has moved past the threshold, and then records it as baked.
+ * returned check is true when the sky has moved past the threshold and `minInterval` real seconds have passed since
+ * the last bake, and then records it as baked. A fast-forwarded clock moves the sky every frame, so the interval, not
+ * the sky, bounds the bake rate; a held-back change is baked as soon as the interval allows.
  */
-export const skyBakeSchedule = (threshold: number): ((sky: Sky) => boolean) => {
-  let baked: Sky | undefined;
-  return (sky) => {
-    if (baked && drawnSkyChange(baked, sky) <= threshold) {
+export const skyBakeSchedule = (
+  threshold: number,
+  minInterval: RealSeconds,
+): ((sky: Sky, now: RealSeconds) => boolean) => {
+  let baked: { sky: Sky; at: number } | undefined;
+  return (sky, now) => {
+    if (baked && (now - baked.at < minInterval || drawnSkyChange(baked.sky, sky) <= threshold)) {
       return false;
     }
-    baked = structuredClone(sky);
+    baked = { sky: structuredClone(sky), at: now };
     return true;
   };
 };
@@ -72,7 +90,7 @@ const takesEnvironment = (material: Material): boolean =>
 
 export interface SkyEnvironment {
   /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. */
-  refresh: (sky: Sky) => boolean;
+  refresh: (sky: Sky, now: RealTimestamp) => boolean;
   /** Keeps the environment out of the diffuse light of a scene's materials now, for a scene the shared patches do not walk. */
   patchNow: (scene: Scene) => void;
   /** Gives a scene the reflection at `exposure`, the sky exposure the scene does not apply per fragment itself. */
@@ -87,7 +105,7 @@ export interface SkyEnvironment {
 export const createSkyEnvironment = (
   renderer: WebGLRenderer,
   openSky: Mesh,
-  { faceSize, rebakeChange, strength }: SkyEnvironmentTuning,
+  { faceSize, rebakeChange, rebakeRealSeconds, strength }: SkyEnvironmentTuning,
   patches: MaterialPatches,
 ): SkyEnvironment => {
   const scene = new Scene();
@@ -95,7 +113,7 @@ export const createSkyEnvironment = (
   const faces = new WebGLCubeRenderTarget(faceSize, { type: HalfFloatType, generateMipmaps: false });
   const camera = new CubeCamera(0.1, 10, faces);
   const prefilter = new PMREMGenerator(renderer);
-  const due = skyBakeSchedule(rebakeChange);
+  const due = skyBakeSchedule(rebakeChange, realSeconds(rebakeRealSeconds));
   const bake = (target?: WebGLRenderTarget): WebGLRenderTarget => {
     camera.update(renderer, scene);
     return prefilter.fromCubemap(faces.texture, target);
@@ -122,8 +140,8 @@ export const createSkyEnvironment = (
   own.add(patch);
   return {
     patchNow: (served) => own.apply(served),
-    refresh(sky) {
-      if (!due(sky)) {
+    refresh(sky, now) {
+      if (!due(sky, realSeconds(now / 1000))) {
         return false;
       }
       bake(prefiltered);

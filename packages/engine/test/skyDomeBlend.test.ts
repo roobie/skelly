@@ -95,7 +95,7 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     cloudShape: { coverGain: 1, edgeSoftness: 0.25, horizonFade: [0.03, 0.12] },
   },
   clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5 }] },
-  environment: { faceSize: 32, rebakeChange: 0.05, strength: 1 },
+  environment: { faceSize: 32, rebakeChange: 0.05, rebakeRealSeconds: 0.5, strength: 1 },
 });
 
 const state = dayPhaseAt(cycle, 0);
