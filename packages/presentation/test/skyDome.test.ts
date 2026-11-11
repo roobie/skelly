@@ -87,4 +87,9 @@ describe('the dome driven by a sky', () => {
   it("draws the look's whole physical weight with the sun high", () => {
     expect(physicalWeightWithSunAt(1)).toBe(physical.weight);
   });
+
+  it("draws half the look's physical weight with the sun midway through the physical band", () => {
+    const [from, to] = physicalBand;
+    expect(physicalWeightWithSunAt((from + to) / 2)).toBeCloseTo(physical.weight / 2, 12);
+  });
 });
