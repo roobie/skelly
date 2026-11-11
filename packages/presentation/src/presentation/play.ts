@@ -2377,15 +2377,15 @@ const startPlayWith = (
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
-  document.addEventListener(
-    'mouseup',
-    (e) => {
-      if (isForwardButton(e)) {
-        heldActionPress.release('forward', e.timeStamp);
-      }
-    },
-    true,
-  );
+  // Cancelling the side button's pointerdown suppresses its mouseup, so the release is heard on pointerup as well. A
+  // second release of the same press is ignored.
+  const onForwardRelease = (e: MouseEvent) => {
+    if (isForwardButton(e)) {
+      heldActionPress.release('forward', e.timeStamp);
+    }
+  };
+  document.addEventListener('pointerup', onForwardRelease, true);
+  document.addEventListener('mouseup', onForwardRelease, true);
   inputTarget.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitKey()) {
       return;
