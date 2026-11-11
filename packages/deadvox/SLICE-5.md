@@ -353,17 +353,15 @@ lane the order is a dependency; across lanes only the joins named here hold.
   by share and breach charges follow, then furniture knock-out and push-off, which
   replace the fall refusal with landing crush; see
   `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
-- **Construction.** The radial action menu goes first because every later hold job
-  (Repair, Take apart, Continue, Fortify) enters through it; the spike it ports lives
-  only on its branch and is adopted, held items too. Taking a world piece apart
-  through work follows, as a recorded command over the existing reservation and yield
-  contract; see `packages/engine/src/core/disassembly.ts`, `planDisassembly`, and
-  `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`.
-  Bulk-stock pieces and rubble clearing build on that command, under "Settled
-  base-building playtest rules". Cell repair, placement and the kit content come
-  after. Player-facing repair, the Repair
-  entry and its pinned view, returns with the #1469 crafting view and queues behind
-  it; see `DESIGN.md`, "World repair selection". Engine rounds do not.
+- **Construction.** The radial action menu is built (`INTERFACE.md`, "HUD"); every
+  hold job (Repair, Take apart, Continue, Fortify) enters through it. Player-facing
+  world work, repair and take apart alike, is one design and queues behind the #1469
+  crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
+  the take-apart command over the existing reservation and yield contract (see
+  `packages/engine/src/core/disassembly.ts`, `planDisassembly`, and
+  `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`), bulk-stock
+  pieces and rubble clearing under "Settled base-building playtest rules", then cell
+  repair, placement and the kit content.
 - **Built systems.** Appliance controls and processes after placement; brute
   knockback and displacement independently, since nothing above needs it; fire last,
   under "Settled fire and exposure rules".
@@ -375,30 +373,18 @@ lane the order is a dependency; across lanes only the joins named here hold.
   of package 7. The site stays a content value so the later site round changes
   content, not the pack's rules.
 
-The first three rounds, in dispatch order:
+The next rounds, in dispatch order:
 
-1. **Adopt the radial action menu.** One widget in the presentation package, one
-   selection owner in engine game code for furniture and held items (see
-   `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`), slots and
-   sizes as content beside `packages/mods/skelly.ui/ui.jsonnet`, `ui`. Rules the port keeps: hold opens and
-   tap keeps the ordinary action; release at centre cancels; each action has a fixed
-   direction that never moves when entries appear, so muscle memory holds; only the
-   hemisphere holding an entry can select it, with a direction indicator; a one-action
-   held item holds its own repeat or charge instead of a menu; Treat opens a child ring
-   (see `packages/deadvox/INTERFACE.md`, "HUD"); every movable piece opens the menu even with Lift alone; no keyboard aim.
-   Directions for repair, continue and take-apart are authored now so later rounds
-   add no layout change, but this round offers none of them: take-apart arrives with
-   round 2, and Repair waits on the #1469 view. Its reasons go in `DESIGN.md`,
-   "Moving furniture".
-2. **Take a world piece apart through work.** The menu's first job after adoption:
-   a recorded player command that runs disassembly on a world piece under the
-   existing work, reservation and yield contract, so no second ownership path
-   appears; see `packages/engine/src/game/commandRouter.ts`, `craftRepairEntity`, and
-   `packages/engine/src/core/disassembly.ts`, `planDisassembly`. Choosing it shows a
-   review first and work starts only on Start, because review is not consent. The
-   review selects no inputs, so this round does not wait for the #1469 view. Its
+1. **Take a world piece apart through work, engine only.** A recorded player command
+   that runs disassembly on a world piece under the existing work, reservation and
+   yield contract, so no second ownership path appears; see
+   `packages/engine/src/game/commandRouter.ts`, `craftRepairEntity`, and
+   `packages/engine/src/core/disassembly.ts`, `planDisassembly`. The menu offers no
+   Take apart entry yet: its review is the same world-work view as repair's, and that
+   view is one design with the #1469 crafting view, so the entry, the review and Start
+   arrive together with repair's; see `DESIGN.md`, "World repair selection". Its
    reasons go in `DESIGN.md`, "Edits persist".
-3. **Adopt the first wave in a base-building scenario pack.** A committed scenario
+2. **Adopt the first wave in a base-building scenario pack.** A committed scenario
    pack on an existing authored site with buildings, so the other lanes have a
    shipped scenario to test in before the new site exists; see `docs/url-mods.md`,
    "Committed scenarios", and `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`,
