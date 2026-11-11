@@ -136,6 +136,7 @@ it('draws the blocks as they are after an edit lands while their chunk is being 
     structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 1,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
