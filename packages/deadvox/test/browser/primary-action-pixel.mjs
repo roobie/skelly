@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
@@ -217,7 +218,8 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       inventory.add(inventory.create(wear), { kind: 'worn' });
     }
   }
-  const rifle = rifleUid === undefined ? inventory.create(gunType) : inventory.itemByUid(rifleUid);
+  // The first optic goes onto a gun stripped of its sights; later ones replace its predecessor.
+  const rifle = rifleUid === undefined ? r.scopedGunAtAnyStation(gunType, opticType) : inventory.itemByUid(rifleUid);
   const scope = inventory.create(opticType);
   const definition = inventory.registry.items.get(gunType);
   const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
@@ -232,7 +234,9 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
     }
     throw new Error(`Could not fit ${opticType}`);
   };
-  fitOptic();
+  if (rifleUid !== undefined) {
+    fitOptic();
+  }
   r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'ads') {
     r.debugGunPose.toggle('ads');
@@ -783,34 +787,9 @@ const heldItemChecks = async (chromium, port) => {
 // back and samples until the acquisition completes. Runs inside the page.
 const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
-  const { inventory, session } = r;
+  const { session } = r;
   r.input.controls.pitch = 0;
-  // rifle_assault ships iron-sighted, so the sights come off before the optic goes on. The authoring tool certifies
-  // particular stations, so the first one that takes the optic wins.
-  const scopedAcquisitionRifle = () => {
-    const gunType = 'rifle_assault';
-    const attachmentKind = (child) =>
-      inventory.registry.models.get(inventory.registry.items.get(child?.type)?.model)?.gun?.attachment?.kind;
-    const stations = inventory.registry.models
-      .get(inventory.registry.items.get(gunType).model)
-      .gun.attachmentSlots.map(({ id }) => id);
-    for (const station of stations) {
-      try {
-        const gun = inventory.create(gunType);
-        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
-          if (['iron-sight', 'optic'].includes(attachmentKind(child))) {
-            inventory.fitSlot(gun, slot, undefined);
-          }
-        }
-        inventory.fitSlot(gun, station, inventory.create('optic_fixed_prism_4x'));
-        return gun;
-      } catch {
-        // Another station may fit.
-      }
-    }
-    throw new Error('Could not fit the acquisition fixture optic');
-  };
-  const rifle = scopedAcquisitionRifle();
+  const rifle = r.scopedGunAtAnyStation('rifle_assault', 'optic_fixed_prism_4x');
   r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'hip') {
     r.debugGunPose.toggle('hip');
@@ -926,6 +905,7 @@ const opticZoomCheck = async (chromium, port) => {
   // One session also exercises clearing masks when switching between optic presentations.
   // The short-relief prism also protects the world camera's near-plane boundary.
   const { page } = await enterTestHouse(chromium, port);
+  await installScopedGun(page);
   // The optic's sight picture must arrive with the acquisition motion, not on the toggle's frame.
   await timePhase('ads-acquisition-motion', async () => {
     const acquisition = await page.evaluate(adsAcquisitionMotionRecord);

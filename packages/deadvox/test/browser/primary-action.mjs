@@ -21,6 +21,7 @@ import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
@@ -2655,6 +2656,7 @@ try {
     assert.deepEqual(first.swings.at(-1), { result: true, profile: loadout.profile, hand: 'left' });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
     await finishedSwing();
+    await installScopedGun(page);
     await page.evaluate(async (magazineUrl) => {
       const { magazineWellCalibre } = await import(magazineUrl);
       const r = globalThis.primaryActionTest;
@@ -2681,22 +2683,6 @@ try {
             def.ammo
           ),
       );
-      // No stock gun ships scoped, so the fixture fits a variable optic onto a magazine-fed gun, in place of the sights
-      // it ships with. The authoring tool certifies particular gun, optic and station triples, so a trial fit finds one
-      // that takes.
-      const scopedGun = (gunType, station, opticType) => {
-        const gun = r.inventory.create(gunType);
-        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
-          const kind = r.inventory.registry.models.get(r.inventory.registry.items.get(child?.type)?.model)?.gun
-            ?.attachment?.kind;
-          if (kind === 'iron-sight' || kind === 'optic') {
-            r.inventory.fitSlot(gun, slot, undefined);
-          }
-        }
-        r.inventory.fitSlot(gun, station, r.inventory.create(opticType));
-        return gun;
-      };
-      r.scopedGun = scopedGun;
       const variableOptics = defs.filter((def) => {
         const range = r.inventory.registry.models.get(def.model)?.gun?.attachment?.properties.magnification;
         return range && range.min < range.max && def.opticZoom?.step > 0;
@@ -2710,7 +2696,7 @@ try {
         )
         .find(({ gun, optic, station }) => {
           try {
-            scopedGun(gun.id, station, optic.id);
+            r.scopedGun(gun.id, station, optic.id);
             return true;
           } catch {
             return false;
