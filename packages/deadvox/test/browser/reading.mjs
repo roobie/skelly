@@ -293,31 +293,19 @@ try {
       stanceBeforeToggle,
     );
     const walk = async (actionId, targetX, increasing) => {
-      const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-      const release = await holdInputAction(page, actionId);
-      try {
-        await waitForSimulation(
-          page,
-          ({ x, up }) => {
-            const { session, body } = globalThis.readingWitness;
-            return {
-              time: session.sim.time,
-              paused: session.sim.paused,
-              reached: up ? body.pos[0] >= x : body.pos[0] <= x,
-            };
-          },
-          { x: targetX, up: increasing },
-          {
-            seconds: 10,
-            from,
-            label: `walk ${actionId} to ${targetX}`,
-            record,
-            stop: release,
-          },
-        );
-      } finally {
-        await release();
-      }
+      await waitForSimulation(
+        page,
+        ({ x, up }) => {
+          const { session, body } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: up ? body.pos[0] >= x : body.pos[0] <= x,
+          };
+        },
+        { x: targetX, up: increasing },
+        { seconds: 10, label: `walk ${actionId} to ${targetX}`, record, hold: actionId },
+      );
     };
     // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
     await page.evaluate(() => {
@@ -925,10 +913,9 @@ try {
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
     }));
-    // The midnight check depends on where this walk ends, so it stops on a destination in the page, never on a
-    // Node-side release: the key goes up in the poll that sees the destination reached, so the stop is one frame
-    // past it whatever the driver latency. The destination is a block from the start, far enough that the poll is
-    // armed before the player gets there. Reading closes by the walk and is checked after the stop.
+    // The midnight check depends on where this walk ends. `walk` arms its stop in the page before the key goes
+    // down, so the walk ends within a frame of the destination whatever the driver latency. Reading closes by the
+    // walk and is checked after the stop.
     await walk('movement.forward', beforeMove.position[0] + 1, true);
     await page.waitForFunction(() => document.querySelector('#reading').hidden);
     const afterMove = await page.evaluate(() => ({
