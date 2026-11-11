@@ -18,6 +18,10 @@
     },
     {
       "kind": "content",
+      "path": "controls-actors.json"
+    },
+    {
+      "kind": "content",
       "path": "enemies.json"
     },
     {

@@ -389,6 +389,12 @@
   ],
   "layouts": [
     {
+      "actors": [
+        {
+          "position": [24, 0.5, 2],
+          "type": "shambler"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -2361,12 +2367,6 @@
           "light": "flashlight"
         }
       },
-      "shamblers": [
-        {
-          "position": [24, 0.5, 2],
-          "type": "shambler"
-        }
-      ],
       "startTimeGameTimeOfDay": "17:00",
       "terrain": [],
       "tracks": [

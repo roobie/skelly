@@ -1,5 +1,5 @@
 import { type ActorDef, requireDayCycle, type WeatheringDef } from '@skelly/engine/content';
-import { INPUT_REPLAY_MAX_BYTES } from '@skelly/engine/input';
+import { debugSpawnActorRow, INPUT_REPLAY_MAX_BYTES } from '@skelly/engine/input';
 import { lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
 import { getBuildRevision } from '@skelly/engine/packs';
 import type { DebugNoclipStep } from '@skelly/engine/session';
@@ -467,7 +467,7 @@ const panelTemplate = ({
       <div id="debug-kit-root"></div>
     `,
     shamblers: html`
-      <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
+      <div class="debug-actor-count" role="group" aria-label="Shambler spawn count">
         <span>Shambler count</span>
         <button type="button" aria-label="Decrease shambler count" ?disabled=${shamblerCount <= 1} @click=${() => setShamblerCount(shamblerCount - 1)}>−</button>
         <output aria-label="Current shambler spawn count" aria-live="polite">${shamblerCount}</output>
@@ -785,13 +785,13 @@ export const createDebugActions = ({
         run: () => hooks.sim.hurt(25, 'a debug key'),
       },
       {
-        id: 'debug.spawn-shamblers',
+        id: 'debug.spawn-actors',
         label: 'Spawn shamblers',
         group: 'shamblers',
         run: () => spawnShambler(shamblerCount()),
       },
       {
-        id: 'debug.spawn-unaware-shambler',
+        id: 'debug.spawn-unaware-actor',
         label: 'Spawn unaware shambler behind wall',
         group: 'shamblers',
         run: spawnUnawareShambler,
@@ -804,12 +804,10 @@ export const createDebugActions = ({
           hooks.emitTestNoise();
         },
       },
-      ...Array.from(actorTypes, (type) => ({
-        id: `debug.spawn-actor.${type.id}`,
-        label: `Spawn ${type.name}`,
-        group: 'shamblers' as const,
-        run: () => spawnActor(type.id, 1),
-      })),
+      ...Array.from(actorTypes, (type) => {
+        const { id, description } = debugSpawnActorRow(type.id, type.name);
+        return { id, label: description, group: 'shamblers' as const, run: () => spawnActor(type.id, 1) };
+      }),
       {
         id: 'debug.melee-aim-toggle',
         label: 'Melee aim boxes',
@@ -818,7 +816,7 @@ export const createDebugActions = ({
         run: toggleAim,
       },
       {
-        id: 'debug.freeze-shamblers',
+        id: 'debug.freeze-actors',
         label: 'Freeze shamblers',
         group: 'shamblers',
         state: isFrozen,
@@ -1406,7 +1404,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       id: action.id,
       key: action.key,
       label:
-        (action.id === 'debug.spawn-shamblers' ? `Spawn ${shamblerCount} shamblers` : action.label) +
+        (action.id === 'debug.spawn-actors' ? `Spawn ${shamblerCount} shamblers` : action.label) +
         (action.detail ? `: ${action.detail()}` : ''),
       state: viewState(action),
       run: () => {

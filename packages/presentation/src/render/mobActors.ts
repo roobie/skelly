@@ -199,7 +199,7 @@ const BOUNDING_RADIUS_M = 1.2;
 export const mobFigurePoolSizeThrough = (figureSeeds: readonly number[], figureSeed: number): number => {
   const index = figureSeeds.indexOf(figureSeed);
   if (index < 0) {
-    throw new RangeError(`Unknown shambler figure seed: ${figureSeed}`);
+    throw new RangeError(`Unknown actor figure seed: ${figureSeed}`);
   }
   return index + 1;
 };

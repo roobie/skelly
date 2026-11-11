@@ -413,7 +413,7 @@ describe('static reachability', () => {
       terrain: [],
       buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
       player: { position: [0, 0, 0], bearing: 0 },
-      shamblers: [{ type: 'fixture_direct', position: [8, 0, 8] }],
+      actors: [{ type: 'fixture_direct', position: [8, 0, 8] }],
       hordes: [{ id: 'fixture_horde', position: [12, 0, 12] }],
       woodlands: [],
       tracks: [],
@@ -582,7 +582,7 @@ describe('static reachability', () => {
         },
       ],
       player: { position: [1, 0.5, 1], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     };

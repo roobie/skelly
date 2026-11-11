@@ -367,7 +367,7 @@ local roofAir = [
     ground: 21, terrain: [],
     buildings: [{ template: 'rural_police_station', position: [52, 21, 52], rotation: 180 }] + yard.buildings,
     player: { position: [65.5, 21.5, 49], bearing: 180 },
-    shamblers: [], woodlands: [],
+    actors: [], woodlands: [],
     tracks: [{ points: [[34, 47], [94, 47]], width: 4, surface: 'dirt' }],
   }],
 })))

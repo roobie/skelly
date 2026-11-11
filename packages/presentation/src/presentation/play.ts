@@ -171,7 +171,7 @@ import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
-import type { SaveController } from '../ui/saveController.ts';
+import { contentLookup, type SaveController } from '../ui/saveController.ts';
 import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
@@ -475,7 +475,7 @@ const createInputReplayRecorder = (
   replaying: boolean,
   snapshot: () => Readonly<SaveSnapshot>,
   generatedColumns: readonly ReplayGeneratedColumn[],
-  startState: () => ReplayStartState,
+  { startState, registry }: { readonly startState: () => ReplayStartState; readonly registry: Engine['registry'] },
 ): InputReplayRecorder | undefined => {
   if (replaying) {
     return undefined;
@@ -483,6 +483,7 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot(), undefined, generatedColumns, {
     startState: startState(),
     nowRealMilliseconds: () => performance.now(),
+    contentLookup: (kind, id) => contentLookup(registry, kind, id),
   });
 };
 
@@ -1719,7 +1720,7 @@ const startPlayWith = (
         Boolean(options.replay),
         captureSnapshot,
         streamer.generatedColumns(),
-        captureReplayStartState,
+        { startState: captureReplayStartState, registry },
       );
     }
   };
@@ -1767,7 +1768,7 @@ const startPlayWith = (
 
   /**
    * Debug: fast-forwards the real clock by `hours` game hours through the same compressed
-   * stepping as rest (needs, scheduler and shamblers all run). Another call
+   * stepping as rest (needs, scheduler and actors all run). Another call
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {

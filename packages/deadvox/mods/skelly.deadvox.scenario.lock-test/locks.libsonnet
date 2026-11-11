@@ -49,7 +49,7 @@ local content = {
     terrain: [],
     buildings: [{ template: 'locked_shed', position: [-2, 0, -1], rotation: 0 }],
     player: { position: [0, 0.5, -1.5], bearing: 180 },
-    shamblers: [],
+    actors: [],
     woodlands: [],
     tracks: [],
   }],

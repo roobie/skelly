@@ -381,7 +381,7 @@ describe('content', () => {
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
-      layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
+      layout.actors.some(({ type }) => type === soldier.id) ? [layout] : [],
     );
     const soldierSite = (id: string) => id.startsWith('camp_') || id.startsWith('crisis_hq');
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
@@ -1289,7 +1289,7 @@ describe('content', () => {
         terrain: [],
         buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
         player: { position: [8, 0.5, 8], bearing: 0 },
-        shamblers: [],
+        actors: [],
         woodlands: [],
         tracks: [],
       },

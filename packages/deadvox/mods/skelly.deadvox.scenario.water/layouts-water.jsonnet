@@ -17,7 +17,7 @@
       }],
       buildings: [],
       player: { position: [256, 21.5, 392], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     },

@@ -288,7 +288,7 @@ export interface HitImpulse {
   /** N·s. */
   readonly impulse: number;
 }
-/** At most this many of the nearest moving shamblers emit footsteps in a simulation tick. */
+/** At most this many of the nearest moving actors emit footsteps in a simulation tick. */
 export const ACTOR_FOOTSTEP_VOICE_CAP = 3;
 
 export interface ActorSystemState {
@@ -341,7 +341,7 @@ export interface ActorSystemOptions {
   /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
    * each arm and the head of a dismembered downed body (see finishDowned). */
   onSevered?: (actor: Actor, region: HumanoidHitRegion) => void;
-  /** Sound-source position is in block coordinates; body is present when the shambler made the sound or was hit.
+  /** Sound-source position is in block coordinates; body is present when the actor made the sound or was hit.
    * The player's own swing and hit set `playerMelee`, since content picks their events. */
   onSound?: (event: SoundId, position: Vec3, body?: Actor, playerMelee?: boolean) => void;
   /** A spit left the mouth. No damage is applied here; the owner of the in-flight glob takes it from this. */
@@ -351,7 +351,7 @@ export interface ActorSystemOptions {
   onPlayerLeaveExposure?: (source: string) => void;
   onAcidImpact?: (position: Vec3, type: ActorDef) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
-  /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
+  /** Called for actual ground-travel footfalls of the nearest three moving actors. */
   onFootstep?: (position: Vec3, id: EntityId, body: Actor) => void;
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
    * it; the system reads nothing back. */
@@ -746,7 +746,7 @@ export class ActorSystem {
     return this.frozen;
   }
 
-  /** Debug-only caller-controlled pause for living shambler AI; this state is deliberately not saved. */
+  /** Debug-only caller-controlled pause for living actor AI; this state is deliberately not saved. */
   setFrozen(frozen: boolean): void {
     if (this.frozen === frozen) {
       return;
@@ -1400,7 +1400,7 @@ export class ActorSystem {
    * The side a fused mass meeting a wall slides to: the one its flesh can move to. Met at a slant, that is the
    * side the wall leads it along; caught on a door frame or wall end, the side that frees it. A random side
    * there could back it out of the gap it was sliding into or pin it. When both sides are open, or neither
-   * side is free, it draws, as a shambler always does.
+   * side is free, it draws, as a plain actor always does.
    */
   private readonly boundOpenSide = this.openSide.bind(this);
 

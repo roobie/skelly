@@ -1,4 +1,11 @@
-import { BindingRegistry, bindingIsDebugOnly, chordIssue, type InputContext } from '@skelly/engine/input';
+import {
+  BindingRegistry,
+  bindingIsDebugOnly,
+  bindingsFromControls,
+  chordIssue,
+  debugSpawnActorRow,
+  type InputContext,
+} from '@skelly/engine/input';
 import { DEBUG_ONLY_CONTEXTS } from '@skelly/engine/internal/core/inputActions.ts';
 import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
 import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
@@ -33,6 +40,7 @@ for (const key of ['addEventListener', 'removeEventListener'] as const) {
 }
 const { mountInputOptions } = await import('@skelly/presentation/internal/ui/inputOptions.ts');
 const { mountMenuPointer } = await import('@skelly/presentation/internal/ui/menuPointer.ts');
+const { controlsCardRows } = await import('@skelly/presentation/internal/presentation/controls.ts');
 const inputOptionsText = baseScreenText().inputOptions;
 
 afterAll(() => dom.happyDOM.abort());
@@ -93,6 +101,24 @@ const debugKeyCollision = () => {
 };
 
 describe('input options context visibility', () => {
+  it('labels a keyed debug spawn row by its actor content name after load', () => {
+    const typeId = 'fixture_roamer';
+    const { id } = debugSpawnActorRow(typeId, typeId);
+    const controls = [
+      { id: 'debug.gate', keys: [{ code: 'F2' }] },
+      { id, keys: [{ code: 'Numpad1' }] },
+    ];
+    const registry = new BindingRegistry(bindingsFromControls({ controls }));
+    const root = document.createElement('div');
+    document.body.append(root);
+    mountInputOptions(root, inputOptionsText, new KeyboardInput(registry), true);
+    for (const name of ['Fixture first name', 'Fixture second name']) {
+      registry.setSpawnActorNames([{ id: typeId, name }]);
+      expect(rowFor(root, id)?.querySelector('span')?.textContent).toContain(name);
+      expect(controlsCardRows(registry, true).find((row) => row.id === id)?.description).toContain(name);
+    }
+    root.remove();
+  });
   it('hides debug-only rows and context names in ordinary runs but keeps them in debug runs', () => {
     const ordinaryRoot = document.createElement('div');
     const debugRoot = document.createElement('div');

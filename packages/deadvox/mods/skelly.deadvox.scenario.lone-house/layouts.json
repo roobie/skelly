@@ -1,6 +1,13 @@
 {
   "layouts": [
     {
+      "actors": [
+        {
+          "chance": 1,
+          "position": [58, 25, 59.5],
+          "type": "shambler"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -47,13 +54,6 @@
         "bearing": 300,
         "position": [72, 21.5, 65]
       },
-      "shamblers": [
-        {
-          "chance": 1,
-          "position": [58, 25, 59.5],
-          "type": "shambler"
-        }
-      ],
       "terrain": [],
       "tracks": [
         {
