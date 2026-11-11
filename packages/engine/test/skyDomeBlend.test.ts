@@ -6,6 +6,7 @@ import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';
 import { skyAt } from '../src/core/sky.ts';
 
 const OVERCAST = {
+  kind: 'layered',
   clouds: { cover: 1, opacity: 1 },
   physicalWeight: 0,
   sun: 0,
@@ -71,7 +72,9 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
   weather: {
     defaults: { fogginess: 0.2, cloudiness: 0.2, rain: 0 },
     fog: { nearTighten: 0.5, farTighten: 0.5 },
-    cloudiness: { ...OVERCAST, fair: 0.2 },
+    fair: { cloudiness: 0.2, kind: 'layered' },
+    cloudy: { ...OVERCAST, cloudiness: 0.5 },
+    overcast: OVERCAST,
     rain: OVERCAST,
   },
   domeShape: {
@@ -94,12 +97,29 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     cloudLight: { light: 0.7, ambient: 0.3, facing: 0.5, deckLight: 0.5 },
     cloudShape: { coverGain: 1, edgeSoftness: 0.25, horizonFade: [0.03, 0.12] },
   },
-  clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5, shade: 0 }] },
+  clouds: {
+    layered: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5, shade: 0 }] },
+    scatter: {
+      scale: 1,
+      drift: [0, 0],
+      billow: 0,
+      region: { scale: 1, strength: 0 },
+      density: 1,
+      shadow: 0.5,
+      lining: 0,
+    },
+  },
   environment: { faceSize: 32, rebakeChange: 0.05, rebakeRealSeconds: 0.5, strength: 1 },
 });
 
 const state = dayPhaseAt(cycle, 0);
 const hourOf = (seconds: number): number => seconds / 3600;
+
+/** A look's dome as the sky draws it, with fair weather's kind of cloud, which the fixture makes the layered kind. */
+const inFairWeather = (dome: DayCycleDef['looks']['day']['dome']) => ({
+  ...dome,
+  clouds: { ...dome.clouds, scatter: 0 },
+});
 
 const leaves = (value: unknown, path = ''): [string, number][] =>
   typeof value === 'number'
@@ -108,15 +128,15 @@ const leaves = (value: unknown, path = ''): [string, number][] =>
 
 describe('sky dome blend', () => {
   it('takes a key look unchanged at its key and blends every dome field halfway between two keys', () => {
-    expect(skyAt(hourOf(state.nightfall), cycle).dome).toEqual(cycle.looks.night.dome);
-    expect(skyAt(hourOf(state.sunrise), cycle).dome).toEqual(cycle.looks.day.dome);
+    expect(skyAt(hourOf(state.nightfall), cycle).dome).toEqual(inFairWeather(cycle.looks.night.dome));
+    expect(skyAt(hourOf(state.sunrise), cycle).dome).toEqual(inFairWeather(cycle.looks.day.dome));
 
     const nightToDaySeconds = (state.sunrise - state.nightfall + SECONDS_PER_DAY) % SECONDS_PER_DAY;
     const midway = skyAt(hourOf((state.nightfall + nightToDaySeconds / 2) % SECONDS_PER_DAY), cycle).dome;
 
-    const night = new Map(leaves(cycle.looks.night.dome));
+    const night = new Map(leaves(inFairWeather(cycle.looks.night.dome)));
     const actual = new Map(leaves(midway));
-    const fields = leaves(cycle.looks.day.dome);
+    const fields = leaves(inFairWeather(cycle.looks.day.dome));
     expect(actual.size).toBe(fields.length);
     for (const [path, day] of fields) {
       expect(actual.get(path)).toBeCloseTo((night.get(path)! + day) / 2, 8);

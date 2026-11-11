@@ -161,7 +161,7 @@ const SkyLookSchema = strictObject({
 
 const FiniteNumber = pipe(number(), finite());
 
-/** One cloud layer of the field; the layers are drawn from the same warped noise at their own scale, angle and drift. */
+/** One layer of the layered cloud field. */
 const CloudLayerSchema = strictObject({
   scale: Positive,
   angle: FiniteNumber,
@@ -172,11 +172,39 @@ const CloudLayerSchema = strictObject({
   shade: UnitFraction,
 });
 
-/** The cloud field's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
-const CloudsSchema = strictObject({
+/** The kinds of cloud the dome draws; each weather state names the one it shows. */
+const CLOUD_KINDS = ['layered', 'scatter'] as const;
+const CloudKind = picklist(CLOUD_KINDS);
+
+/** The layered field: flat layers drawn from the same warped noise at their own scale, angle and drift. */
+const LayeredCloudsSchema = strictObject({
   warp: NonNegative,
   /** The sky dome (#1505) samples every layer on every sky pixel, so the count is capped to bound that cost. */
   layers: pipe(array(CloudLayerSchema), minLength(1), maxLength(4)),
+});
+
+/** The scatter kind: a few big soft clouds, each shaded deeper towards its core and lined where the light is behind it. */
+const ScatterCloudsSchema = strictObject({
+  /** The noise's frequency over the cloud plane: higher draws more, smaller clouds. */
+  scale: FinitePositive,
+  /** Noise-space drift per second along x and y. */
+  drift: tuple([FiniteNumber, FiniteNumber]),
+  /** How fast the noise's octaves slide past one another per second, so the clouds billow rather than slide as one. */
+  billow: FiniteNonNegative,
+  /** The large-scale swing in cover that leaves clear gaps beside dense banks: its frequency and its reach in cover. */
+  region: strictObject({ scale: FinitePositive, strength: UnitFraction }),
+  /** How fast a cloud turns opaque past its edge. */
+  density: FinitePositive,
+  /** The share of a cloud's light left at its self-shadowed core. */
+  shadow: UnitFraction,
+  /** How bright a cloud's rim shines with the light behind it. */
+  lining: FiniteNonNegative,
+});
+
+/** Each kind's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
+const CloudsSchema = strictObject({
+  layered: LayeredCloudsSchema,
+  scatter: ScatterCloudsSchema,
 });
 
 /**
@@ -210,31 +238,46 @@ const WeatherSkySchema = strictObject({
   }),
 });
 
+/** A weather state's sky and the kind of cloud it shows. */
+const WeatherStateSchema = strictObject({ ...WeatherSkySchema.entries, kind: CloudKind });
+
 /** The weather on top of the looks: fog, cloudiness and rain. */
-const WeatherTuningSchema = strictObject({
-  /**
-   * The weather a session starts at; the looks' height fog is exactly their own density at this fogginess, and
-   * their own clouds show at the fair cloudiness.
-   */
-  defaults: strictObject({
-    fogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
-    cloudiness: UnitFraction,
-    rain: UnitFraction,
+const WeatherTuningSchema = pipe(
+  strictObject({
+    /**
+     * The weather a session starts at; the looks' height fog is exactly their own density at this fogginess, and
+     * their own clouds show at the fair cloudiness.
+     */
+    defaults: strictObject({
+      fogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+      cloudiness: UnitFraction,
+      rain: UnitFraction,
+    }),
+    /** How far thick fog pulls the distance fog in; fractions only shrink it, so both ends stay below 1. */
+    fog: strictObject({
+      nearTighten: pipe(UnitFraction, maxValue(0.99)),
+      farTighten: pipe(UnitFraction, maxValue(0.99)),
+    }),
+    /** The looks' own sky: the cloudiness at which it shows, and its kind of cloud. */
+    fair: strictObject({ cloudiness: UnitFraction, kind: CloudKind }),
+    /** The sky between fair weather and overcast, at its own cloudiness. */
+    cloudy: strictObject({ ...WeatherStateSchema.entries, cloudiness: UnitFraction }),
+    /** The sky at full cloudiness. */
+    overcast: WeatherStateSchema,
+    /** Rain's sky on top of the overcast it brings with it. */
+    rain: WeatherStateSchema,
   }),
-  /** How far thick fog pulls the distance fog in; fractions only shrink it, so both ends stay below 1. */
-  fog: strictObject({
-    nearTighten: pipe(UnitFraction, maxValue(0.99)),
-    farTighten: pipe(UnitFraction, maxValue(0.99)),
+  rawCheck(({ dataset, addIssue }) => {
+    if (!dataset.typed) {
+      return;
+    }
+    // A clearer sky than fair weather, and each state on the way to overcast, needs its own room on the scale.
+    const { fair, cloudy } = dataset.value;
+    if (!(fair.cloudiness > 0 && fair.cloudiness < cloudy.cloudiness && cloudy.cloudiness < 1)) {
+      addIssue({ message: 'fair.cloudiness and cloudy.cloudiness must rise strictly inside (0, 1)' });
+    }
   }),
-  /** Overcast's sky, over the cloudiness above fair weather. */
-  cloudiness: strictObject({
-    ...WeatherSkySchema.entries,
-    /** The cloudiness at which the looks show their own clouds; inside (0, 1), so clearer and cloudier both have room. */
-    fair: pipe(UnitFraction, minValue(0.01), maxValue(0.99)),
-  }),
-  /** Rain's sky on top of the overcast it brings with it. */
-  rain: WeatherSkySchema,
-});
+);
 
 /** The sky's reflection on models: a prefiltered map of the dome alone, redrawn only once the look has moved enough to show. */
 const SkyEnvironmentSchema = strictObject({

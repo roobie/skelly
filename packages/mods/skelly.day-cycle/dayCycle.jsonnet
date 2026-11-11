@@ -132,8 +132,19 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
     weather: {
       defaults: { fogginess: 0.2, cloudiness: fairCloudiness, rain: 0 },
       fog: { nearTighten: 0.85, farTighten: 0.6 },
-      cloudiness: {
-        fair: fairCloudiness,
+      fair: { cloudiness: fairCloudiness, kind: 'layered' },
+      cloudy: {
+        cloudiness: 0.5,
+        kind: 'scatter',
+        clouds: { cover: 0.3, opacity: 1 },
+        physicalWeight: 0.8,
+        sun: 0.85,
+        light: 0.8,
+        ambient: 0.95,
+        skyColour: { saturation: 0.85, brightness: 0.97 },
+      },
+      overcast: {
+        kind: 'layered',
         clouds: { cover: 0.65, opacity: 1 },
         physicalWeight: 0.15,
         sun: 0.1,
@@ -142,6 +153,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
         skyColour: { saturation: 0.45, brightness: 0.9 },
       },
       rain: {
+        kind: 'layered',
         clouds: { cover: 1, opacity: 1 },
         physicalWeight: 0,
         sun: 0,
@@ -177,12 +189,23 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       strength: 1,
     },
     clouds: {
-      warp: 0.6,
-      layers: [
-        { scale: 0.35, angle: 0, drift: [0.0006, 0.00013], opacity: 0.32, shade: 1 },
-        { scale: 0.83, angle: 2.1, drift: [-0.0011, 0.0004], opacity: 0.5, shade: 1 },
-        { scale: 2.07, angle: 4.0, drift: [0.0028, -0.0019], opacity: 0.42, shade: 0 },
-      ],
+      layered: {
+        warp: 0.6,
+        layers: [
+          { scale: 0.35, angle: 0, drift: [0.0006, 0.00013], opacity: 0.32, shade: 1 },
+          { scale: 0.83, angle: 2.1, drift: [-0.0011, 0.0004], opacity: 0.5, shade: 1 },
+          { scale: 2.07, angle: 4.0, drift: [0.0028, -0.0019], opacity: 0.42, shade: 0 },
+        ],
+      },
+      scatter: {
+        scale: 0.36,
+        drift: [0.0012, 0.0005],
+        billow: 0.0004,
+        region: { scale: 0.11, strength: 0.22 },
+        density: 4.8,
+        shadow: 0.45,
+        lining: 0.6,
+      },
     },
   },
 }

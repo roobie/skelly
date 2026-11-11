@@ -1,7 +1,7 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
+  - you're changing the solar-phase look, the kinds of cloud the sky draws, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
   - you're changing sun shadow occlusion in interiors or underground
   - you're changing how models reflect the sky, how metal draws or when the sky's reflection is rebaked
   - you're changing wide ambient occlusion or its interaction with skylight
@@ -28,6 +28,8 @@ Models reflect the sky, because metal with nothing to reflect draws near black. 
 The sun's direction counts only while the sun is up or its glow is drawn: the wide glow lights the twilight sky from below the horizon, so dusk and dawn follow the sun, while the night, with no glow and a sun disc under the fog, does not rebake as the sun keeps moving. Judged, not measured: the moon crossing the night dome is too small and blurred in the reflection to show.
 
 Bakes are also spaced by a content interval of real seconds, so a fast-forwarded clock cannot bake every frame.
+
+The shipped fair sky is the layered kind of cloud, as judged by eye, while a cloudy sky shows the scatter kind: heaped fair-to-cloudy cloud is broken and lumpy, and overcast and rain return to the layered deck. A change of kind crossfades the two kinds' opacity rather than morphing one into the other, because they share no shape to morph; a kind with no share is skipped, so a sky of one kind pays only for that kind. See `packages/presentation/src/render/skyDome.ts`, `createSkyDome`, and `packages/engine/src/core/weather.ts`, `skyInWeather`.
 
 Clouds bake as they stand, since their drift between bakes does not show in a blurred reflection. See `packages/presentation/src/render/skyEnvironment.ts`, `createSkyEnvironment`, and `packages/deadvox/docs/content.md`, "Day cycle".
 
