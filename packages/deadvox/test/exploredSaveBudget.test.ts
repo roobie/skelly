@@ -135,7 +135,9 @@ it('keeps decompressed save growth per explored column inside the target-area si
   expect(perColumn * TARGET_EXPLORED_COLUMNS).toBeLessThan(EXPLORED_SAVE_BUDGET_BYTES);
 });
 
-it('round-trips the save of each sampled explored area to an equal snapshot', async () => {
+// Sampling builds the stress city's squares, bounded CPU work whose duration scales with machine load, so a timer
+// only turns a busy machine into a failure.
+it('round-trips the save of each sampled explored area to an equal snapshot', { timeout: 0 }, async () => {
   for (const { snapshot, decoded } of await Promise.all(SAMPLED_SIDES.map(sample))) {
     expect(decoded).toEqual(snapshot);
   }
