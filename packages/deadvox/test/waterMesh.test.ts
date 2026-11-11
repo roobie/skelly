@@ -2,7 +2,7 @@ import { PADDED, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE, wideIndex } from '@skelly/engine/internal/core/occlusion.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh, type MeshData } from '@skelly/engine/mesh';
+import { buildMesh, buildRequestedMesh, type MeshData, wideFrom } from '@skelly/engine/mesh';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
@@ -47,6 +47,7 @@ describe('liquid enclosure', () => {
       structures: [],
       radius: 0,
       preloadRings: 0,
+      columnsPerFrame: 2,
       hysteresis: 1,
       surface: {
         height: () => (top === 'water' ? 2 * CHUNK - 1 : 3 * CHUNK - 1),
@@ -70,16 +71,17 @@ describe('liquid enclosure', () => {
     if (bed?.type !== 'mesh' || init?.type !== 'init') {
       throw new Error('the bed chunk never reached the worker');
     }
-    const mesh = buildMesh(bed.padded, init.colors, { liquids: init.liquids, wireMeshes: init.wireMeshes });
+    const mesh = buildRequestedMesh(init, bed);
+    const wide = wideFrom(bed.neighbourhood, init.occluders);
     const tops = [...unitFaces(mesh)].filter((face) => {
       const [, y, , axis, sign] = face.split(',').map(Number);
       return y === CHUNK - 1 && axis === 1 && sign === 1;
     });
     expect(tops.length).toBe(CHUNK * CHUNK);
     const r = OCCLUSION_RADIUS;
-    expect(bed.wide[wideIndex(r + 4, r + CHUNK, r + 4)]).toBe(0);
-    expect(bed.wide[wideIndex(r + 4, r + CHUNK - 1, r + 4)]).toBe(1);
-    expect(bed.wide.length).toBe(WIDE ** 3);
+    expect(wide[wideIndex(r + 4, r + CHUNK, r + 4)]).toBe(0);
+    expect(wide[wideIndex(r + 4, r + CHUNK - 1, r + 4)]).toBe(1);
+    expect(wide.length).toBe(WIDE ** 3);
   });
 
   it('still drops the same chunk when rock stands where the water was', () => {

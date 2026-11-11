@@ -48,7 +48,14 @@ export const GraphicsTuningSchema = strictObject({
   /** Retries of a model fetch that hit a passing server or network error, and the first wait, which doubles. */
   modelFetchRetry: strictObject({ retries: Count, backoffRealSeconds: NonNegative }),
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
+  /**
+   * The side, in chunks, of the square area one instanced batch of standing furniture covers. A larger area draws
+   * fewer batches but culls less of what is out of view (`packages/presentation/src/render/furniture.ts`).
+   */
+  furnitureSectorChunks: pipe(number(), integer(), minValue(1)),
   skyPreloadRings: Count,
+  /** Terrain columns generated on the main thread per frame while streaming (`packages/engine/src/game/streamer.ts`, `update`). */
+  columnsPerFrame: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */

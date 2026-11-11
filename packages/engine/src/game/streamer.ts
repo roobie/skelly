@@ -10,7 +10,7 @@ import { revealedColumns } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
-import { extractPadded, extractWide } from '../core/meshInput.ts';
+import { detachNeighbourhood, neighbourhoodOf } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
@@ -20,8 +20,6 @@ import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
-
-const COLUMNS_PER_FRAME = 2;
 
 /** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
 const withinRadius = (dx: number, dz: number, radius: number): boolean => dx * dx + dz * dz <= radius * radius;
@@ -93,6 +91,8 @@ export interface StreamerOptions {
   stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
+  /** Terrain columns generated per frame while streaming; from graphics tuning. */
+  columnsPerFrame: number;
   /** Extra terrain rings for sky prebuilding, without expanding mesh/reveal admission. */
   preloadRings: number;
   /** Chunks beyond the rings that meshes and chunk data stay, so a column on the edge does not churn. */
@@ -149,6 +149,11 @@ export class Streamer {
   /** Admission seam for lighting; neighbour residency policy is separate. */
   onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
   private revealed = new Set<string>();
+  private readonly revealKeys: Set<string>;
+  /** Columns whose meshed state may have just turned true, awaiting `refreshReveal`. */
+  private readonly recheck = new Set<string>();
+  private centerChanged = true;
+  private revealStale = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
   onSkyService: ((realMs: number) => void) | undefined;
@@ -215,6 +220,7 @@ export class Streamer {
         wireMeshes: opts.wireMeshes ?? [],
         liquids: opts.liquids ?? new Uint8Array(0),
         fencePosts: opts.fencePosts ?? [],
+        occluders: this.occluders,
       });
       this.workers.push(worker);
     }
@@ -222,6 +228,7 @@ export class Streamer {
 
     this.meshOffsets = discOffsets(opts.radius);
     this.revealOffsets = grownOffsets(this.meshOffsets);
+    this.revealKeys = new Set(this.revealOffsets.map(([dx, dz]) => `${dx},${dz}`));
     this.offsets = grownOffsets(discOffsets(opts.radius + opts.preloadRings));
     this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
@@ -273,7 +280,7 @@ export class Streamer {
       return;
     }
     const { world, scale, meshes } = this.opts;
-    this.completeColumns.delete(col);
+    this.forgetComplete(col);
     this.dirtyReplayNeighbours(cx, cz);
     const pinned = world.isTouched(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
@@ -375,7 +382,7 @@ export class Streamer {
     }
 
     let worked = moved;
-    let budget = COLUMNS_PER_FRAME;
+    let budget = this.opts.columnsPerFrame;
     for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
       if (this.generationFailed || budget === 0) {
         worked = true; // columns may remain
@@ -413,11 +420,12 @@ export class Streamer {
 
     if (moved) {
       this.center = [pcx, pcz];
+      this.centerChanged = true;
       for (const key of [...this.opts.meshes.keys()]) {
         const [cx, , cz] = key.split(',').map(Number) as Vec3;
         if (!this.inRange(cx, cz)) {
           this.opts.meshes.remove(key);
-          this.completeColumns.delete(`${cx},${cz}`);
+          this.forgetComplete(`${cx},${cz}`);
           this.dirty.add(key); // remesh when we come back
         }
       }
@@ -429,15 +437,43 @@ export class Streamer {
     this.settled = !worked;
   }
 
-  private refreshReveal(): void {
-    for (const [dx, dz] of this.revealOffsets) {
-      const cx = this.center[0] + dx;
-      const cz = this.center[1] + dz;
-      const key = `${cx},${cz}`;
-      if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
-        this.completeColumns.add(key);
-      }
+  private forgetComplete(col: string): void {
+    this.revealStale = this.completeColumns.delete(col) || this.revealStale;
+  }
+
+  private markComplete(cx: number, cz: number): void {
+    const key = `${cx},${cz}`;
+    if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
+      this.completeColumns.add(key);
+      this.revealStale = true;
     }
+  }
+
+  /**
+   * Only a column event (generated, meshed, unloaded) or a move changes which columns are complete,
+   * so the window is rescanned after a move and otherwise only the columns an event touched.
+   */
+  private refreshReveal(): void {
+    if (this.centerChanged) {
+      this.centerChanged = false;
+      this.revealStale = true;
+      this.recheck.clear();
+      for (const [dx, dz] of this.revealOffsets) {
+        this.markComplete(this.center[0] + dx, this.center[1] + dz);
+      }
+    } else {
+      for (const key of this.recheck) {
+        const [cx, cz] = key.split(',').map(Number) as [number, number];
+        if (this.revealKeys.has(`${cx - this.center[0]},${cz - this.center[1]}`)) {
+          this.markComplete(cx, cz);
+        }
+      }
+      this.recheck.clear();
+    }
+    if (!this.revealStale) {
+      return;
+    }
+    this.revealStale = false;
     const columns = revealedColumns(this.center, this.revealOffsets, (cx, cz) =>
       this.completeColumns.has(`${cx},${cz}`),
     );
@@ -470,7 +506,7 @@ export class Streamer {
         }
       }
       this.generated.delete(col);
-      this.completeColumns.delete(col);
+      this.forgetComplete(col);
       this.onColumnUnload(cx, cz);
     }
   }
@@ -510,6 +546,7 @@ export class Streamer {
         }
       }
       this.generated.add(col);
+      this.recheck.add(col);
       if (notify) {
         this.onColumn(cx, cz);
       }
@@ -549,25 +586,25 @@ export class Streamer {
     return chunks;
   }
 
+  private recheckChunkColumn(chunkKeyText: string): void {
+    const [cx, , cz] = chunkKeyText.split(',');
+    this.recheck.add(`${cx},${cz}`);
+  }
+
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
     this.dirty.delete(key);
     const { world, scale, meshes } = this.opts;
     if (isEnclosed(world, [cx, cy, cz], scale.minCy, this.occluders)) {
       meshes.remove(key); // nothing visible; skip the worker entirely
+      this.recheckChunkColumn(key);
       return;
     }
     this.inFlight.add(key);
-    const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
-    const wide = extractWide(world, [cx, cy, cz], scale.minCy, this.occluders);
+    // The worker builds the padded and wide arrays; the main thread only copies the chunks they read.
+    const [neighbourhood, transfer] = detachNeighbourhood(neighbourhoodOf(world, [cx, cy, cz], scale.minCy));
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
-    this.send(worker, {
-      type: 'mesh',
-      key,
-      version: this.versions.get(key) ?? 0,
-      padded,
-      wide,
-    });
+    this.send(worker, { type: 'mesh', key, version: this.versions.get(key) ?? 0, neighbourhood }, transfer);
   }
 
   private receive(worker: MesherPort, msg: FromMesher): void {
@@ -595,6 +632,7 @@ export class Streamer {
 
   private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
     this.inFlight.delete(msg.key);
+    this.recheckChunkColumn(msg.key);
     const { stats } = this.opts;
     if (stats) {
       stats.meshMs.push(msg.ms);
@@ -617,13 +655,9 @@ export class Streamer {
     this.refreshReveal();
   }
 
-  private send(worker: MesherPort, msg: ToMesher): void {
+  private send(worker: MesherPort, msg: ToMesher, transfer: ArrayBuffer[] = []): void {
     if (msg.type !== 'init') {
       this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
-    }
-    const transfer: ArrayBuffer[] = [];
-    if (msg.type === 'mesh') {
-      transfer.push(msg.padded.buffer as ArrayBuffer, msg.wide.buffer as ArrayBuffer);
     }
     if (msg.type === 'sky') {
       transfer.push(...msg.input.chunks.flatMap((chunk) => (chunk.raw ? [chunk.raw.buffer as ArrayBuffer] : [])));

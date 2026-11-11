@@ -129,6 +129,7 @@ export function createWorldSetup(
     stamp: terrain.stamp,
     radius: config.radiusChunks,
     preloadRings: graphicsTuningOf(registry).skyPreloadRings,
+    columnsPerFrame: graphicsTuningOf(registry).columnsPerFrame,
     hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
   });

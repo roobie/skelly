@@ -1,8 +1,12 @@
 // Copies a chunk and a shell of its neighbours' blocks into one array, for the mesher.
 
-import type { Chunk } from './chunk.ts';
 import { CHUNK, localIndex, type Vec3 } from './coords.ts';
-import type { World } from './world.ts';
+
+/** One chunk's blocks as the shell reads them: its block array, or the one id a uniform chunk stores (0 when missing). */
+export type ChunkBlocks = Readonly<Uint16Array> | number;
+
+/** Index of the chunk at offset (ox, oy, oz), each -1, 0 or 1, in a 27-chunk neighbourhood: x fastest, then z, then y. */
+export const neighbourIndex = (ox: number, oy: number, oz: number): number => ox + 1 + 3 * (oz + 1 + 3 * (oy + 1));
 
 /** The chunk-local range [lo, hi) of a neighbour chunk at offset -1, 0 or 1 that lies within `border` of the centre chunk. */
 const shellSpan = (offset: number, border: number): [number, number] => [
@@ -13,8 +17,8 @@ const shellSpan = (offset: number, border: number): [number, number] => [
 /**
  * A chunk plus a `border`-block shell around it, copied from the chunk and its 26 neighbours into
  * `out` (side CHUNK + 2 * border, x fastest, then z, then y). Copies whole rows (a span of one chunk
- * at a time), not cell by cell with a chunk lookup per cell. `border` must not exceed CHUNK. Missing
- * chunks and uniform air stay 0. With `solidOnly`, `out` holds 1 for every non-air block, not its id.
+ * at a time), not cell by cell. `border` must not exceed CHUNK. Missing chunks and uniform air stay
+ * 0. With `solidOnly`, `out` holds 1 for every non-air block, not its id.
  */
 export class Shell {
   readonly out: Uint8Array | Uint16Array;
@@ -33,22 +37,20 @@ export class Shell {
     this.out = solidOnly ? new Uint8Array(cells) : new Uint16Array(cells);
   }
 
-  fill(world: World, [cx, cy, cz]: Vec3): void {
+  /** Copies from the 27 chunks around the centre, ordered by `neighbourIndex`. */
+  fill(chunks: readonly ChunkBlocks[]): void {
     for (let oy = -1; oy <= 1; oy++) {
       for (let oz = -1; oz <= 1; oz++) {
         for (let ox = -1; ox <= 1; ox++) {
-          const chunk = world.getChunk(cx + ox, cy + oy, cz + oz);
-          if (chunk) {
-            this.addChunk(chunk, [ox, oy, oz]);
-          }
+          this.addChunk(chunks[neighbourIndex(ox, oy, oz)]!, [ox, oy, oz]);
         }
       }
     }
   }
 
-  private addChunk(chunk: Chunk, [ox, oy, oz]: Vec3): void {
-    const raw = chunk.raw();
-    const uniform = chunk.uniformId ?? 0;
+  private addChunk(blocks: ChunkBlocks, [ox, oy, oz]: Vec3): void {
+    const raw = typeof blocks === 'number' ? undefined : blocks;
+    const uniform = typeof blocks === 'number' ? blocks : 0;
     if (!raw && uniform === 0) {
       return;
     }

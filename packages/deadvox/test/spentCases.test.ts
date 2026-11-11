@@ -57,6 +57,30 @@ describe('spent-case presentation', () => {
     expect((piles.group.children[0] as InstancedMesh).count).toBe(12);
   });
 
+  it('redraws only the pile that changed, and frees the bundle of a pile that empties', () => {
+    const inventory = new Inventory(registry);
+    const first = inventory.create('canned_beans');
+    const second = inventory.create('canned_beans');
+    expect(inventory.add(first, { kind: 'pile', pos: [1, 2, 3] })).toBe(true);
+    expect(inventory.add(second, { kind: 'pile', pos: [8, 2, 3] })).toBe(true);
+    const piles = new PileMeshes(0.5);
+    piles.sync(inventory);
+    const [bundleOfFirst, bundleOfSecond] = piles.group.children;
+    expect(piles.group.children).toHaveLength(2);
+
+    expect(inventory.add(inventory.create('canned_beans'), { kind: 'pile', pos: [1, 2, 3] })).toBe(true);
+    piles.sync(inventory);
+    expect(piles.group.children).toContain(bundleOfSecond);
+    expect(piles.group.children).toHaveLength(2);
+    expect(piles.group.children).not.toContain(bundleOfFirst);
+
+    expect(inventory.consume(second)).toBe(true);
+    piles.sync(inventory);
+    expect(piles.group.children).not.toContain(bundleOfSecond);
+    expect(piles.group.children).toHaveLength(1);
+    piles.dispose();
+  });
+
   it('uses validated pile-display components instead of item ids to choose scatter rendering', () => {
     const { registry: fixtureRegistry, issues } = buildRegistry([
       playerInventorySource(),
