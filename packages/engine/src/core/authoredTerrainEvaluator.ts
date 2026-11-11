@@ -1,11 +1,10 @@
 import { inPolygon, type LayoutPoint } from './authoredLayout.ts';
 import { layoutHeight, polylineDistance, polylineDistanceAt, rectDistance, smoothstep } from './authoredTerrain.mjs';
-import { type CatalogueFloor, catalogueHeight, catalogueTop } from './catalogueTerrainEvaluator.ts';
 import type { Chunk } from './chunk.ts';
 import { CHUNK, toChunk } from './coords.ts';
 import { simplexNoise2 } from './random.ts';
 import type { ContentFile, SiteLayoutDef } from './schema.ts';
-import type { Rect } from './site.ts';
+import { rectDistance as floorDistance, type Rect } from './site.ts';
 import { type Placement, stampPlacement } from './templates.ts';
 import { leafLitterAt, stampTrees, TreeIndex, type TreePlacement } from './vegetation.ts';
 import type { Surface } from './worldgen.ts';
@@ -15,7 +14,9 @@ export interface AuthoredGroundData {
   readonly seed: number;
   readonly topography: NonNullable<ContentFile['siteGeneration']>[number]['topography'];
   readonly layout: Pick<SiteLayoutDef, 'bounds' | 'ground' | 'terrain' | 'water'>;
-  readonly tracks: readonly (Omit<SiteLayoutDef['tracks'][number], 'surface'> & { surface: number | undefined })[];
+  readonly tracks: readonly (Pick<SiteLayoutDef['tracks'][number], 'points' | 'width'> & {
+    surface: number | undefined;
+  })[];
   readonly protectedBuildings: readonly Rect[];
   readonly spawnPoints: readonly [number, number][];
   readonly lots: readonly { rect: Rect; floor: number; key: string }[];
@@ -284,3 +285,21 @@ const siteWater = (
     sandy: (x, z) => rows.some((row) => reaches(row, x, z)) && (wet(x, z) || rows.some((row) => onShore(row, x, z))),
   };
 };
+export interface CatalogueFloor {
+  readonly rect: Rect;
+  readonly floor: number;
+  readonly blend: number;
+  readonly floorBlock: number;
+}
+
+export function catalogueHeight(data: CatalogueFloor, x: number, z: number, natural: number): number {
+  const distance = floorDistance(data.rect, x, z);
+  if (distance >= data.blend) {
+    return natural;
+  }
+  return Math.round(natural + smoothstep(1 - distance / data.blend) * (data.floor - natural));
+}
+
+export function catalogueTop(data: CatalogueFloor, x: number, z: number): number | undefined {
+  return floorDistance(data.rect, x, z) === 0 ? data.floorBlock : undefined;
+}

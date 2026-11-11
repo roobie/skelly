@@ -1,4 +1,4 @@
-import { type CatalogueFloor, catalogueHeight, catalogueTop } from './catalogueTerrainEvaluator.ts';
+import type { CatalogueFloor } from './authoredTerrainEvaluator.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
@@ -177,15 +177,6 @@ export class ShowroomCatalogue {
       z1: Math.max(...this.props.map(({ pos, size }) => pos[2] + size[2])) + toBlocks(catalogue.spacing),
     };
     this.terrain = { rect: this.rect, floor: this.floor, blend: toBlocks(catalogue.blend), floorBlock: block };
-  }
-
-  /** Level inside the floor, blending into the natural ground around it. */
-  height(x: number, z: number, natural: number): number {
-    return catalogueHeight(this.terrain, x, z, natural);
-  }
-
-  top(x: number, z: number): number | undefined {
-    return catalogueTop(this.terrain, x, z);
   }
 
   supplySourcesIn(area: Rect) {
