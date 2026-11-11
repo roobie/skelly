@@ -1,21 +1,35 @@
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
+import type { Neighbourhood } from '../core/meshInput.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 import type { ShapeData } from '../vehicles/shapeData.ts';
 
+/** The block tables a mesher keeps for every chunk it meshes. */
+export interface MesherInit {
+  type: 'init';
+  colors: Uint8Array;
+  patterns: Uint8Array;
+  weatherable: Uint8Array;
+  wireMeshes: WireMeshes;
+  liquids: Uint8Array;
+  fencePosts: FencePostDefs;
+  /** 1 per block id that darkens wide occlusion. */
+  occluders: Uint8Array;
+}
+
+/** One chunk to mesh, with its neighbours' blocks as they were when it was requested. */
+export interface MeshRequest {
+  type: 'mesh';
+  key: string;
+  version: number;
+  neighbourhood: Neighbourhood;
+}
+
 export type ToMesher =
-  | {
-      type: 'init';
-      colors: Uint8Array;
-      patterns: Uint8Array;
-      weatherable: Uint8Array;
-      wireMeshes: WireMeshes;
-      liquids: Uint8Array;
-      fencePosts: FencePostDefs;
-    }
-  | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array }
+  | MesherInit
+  | MeshRequest
   | { type: 'sky'; id: number; input: SkySnapshot }
   | { type: 'vehicle'; key: string; blueprint: string; removed: readonly string[] };
 
