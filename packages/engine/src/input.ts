@@ -4,6 +4,7 @@ export {
   bindingIsDebugOnly,
   type Chord,
   contextsForRun,
+  debugSpawnActorRow,
   INPUT_ACTIONS,
   INVENTORY_TAB_BINDINGS,
   type InputContext,

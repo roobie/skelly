@@ -28,10 +28,10 @@ export const SenseSchema = strictObject({
     sprintingStepMetres: Positive,
     hardLandingMetres: Positive,
   }),
-  /** How long a player vocal noise stays audible to shamblers after it is emitted. */
+  /** How long a player vocal noise stays audible to actors after it is emitted. */
   vocalNoiseLifetimeSimSeconds: PositiveSimSeconds,
   /**
-   * The shambler voice-pitch law (`packages/deadvox/DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
+   * The actor voice-pitch law (`packages/deadvox/DESIGN.md`, "Audio"), as multiples of the old law's pitch √(reference height ÷ body
    * height) at the smallest pooled body. One law covers the whole figure pool, so it lives here, not on an actor type.
    */
   actorVoice: strictObject({
@@ -44,7 +44,7 @@ export const SenseSchema = strictObject({
   }),
   light: strictObject({
     playerDaySightScale: Fraction,
-    /** Reduce how far shamblers investigate non-player light sources. */
+    /** Reduce how far actors investigate non-player light sources. */
     lureRangeScale: Fraction,
     throwMaxDistanceMetres: Positive,
     throwChargeSimSeconds: PositiveSimSeconds,

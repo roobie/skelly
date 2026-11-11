@@ -181,7 +181,7 @@ export const SiteLayoutSchema = strictObject({
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
     bearing: Degrees,
   }),
-  shamblers: array(
+  actors: array(
     strictObject({
       type: Id,
       position: MetrePosition,

@@ -151,20 +151,23 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   const box = visibleBounds(scene);
   const centre = box.getCenter(new Vector3());
   // On the ground: turned as it rests, then centred on x and z over the origin and resting on y = 0.
-  // Standing upright raises the model's +x as an upright hold does.
-  const rest = new Matrix4().makeRotationZ(def.rest === 'upright' ? Math.PI / 2 : 0);
+  // Standing upright raises the model's +z, so it stands on its -z end. Lying down, its long side turns onto x,
+  // which pile layout and the other ground views take as a model's length.
+  const size = box.getSize(new Vector3());
+  const quarterTurn = new Matrix4().makeRotationY(def.rest === 'upright' || size.z > size.x ? Math.PI / 2 : 0);
+  const rest = def.rest === 'upright' ? quarterTurn.multiply(new Matrix4().makeRotationX(-Math.PI / 2)) : quarterTurn;
   const rested = box.clone().applyMatrix4(rest);
   const restedCentre = rested.getCenter(new Vector3());
   const ground = around(scene, new Vector3(restedCentre.x, rested.min.y, restedCentre.z));
   modelFrame(ground, 'ground').quaternion.setFromRotationMatrix(rest);
   // Held: the grip at the origin, turned and rolled as the entry says, then oriented by its hold pose.
-  // The lens is the `lens` anchor, else the `flame` anchor, else the middle of the model's front end.
+  // The lens is the `lens` anchor, else the `flame` anchor, else the middle of the model's front (+z) end.
   const anchor = def.anchors?.lens ?? def.anchors?.flame;
-  const lens = anchor ? new Vector3(...anchor) : new Vector3(box.max.x, centre.y, centre.z);
+  const lens = anchor ? new Vector3(...anchor) : new Vector3(centre.x, centre.y, box.max.z);
   const turned = around(scene, def.grip ? new Vector3(...def.grip.at) : centre, lens);
   const [tx, ty, tz] = def.grip?.turn ?? [0, 0, 0];
   turned.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
-  turned.rotateX(MathUtils.degToRad(def.roll ?? 0));
+  turned.rotateZ(MathUtils.degToRad(def.roll ?? 0));
   const held = new Group().add(turned);
   ground.updateMatrixWorld(true);
   const groundParts: GroundModelPart[] = [];
@@ -173,10 +176,11 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
       groundParts.push({ geometry: object.geometry, material: object.material, matrix: object.matrixWorld.clone() });
     }
   });
+  // The held axes put the working end on +z: the forward hold turns it to the view's front, the upright hold raises it.
   if (def.hold === 'upright') {
-    held.rotation.z = Math.PI / 2;
+    held.rotation.set(-Math.PI / 2, Math.PI / 2, 0, 'YXZ');
   } else {
-    held.rotation.y = Math.PI / 2;
+    held.rotation.y = Math.PI;
   }
   return { ground, groundParts, held, scene };
 };

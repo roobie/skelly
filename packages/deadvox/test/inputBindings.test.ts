@@ -3,8 +3,10 @@
 import type { Binding, Chord, InputContext } from '@skelly/engine/input';
 import {
   BindingRegistry,
+  bindingsFromControls,
   chordIssue,
   controlRowIssue,
+  debugSpawnActorRow,
   defaultKeySetIssues,
   REFUSED_MODIFIERS,
 } from '@skelly/engine/input';
@@ -633,13 +635,30 @@ describe('keyboard registry', () => {
     const defaults = new Map(INPUT_BINDINGS.map((binding) => [binding.id, binding.defaults]));
     defaults.set('view.free-look', [{ code: 'AltRight' }]);
     expect(defaultKeySetIssues(defaults)).toEqual([]);
-    expect(controlRowIssue('view.free-look', [{ code: 'AltLeft' }])).toBeUndefined();
-    expect(controlRowIssue('view.free-look', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
+    expect(controlRowIssue('view.free-look', [{ code: 'AltLeft' }], new Map())).toBeUndefined();
+    expect(controlRowIssue('view.free-look', [{ code: 'KeyJ', modifier: 'alt' }], new Map())).toBeDefined();
 
     const gate: Binding = { ...fixture[3]!, defaults: [{ code: 'AltLeft' }] };
     const gated: Binding = { ...fixture[4]!, defaults: [{ code: 'KeyJ' }] };
     const held: Binding = { ...fixture[1]!, defaults: [{ code: 'KeyJ' }, { code: 'AltLeft' }] };
     expect(bindingConflict([gate, gated, held], new Map())).toBeDefined();
+  });
+  it('binds a debug spawn action only through a controls row naming a loaded actor', () => {
+    const { id } = debugSpawnActorRow('fixture_roamer', 'Fixture roamer');
+    const keys = [{ code: 'Numpad1' }];
+    const gate = { id: 'debug.gate', keys: [{ code: 'F2' }] };
+    expect(bindingsFromControls({ controls: [gate] }).some((binding) => binding.id === id)).toBe(false);
+    const keyed = bindingsFromControls({ controls: [gate, { id, keys }] }).find((binding) => binding.id === id);
+    expect(keyed).toMatchObject({ debug: true, gate: 'debug.gate', defaults: keys });
+    expect(controlRowIssue(id, keys, new Map([['fixture_roamer', {}]]))).toBeUndefined();
+    expect(controlRowIssue(id, keys, new Map())).toBeDefined();
+  });
+  it('reports a key conflict between a keyed debug spawn row and a catalogue action', () => {
+    const { id } = debugSpawnActorRow('fixture_roamer', 'Fixture roamer');
+    const defaults = new Map(INPUT_BINDINGS.map((binding) => [binding.id, binding.defaults]));
+    const taken = defaults.get('debug.god-toggle')!;
+    expect(defaultKeySetIssues(defaults)).toEqual([]);
+    expect(defaultKeySetIssues(defaults.set(id, taken))).not.toEqual([]);
   });
   it('rejects browser-owned modifiers for every game binding', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());

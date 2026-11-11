@@ -1,6 +1,6 @@
 import { canonicalJsonBytes, isPlainRecord, SHA256_HEX } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
-import { INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
+import { debugSpawnActorType, INPUT_ACTIONS, type InputContext, POINTER_ACTIONS } from '../core/inputActions.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import type { MoveIntent } from './player.ts';
@@ -115,6 +115,10 @@ const ACTION_IDS = [
   ]),
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
+const isReplayAction = (action: string): boolean =>
+  ACTION_INDEX.has(action) || debugSpawnActorType(action) !== undefined;
+/** Whether loaded content holds an id; a recorder and the decoder of its recordings ask the same question. */
+type ReplayContentLookup = (kind: SaveContentKind, id: string) => boolean;
 // Derive contexts from the actions so adding a binding context cannot make recording throw.
 const CONTEXTS: readonly InputContext[] = [...new Set(INPUT_ACTIONS.flatMap(({ contexts }) => contexts))];
 const CONTEXT_INDEX = new Map(CONTEXTS.map((context, index) => [context, index]));
@@ -249,7 +253,7 @@ const isValidQueuedAction = (
   context: InputContext,
   payload: ReplayActionPayload | undefined,
 ): boolean => {
-  if (!(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context))) {
+  if (!(isReplayAction(action) && CONTEXT_INDEX.has(context))) {
     return false;
   }
   const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) ? payload !== undefined : true;
@@ -305,7 +309,7 @@ const isReplayActionRecord = (
     tick >= 0 &&
     tick <= frameCount &&
     tick >= lastTick &&
-    ACTION_INDEX.has(action) &&
+    isReplayAction(action) &&
     (candidate.phase === 'down' || candidate.phase === 'up') &&
     typeof candidate.context === 'string' &&
     CONTEXT_INDEX.has(candidate.context as InputContext) &&
@@ -390,6 +394,10 @@ export class InputReplayRecorder {
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionContexts = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPayloads: (string | undefined)[] = new Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  // Debug spawn ids come from content, so each recorder numbers its own after the fixed ids. A window holds at most
+  // INPUT_REPLAY_ACTIONS_PER_WINDOW actions, which keeps every index inside `actionIds`' range.
+  private readonly spawnActionIds: string[] = [];
+  private readonly spawnActionIndex = new Map<string, number>();
   private pending: {
     action: string;
     phase: 'down' | 'up';
@@ -401,6 +409,7 @@ export class InputReplayRecorder {
   private frameCount = 0;
   private actionCount = 0;
   readonly nowRealMilliseconds: (() => number) | undefined;
+  readonly contentLookup: ReplayContentLookup | undefined;
   private batchStartedAtRealMilliseconds = 0;
   private readonly batchCosts: Float32Array = new Float32Array(120);
   private completedBatches = 0;
@@ -419,10 +428,13 @@ export class InputReplayRecorder {
       readonly startState?: ReplayStartState;
       /** The real clock for recording-cost samples; without one, no cost is sampled. */
       readonly nowRealMilliseconds?: () => number;
+      /** The loaded content a queued debug spawn must name; without it, every debug spawn is refused. */
+      readonly contentLookup?: ReplayContentLookup;
     } = {},
   ) {
     this.ticksPerWindow = ticksPerWindow;
     this.nowRealMilliseconds = options.nowRealMilliseconds;
+    this.contentLookup = options.contentLookup;
     const columnChangeEventLimit = options.columnChangeEventLimit ?? INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW;
     const startState = options.startState ?? DEFAULT_REPLAY_START_STATE;
     if (
@@ -499,6 +511,20 @@ export class InputReplayRecorder {
     );
   }
 
+  private actionIndex(action: string): number {
+    const known = ACTION_INDEX.get(action) ?? this.spawnActionIndex.get(action);
+    if (known !== undefined) {
+      return known;
+    }
+    const index = ACTION_IDS.length + this.spawnActionIds.push(action) - 1;
+    this.spawnActionIndex.set(action, index);
+    return index;
+  }
+
+  private actionAt(index: number): string {
+    return ACTION_IDS[index] ?? this.spawnActionIds[index - ACTION_IDS.length]!;
+  }
+
   queueAction(
     action: string,
     phase: 'down' | 'up',
@@ -511,7 +537,11 @@ export class InputReplayRecorder {
     ) {
       return;
     }
-    if (!isValidQueuedAction(action, context, options.payload)) {
+    const spawned = debugSpawnActorType(action);
+    if (
+      !isValidQueuedAction(action, context, options.payload) ||
+      (spawned !== undefined && this.contentLookup?.('actor', spawned) !== true)
+    ) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
     const payloadText =
@@ -548,7 +578,7 @@ export class InputReplayRecorder {
         const index = this.actionCount;
         this.actionCount += 1;
         this.actionTicks[index] = this.frameCount;
-        this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
+        this.actionIds[index] = this.actionIndex(pending.action);
         this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
         this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
         if (pending.payload !== undefined) {
@@ -590,7 +620,7 @@ export class InputReplayRecorder {
       const index = this.actionCount;
       this.actionCount += 1;
       this.actionTicks[index] = this.frameCount;
-      this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
+      this.actionIds[index] = this.actionIndex(pending.action);
       this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
       this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
       if (pending.payload !== undefined) {
@@ -628,7 +658,7 @@ export class InputReplayRecorder {
     ]);
     const actions: ReplayAction[] = Array.from({ length: this.actionCount }, (_, index) => ({
       tick: this.actionTicks[index]!,
-      action: ACTION_IDS[this.actionIds[index]!]!,
+      action: this.actionAt(this.actionIds[index]!),
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
       ...(this.actionPayloads[index] === undefined
@@ -669,6 +699,7 @@ export const rolloverInputReplayRecorder = (
     columnChangeEventLimit: current.columnChangeEventLimit,
     startState,
     ...(current.nowRealMilliseconds ? { nowRealMilliseconds: current.nowRealMilliseconds } : {}),
+    ...(current.contentLookup ? { contentLookup: current.contentLookup } : {}),
   });
   current.resolvePendingActionsAtRollover(next);
   current.transferPendingColumnChangesTo(next);
@@ -840,7 +871,7 @@ export async function encodeInputReplay(
 
 export async function decodeInputReplay(
   input: Uint8Array | ArrayBuffer,
-  options: { readonly contentLookup: (kind: SaveContentKind, id: string) => boolean },
+  options: { readonly contentLookup: ReplayContentLookup },
 ): Promise<DecodedInputReplay> {
   const bytes = input instanceof Uint8Array ? input.slice() : new Uint8Array(input.slice(0));
   if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
@@ -946,6 +977,10 @@ export async function decodeInputReplay(
   const actions: ReplayAction[] = value.actions.map((candidate, index) => {
     if (!isReplayActionRecord(candidate, lastTick, frames.length)) {
       throw new Error(`Invalid or out-of-order replay action ${index}`);
+    }
+    const spawned = debugSpawnActorType(candidate.action);
+    if (spawned !== undefined && !options.contentLookup('actor', spawned)) {
+      throw new Error(`Replay action ${index} spawns an actor type absent from the content: ${spawned}`);
     }
     if (Object.hasOwn(candidate, 'payload')) {
       actionPayloadBytes += canonicalJsonBytes(candidate.payload).byteLength;

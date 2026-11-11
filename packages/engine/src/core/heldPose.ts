@@ -10,8 +10,8 @@ import { basisRotation, blendDirection, blendRotation, rotationBasis } from './s
 
 /** A hold authored for the right hand, mirrored across the view's x for the left. */
 const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right' ? x : -x, y, z];
-/** A hold authored on the model's right, mirrored across the model's z for the left hand. */
-const mirrorModelZ = (side: HandSide, [x, y, z]: Vec3): Vec3 => [x, y, side === 'right' ? z : -z];
+/** A hold authored on the model's right, mirrored across the model's x for the left hand. */
+const mirrorModelX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right' ? x : -x, y, z];
 
 /** From a long gun's grip to its butt, in the view's frame; the lowered gun turns about the butt. */
 export const heldButtOffset = (model: ModelDef): Vec3 => {
@@ -65,7 +65,7 @@ export interface HeldHoldFrame {
 
 /**
  * Both holds are authored for a right-handed hold, so `side` is the hand holding the gun, not the hand on this hold:
- * a left-held gun mirrors the firing and the support hold together across the model's z.
+ * a left-held gun mirrors the firing and the support hold together across the model's x.
  */
 export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 'support'): HeldHoldFrame => {
   if (!(model.hands && model.grip)) {
@@ -73,9 +73,9 @@ export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 
   }
   const { grip, hands } = model;
   const authored = hands[hold];
-  const at = modelToView(model, mirrorModelZ(side, authored.at).map((value, index) => value - grip.at[index]!) as Vec3);
-  const palm = normalize(modelToView(model, mirrorModelZ(side, authored.palm)));
-  const fingers = normalize(modelToView(model, mirrorModelZ(side, authored.fingers)));
+  const at = modelToView(model, mirrorModelX(side, authored.at).map((value, index) => value - grip.at[index]!) as Vec3);
+  const palm = normalize(modelToView(model, mirrorModelX(side, authored.palm)));
+  const fingers = normalize(modelToView(model, mirrorModelX(side, authored.fingers)));
   let palmSide = side;
   if (hold === 'support') {
     palmSide = side === 'right' ? 'left' : 'right';
@@ -97,7 +97,7 @@ export const heldProneSupportAt = (model: ModelDef, side: HandSide): Vec3 | unde
   const { grip, hands } = model;
   return (
     hands.proneSupport &&
-    modelToView(model, mirrorModelZ(side, hands.proneSupport.at).map((value, index) => value - grip.at[index]!) as Vec3)
+    modelToView(model, mirrorModelX(side, hands.proneSupport.at).map((value, index) => value - grip.at[index]!) as Vec3)
   );
 };
 
@@ -120,9 +120,9 @@ const radians = (degrees: number): number => (degrees * Math.PI) / 180;
 
 export const modelToView = (model: ModelDef, vector: Vec3): Vec3 => {
   const [x, y, z] = model.grip?.turn ?? [0, 0, 0];
-  // Three's Euler XYZ, followed by rotateX(roll), then the outer hold-pose wrapper.
-  const turned = rx(ry(rz(rx(vector, radians(model.roll ?? 0)), radians(z)), radians(y)), radians(x));
-  return model.hold === 'upright' ? rz(turned, Math.PI / 2) : ry(turned, Math.PI / 2);
+  // Three's Euler XYZ, followed by rotateZ(roll) about the working end, then the outer hold-pose wrapper.
+  const turned = rx(ry(rz(rz(vector, radians(model.roll ?? 0)), radians(z)), radians(y)), radians(x));
+  return model.hold === 'upright' ? ry(rx(turned, -Math.PI / 2), Math.PI / 2) : ry(turned, Math.PI);
 };
 
 export const heldAnchorOffset = (model: ModelDef, name: string): Vec3 => {
@@ -451,7 +451,7 @@ export const heldFirearmTransform = ({
       : normalRoot;
   const rootOffset = seatedFirearmRoot(model, stockSeat, applyRootRotation) ?? opticalRoot;
   const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));
-  const muzzleDirection = applyRootRotation(modelToView(model, model.gun?.muzzleDirection ?? [1, 0, 0]));
+  const muzzleDirection = applyRootRotation(modelToView(model, model.gun?.muzzleDirection ?? [0, 0, 1]));
   const muzzleUp = applyRootRotation(modelToView(model, [0, 1, 0]));
   const sightEyeOffset = viewEye
     ? applyRootRotation(modelToView(model, viewEye.map((value, index) => value - model.grip!.at[index]!) as Vec3))

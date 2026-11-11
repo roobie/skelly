@@ -390,7 +390,7 @@ describe('loot economy descriptions', () => {
       terrain: [],
       buildings: [],
       player: { position: [2, 0.5, 2], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     };

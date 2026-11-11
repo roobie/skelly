@@ -24,16 +24,19 @@ export interface VehiclePartProjection {
   readonly boxes: readonly ModelBox[];
 }
 
+/** Facing north puts the vehicle frame's forward, +z, on world +x. */
 const yawForFacing = (facing: VehicleInstance['facing']): number =>
-  ({ n: 0, e: Math.PI / 2, s: Math.PI, w: -Math.PI / 2 })[facing];
+  ({ n: Math.PI / 2, e: Math.PI, s: -Math.PI / 2, w: 0 })[facing];
+
+/** A facing's yaw is a whole quarter turn, so its basis is exact and box edges stay on block boundaries. */
+const turned = (yaw: number, [x, , z]: Vec3): [number, number] => {
+  const [cos, sin] = [Math.round(Math.cos(yaw)), Math.round(Math.sin(yaw))];
+  return [cos * x + sin * z, cos * z - sin * x];
+};
 
 const transformPoint = ({ position, yaw, mirror }: VehicleFittingTransform, [x, y, z]: Vec3): Vec3 => {
-  const localZ = mirror ? -z : z;
-  return [
-    position[0] + Math.cos(yaw) * x + Math.sin(yaw) * localZ,
-    position[1] + y,
-    position[2] - Math.sin(yaw) * x + Math.cos(yaw) * localZ,
-  ];
+  const [worldX, worldZ] = turned(yaw, [mirror ? -x : x, y, z]);
+  return [position[0] + worldX, position[1] + y, position[2] + worldZ];
 };
 
 const transformBox = (transform: VehicleFittingTransform, { min, max }: ModelBox): ModelBox => {
@@ -69,11 +72,12 @@ const vehicleFittingTransform = (
   blockSize: number,
 ): VehicleFittingTransform => {
   const yaw = yawForFacing(vehicle.facing);
+  const [x, z] = turned(yaw, fitting.at);
   return {
     position: [
-      vehicle.origin[0] * blockSize + Math.cos(yaw) * fitting.at[0] + Math.sin(yaw) * fitting.at[2],
+      vehicle.origin[0] * blockSize + x,
       vehicle.origin[1] * blockSize + fitting.at[1],
-      vehicle.origin[2] * blockSize - Math.sin(yaw) * fitting.at[0] + Math.cos(yaw) * fitting.at[2],
+      vehicle.origin[2] * blockSize + z,
     ],
     yaw,
     mirror: fitting.mirror === true,

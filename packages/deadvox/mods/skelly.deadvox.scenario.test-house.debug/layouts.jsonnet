@@ -15,7 +15,7 @@ local debugHouse = layout + {
     fixedLoot: [{ at: [3, 1, 24], items: import 'test-house-rack.libsonnet' }],
   }],
   // One amalgam in the open south of the garden wall, to look at carving; the range rack's shotgun carves it.
-  shamblers: layout.shamblers + [amalgam],
+  actors: layout.actors + [amalgam],
 };
 {
   templates: [import 'test-house-range.libsonnet'],

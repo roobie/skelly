@@ -55,7 +55,7 @@ export const pileLayout = (
       continue;
     }
     const [w, h] = footprint(def, placed.rotated);
-    // A model's long side is its x; the item's long side is its size's longer one.
+    // A model's ground form lies with its long side on x; the item's long side is its size's longer one.
     const alongX = def.size[0] >= def.size[1] !== placed.rotated;
     layout.models.push({
       placed,

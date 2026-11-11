@@ -33,7 +33,7 @@ const lakeLayout = (overrides: Partial<SiteLayoutDef> = {}): SiteLayoutDef => ({
   ],
   buildings: [],
   player: { position: [24, 20.5, 42], bearing: 0 },
-  shamblers: [],
+  actors: [],
   woodlands: [],
   tracks: [],
   ...overrides,

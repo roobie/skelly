@@ -124,6 +124,7 @@ const reportError = (message: string) => {
 applyUiTokens(content.registry, document.documentElement, { report: reportError, files: assets.cursors });
 const { screenText } = claimed(content.registry.ui, 'interface')!;
 inputBindings.setPointerLabels(screenText.pointerButtonLabels);
+inputBindings.setSpawnActorNames(content.registry.actors.values());
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
 const scrollUpCue = document.getElementById('card-scroll-up');
 const scrollDownCue = document.getElementById('card-scroll-down');

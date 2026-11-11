@@ -35,7 +35,7 @@
       "file": "assets/models/jerry_can.glb",
       "grip": {
         "at": [0.040000000000000001, 0.46000000000000002, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "jerry_can",

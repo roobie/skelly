@@ -33,18 +33,12 @@ const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
   return physical;
 };
 
-const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
-  if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
-    return loaded;
-  }
-  const { materialId, colourMultiplier } = parse(MaterialReferenceSchema, {
-    materialId: loaded.userData.materialId,
-    colourMultiplier: loaded.userData.colourMultiplier,
-  });
-  const definition = Object.hasOwn(table, materialId) ? table[materialId] : undefined;
-  if (!(definition && loaded instanceof MeshStandardMaterial)) {
-    throw new Error(`Unsupported model material ${materialId}`);
-  }
+/** Draws a library entry on `loaded`, the one way an authored material and a painted copy both get their surface. */
+const surfaced = (
+  loaded: MeshStandardMaterial,
+  definition: MaterialDef,
+  colourMultiplier: readonly [number, number, number],
+): MeshStandardMaterial => {
   const { opacity, transparent, depthWrite, sheen } = surfaceOf(definition.finish);
   const material = sheen ? sheenable(loaded) : loaded;
   if (sheen && material instanceof MeshPhysicalMaterial) {
@@ -64,6 +58,28 @@ const applyMaterial = (loaded: Material, table: Readonly<Record<string, Material
   material.transparent = transparent;
   material.depthWrite = depthWrite;
   return material;
+};
+
+/**
+ * A copy of `material` wearing a library entry whole. It starts from a plain standard copy, so an authored sheen
+ * doesn't outlast a finish that has none.
+ */
+export const paintedCopy = (material: MeshStandardMaterial, definition: MaterialDef): MeshStandardMaterial =>
+  surfaced(new MeshStandardMaterial().copy(material), definition, [1, 1, 1]);
+
+const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
+  if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
+    return loaded;
+  }
+  const { materialId, colourMultiplier } = parse(MaterialReferenceSchema, {
+    materialId: loaded.userData.materialId,
+    colourMultiplier: loaded.userData.colourMultiplier,
+  });
+  const definition = Object.hasOwn(table, materialId) ? table[materialId] : undefined;
+  if (!(definition && loaded instanceof MeshStandardMaterial)) {
+    throw new Error(`Unsupported model material ${materialId}`);
+  }
+  return surfaced(loaded, definition, colourMultiplier);
 };
 
 export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<string, MaterialDef>>): void => {

@@ -42,8 +42,10 @@ defects before they reach `main`.
 
 ## Shared asset pin bumps
 
-Skelly always uses the latest published skelly-assets release. One linear release
-line exposes consumer gaps at each pin bump instead of accumulating them. Keep the
+Skelly follows the latest published skelly-assets release. One linear release
+line exposes consumer gaps at each pin bump instead of accumulating them. The rule
+is a general direction, not a condition on every PR: a PR need not run on the newest
+release, so a bump lands as its own PR when the work it would disturb allows. Keep the
 release pin and `packages/skelly-assets` gitlink together in one commit with the
 content changes the release needs: source and released bytes must come from the
 same revision. See `tools/skelly-assets/setup.mjs`, `pinRelease` and

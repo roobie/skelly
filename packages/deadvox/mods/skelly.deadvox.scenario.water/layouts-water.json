@@ -1,6 +1,7 @@
 {
   "layouts": [
     {
+      "actors": [],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -34,7 +35,6 @@
         "bearing": 0,
         "position": [256, 21.5, 392]
       },
-      "shamblers": [],
       "terrain": [
         {
           "centre": [256, 224],

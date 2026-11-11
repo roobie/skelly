@@ -154,7 +154,7 @@ describe('loot source routing', () => {
         },
       ],
       player: { position: [4, 0, 4], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     });

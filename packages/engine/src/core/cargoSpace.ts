@@ -132,9 +132,9 @@ const narrow = (clearance: Map<string, number>, box: ModelBox, plane: number, ce
   }
 };
 
-/** A cargo space's pocket: its footprint, whatever its height. */
+/** A cargo space's pocket: its footprint, whatever its height, forward by across. */
 export const cargoGrid = ([x, , z]: CargoCells, { handlingSimSeconds, wideReason }: CargoSpaceDef): Container => ({
-  pockets: [{ grid: [x, z], handlingSimSeconds }],
+  pockets: [{ grid: [z, x], handlingSimSeconds }],
   ...(wideReason === undefined ? {} : { wideReason }),
 });
 

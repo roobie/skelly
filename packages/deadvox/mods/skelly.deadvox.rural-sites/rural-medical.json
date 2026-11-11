@@ -1,6 +1,7 @@
 {
   "layouts": [
     {
+      "actors": [],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -45,7 +46,6 @@
         "bearing": 0,
         "position": [57, 21.5, 65]
       },
-      "shamblers": [],
       "terrain": [],
       "tracks": [
         {

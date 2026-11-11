@@ -4,7 +4,7 @@ import { type Registry, requireDayCycle } from './content.ts';
 import type { ActorSpawn, Site } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-/** Chunk-driven spawns with session-lifetime de-duplication: killed shamblers stay gone. */
+/** Chunk-driven spawns with session-lifetime de-duplication: killed actors stay gone. */
 export interface ActorColumnLoad {
   cx: number;
   cz: number;

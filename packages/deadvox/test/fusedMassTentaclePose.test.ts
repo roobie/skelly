@@ -215,7 +215,7 @@ describe('fused-mass attack tentacle pose', () => {
       figure,
       transforms: boneTransforms(figure.bones, restPose),
       hidden: new Set(),
-      yaw: rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI),
+      yaw: rotY((Math.atan2(facing[0], facing[2]) * 180) / Math.PI),
       position,
     });
     const offset = fusedMassStrikeOrigin(figure, facing);

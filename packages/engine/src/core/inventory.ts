@@ -608,12 +608,15 @@ export class Inventory {
       sites: blueprint.fittings.map(copyVehiclePlacement),
       fittings: blueprint.fittings
         .filter(({ id }) => !absent.includes(id))
-        .map((fitting) => ({
-          ...copyVehiclePlacement(fitting),
-          item: fitting.cargo
+        .map((fitting) => {
+          const item = fitting.cargo
             ? cargoSpaceItem(this.factory, this.registry, fitting.part, fitting.cargo)
-            : this.factory.create(this.registry, fitting.part),
-        })),
+            : this.factory.create(this.registry, fitting.part);
+          if (fitting.finish !== undefined) {
+            item.finish = fitting.finish;
+          }
+          return { ...copyVehiclePlacement(fitting), item };
+        }),
     };
     const vehicleId = this.vehicles.add(this.registry, vehicle);
     this.version += 1;
@@ -663,11 +666,25 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, paperMap, fitted, charge, craftedLiquids, liquidContents }: Rolled): Item {
+  createRolled({
+    type,
+    count,
+    condition,
+    paperMap,
+    fitted,
+    charge,
+    craftedLiquids,
+    liquidContents,
+    cartridges,
+    fittedCartridges,
+  }: Rolled): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),
     });
+    if (cartridges !== undefined) {
+      item.cartridges = [...cartridges];
+    }
     if (craftedLiquids !== undefined) {
       item.craftedLiquids = craftedLiquids.map((amount) => ({ ...amount }));
     }
@@ -676,6 +693,9 @@ export class Inventory {
     }
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
+    }
+    for (const [slot, rounds] of Object.entries(fittedCartridges ?? {})) {
+      item.slots![slot]!.cartridges = [...rounds];
     }
     if (charge !== undefined) {
       for (const battery of [item, ...Object.values(item.slots ?? {})]) {

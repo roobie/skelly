@@ -194,8 +194,10 @@ Body-plan mechanisms use descriptive anatomy names: humanoid rather than shamble
 fused-mass rather than amalgam, and shape names for other forms. Product content ids
 may retain their setting vocabulary. This keeps reusable anatomy independent of the
 product that first supplies it; see `packages/deadvox/docs/pack-split.md`, "Creature framework".
-A test holds engine and presentation sources free of "zombie" and "amalgam", so those setting
-words cannot creep back into shared code; see `test/setting-vocabulary.test.mjs`, `settingWordHits`.
+A test holds engine and presentation sources free of "zombie", "amalgam" and "shambler", so those
+setting words cannot creep back into shared code; see `test/setting-vocabulary.test.mjs`, `settingWordHits`.
+The engine carries many content-only products, so product actor ids stay out of its action catalogue:
+debug spawn rows come from loaded content; see `packages/engine/src/core/inputActions.ts`, `debugSpawnActorRow`.
 
 Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army

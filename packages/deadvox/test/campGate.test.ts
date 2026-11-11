@@ -130,7 +130,7 @@ const perimeterSolidCells = (walls: readonly WorldPlacement[]): Point3[] => {
 };
 
 const nearGroundRingPoints = (
-  markers: readonly SiteLayoutDef['shamblers'][number][],
+  markers: readonly SiteLayoutDef['actors'][number][],
   bounds: Bounds,
 ): [number, number][] => {
   const cellCenters = (start: number, end: number): number[] => {
@@ -526,7 +526,7 @@ describe('camp gate templates', () => {
     const walls = perimeterPlacements(camp);
     const bounds = perimeterBounds(walls);
     const approaches = outsideApproachPoints(camp, bounds);
-    const markers = camp.shamblers.filter(({ type }) => type === 'amalgam');
+    const markers = camp.actors.filter(({ type }) => type === 'amalgam');
     const nearGround = nearGroundRingPoints(markers, bounds);
     const breaches = perimeterGaps(walls, bounds);
     const solidCells = perimeterSolidCells(walls);

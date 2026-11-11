@@ -16,7 +16,7 @@
       "emissiveMaterial": "#453b2b",
       "file": "assets/models/road_flare.glb",
       "grip": {
-        "at": [0.018000000000000002, 0, 0],
+        "at": [0, 0, 0.018000000000000002],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -30,7 +30,7 @@
       },
       "parts": {
         "road_flare": {
-          "centreOfMass": [0.16025400641025642, 0, 0],
+          "centreOfMass": [0, 0, 0.16025400641025642],
           "massKg": 0.12,
           "node": "road_flare:compound"
         }
@@ -39,12 +39,12 @@
     },
     {
       "anchors": {
-        "flame": [0.41999999999999998, 0, 0]
+        "flame": [0, 0, 0.41999999999999998]
       },
       "emissiveMaterial": "#2b241c",
       "file": "assets/models/torch.glb",
       "grip": {
-        "at": [0.111, 0, 0],
+        "at": [0, 0, 0.111],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -61,11 +61,11 @@
     },
     {
       "anchors": {
-        "flame": [0.112, 0, 0]
+        "flame": [0, 0, 0.112]
       },
       "file": "assets/models/candle.glb",
       "grip": {
-        "at": [0.040000000000000008, 0, 0],
+        "at": [0, 0, 0.040000000000000008],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -87,7 +87,7 @@
       "file": "assets/models/oil_lamp.glb",
       "grip": {
         "at": [0, 0.0060000000000000001, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "oil_lamp",
@@ -151,7 +151,7 @@
       "file": "assets/models/lighter.glb",
       "grip": {
         "at": [0, 0.028000000000000001, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "lighter",
@@ -200,7 +200,7 @@
       "file": "assets/models/matches.glb",
       "grip": {
         "at": [0, 0.01, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "matches",

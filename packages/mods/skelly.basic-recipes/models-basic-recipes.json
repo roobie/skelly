@@ -4,7 +4,7 @@
       "file": "assets/models/wooden_plank.glb",
       "grip": {
         "at": [0, 0.01, 0],
-        "turn": [0, 0, 0]
+        "turn": [0, -90, 0]
       },
       "hold": "upright",
       "id": "wooden_plank",
@@ -27,7 +27,7 @@
     {
       "file": "assets/models/hand_saw.glb",
       "grip": {
-        "at": [0.016, 0, 0],
+        "at": [0, 0, 0.016],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -41,7 +41,7 @@
       },
       "parts": {
         "hand_saw": {
-          "centreOfMass": [0.14269000000000001, 0, 0],
+          "centreOfMass": [0, 0, 0.14269000000000001],
           "massKg": 0.65000000000000002,
           "node": "hand_saw:compound"
         }
