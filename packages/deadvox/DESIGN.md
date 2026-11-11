@@ -2702,7 +2702,11 @@ renderer only chooses which fields to build early and draws what the cache holds
 caches would let the room a player sees and the room gameplay reads disagree. The
 visibility is derived, so it is not saved: a reload recomputes the same answer from
 restored state. Outside every field the answer is open sky, as `docs/readables.md`,
-"Reading needs light" requires, so missing data never reads as darkness. See
+"Reading needs light" requires, so missing data never reads as darkness. Sky light fades
+out within a fixed halo, so a field depends only on the chunks and blocking furniture inside
+its dependency box, and a change rechecks only the fields whose box it reaches. Every arriving
+column changes the world, so rechecking every field on every change costs frame rate in
+proportion to view radius while the world fills. See
 `packages/engine/src/core/skyField.ts`, `SkyFields`, `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
 
