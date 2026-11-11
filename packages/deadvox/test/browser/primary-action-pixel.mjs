@@ -1019,115 +1019,257 @@ const opticZoomCheck = async (chromium, port) => {
   await page.close();
 };
 
+// Opens the lake scenario with the camera over the basin centre, so the small startup ring is the lake, and
+// enters the world. `hash` adds to the stage's own settings.
+const openLake = async (chromium, port, hash) => {
+  const page = await chromium.newPage({ viewport: { width: 640, height: 400 } });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.addInitScript(fakePointerLock);
+  const { layouts } = JSON.parse(
+    await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'),
+  );
+  const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
+  const [centreX, centreZ] = lakeLayout.terrain[0].centre;
+  const cam = [centreX, lakeLayout.water[0].level + 2, centreZ, 0, 89, 0];
+  await timePhase('lake-menu', async () => {
+    await page.goto(
+      browserStageUrl(
+        'primary-action-pixel',
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: lakeNoonMod,
+          hash: { debug: true, seed: 1, radius: 16, cam, freeze: true, sunshadow: false, torchshadow: false, ...hash },
+        }),
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  });
+  await timePhase('lake-enter', () => enterWorld(page));
+  return { page, errors };
+};
+
+// Installs `globalThis.lakeLook(eyeAt, pitch, yaw)` in the page: puts the camera at a height over the basin centre,
+// looking at a pitch (and a yaw, when given), and resolves with the centre pixel, the pixel `BESIDE_PIXELS` to its
+// right and the chunk depth of the second frame after the move
+// (so the camera has followed the body). The game is frozen, so a placed body stays put. The software renderer
+// draws a frame or two a second, so every view is read inside one render hook, not awaited. It reads the drawing
+// buffer right after the mood pass, the frame's last draw, so post on and off are both read as the player sees
+// them; the HUD is DOM, not in it.
+const installLakeLook = async (beside) => {
+  // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
+  const { centreDepth } = await import('/test/browser/water-depth.ts');
+  const r = globalThis.primaryActionTest;
+  const { engine } = r;
+  const { body } = r.session;
+  const s = r.scale.blockSize;
+  const layout = engine.registry.layouts.get('lake_demo');
+  const [x, z] = layout.terrain[0].centre;
+  const eye = engine.camera.position.y - body.pos[1] * s;
+  const gl = engine.renderer.getContext();
+  const pixelAt = (dx) => {
+    const pixel = new Uint8Array(4);
+    gl.readPixels(
+      (gl.drawingBufferWidth >> 1) + dx,
+      gl.drawingBufferHeight >> 1,
+      1,
+      1,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixel,
+    );
+    return { r: pixel[0], g: pixel[1], b: pixel[2] };
+  };
+  globalThis.lakeLook = (eyeAt, pitch, yaw) =>
+    new Promise((done) => {
+      body.pos = [x / s, (eyeAt - eye) / s, z / s];
+      body.vel = [0, 0, 0];
+      r.input.controls.pitch = pitch;
+      if (yaw !== undefined) {
+        r.input.controls.yaw = yaw;
+      }
+      const { mood } = engine;
+      const { render } = mood;
+      let renders = 0;
+      mood.render = (...args) => {
+        render.apply(mood, args);
+        renders += 1;
+        if (renders < 2) {
+          return;
+        }
+        mood.render = render;
+        done({
+          cameraY: engine.camera.position.y,
+          colour: pixelAt(0),
+          beside: pixelAt(beside),
+          depth: centreDepth(engine),
+        });
+      };
+    });
+  return layout.water[0].level;
+};
+
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
 // a pixel magenta, so a camera under the water looking straight up sees magenta exactly when the
 // surface's underside is missing or wound away from it. Looking down or level would pass on the bed.
-const lakeSurfaceCheck = (chromium, port) =>
-  timePhase('underwater-surface-pixels', async () => {
-    const lake = await chromium.newPage({ viewport: { width: 640, height: 400 } });
-    try {
-      const lakeErrors = [];
-      lake.on('pageerror', (error) => lakeErrors.push(error.message));
-      await lake.addInitScript(fakePointerLock);
-      // Start over the basin centre, so the small startup ring is the lake.
-      const { layouts } = JSON.parse(
-        await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'),
-      );
-      const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
-      const [centreX, centreZ] = lakeLayout.terrain[0].centre;
-      const cam = [centreX, lakeLayout.water[0].level + 2, centreZ, 0, 89, 0];
-      await timePhase('lake-menu', async () => {
-        await lake.goto(
-          browserStageUrl(
-            'primary-action-pixel',
-            gameUrl(`http://127.0.0.1:${port}`, {
-              startMod: lakeNoonMod,
-              hash: {
-                debug: true,
-                seed: 1,
-                radius: 16,
-                cam,
-                freeze: true,
-                post: false,
-                sunshadow: false,
-                torchshadow: false,
-                crackcheck: true,
-              },
-            }),
-          ),
-        );
-        await lake.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-      });
-      await timePhase('lake-enter', () => enterWorld(lake));
-      // The game is frozen, so a placed body stays put while the camera keeps following it. The software
-      // renderer draws a frame or two a second, so every view is read inside one render hook, not awaited.
-      const { level, sky, under, above } = await lake.evaluate(async () => {
-        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
-        const { centreDepth } = await import('/test/browser/water-depth.ts');
-        const r = globalThis.primaryActionTest;
-        const { engine } = r;
-        const { body } = r.session;
-        const s = r.scale.blockSize;
-        const layout = engine.registry.layouts.get('lake_demo');
-        const [x, z] = layout.terrain[0].centre;
-        const eye = engine.camera.position.y - body.pos[1] * s;
-        const gl = engine.renderer.getContext();
-        // Reads the drawing buffer once the frame's draws have finished; the HUD is DOM, not in it. On the
-        // held layer's stack the frame is not complete: below render scale 1 the scene is drawn into a
-        // sub-viewport that only a later upscale covers (render/screenScale.ts, ScreenScale.render), and
-        // the centre pixel can sit outside that viewport. The second frame after the move is read, so
-        // the camera has followed the body.
-        const look = (eyeAt, pitch) =>
-          new Promise((done) => {
-            body.pos = [x / s, (eyeAt - eye) / s, z / s];
-            body.vel = [0, 0, 0];
-            r.input.controls.pitch = pitch;
-            const { held } = r.view;
-            const { render } = held;
-            let renders = 0;
-            held.render = (...args) => {
-              render.apply(held, args);
-              renders += 1;
-              if (renders < 2) {
-                return;
-              }
-              held.render = render;
-              queueMicrotask(() => {
-                const pixel = new Uint8Array(4);
-                gl.readPixels(
-                  gl.drawingBufferWidth >> 1,
-                  gl.drawingBufferHeight >> 1,
-                  1,
-                  1,
-                  gl.RGBA,
-                  gl.UNSIGNED_BYTE,
-                  pixel,
-                );
-                const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
-                done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
-              });
-            };
-          });
-        const surface = layout.water[0].level;
-        return {
-          level: surface,
-          sky: await look(surface + 2, 1.55),
-          under: await look(surface - s, 1.55),
-          // Straight down, the player's own body covers the centre; a radian down meets the water just ahead.
-          above: await look(surface + 2, -1),
+const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
+  const { sky, under, above } = await lake.evaluate(async (surface) => {
+    const s = globalThis.primaryActionTest.scale.blockSize;
+    return {
+      sky: await globalThis.lakeLook(surface + 2, 1.55),
+      under: await globalThis.lakeLook(surface - s, 1.55),
+      // Straight down, the player's own body covers the centre; a radian down meets the water just ahead.
+      above: await globalThis.lakeLook(surface + 2, -1),
+    };
+  }, level);
+  const magenta = ({ r, g, b }) => r > 150 && b > 150 && g < 0.5 * Math.min(r, b);
+  process.stdout.write(`Underwater surface views: ${JSON.stringify({ level, sky, under, above })}\n`);
+  assert.ok(magenta(sky.colour) && sky.depth === 1, 'the control looks up at open sky and both oracles see it');
+  assert.ok(under.cameraY < level && above.cameraY > level, 'the views sit under and above the surface');
+  assert.ok(!magenta(under.colour), 'looking up from under the water, the centre pixel is the surface, not the sky');
+  assert.ok(under.depth < 1, 'looking up from under the water, a chunk face covers the centre');
+  assert.ok(above.colour.b > above.colour.r && above.depth < 1, 'looking down from above, the centre is water');
+  assert.deepEqual(lakeErrors, []);
+};
+
+// The sky dome stands in for the flat background, so where nothing covers the horizon it must read as the flat
+// background, which is the fog colour, with post on and off. The reference is the same view with the dome's
+// material hidden. Higher up the dome must differ from it, or the horizon match could pass with no dome drawn.
+// The page runs a tone mapper at an exposure other than 1 with bloom, so the post chain's colour scale and the
+// sky's bloom rule are in play: a dome left unscaled, or bright enough to bloom, would not meet the fog colour.
+const HORIZON_PITCH = 0;
+const HIGH_PITCH = 0.7;
+const horizonTolerance = 3;
+const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
+const skyHorizonCheck = async (lake, level, lakeErrors) => {
+  const views = await lake.evaluate(
+    async ({ surface, horizonPitch, highPitch }) => {
+      const { engine } = globalThis.primaryActionTest;
+      engine.mood.setCrackCheck(false);
+      // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
+      engine.mood.setFilm(false);
+      const dome = engine.scene.getObjectByName('skyDome');
+      const byMode = {};
+      for (const post of [false, true]) {
+        engine.mood.setPost(post);
+        const view = {};
+        for (const [name, visible] of [
+          ['dome', true],
+          ['flat', false],
+        ]) {
+          dome.material.visible = visible;
+          view[name] = {
+            horizon: await globalThis.lakeLook(surface + 2, horizonPitch),
+            high: await globalThis.lakeLook(surface + 2, highPitch),
+          };
+        }
+        dome.material.visible = true;
+        byMode[post ? 'post' : 'direct'] = view;
+      }
+      return byMode;
+    },
+    { surface: level, horizonPitch: HORIZON_PITCH, highPitch: HIGH_PITCH },
+  );
+  process.stdout.write(`Sky dome horizon views: ${JSON.stringify(views)}\n`);
+  for (const [mode, { dome, flat }] of Object.entries(views)) {
+    assert.equal(dome.horizon.depth, 1, `${mode}: nothing covers the horizon pixel, so it shows the sky`);
+    assert.ok(
+      apart(dome.horizon.colour, flat.horizon.colour) <= horizonTolerance,
+      `${mode}: the dome meets the fog colour at the horizon`,
+    );
+    assert.ok(
+      apart(dome.high.colour, flat.high.colour) > horizonTolerance,
+      `${mode}: higher up the dome differs from the flat background`,
+    );
+  }
+  assert.deepEqual(lakeErrors, []);
+};
+
+// The sun's disc is in frame, brighter than the sky beside it, or the checks below prove nothing.
+//
+// The sky stays out of bloom through `toDisplay`, whatever radiance it has. Only a small bright body against a sky
+// with headroom can show that: a saturated pixel reads the same with bloom on and off, and radiance past half-float
+// range blacks the frame instead of glowing. So the test-owned look, drawn only inside this page, is a clear keyed
+// sky with no painted glow and a disc far past the bloom threshold, and the sky beside it reads the same either way.
+//
+// Bloom cannot light the sky, so the painted glow is all the glow the sun has. Every view is of that look, with only
+// the glow varied, so tuning a shipped look cannot fail the check. A glow far past display range still has headroom
+// only if it went through `toDisplay` with the rest of the sky.
+const BRIGHT_SUN = 100;
+const OVERDRIVEN_GLOW = 100;
+const BESIDE_PIXELS = 24;
+const skySunGlowCheck = async (lake, level, lakeErrors) => {
+  const views = await lake.evaluate(
+    async ({ surface, sunBrightness, overdrivenGlow }) => {
+      const { engine } = globalThis.primaryActionTest;
+      engine.mood.setCrackCheck(false);
+      engine.mood.setFilm(false);
+      engine.mood.setPost(true);
+      const dome = engine.scene.getObjectByName('skyDome');
+      const { uniforms } = dome.material;
+      const [x, y, z] = uniforms.uSunDir.value.toArray();
+      // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
+      const pitch = Math.asin(y);
+      const yaw = Math.atan2(-x, -z);
+      const look = () => globalThis.lakeLook(surface + 2, pitch, yaw);
+      const { onBeforeRender } = dome;
+      const lookWith = async (overrides) => {
+        // Runs at the draw, after the frame's own update has set the uniforms.
+        dome.onBeforeRender = () => {
+          for (const [name, value] of Object.entries(overrides)) {
+            uniforms[name].value = value;
+          }
         };
-      });
-      const magenta = ({ r, g, b }) => r > 150 && b > 150 && g < 0.5 * Math.min(r, b);
-      process.stdout.write(`Underwater surface views: ${JSON.stringify({ level, sky, under, above })}\n`);
-      assert.ok(magenta(sky.colour) && sky.depth === 1, 'the control looks up at open sky and both oracles see it');
-      assert.ok(under.cameraY < level && above.cameraY > level, 'the views sit under and above the surface');
-      assert.ok(
-        !magenta(under.colour),
-        'looking up from under the water, the centre pixel is the surface, not the sky',
-      );
-      assert.ok(under.depth < 1, 'looking up from under the water, a chunk face covers the centre');
-      assert.ok(above.colour.b > above.colour.r && above.depth < 1, 'looking down from above, the centre is water');
-      assert.deepEqual(lakeErrors, []);
+        const view = await look();
+        dome.onBeforeRender = onBeforeRender;
+        return view;
+      };
+      const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: sunBrightness };
+      engine.mood.setBloom(false);
+      const plain = await lookWith(brightSun);
+      const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
+      const overdriven = await lookWith({ ...brightSun, uSunGlow: overdrivenGlow });
+      engine.mood.setBloom(true);
+      const bloom = await lookWith(brightSun);
+      return { plain, glowing, overdriven, bloom, bloomRan: engine.mood.bloomPass.enabled };
+    },
+    { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
+  );
+  process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
+  const brightness = ({ r, g, b }) => r + g + b;
+  const visiblyBrighter = (lit, dim) => brightness(lit) > brightness(dim) + 3 * horizonTolerance;
+  assert.ok(views.bloomRan, 'the bloom pass runs for the view that compares the sky with bloom on');
+  assert.ok(
+    visiblyBrighter(views.plain.colour, views.plain.beside),
+    'the sun disc is in frame, brighter than the sky beside it',
+  );
+  const hasHeadroom = (colour) => Math.max(...Object.values(colour)) + horizonTolerance < 255;
+  assert.ok(hasHeadroom(views.plain.beside), 'the sky beside the sun has headroom for bloom to show');
+  assert.ok(
+    apart(views.bloom.beside, views.plain.beside) <= horizonTolerance,
+    'the sky beside a very bright sun gains no glow from bloom',
+  );
+  assert.ok(
+    visiblyBrighter(views.glowing.beside, views.plain.beside),
+    'the painted glow brightens the sky beside the sun',
+  );
+  assert.ok(hasHeadroom(views.overdriven.beside), 'a glow far past display range is brought into it with the sky');
+  assert.deepEqual(lakeErrors, []);
+};
+
+const lakeChecks = (chromium, port) =>
+  timePhase('lake-pixels', async () => {
+    const { page: lake, errors } = await openLake(chromium, port, {
+      post: false,
+      crackcheck: true,
+      tone: 'aces',
+      exposure: 0.5,
+      bloom: true,
+    });
+    try {
+      const level = await lake.evaluate(installLakeLook, BESIDE_PIXELS);
+      await timePhase('underwater-surface-pixels', () => lakeSurfaceCheck(lake, level, errors));
+      await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, level, errors));
+      await timePhase('sky-sun-glow-pixels', () => skySunGlowCheck(lake, level, errors));
     } finally {
       await lake.close();
     }
@@ -1156,7 +1298,7 @@ try {
     held: heldItemChecks,
     'optic-zoom': opticZoomCheck,
     'optic-sights': opticZoomCheck,
-    lake: lakeSurfaceCheck,
+    lake: lakeChecks,
   };
   await checks[group](browser, address.port);
 } finally {

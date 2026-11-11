@@ -16,19 +16,38 @@ export interface Dome {
   zenith: Rgb;
   /** Colour of the band just above the horizon, between the fog colour and the zenith. */
   horizonGlow: Rgb;
-  /** The physical sky: weight 0 is the keyed gradient only, 1 the physical sky; the rest are the model's own terms. */
-  physical: { weight: number; turbidity: number; rayleigh: number; mie: number; mieDirectional: number };
+  /**
+   * The physical sky: weight 0 is the keyed gradient only, 1 the physical sky once the sun is high enough; the dome
+   * scales it by how far the sun is up the `physicalBand`, so a low sun draws the gradient whatever the weight. The
+   * rest are the model's own terms.
+   */
+  physical: {
+    weight: number;
+    exposure: number;
+    turbidity: number;
+    rayleigh: number;
+    mie: number;
+    mieDirectional: number;
+  };
   /** Cloud threshold shift and the scale of every layer's opacity. */
   clouds: { cover: number; opacity: number };
   stars: number;
+  moon: { colour: Rgb; brightness: number };
+  sun: { colour: Rgb; brightness: number; glowColour: Rgb; glow: number };
 }
+
+/** The cloud field's shape and the dome's other fixed shape, which the cycle holds once for every look. */
+export type Clouds = DayCycleDef['clouds'];
+export type DomeShape = DayCycleDef['domeShape'];
 
 export interface Sky {
   dayPhase: DayPhase;
-  /** Background colour; the fog fades to it. */
+  /** The fog colour, which is also the sky dome's colour at the horizon. */
   sky: Rgb;
   /** Unit vector towards the main light: the sun by day, the moon by night. */
   light: Vec3;
+  /** The true solar direction, unclamped, so a sky dome can draw the sun at and below the horizon. */
+  sunDirection: Vec3;
   lightColor: Rgb;
   lightIntensity: number;
   /** Hemisphere light: sky and ground colours and intensity. */
@@ -56,7 +75,7 @@ export interface Sky {
   dome: Dome;
 }
 
-type Look = Omit<Sky, 'light' | 'dayPhase'>;
+type Look = Omit<Sky, 'light' | 'dayPhase' | 'sunDirection'>;
 
 const DAY_SECONDS = 24 * 60 * 60;
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -83,6 +102,7 @@ const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
   horizonGlow: mixRgb(a.horizonGlow, b.horizonGlow, t),
   physical: {
     weight: mix(a.physical.weight, b.physical.weight, t),
+    exposure: mix(a.physical.exposure, b.physical.exposure, t),
     turbidity: mix(a.physical.turbidity, b.physical.turbidity, t),
     rayleigh: mix(a.physical.rayleigh, b.physical.rayleigh, t),
     mie: mix(a.physical.mie, b.physical.mie, t),
@@ -90,6 +110,13 @@ const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
   },
   clouds: { cover: mix(a.clouds.cover, b.clouds.cover, t), opacity: mix(a.clouds.opacity, b.clouds.opacity, t) },
   stars: mix(a.stars, b.stars, t),
+  moon: { colour: mixRgb(a.moon.colour, b.moon.colour, t), brightness: mix(a.moon.brightness, b.moon.brightness, t) },
+  sun: {
+    colour: mixRgb(a.sun.colour, b.sun.colour, t),
+    brightness: mix(a.sun.brightness, b.sun.brightness, t),
+    glowColour: mixRgb(a.sun.glowColour, b.sun.glowColour, t),
+    glow: mix(a.sun.glow, b.sun.glow, t),
+  },
 });
 
 const interpolate = (a: Look, b: Look, t: number): Look => ({
@@ -144,7 +171,12 @@ export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const [x, , z] = state.sunDirection;
   const y = Math.max(state.sunDirection[1], MIN_LIGHT_Y);
   const len = Math.hypot(x, y, z);
-  return { ...lookAt(state, time, cycle), dayPhase: state.phase, light: [x / len, y / len, z / len] };
+  return {
+    ...lookAt(state, time, cycle),
+    dayPhase: state.phase,
+    light: [x / len, y / len, z / len],
+    sunDirection: state.sunDirection,
+  };
 };
 
 /**

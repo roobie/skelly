@@ -398,9 +398,13 @@ Only an emitted event stops a long action, except that bleeding also refuses
 compression for player actions. Nearby or aware shamblers do not make the game
 judge an area safe on the player's behalf: the player may choose to wait where
 enemies cannot reach them. Damage, a need threshold, a carried light dying, or
-deliberate debug noise can interrupt. A sleeper wakes; other actions return to
-real time and offer Continue or Stop without losing completed progress. Debug
-compression is not stopped by bleeding. See `Simulation.checkInterruptions` in
+deliberate debug noise can interrupt, and none loses completed progress. A
+sleeper wakes. A blow stops any other action outright, because being hit is no
+moment for a choice. A critical need such as starving returns the action to real
+time and offers Continue or Stop, because hunger is a choice the player can weigh
+against finishing the work. Thirst, exhaustion and a dying light offer the same
+prompt; no ruling has set any of them apart from starving. The prompt's form is in
+`INTERFACE.md`, "HUD". Debug compression is not stopped by bleeding. See `Simulation.checkInterruptions` in
 `packages/engine/src/core/sim.ts` and `LongActions.syncInterruption` in `packages/engine/src/core/longAction.ts`.
 
 Without an alarm-bearing item, sleep ends when fatigue reaches zero. With an
@@ -633,11 +637,12 @@ because rearranging a room should not require destroying its contents. See `pack
   apart and continuing held work enter through the same menu, so every hold
   choice reads alike, and their directions are authored before they are offered
   so their arrival moves no existing entry. Readability does not fasten a board;
-  its ordinary use stays on the tap. The menu belongs to movable kinds, even
-  with lift alone: building parts keep direct use because offering impossible
-  moves would obstruct their ordinary interaction. A fitted placement of a
-  movable kind still offers the menu and explains why it cannot move, so
-  fitting does not silently change that kind's controls. An open menu is a
+  its ordinary use stays on the tap. The menu opens on any piece that has a
+  hold action, building parts included, because a hold that opens nothing is a
+  dead gesture and a player's own boards must be able to come down; a piece
+  with nothing to choose opens no menu, so the tap's use is never obstructed. A
+  fitted placement of a movable kind offers the menu and explains why it cannot
+  move, so fitting does not silently change that kind's controls. An open menu is a
   single confirmation, not a persistent interaction mode: returning from a
   pause or another target must not unexpectedly act instead of offering
   choices. Each action keeps one authored direction, so muscle memory survives
@@ -3810,11 +3815,17 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
-Holding world interaction opens the action menu on every movable piece, intact or damaged; lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
+Holding world interaction opens the action menu on every piece with a hold action, intact or damaged (`DESIGN.md`, "Moving furniture"); lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-No Repair entry is offered to players until the #1469 crafting view settles input selection: a one-click repair look before that view would fix the input-choice flow prematurely. The entry returns with that view, together with the turnable 3D view of the target beside its requirements, so the player can inspect the piece they are committing supplies to. Keyboard arrow aiming is not a second target-selection path: the action-list choice already names the piece.
+Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Neither entry is offered to players until the #1469 crafting view settles: the world-work view is laid out together with that view, and a review shipped alone before then would fix the view's shape (target, rows, time, blockers, Start) before the crafting layout it must sit beside, leaving a second surface to replace or to let drift. The engine command for taking a piece apart does not wait, because it carries no view. The entries return with that view, together with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
+
+A piece is whole by default: its definition authors what taking it apart yields, and repair stays one recipe per kind, so a stool needs no parts to come apart or to mend. A kind that authors a parts blueprint takes the parts path instead: a job removes or fits one part, and condition is per part. Keeping the parts route per kind leaves it open for the kinds that earn it without paying its cost on every cupboard, and both routes feed the same review, so the player still learns one surface. The content check refuses a kind that authors both, because a piece's model decides how the verb behaves and two models on one kind would leave that undecided. The route is a field of the furniture definition that the engine take-apart round adds; see `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `SLICE-5.md`, "Lanes and the next rounds".
+
+A paused world job lives on its piece. The reserved piece holds the job, its progress and, for repair, its escrowed inputs, as a work item it contains under the container rules, so item ownership stays in the item tree and progress gains no second owner. Continue is on the piece's ring. A job that stays at its piece also works reasonably in multiplayer: whoever stands at the piece can continue it, and nobody carries another player's job away. A paused repair reserves its piece as a paused take apart does, one rule for every world job, so another move cannot take the target and leave the job vanishing under the player; a piece mid-repair cannot move until its job is cancelled. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.useRefusal`, and `DESIGN.md`, "Block entities".
+
+Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
 
 ## UI principles
 

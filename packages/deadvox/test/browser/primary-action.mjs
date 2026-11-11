@@ -2615,22 +2615,17 @@ try {
         time: globalThis.primaryActionTest.session.sim.time,
         feet: globalThis.primaryActionTest.feet(),
       }));
-      const releaseForward = await holdAction(page, 'movement.forward');
-      try {
-        await waitForSimulation(
-          page,
-          progressingSample,
-          { start: before.time },
-          {
-            seconds: 0.35,
-            label: 'render-free input and simulation witness',
-            record: (line) => process.stderr.write(`${line}\n`),
-            stop: releaseForward,
-          },
-        );
-      } finally {
-        await releaseForward();
-      }
+      await waitForSimulation(
+        page,
+        progressingSample,
+        { start: before.time },
+        {
+          seconds: 0.35,
+          label: 'render-free input and simulation witness',
+          record: (line) => process.stderr.write(`${line}\n`),
+          hold: 'movement.forward',
+        },
+      );
       const witness = await page.evaluate(() => ({
         renderer: Boolean(globalThis.primaryActionTest.engine.renderer),
         requests: globalThis.renderFreeWitness.webglRequests,
