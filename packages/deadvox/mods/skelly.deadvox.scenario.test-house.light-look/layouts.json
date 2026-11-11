@@ -1,6 +1,7 @@
 {
   "layouts": [
     {
+      "actors": [],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -110,7 +111,6 @@
         "bearing": 180,
         "position": [-2.75, 21, 12.75]
       },
-      "shamblers": [],
       "showroom": {
         "capacity": 3,
         "facing": "s",
