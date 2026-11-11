@@ -1676,6 +1676,7 @@ const startPlayWith = (
     keyboard: keyboardInput,
     weather,
     flashlight,
+    solidity: { isSolid: session.physicalSolid, isOpaque: session.isOpaque },
     body,
     inventory,
     character: session.character,

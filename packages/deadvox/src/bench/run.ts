@@ -34,6 +34,7 @@ import { pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { linkStartMod } from '../product/page.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
 import { createBenchLightFixture } from './lightFixture.ts';
+import { withLayoutVehicles } from './placementWorld.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -48,7 +49,7 @@ import {
 } from './plan.ts';
 import { applyBenchWeathering, benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
-import { findShamblerBenchPlayer, withLayoutVehicles } from './shamblerPlacement.ts';
+import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, mean, sampleStats } from './stats.ts';
 

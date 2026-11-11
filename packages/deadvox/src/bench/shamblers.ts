@@ -25,6 +25,7 @@ import type { RenderedEngine } from '@skelly/presentation/play';
 import { ActorMeshes, type ActorRenderer, applySky, MobActorMeshes } from '@skelly/presentation/render';
 import type { HashState } from '../hashState.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
+import { withLayoutVehicles } from './placementWorld.ts';
 import {
   ACTIVE_SHAMBLER_TARGET,
   type BenchRecord,
@@ -38,7 +39,7 @@ import {
 import { benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
 import { benchSiteLabel, environment, loadNextRun, timeOfDayText } from './run.ts';
-import { findShamblerBenchPlayer, withLayoutVehicles } from './shamblerPlacement.ts';
+import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
 

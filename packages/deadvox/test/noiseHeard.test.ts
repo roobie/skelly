@@ -869,7 +869,14 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     isOpaque: isSolid,
     groundAt: () => scale.blockSize,
   } as unknown as Engine;
-  expect(spawnUnawareShambler(debugEngine, session.body, session.actors)).toBe(true);
+  expect(
+    spawnUnawareShambler({
+      engine: debugEngine,
+      queries: debugEngine,
+      player: session.body,
+      actors: session.actors,
+    }),
+  ).toBe(true);
   const [id, actor] = [...session.actorStore.entries()][0]!;
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);

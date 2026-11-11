@@ -68,7 +68,7 @@ describe('debug shambler spawning', () => {
     const body = player();
     const actors = actorsFor(body, solid);
 
-    expect(spawnShamblers(engine, body, actors, 25)).toBe(25);
+    expect(spawnShamblers({ engine, queries: engine, player: body, actors }, 25)).toBe(25);
     const bodies = [body, ...[...actors.store.entries()].map(([, actor]) => actor.body)];
     expect(bodies).toHaveLength(26);
     for (let i = 0; i < bodies.length; i++) {
@@ -85,8 +85,8 @@ describe('debug shambler spawning', () => {
     const body = player();
     const actors = actorsFor(body, solid);
 
-    expect(spawnShamblers(engine, body, actors, 10)).toBe(10);
-    expect(spawnShamblers(engine, body, actors, 10)).toBe(10);
+    expect(spawnShamblers({ engine, queries: engine, player: body, actors }, 10)).toBe(10);
+    expect(spawnShamblers({ engine, queries: engine, player: body, actors }, 10)).toBe(10);
     const bodies = [body, ...[...actors.store.entries()].map(([, actor]) => actor.body)];
     for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {
@@ -101,7 +101,9 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const actors = actorsFor(body, solid);
 
-    expect(spawnActorType(engine, body, actors, { typeId: largestType.id, count: 1 })).toBe(1);
+    expect(
+      spawnActorType({ engine, queries: engine, player: body, actors }, { typeId: largestType.id, count: 1 }),
+    ).toBe(1);
     const [id, actor] = [...actors.store.entries()][0]!;
     const initialDistance =
       Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
@@ -167,7 +169,7 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const actors = actorsFor(body, solid);
 
-    expect(spawnActorType(engine, body, actors, { typeId: type.id, count: 1 })).toBe(1);
+    expect(spawnActorType({ engine, queries: engine, player: body, actors }, { typeId: type.id, count: 1 })).toBe(1);
     expect(bodyIsClear([...actors.store.entries()][0]![1].body, solid)).toBe(true);
   });
 
@@ -189,7 +191,20 @@ describe('debug shambler spawning', () => {
     });
     const body = player();
     const actors = actorsFor(body, crowdedEngine.isSolid);
-    expect(spawnShamblers(crowdedEngine, body, actors, 3)).toBe(1);
+    expect(spawnShamblers({ engine: crowdedEngine, queries: crowdedEngine, player: body, actors }, 3)).toBe(1);
     expect(actors.store.size).toBe(1);
+  });
+
+  it('places only where the supplied solid rule allows, not where the engine query does', () => {
+    const open = () => false;
+    const engine = testEngine(open);
+    const body = player();
+
+    expect(
+      spawnShamblers(
+        { engine, queries: { isSolid: () => true, isOpaque: () => true }, player: body, actors: actorsFor(body, open) },
+        3,
+      ),
+    ).toBe(0);
   });
 });
