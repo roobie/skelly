@@ -181,25 +181,45 @@ export class FurnitureMeshes {
     this.drawnReveal = revealVersion;
     const pieces = new Map<BlockEntity, Piece>();
     const members = new Map<string, Piece[]>();
-    this.group.clear();
     for (const entity of entities.all) {
-      const pose = poseKey(entity, entities.wearOf(entity));
-      const kept = this.pieces.get(entity);
-      const piece = kept?.pose === pose ? kept : this.piece(entity, entities.defOf(entity), pose);
+      const piece = this.pieceFor(entity, entities);
       pieces.set(entity, piece);
       const revealed = this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true;
       if (piece.batch === undefined) {
         piece.mesh.visible = revealed;
-        this.group.add(piece.mesh);
       } else if (revealed) {
         const list = members.get(piece.batch) ?? [];
         list.push(piece);
         members.set(piece.batch, list);
       }
     }
+    for (const [entity, gone] of this.pieces) {
+      if (!pieces.has(entity) && gone.batch === undefined) {
+        this.group.remove(gone.mesh);
+      }
+    }
     this.pieces = pieces;
     this.drawBatches(members);
-    this.group.add(this.marker);
+    if (this.group.children.at(-1) !== this.marker) {
+      this.group.add(this.marker);
+    }
+  }
+
+  /** The entity's piece: kept while its pose is unchanged, else rebuilt in place of the old one. */
+  private pieceFor(entity: BlockEntity, entities: BlockEntities): Piece {
+    const pose = poseKey(entity, entities.wearOf(entity));
+    const kept = this.pieces.get(entity);
+    if (kept?.pose === pose) {
+      return kept;
+    }
+    const piece = this.piece(entity, entities.defOf(entity), pose);
+    if (kept && kept.batch === undefined) {
+      this.group.remove(kept.mesh);
+    }
+    if (piece.batch === undefined) {
+      this.group.add(piece.mesh);
+    }
+    return piece;
   }
 
   /** Adds a batch per key of `members`, keeping each drawn batch whose members are the same, and disposes the rest. */
@@ -209,10 +229,13 @@ export class FurnitureMeshes {
       const kept = this.batches.get(key);
       const batch = kept && sameMembers(kept.members, list) ? kept : { members: list, mesh: batchMesh(list) };
       batches.set(key, batch);
-      this.group.add(batch.mesh);
+      if (batch !== kept) {
+        this.group.add(batch.mesh);
+      }
     }
     for (const [key, { mesh }] of this.batches) {
       if (batches.get(key)?.mesh !== mesh) {
+        this.group.remove(mesh);
         mesh.dispose();
       }
     }

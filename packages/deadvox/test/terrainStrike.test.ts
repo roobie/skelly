@@ -347,6 +347,7 @@ const meshing = (f: Fixture) => {
     weatherable: new Uint8Array(f.registry.blocks.length),
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
   });
   const next = () => {
