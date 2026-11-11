@@ -130,7 +130,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       defaults: { fogginess: 0.2, cloudiness: 0, rain: 0 },
       fog: { nearTighten: 0.85, farTighten: 0.6 },
       cloudiness: {
-        clouds: { cover: 0.9, opacity: 1 },
+        clouds: { cover: 0.65, opacity: 1 },
         physicalWeight: 0.15,
         sun: 0.1,
         light: 0.45,
