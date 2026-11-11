@@ -1,10 +1,15 @@
 {
   "defaultStart": "playtest",
-  "dependencies": ["skelly.deadvox.scenario.playtest"],
+  "dependencies": ["skelly.deadvox", "skelly.deadvox.scenario.playtest"],
   "files": [],
   "id": "skelly.deadvox.scenario.playtest.play",
   "optIn": true,
-  "overrides": [],
+  "overrides": [
+    {
+      "entry": "defaultStart",
+      "pack": "skelly.deadvox"
+    }
+  ],
   "product": false,
   "tier": "scenario",
   "version": "1"

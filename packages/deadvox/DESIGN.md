@@ -2567,9 +2567,12 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   Resistance precedes the strength gate so an ineffective blow does not accumulate
   damage. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`; `packages/engine/src/core/content.ts`,
   `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
-- **Rubble preserves wreckage.** A material's fallen form is solid rubble because
-  wreckage should still provide cover; falling alone is not loose salvage. Strikes
-  and deconstruction are the intended routes to loose resources. See
+- **Rubble preserves wreckage.** A material's fallen form is solid rubble until
+  cleared, because wreckage should still provide cover; falling alone is not loose
+  salvage. Clearing is the take-apart command applied to rubble, so it arrives with
+  that command and adds no second destruction verb. Breaking also yields, at far
+  more time per unit than looting stock, so looting stays the efficient path; see
+  `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
@@ -2866,8 +2869,10 @@ matters for a far kill at the loaded edge together with full supported spots,
 so the case is rare; loss is already the outcome when no room is found.
 Readiness uses the replay-aware zombie rule.
 
-With no supported landing or no room found by the permitted search, the item is
-lost: the zombie has been removed or the limb cut, so no owner can retain it.
+With no supported landing or no room found by the permitted search, including an
+unready column that cannot search farther, discard the item. The zombie has been
+removed or the limb cut, so no owner can retain it. Discarding avoids a pending-drop
+queue in saves; pre-pre-alpha accepts loot lost at the loaded edge.
 Loss adds neither a notice nor a sound. Zombie loot can yield nothing, and a
 line about an unseen body would narrate what the character cannot know; see
 `INTERFACE.md`, "Text". Zombie drops search wider because they have no retained

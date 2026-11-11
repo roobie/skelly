@@ -6,6 +6,7 @@ import {
   type PackInput,
   type PackManifest,
   packStartIssues,
+  selectFolderClosure,
 } from '../core/packAdmission.ts';
 import { logicalKey } from '../core/packFiles.ts';
 import type { SaveVersionComponents } from '../core/saveFormat.ts';
@@ -31,6 +32,7 @@ export const bundledPacksFrom = (manifests: Readonly<Record<string, PackManifest
 
 /** The product's shipped packs and their content, read by the product; this module names no pack root. */
 export interface BundledContentSources {
+  readonly entryPack: string;
   /** Every shipped pack; see `bundledPacksFrom`. */
   readonly packs: readonly BundledPack[];
   /** Content files keyed by `<root>/<path>`, each path as its manifest lists it. */
@@ -44,7 +46,7 @@ export type StartupContent = ReturnType<typeof buildRegistry> & {
 };
 
 export interface BundledContent {
-  /** The packs that start without selection: every shipped pack except the opt-in ones. */
+  /** The entry pack's dependency closure, admitted without mod selection. */
   readonly bundledPackInputs: readonly PackInput[];
   /** Every shipped pack, opt-in ones included, for selecting an opt-in pack's closure. */
   readonly availablePackInputs: readonly PackInput[];
@@ -65,6 +67,7 @@ export const optInPackIdentity = (pack: PackInput): SaveVersionComponents['conte
 export const createBundledContent = async ({
   packs: bundledPacks,
   files,
+  entryPack,
 }: BundledContentSources): Promise<BundledContent> => {
   const available: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
     source: root,
@@ -74,7 +77,7 @@ export const createBundledContent = async ({
       data: (kind === 'content' ? files : __SKELLY_FILE_HASHES__)[logicalKey({ root }, path)],
     })),
   }));
-  const packs = available.filter(({ manifest }) => !manifest.optIn);
+  const packs = selectFolderClosure([entryPack], available, []);
   const admission = admitPacks(packs);
   const admissions = await Promise.all(
     admission.packs.map(async (pack) => ({

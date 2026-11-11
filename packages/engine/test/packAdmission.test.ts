@@ -82,6 +82,29 @@ it('a compatibility pack settles independent entry setters only by declaring bot
   expect(admitPacks([resolver, first, second]).sources).toEqual([]);
 });
 
+it('requires defaultStart setters to declare the same dependency override as content entries', () => {
+  const owner = pack('fixture.entry');
+  const play = pack('fixture.play', [owner.manifest.id]);
+  owner.manifest.defaultStart = 'fixture_base';
+  play.manifest.defaultStart = 'fixture_play';
+  const refused = admitPacks([play, owner]);
+  expect(refused.packs).toEqual([]);
+  expect(refused.issues).toEqual([
+    expect.objectContaining({
+      path: 'overrides',
+      message: expect.stringContaining('defaultStart'),
+    }),
+  ]);
+  expect(refused.issues[0]!.message).toContain(owner.manifest.id);
+  expect(refused.issues[0]!.message).toContain(play.manifest.id);
+  play.manifest.overrides.push({ pack: owner.manifest.id, entry: 'defaultStart' });
+  const admitted = admitPacks([play, owner]);
+  expect(admitted.issues).toEqual([]);
+  expect(admitted.packs.at(-1)?.manifest.defaultStart).toBe(play.manifest.defaultStart);
+  play.manifest.dependencies = [];
+  expect(admitPacks([owner, play]).packs).toEqual([]);
+});
+
 it('refuses a middle pack that redefines an earlier entry undeclared even when the last pack declares both', () => {
   const a = pack('fixture.a');
   const b = pack('fixture.b', [a.manifest.id]);
