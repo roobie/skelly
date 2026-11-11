@@ -43,7 +43,7 @@ const load = async () => {
     { [modelEntry.file]: 'fixture.glb' },
     {
       modelLoadConcurrency: 1,
-      modelFetchRetry: { retries: 0, backoffMs: 0 },
+      modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
     },
   );
   expect(report).not.toHaveBeenCalled();

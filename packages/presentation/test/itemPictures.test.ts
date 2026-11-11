@@ -212,7 +212,7 @@ it('reports a declared model load failure rather than treating it as absent auth
       { 'assets/models/pictured.glb': '/fixture.glb' },
       {
         modelLoadConcurrency: 1,
-        modelFetchRetry: { retries: 0, backoffMs: 0 },
+        modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
       },
     );
     expect(new ItemPictures(registry, models, 2).picture(inv.create('pictured'))).toBeUndefined();

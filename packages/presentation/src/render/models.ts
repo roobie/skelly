@@ -281,7 +281,7 @@ export class ModelLibrary {
     const load = retrying<GLTF>(
       (target, onLoad, onError) => loader.load(target, onLoad, undefined, onError),
       loading.modelFetchRetry,
-      (ms, then) => setTimeout(then, ms),
+      (seconds, then) => setTimeout(then, seconds * 1000),
     );
     this.loadNext = (): void => {
       const entry = this.pending[this.next];

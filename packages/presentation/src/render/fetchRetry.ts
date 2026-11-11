@@ -6,7 +6,7 @@ export interface FetchRetry {
   /** Further tries after the first one fails. */
   readonly retries: number;
   /** Wait before the first retry; each later wait doubles. */
-  readonly backoffMs: number;
+  readonly backoffRealSeconds: number;
 }
 
 /** A loader's `load`: the shape three's loaders share, reduced to what a retry needs. */
@@ -24,16 +24,16 @@ export const isPassingFailure = (error: unknown): boolean => {
 
 /** `load` that tries again after a passing failure, `wait`ing between tries; the last error reaches `onError`. */
 export const retrying =
-  <T>(load: LoadWith<T>, retry: FetchRetry, wait: (ms: number, then: () => void) => void): LoadWith<T> =>
+  <T>(load: LoadWith<T>, retry: FetchRetry, wait: (seconds: number, then: () => void) => void): LoadWith<T> =>
   (url, onLoad, onError) => {
-    const attempt = (retriesLeft: number, backoffMs: number): void => {
+    const attempt = (retriesLeft: number, backoffRealSeconds: number): void => {
       load(url, onLoad, (error) => {
         if (retriesLeft > 0 && isPassingFailure(error)) {
-          wait(backoffMs, () => attempt(retriesLeft - 1, backoffMs * 2));
+          wait(backoffRealSeconds, () => attempt(retriesLeft - 1, backoffRealSeconds * 2));
         } else {
           onError(error);
         }
       });
     };
-    attempt(retry.retries, retry.backoffMs);
+    attempt(retry.retries, retry.backoffRealSeconds);
   };

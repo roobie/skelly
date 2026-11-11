@@ -55,7 +55,7 @@ vi.mock('@skelly/presentation/internal/render/models.ts', async (importOriginal)
   const actual = await importOriginal<typeof import('@skelly/presentation/internal/render/models.ts')>();
   class EmptyPackLibrary extends actual.ModelLibrary {
     constructor(...[content, report]: ConstructorParameters<typeof actual.ModelLibrary>) {
-      super(content, report, {}, { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffMs: 0 } });
+      super(content, report, {}, { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } });
     }
   }
   // biome-ignore lint/style/useNamingConvention: the mock replaces the class export by its name.

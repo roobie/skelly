@@ -22,8 +22,8 @@ const run = (statuses: readonly (number | 'network')[], retry: FetchRetry) => {
     const load = retrying(
       (url, onLoad, onError) => loader.load(url, onLoad, undefined, onError),
       retry,
-      (ms, then) => {
-        waits.push(ms);
+      (seconds, then) => {
+        waits.push(seconds);
         then();
       },
     );
@@ -37,13 +37,13 @@ const run = (statuses: readonly (number | 'network')[], retry: FetchRetry) => {
 
 describe('model fetch retry', () => {
   afterEach(() => vi.unstubAllGlobals());
-  const retry = { retries: 3, backoffMs: 7 };
+  const retry = { retries: 3, backoffRealSeconds: 7 };
 
   it('loads after a passing 5xx or network failure, waiting longer each time', async () => {
     const outcome = await run([503, 'network', 200], retry);
     expect(outcome.result).toBe('model');
     expect(outcome.fetched).toBe(3);
-    expect(outcome.waits).toEqual([retry.backoffMs, retry.backoffMs * 2]);
+    expect(outcome.waits).toEqual([retry.backoffRealSeconds, retry.backoffRealSeconds * 2]);
   });
 
   it('fails a 4xx at once without retrying', async () => {

@@ -55,7 +55,7 @@
         "maxCorpses": 16
       },
       "modelFetchRetry": {
-        "backoffMs": 500,
+        "backoffRealSeconds": 0.5,
         "retries": 3
       },
       "modelLoadConcurrency": 8,

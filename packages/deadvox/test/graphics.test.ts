@@ -53,7 +53,7 @@ const source = (options: GraphicsOptions) => ({
         itemPictureCacheCapacity: 2,
         itemPicture: { framing: 1.1 },
         modelLoadConcurrency: 2,
-        modelFetchRetry: { retries: 1, backoffMs: 1 },
+        modelFetchRetry: { retries: 1, backoffRealSeconds: 1 },
         unbuiltSkyCap: 0.5,
         skyJobsInFlight: 2,
         skyPreloadRings: 1,

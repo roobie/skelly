@@ -46,7 +46,7 @@ export const GraphicsTuningSchema = strictObject({
   itemPicture: strictObject({ framing: Positive }),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
   /** Retries of a model fetch that hit a passing server or network error, and the first wait, which doubles. */
-  modelFetchRetry: strictObject({ retries: Count, backoffMs: NonNegative }),
+  modelFetchRetry: strictObject({ retries: Count, backoffRealSeconds: NonNegative }),
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
   skyPreloadRings: Count,
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
