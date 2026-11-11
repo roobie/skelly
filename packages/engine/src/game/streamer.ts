@@ -13,11 +13,10 @@ import type { MeshData } from '../core/mesher.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
-import type { BlockBox } from '../core/structure.ts';
+import type { TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
-import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import { DirtyChunks } from './dirtyChunks.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 import { SentChunks } from './sentChunks.ts';
@@ -71,9 +70,7 @@ export interface StreamerOptions {
   world: World;
   meshes: ChunkMeshSink;
   mesher: MesherSource;
-  seed: number;
-  terrain: TerrainBlocks;
-  shape: TerrainShape;
+  terrain: TerrainEvaluator;
   colors: Uint8Array;
   /** Surface pattern id per block id, for the mesher. */
   patterns: Uint8Array;
@@ -84,12 +81,6 @@ export interface StreamerOptions {
   liquids?: Uint8Array;
   fencePosts?: FencePostDefs;
   scale: Scale;
-  /** Stamped into every column as it generates. */
-  structures: readonly BlockBox[];
-  /** Changes to the ground (flattened lots, roads). */
-  surface?: Surface | undefined;
-  /** Writes buildings into each chunk as it generates. */
-  stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
   /** Terrain columns generated per frame while streaming; from graphics tuning. */
@@ -594,8 +585,8 @@ export class Streamer {
 
   /** Generates a column and adds the chunks the world doesn't hold yet; returns those. */
   private addGenerated(cx: number, cz: number): Chunk[] {
-    const { world, seed, terrain, shape, scale, structures, surface, stamp } = this.opts;
-    const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
+    const { world, terrain } = this.opts;
+    const column = terrain.generateColumn(cx, cz);
     return installColumn(world, column);
   }
 

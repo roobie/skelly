@@ -13,6 +13,11 @@
 // scaled with the clear colour and the fog by `Mood` (render/mood.ts, `Mood.draw`) through `skyDomeUniforms`.
 // A dome that skipped either would not meet the fogged geometry at the horizon.
 //
+// It draws after the opaque geometry, its depth pinned to the far plane, so only the pixels no geometry covered
+// are shaded: the dome's fragment is the frame's dearest per pixel, and drawn first it would pay that cost under
+// every wall and hill before geometry drew over it. The pin, not the sphere's own depth, keeps it behind every
+// drawn surface, so it never replaces one; the transparent list three.js always draws later still blends over it.
+//
 // The physical sky, the sun, the moon and the lit clouds are radiance in arbitrary units, so the composited colour
 // is brought into display range once by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under
 // 1 whatever the content, as `targetColorScale` in engine/core/mood.ts assumes of any sky colour, so it never counts
@@ -26,6 +31,7 @@ import {
   Color,
   type DataTexture,
   type IUniform,
+  LessEqualDepth,
   Mesh,
   type PerspectiveCamera,
   ShaderMaterial,
@@ -102,6 +108,10 @@ const VERTEX_SHADER = /* glsl */ `
     // Unit sphere at the camera: the local position is the view direction.
     vDir = position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    // The dome draws after the opaque geometry and shades only what no geometry covered, so its
+    // depth is the far plane's own: never in front of a drawn surface, equal to the cleared depth
+    // where nothing drew, which the material's depth test lets pass.
+    gl_Position.z = gl_Position.w;
   }
 `;
 
@@ -110,8 +120,10 @@ const VERTEX_SHADER = /* glsl */ `
  * keep sampler use legal in GLSL ES 1.0.
  */
 const layerGlsl = (index: number): string => /* glsl */ `
-    col = mix( col, mix( litTops, litDeck, uLayerShade[${index}] ),
-      cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * cloudOpacity );`;
+    if ( uLayerOpacity[${index}] > 0.0 ) {
+      col = mix( col, mix( litTops, litDeck, uLayerShade[${index}] ),
+        cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * cloudOpacity );
+    }`;
 
 const fragmentShader = (layers: number): string => /* glsl */ `
   varying vec3 vDir;
@@ -258,24 +270,43 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   void main () {
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
-    vec3 physical = physicalSky( dir );
-    vec3 col = mix( keyed, physical, uPhysicalWeight );
     float sunCos = clamp( dot( dir, uSunDir ), 0.0, 1.0 );
-    col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness + sunDisc( sunCos );
+    // A term whose weight is zero leaves the colour bit-for-bit as it was, so it is skipped whole.
+    // The physical sky is the dome's dearest per-pixel work, and no look runs it around a low sun:
+    // the guard is what a dusk frame lives on.
+    vec3 col = keyed;
+    if ( uPhysicalWeight > 0.0 ) {
+      col = mix( keyed, physicalSky( dir ), uPhysicalWeight );
+    }
+    vec3 painted = vec3( 0.0 );
+    if ( uStars > 0.0 ) {
+      painted += vec3( stars( dir ) * uStars );
+    }
+    if ( uMoonBrightness > 0.0 ) {
+      painted += moon( dir ) * uMoonBrightness;
+    }
+    if ( uSunBrightness > 0.0 ) {
+      painted += sunDisc( sunCos );
+    }
+    col += painted;
 
     // Clouds cover the stars, the moon and the sun's disc behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
-    // A deck layer takes the main light only up to the deck's lower cap while the tops take it up to 1; with one light
-    // for every layer a closing cover reads as a flat sheet. A light already under the deck's cap, as an overcast's
-    // is, lights deck and tops alike.
-    float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
-    vec3 litTops = uCloudAmbient + uCloudLight * facing;
-    vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
-    vec2 plane = dir.xz / max( dir.y, 0.06 );
-    ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+    if ( cloudOpacity > 0.0 && uCover > 0.0 ) {
+      // A layer's deck share takes the main light only up to the deck's lower cap while the tops take it up to 1; with
+      // one light for every layer a closing cover reads as a flat sheet. A light already under the deck's cap lights
+      // deck and tops alike.
+      float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
+      vec3 litTops = uCloudAmbient + uCloudLight * facing;
+      vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
+      vec2 plane = dir.xz / max( dir.y, 0.06 );
+      ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+    }
 
     // The glow is lit air between the eye and the clouds, so it goes over them.
-    col += sunGlow( sunCos );
+    if ( uSunGlow > 0.0 ) {
+      col += sunGlow( sunCos );
+    }
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
@@ -355,6 +386,9 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       name: 'SkyDome',
       side: BackSide,
       depthWrite: false,
+      // Lets the dome through only where the depth buffer still holds the cleared far plane; see
+      // the vertex shader's depth pin.
+      depthFunc: LessEqualDepth,
       toneMapped: false,
       uniforms: domeUniforms,
       vertexShader: VERTEX_SHADER,
@@ -365,7 +399,9 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
   const mesh = new Mesh(geometry, material);
   mesh.name = 'skyDome';
   mesh.frustumCulled = false;
-  mesh.renderOrder = -1000;
+  // After every opaque draw (which three.js places before the transparent list whatever the order
+  // here), so the depth test leaves the dome only the pixels no geometry covered.
+  mesh.renderOrder = 900;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
   // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
   // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky.

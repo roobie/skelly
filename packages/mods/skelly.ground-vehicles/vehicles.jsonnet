@@ -2,6 +2,9 @@
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local surfaces = import 'packages/skelly-assets/tools/packages/thing-core/src/materials.json';
+// A body's half-metre sky cells are mostly air between thin panels, so a cell stops only part of the sky light:
+// the ground under a car and its cabin read shaded, not enclosed.
+local bodyShade = 0.35;
 local part(id, name, size, capabilities, description=null) = {
   id: id,
   name: name,
@@ -14,7 +17,7 @@ local part(id, name, size, capabilities, description=null) = {
     obstruction: {
       // Glazing retains body collision but admits sight and light.
       sight: !std.member(capabilities, 'glazing'),
-      light: !std.member(capabilities, 'glazing'),
+      light: if std.member(capabilities, 'glazing') then 0 else bodyShade,
       // Sound and combat remain explicit rather than inferred from a part name or model.
       sound: true,
       combat: true,

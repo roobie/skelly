@@ -14,7 +14,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -35,7 +35,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -56,7 +56,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -77,7 +77,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -98,7 +98,7 @@
         "mount": "hatchback_wheel",
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -118,7 +118,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -138,7 +138,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -158,7 +158,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -178,7 +178,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -198,7 +198,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -218,7 +218,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -238,7 +238,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -258,7 +258,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -278,7 +278,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -298,7 +298,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -318,7 +318,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -338,7 +338,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -358,7 +358,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -378,7 +378,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -399,7 +399,7 @@
         "mount": "hatchback_front_strut",
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -420,7 +420,7 @@
         "mount": "hatchback_rear_axle",
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -440,7 +440,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -460,7 +460,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -480,7 +480,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -500,7 +500,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -520,7 +520,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -540,7 +540,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -560,7 +560,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -580,7 +580,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -600,7 +600,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -620,7 +620,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -640,7 +640,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -660,7 +660,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -680,7 +680,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -700,7 +700,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -720,7 +720,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -740,7 +740,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -760,7 +760,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -780,7 +780,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -800,7 +800,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -820,7 +820,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -840,7 +840,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -860,7 +860,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -880,7 +880,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -900,7 +900,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -920,7 +920,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -940,7 +940,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": false,
+          "light": 0,
           "sight": false,
           "sound": true
         }
@@ -960,7 +960,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -980,7 +980,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1000,7 +1000,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1020,7 +1020,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1040,7 +1040,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1060,7 +1060,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1080,7 +1080,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1100,7 +1100,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1120,7 +1120,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1140,7 +1140,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1160,7 +1160,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1180,7 +1180,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         },
@@ -1201,7 +1201,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1221,7 +1221,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1241,7 +1241,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1261,7 +1261,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1281,7 +1281,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1301,7 +1301,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1331,7 +1331,7 @@
         "mount": "cargo_space",
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         },
@@ -1360,7 +1360,7 @@
         "mount": "mounting_plate",
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         },
@@ -1385,7 +1385,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1405,7 +1405,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1425,7 +1425,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1445,7 +1445,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1465,7 +1465,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1485,7 +1485,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -1505,7 +1505,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }

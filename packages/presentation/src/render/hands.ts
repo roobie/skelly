@@ -106,7 +106,7 @@ export class HeldItems {
       this.ambient,
       this.camera,
       presentation.warmUp(),
-      modelMaterialWarmUp(false),
+      modelMaterialWarmUp({ instanced: false, skyAnchored: false }),
     );
   }
 

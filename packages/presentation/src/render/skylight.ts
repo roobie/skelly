@@ -29,7 +29,7 @@ import {
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
-import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
+import { SKY_ANCHOR_ATTRIBUTE, SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const DIRECTIONAL_LIGHT_INFO_CALL = /getDirectionalLightInfo\([^;]+\);/;
@@ -508,7 +508,7 @@ varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
 vec2 skyVisibility(out bool unbuilt) {
   unbuilt = false;
-  vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * 0.5});
+  vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * SKY_RECEIVER_STEP});
   vec2 gridCell = floor(point.xz / float(${this.blockSize * CHUNK})) - uSkyGridOrigin;
   if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return vec2(1.0);
   vec2 candidates = texture2D(uSkyGrid, (gridCell + 0.5) / uSkyGridSize).xy;

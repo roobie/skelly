@@ -6,6 +6,7 @@ import { CHUNK, terrainShapeOf } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { createRuntime, fixtureColumns, fixtureSite, registry, scale, seed, startRest } from './snapshotTestSupport.ts';
 
 const DAYTIME = parseTimeOfDay('10:00')!;
@@ -65,7 +66,11 @@ it('bounds daytime opacity queries to one column scan per source in a compressed
   }
   const x = cx * CHUNK + clearCell[0];
   const z = cz * CHUNK + clearCell[1];
-  const ground = fixtureSite.surface.height(x, z, terrainHeight(seed, terrainShapeOf(registry), scale, x, z));
+  const ground = terrainFor(fixtureSite, registry, scale, seed).surface!.height(
+    x,
+    z,
+    terrainHeight(seed, terrainShapeOf(registry), scale, x, z),
+  );
   const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, z + 0.5];
 
   let opaqueCalls = 0;

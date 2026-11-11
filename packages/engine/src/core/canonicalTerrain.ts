@@ -1,8 +1,7 @@
 import type { Chunk } from './chunk.ts';
 import { CHUNK, toChunk, toLocal } from './coords.ts';
-import type { BlockBox } from './structure.ts';
+import type { TerrainEvaluator } from './terrainEvaluator.ts';
 import type { World } from './world.ts';
-import { generateColumn, type Terrain } from './worldgen.ts';
 
 /** Shared installation preserves resident edits, including chunks served before the rest of their column. */
 export const installColumn = (world: World, column: readonly Chunk[]): Chunk[] => {
@@ -18,20 +17,18 @@ export class CanonicalTerrain {
   private readonly scratch = new Map<string, Chunk[]>();
 
   readonly world: World;
-  readonly terrain: Terrain;
-  readonly structures: readonly BlockBox[];
+  readonly terrain: TerrainEvaluator;
 
-  constructor(world: World, terrain: Terrain, structures: readonly BlockBox[] = []) {
+  constructor(world: World, terrain: TerrainEvaluator) {
     this.world = world;
     this.terrain = terrain;
-    this.structures = structures;
   }
 
   private column(cx: number, cz: number): Chunk[] {
     const key = `${cx},${cz}`;
     let column = this.scratch.get(key);
     if (!column) {
-      column = generateColumn(this.terrain, cx, cz, this.structures);
+      column = this.terrain.generateColumn(cx, cz);
       this.scratch.set(key, column);
     }
     return column;
