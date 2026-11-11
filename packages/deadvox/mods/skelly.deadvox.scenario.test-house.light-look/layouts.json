@@ -4,7 +4,7 @@
       "actors": [
         {
           "chance": 1,
-          "position": [-2.75, 21, 5],
+          "position": [1, 21, 25.5],
           "type": "shambler"
         }
       ],
@@ -120,7 +120,7 @@
       },
       "player": {
         "bearing": 180,
-        "position": [-2.75, 21, 12.75]
+        "position": [1, 21, 27]
       },
       "showroom": {
         "capacity": 3,
