@@ -1,5 +1,13 @@
 export { type IlluminationScene, illuminationAt, readingLightRefusal } from './core/illumination.ts';
-export { type Clouds, type DomeShape, type Rgb, type Sky, skyAt, sunShadowStrength } from './core/sky.ts';
+export {
+  type Clouds,
+  type DomeShape,
+  type Rgb,
+  type Sky,
+  type SkyEnvironmentTuning,
+  skyAt,
+  sunShadowStrength,
+} from './core/sky.ts';
 export {
   authoredSkyBoxes,
   type SkyField,

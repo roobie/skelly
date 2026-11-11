@@ -54,6 +54,8 @@ export interface SkyDomeFrame {
 
 export interface SkyDome {
   readonly mesh: Mesh;
+  /** The dome as it draws under open sky, unscaled by the post chain and centred on the origin, for the sky's reflection. */
+  readonly openSky: Mesh;
   update: (frame: SkyDomeFrame) => void;
   /** True hides the dome, so the crack check's magenta shows through the background. */
   setHidden: (hidden: boolean) => void;
@@ -336,25 +338,43 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uLayer: { value: clouds.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
     uLayerOpacity: { value: clouds.layers.map((layer) => layer.opacity) },
   };
-  const material = new ShaderMaterial({
-    name: 'SkyDome',
-    side: BackSide,
-    depthWrite: false,
-    toneMapped: false,
-    uniforms,
-    vertexShader: VERTEX_SHADER,
-    fragmentShader: fragmentShader(clouds.layers.length),
-  });
-  const mesh = new Mesh(new SphereGeometry(1, 48, 24), material);
+  const domeMaterial = (domeUniforms: typeof uniforms): ShaderMaterial =>
+    new ShaderMaterial({
+      name: 'SkyDome',
+      side: BackSide,
+      depthWrite: false,
+      toneMapped: false,
+      uniforms: domeUniforms,
+      vertexShader: VERTEX_SHADER,
+      fragmentShader: fragmentShader(clouds.layers.length),
+    });
+  const material = domeMaterial(uniforms);
+  const geometry = new SphereGeometry(1, 48, 24);
+  const mesh = new Mesh(geometry, material);
   mesh.name = 'skyDome';
   mesh.frustumCulled = false;
   mesh.renderOrder = -1000;
+  // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
+  // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
+  // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky.
+  const openUniforms = {
+    ...uniforms,
+    uSkyColorScale: { value: 1 },
+    uSkyVisibility: { value: 1 },
+    uFogColor: { value: new Color() },
+  };
+  const openMaterial = domeMaterial(openUniforms);
+  const openSky = new Mesh(geometry, openMaterial);
+  openSky.name = 'openSky';
+  openSky.frustumCulled = false;
   return {
     mesh,
+    openSky,
     update({ sky, simSeconds, camera, skyVisibility }: SkyDomeFrame): void {
       const { dome, sunDirection } = sky;
       const terms = preethamTerms(sunDirection[1], dome.physical);
       setSrgb(uniforms.uFogColor.value, sky.sky).multiplyScalar(skyVisibility);
+      setSrgb(openUniforms.uFogColor.value, sky.ambientGround);
       uniforms.uSkyVisibility.value = skyVisibility;
       setSrgb(uniforms.uHorizon.value, sky.sky);
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
@@ -390,8 +410,9 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       mesh.visible = !hidden;
     },
     dispose(): void {
-      mesh.geometry.dispose();
+      geometry.dispose();
       material.dispose();
+      openMaterial.dispose();
       for (const texture of textures) {
         texture.dispose();
       }

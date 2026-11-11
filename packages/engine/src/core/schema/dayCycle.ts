@@ -183,6 +183,24 @@ const WeatherTuningSchema = strictObject({
   farTighten: pipe(UnitFraction, maxValue(0.99)),
 });
 
+/** The sky's reflection on models: a prefiltered map of the dome alone, redrawn only once the look has moved enough to show. */
+const SkyEnvironmentSchema = strictObject({
+  /**
+   * Cube face edge in pixels; prefiltering halves it per level, so a size between powers of two would be wasted.
+   * The minimum is three's smallest prefilter level; the maximum is a cost cap, since the reflection is blurred.
+   */
+  faceSize: pipe(
+    Count,
+    minValue(16),
+    maxValue(256),
+    check((size) => Number.isInteger(Math.log2(size)), 'must be a power of two'),
+  ),
+  /** How far the drawn sky moves, as its largest change in any value, before the reflection is redrawn: smaller follows twilight closer for more bakes. */
+  rebakeChange: FinitePositive,
+  /** How strongly models reflect the open sky; sky exposure dims it where the sky cannot reach. */
+  strength: FiniteNonNegative,
+});
+
 const SKY_PHASES = ['night', 'dawn', 'day', 'dusk'] as const;
 
 /** Where a look sits in a solar phase: 0 is the phase's start, 1 its end. */
@@ -236,6 +254,7 @@ export const DayCycleSchema = strictObject({
   weather: WeatherTuningSchema,
   clouds: CloudsSchema,
   domeShape: DomeShapeSchema,
+  environment: SkyEnvironmentSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,
   /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */

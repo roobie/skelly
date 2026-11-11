@@ -10,7 +10,9 @@ import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine
 import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
 import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
 import { ITEM_POINT_LIGHTS } from '@skelly/presentation/internal/render/lightPool.ts';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
+import type { SkyEnvironment } from '@skelly/presentation/internal/render/skyEnvironment.ts';
 import type { Engine } from '@skelly/presentation/play';
 import { flashlightDaylightScale, Skylight } from '@skelly/presentation/render';
 import {
@@ -61,6 +63,17 @@ vi.mock('@skelly/presentation/internal/render/models.ts', async (importOriginal)
   // biome-ignore lint/style/useNamingConvention: the mock replaces the class export by its name.
   return { ...actual, ModelLibrary: EmptyPackLibrary };
 });
+// The fake renderer has no GPU to bake the sky's reflection on, so the play view gets an environment that never bakes.
+vi.mock('@skelly/presentation/internal/render/skyEnvironment.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@skelly/presentation/internal/render/skyEnvironment.ts')>()),
+  createSkyEnvironment: () =>
+    ({
+      refresh: () => false,
+      patchNow: () => undefined,
+      light: () => undefined,
+      dispose: () => undefined,
+    }) satisfies SkyEnvironment,
+}));
 
 const meshFixture = () => ({
   setLinearColors: vi.fn(),
@@ -109,6 +122,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
     registry: inventory.registry,
     renderer,
+    materialPatches: new MaterialPatches(),
     scene: new Scene(),
     camera: new PerspectiveCamera(),
     meshes: meshFixture(),
@@ -200,6 +214,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const aim: Vec3 = geometry === 'doorway' ? [1, 0, 0] : [0, 0, -1];
   camera.position.set(...cameraPosition);
   camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
+  const materialPatches = new MaterialPatches();
   const sky = new Skylight(
     new SkyFields(owner, { bottom: 0, top: 31 }, [box]),
     {
@@ -211,6 +226,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
     {
       clock: () => 0,
+      patches: materialPatches,
       submit: (input, receive) => {
         pending.push({ input, receive });
         return true;
@@ -218,10 +234,12 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
   );
   const position = camera.position.toArray().map((axis) => axis / 0.5) as Vec3;
-  sky.update(scene, position);
+  sky.update(position);
+  materialPatches.apply(scene);
   const job = pending.shift()!;
   job.receive(buildSkyResult(job.input), 0);
-  sky.update(scene, position);
+  sky.update(position);
+  materialPatches.apply(scene);
   if (!(sky.inspect()[0]?.complete && sky.inspect()[0]?.current && sky.inspect()[0]?.resident)) {
     throw new Error('test skylight fixture did not become current and resident');
   }
@@ -247,6 +265,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       farPlaneScale: FAR_PLANE_SCALE,
     },
     skylight: sky,
+    materialPatches,
     isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
     meshes: meshFixture(),
@@ -260,7 +279,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       setNightVisionFlare: vi.fn(),
       setSky: vi.fn(),
     },
-    shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
+    shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
@@ -330,7 +349,8 @@ function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3, patched 
   const geometry = new BoxGeometry();
   const mesh = new Mesh(geometry, material);
   f.engine.scene.add(mesh);
-  f.sky.update(f.engine.scene, f.engine.camera.position.toArray().map((axis) => axis / 0.5) as Vec3);
+  f.sky.update(f.engine.camera.position.toArray().map((axis) => axis / 0.5) as Vec3);
+  f.engine.materialPatches.apply(f.engine.scene);
   const shader = {
     uniforms: {} as Record<string, { value: unknown }>,
     vertexShader: ShaderLib.lambert.vertexShader,
@@ -405,6 +425,20 @@ describe('play presentation ownership', () => {
     expect(liftNow(10)).toBe(0);
     expect(liftNow(0.1)).toBe(0);
     view.dispose();
+  });
+
+  it('warms the main scene up with every patch a frame installs, so the first frame recompiles nothing', async () => {
+    const f = litWorld('doorway');
+    try {
+      const material = new MeshLambertMaterial();
+      f.engine.scene.add(new Mesh(new BoxGeometry(), material));
+      await f.view.warmUp();
+      const warmed = { key: material.customProgramCacheKey(), version: material.version };
+      f.engine.materialPatches.apply(f.engine.scene);
+      expect({ key: material.customProgramCacheKey(), version: material.version }).toEqual(warmed);
+    } finally {
+      f.cleanup();
+    }
   });
 
   it('gives a dark receiver useful beam strength even with a sunlit camera', () => {
@@ -569,6 +603,7 @@ describe('play presentation ownership', () => {
     const engine = {
       config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
       registry: inventory.registry,
+      materialPatches: new MaterialPatches(),
       scene: new Scene(),
       camera: new PerspectiveCamera(),
       meshes: meshFixture(),

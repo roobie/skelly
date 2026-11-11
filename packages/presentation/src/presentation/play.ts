@@ -3043,8 +3043,7 @@ const startPlayWith = (
   const finishDraw = (sky: Parameters<typeof view.prepareLighting>[0], now: RealTimestamp): boolean => {
     finishLoadingFrame(worldLoading, () => updateWorldLoading(now), {
       worldFeedsSkylight: Boolean(renderer),
-      skylight: () =>
-        engine.skylight?.update(engine.scene, [camera.position.x / s, camera.position.y / s, camera.position.z / s]),
+      skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
         view.prepareLighting(sky);
         view.updateShadows(sky);
