@@ -3,8 +3,8 @@ import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, MesherSource } from '@skelly/engine/mesh';
 import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
 import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '@skelly/engine/world';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { Skylight } from '@skelly/presentation/render';
-import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { baseTerrainShape } from './baseRegistry.ts';
@@ -33,7 +33,6 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     },
   ]);
   const entities = new BlockEntities(registry);
-  const scene = new Scene();
   let admit = false;
   const jobs: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields({ world, entities, registry }, { bottom: scale.minCy * CHUNK, top: 96 }, [
@@ -50,6 +49,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     },
     {
       clock: () => 0,
+      patches: new MaterialPatches(),
       submit: (input, receive) => {
         if (!admit) {
           return false;
@@ -59,7 +59,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
       },
     },
   );
-  const update = () => sky.update(scene, [4, 29, 4]);
+  const update = () => sky.update([4, 29, 4]);
   update();
   expect(fields.loaded(0)).toBe(false);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };

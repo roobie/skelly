@@ -125,15 +125,12 @@ export function createEngine(
     worldSetup.streamer.onBeforeReveal = (cx, cz) => skyFields.finishColumn(cx, cz);
   }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
-    if (skylight) {
-      skylight.update(scene, [
-        camera.position.x / scale.blockSize,
-        camera.position.y / scale.blockSize,
-        camera.position.z / scale.blockSize,
-      ]);
-    } else {
-      materialPatches.apply(scene);
-    }
+    skylight?.update([
+      camera.position.x / scale.blockSize,
+      camera.position.y / scale.blockSize,
+      camera.position.z / scale.blockSize,
+    ]);
+    materialPatches.apply(scene);
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 

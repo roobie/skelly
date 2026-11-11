@@ -21,7 +21,6 @@ import {
   RedFormat,
   RGBAFormat,
   RGFormat,
-  type Scene,
   ShaderChunk,
   UnsignedByteType,
   Vector2,
@@ -29,7 +28,7 @@ import {
 } from 'three';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
-import { MaterialPatches, materialPatch } from './materialPatches.ts';
+import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
@@ -40,8 +39,8 @@ const PREFETCH_M = 16;
 interface SkyRuntime {
   submit: SkySubmit;
   clock?: () => number;
-  /** Where the skylight registers its patch; the owner applies it, and others register theirs beside it. */
-  patches?: MaterialPatches;
+  /** Where the skylight registers its patch; the owner applies the set to scenes. */
+  patches: MaterialPatches;
 }
 const vectors = () => Array.from({ length: RESIDENT_FIELDS }, () => new Vector3());
 /** Red holds `SkyVolume`, "light"; green holds its "unfurnished" twin, interleaved per voxel. */
@@ -120,7 +119,6 @@ export class Skylight {
   private readonly jobs: SkyRuntime;
   private readonly index: ReturnType<typeof regionIndex>;
   private readonly clock: () => number;
-  private readonly patches: MaterialPatches;
   private readonly receiverPatch = materialPatch({
     compile: (shader) => this.compile(shader),
     key: () =>
@@ -173,8 +171,7 @@ export class Skylight {
     this.maxJobs = skyJobsInFlight;
     this.jobs = runtime;
     this.clock = runtime.clock ?? (() => performance.now());
-    this.patches = runtime.patches ?? new MaterialPatches();
-    this.patches.add(this.receiverPatch);
+    runtime.patches.add(this.receiverPatch);
     let heightOffset = 0;
     this.heightOffsets = this.fields.map(({ dependency }) => {
       const offset = heightOffset;
@@ -321,7 +318,7 @@ export class Skylight {
     }
     return sent;
   }
-  update(scene: Scene, position: Vec3): void {
+  update(position: Vec3): void {
     const start = this.clock();
     this.publish();
     const nearby = this.nearby(position);
@@ -339,7 +336,6 @@ export class Skylight {
       this.refreshMetadata();
     }
     this.prepare(position);
-    this.patches.apply(scene);
     this.onService?.(this.clock() - start);
   }
   private refreshMetadata(): void {

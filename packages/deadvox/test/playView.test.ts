@@ -121,6 +121,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
     registry: inventory.registry,
     renderer,
+    materialPatches: new MaterialPatches(),
     scene: new Scene(),
     camera: new PerspectiveCamera(),
     meshes: meshFixture(),
@@ -232,10 +233,12 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
   );
   const position = camera.position.toArray().map((axis) => axis / 0.5) as Vec3;
-  sky.update(scene, position);
+  sky.update(position);
+  materialPatches.apply(scene);
   const job = pending.shift()!;
   job.receive(buildSkyResult(job.input), 0);
-  sky.update(scene, position);
+  sky.update(position);
+  materialPatches.apply(scene);
   if (!(sky.inspect()[0]?.complete && sky.inspect()[0]?.current && sky.inspect()[0]?.resident)) {
     throw new Error('test skylight fixture did not become current and resident');
   }
@@ -345,7 +348,8 @@ function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3, patched 
   const geometry = new BoxGeometry();
   const mesh = new Mesh(geometry, material);
   f.engine.scene.add(mesh);
-  f.sky.update(f.engine.scene, f.engine.camera.position.toArray().map((axis) => axis / 0.5) as Vec3);
+  f.sky.update(f.engine.camera.position.toArray().map((axis) => axis / 0.5) as Vec3);
+  f.engine.materialPatches.apply(f.engine.scene);
   const shader = {
     uniforms: {} as Record<string, { value: unknown }>,
     vertexShader: ShaderLib.lambert.vertexShader,
@@ -584,6 +588,7 @@ describe('play presentation ownership', () => {
     const engine = {
       config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
       registry: inventory.registry,
+      materialPatches: new MaterialPatches(),
       scene: new Scene(),
       camera: new PerspectiveCamera(),
       meshes: meshFixture(),

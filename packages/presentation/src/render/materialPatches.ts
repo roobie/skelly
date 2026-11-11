@@ -6,31 +6,52 @@ export interface MaterialPatch {
   install: (material: Material) => void;
 }
 
-/**
- * A change to how materials compile. It wraps a material's own compile hook and program cache key once, so patches from
- * different owners stack, and recompiles the material under the new key.
- */
-export const materialPatch = (change: {
+interface Change {
   compile: (...args: Parameters<CompileHook>) => void;
   /** Tells the patched program from the unpatched one in three's program cache. */
   key: () => string;
   /** Defaults to every material. */
   applies?: (material: Material) => boolean;
-}): MaterialPatch => {
-  const installed = new WeakSet<Material>();
+}
+
+interface Patched {
+  changes: { order: number; change: Change }[];
+}
+
+const patched = new WeakMap<Material, Patched>();
+let created = 0;
+
+/**
+ * A change to how materials compile. It stacks on the material's own compile hook and program cache key and recompiles
+ * the material under the new key. Changes apply in the order they were created, whichever installs first, so a
+ * material gets one program however its scenes were walked.
+ */
+export const materialPatch = (change: Change): MaterialPatch => {
+  created += 1;
+  const order = created;
   return {
     install(material) {
-      if (installed.has(material) || change.applies?.(material) === false) {
+      let state = patched.get(material);
+      if (change.applies?.(material) === false || state?.changes.some((entry) => entry.change === change)) {
         return;
       }
-      installed.add(material);
-      const compile = material.onBeforeCompile;
-      const key = material.customProgramCacheKey;
-      material.onBeforeCompile = (shader, renderer) => {
-        compile.call(material, shader, renderer);
-        change.compile(shader, renderer);
-      };
-      material.customProgramCacheKey = () => `${key.call(material)}:${change.key()}`;
+      if (!state) {
+        state = { changes: [] };
+        patched.set(material, state);
+        const { changes } = state;
+        const compile = material.onBeforeCompile;
+        const key = material.customProgramCacheKey;
+        material.onBeforeCompile = (shader, renderer) => {
+          compile.call(material, shader, renderer);
+          for (const entry of changes) {
+            entry.change.compile(shader, renderer);
+          }
+        };
+        material.customProgramCacheKey = () =>
+          [key.call(material), ...changes.map((entry) => entry.change.key())].join(':');
+      }
+      state.changes.push({ order, change });
+      state.changes.sort((a, b) => a.order - b.order);
       material.needsUpdate = true;
     },
   };

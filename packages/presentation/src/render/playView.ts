@@ -777,7 +777,7 @@ export const createPlayView = (
         return Promise.resolve();
       }
       lightWithSky(1);
-      skyEnvironment?.patchNow(scene);
+      engine.materialPatches.apply(scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

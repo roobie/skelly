@@ -73,7 +73,7 @@ const takesEnvironment = (material: Material): boolean =>
 export interface SkyEnvironment {
   /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. */
   refresh: (sky: Sky) => boolean;
-  /** Keeps the environment out of the diffuse light of a scene's materials now, for scenes the shared patches do not walk or before warm-up. */
+  /** Keeps the environment out of the diffuse light of a scene's materials now, for a scene the shared patches do not walk. */
   patchNow: (scene: Scene) => void;
   /** Gives a scene the reflection at `exposure`, the sky exposure the scene does not apply per fragment itself. */
   light: (scene: Scene, exposure: number) => void;
