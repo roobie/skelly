@@ -1,5 +1,5 @@
 import type { Clouds, DomeShape, Rgb, Sky } from '@skelly/engine/sky';
-import { PerspectiveCamera, type ShaderMaterial } from 'three';
+import { Color, PerspectiveCamera, type ShaderMaterial, SRGBColorSpace } from 'three';
 import { describe, expect, it } from 'vitest';
 import { createSkyDome, physicalShare, preethamTerms } from '../src/render/skyDome.ts';
 
@@ -34,6 +34,7 @@ describe('the physical sky terms', () => {
 
 describe('the dome driven by a sky', () => {
   const colour: Rgb = [0.5, 0.5, 0.5];
+  const ground: Rgb = [0.1, 0.2, 0.3];
   const body = { disc: [0.9, 0.99], discGain: 1, tightHalo: { power: 8, gain: 1 }, wideHalo: { power: 2, gain: 1 } };
   const shape = {
     horizonBand: [0, 0.2],
@@ -54,6 +55,7 @@ describe('the dome driven by a sky', () => {
       lightColor: colour,
       lightIntensity: 1,
       ambientSky: colour,
+      ambientGround: ground,
       ambientIntensity: 1,
       dome: {
         zenith: colour,
@@ -85,5 +87,13 @@ describe('the dome driven by a sky', () => {
   it("draws half the look's physical weight with the sun midway through the physical band", () => {
     const [from, to] = physicalBand;
     expect(physicalWeightWithSunAt((from + to) / 2)).toBeCloseTo(physical.weight / 2, 12);
+  });
+
+  it('shows the ambient ground colour below the horizon in the open sky the reflection bakes, not the fog colour', () => {
+    const dome = createSkyDome(clouds, shape);
+    dome.update({ sky: skyWithSunAt(1), simSeconds: 0, camera: new PerspectiveCamera(), skyVisibility: 1 });
+    const below = (dome.openSky.material as ShaderMaterial).uniforms.uFogColor!.value as Color;
+    dome.dispose();
+    expect(below.equals(new Color().setRGB(...ground, SRGBColorSpace))).toBe(true);
   });
 });

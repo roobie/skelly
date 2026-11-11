@@ -22,6 +22,7 @@ const DRAWN: readonly (keyof Sky)[] = [
   'lightColor',
   'lightIntensity',
   'ambientSky',
+  'ambientGround',
   'ambientIntensity',
   'dome',
 ];

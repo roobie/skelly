@@ -355,6 +355,8 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
   mesh.frustumCulled = false;
   mesh.renderOrder = -1000;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
+  // Below the horizon it shows the ambient light's ground colour instead of fog, so downward-facing metal is lit as dimly
+  // as the hemisphere light lights it.
   const openUniforms = {
     ...uniforms,
     uSkyColorScale: { value: 1 },
@@ -372,7 +374,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       const { dome, sunDirection } = sky;
       const terms = preethamTerms(sunDirection[1], dome.physical);
       setSrgb(uniforms.uFogColor.value, sky.sky).multiplyScalar(skyVisibility);
-      setSrgb(openUniforms.uFogColor.value, sky.sky);
+      setSrgb(openUniforms.uFogColor.value, sky.ambientGround);
       uniforms.uSkyVisibility.value = skyVisibility;
       setSrgb(uniforms.uHorizon.value, sky.sky);
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
