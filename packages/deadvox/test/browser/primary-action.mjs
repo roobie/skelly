@@ -2681,19 +2681,53 @@ try {
             def.ammo
           ),
       );
-      const gun = defs.find(
-        (def) =>
-          def.firearm &&
-          magazineWellCalibre(r.inventory.registry, def.id) &&
-          r.inventory.registry.models.get(def.model)?.gun?.attachments?.some((mounted) => {
-            const range = mounted.properties.magnification;
-            return range && range.min < range.max;
-          }),
-      );
-      if (!(light && tool && inert && gun)) {
+      // No stock gun ships scoped, so the fixture fits a variable optic onto a magazine-fed gun, in place of the sights
+      // it ships with. The authoring tool certifies particular gun, optic and station triples, so a trial fit finds one
+      // that takes.
+      const scopedGun = (gunType, station, opticType) => {
+        const gun = r.inventory.create(gunType);
+        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
+          const kind = r.inventory.registry.models.get(r.inventory.registry.items.get(child?.type)?.model)?.gun
+            ?.attachment?.kind;
+          if (kind === 'iron-sight' || kind === 'optic') {
+            r.inventory.fitSlot(gun, slot, undefined);
+          }
+        }
+        r.inventory.fitSlot(gun, station, r.inventory.create(opticType));
+        return gun;
+      };
+      r.scopedGun = scopedGun;
+      const variableOptics = defs.filter((def) => {
+        const range = r.inventory.registry.models.get(def.model)?.gun?.attachment?.properties.magnification;
+        return range && range.min < range.max && def.opticZoom?.step > 0;
+      });
+      const fitting = defs
+        .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
+        .flatMap((gun) =>
+          (r.inventory.registry.models.get(gun.model)?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
+            variableOptics.map((optic) => ({ gun, optic, station })),
+          ),
+        )
+        .find(({ gun, optic, station }) => {
+          try {
+            scopedGun(gun.id, station, optic.id);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+      if (!(light && tool && inert && fitting)) {
         throw new Error('Missing hand-action fixture capabilities');
       }
-      r.types = { light: light.id, tool: tool.id, profile: tool.weapon.melee.type, inert: inert.id, gun: gun.id };
+      r.types = {
+        light: light.id,
+        tool: tool.id,
+        profile: tool.weapon.melee.type,
+        inert: inert.id,
+        gun: fitting.gun.id,
+        optic: fitting.optic.id,
+        opticStation: fitting.station,
+      };
       r.clearHand(r.dominant);
     }, magazineModule);
     // Fixture creation and placement stay with Inventory, never its hand map.
@@ -3648,7 +3682,7 @@ try {
       if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
         throw new Error('Could not pocket the loaded fixture magazine');
       }
-      const gun = r.inventory.create(r.types.gun);
+      const gun = r.scopedGun(r.types.gun, r.types.opticStation, r.types.optic);
       r.setHand(r.dominant, gun);
       must(firearms.loadNext(gun.uid, sim.time));
       settle();
