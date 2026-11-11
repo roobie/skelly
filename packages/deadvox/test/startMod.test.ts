@@ -8,8 +8,8 @@ import {
 import { currentSaveVersionIdentity } from '@skelly/engine/save';
 import { configFromUrl, isPracticeStart } from '@skelly/engine/session';
 import { parseTimeOfDay } from '@skelly/engine/sim';
-import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
-import { describe, expect, it } from 'vitest';
+import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { describe, expect, it, vi } from 'vitest';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { productModIntake } from '../src/product/mods.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
@@ -37,7 +37,11 @@ const mod = (id: string, starts: unknown[], extra: Record<string, unknown> = {})
   ...extra,
 });
 const startMod = mod('fixture.start-mod', [row('fixture_start_mod_start')]);
-const scenario = mod('fixture.scenario', [row('fixture_scenario_start')], { defaultStart: 'fixture_scenario_start' });
+const scenario = mod('fixture.scenario', [row('fixture_scenario_start')], {
+  defaultStart: 'fixture_scenario_start',
+  dependencies: ['skelly.deadvox'],
+  overrides: [{ pack: 'skelly.deadvox', entry: 'defaultStart' }],
+});
 const intake: ModIntake = {
   ...productModIntake,
   bundledMods: [
@@ -180,19 +184,7 @@ describe('committed scenario mods', () => {
     expect(practiceRun([])).toBe(false);
   });
 
-  it('starts from the last listed default whether it comes from a single-file mod or a folder pack', () => {
-    const practice = practiceModId(intake, startupContent().registry);
-    expect(practice).toBeDefined();
-    const practiceRun = (ids: string[]) => {
-      const selection = select(new URLSearchParams(), ids);
-      expect(selection.issues).toEqual([]);
-      return isPracticeStart(selection.content.registry, startOf(selection).startId);
-    };
-    expect(practiceRun([scenario.id, practice!])).toBe(true);
-    expect(practiceRun([practice!, scenario.id])).toBe(false);
-  });
-
-  it('starts practice from the practice link even when the page already lists the practice pack before another scenario', () => {
+  it('replaces another start pack and warns on the loaded practice page, not the departing page', () => {
     const practice = practiceModId(productModIntake, startupContent().registry);
     const other = scenarios.find(([id]) => id !== practice)?.[0];
     expect(practice).toBeDefined();
@@ -206,8 +198,32 @@ describe('committed scenario mods', () => {
       return isPracticeStart(content.registry, configFromUrl(read.query, {}, content, ragdollSweepViewer).startId);
     };
     const page = `https://example.test/deadvox/?mods=${practice},${other}`;
-    expect(runOn(page)).toBe(false);
-    expect(runOn(tutorialUrl(page, practice!))).toBe(true);
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const link = tutorialUrl(
+        page,
+        practice!,
+        productModIntake.content.availablePackInputs.map(({ manifest }) => manifest),
+      );
+      const data = new Map<string, string>();
+      const stash = () => ({
+        getItem: (key: string) => data.get(key) ?? null,
+        setItem: (key: string, value: string) => data.set(key, value),
+        removeItem: (key: string) => data.delete(key),
+      });
+      const href = stagePracticeLink(link, stash);
+      expect(warning).not.toHaveBeenCalled();
+      expect(new URL(href).searchParams.get('mods')?.split(',')).not.toContain(other);
+      expect(runOn(href)).toBe(true);
+      logPracticeWarnings(href, stash);
+      expect(warning).toHaveBeenCalledTimes(1);
+      expect(warning.mock.calls.flat().some((value) => String(value).includes(other!))).toBe(true);
+      warning.mockClear();
+      logPracticeWarnings(href, stash);
+      expect(warning).not.toHaveBeenCalled();
+    } finally {
+      warning.mockRestore();
+    }
   });
 
   it('gives a stack of single-file mods and folder packs a save identity that follows its load order', async () => {
@@ -219,8 +235,8 @@ describe('committed scenario mods', () => {
       expect(selection.issues).toEqual([]);
       return (await currentSaveVersionIdentity(selection.admitted, selection.inlineAdmitted)).digest;
     };
-    const listed = await digest([scenario.id, folder!]);
-    expect(await digest([scenario.id, folder!])).toBe(listed);
-    expect(await digest([folder!, scenario.id])).not.toBe(listed);
+    const listed = await digest([startMod.id, folder!]);
+    expect(await digest([startMod.id, folder!])).toBe(listed);
+    expect(await digest([folder!, startMod.id])).not.toBe(listed);
   });
 });

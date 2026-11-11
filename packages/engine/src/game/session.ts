@@ -1592,17 +1592,17 @@ export const createSession = (options: SessionOptions) => {
   };
   const traps = new BearTraps(inventory);
   const actorReady = actorReadinessFor(options);
-  const placeActorDrop = (item: Item, pos: Vec3): void => {
+  const placeActorDrop = (item: Item, pos: Vec3): 'placed' | 'discarded' => {
     const landed = freshDropTarget(inventory, item, pos);
     if (!landed) {
-      return;
+      return 'discarded';
     }
     if (inventory.planAdd(item, landed).ok) {
       inventory.add(item, landed);
-      return;
+      return 'placed';
     }
     if (!actorReady(pos[0], pos[2])) {
-      return;
+      return 'discarded';
     }
     const landings = dropSpots(pos).flatMap((spot) => {
       const floor = inventory.landing(spot);
@@ -1612,9 +1612,10 @@ export const createSession = (options: SessionOptions) => {
       const target = { kind: 'pile' as const, pos: cell };
       if (inventory.planAdd(item, target).ok) {
         inventory.add(item, target);
-        return;
+        return 'placed';
       }
     }
+    return 'discarded';
   };
   const actorSystem = new ActorSystem({
     activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,

@@ -5,5 +5,6 @@ manifest(
   tier='scenario',
   defaultStart='tutorial',
   optIn=true,
-  dependencies=['skelly.deadvox.scenario.tutorial'],
+  dependencies=['skelly.deadvox', 'skelly.deadvox.scenario.tutorial'],
+  overrides=[{ pack: 'skelly.deadvox', entry: 'defaultStart' }],
 )
