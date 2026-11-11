@@ -161,6 +161,8 @@ Terrain goes on screen a whole column at a time and never beyond a column that i
 
 Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `packages/engine/src/game/streamer.ts`, `Streamer`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `packages/presentation/src/render/distanceFog.ts`, `withDistanceFog`.
 
+The default view radius is content, and the fog reaches full strength at its edge along a curve that content shapes. A shorter radius pulls the fog in until it reads as a grey wall that hides the sky, so the default favours a readable horizon over the cheaper view, and the acceptance below applies at that default. See `packages/mods/skelly.graphics/graphics.jsonnet`, `viewRadiusM` and `fogCurveExponent`, and `packages/engine/src/game/config.ts`, `defaultViewRadiusM`.
+
 Performance acceptance targets 60 fps on a portable reference-laptop class:
 Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
 game should ideally run on a low-end ("potato") PC so that as many people as
@@ -3696,7 +3698,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
-  The targets are 96–128 m near detail and 512 m or more of far terrain; to be
+  The targets are 128 m near detail and 512 m or more of far terrain; to be
   measured.
 - **Zombie bodies:** an actor moving off-screen must not come back with stale
   bones or snap by the distance it moved while culled, and an actor taking over
