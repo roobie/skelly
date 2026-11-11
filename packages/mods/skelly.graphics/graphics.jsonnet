@@ -8,6 +8,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     nearPlaneMetres: 0.01,
     playerViewFovDegrees: 75,
     opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
+    viewRadiusM: 96,
     readyRadiusM: 64,
     streamHysteresisM: 16,
     fogFarPlaneScale: 1.5,

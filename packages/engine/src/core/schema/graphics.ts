@@ -16,6 +16,9 @@ import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
 import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
 
+/** The view radii a run accepts, from the content default or a debug hash. */
+export const VIEW_RADIUS_BOUNDS_M = { min: 32, max: 256 } as const;
+
 /** An inclusive { min, max } range of one kind of number. */
 const orderedRange = (item: typeof NonNegative | typeof Positive) =>
   pipe(
@@ -32,6 +35,11 @@ export const GraphicsTuningSchema = strictObject({
     rimSoftness: pipe(Positive, maxValue(0.5)),
     reticleAntiAliasWidth: pipe(Positive, maxValue(2)),
   }),
+  /**
+   * The view radius a run starts with: what is meshed and drawn, and where the distance fog must be complete.
+   * Streaming loads past it, so it sets the world's load as well as its look.
+   */
+  viewRadiusM: pipe(number(), finite(), minValue(VIEW_RADIUS_BOUNDS_M.min), maxValue(VIEW_RADIUS_BOUNDS_M.max)),
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),

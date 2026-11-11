@@ -1,5 +1,5 @@
 import { blockColors } from '@skelly/engine/content';
-import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
+import { defaultViewRadiusM, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
 import { buildingBounds } from '@skelly/engine/terrain';
 import {
   BLOCK_SIZE,
@@ -39,7 +39,7 @@ const params = new URLSearchParams(globalThis.location.search);
 const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
-const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
+const config = makeConfig(seed, defaultViewRadiusM(content), content);
 Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'), mapWorldShape(params));
 config.debug = true;
 if (registry.scenarios.has(config.site)) {

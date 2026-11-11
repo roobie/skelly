@@ -47,6 +47,7 @@ const source = (options: GraphicsOptions) => ({
         id: fixtureIds.graphics,
         capability: 'graphics',
         ...fixtureGraphics,
+        viewRadiusM: 96,
         readyRadiusM: 16,
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,

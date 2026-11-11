@@ -14,7 +14,7 @@ import type { SaveBackendPreference } from '@skelly/engine/save';
 import {
   applyWeatheringConfig,
   configFromUrl,
-  DEFAULT_RADIUS_M,
+  defaultViewRadiusM,
   isPracticeStart,
   makeConfig,
   savingEnabledFromUrl,
@@ -401,7 +401,7 @@ if (bench === 'report') {
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(hash);
   if (run) {
-    const config = benchStartConfig(content, run.seed, DEFAULT_RADIUS_M);
+    const config = benchStartConfig(content, run.seed, defaultViewRadiusM(content));
     const engine = createEngine(config, view, undefined, { graphicsSource: 'mod' });
     startShamblerBench(engine, run, await fetchActorFigureFiles(engine.registry, assets.figures));
   } else {

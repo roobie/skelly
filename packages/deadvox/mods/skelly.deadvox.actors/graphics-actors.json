@@ -116,7 +116,8 @@
         "options": [false, true]
       },
       "streamHysteresisM": 16,
-      "unbuiltSkyCap": 0.5
+      "unbuiltSkyCap": 0.5,
+      "viewRadiusM": 96
     }
   ]
 }
