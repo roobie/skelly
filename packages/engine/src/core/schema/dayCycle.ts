@@ -41,16 +41,18 @@ const SkyColour = pipe(
 const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
 
 /** The dome's physical (Preetham) sky model in its own terms, so hazier air at a low sun is content, not code. */
+const FiniteNonNegative = pipe(NonNegative, finite('must be finite'));
+
 const PhysicalSkySchema = strictObject({
   /** Scales the model's radiance before it is mapped into display range; the model's own units are arbitrary. */
-  exposure: pipe(NonNegative, finite()),
+  exposure: FiniteNonNegative,
   /** 0 draws the keyed gradient only, 1 the physical sky. */
   weight: UnitFraction,
-  turbidity: NonNegative,
-  rayleigh: NonNegative,
-  mie: NonNegative,
+  turbidity: FiniteNonNegative,
+  rayleigh: FiniteNonNegative,
+  mie: FiniteNonNegative,
   /** The model's Henyey-Greenstein asymmetry, which is undefined at 1. */
-  mieDirectional: pipe(NonNegative, ltValue(1, 'must be below 1')),
+  mieDirectional: pipe(FiniteNonNegative, ltValue(1, 'must be below 1')),
 });
 
 /** The sky dome of one look: the gradient between the fog colour and the zenith, the physical sky, clouds and stars. */
@@ -68,28 +70,59 @@ const DomeLookSchema = strictObject({
   /** Star brightness. */
   stars: UnitFraction,
   /** The moon, which the dome draws opposite the sun. */
-  moon: strictObject({ colour: SkyColour, brightness: pipe(NonNegative, finite()) }),
+  moon: strictObject({ colour: SkyColour, brightness: FiniteNonNegative }),
 });
 
-/** A height range over the horizon, as the sine of the elevation, over which one gradient colour eases into the next. */
-const ElevationBand = pipe(
+/** The two edges, low to high, between which a smoothstep eases; reversed edges are undefined in GLSL. */
+const Band = pipe(
   tuple([UnitFraction, UnitFraction]),
-  check(([from, to]) => from < to, 'must rise from a lower to a higher elevation'),
+  check(([from, to]) => from < to, 'must rise from a lower to a higher edge'),
 );
 
-/** The dome's shape that does not change over the day: how its gradient and cloud light are built from the looks. */
+const FinitePositive = pipe(Positive, finite('must be finite'));
+
+/** A lobe of light round a direction: `cos(angle) ** power * gain`. */
+const Lobe = strictObject({ power: FinitePositive, gain: FiniteNonNegative });
+
+/** The dome's shape that does not change over the day: how its gradient, stars, moon and cloud light are built from the looks. */
 const DomeShapeSchema = strictObject({
-  /** Where the look's fog colour eases into the horizon glow. */
-  horizonBand: ElevationBand,
-  /** Where the horizon glow eases into the zenith. */
-  glowBand: ElevationBand,
-  /** The fraction of the starfield's cells that hold a star. */
-  starDensity: UnitFraction,
+  /** Where the look's fog colour eases into the horizon glow, as the sine of the elevation. */
+  horizonBand: Band,
+  /** Where the horizon glow eases into the zenith, as the sine of the elevation. */
+  glowBand: Band,
+  /** The sun heights between which the physical sky is lifted to the keyed gradient: fully below the first, not at all above the second. */
+  floorBand: Band,
+  starField: strictObject({
+    /** The fraction of the field's cells that hold a star. */
+    density: UnitFraction,
+    /** A star's radius as a fraction of its cell. */
+    size: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+    /** How far a star's brightness dips below full: 0 is steady. */
+    twinkle: UnitFraction,
+  }),
+  moon: strictObject({
+    /** The cosines of the angle from the moon's centre between which the disc eases in; the moon's size. */
+    disc: Band,
+    discGain: FiniteNonNegative,
+    /** The halo is a tight lobe and a wide one. */
+    tightHalo: Lobe,
+    wideHalo: Lobe,
+  }),
   cloudLight: strictObject({
     /** How much of the main light's colour a cloud takes. */
-    light: NonNegative,
+    light: FiniteNonNegative,
     /** How much of the ambient sky colour a cloud takes. */
-    ambient: NonNegative,
+    ambient: FiniteNonNegative,
+    /** The share of the main light that depends on facing it; the rest lights a cloud evenly. */
+    facing: UnitFraction,
+  }),
+  cloudShape: strictObject({
+    /** How fast the cloud threshold falls as cover rises. */
+    coverGain: FiniteNonNegative,
+    /** How wide the cloud edge is in noise units. */
+    edgeSoftness: FinitePositive,
+    /** Where clouds fade in above the horizon, as the sine of the elevation. */
+    horizonFade: Band,
   }),
 });
 

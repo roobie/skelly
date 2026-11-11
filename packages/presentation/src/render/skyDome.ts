@@ -8,12 +8,12 @@
 // scaled with the clear colour and the fog by `Mood` (render/mood.ts, `Mood.draw`) through `skyDomeUniforms`.
 // A dome that skipped either would not meet the fogged geometry at the horizon.
 //
-// The physical sky and the celestial bodies are radiance in arbitrary units, so each is brought into display range
-// by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under 1, as `targetColorScale` in
-// engine/core/mood.ts assumes of any sky colour, so it never counts as bright to the bloom pass and the largest
-// colour scale cannot push the sun's disc out of half-float range. The sun disc belongs to the physical sky, and
-// the moon and stars to their own brightness, so a flat look (gradient stops all the fog colour, no physical
-// weight, cover, stars or moon) draws exactly the flat background.
+// The physical sky, the celestial bodies and the lit clouds are radiance in arbitrary units, so the composited colour
+// is brought into display range once by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under
+// 1 whatever the content, as `targetColorScale` in engine/core/mood.ts assumes of any sky colour, so it never counts
+// as bright to the bloom pass and the largest colour scale cannot push the sun's disc out of half-float range. The
+// shoulder starts at the keyed gradient's own brightness, so a flat look (gradient stops all the fog colour, no
+// physical weight, cover, stars or moon) draws exactly the flat background.
 
 import type { Clouds, DomeShape, Rgb, Sky } from '@skelly/engine/sky';
 import {
@@ -55,10 +55,6 @@ export interface SkyDome {
   dispose: () => void;
 }
 
-/** The sun's height over which the keyed floor fades out: full below the first, none above the second. */
-const FLOOR_FROM_SUN_HEIGHT = 0.05;
-const FLOOR_TO_SUN_HEIGHT = 0.3;
-
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 const setSrgb = (into: Color, [r, g, b]: Rgb): Color => into.setRGB(r, g, b, SRGBColorSpace);
 
@@ -90,8 +86,8 @@ export const preethamTerms = (
 };
 
 /** How far the physical sky is lifted to the keyed gradient: fully around a low sun, not at all with it high. */
-export const keyedFloor = (sunHeight: number): number =>
-  1 - clamp01((sunHeight - FLOOR_FROM_SUN_HEIGHT) / (FLOOR_TO_SUN_HEIGHT - FLOOR_FROM_SUN_HEIGHT));
+export const keyedFloor = (sunHeight: number, [from, to]: readonly [number, number]): number =>
+  1 - clamp01((sunHeight - from) / (to - from));
 
 const VERTEX_SHADER = /* glsl */ `
   varying vec3 vDir;
@@ -116,6 +112,16 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform vec2 uHorizonBand;
   uniform vec2 uGlowBand;
   uniform float uStarThreshold;
+  uniform float uStarSize;
+  uniform float uStarTwinkle;
+  uniform vec2 uMoonDisc;
+  uniform float uMoonDiscGain;
+  uniform vec2 uMoonTightHalo;
+  uniform vec2 uMoonWideHalo;
+  uniform float uCoverGain;
+  uniform float uEdgeSoftness;
+  uniform vec2 uCloudFade;
+  uniform float uCloudFacing;
   uniform float uPhysicalExposure;
   uniform float uMoonBrightness;
   uniform vec3 uHorizonGlow;
@@ -145,18 +151,22 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
   const float SUN_ANGULAR_DIAMETER_COS = 0.999956676946448;
-  // Radiance up to the knee passes unchanged; above it the brightest channel eases towards 1, scaling the others
-  // with it so a bright sky keeps its hue instead of clipping to white per channel.
+  // Brightness up to the knee passes unchanged; above it the brightest channel eases towards 1, scaling the others
+  // with it so a bright sky keeps its hue instead of clipping to white per channel. The knee is never below the
+  // keyed gradient's own brightness, which therefore always passes whole.
   const float SHOULDER_KNEE = 0.6;
 
-  vec3 toDisplay ( vec3 radiance ) {
+  vec3 toDisplay ( vec3 radiance, vec3 keyed ) {
     float peak = max( radiance.r, max( radiance.g, radiance.b ) );
-    if ( peak <= SHOULDER_KNEE ) {
+    float knee = clamp( max( SHOULDER_KNEE, max( keyed.r, max( keyed.g, keyed.b ) ) ), 0.0, 1.0 );
+    if ( peak <= knee ) {
       return radiance;
     }
-    float room = 1.0 - SHOULDER_KNEE;
-    float mapped = SHOULDER_KNEE + room * ( 1.0 - exp( -( peak - SHOULDER_KNEE ) / room ) );
-    return radiance * ( mapped / peak );
+    float room = 1.0 - knee;
+    if ( room <= 0.0 ) {
+      return radiance / peak;
+    }
+    return radiance * ( ( knee + room * ( 1.0 - exp( -( peak - knee ) / room ) ) ) / peak );
   }
 
   vec3 keyedSky ( vec3 dir ) {
@@ -166,7 +176,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
 
   // Preetham's analytic daylight with its sun disc (three's Sky addon, less its clouds).
   vec3 physicalSky ( vec3 dir ) {
-    float zenithAngle = acos( max( 0.0, dir.y ) );
+    float zenithAngle = acos( clamp( dir.y, 0.0, 1.0 ) );
     float airmass = 1.0 / ( cos( zenithAngle ) + 0.15 * pow( 93.885 - degrees( zenithAngle ), -1.253 ) );
     vec3 extinction = exp( -( uBetaR * RAYLEIGH_ZENITH_LENGTH + uBetaM * MIE_ZENITH_LENGTH ) * airmass );
     float cosTheta = dot( dir, uSunDir );
@@ -193,16 +203,16 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec2 sph = vec2( atan( dir.z, dir.x ) * 38.2, asin( clamp( dir.y, -1.0, 1.0 ) ) * 76.4 );
     vec2 cell = floor( sph );
     vec2 inCell = fract( sph ) - vec2( hash( cell ), hash( cell + 19.7 ) );
-    float star = smoothstep( 0.12, 0.0, length( inCell ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
-    float twinkle = 0.6 + 0.4 * hash( cell + 3.1 );
+    float star = ( 1.0 - smoothstep( 0.0, uStarSize, length( inCell ) ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
+    float twinkle = 1.0 - uStarTwinkle * ( 1.0 - hash( cell + 3.1 ) );
     return star * twinkle * smoothstep( 0.0, 0.25, dir.y );
   }
 
   vec3 moon ( vec3 dir ) {
     float d = clamp( dot( dir, uMoonDir ), 0.0, 1.0 );
-    float disc = smoothstep( 0.99955, 0.99985, d );
-    float halo = pow( d, 350.0 ) * 0.9 + pow( d, 14.0 ) * 0.18;
-    return uMoonColour * ( disc * 5.0 + halo * 0.35 );
+    float disc = smoothstep( uMoonDisc.x, uMoonDisc.y, d );
+    float halo = pow( d, uMoonTightHalo.x ) * uMoonTightHalo.y + pow( d, uMoonWideHalo.x ) * uMoonWideHalo.y;
+    return uMoonColour * ( disc * uMoonDiscGain + halo );
   }
 
   // One layer's cover at a sky-plane point. A tiling texture repeats, so the lookup is rotated per layer and
@@ -213,25 +223,26 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec2 uv = mat2( c, s, -s, c ) * plane * layer.x + layer.zw * uSimSeconds;
     uv += ( texture2D( tex, uv * 0.31 + vec2( 0.37, 0.71 ) ).rg - 0.5 ) * uWarp;
     vec2 noise = texture2D( tex, uv ).rg;
-    float threshold = 1.0 - 1.2 * uCover;
+    float threshold = 1.0 - uCoverGain * uCover;
     // Cover 0 is clear sky however high the noise rises.
-    return smoothstep( threshold, threshold + 0.3, noise.r + ( noise.g - 0.5 ) * 0.35 ) * step( 0.0001, uCover );
+    return smoothstep( threshold, threshold + uEdgeSoftness, noise.r + ( noise.g - 0.5 ) * 0.35 ) * step( 0.0001, uCover );
   }
 
   void main () {
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
-    vec3 physical = toDisplay( physicalSky( dir ) );
+    vec3 physical = physicalSky( dir );
     physical = mix( physical, max( physical, keyed ), uKeyedFloor );
     vec3 col = mix( keyed, physical, uPhysicalWeight );
-    col += toDisplay( vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness );
+    col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness;
 
     // Clouds come last, so they cover the stars, the moon and the sun behind them.
-    float cloudOpacity = uCloudOpacity * smoothstep( 0.02, 0.14, dir.y );
-    vec3 litCloud = uCloudAmbient + uCloudLight * ( 0.6 + 0.4 * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
+    float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
+    vec3 litCloud = uCloudAmbient + uCloudLight * ( 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
     vec2 plane = dir.xz / max( dir.y, 0.06 );
     ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
 
+    col = toDisplay( col, keyed );
     col *= uSkyVisibility;
     col = mix( col, uFogColor, 1.0 - smoothstep( 0.0, 0.06, dir.y ) );
     gl_FragColor = vec4( col * uSkyColorScale, 1.0 );
@@ -258,7 +269,17 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uZenith: { value: new Color() },
     uHorizonBand: { value: new Vector2(...shape.horizonBand) },
     uGlowBand: { value: new Vector2(...shape.glowBand) },
-    uStarThreshold: { value: 1 - shape.starDensity },
+    uStarThreshold: { value: 1 - shape.starField.density },
+    uStarSize: { value: shape.starField.size },
+    uStarTwinkle: { value: shape.starField.twinkle },
+    uMoonDisc: { value: new Vector2(...shape.moon.disc) },
+    uMoonDiscGain: { value: shape.moon.discGain },
+    uMoonTightHalo: { value: new Vector2(shape.moon.tightHalo.power, shape.moon.tightHalo.gain) },
+    uMoonWideHalo: { value: new Vector2(shape.moon.wideHalo.power, shape.moon.wideHalo.gain) },
+    uCoverGain: { value: shape.cloudShape.coverGain },
+    uEdgeSoftness: { value: shape.cloudShape.edgeSoftness },
+    uCloudFade: { value: new Vector2(...shape.cloudShape.horizonFade) },
+    uCloudFacing: { value: shape.cloudLight.facing },
     uPhysicalExposure: { value: 0 },
     uMoonBrightness: { value: 0 },
     uHorizonGlow: { value: new Color() },
@@ -309,7 +330,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
       setSrgb(uniforms.uZenith.value, dome.zenith);
       uniforms.uPhysicalWeight.value = dome.physical.weight;
-      uniforms.uKeyedFloor.value = keyedFloor(sunDirection[1]);
+      uniforms.uKeyedFloor.value = keyedFloor(sunDirection[1], shape.floorBand);
       uniforms.uSunDir.value.set(...sunDirection);
       uniforms.uSunIntensity.value = terms.sunIntensity;
       uniforms.uBetaR.value.set(...terms.rayleigh);

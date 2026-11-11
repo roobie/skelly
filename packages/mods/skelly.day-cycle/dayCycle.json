@@ -32,11 +32,34 @@
     "domeShape": {
       "cloudLight": {
         "ambient": 0.25,
+        "facing": 0.40000000000000002,
         "light": 0.80000000000000004
       },
+      "cloudShape": {
+        "coverGain": 1.2,
+        "edgeSoftness": 0.29999999999999999,
+        "horizonFade": [0.02, 0.14000000000000001]
+      },
+      "floorBand": [0.050000000000000003, 0.29999999999999999],
       "glowBand": [0.12, 0.55000000000000004],
       "horizonBand": [0.014999999999999999, 0.14000000000000001],
-      "starDensity": 0.014
+      "moon": {
+        "disc": [0.99955000000000005, 0.99985000000000002],
+        "discGain": 5,
+        "tightHalo": {
+          "gain": 0.315,
+          "power": 350
+        },
+        "wideHalo": {
+          "gain": 0.063,
+          "power": 14
+        }
+      },
+      "starField": {
+        "density": 0.014,
+        "size": 0.12,
+        "twinkle": 0.40000000000000002
+      }
     },
     "keys": [
       {

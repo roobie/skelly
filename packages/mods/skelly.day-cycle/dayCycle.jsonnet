@@ -126,8 +126,16 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
     domeShape: {
       horizonBand: [0.015, 0.14],
       glowBand: [0.12, 0.55],
-      starDensity: 0.014,
-      cloudLight: { light: 0.8, ambient: 0.25 },
+      floorBand: [0.05, 0.3],
+      starField: { density: 0.014, size: 0.12, twinkle: 0.4 },
+      moon: {
+        disc: [0.99955, 0.99985],
+        discGain: 5,
+        tightHalo: { power: 350, gain: 0.315 },
+        wideHalo: { power: 14, gain: 0.063 },
+      },
+      cloudLight: { light: 0.8, ambient: 0.25, facing: 0.4 },
+      cloudShape: { coverGain: 1.2, edgeSoftness: 0.3, horizonFade: [0.02, 0.14] },
     },
     clouds: {
       warp: 0.6,

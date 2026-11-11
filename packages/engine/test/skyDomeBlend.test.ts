@@ -61,8 +61,16 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
   domeShape: {
     horizonBand: [0.02, 0.1],
     glowBand: [0.1, 0.5],
-    starDensity: 0.02,
-    cloudLight: { light: 0.7, ambient: 0.3 },
+    floorBand: [0.1, 0.4],
+    starField: { density: 0.02, size: 0.2, twinkle: 0.3 },
+    moon: {
+      disc: [0.999, 0.9995],
+      discGain: 4,
+      tightHalo: { power: 300, gain: 0.3 },
+      wideHalo: { power: 10, gain: 0.05 },
+    },
+    cloudLight: { light: 0.7, ambient: 0.3, facing: 0.5 },
+    cloudShape: { coverGain: 1, edgeSoftness: 0.25, horizonFade: [0.03, 0.12] },
   },
   clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5 }] },
 });

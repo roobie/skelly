@@ -37,7 +37,7 @@ export type DomeShape = DayCycleDef['domeShape'];
 
 export interface Sky {
   dayPhase: DayPhase;
-  /** Background colour; the fog fades to it. */
+  /** The fog colour, which is also the sky dome's colour at the horizon. */
   sky: Rgb;
   /** Unit vector towards the main light: the sun by day, the moon by night. */
   light: Vec3;
