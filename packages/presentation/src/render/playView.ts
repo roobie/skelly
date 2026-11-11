@@ -352,6 +352,7 @@ export const createPlayView = (
     held.dispose();
     playerMeshes.dispose();
     avatarMannequin?.dispose();
+    meshes.dispose();
   };
   page.addEventListener('pagehide', dispose);
   const vehicleMesher = vehicleShapesInWorker();

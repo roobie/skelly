@@ -1,7 +1,15 @@
 import type { MeshData } from '@skelly/engine/mesh';
 import { CHUNK } from '@skelly/engine/world';
 import { ChunkMeshes } from '@skelly/presentation/render';
-import { DoubleSide, MeshDepthMaterial, PerspectiveCamera, Raycaster, Vector3 } from 'three';
+import {
+  DoubleSide,
+  type EventDispatcher,
+  MeshDepthMaterial,
+  PerspectiveCamera,
+  Raycaster,
+  Scene,
+  Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 
@@ -112,5 +120,26 @@ describe('chunk batch', () => {
     expect(batch.maxInstanceCount).toBeGreaterThan(instances);
     mainPass(meshes);
     expect([groundAt(meshes, 0), groundAt(meshes, 2), groundAt(meshes, instances - 1, 1)]).toEqual([4, 5, 6]);
+  });
+
+  it('frees the batch, its instance textures and the material once, and leaves the scene', () => {
+    const meshes = new ChunkMeshes(BLOCK_M, BUNDLED_CONTENT.registry);
+    meshes.set('a', [0, 0, 0], floorAt(1));
+    const scene = new Scene().add(meshes.batch);
+    // three keeps the instance textures private; they are what a dropped batch would leak on the GPU.
+    const { _matricesTexture, _indirectTexture } = meshes.batch as unknown as Record<
+      '_matricesTexture' | '_indirectTexture',
+      EventDispatcher<{ dispose: object }>
+    >;
+    const owned = [meshes.batch.geometry, _matricesTexture, _indirectTexture, meshes.material];
+    const disposals = new Map(owned.map((resource) => [resource, 0]));
+    for (const resource of owned) {
+      resource.addEventListener('dispose', () => {
+        disposals.set(resource, disposals.get(resource)! + 1);
+      });
+    }
+    meshes.dispose();
+    expect([...disposals.values()]).toEqual(owned.map(() => 1));
+    expect(scene.children).not.toContain(meshes.batch);
   });
 });

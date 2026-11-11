@@ -521,6 +521,19 @@ export class ChunkMeshes implements ColumnReveal {
     this.chunks.delete(key);
     this.changes += 1;
   }
+
+  /**
+   * Frees the batch, with its geometry and instance textures, then the material and noise texture this owner made,
+   * once. The batch leaves the scene first: a render after disposal would reach for its freed textures.
+   */
+  dispose(): void {
+    this.batch.removeFromParent();
+    this.batch.dispose();
+    this.chunks.clear();
+    this.material.dispose();
+    this.surfaceNoise.value?.dispose();
+    this.surfaceNoise.value = null;
+  }
 }
 
 /** Mesher output as a geometry the batch copies in, with tight bounds. */
