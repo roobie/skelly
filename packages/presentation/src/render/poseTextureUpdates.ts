@@ -59,21 +59,20 @@ export class PoseTextureUpdates {
     }
     const rowComponents = this.texture.image.width * 4;
     for (const row of this.touched) {
-      const start = row * rowComponents;
-      const end = start + rowComponents;
-      let first = end;
-      let last = start;
-      for (let i = start; i < end; i++) {
-        if (data[i] !== this.previous[i]) {
-          first = Math.min(first, i);
-          last = i;
-          this.previous[i] = data[i]!;
-        }
+      let first = row * rowComponents;
+      let last = first + rowComponents - 1;
+      while (first <= last && data[first] === this.previous[first]) {
+        first += 1;
       }
-      if (first < end) {
-        const aligned = Math.floor(first / 4) * 4;
-        this.texture.addUpdateRange(aligned, (Math.floor(last / 4) + 1) * 4 - aligned);
+      if (first > last) {
+        continue;
       }
+      while (data[last] === this.previous[last]) {
+        last -= 1;
+      }
+      this.previous.set(data.subarray(first, last + 1), first);
+      const aligned = Math.floor(first / 4) * 4;
+      this.texture.addUpdateRange(aligned, (Math.floor(last / 4) + 1) * 4 - aligned);
     }
     this.touched.clear();
   }
