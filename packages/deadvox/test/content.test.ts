@@ -1083,6 +1083,44 @@ describe('content', () => {
     });
   });
 
+  it("checks a piece's take-apart yield references and admits exactly one take-apart route", () => {
+    const source = 'take-apart-fixture.json';
+    const takeApart = (item: string) => ({
+      yield: {
+        timeGameMinutes: 1,
+        skill: 'crafting',
+        yields: [{ item, count: 2, fractions: [0.5, 1], rounding: 'floor' }],
+      },
+    });
+    const data = (route: object) => ({
+      items: [{ id: 'fixture_offcut', name: 'Offcut', category: 'material', weight: 1, size: [1, 1] }],
+      furniture: [
+        {
+          id: 'fixture_piece',
+          name: 'Piece',
+          size: [1, 1, 1],
+          color: '#123456',
+          massKg: 5,
+          breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
+          takeApart: route,
+        },
+      ],
+    });
+    expect(buildRegistry([{ source, data: data(takeApart('fixture_offcut')) }]).issues).toEqual([]);
+    expect(buildRegistry([{ source, data: data(takeApart('fixture_missing')) }]).issues).toContainEqual({
+      source,
+      path: 'furniture[0].takeApart.yield.yields[0].item',
+      message: 'no item "fixture_missing"',
+    });
+    const bothRoutes = buildRegistry([
+      { source, data: data({ ...takeApart('fixture_offcut'), parts: 'fixture_parts' }) },
+    ]);
+    expect(bothRoutes.registry.furniture.has('fixture_piece')).toBe(false);
+    const neitherRoute = buildRegistry([{ source, data: data({}) }]);
+    expect(neitherRoute.registry.furniture.has('fixture_piece')).toBe(false);
+  });
+
   it('keeps every sleep surface that is carried like a rug poorer than every fixed one', () => {
     const sleepers = [...baseRegistry.furniture.values()].filter((def) => def.rest?.sleep === true);
     const carried = sleepers.filter((def) => def.cover === true);

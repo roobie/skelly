@@ -19,6 +19,7 @@ import {
   ItemSchema,
   LiquidSchema,
   MeleeClassSchema,
+  type RecoveryWorkSchema,
   type TreatmentSchema,
   VehicleBlueprintSchema,
   VehicleFinishSchema,
@@ -176,6 +177,8 @@ export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
+
+export type RecoveryWork = InferOutput<typeof RecoveryWorkSchema>;
 
 type LootTable = InferOutput<typeof LootTableSchema>;
 
