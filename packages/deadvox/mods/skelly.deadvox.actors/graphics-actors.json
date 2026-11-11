@@ -30,6 +30,7 @@
         "options": [false, true]
       },
       "fogFarPlaneScale": 1.5,
+      "furnitureSectorChunks": 4,
       "gore": {
         "chunks": {
           "cap": 48,

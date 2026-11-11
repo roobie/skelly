@@ -26,7 +26,7 @@ import {
   searchTime,
 } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
-import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, type Group, InstancedMesh, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';
@@ -291,7 +291,7 @@ describe('furniture', () => {
     expect(stoppedByWall).toBeUndefined();
   });
 
-  it('keeps each shaped furniture instance to one draw object', () => {
+  it('draws every instance of a shaped furniture in one draw object', () => {
     const fixture = {
       id: 'fixture_shaped_furniture',
       name: 'Fixture shaped furniture',
@@ -319,10 +319,13 @@ describe('furniture', () => {
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
 
-    const meshes = furniture.group.children.filter((child) => child.type !== 'LineSegments') as Mesh[];
-    expect(meshes).toHaveLength(3);
-    expect(meshes.every((mesh) => mesh.isMesh && mesh.geometry.groups.length === 0)).toBe(true);
-    expect(meshes.every((mesh) => !Array.isArray(mesh.material))).toBe(true);
+    const [batch, ...rest] = furniture.group.children.filter((child) => child.type !== 'LineSegments');
+    expect(rest).toEqual([]);
+    expect(batch).toBeInstanceOf(InstancedMesh);
+    const { count, geometry, material } = batch as InstancedMesh;
+    expect(count).toBe(3);
+    expect(geometry.groups).toEqual([]);
+    expect(Array.isArray(material)).toBe(false);
   });
 
   it('renders wall-mount shapes flush with the back face in every facing', () => {
