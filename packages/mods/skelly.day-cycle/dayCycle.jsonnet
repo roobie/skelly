@@ -8,16 +8,24 @@ local physical(weight) = {
   mieDirectional: 0.8,
 };
 
-local dome(zenith, horizonGlow, weight, cloudOpacity, stars, moon) = {
+local sun(brightness, glow) = {
+  colour: '#fff0d4',
+  brightness: brightness,
+  glowColour: '#ffa040',
+  glow: glow,
+};
+
+local dome(zenith, horizonGlow, weight, cloudOpacity, stars, moon, sunLook) = {
   zenith: zenith,
   horizonGlow: horizonGlow,
   physical: physical(weight),
   clouds: { cover: 0.45, opacity: cloudOpacity },
   stars: stars,
   moon: { colour: '#b3bfd9', brightness: moon },
+  sun: sunLook,
 };
 
-local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
+local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
 
 {
   dayCycle: {
@@ -55,7 +63,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
         heightFogColor: '#1c2430',
         bloom: 0.5,
         tone: 1,
-        dome: dome('#070a10', '#141b26', 0, 0.6, 1, 1),
+        dome: dome('#070a10', '#141b26', 0, 0.6, 1, 1, sun(0, 0)),
       },
       deepNight: {
         sky: '#040508',
@@ -70,7 +78,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
         heightFogColor: '#121821',
         bloom: 0.55,
         tone: 1,
-        dome: dome('#030407', '#0a0f16', 0, 0.6, 1, 1),
+        dome: dome('#030407', '#0a0f16', 0, 0.6, 1, 1, sun(0, 0)),
       },
       dawn: {
         sky: '#8a807e',
@@ -100,7 +108,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
         heightFogColor: '#b4c6d4',
         bloom: 0.08,
         tone: 0,
-        dome: dome('#6f8aa3', '#c9c4b8', 1, 1, 0, 0),
+        dome: dome('#6f8aa3', '#c9c4b8', 1, 1, 0, 0, sun(1, 0)),
       },
       dusk: {
         sky: '#6e5e5c',
@@ -126,13 +134,19 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
     domeShape: {
       horizonBand: [0.015, 0.14],
       glowBand: [0.12, 0.55],
-      floorBand: [0.05, 0.3],
+      physicalBand: [0.3, 0.55],
       starField: { density: 0.014, size: 0.12, twinkle: 0.4 },
       moon: {
         disc: [0.99955, 0.99985],
         discGain: 5,
         tightHalo: { power: 350, gain: 0.315 },
         wideHalo: { power: 14, gain: 0.063 },
+      },
+      sun: {
+        disc: [0.99965, 0.9999],
+        discGain: 4,
+        tightHalo: { power: 900, gain: 0.6 },
+        wideHalo: { power: 16, gain: 0.9 },
       },
       cloudLight: { light: 0.8, ambient: 0.25, facing: 0.4 },
       cloudShape: { coverGain: 1.2, edgeSoftness: 0.3, horizonFade: [0.02, 0.14] },

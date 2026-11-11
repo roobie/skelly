@@ -29,6 +29,7 @@ export interface Dome {
   clouds: { cover: number; opacity: number };
   stars: number;
   moon: { colour: Rgb; brightness: number };
+  sun: { colour: Rgb; brightness: number; glowColour: Rgb; glow: number };
 }
 
 /** The cloud field's shape and the dome's other fixed shape, which the cycle holds once for every look. */
@@ -106,6 +107,12 @@ const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
   clouds: { cover: mix(a.clouds.cover, b.clouds.cover, t), opacity: mix(a.clouds.opacity, b.clouds.opacity, t) },
   stars: mix(a.stars, b.stars, t),
   moon: { colour: mixRgb(a.moon.colour, b.moon.colour, t), brightness: mix(a.moon.brightness, b.moon.brightness, t) },
+  sun: {
+    colour: mixRgb(a.sun.colour, b.sun.colour, t),
+    brightness: mix(a.sun.brightness, b.sun.brightness, t),
+    glowColour: mixRgb(a.sun.glowColour, b.sun.glowColour, t),
+    glow: mix(a.sun.glow, b.sun.glow, t),
+  },
 });
 
 const interpolate = (a: Look, b: Look, t: number): Look => ({

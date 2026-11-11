@@ -1,19 +1,24 @@
 // The sky dome: one camera-following sphere that stands in for the flat background. A look's `dome` block
 // (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars and moon; the
 // day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density and the
-// cloud light. The rules that stay in code are the physical sky floored at the
-// gradient around a low sun, the fade into the fog colour at the horizon, and cloud light from the main light.
+// cloud light. The rules that stay in code are the physical sky giving way to the gradient around a low sun, the
+// fade into the fog colour at the horizon, and cloud light from the main light.
+//
+// The sun and its glow are painted rather than taken from the physical sky. Around a low sun the model's radiance
+// falls by a hundred times within twenty degrees and swings from red through green to blue, which reads only when a
+// per-channel curve burns it to white; and its disc takes the air's extinction, which leaves it redder and darker than
+// the sky beside it. Bloom cannot supply the glow either, because the sky stays out of bloom.
 //
 // It is drawn the way the background it replaces is: never tone-mapped on the screen path, and in the post chain
 // scaled with the clear colour and the fog by `Mood` (render/mood.ts, `Mood.draw`) through `skyDomeUniforms`.
 // A dome that skipped either would not meet the fogged geometry at the horizon.
 //
-// The physical sky, the celestial bodies and the lit clouds are radiance in arbitrary units, so the composited colour
+// The physical sky, the sun, the moon and the lit clouds are radiance in arbitrary units, so the composited colour
 // is brought into display range once by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under
 // 1 whatever the content, as `targetColorScale` in engine/core/mood.ts assumes of any sky colour, so it never counts
 // as bright to the bloom pass and the largest colour scale cannot push the sun's disc out of half-float range. The
 // shoulder starts at the keyed gradient's own brightness, so a flat look (gradient stops all the fog colour, no
-// physical weight, cover, stars or moon) draws exactly the flat background.
+// physical weight, cover, stars, moon or sun) draws exactly the flat background.
 
 import type { Clouds, DomeShape, Rgb, Sky } from '@skelly/engine/sky';
 import {
@@ -85,9 +90,9 @@ export const preethamTerms = (
   return { sunIntensity, rayleigh: scaled(TOTAL_RAYLEIGH, rayleigh), mie: scaled(MIE_CONST, mieScale) };
 };
 
-/** How far the physical sky is lifted to the keyed gradient: fully around a low sun, not at all with it high. */
-export const keyedFloor = (sunHeight: number, [from, to]: readonly [number, number]): number =>
-  1 - clamp01((sunHeight - from) / (to - from));
+/** How much of the physical sky a sun at this height allows: none around a low sun, all of it with the sun high. */
+export const physicalShare = (sunHeight: number, [from, to]: readonly [number, number]): number =>
+  clamp01((sunHeight - from) / (to - from));
 
 const VERTEX_SHADER = /* glsl */ `
   varying vec3 vDir;
@@ -127,7 +132,6 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform vec3 uHorizonGlow;
   uniform vec3 uHorizon;
   uniform float uPhysicalWeight;
-  uniform float uKeyedFloor;
   uniform vec3 uSunDir;
   uniform float uSunIntensity;
   uniform vec3 uBetaR;
@@ -135,6 +139,14 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uMieDirectional;
   uniform vec3 uMoonDir;
   uniform vec3 uMoonColour;
+  uniform vec2 uSunDisc;
+  uniform float uSunDiscGain;
+  uniform vec2 uSunTightHalo;
+  uniform vec2 uSunWideHalo;
+  uniform vec3 uSunColour;
+  uniform float uSunBrightness;
+  uniform vec3 uSunGlowColour;
+  uniform float uSunGlow;
   uniform float uStars;
   uniform float uCover;
   uniform float uCloudOpacity;
@@ -150,7 +162,6 @@ const fragmentShader = (layers: number): string => /* glsl */ `
 
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
-  const float SUN_ANGULAR_DIAMETER_COS = 0.999956676946448;
   // Brightness up to the knee passes unchanged; above it the brightest channel eases towards 1, scaling the others
   // with it so a bright sky keeps its hue instead of clipping to white per channel. The knee is never below the
   // keyed gradient's own brightness, which therefore always passes whole.
@@ -174,7 +185,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return mix( uHorizon, col, smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
   }
 
-  // Preetham's analytic daylight with its sun disc (three's Sky addon, less its clouds).
+  // Preetham's analytic daylight (three's Sky addon, less its clouds and its sun disc).
   vec3 physicalSky ( vec3 dir ) {
     float zenithAngle = acos( clamp( dir.y, 0.0, 1.0 ) );
     float airmass = 1.0 / ( cos( zenithAngle ) + 0.15 * pow( 93.885 - degrees( zenithAngle ), -1.253 ) );
@@ -189,10 +200,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec3 inScatter = pow( scattered * ( 1.0 - extinction ), vec3( 1.5 ) );
     inScatter *= mix( vec3( 1.0 ), pow( scattered * extinction, vec3( 0.5 ) ),
       clamp( pow( 1.0 - uSunDir.y, 5.0 ), 0.0, 1.0 ) );
-    float disc = clamp( ( cosTheta - SUN_ANGULAR_DIAMETER_COS ) * 50000.0, 0.0, 1.0 );
-    vec3 discColour = 760.0 * disc * min( uSunIntensity * extinction, 80.0 );
-    return ( ( inScatter + vec3( 0.1 ) * extinction ) * 0.04 + discColour + vec3( 0.0, 0.0003, 0.00075 ) )
-      * uPhysicalExposure;
+    return ( ( inScatter + vec3( 0.1 ) * extinction ) * 0.04 + vec3( 0.0, 0.0003, 0.00075 ) ) * uPhysicalExposure;
   }
 
   float hash ( vec2 cell ) {
@@ -208,11 +216,23 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return star * twinkle * smoothstep( 0.0, 0.25, dir.y );
   }
 
+  // A lobe of light round a body, as cos(angle) ** power * gain; shape is power, gain.
+  float lobe ( float cosAngle, vec2 shape ) {
+    return pow( cosAngle, shape.x ) * shape.y;
+  }
+
   vec3 moon ( vec3 dir ) {
     float d = clamp( dot( dir, uMoonDir ), 0.0, 1.0 );
     float disc = smoothstep( uMoonDisc.x, uMoonDisc.y, d );
-    float halo = pow( d, uMoonTightHalo.x ) * uMoonTightHalo.y + pow( d, uMoonWideHalo.x ) * uMoonWideHalo.y;
-    return uMoonColour * ( disc * uMoonDiscGain + halo );
+    return uMoonColour * ( disc * uMoonDiscGain + lobe( d, uMoonTightHalo ) + lobe( d, uMoonWideHalo ) );
+  }
+
+  vec3 sunDisc ( float cosAngle ) {
+    return uSunColour * ( smoothstep( uSunDisc.x, uSunDisc.y, cosAngle ) * uSunDiscGain * uSunBrightness );
+  }
+
+  vec3 sunGlow ( float cosAngle ) {
+    return ( uSunColour * lobe( cosAngle, uSunTightHalo ) + uSunGlowColour * lobe( cosAngle, uSunWideHalo ) ) * uSunGlow;
   }
 
   // One layer's cover at a sky-plane point. A tiling texture repeats, so the lookup is rotated per layer and
@@ -232,15 +252,18 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
     vec3 physical = physicalSky( dir );
-    physical = mix( physical, max( physical, keyed ), uKeyedFloor );
     vec3 col = mix( keyed, physical, uPhysicalWeight );
-    col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness;
+    float sunCos = clamp( dot( dir, uSunDir ), 0.0, 1.0 );
+    col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness + sunDisc( sunCos );
 
     // Clouds come last, so they cover the stars, the moon and the sun behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
     vec3 litCloud = uCloudAmbient + uCloudLight * ( 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
     vec2 plane = dir.xz / max( dir.y, 0.06 );
     ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+
+    // The glow is lit air between the eye and the clouds, so it goes over them.
+    col += sunGlow( sunCos );
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
@@ -285,7 +308,6 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uHorizonGlow: { value: new Color() },
     uHorizon: { value: new Color() },
     uPhysicalWeight: { value: 0 },
-    uKeyedFloor: { value: 0 },
     uSunDir: { value: new Vector3(0, 1, 0) },
     uSunIntensity: { value: 0 },
     uBetaR: { value: new Vector3() },
@@ -293,6 +315,14 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uMieDirectional: { value: 0 },
     uMoonDir: { value: new Vector3(0, -1, 0) },
     uMoonColour: { value: new Color() },
+    uSunDisc: { value: new Vector2(...shape.sun.disc) },
+    uSunDiscGain: { value: shape.sun.discGain },
+    uSunTightHalo: { value: new Vector2(shape.sun.tightHalo.power, shape.sun.tightHalo.gain) },
+    uSunWideHalo: { value: new Vector2(shape.sun.wideHalo.power, shape.sun.wideHalo.gain) },
+    uSunColour: { value: new Color() },
+    uSunBrightness: { value: 0 },
+    uSunGlowColour: { value: new Color() },
+    uSunGlow: { value: 0 },
     uStars: { value: 0 },
     uCover: { value: 0 },
     uCloudOpacity: { value: 0 },
@@ -329,8 +359,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       setSrgb(uniforms.uHorizon.value, sky.sky);
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
       setSrgb(uniforms.uZenith.value, dome.zenith);
-      uniforms.uPhysicalWeight.value = dome.physical.weight;
-      uniforms.uKeyedFloor.value = keyedFloor(sunDirection[1], shape.floorBand);
+      uniforms.uPhysicalWeight.value = dome.physical.weight * physicalShare(sunDirection[1], shape.physicalBand);
       uniforms.uSunDir.value.set(...sunDirection);
       uniforms.uSunIntensity.value = terms.sunIntensity;
       uniforms.uBetaR.value.set(...terms.rayleigh);
@@ -341,6 +370,10 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       uniforms.uPhysicalExposure.value = dome.physical.exposure;
       uniforms.uMoonBrightness.value = dome.moon.brightness;
       setSrgb(uniforms.uMoonColour.value, dome.moon.colour);
+      setSrgb(uniforms.uSunColour.value, dome.sun.colour);
+      uniforms.uSunBrightness.value = dome.sun.brightness;
+      setSrgb(uniforms.uSunGlowColour.value, dome.sun.glowColour);
+      uniforms.uSunGlow.value = dome.sun.glow;
       uniforms.uCover.value = dome.clouds.cover;
       uniforms.uCloudOpacity.value = dome.clouds.opacity;
       uniforms.uSimSeconds.value = simSeconds;

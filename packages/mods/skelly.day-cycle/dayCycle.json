@@ -40,7 +40,6 @@
         "edgeSoftness": 0.29999999999999999,
         "horizonFade": [0.02, 0.14000000000000001]
       },
-      "floorBand": [0.050000000000000003, 0.29999999999999999],
       "glowBand": [0.12, 0.55000000000000004],
       "horizonBand": [0.014999999999999999, 0.14000000000000001],
       "moon": {
@@ -55,10 +54,23 @@
           "power": 14
         }
       },
+      "physicalBand": [0.29999999999999999, 0.55000000000000004],
       "starField": {
         "density": 0.014,
         "size": 0.12,
         "twinkle": 0.40000000000000002
+      },
+      "sun": {
+        "disc": [0.99965000000000004, 0.99990000000000001],
+        "discGain": 4,
+        "tightHalo": {
+          "gain": 0.59999999999999998,
+          "power": 900
+        },
+        "wideHalo": {
+          "gain": 0.90000000000000002,
+          "power": 16
+        }
       }
     },
     "keys": [
@@ -144,6 +156,12 @@
             "weight": 0.5
           },
           "stars": 0,
+          "sun": {
+            "brightness": 1,
+            "colour": "#fff0d4",
+            "glow": 1,
+            "glowColour": "#ffa040"
+          },
           "zenith": "#80786f"
         },
         "fogFar": 0.80000000000000004,
@@ -179,6 +197,12 @@
             "weight": 1
           },
           "stars": 0,
+          "sun": {
+            "brightness": 1,
+            "colour": "#fff0d4",
+            "glow": 0,
+            "glowColour": "#ffa040"
+          },
           "zenith": "#6f8aa3"
         },
         "fogFar": 0.94999999999999996,
@@ -214,6 +238,12 @@
             "weight": 0
           },
           "stars": 1,
+          "sun": {
+            "brightness": 0,
+            "colour": "#fff0d4",
+            "glow": 0,
+            "glowColour": "#ffa040"
+          },
           "zenith": "#030407"
         },
         "fogFar": 0.34999999999999998,
@@ -249,6 +279,12 @@
             "weight": 0.5
           },
           "stars": 0,
+          "sun": {
+            "brightness": 1,
+            "colour": "#fff0d4",
+            "glow": 1,
+            "glowColour": "#ffa040"
+          },
           "zenith": "#80786f"
         },
         "fogFar": 0.80000000000000004,
@@ -284,6 +320,12 @@
             "weight": 0
           },
           "stars": 1,
+          "sun": {
+            "brightness": 0,
+            "colour": "#fff0d4",
+            "glow": 0,
+            "glowColour": "#ffa040"
+          },
           "zenith": "#070a10"
         },
         "fogFar": 0.5,

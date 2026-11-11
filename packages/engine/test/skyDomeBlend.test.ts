@@ -12,6 +12,7 @@ const NIGHT_DOME = {
   clouds: { cover: 0.2, opacity: 0.4 },
   stars: 0.9,
   moon: { colour: '#405060', brightness: 0.8 },
+  sun: { colour: '#506070', brightness: 0.1, glowColour: '#607080', glow: 0.2 },
 };
 const DAY_DOME = {
   zenith: '#a0b0c0',
@@ -20,6 +21,7 @@ const DAY_DOME = {
   clouds: { cover: 0.8, opacity: 1 },
   stars: 0.1,
   moon: { colour: '#c0d0e0', brightness: 0.2 },
+  sun: { colour: '#d0e0f0', brightness: 0.9, glowColour: '#e0f0ff', glow: 0.7 },
 };
 
 const look = (dome: typeof NIGHT_DOME) => ({
@@ -61,13 +63,19 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
   domeShape: {
     horizonBand: [0.02, 0.1],
     glowBand: [0.1, 0.5],
-    floorBand: [0.1, 0.4],
+    physicalBand: [0.1, 0.4],
     starField: { density: 0.02, size: 0.2, twinkle: 0.3 },
     moon: {
       disc: [0.999, 0.9995],
       discGain: 4,
       tightHalo: { power: 300, gain: 0.3 },
       wideHalo: { power: 10, gain: 0.05 },
+    },
+    sun: {
+      disc: [0.9995, 0.9998],
+      discGain: 3,
+      tightHalo: { power: 500, gain: 0.5 },
+      wideHalo: { power: 20, gain: 0.4 },
     },
     cloudLight: { light: 0.7, ambient: 0.3, facing: 0.5 },
     cloudShape: { coverGain: 1, edgeSoftness: 0.25, horizonFade: [0.03, 0.12] },

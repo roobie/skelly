@@ -71,6 +71,17 @@ const DomeLookSchema = strictObject({
   stars: UnitFraction,
   /** The moon, which the dome draws opposite the sun. */
   moon: strictObject({ colour: SkyColour, brightness: FiniteNonNegative }),
+  /** The sun, painted over the sky whatever the physical sky's weight. */
+  sun: strictObject({
+    /** The disc and the air right round it. */
+    colour: SkyColour,
+    /** Scales the disc. */
+    brightness: FiniteNonNegative,
+    /** The air further out. */
+    glowColour: SkyColour,
+    /** Scales the halos, so a low sun can be wrapped in haze and a high one left clean. */
+    glow: FiniteNonNegative,
+  }),
 });
 
 /** The two edges, low to high, between which a smoothstep eases; reversed edges are undefined in GLSL. */
@@ -84,14 +95,23 @@ const FinitePositive = pipe(Positive, finite('must be finite'));
 /** A lobe of light round a direction: `cos(angle) ** power * gain`. */
 const Lobe = strictObject({ power: FinitePositive, gain: FiniteNonNegative });
 
-/** The dome's shape that does not change over the day: how its gradient, stars, moon and cloud light are built from the looks. */
+/** A body drawn on the dome: a disc with a tight halo and a wide one. */
+const BodyShapeSchema = strictObject({
+  /** The cosines of the angle from the body's centre between which the disc eases in; the body's size. */
+  disc: Band,
+  discGain: FiniteNonNegative,
+  tightHalo: Lobe,
+  wideHalo: Lobe,
+});
+
+/** The dome's shape that does not change over the day: how its gradient, stars, bodies and cloud light are built from the looks. */
 const DomeShapeSchema = strictObject({
   /** Where the look's fog colour eases into the horizon glow, as the sine of the elevation. */
   horizonBand: Band,
   /** Where the horizon glow eases into the zenith, as the sine of the elevation. */
   glowBand: Band,
-  /** The sun heights between which the physical sky is lifted to the keyed gradient: fully below the first, not at all above the second. */
-  floorBand: Band,
+  /** The sun heights between which the physical sky comes in over the keyed gradient: none below the first, all of it above the second. */
+  physicalBand: Band,
   starField: strictObject({
     /** The fraction of the field's cells that hold a star. */
     density: UnitFraction,
@@ -100,14 +120,8 @@ const DomeShapeSchema = strictObject({
     /** How far a star's brightness dips below full: 0 is steady. */
     twinkle: UnitFraction,
   }),
-  moon: strictObject({
-    /** The cosines of the angle from the moon's centre between which the disc eases in; the moon's size. */
-    disc: Band,
-    discGain: FiniteNonNegative,
-    /** The halo is a tight lobe and a wide one. */
-    tightHalo: Lobe,
-    wideHalo: Lobe,
-  }),
+  moon: BodyShapeSchema,
+  sun: BodyShapeSchema,
   cloudLight: strictObject({
     /** How much of the main light's colour a cloud takes. */
     light: FiniteNonNegative,
