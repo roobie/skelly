@@ -25,12 +25,18 @@ export const registerLayoutVehicles = (
   }
 };
 
-/** Each parked vehicle's whole envelope in blocks, as a sky field box, so it shades wherever the layout parks it. */
+/**
+ * Each parked vehicle's whole envelope in blocks, as a sky field box, so it shades wherever the layout parks it. A
+ * vehicle with no parts blocks nothing and gets no box.
+ */
 export const layoutVehicleSkyBoxes = (registry: Registry, site: string, blockSize: number): SkyBounds[] => {
   const inventory = new Inventory(registry);
   registerLayoutVehicles(inventory, registry, site, blockSize);
-  return [...inventory.vehicles.records].map(([vehicleId, vehicle]) => {
+  return [...inventory.vehicles.records].flatMap(([vehicleId, vehicle]) => {
     const boxes = projectVehicleParts(registry, vehicleId, vehicle, blockSize).flatMap((part) => part.boxes);
+    if (boxes.length === 0) {
+      return [];
+    }
     const axes = [0, 1, 2] as const;
     return {
       min: axes.map((axis) => Math.floor(Math.min(...boxes.map((box) => box.min[axis])) / blockSize)) as Vec3,

@@ -159,6 +159,25 @@ describe('parked vehicles', () => {
     expect(covered.every(Boolean)).toBe(true);
   });
 
+  it('gives a layout vehicle with no parts no field', () => {
+    const hatchback = registry.vehicleBlueprints.get('hatchback')!;
+    const site = registry.layouts.keys().next().value!;
+    const stripped = {
+      ...registry,
+      vehicleBlueprints: new Map([['stripped', { ...hatchback, id: 'stripped', fittings: [] }]]),
+      layouts: new Map([
+        [
+          site,
+          {
+            ...registry.layouts.get(site)!,
+            vehicles: [{ placementKey: 'stripped', blueprint: 'stripped', position: [0, 0, 0], facing: 'n' }],
+          },
+        ],
+      ]),
+    } as typeof registry;
+    expect(layoutVehicleSkyBoxes(stripped, site, scale.blockSize)).toEqual([]);
+  });
+
   it('relights the old spot once the vehicle moves, rebuilding only the fields it reaches', () => {
     const { sky, inventory, light, id } = parked();
     const spot = underneath(light);
