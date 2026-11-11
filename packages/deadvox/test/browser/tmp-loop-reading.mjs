@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import process from 'node:process';
 
 const runs = Number(process.argv[2] ?? 20);
 const say = (text) => process.stdout.write(`${text}\n`);
