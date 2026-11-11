@@ -175,6 +175,22 @@ describe('authored supply projection', () => {
     expect(runs[0]).toEqual(runs[1]);
   });
 
+  it('arrival publishes only its column, and a column a live pile refuses publishes nothing', () => {
+    const { registry, inventory, consumed, owner, source } = fixture();
+    const filler = 'supply_fixture_filler';
+    registry.items.set(filler, { ...registry.items.get(loot.type)!, id: filler, size: [PILE_GRID.w, PILE_GRID.h] });
+    expect(inventory.add(inventory.create(filler), { kind: 'pile', pos: ground.destination })).toBe(true);
+    const before = owners(inventory);
+    // Column 1 furnishes its shelf before its ground loot meets the full pile.
+    expect(() => owner.arrive(1, 0, source)).toThrow('does not fit in its pile');
+    expect(owners(inventory)).toEqual(before);
+    expect([...consumed]).toEqual([]);
+    owner.arrive(0, 0, source);
+    expect(inventory.entities.at(...shelf.pos)).toBeDefined();
+    expect(inventory.entities.at(...second.pos)).toBeUndefined();
+    expect([...consumed]).toEqual(['0,0']);
+  });
+
   it('rebuilds closure in source order and resolves stable entity and item handles to eventual owners', () => {
     const { inventory, owner, source } = fixture();
     const existing = inventory.furnish({ ...shelf, pos: [-4, 2, 3] }, [loot])!;

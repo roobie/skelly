@@ -6,7 +6,6 @@
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { canonicalJson } from '../core/canonicalJson.ts';
-import { dominantSide } from '../core/character.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
@@ -113,7 +112,7 @@ export class Survival {
     this.hooks = hooks;
     const text = actionText(inventory.registry);
     this.text = text;
-    this.itemActionSelection = new ItemActionSelection(text.itemActions.openCan);
+    this.itemActionSelection = new ItemActionSelection();
     this.queue.registerAction('survival.consume', (params) => {
       const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
       if (!item || this.handOf(item) === undefined) {
@@ -289,25 +288,13 @@ export class Survival {
     return this.itemActionSelection.forItem(item, this.availableItemActions(item));
   }
 
-  cycleItemAction(item: Item, direction: number): boolean {
-    return this.itemActionSelection.step(item, this.availableItemActions(item), direction);
-  }
-
-  wieldedItemActionHint(): string | undefined {
-    const item = this.inventory.hands[dominantSide(this.inventory.character)];
-    if (!item) {
-      return undefined;
-    }
-    const actions = this.availableItemActions(item);
-    if (actions.length === 0 || (actions.length < 2 && (actions[0]!.opening || actions[0]!.id === 'own'))) {
-      return undefined;
-    }
-    const selectedId = this.selectedItemAction(item)?.id;
-    const { name } = defOf(this.inventory.registry, item.type);
-    return [
-      fillText(this.text.survival.actionListHeading, { item: name }),
-      ...actions.map((action) => `${action.id === selectedId ? '›' : ' '} ${action.label}`),
-    ].join('\n');
+  /**
+   * Runs `use` with the action `id` chosen for this one use of `item`. An action no longer offered refuses, so a
+   * choice whose target went away never falls back to another action.
+   */
+  withItemAction(item: Item, id: string, use: (action: ItemAction) => string | undefined): string | undefined {
+    const action = this.availableItemActions(item).find((candidate) => candidate.id === id);
+    return action ? this.itemActionSelection.choose(item, action, () => use(action)) : this.text.common.gone;
   }
 
   private applyItemAction(item: Item, action: ItemAction | undefined): string | undefined {

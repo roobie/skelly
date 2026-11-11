@@ -11,6 +11,7 @@ import {
   Box3,
   type BufferGeometry,
   Group,
+  type LoadingManager,
   type Material,
   MathUtils,
   Matrix4,
@@ -22,6 +23,7 @@ import {
 import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
+import { asParseFailure, type Cancel, type FetchRetry, retrying } from './fetchRetry.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
 import { fittedStateGroup } from './itemStateLook.ts';
@@ -31,6 +33,12 @@ import { applyModelMaterials } from './modelMaterials.ts';
  * A fixture's model URLs keyed by the model's `file`, or the product's bundled ones (`PresentationAssets`, `models`).
  */
 export type ModelFiles = Readonly<Record<string, string>> | { readonly packAssets: PackAssetFiles };
+
+/** The graphics tunables that shape how models are fetched (`packages/engine/src/core/schema/graphics.ts`). */
+export interface ModelLoading {
+  readonly modelLoadConcurrency: number;
+  readonly modelFetchRetry: FetchRetry;
+}
 
 export interface GroundModelPart {
   readonly geometry: BufferGeometry;
@@ -246,6 +254,20 @@ export const instantiateSkin = (scene: Object3D) => {
   };
 };
 
+/** A loader whose parse failures are tagged, so a retry of the fetch can tell them from transport failures. */
+const parseTaggingLoader = (manager?: LoadingManager): GLTFLoader => {
+  const loader = new GLTFLoader(manager);
+  const parse = loader.parse.bind(loader);
+  loader.parse = (data, path, onLoad, onError) => {
+    try {
+      parse(data, path, onLoad, (error) => onError?.(asParseFailure(error) as ErrorEvent));
+    } catch (error) {
+      throw asParseFailure(error); // GLTFLoader's load forwards a synchronous throw to its error callback.
+    }
+  };
+  return loader;
+};
+
 export class ModelLibrary {
   /** Goes up each time a model loads, so what's drawn can catch up. */
   version = 0;
@@ -255,11 +277,12 @@ export class ModelLibrary {
   private readonly composedGround = new Map<string, Object3D>();
   private readonly pending: [ModelDef, string][];
   private next = 0;
+  private readonly cancels = new Set<Cancel>();
   private readonly loadNext: () => void;
 
   /** `report` hears about models that can't be drawn; it's never called during construction. */
-  constructor(registry: Registry, report: (message: string) => void, files: ModelFiles, loadConcurrency: number) {
-    const loader = new GLTFLoader();
+  constructor(registry: Registry, report: (message: string) => void, files: ModelFiles, loading: ModelLoading) {
+    const loader = parseTaggingLoader();
     const packAssets = typeof files.packAssets === 'object' ? files.packAssets : undefined;
     this.pending = [...registry.models.values()].flatMap((def) => {
       const url = packAssets
@@ -271,6 +294,14 @@ export class ModelLibrary {
       }
       return [[def, url] as [ModelDef, string]];
     });
+    const load = retrying<GLTF>(
+      (target, onLoad, onError) => loader.load(target, onLoad, undefined, onError),
+      loading.modelFetchRetry,
+      (seconds, then) => {
+        const timer = setTimeout(then, seconds * 1000);
+        return () => clearTimeout(timer);
+      },
+    );
     this.loadNext = (): void => {
       const entry = this.pending[this.next];
       this.next += 1;
@@ -279,7 +310,7 @@ export class ModelLibrary {
       }
       const [def, url] = entry;
       const finish = () => this.loadNext();
-      loader.load(
+      const cancel = load(
         url,
         (gltf) => {
           try {
@@ -306,16 +337,24 @@ export class ModelLibrary {
             finish();
           }
         },
-        undefined,
         (error) => {
           report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`);
           finish();
         },
       );
+      this.cancels.add(cancel);
     };
-    for (let slot = 0; slot < loadConcurrency; slot += 1) {
+    for (let slot = 0; slot < loading.modelLoadConcurrency; slot += 1) {
       this.loadNext();
     }
+  }
+
+  /** Stops loading: pending retries are dropped, and late loader callbacks neither publish, report nor load on. */
+  dispose(): void {
+    for (const cancel of this.cancels) {
+      cancel();
+    }
+    this.cancels.clear();
   }
 
   private request(id: string): void {

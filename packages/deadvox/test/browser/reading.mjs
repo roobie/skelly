@@ -8,6 +8,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { actionRingShown } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
@@ -1139,11 +1140,11 @@ try {
     });
     await walk('movement.back', signFixture.x, false);
     await aim(signFixture.type);
-    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action list.
+    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action menu.
     const readSign = async () => {
       await pressAction(page, 'world.interact');
       await page.locator('#reading').waitFor({ state: 'visible' });
-      assert.equal(await page.locator('#item-action-list').isVisible(), false);
+      assert.equal(await actionRingShown(page), false);
     };
     await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);

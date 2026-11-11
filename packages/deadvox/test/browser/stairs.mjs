@@ -698,14 +698,17 @@ try {
           throw new Error('Could not place fixture flashlight in hand');
         }
       });
+      // A tap: the flashlight has a choice of actions, so its use runs on release.
       const mouse5 = () =>
-        page.evaluate(() =>
-          document
-            .querySelector('#view canvas')
-            .dispatchEvent(
-              new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
-            ),
-        );
+        page.evaluate(() => {
+          const canvas = document.querySelector('#view canvas');
+          canvas.dispatchEvent(
+            new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
+          );
+          canvas.dispatchEvent(
+            new PointerEvent('pointerup', { button: 4, buttons: 0, pointerType: 'mouse', bubbles: true }),
+          );
+        });
       await mouse5();
       await page.waitForFunction(() => {
         const { session, engine } = globalThis.stairsWitness;

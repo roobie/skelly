@@ -17,8 +17,21 @@ export const skyDependencyBounds = (bounds: SkyBounds, top: number): SkyBounds =
   ...growSky(bounds, SKY_HALO),
   max: [bounds.max[0] + SKY_HALO, top + 1, bounds.max[2] + SKY_HALO],
 });
-const overlapsSky = (a: SkyBounds, b: SkyBounds): boolean =>
+export const overlapsSky = (a: SkyBounds, b: SkyBounds): boolean =>
   a.min.every((value, axis) => value < b.max[axis]! && a.max[axis]! > b.min[axis]!);
+/** The chunk coordinates, inclusive, whose blocks a capture of `dependency` reads. */
+export const skyChunkRange = (dependency: SkyBounds, { bottom, top }: { bottom: number; top: number }) => ({
+  min: [
+    Math.floor(dependency.min[0] / CHUNK),
+    Math.floor(Math.max(bottom, dependency.min[1]) / CHUNK),
+    Math.floor(dependency.min[2] / CHUNK),
+  ] as Vec3,
+  max: [
+    Math.floor((dependency.max[0] - 1) / CHUNK),
+    Math.floor(top / CHUNK),
+    Math.floor((dependency.max[2] - 1) / CHUNK),
+  ] as Vec3,
+});
 export interface SkyChunk {
   cx: number;
   cy: number;
@@ -65,9 +78,13 @@ export function* captureSky(
   const opacity = Uint8Array.from(registry.blocks, (definition, id) =>
     Number(id !== 0 && Boolean(definition?.opaque ?? definition?.solid)),
   );
-  for (let cz = Math.floor(dependency.min[2] / CHUNK); cz <= Math.floor((dependency.max[2] - 1) / CHUNK); cz++) {
-    for (let cx = Math.floor(dependency.min[0] / CHUNK); cx <= Math.floor((dependency.max[0] - 1) / CHUNK); cx++) {
-      for (let cy = Math.floor(Math.max(bottom, dependency.min[1]) / CHUNK); cy <= Math.floor(top / CHUNK); cy++) {
+  const {
+    min: [x0, y0, z0],
+    max: [x1, y1, z1],
+  } = skyChunkRange(dependency, { bottom, top });
+  for (let cz = z0; cz <= z1; cz++) {
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cy = y0; cy <= y1; cy++) {
         const chunk = world.getChunk(cx, cy, cz);
         versions.push({ coords: [cx, cy, cz], chunk, revision: chunk?.revision });
         chunks.push({ cx, cy, cz, uniform: chunk?.uniformId, raw: chunk?.raw()?.slice() });

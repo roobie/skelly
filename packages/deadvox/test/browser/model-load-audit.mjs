@@ -27,7 +27,7 @@ export const modelLoadAuditPlugin = {
 };
 
 export const instrumentModelLoads = (code) => {
-  const marker = '    const loader = new GLTFLoader();';
+  const marker = '    const loader = parseTaggingLoader();';
   assert(code.includes(marker), 'model loader audit admission point exists');
   return `import { LoadingManager as AuditLoadingManager } from 'three';\n${code}`.replace(
     marker,
@@ -37,7 +37,7 @@ export const instrumentModelLoads = (code) => {
     manager.onError = (url) => globalThis.recordModelLoadAudit?.({
       event: 'asset-error', url, startedAt: started.get(url),
     });
-    const loader = new GLTFLoader(manager);
+    const loader = parseTaggingLoader(manager);
     loader.register((parser) => {
       const load = parser.textureLoader.load;
       parser.textureLoader.load = function(url, onLoad, onProgress, onError) {

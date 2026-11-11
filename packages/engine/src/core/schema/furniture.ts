@@ -1,6 +1,7 @@
 import {
   array,
   check,
+  finite,
   literal,
   ltValue,
   maxValue,
@@ -36,6 +37,8 @@ import {
   SimSeconds,
   Size,
 } from './primitives.ts';
+
+const FiniteBlocks = pipe(number(), finite());
 
 // ---- furniture ----
 
@@ -230,7 +233,15 @@ export const FurnitureSchema = pipe(
           check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
         ),
         enabled: vBoolean(),
-        light: optional(strictObject({ color: Color, intensity: Positive, radius: Positive })),
+        light: optional(
+          strictObject({
+            color: Color,
+            intensity: Positive,
+            radius: Positive,
+            /** Blocks from the centre of the piece's origin cell, in its own axes; absent, it shines from that centre. */
+            offset: optional(tuple([FiniteBlocks, FiniteBlocks, FiniteBlocks])),
+          }),
+        ),
       }),
     ),
     charger: optional(

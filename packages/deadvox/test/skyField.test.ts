@@ -16,7 +16,7 @@ import {
   type Vec3,
   World,
 } from '@skelly/engine/world';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';
@@ -56,6 +56,40 @@ it('darkens and relights a room as a door closes and opens over its only roof ho
   expect(sky.visibilityAt(inside)).toBe(0);
   fixture.entities.setOpen(door, true);
   expect(sky.visibilityAt(inside)).toBeGreaterThan(LIT);
+});
+
+it('drops a built field when a block or a standing piece changes at the edge of its dependency box', () => {
+  const fixture = skyWorldFixture();
+  const sky = fields(fixture);
+  const edge = sky.fields[0]!.dependency.max[0] - 1;
+  sky.visibilityAt(inside);
+  fixture.world.setBlock(edge, 1, 8, fixture.wall);
+  expect(sky.current(0)).toBeUndefined();
+  sky.visibilityAt(inside);
+  expect(fixture.entities.add({ type: 'fixture_door', pos: [edge, 2, 8], size: [1, 1, 1], facing: 'n' })).toBeDefined();
+  expect(sky.current(0)).toBeUndefined();
+});
+
+it('keeps a built field without reading the world after changes outside its dependency box', () => {
+  const fixture = skyWorldFixture();
+  const sky = fields(fixture);
+  const { dependency } = sky.fields[0]!;
+  sky.visibilityAt(inside);
+  const built = sky.current(0);
+  expect(built?.complete).toBe(true);
+  const unreadChunkX = (Math.floor((dependency.max[0] - 1) / CHUNK) + 1) * CHUNK;
+  fixture.world.setBlock(unreadChunkX, 1, 8, fixture.wall);
+  expect(fixture.world.getBlock(unreadChunkX, 1, 8)).toBe(fixture.wall);
+  const beside = {
+    type: 'fixture_door',
+    pos: [dependency.max[0], 2, 8] as Vec3,
+    size: [1, 1, 1] as Vec3,
+    facing: 'n' as const,
+  };
+  expect(fixture.entities.add(beside)).toBeDefined();
+  const reads = vi.spyOn(fixture.world, 'getChunk');
+  expect(sky.current(0)).toBe(built);
+  expect(reads).not.toHaveBeenCalled();
 });
 
 it('fails open outside every field, even inside a sealed room', () => {

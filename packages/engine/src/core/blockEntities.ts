@@ -358,9 +358,26 @@ export class BlockEntities {
   }
 
   snapshotState(foodAt?: number): Readonly<BlockEntitiesState> {
+    return this.stateOf([...this.byOrigin.values()], foodAt);
+  }
+
+  /** The pieces claiming these origins, as a state that restores on its own with the live allocator. */
+  snapshotAt(origins: readonly Readonly<Vec3>[]): Readonly<BlockEntitiesState> {
+    const found = new Set<BlockEntity>();
+    for (const origin of origins) {
+      const entity = this.byOrigin.get(key(...origin));
+      if (entity) {
+        found.add(entity);
+      }
+    }
+    return this.stateOf([...found]);
+  }
+
+  private stateOf(entities: readonly BlockEntity[], foodAt?: number): Readonly<BlockEntitiesState> {
+    const reserved = entities.map(({ uid }) => uid).filter((uid) => this.reservedUids.has(uid));
     return freezeSnapshot({
       nextUid: this.nextUid,
-      entities: [...this.byOrigin.values()].map((entity) => ({
+      entities: entities.map((entity) => ({
         uid: entity.uid,
         type: entity.type,
         origin: [...entity.origin],
@@ -379,7 +396,7 @@ export class BlockEntities {
           ? {}
           : { pockets: entity.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
       })),
-      ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
+      ...(reserved.length === 0 ? {} : { reserved: reserved.sort((a, b) => a - b) }),
     });
   }
 

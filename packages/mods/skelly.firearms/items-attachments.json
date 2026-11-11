@@ -146,7 +146,7 @@
           }
         },
         "color": "#fff1d8",
-        "intensity": 5,
+        "intensity": 4,
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.25,

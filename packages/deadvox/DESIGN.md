@@ -482,8 +482,12 @@ must not become saved edits merely because an admission check reached them. See
 Authored supply must have one truth before and after arrival. A speculative check
 cannot allocate live items, and an emptied source must not regenerate its original
 stock. Owner-controlled publication preserves existing item aliases rather than
-replacing the live inventory with a private copy. See `packages/engine/src/core/columnSupply.ts`,
-`createColumnSupply`; `packages/engine/src/game/session.ts`, `rolledColumns`; and
+replacing the live inventory with a private copy. Arrival checks a column's supply
+before publishing it, so a supply that fails publishes nothing, and checks it against
+only the owners that supply can meet, so a far view's many arrivals stay cheap however
+much of the world is explored. See `packages/engine/src/core/columnSupply.ts`,
+`createColumnSupply`; `packages/engine/src/core/inventory.ts`, `Inventory.projectAt`;
+`packages/engine/src/game/session.ts`, `rolledColumns`; and
 `packages/engine/src/core/saveState.ts`, `SaveSnapshot`.
 
 Voluntary removal protects what relies on a piece rather than stranding or losing it.
@@ -623,18 +627,25 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. A tap-and-hold opens
-  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
-  deliberate hold. Readability does not fasten a board; its ordinary use stays
-  on the tap. The list belongs to movable kinds: building parts keep direct use
-  because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the list and explains why
-  it cannot move, so fitting does not silently change that kind's controls.
-  An open list is a single confirmation, not a persistent interaction mode:
-  returning from a pause or another target must not unexpectedly act instead of
-  offering choices. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/furnitureActions.ts`,
-  `FurnitureActionSelection`.
+  search, rest, read), so the common action stays one tap. Holding opens the
+  radial action menu of rarer actions, which move or break the piece and so sit
+  behind a deliberate hold; releasing on an entry confirms it. Repair, taking
+  apart and continuing held work enter through the same menu, so every hold
+  choice reads alike, and their directions are authored before they are offered
+  so their arrival moves no existing entry. Readability does not fasten a board;
+  its ordinary use stays on the tap. The menu belongs to movable kinds, even
+  with lift alone: building parts keep direct use because offering impossible
+  moves would obstruct their ordinary interaction. A fitted placement of a
+  movable kind still offers the menu and explains why it cannot move, so
+  fitting does not silently change that kind's controls. An open menu is a
+  single confirmation, not a persistent interaction mode: returning from a
+  pause or another target must not unexpectedly act instead of offering
+  choices. Each action keeps one authored direction, so muscle memory survives
+  a piece gaining or losing actions. Nothing is chosen until the pull leaves the
+  dead zone within an entry's selection angle, so a release at the centre or a
+  pull away from the only entry does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
+  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
+  `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `packages/engine/src/core/furnitureMove.ts`, `turnCarried`,
@@ -1561,8 +1572,8 @@ See `packages/skelly-assets/models/cans.libsonnet`,
 Sharpening is held-item work rather than a craft-list repair: the prepared
 blade-and-stone pair makes carried equipment matter, and the wheel rewards a
 trip to furniture. Like can opening, a blade's competing action remains a player
-choice so sharpening does not cause a surprise swing. Aimed wheel activation
-uses the held blade. Repair recipes retain the shared content-owned restoration,
+choice so sharpening does not cause a surprise swing. Choosing it in the held
+action menu uses the held blade. Repair recipes retain the shared content-owned restoration,
 skill and work-rate contract; their activation selector keeps held work out of
 the craft list. See `packages/engine/src/game/sharpening.ts`, `Sharpening`,
 `packages/engine/src/game/itemActions.ts`, `ItemActionSelection`, `packages/engine/src/core/schema/recipes.ts`,
@@ -2702,7 +2713,11 @@ renderer only chooses which fields to build early and draws what the cache holds
 caches would let the room a player sees and the room gameplay reads disagree. The
 visibility is derived, so it is not saved: a reload recomputes the same answer from
 restored state. Outside every field the answer is open sky, as `docs/readables.md`,
-"Reading needs light" requires, so missing data never reads as darkness. See
+"Reading needs light" requires, so missing data never reads as darkness. Sky light fades
+out within a fixed halo, so a field depends only on the chunks and blocking furniture inside
+its dependency box, and a change rechecks only the fields whose box it reaches. Every arriving
+column changes the world, so rechecking every field on every change costs frame rate in
+proportion to view radius while the world fills. See
 `packages/engine/src/core/skyField.ts`, `SkyFields`, `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
 
@@ -2713,6 +2728,18 @@ player aims it at what they read; a beam set down points somewhere the rules don
 so it counts for nothing. A lit candle held alone is enough to read by at night. See
 `packages/engine/src/core/illumination.ts`, `illuminationAt`, and `packages/presentation/src/render/lightFalloff.ts`,
 `installNearFieldFalloff`.
+
+A powered fixture's light position has one owner, which the renderer and the rules both read, so a room cannot look
+lit from one place and count as lit from another. A fixture with no authored offset shines from the centre of its origin
+cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such as a ceiling strip or a lamp's shade,
+authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
+`packages/engine/src/core/schema/furniture.ts`, `offset`.
+
+Lights form pools: the near field stays low so brightness falls off across a room instead of flooding it. That fixes
+the cause, so an intensity means something physical rather than compensating for a flat falloff light by light. One
+near-field value serves the renderer and the rules, so what the player sees keeps predicting whether they can read.
+When the near field moves, rescale each light to hold its strength at half its radius, so its reach stays about the
+same. See `packages/mods/skelly.senses/senses.jsonnet`, `nearFieldMetres`.
 
 Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
 transport therefore belongs ahead of reveal on workers; synchronous completion at
@@ -2789,8 +2816,8 @@ rechecks the route that admitted it when it completes. See `packages/engine/src/
 `batterySlotOption` and `batteryOption`, and `packages/presentation/src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen on the wheel
-and then activated, because a swap needs a spare: without one a player could not move
+A held light's battery can be taken out on its own, as an action chosen in the held
+action menu, because a swap needs a spare: without one a player could not move
 a cell to a charger, another light or a pocket. It follows magazine removal: the light
 must be in hand, the battery keeps its charge and goes to the first pocket with room,
 else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
@@ -3783,11 +3810,11 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
-Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
+Holding world interaction opens the action menu on every movable piece, intact or damaged; lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-No Repair entry is offered to players until the #1469 crafting view settles input selection: a one-click repair look before that view would fix the input-choice flow prematurely. The entry returns with that view, together with the turnable 3D view of the target beside its requirements, so the player can inspect the piece they are committing supplies to. Keyboard arrow aiming is not a second target-selection path: the action-list choice already names the piece.
+Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Neither entry is offered to players until the #1469 crafting view settles: the world-work view is laid out together with that view, and a review shipped alone before then would fix the view's shape (target, rows, time, blockers, Start) before the crafting layout it must sit beside, leaving a second surface to replace or to let drift. The engine command for taking a piece apart does not wait, because it carries no view. The entries return with that view, together with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
 
 ## UI principles
 

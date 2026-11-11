@@ -73,7 +73,7 @@ const library = async (ids: readonly string[]): Promise<ModelLibrary> => {
     { ...content, models: new Map(defs.map((def) => [def.id, def])) },
     (message) => errors.push(message),
     Object.fromEntries(defs.map(({ file }) => [file, file])),
-    defs.length,
+    { modelLoadConcurrency: defs.length, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
   );
   spy.mockRestore();
   await Promise.all(loads);

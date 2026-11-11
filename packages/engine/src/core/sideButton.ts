@@ -4,8 +4,8 @@ export interface ButtonEventLike {
   readonly buttons: number;
 }
 
-const FORWARD_BUTTON = 4;
-const FORWARD_MASK = 16;
+export const FORWARD_BUTTON = 4;
+export const FORWARD_MASK = 16;
 
 /**
  * Mouse 5 (side forward). `button === 4` is the standard; the `buttons` bit (16) is a fallback for

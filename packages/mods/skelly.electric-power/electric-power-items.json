@@ -64,7 +64,7 @@
           }
         },
         "color": "#fff1d8",
-        "intensity": 5,
+        "intensity": 4,
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.25,
@@ -122,7 +122,7 @@
           }
         },
         "color": "#fff1d8",
-        "intensity": 4.5,
+        "intensity": 3.2999999999999998,
         "power": {
           "battery": "aa_battery",
           "chargePerGameHour": 0.20000000000000001,
@@ -157,7 +157,7 @@
       "id": "night_vision_goggles",
       "light": {
         "color": "#7dff86",
-        "intensity": 0.80000000000000004,
+        "intensity": 0.59999999999999998,
         "nightVision": {
           "edge": {
             "darkening": 0.92000000000000004,

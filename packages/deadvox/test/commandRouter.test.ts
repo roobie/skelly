@@ -108,6 +108,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
     throwStance: unusedGesture,
     wornLight: unusedGesture,
     interact: unusedGesture,
+    offHandUse: { keyDown: () => false, keyUp: unused },
     quickbar: unusedGesture,
     cancelHeld: unused,
   },

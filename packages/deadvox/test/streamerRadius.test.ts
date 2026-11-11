@@ -149,3 +149,16 @@ it.each([0, 1, 2])('keeps the sky margin resident across a border step with %i e
   expect(new Set(streamer.generatedColumns().map(([cx, cz]) => `${cx},${cz}`))).toEqual(loaded);
   expect(new Set(drawn.keys())).toEqual(shown);
 });
+
+it('streams the new columns when the player crosses a column border after an idle stretch', () => {
+  const { streamer, drawn, settle } = liveStreamer();
+  settle(0, 0);
+  const arrived: string[] = [];
+  streamer.onColumn = (cx, cz) => arrived.push(`${cx},${cz}`);
+  settle(0, 0);
+  expect(arrived).toEqual([]);
+  settle(5, 0);
+  expect(arrived.length).toBeGreaterThan(0);
+  expect(streamer.unmeshedColumns(5.5 * CHUNK, 0.5 * CHUNK, RADIUS)).toBe(0);
+  expect(drawn.has('5,0,0')).toBe(true);
+});
