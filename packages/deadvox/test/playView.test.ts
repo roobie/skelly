@@ -61,6 +61,11 @@ vi.mock('@skelly/presentation/internal/render/models.ts', async (importOriginal)
   // biome-ignore lint/style/useNamingConvention: the mock replaces the class export by its name.
   return { ...actual, ModelLibrary: EmptyPackLibrary };
 });
+// The fake renderer has no GPU to bake the sky's reflection on, so the play view gets an environment that never bakes.
+vi.mock('@skelly/presentation/internal/render/skyEnvironment.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@skelly/presentation/internal/render/skyEnvironment.ts')>()),
+  createSkyEnvironment: () => ({ refresh: () => false, light: () => undefined, dispose: () => undefined }),
+}));
 
 const meshFixture = () => ({
   setLinearColors: vi.fn(),
