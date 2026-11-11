@@ -1140,8 +1140,8 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
 // range blacks the frame instead of glowing. So the test-owned look, drawn only inside this page, is a clear keyed
 // sky with no painted glow and a disc far past the bloom threshold, and the sky beside it reads the same either way.
 //
-// Bloom cannot light the sky, so the painted glow is all the glow the sun has; on the ordinary look it brightens
-// that same pixel.
+// Bloom cannot light the sky, so the painted glow is all the glow the sun has. Every view is of that look, with only
+// the glow varied, so tuning a shipped look cannot fail the check.
 const BRIGHT_SUN = 100;
 const BESIDE_PIXELS = 24;
 const skySunGlowCheck = async (lake, level, lakeErrors) => {
@@ -1172,13 +1172,11 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
       };
       const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: sunBrightness };
       engine.mood.setBloom(false);
-      const disc = await look();
-      const unglowed = await lookWith({ uSunGlow: 0 });
-      const glowing = await lookWith({ uSunGlow: 1 });
       const plain = await lookWith(brightSun);
+      const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
       engine.mood.setBloom(true);
       const bloom = await lookWith(brightSun);
-      return { disc, unglowed, glowing, plain, bloom, bloomRan: engine.mood.bloomPass.enabled };
+      return { plain, glowing, bloom, bloomRan: engine.mood.bloomPass.enabled };
     },
     { surface: level, sunBrightness: BRIGHT_SUN },
   );
@@ -1187,7 +1185,7 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
   const visiblyBrighter = (lit, dim) => brightness(lit) > brightness(dim) + 3 * horizonTolerance;
   assert.ok(views.bloomRan, 'the bloom pass runs for the view that compares the sky with bloom on');
   assert.ok(
-    visiblyBrighter(views.disc.colour, views.disc.beside),
+    visiblyBrighter(views.plain.colour, views.plain.beside),
     'the sun disc is in frame, brighter than the sky beside it',
   );
   const besidePeak = Math.max(...Object.values(views.plain.beside));
@@ -1197,7 +1195,7 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
     'the sky beside a very bright sun gains no glow from bloom',
   );
   assert.ok(
-    visiblyBrighter(views.glowing.beside, views.unglowed.beside),
+    visiblyBrighter(views.glowing.beside, views.plain.beside),
     'the painted glow brightens the sky beside the sun',
   );
   assert.deepEqual(lakeErrors, []);
