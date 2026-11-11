@@ -915,8 +915,8 @@ try {
     const reopened = await readProgress();
     assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
     assert.ok(reopened.value >= stoppedOnClose.elapsed);
-    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk's length
-    // depends on when the stage releases the key, and the walk to the sign must start on the lane.
+    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk to the sign
+    // must start on the lane.
     await page.evaluate(() => {
       globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.controls.pitch = 0;
@@ -925,23 +925,12 @@ try {
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
     }));
-    // The key is released inside the page by the poll that ends the wait, so the walk's length is simulated time
-    // and not the wall-clock round trip of a release from Node; the midnight check below depends on where it ends.
-    const release = await holdInputAction(page, 'movement.forward');
-    try {
-      await page.waitForFunction(() => document.querySelector('#reading').hidden);
-      await waitForSimulation(
-        page,
-        (until) => {
-          const { session } = globalThis.readingWitness;
-          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
-        },
-        beforeMove.time + 0.2,
-        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record, stop: release },
-      );
-    } finally {
-      await release();
-    }
+    // The midnight check depends on where this walk ends, so it stops on a destination in the page, never on a
+    // Node-side release: the key goes up in the poll that sees the destination reached, so the stop is one frame
+    // past it whatever the driver latency. The destination is a block from the start, far enough that the poll is
+    // armed before the player gets there. Reading closes by the walk and is checked after the stop.
+    await walk('movement.forward', beforeMove.position[0] + 1, true);
+    await page.waitForFunction(() => document.querySelector('#reading').hidden);
     const afterMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
@@ -963,6 +952,8 @@ try {
         session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seekSeconds));
         saveController?.rearmAutosaveAfterTimeSeek?.();
       }
+      // The light is read where `readingLight` samples it, at the reader's eye; the feet only show the route.
+      const eye = session.playerEye();
       return {
         refusal: session.readingLight(),
         open: reading.isOpen,
@@ -971,9 +962,10 @@ try {
         diagnostics: {
           time: session.sim.time,
           hour: (session.sim.calendar / 3600) % 24,
+          eye,
           feet: [...body.pos],
-          illumination: session.illuminationAt(body.pos),
-          skyVisibility: session.skyFields.visibilityAt(body.pos),
+          illumination: session.illuminationAt(eye),
+          skyVisibility: session.skyFields.visibilityAt(eye),
           fixtureLights: session.power?.lights().length ?? 0,
         },
       };
