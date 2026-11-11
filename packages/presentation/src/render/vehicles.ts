@@ -106,14 +106,22 @@ export class VehicleMeshes {
       this.drop(previous);
     }
     this.group.add(group);
-    this.rendered.set(id, { signature, group, owned: this.anchorToSky(group, light) });
+    this.rendered.set(id, {
+      signature,
+      group,
+      owned: this.anchorToSky(group, (x, y, z) => light.isSolidFor(id, x, y, z)),
+    });
   }
 
   /**
-   * Moves each part's sky sample out of the light-blocking cells the vehicles add to the sky field (see
-   * `addSkyCellAnchors`), so a parked car shades the ground under it without darkening its own body.
+   * Moves each part's sky sample out of the light-blocking cells its own vehicle adds to the sky field (see
+   * `addSkyCellAnchors`), so a parked car shades the ground under it without darkening its own body. Only its own
+   * cells count, as they alone are in the render signature; a neighbour shades it through the field instead.
    */
-  private anchorToSky(group: Group, light: VehicleOccupancy): (BufferGeometry | Material)[] {
+  private anchorToSky(
+    group: Group,
+    blocked: (x: number, y: number, z: number) => boolean,
+  ): (BufferGeometry | Material)[] {
     group.updateWorldMatrix(true, true);
     const meshes: Mesh[] = [];
     group.traverse((object) => {
@@ -134,7 +142,7 @@ export class VehicleMeshes {
       const geometry = mesh.geometry.clone();
       addSkyCellAnchors(geometry, {
         toWorld: mesh.matrixWorld,
-        blocked: (x, y, z) => light.isSolid(x, y, z),
+        blocked,
         blockSize: this.blockSize,
       });
       mesh.geometry = geometry;

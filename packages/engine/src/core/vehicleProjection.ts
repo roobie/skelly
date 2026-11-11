@@ -234,6 +234,12 @@ export class VehicleOccupancy {
     return owners !== undefined && [...owners].some((owner) => owner !== vehicleId);
   }
 
+  /** Solid because of this vehicle, whatever else shares the cell. */
+  isSolidFor(vehicleId: number, x: number, y: number, z: number): boolean {
+    this.rebuild();
+    return this.cells.get(`${x},${y},${z}`)?.has(vehicleId) ?? false;
+  }
+
   private rebuild(): void {
     if (this.seenVersion === this.vehicles.version) {
       return;

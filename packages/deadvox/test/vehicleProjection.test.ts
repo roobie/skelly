@@ -2,6 +2,7 @@ import { placeFitting } from '@skelly/engine/internal/core/vehicleBlueprint.ts';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { applyItemStateLook } from '@skelly/presentation/internal/render/itemStateLook.ts';
 import { applyModelMaterials } from '@skelly/presentation/internal/render/modelMaterials.ts';
+import { SKY_ANCHOR_ATTRIBUTE } from '@skelly/presentation/internal/render/skyAnchor.ts';
 import { VehicleMeshes } from '@skelly/presentation/internal/render/vehicles.ts';
 import { MATERIALS, type MaterialDef } from '@skelly/thing-core/materials';
 import { BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, SRGBColorSpace } from 'three';
@@ -235,5 +236,29 @@ describe('production vehicle projection', () => {
 
     expect(rendered.groupFor(first)).not.toBeUndefined();
     expect(rendered.groupFor(second)).toBe(unchanged);
+  });
+
+  it("anchors a vehicle's sky samples against its own cells, which alone key its render", () => {
+    const anchorsOf = (neighbour: boolean) => {
+      const { inventory } = createRuntime();
+      if (neighbour) {
+        inventory.registerVehicle({ ...spec('projection.neighbour'), origin: [13, 7, -7] });
+      }
+      const id = inventory.registerVehicle(spec('projection.anchored'));
+      const solid = { version: 1, part: () => new Group().add(new Mesh(new BoxGeometry(0.4, 0.4, 0.4))) };
+      const rendered = new VehicleMeshes(registry, solid as never, scale.blockSize);
+      rendered.sync(inventory.vehicles);
+      const anchors: number[] = [];
+      rendered.groupFor(id)!.traverse((object) => {
+        if (object instanceof Mesh) {
+          anchors.push(...(object.geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE).array as Float32Array));
+        }
+      });
+      return anchors;
+    };
+
+    const alone = anchorsOf(false);
+    expect(alone.length).toBeGreaterThan(0);
+    expect(anchorsOf(true)).toEqual(alone);
   });
 });
