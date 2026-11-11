@@ -1702,7 +1702,7 @@ const startPlayWith = (
         cancelHeldInput();
         spectator.toggle(body, eye(), input.controls.yaw, input.controls.pitch);
       },
-      teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, engine.isSolid),
+      teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, session.physicalSolid),
     },
     thirdPerson,
     gunPose: { mode: () => debugGunPose.mode, toggle: (mode) => debugGunPose.toggle(mode) },

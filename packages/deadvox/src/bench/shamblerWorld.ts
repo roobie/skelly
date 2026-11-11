@@ -5,14 +5,13 @@ import {
   chunksFor,
   Forest,
   generateColumn,
+  layoutVehicleQueries,
   makeScale,
   TEMPLATE_BLOCK_SIZE,
   terrainShapeOf,
   toChunk,
   World,
   worldGroundAt,
-  worldOpaque,
-  worldSolid,
 } from '@skelly/engine/world';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
@@ -54,8 +53,7 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
     config: { scale },
     spawn: site.spawn,
     groundAt: (xm, zm) => worldGroundAt({ seed, shape, scale, surface, xm, zm }),
-    isSolid: worldSolid(world, registry, entities),
-    isOpaque: worldOpaque(world, registry, entities),
+    ...layoutVehicleQueries({ world, registry, entities, site: 'forest', blockSize: scale.blockSize }),
     world,
     entities,
     loadedColumns: 0,

@@ -1,3 +1,5 @@
+import { layoutVehiclePlacements } from '@skelly/engine/internal/game/layoutVehicles.ts';
+import { BlockEntities, layoutVehicleQueries, makeScale, World, worldSolid } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import {
   bodyIsClear,
@@ -39,5 +41,26 @@ describe('shared shambler benchmark placement', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('rejects a body overlapping only a parked vehicle, which the vehicle-blind query accepts', () => {
+    const world = new World();
+    const entities = new BlockEntities(registry);
+    const blockSize = 0.5;
+    const blind = worldSolid(world, registry, entities);
+    const aware = layoutVehicleQueries({ world, registry, entities, site: 'testHouse', blockSize }).isSolid;
+    const { origin } = layoutVehiclePlacements(registry, 'testHouse', blockSize)[0]!;
+    const cell = Array.from({ length: 41 * 41 * 9 }, (_, i): [number, number, number] => [
+      Math.floor(origin[0]) + (i % 41) - 20,
+      Math.floor(origin[1]) + (Math.floor(i / 1681) % 9) - 2,
+      Math.floor(origin[2]) + (Math.floor(i / 41) % 41) - 20,
+    ]).find(([x, y, z]) => aware(x, y, z))!;
+    expect(cell).toBeDefined();
+    const body = createPlayerBody(makeScale(blockSize), cell[0] + 0.5, cell[1], cell[2] + 0.5);
+    body.halfWidth = 0.1;
+    body.height = 0.1;
+
+    expect(bodyIsClear(body, blind)).toBe(true);
+    expect(bodyIsClear(body, aware)).toBe(false);
   });
 });

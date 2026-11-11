@@ -38,7 +38,7 @@ import {
 import { benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
 import { benchSiteLabel, environment, loadNextRun, timeOfDayText } from './run.ts';
-import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
+import { findShamblerBenchPlayer, withLayoutVehicles } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
 
@@ -135,8 +135,9 @@ export const startShamblerBench = (
   let simTime = 0;
   let lastActorStepTime = 0;
   let lastBackgroundStepTime = 0;
+  const parked = withLayoutVehicles(engine);
   const prepare = (): void => {
-    playerBody = findShamblerBenchPlayer(engine);
+    playerBody = findShamblerBenchPlayer(parked);
     const simulation = new Simulation({
       seed: run.seed,
       registry: engine.registry,
@@ -149,8 +150,8 @@ export const startShamblerBench = (
       activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
       actorFigureFiles,
       seed: run.seed,
-      isSolid: engine.isSolid,
-      isOpaque: engine.isOpaque,
+      isSolid: parked.isSolid,
+      isOpaque: parked.isOpaque,
       blockSize: s,
       tuning: claimed(engine.registry.senses, 'player')!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
@@ -172,7 +173,7 @@ export const startShamblerBench = (
       count: activeCount,
       seed: run.seed,
       player: playerBody,
-      engine,
+      engine: parked,
       registry: engine.registry,
       actors,
       tier: 'active',
@@ -182,7 +183,7 @@ export const startShamblerBench = (
         count: backgroundCount,
         seed: run.seed + activeCount,
         player: playerBody,
-        engine,
+        engine: parked,
         registry: engine.registry,
         actors,
         tier: 'background',
@@ -312,7 +313,7 @@ export const startShamblerBench = (
       }
       playerBody.vel[0] = 0;
       playerBody.vel[2] = 0;
-      stepBody(playerBody, 1 / PHYSICS_RATE, engine.isSolid, {
+      stepBody(playerBody, 1 / PHYSICS_RATE, parked.isSolid, {
         ...physicsFor(scale, Player),
         obstacles: [...actors.store.entries()].map(([, actor]) => actor.body),
       });

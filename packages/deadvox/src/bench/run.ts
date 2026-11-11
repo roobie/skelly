@@ -48,7 +48,7 @@ import {
 } from './plan.ts';
 import { applyBenchWeathering, benchDraw } from './post.ts';
 import { syncClock } from './renderClock.ts';
-import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
+import { findShamblerBenchPlayer, withLayoutVehicles } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, mean, sampleStats } from './stats.ts';
 
@@ -349,7 +349,8 @@ export const startBench = (
       return;
     }
     try {
-      playerBody = findShamblerBenchPlayer(engine);
+      const parked = withLayoutVehicles(engine);
+      playerBody = findShamblerBenchPlayer(parked);
       x = playerBody.pos[0] * s;
       z = playerBody.pos[2] * s;
       const simulation = new Simulation({
@@ -365,8 +366,8 @@ export const startBench = (
         activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
         actorFigureFiles,
         seed: config.seed,
-        isSolid: engine.isSolid,
-        isOpaque: engine.isOpaque,
+        isSolid: parked.isSolid,
+        isOpaque: parked.isOpaque,
         blockSize: s,
         tuning: claimed(engine.registry.senses, 'player')!,
         physics: physicsFor(config.scale, Player),
@@ -386,7 +387,7 @@ export const startBench = (
         count: shamblerCount,
         seed: config.seed,
         player: playerBody,
-        engine,
+        engine: parked,
         registry: engine.registry,
         actors,
       });

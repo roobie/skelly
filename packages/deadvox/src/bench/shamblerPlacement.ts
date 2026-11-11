@@ -1,6 +1,16 @@
 import type { Registry } from '@skelly/engine/content';
 import { createPlayerBody, playerTuning } from '@skelly/engine/sim';
-import { type Body, bodyOverlapsBlock, raycast, type Scale, type SolidAt, type Vec3 } from '@skelly/engine/world';
+import {
+  type BlockEntities,
+  type Body,
+  bodyOverlapsBlock,
+  layoutVehicleQueries,
+  raycast,
+  type Scale,
+  type SolidAt,
+  type Vec3,
+  type World,
+} from '@skelly/engine/world';
 
 export interface ShamblerPlacementWorld {
   registry: Registry;
@@ -10,6 +20,22 @@ export interface ShamblerPlacementWorld {
   isSolid: SolidAt;
   isOpaque: SolidAt;
 }
+
+/** The engine with solid and sight queries that count the site's parked vehicles, as a session sees them. */
+export const withLayoutVehicles = <
+  E extends ShamblerPlacementWorld & { world: World; entities: BlockEntities; config: { site: string } },
+>(
+  engine: E,
+): E => ({
+  ...engine,
+  ...layoutVehicleQueries({
+    world: engine.world,
+    registry: engine.registry,
+    entities: engine.entities,
+    site: engine.config.site,
+    blockSize: engine.config.scale.blockSize,
+  }),
+});
 
 export const bodyIsClear = (body: Body, isSolid: SolidAt): boolean => {
   const halfDepth = body.halfDepth ?? body.halfWidth;
