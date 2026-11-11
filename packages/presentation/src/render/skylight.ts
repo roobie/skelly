@@ -485,6 +485,10 @@ vec4 skyPosition = vec4(transformed, 1.0);
 skyPosition = vec4(${SKY_ANCHOR_ATTRIBUTE}, 1.0);
 #endif
 vec3 skyNormal = objectNormal;
+#ifdef USE_BATCHING
+skyPosition = batchingMatrix * skyPosition;
+skyNormal = mat3(batchingMatrix) * skyNormal;
+#endif
 #ifdef USE_INSTANCING
 skyPosition = instanceMatrix * skyPosition;
 skyNormal = mat3(instanceMatrix) * skyNormal;

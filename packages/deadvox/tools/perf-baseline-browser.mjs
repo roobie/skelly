@@ -143,7 +143,7 @@ export function install(engine) {
       perf.records.push(record);
     }
   };
-  engine.meshes.group.userData.perfCategory = 'chunks';
+  engine.meshes.batch.userData.perfCategory = 'chunks';
   const direct = renderer.renderBufferDirect.bind(renderer);
   const render = renderer.render.bind(renderer);
   renderer.render = (root, ...args) => {

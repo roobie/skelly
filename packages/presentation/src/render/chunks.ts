@@ -9,14 +9,13 @@ import {
   Color,
   type DataTexture,
   Frustum,
-  Group,
   Matrix4,
-  Mesh,
   MeshLambertMaterial,
   type Side,
   Sphere,
   Vector3,
 } from 'three';
+import { ChunkBatch, type ChunkPass } from './chunkBatch.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { createSurfaceNoise } from './surfaceNoise.ts';
 import { camoShaderConfig, SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
@@ -34,8 +33,8 @@ float cellHash(vec3 c) {
 }`;
 
 // Per-quad surface pattern: its id (constant per quad, so interpolation only needs rounding),
-// the fragment's world position in metres and the face normal (object space is axis-aligned and
-// the group only scales, so it is the world normal too).
+// the fragment's world position in metres and the face normal (object space is axis-aligned, the
+// batch only scales and its chunk matrices only translate, so it is the world normal too).
 // The id is `flat` (provoking vertex; never interpolated, so it can't extrapolate).
 const PATTERN_VARYING = 'flat varying float vPattern;\ncentroid varying vec3 vWorld;\ncentroid varying vec3 vFaceN;';
 const WEATHERING_BASE_GRIME_FLOOR = 0.22;
@@ -143,12 +142,16 @@ const chunkMaterial = ({
         '#include <begin_vertex>',
         // Half a block inside the face, in world block coordinates.
         `#include <begin_vertex>
+mat4 chunkToWorld = modelMatrix;
+#ifdef USE_BATCHING
+chunkToWorld = modelMatrix * batchingMatrix;
+#endif
 vOcclusion = occlusion;
 vWeather = weather;
 vWeatherable = weatherable;
-vCell = (modelMatrix * vec4(position - normalize(normal) * 0.5, 1.0)).xyz / uBlockSize;
+vCell = (chunkToWorld * vec4(position - normalize(normal) * 0.5, 1.0)).xyz / uBlockSize;
 vPattern = pattern;
-vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+vWorld = (chunkToWorld * vec4(position, 1.0)).xyz;
 vFaceN = normalize(normal);`,
       );
     shader.fragmentShader = shader.fragmentShader
@@ -238,17 +241,24 @@ if (uWeathering > 0.0 && vWeatherable > 0.5 && (uWeatheringSplitEnabled < 0.5 ||
   return material;
 };
 
+interface Chunk {
+  /** In blocks. */
+  readonly origin: Readonly<Vec3>;
+  /** Tight bounds in metres: a chunk with only ground in its bottom blocks gets a flat box, not one around the whole chunk. */
+  readonly box: Box3;
+  readonly instance: number;
+  /** Whether its column is revealed; kept with the reveal set so per-frame culls don't rebuild column keys. */
+  revealed: boolean;
+}
+
 /**
- * Owns the three.js meshes for chunks, keyed by chunk key, and culls them: `cull` hides
- * the meshes whose tight box is outside the camera's frustum or past the fog's end.
+ * Owns the chunks' terrain, keyed by chunk key, in one batch (chunkBatch.ts), and culls it: `cull`
+ * leaves out of the main pass the chunks whose tight box is outside the camera's frustum or past the
+ * fog's end.
  */
 export class ChunkMeshes implements ColumnReveal {
-  readonly group = new Group();
-  private readonly meshes = new Map<string, Mesh>();
-  /** Each mesh's tight box, in metres. */
-  private readonly boxes = new Map<Mesh, Box3>();
-  /** Meshes whose column is revealed; kept with the reveal set so per-frame culls don't rebuild column keys. */
-  private readonly shown = new Set<Mesh>();
+  readonly batch: ChunkBatch;
+  private readonly chunks = new Map<string, Chunk>();
   readonly material: MeshLambertMaterial;
   private readonly blockSize: number;
   private readonly surfaceNoise: { value: DataTexture | null } = { value: null };
@@ -293,27 +303,18 @@ export class ChunkMeshes implements ColumnReveal {
     this.revealed = columns;
     this.revealChanges += 1;
     this.changes += 1;
-    for (const mesh of this.meshes.values()) {
-      if (!this.markRevealed(mesh)) {
-        mesh.visible = false;
+    for (const chunk of this.chunks.values()) {
+      chunk.revealed = this.isRevealed(chunk.origin[0], chunk.origin[2]);
+      if (!chunk.revealed) {
+        this.batch.setPassVisible(chunk.instance, 'main', false);
+        this.batch.setPassVisible(chunk.instance, 'shadow', false);
       }
     }
   }
 
-  /** Records whether `mesh`'s column is revealed and returns it. */
-  private markRevealed(mesh: Mesh): boolean {
-    const revealed = this.isRevealed(mesh.position.x, mesh.position.z);
-    if (revealed) {
-      this.shown.add(mesh);
-    } else {
-      this.shown.delete(mesh);
-    }
-    return revealed;
-  }
   /** Mesh replacement/removal notification, including meshes with zero triangles. Data arrivals belong to Streamer. */
   onChange?: (origin: Vec3) => void;
 
-  /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number, registry: Registry) {
     this.material = chunkMaterial({
       blockSize,
@@ -340,13 +341,8 @@ export class ChunkMeshes implements ColumnReveal {
       surfaceNoise: this.surfaceNoise,
     });
     this.blockSize = blockSize;
-    this.group.scale.setScalar(blockSize);
-    // Never drawn and not in `boxes`, so `cull` leaves it hidden. It only puts the chunk material
-    // on a mesh before any chunk exists, so `renderer.compile` can build the game's heaviest shader early.
-    const warmUp = new Mesh(new BufferGeometry(), this.material);
-    warmUp.visible = false;
-    warmUp.receiveShadow = true;
-    this.group.add(warmUp);
+    // In the scene before any chunk exists, so `renderer.compile` builds the game's heaviest shader early.
+    this.batch = new ChunkBatch(this.material, blockSize);
   }
 
   /** Mesh and reveal changes invalidate cached shadow maps. */
@@ -449,11 +445,18 @@ export class ChunkMeshes implements ColumnReveal {
   }
 
   get count(): number {
-    return this.meshes.size;
+    return this.chunks.size;
   }
 
   keys(): IterableIterator<string> {
-    return this.meshes.keys();
+    return this.chunks.keys();
+  }
+
+  /** Origins, in blocks, of the chunks with terrain, or of only those `pass` draws. */
+  origins(pass?: ChunkPass): Readonly<Vec3>[] {
+    return [...this.chunks.values()]
+      .filter((chunk) => pass === undefined || this.batch.isPassVisible(chunk.instance, pass))
+      .map((chunk) => chunk.origin);
   }
 
   set(key: string, origin: [number, number, number], data: MeshData): void {
@@ -462,83 +465,76 @@ export class ChunkMeshes implements ColumnReveal {
     if (data.indices.length === 0) {
       return;
     }
-    const geometry = new BufferGeometry();
-    geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
-    geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
-    geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
-    geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
-    geometry.setAttribute('weatherable', new BufferAttribute(data.weatherable, 1));
-    geometry.setAttribute('occlusion', new BufferAttribute(data.occlusion, 1, true));
-    geometry.setAttribute('weather', new BufferAttribute(data.weathering, 2));
-    geometry.setIndex(new BufferAttribute(data.indices, 1));
-    // Tight bounds: a chunk with only ground in its bottom blocks gets a flat box, not a
-    // box around the whole chunk.
-    geometry.computeBoundingBox();
-    geometry.boundingSphere = geometry.boundingBox!.getBoundingSphere(new Sphere());
-    const mesh = new Mesh(geometry, this.material);
-    mesh.position.set(...origin);
-    mesh.matrixAutoUpdate = false;
-    mesh.updateMatrix();
-    mesh.frustumCulled = false; // `cull` does it, with the box
-    mesh.receiveShadow = true; // every chunk receives; `selectShadowCasters` picks the ones that cast
-    mesh.visible = this.markRevealed(mesh);
-    // The group only scales, so a box in blocks becomes metres by the block size.
-    const box = geometry.boundingBox!.clone().translate(mesh.position);
+    const geometry = chunkGeometry(data);
+    const instance = this.batch.addChunk(geometry, origin);
+    // The batch only scales, so a box in blocks becomes metres by the block size.
+    const box = geometry.boundingBox!.clone().translate(new Vector3(...origin));
     box.min.multiplyScalar(this.blockSize);
     box.max.multiplyScalar(this.blockSize);
-    this.meshes.set(key, mesh);
-    this.boxes.set(mesh, box);
-    this.group.add(mesh);
+    const revealed = this.isRevealed(origin[0], origin[2]);
+    this.batch.setPassVisible(instance, 'main', revealed);
+    this.chunks.set(key, { origin: [...origin], box, instance, revealed });
     this.changes += 1;
   }
 
   /**
-   * Makes the meshes whose tight box passes `casts` the shadow casters, drawn from their `side` faces
-   * (shadows.ts says which light takes which), and shows exactly those: the
-   * shadow pass skips hidden meshes, so a chunk behind the camera can still shade what is in front of it.
-   * The render's main pass is already queued when this runs (from the shadow hook), and `cull` sets
-   * visibility afresh before the next one. Returns how many cast.
+   * Makes the chunks whose tight box passes `casts` the next shadow pass's casters, drawn from their
+   * `side` faces (shadows.ts says which light takes which). The main pass's set is apart from it, so a
+   * chunk behind the camera can still shade what is in front of it. Returns how many cast.
    */
   selectShadowCasters(casts: (box: Box3) => boolean, side: Side): number {
     this.material.shadowSide = side;
     let count = 0;
-    for (const [mesh, box] of this.boxes) {
-      const on = this.shown.has(mesh) && casts(box);
-      mesh.castShadow = on;
-      mesh.visible = on;
+    for (const { box, instance, revealed } of this.chunks.values()) {
+      const on = revealed && casts(box);
+      this.batch.setPassVisible(instance, 'shadow', on);
       count += on ? 1 : 0;
     }
     return count;
   }
 
   /**
-   * Shows only the meshes whose box meets the camera's frustum and comes within `fogEndM` of the
-   * camera horizontally: fog goes by horizontal distance (render/distanceFog.ts), so the far plane
-   * alone keeps fully fogged chunks to the camera's side. The camera's matrices must be current.
+   * Draws in the main pass only the chunks whose box meets the camera's frustum and comes within
+   * `fogEndM` of the camera horizontally: fog goes by horizontal distance (render/distanceFog.ts), so
+   * the far plane alone keeps fully fogged chunks to the camera's side. The camera's matrices must be current.
    */
   cull(camera: Camera, fogEndM = Number.POSITIVE_INFINITY): void {
     this.viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.viewProjection);
     this.eye.setFromMatrixPosition(camera.matrixWorld);
     const { x, z } = this.eye;
-    for (const [mesh, box] of this.boxes) {
+    for (const { box, instance, revealed } of this.chunks.values()) {
       const dx = Math.max(box.min.x - x, 0, x - box.max.x);
       const dz = Math.max(box.min.z - z, 0, z - box.max.z);
-      mesh.visible = this.shown.has(mesh) && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
+      const drawn = revealed && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
+      this.batch.setPassVisible(instance, 'main', drawn);
     }
   }
 
   remove(key: string): void {
-    const mesh = this.meshes.get(key);
-    if (!mesh) {
+    const chunk = this.chunks.get(key);
+    if (!chunk) {
       return;
     }
-    this.onChange?.([mesh.position.x, mesh.position.y, mesh.position.z]);
-    this.group.remove(mesh);
-    mesh.geometry.dispose();
-    this.meshes.delete(key);
-    this.boxes.delete(mesh);
-    this.shown.delete(mesh);
+    this.onChange?.([...chunk.origin]);
+    this.batch.removeChunk(chunk.instance);
+    this.chunks.delete(key);
     this.changes += 1;
   }
 }
+
+/** Mesher output as a geometry the batch copies in, with tight bounds. */
+const chunkGeometry = (data: MeshData): BufferGeometry => {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(data.positions, 3));
+  geometry.setAttribute('normal', new BufferAttribute(data.normals, 3, true));
+  geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
+  geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
+  geometry.setAttribute('weatherable', new BufferAttribute(data.weatherable, 1));
+  geometry.setAttribute('occlusion', new BufferAttribute(data.occlusion, 1, true));
+  geometry.setAttribute('weather', new BufferAttribute(data.weathering, 2));
+  geometry.setIndex(new BufferAttribute(data.indices, 1));
+  geometry.computeBoundingBox();
+  geometry.boundingSphere = geometry.boundingBox!.getBoundingSphere(new Sphere());
+  return geometry;
+};
