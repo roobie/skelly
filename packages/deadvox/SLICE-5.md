@@ -354,7 +354,8 @@ lane the order is a dependency; across lanes only the joins named here hold.
   replace the fall refusal with landing crush; see
   `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
 - **Construction.** The radial action menu is built (`INTERFACE.md`, "HUD"); every
-  hold job (Repair, Take apart, Continue, Fortify) enters through it. Player-facing
+  hold job (Repair, Take apart, Continue, Fortify) enters through it, on building parts
+  as on movable pieces (`DESIGN.md`, "Moving furniture"). Player-facing
   world work, repair and take apart alike, is one design and queues behind the #1469
   crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
   the take-apart command over the existing reservation and yield contract (see
@@ -382,8 +383,12 @@ The next rounds, in dispatch order:
    `packages/engine/src/core/disassembly.ts`, `planDisassembly`. The menu offers no
    Take apart entry yet: its review is the same world-work view as repair's, and that
    view is one design with the #1469 crafting view, so the entry, the review and Start
-   arrive together with repair's; see `DESIGN.md`, "World repair selection". Its
-   reasons go in `DESIGN.md`, "Edits persist".
+   arrive together with repair's; see `DESIGN.md`, "World repair selection". The
+   definition's take-apart route is an authored yield, or a parts blueprint for a kind
+   that authors one, never both; the yield lands in a pile where the actor stood, and
+   a paused job lives on its reserved piece. Those rules and their reasons are in
+   `DESIGN.md`, "World repair selection"; the command's own reasons go in `DESIGN.md`,
+   "Edits persist".
 2. **Adopt the first wave in a base-building scenario pack.** A committed scenario
    pack on an existing authored site with buildings, so the other lanes have a
    shipped scenario to test in before the new site exists; see `docs/url-mods.md`,
