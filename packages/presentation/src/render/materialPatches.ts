@@ -14,11 +14,12 @@ interface Change {
   applies?: (material: Material) => boolean;
 }
 
-interface Patched {
-  changes: { order: number; change: Change }[];
+interface Ordered {
+  order: number;
+  change: Change;
 }
 
-const patched = new WeakMap<Material, Patched>();
+const patched = new WeakMap<Material, Ordered[]>();
 let created = 0;
 
 /**
@@ -31,27 +32,27 @@ export const materialPatch = (change: Change): MaterialPatch => {
   const order = created;
   return {
     install(material) {
-      let state = patched.get(material);
-      if (change.applies?.(material) === false || state?.changes.some((entry) => entry.change === change)) {
+      let changes = patched.get(material);
+      if (change.applies?.(material) === false || changes?.some((entry) => entry.change === change)) {
         return;
       }
-      if (!state) {
-        state = { changes: [] };
-        patched.set(material, state);
-        const { changes } = state;
+      if (!changes) {
+        const stacked: Ordered[] = [];
+        changes = stacked;
+        patched.set(material, stacked);
         const compile = material.onBeforeCompile;
         const key = material.customProgramCacheKey;
         material.onBeforeCompile = (shader, renderer) => {
           compile.call(material, shader, renderer);
-          for (const entry of changes) {
+          for (const entry of stacked) {
             entry.change.compile(shader, renderer);
           }
         };
         material.customProgramCacheKey = () =>
-          [key.call(material), ...changes.map((entry) => entry.change.key())].join(':');
+          [key.call(material), ...stacked.map((entry) => entry.change.key())].join(':');
       }
-      state.changes.push({ order, change });
-      state.changes.sort((a, b) => a.order - b.order);
+      changes.push({ order, change });
+      changes.sort((a, b) => a.order - b.order);
       material.needsUpdate = true;
     },
   };

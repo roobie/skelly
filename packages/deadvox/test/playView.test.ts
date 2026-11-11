@@ -278,7 +278,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       setNightVisionFlare: vi.fn(),
       setSky: vi.fn(),
     },
-    shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn() },
+    shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
@@ -424,6 +424,20 @@ describe('play presentation ownership', () => {
     expect(liftNow(10)).toBe(0);
     expect(liftNow(0.1)).toBe(0);
     view.dispose();
+  });
+
+  it('warms the main scene up with every patch a frame installs, so the first frame recompiles nothing', async () => {
+    const f = litWorld('doorway');
+    try {
+      const material = new MeshLambertMaterial();
+      f.engine.scene.add(new Mesh(new BoxGeometry(), material));
+      await f.view.warmUp();
+      const warmed = { key: material.customProgramCacheKey(), version: material.version };
+      f.engine.materialPatches.apply(f.engine.scene);
+      expect({ key: material.customProgramCacheKey(), version: material.version }).toEqual(warmed);
+    } finally {
+      f.cleanup();
+    }
   });
 
   it('gives a dark receiver useful beam strength even with a sunlit camera', () => {

@@ -356,7 +356,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
   mesh.renderOrder = -1000;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
   // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
-  // colour the hemisphere light uses, though not its brightness, so downward-facing metal is not lit from below.
+  // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky.
   const openUniforms = {
     ...uniforms,
     uSkyColorScale: { value: 1 },
