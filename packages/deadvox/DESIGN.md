@@ -2747,8 +2747,11 @@ sky field still treat any share as blocking: they ask whether a ray passes a cel
 much diffuse light a cell lets on.
 Its parts sit inside those coarse cells, so each surface samples the sky from the first open
 cell along its normal, as a shaped piece samples from its envelope face; otherwise the car
-would shade its own skin. Only the car's own cells count there, because they alone
-key its render; a neighbour shades it through the field. Each layout-parked vehicle gets
+would shade its own skin. The search stops at the car's own light-blocking geometry: an open
+cell above the roof is not the sky a seat under the roof sees, so a surface that meets its own
+body first samples the shaded cells inside it, while one facing out through glass still finds
+open sky. Only the car's own cells and geometry count there, because they alone key its
+render; a neighbour shades it through the field. Each layout-parked vehicle gets
 its own field because open sky outside every field would otherwise leave a car on open
 ground unshaded; layout vehicles keep their origin in play, so their fields can be fixed
 when the world is set up. Only a few field volumes are resident at once, so a street of

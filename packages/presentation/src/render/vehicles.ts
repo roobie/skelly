@@ -1,10 +1,12 @@
 import type { Registry } from '@skelly/engine/content';
+import type { SkyBounds } from '@skelly/engine/sky';
 import {
   projectVehicleParts,
   type VehicleInstances,
   VehicleOccupancy,
   type VehiclePartProjection,
 } from '@skelly/engine/vehicles';
+import type { Vec3 } from '@skelly/engine/world';
 import { type BufferGeometry, Group, type Material, Mesh, type Object3D } from 'three';
 import { itemFinishLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
@@ -109,18 +111,28 @@ export class VehicleMeshes {
     this.rendered.set(id, {
       signature,
       group,
-      owned: this.anchorToSky(group, (x, y, z) => light.isSolidFor(id, x, y, z)),
+      owned: this.anchorToSky(group, {
+        blocked: (x, y, z) => light.isSolidFor(id, x, y, z),
+        own: parts
+          .filter((part) => light.shareOf(part) > 0)
+          .flatMap((part) => part.boxes)
+          .map(({ min, max }) => ({
+            min: min.map((value) => value / this.blockSize) as Vec3,
+            max: max.map((value) => value / this.blockSize) as Vec3,
+          })),
+      }),
     });
   }
 
   /**
    * Moves each part's sky sample out of the light-blocking cells its own vehicle adds to the sky field (see
    * `addSkyCellAnchors`), so a parked car shades the ground under it without darkening its own body. Only its own
-   * cells count, as they alone are in the render signature; a neighbour shades it through the field instead.
+   * cells and geometry count, as they alone are in the render signature; a neighbour shades it through the field
+   * instead.
    */
   private anchorToSky(
     group: Group,
-    blocked: (x: number, y: number, z: number) => boolean,
+    { blocked, own }: { blocked: (x: number, y: number, z: number) => boolean; own: readonly SkyBounds[] },
   ): (BufferGeometry | Material)[] {
     group.updateWorldMatrix(true, true);
     const meshes: Mesh[] = [];
@@ -143,6 +155,7 @@ export class VehicleMeshes {
       addSkyCellAnchors(geometry, {
         toWorld: mesh.matrixWorld,
         blocked,
+        own,
         blockSize: this.blockSize,
       });
       mesh.geometry = geometry;

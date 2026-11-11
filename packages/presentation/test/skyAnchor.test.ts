@@ -151,7 +151,7 @@ const blockedSamples = (
   blocked: (x: number, y: number, z: number) => boolean,
   blockSize: number,
 ): string[] => {
-  addSkyCellAnchors(geometry, { toWorld, blocked, blockSize });
+  addSkyCellAnchors(geometry, { toWorld, blocked, own: [], blockSize });
   const anchor = geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE)!;
   const normal = geometry.getAttribute('normal');
   const normalToWorld = new Matrix3().getNormalMatrix(toWorld);
@@ -187,4 +187,26 @@ it('steps a surface in an open cell past blocked cells its normal meets within t
   const blocked = (x: number, y: number, z: number) => x >= 0 && x < 3 && y === 1 && z >= 0 && z < 3;
   const toWorld = new Matrix4().makeTranslation(0.75, 0.35, 0.75);
   expect(blockedSamples(new BoxGeometry(1, 0.1, 1), toWorld, blocked, 0.5)).toEqual([]);
+});
+
+it("never carries a surface's sky sample past its own body's geometry", () => {
+  // A cabin of blocked cells three layers high under a thin roof panel, and a seat whose top lies in the top layer:
+  // the open cell above the roof is within reach, but the seat sees the roof, not that sky.
+  const blocked = (x: number, y: number, z: number) => x >= 0 && x < 4 && y >= 0 && y < 3 && z >= 0 && z < 4;
+  const roof = { min: [0, 2.75, 0] as Vec3, max: [4, 2.875, 4] as Vec3 };
+  const seat = new BoxGeometry(1, 0.2, 1);
+  const toWorld = new Matrix4().makeTranslation(1, 1, 1);
+  addSkyCellAnchors(seat, { toWorld, blocked, own: [roof], blockSize: 0.5 });
+  const anchor = seat.getAttribute(SKY_ANCHOR_ATTRIBUTE)!;
+  const normal = seat.getAttribute('normal');
+  const samples: number[] = [];
+  for (let vertex = 0; vertex < anchor.count; vertex++) {
+    if (normal.getY(vertex) > 0.5) {
+      samples.push(new Vector3().fromBufferAttribute(anchor, vertex).applyMatrix4(toWorld).y / 0.5 + 0.5);
+    }
+  }
+  expect(samples.length).toBeGreaterThan(0);
+  for (const height of samples) {
+    expect(height).toBeLessThan(roof.min[1]);
+  }
 });
