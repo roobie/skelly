@@ -324,8 +324,8 @@ export const createPlayView = (
     sunSource: engine.sky.light,
   });
   /**
-   * Sky exposure dims the play scene's reflection per fragment (render/skylight.ts, `Skylight`); held items sit at
-   * the camera, so theirs takes the camera's, as their ambient light does.
+   * Sky exposure dims the play scene's reflection per fragment (`src/render/skylight.ts`, `Skylight`); held items
+   * sit at the camera, so theirs takes the camera's, as their ambient light does.
    */
   const lightWithSky = (cameraSkyVisibility: number) => {
     skyEnvironment?.light(scene, 1);

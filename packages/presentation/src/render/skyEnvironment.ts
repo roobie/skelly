@@ -1,7 +1,7 @@
 // The sky's reflection on models. Metal has nothing to reflect without an environment, so it draws near black; a
 // prefiltered map of the dome gives it the sky. The map is baked from the dome alone, never the world, so it stands
-// for open sky, and sky exposure dims it where the sky cannot reach (render/skylight.ts, `Skylight`), as it dims the
-// hemisphere light, so metal does not glow indoors.
+// for open sky, and sky exposure dims it where the sky cannot reach (`src/render/skylight.ts`, `Skylight`), as it
+// dims the hemisphere light, so metal does not glow indoors.
 //
 // A bake draws six faces and prefilters them, too much for every frame, so it is redone only once the drawn sky has
 // moved past the day cycle's `environment.rebakeChange`. Measuring the change rather than baking at set hours keeps the

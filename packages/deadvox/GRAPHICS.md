@@ -3,6 +3,7 @@ read_if:
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
   - you're changing sun shadow occlusion in interiors or underground
+  - you're changing how models reflect the sky, how metal draws or when the sky's reflection is rebaked
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
@@ -21,6 +22,8 @@ The default look is tone mapping off, low exposure, the mood pass off and no wea
 Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `packages/presentation/src/render/autoTone.ts`.
 
 Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with held-item lighting. See `packages/presentation/src/render/playView.ts`, `prepareLighting`; `packages/presentation/src/render/sky.ts`, `applySky`; and `packages/presentation/src/render/mood.ts`, `Mood.setSky`.
+
+Models reflect the sky, because metal with nothing to reflect draws near black. The reflection is baked from the dome alone, never the world, so it stands for open sky, and sky exposure dims it per surface as it dims the hemisphere light, so metal does not glow indoors. Held items take the camera's exposure, as their ambient light does. It is reflection only: the hemisphere light already owns the diffuse sky, and the environment would light every surface twice. A bake is too costly for every frame, so it is redone once the drawn sky has moved past a content threshold since the last bake; measuring the change rather than baking at set hours keeps it close behind a fast twilight without rebaking a still noon. Clouds bake as they stand, since their drift between bakes does not show in a blurred reflection. See `packages/presentation/src/render/skyEnvironment.ts`, `createSkyEnvironment`, and `packages/deadvox/docs/content.md`, "Day cycle".
 
 A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the actual sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. Keep furniture occlusion in that sky query: unlike ceiling fixtures, beams cast furniture shadows, and ignoring closed doors or hatches suppresses the beam in rooms they shelter. See `packages/presentation/src/render/skylight.ts`, `Skylight`, and `packages/presentation/src/render/flashlight.ts`, `flashlightDaylightScale`.
 
