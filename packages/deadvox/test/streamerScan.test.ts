@@ -1,7 +1,7 @@
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
-import { CHUNK, makeScale, World } from '@skelly/engine/world';
+import { CHUNK, createTerrainEvaluator, makeScale, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
 
@@ -60,19 +60,22 @@ const harness = () => {
     world,
     meshes: meshes as never,
     mesher: { count: 1, create: () => worker },
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: createTerrainEvaluator({
+      seed: 17,
+      blocks: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
+      shape: { ...baseTerrainShape(), minHeightMetres: 2, maxHeightMetres: 2 },
+      scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 },
+      site: { kind: 'natural' },
+      structures: [],
+    }),
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 },
-    structures: [],
     radius: RADIUS,
     preloadRings: 0,
     columnsPerFrame: COLUMNS_PER_FRAME,
     hysteresis: 1.5,
-    surface: { height: () => 4, top: () => undefined },
   });
   const generated = new Set<string>();
   const arrived: [number, number][] = [];

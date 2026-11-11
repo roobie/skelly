@@ -5,25 +5,15 @@ import type { Site } from '@skelly/engine/internal/core/site.ts';
 import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
 import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
-import { layoutVehicleSkyBoxes } from '@skelly/engine/internal/game/layoutVehicles.ts';
+import { layoutVehicleSkyBoxes, registerLayoutVehicles } from '@skelly/engine/internal/game/layoutVehicles.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
 import { VehicleOccupancy } from '@skelly/engine/vehicles';
-import {
-  BlockEntities,
-  CHUNK,
-  Chunk,
-  generateColumn,
-  registerLayoutVehicles,
-  sitePalette,
-  terrainShapeOf,
-  toChunk,
-  type Vec3,
-  World,
-} from '@skelly/engine/world';
+import { BlockEntities, CHUNK, Chunk, sitePalette, toChunk, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';
 
 // biome-ignore lint/style/noProcessEnv: the build is timed only under the bench script.
@@ -257,17 +247,10 @@ const authoredWorld = (site: Site, box: SkyBounds) => {
   const dependency = skyDependencyBounds(box, benchRange.top);
   const world = new World();
   const entities = new BlockEntities(registry);
-  const terrain = {
-    seed,
-    shape: terrainShapeOf(registry),
-    blocks: sitePalette(registry).terrain,
-    scale,
-    surface: site.surface,
-    stamp: (chunk: Parameters<Site['stamp']>[0]) => site.stamp(chunk),
-  };
+  const terrain = terrainFor(site, registry, scale, seed);
   for (let cz = toChunk(dependency.min[2]) - 1; cz <= toChunk(dependency.max[2]) + 1; cz++) {
     for (let cx = toChunk(dependency.min[0]) - 1; cx <= toChunk(dependency.max[0]) + 1; cx++) {
-      for (const chunk of generateColumn(terrain, cx, cz)) {
+      for (const chunk of terrain.generateColumn(cx, cz)) {
         world.addChunk(chunk);
       }
       for (const { spec } of site.furnitureIn(cx, cz)) {

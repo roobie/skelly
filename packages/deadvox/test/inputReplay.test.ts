@@ -994,9 +994,8 @@ describe('input replay', () => {
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
     const site: Site = {
-      surface: fixtureSite.surface,
+      terrain: fixtureSite.terrain,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
@@ -1262,9 +1261,8 @@ describe('input replay', () => {
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
     };
     const site: Site = {
-      surface: fixtureSite.surface,
+      terrain: fixtureSite.terrain,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),

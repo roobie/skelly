@@ -6,7 +6,7 @@ import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skell
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { CHUNK, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
+import { CHUNK, createTerrainEvaluator, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -276,19 +276,24 @@ describe('authored supply projection', () => {
     const { registry, source } = fixture();
     const runtime = createRuntime(undefined, false, [[8, 8]], { registry });
     const floor = registry.blockIds.get('supply_fixture_floor')!;
-    const canonical = new CanonicalTerrain(runtime.world, {
-      seed: 7,
-      scale: makeScale(0.5),
-      blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
-      shape: {
-        minHeightMetres: 0.5,
-        maxHeightMetres: 0.5,
-        beachBelowMetres: 0,
-        dirtDepthMetres: 1,
-        featureSizeMetres: 1,
-        octaves: 1,
-      },
-    });
+    const canonical = new CanonicalTerrain(
+      runtime.world,
+      createTerrainEvaluator({
+        site: { kind: 'natural' },
+        structures: [],
+        seed: 7,
+        scale: makeScale(0.5),
+        blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
+        shape: {
+          minHeightMetres: 0.5,
+          maxHeightMetres: 0.5,
+          beachBelowMetres: 0,
+          dirtDepthMetres: 1,
+          featureSizeMetres: 1,
+          octaves: 1,
+        },
+      }),
+    );
     const projection = runtime.session.projectSupply(source);
     projection.read(region);
     projection.include(2, 0);

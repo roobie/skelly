@@ -16,9 +16,10 @@ import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.
 import { ChunkMeshes, PileMeshes } from '@skelly/presentation/render';
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { skyFixture } from './fixtures/sky.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 class OwnedWorker implements MesherPort {
   static instances: OwnedWorker[] = [];
@@ -74,19 +75,15 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
     world: new World(),
     meshes: meshes as never,
     mesher: ownedMeshers(1),
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
     columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const beforeReveal = vi.fn((cx: number, cz: number) => {
     const published = meshes.setRevealedColumns.mock.calls.at(-1)![0] as Set<string>;
@@ -169,20 +166,25 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     world,
     meshes,
     mesher: ownedMeshers(1),
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: {
+      ...fixtureTerrain({ scale, floor: -1 }),
+      generateColumn: (cx, cz) =>
+        fixtureTerrain({ scale, floor: -1 })
+          .generateColumn(cx, cz)
+          .map((chunk) => {
+            chunk.set(1, 1, 1, 1);
+            chunk.compact();
+            return chunk;
+          }),
+    },
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 2,
     preloadRings: 0,
     columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => -1, top: () => undefined },
-    stamp: (chunk) => chunk.set(1, 1, 1, 1),
   });
   streamer.setReplayControlled();
   streamer.update(0, 0);
@@ -256,19 +258,15 @@ function skyStreamer(meshers: number) {
     world: new World(),
     meshes: meshes as never,
     mesher: ownedMeshers(meshers),
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
     columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   return { streamer, meshes };
 }

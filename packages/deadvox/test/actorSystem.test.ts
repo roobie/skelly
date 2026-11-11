@@ -157,9 +157,8 @@ const normalized = (v: Vec3): Vec3 => {
   return magnitude ? [v[0] / magnitude, v[1] / magnitude, v[2] / magnitude] : [0, 0, 0];
 };
 const spawnSite = (spawn: ActorSpawn): Site => ({
-  surface: { height: (_x, _z, natural) => natural, top: () => undefined },
+  terrain: { kind: 'natural' },
   spawn: { pos: [0, 0, 0], yaw: 0 },
-  stamp: () => undefined,
   supplySourcesIn: () => [],
   lootPointsIn: () => [],
   furnitureIn: () => [],
@@ -2222,7 +2221,7 @@ describe('shambler scenarios', () => {
       ...spawnSite({ type: 'shambler', pos: [0, 41, 0] }),
       registry,
       seed: 7,
-      surface: base.surface,
+      terrain: base.terrain,
       hordesIn: (cx: number, cz: number) =>
         cx === 0 && cz === 0 ? [{ id: 'fixture-horde', type: 'shambler', pos: [0, 41, 0] as Vec3, members: 20 }] : [],
     };

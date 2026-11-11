@@ -15,11 +15,11 @@ import {
   kitSlotChoices,
   placedSpawns,
 } from '@skelly/engine/internal/core/templates.ts';
-import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import {
   CHUNK,
-  Chunk,
+  type Chunk,
   CitySite,
+  createTerrainEvaluator,
   footprint,
   makeScale,
   siteGenerationOf,
@@ -33,6 +33,7 @@ import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { defaultStartOf, fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -84,8 +85,7 @@ const generated = (reverse: boolean) => {
   }
   const chunks = new Map<string, Uint16Array>();
   for (const [cx, cy, cz] of cells) {
-    const chunk = new Chunk(cx, cy, cz);
-    site.stamp(chunk);
+    const chunk = terrainFor(site, registry, scale, site.seed).generateChunk([cx, cy, cz]);
     chunks.set(`${cx},${cy},${cz}`, chunk.toArray());
   }
   const columns = new Map(cells.map(([cx, , cz]) => [`${cx},${cz}`, [cx, cz] as const]));
@@ -417,9 +417,12 @@ describe('one finished city plan', () => {
       scenario.city.street +
       scenario.city.pad +
       2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows);
-    expect(site.surface.top(scenario.city.street + scenario.city.pad + 2, alleyZ)).toBe(
-      sitePalette(admitted.registry).paving,
-    );
+    expect(
+      terrainFor(site, site.registry, scale, site.seed).surface!.top(
+        scenario.city.street + scenario.city.pad + 2,
+        alleyZ,
+      ),
+    ).toBe(sitePalette(admitted.registry).paving);
     expect(plan.structures.length).toBeGreaterThan(0);
     const occupied = (point: Vec3) =>
       plan.structures.some(({ min, max }) => point.every((value, axis) => value >= min[axis]! && value < max[axis]!));
@@ -520,23 +523,20 @@ describe('one finished city plan', () => {
       const [x0, y0, z0] = placement.origin;
       for (let z = z0; z < z0 + depth; z++) {
         for (let x = x0; x < x0 + width; x++) {
-          const ground = site.surface.height(x, z, floor + 1);
+          const ground = terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, floor + 1);
           expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
           const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
           const key = cell.join(',');
           let chunk = chunks.get(key);
           if (!chunk) {
-            chunk = generateChunk(
-              {
-                seed: 73,
-                shape: terrainShapeOf(registry),
-                scale,
-                surface: site.surface,
-                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid, water: solid },
-              },
-              cell,
-            );
-            site.stamp(chunk);
+            chunk = createTerrainEvaluator({
+              seed: 73,
+              shape: terrainShapeOf(registry),
+              scale,
+              site: site.terrain,
+              structures: [],
+              blocks: { grass: solid, dirt: solid, rock: solid, sand: solid, water: solid },
+            }).generateChunk(cell);
             chunks.set(key, chunk);
           }
           expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
@@ -654,8 +654,12 @@ describe('one finished city plan', () => {
     expect(mod(plan.spawn[0], pitchX)).toBeLessThan(grid.street);
     expect(mod(plan.spawn[2], pitchZ)).toBeLessThan(grid.street);
     const site = new CitySite(73, registry, scale, plan);
-    expect(site.surface.height(plan.spawn[0], plan.spawn[2], floor + 9)).toBe(floor);
-    expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(sitePalette(registry).paving);
+    expect(
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(plan.spawn[0], plan.spawn[2], floor + 9),
+    ).toBe(floor);
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(plan.spawn[0], plan.spawn[2])).toBe(
+      sitePalette(registry).paving,
+    );
   });
 
   it('paves its streets with the block the site palette names, not a fixed block id', () => {
@@ -669,7 +673,9 @@ describe('one finished city plan', () => {
       }),
     };
     const site = new CitySite(73, repaved, scale, planned());
-    expect(site.surface.top(site.plan.spawn[0], site.plan.spawn[2])).toBe(registry.blockIds.get(other));
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(site.plan.spawn[0], site.plan.spawn[2])).toBe(
+      registry.blockIds.get(other),
+    );
   });
 
   it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {

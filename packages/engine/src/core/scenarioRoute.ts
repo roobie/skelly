@@ -9,8 +9,8 @@ import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import { footprint, type Placement } from './templates.ts';
+import { createTerrainEvaluator } from './terrainEvaluator.ts';
 import { World } from './world.ts';
-import { generateChunk } from './worldgen.ts';
 
 const key = (point: readonly number[]) => point.join(',');
 
@@ -61,13 +61,14 @@ export class ScenarioRouteSpace {
         0,
       ) / CHUNK,
     );
-    this.terrain = {
+    this.terrain = createTerrainEvaluator({
       seed: site.seed,
       scale: makeScale(TEMPLATE_BLOCK_SIZE),
       blocks: sitePalette(site.registry).terrain,
       shape: terrainShapeOf(site.registry),
-      surface: site.surface,
-    };
+      site: site.terrain,
+      structures: [],
+    });
     this.solid = worldSolid(this.world, site.registry, this.entities);
     this.opaque = worldOpaque(this.world, site.registry, this.entities);
   }
@@ -79,8 +80,7 @@ export class ScenarioRouteSpace {
       return;
     }
     this.chunks.add(chunkKey);
-    const chunk = generateChunk(this.terrain, cell);
-    this.site.stamp(chunk);
+    const chunk = this.terrain.generateChunk(cell);
     this.world.addChunk(chunk);
     // A preceding-column piece can obstruct this chunk; the fixed initial world needs only one load.
     for (let dx = 0; dx <= this.furnitureReach; dx++) {

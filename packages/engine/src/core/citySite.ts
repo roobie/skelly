@@ -1,4 +1,3 @@
-import type { Chunk } from './chunk.ts';
 import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -17,10 +16,10 @@ import {
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { footprint, type Placement, placedPieces } from './templates.ts';
-import { createCitySurface, stampCityTerrain } from './terrainEvaluator.ts';
-import type { Surface } from './worldgen.ts';
+import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
 
 export class CitySite implements Site {
+  readonly terrain: SiteTerrainPlan;
   readonly seed: number;
   readonly registry: Registry;
   readonly plan: CityPlan;
@@ -39,6 +38,27 @@ export class CitySite implements Site {
     this.registry = registry;
     this.plan = plan;
     this.paving = sitePalette(registry).paving;
+    this.terrain = {
+      kind: 'city',
+      data: {
+        grid: {
+          street: plan.grid.street,
+          blockX: plan.grid.blockX,
+          blockZ: plan.grid.blockZ,
+          pad: plan.grid.pad,
+          rows: plan.grid.rows,
+          blend: plan.grid.blend,
+          ...(plan.grid.paving !== undefined && { paving: plan.grid.paving }),
+          ...(plan.grid.flatSurroundings !== undefined && { flatSurroundings: plan.grid.flatSurroundings }),
+        },
+        bounds: plan.bounds,
+        core: plan.core,
+        floor: plan.floor,
+      },
+      paving: this.paving,
+      structures: plan.structures,
+      placements: terrainPlacements(plan.placements),
+    };
     this.lootColumns = lootPointsByColumn(
       plan.placements.flatMap((placement) =>
         lootSourcesOf(
@@ -102,14 +122,6 @@ export class CitySite implements Site {
   }
   get floor() {
     return this.plan.floor;
-  }
-
-  get surface(): Surface {
-    return createCitySurface(this.plan, this.paving);
-  }
-
-  stamp(chunk: Chunk): void {
-    stampCityTerrain(chunk, this.plan.structures, this.byColumn.get(`${chunk.cx},${chunk.cz}`) ?? []);
   }
 
   supplySourcesIn(area: Rect) {

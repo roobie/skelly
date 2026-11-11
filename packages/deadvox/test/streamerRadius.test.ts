@@ -3,7 +3,7 @@ import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, expect, it } from 'vitest';
-import { baseTerrainShape } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 /** Answers every mesh request with a non-empty mesh when `drain` runs. */
 class AnsweringWorker implements MesherPort {
@@ -55,19 +55,15 @@ const liveStreamer = (preloadRings = 0) => {
     world: new World(),
     meshes: meshes as never,
     mesher: { count: 1, create: () => new AnsweringWorker() },
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 }, floor: 4 }),
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 },
-    structures: [],
     radius: RADIUS,
     preloadRings,
     columnsPerFrame: 2,
     hysteresis: HYSTERESIS,
-    surface: { height: () => 4, top: () => undefined },
   });
   /** Streams around column (cx, cz) until nothing more loads. */
   const settle = (cx: number, cz: number) => {
