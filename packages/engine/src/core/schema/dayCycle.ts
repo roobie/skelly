@@ -246,6 +246,8 @@ const SkyEnvironmentSchema = strictObject({
   ),
   /** How far the drawn sky moves, as its largest change in any value, before the reflection is redrawn: smaller follows twilight closer for more bakes. */
   rebakeChange: FinitePositive,
+  /** The fewest real seconds between two bakes, so a fast-forwarded clock cannot bake every frame. */
+  rebakeInterval: FiniteNonNegative,
   /** How strongly models reflect the open sky; sky exposure dims it where the sky cannot reach. */
   strength: FiniteNonNegative,
 });

@@ -633,7 +633,7 @@ export const createPlayView = (
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
-      skyEnvironment?.refresh(sky);
+      skyEnvironment?.refresh(sky, performance.now() / 1000);
       lightWithSky(skyVisibility);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
