@@ -118,16 +118,14 @@ describe('fixture save/load continuation', () => {
     const [cx, cz] = fixtureZombieColumn;
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
     const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: dusk } };
-    const timedSite = {
+    const timedSite: Site = {
       terrain: { kind: 'natural' },
-      surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
-      stamp: () => undefined,
       supplySourcesIn: () => [],
       lootPointsIn: () => [],
       furnitureIn: () => [],
       actorsIn: () => [marker],
-    } as Site;
+    };
     const original = createRuntime(undefined, false, [fixtureZombieColumn], { start });
     original.session.onColumn(cx, cz, timedSite);
     const key = `shambler:${pos.join(',')}`;
