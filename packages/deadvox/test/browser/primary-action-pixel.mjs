@@ -1141,12 +1141,14 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
 // sky with no painted glow and a disc far past the bloom threshold, and the sky beside it reads the same either way.
 //
 // Bloom cannot light the sky, so the painted glow is all the glow the sun has. Every view is of that look, with only
-// the glow varied, so tuning a shipped look cannot fail the check.
+// the glow varied, so tuning a shipped look cannot fail the check. A glow far past display range still has headroom
+// only if it went through `toDisplay` with the rest of the sky.
 const BRIGHT_SUN = 100;
+const OVERDRIVEN_GLOW = 100;
 const BESIDE_PIXELS = 24;
 const skySunGlowCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
-    async ({ surface, sunBrightness }) => {
+    async ({ surface, sunBrightness, overdrivenGlow }) => {
       const { engine } = globalThis.primaryActionTest;
       engine.mood.setCrackCheck(false);
       engine.mood.setFilm(false);
@@ -1174,11 +1176,12 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
       engine.mood.setBloom(false);
       const plain = await lookWith(brightSun);
       const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
+      const overdriven = await lookWith({ ...brightSun, uSunGlow: overdrivenGlow });
       engine.mood.setBloom(true);
       const bloom = await lookWith(brightSun);
-      return { plain, glowing, bloom, bloomRan: engine.mood.bloomPass.enabled };
+      return { plain, glowing, overdriven, bloom, bloomRan: engine.mood.bloomPass.enabled };
     },
-    { surface: level, sunBrightness: BRIGHT_SUN },
+    { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
   );
   process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
   const brightness = ({ r, g, b }) => r + g + b;
@@ -1188,8 +1191,8 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
     visiblyBrighter(views.plain.colour, views.plain.beside),
     'the sun disc is in frame, brighter than the sky beside it',
   );
-  const besidePeak = Math.max(...Object.values(views.plain.beside));
-  assert.ok(besidePeak + horizonTolerance < 255, 'the sky beside the sun has headroom for bloom to show');
+  const hasHeadroom = (colour) => Math.max(...Object.values(colour)) + horizonTolerance < 255;
+  assert.ok(hasHeadroom(views.plain.beside), 'the sky beside the sun has headroom for bloom to show');
   assert.ok(
     apart(views.bloom.beside, views.plain.beside) <= horizonTolerance,
     'the sky beside a very bright sun gains no glow from bloom',
@@ -1198,6 +1201,7 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
     visiblyBrighter(views.glowing.beside, views.plain.beside),
     'the painted glow brightens the sky beside the sun',
   );
+  assert.ok(hasHeadroom(views.overdriven.beside), 'a glow far past display range is brought into it with the sky');
   assert.deepEqual(lakeErrors, []);
 };
 
