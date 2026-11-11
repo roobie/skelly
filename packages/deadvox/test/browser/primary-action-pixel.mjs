@@ -763,23 +763,23 @@ const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { inventory, session } = r;
   r.input.controls.pitch = 0;
-  const rifle = inventory.create('rifle_assault');
-  r.setHand(r.dominant, rifle);
-  const scope = inventory.create('optic_fixed_prism_4x');
-  const stations = inventory.registry.models
-    .get(inventory.registry.items.get(rifle.type).model)
-    .gun.attachmentSlots.map(({ id }) => id);
-  const fitted = stations.some((slot) => {
-    try {
-      return inventory.fitSlot(rifle, slot, scope);
-    } catch {
-      // Another station may fit.
-      return false;
+  // The first station that takes the optic wins: the authoring tool certifies particular stations.
+  const scopedAcquisitionRifle = () => {
+    const gunType = 'rifle_assault';
+    const stations = inventory.registry.models
+      .get(inventory.registry.items.get(gunType).model)
+      .gun.attachmentSlots.map(({ id }) => id);
+    for (const slot of stations) {
+      try {
+        return r.scopedGun(gunType, slot, 'optic_fixed_prism_4x');
+      } catch {
+        // Another station may fit.
+      }
     }
-  });
-  if (!fitted) {
     throw new Error('Could not fit the acquisition fixture optic');
-  }
+  };
+  const rifle = scopedAcquisitionRifle();
+  r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'hip') {
     r.debugGunPose.toggle('hip');
   }
