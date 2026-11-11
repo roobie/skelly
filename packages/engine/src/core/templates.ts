@@ -7,6 +7,7 @@
 
 import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { type LootContext, type LootDepth, lootDepthOf } from './loot.ts';
@@ -517,12 +518,7 @@ const traversalContract = (registry: Registry, template: CompiledTemplate): stri
   }
   return JSON.stringify([
     Object.entries(template.anchors ?? {})
-      .sort(([a], [b]) => {
-        if (a === b) {
-          return 0;
-        }
-        return a < b ? -1 : 1;
-      })
+      .sort(([a], [b]) => compareCodeUnits(a, b))
       .map(([id, anchor]) => [id, anchor.kind, anchor.at]),
     [...occupied].sort((a, b) => a - b),
     ladders.sort(),
@@ -568,10 +564,7 @@ const resolveSlot = (
   const choices = [...resolved].sort((a, b) => {
     const left = refKey(a.ref);
     const right = refKey(b.ref);
-    if (left === right) {
-      return 0;
-    }
-    return left < right ? -1 : 1;
+    return compareCodeUnits(left, right);
   });
   if (choices.length === 0 || new Set(choices.map((choice) => refKey(choice.ref))).size !== choices.length) {
     throw new Error(`${label}: choices must be nonempty and unique`);
@@ -601,7 +594,7 @@ const resolveSlot = (
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
-    JSON.stringify([...(template.ports ?? [])].sort((a, b) => (a.id < b.id ? -1 : 1)));
+    JSON.stringify([...(template.ports ?? [])].sort((a, b) => compareCodeUnits(a.id, b.id)));
   for (const { placement } of candidates) {
     if (
       placement.template.ownership!.some(
