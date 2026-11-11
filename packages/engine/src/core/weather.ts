@@ -2,10 +2,10 @@
 // If weather ever affects the simulation, remove that exclusion and bring the weather state into the
 // save (docs/decisions/0002-saves.md).
 //
-// Weather as it reaches the look: set the `Weather` levels and the blended sky follows. Pure;
-// presentation/render/playView.ts holds the one `Weather` and applies `skyInWeather` to each frame's sky before
-// render/sky.ts and the dome use it. Weather moves the sky's values, never the dome's shader, so changing it
-// rebuilds nothing.
+// Weather as it reaches the look: set the `Weather` levels and the blended sky follows. Pure; the play view
+// (`packages/presentation/src/render/playView.ts`, `createPlayView`) holds the one `Weather` and applies
+// `skyInWeather` to each frame's sky before the renderer and the dome use it. Weather moves the sky's values,
+// never the dome's shader, so changing it rebuilds nothing.
 
 import type { DayCycleDef } from './schema.ts';
 import type { Rgb, Sky } from './sky.ts';

@@ -1,8 +1,8 @@
 // Debug look settings in the page hash, so a look survives a reload and can be shared.
 // Only the debug tools read or write these; every other hash key is left alone.
 // An absent key means the default look, which is content: the `look` section for tone, exposure and the
-// mood pass, the day cycle's default weather for fog, clouds and rain, and the code defaults for the rest; only deviations
-// from it are written. Each key's control is named in the debug panel's catalogue, and its value type in
+// mood pass, the day cycle's default weather for fog, clouds and rain, and the code defaults for the rest;
+// only deviations from it are written. Each key's control is named in the debug panel's catalogue, and its value type in
 // `src/hashState.ts`, `HASH_KEYS`. Numbers are clamped to their control's range, and a bloom clip equal to the
 // tone mapper's own (`BLOOM_CLIP_BY_TONE`) is left out because it follows the tone mapper; under auto that
 // value moves with the time of day, so it is never left out. The debug time-of-day override is not persisted.
