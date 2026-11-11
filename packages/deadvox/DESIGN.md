@@ -2734,6 +2734,19 @@ proportion to view radius while the world fills. See
 `packages/engine/src/core/skyField.ts`, `SkyFields`, `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
 
+A parked vehicle blocks sky light through the same cells that block sight and sun, so the
+ground under a car and its cabin read as shaded to both the renderer and the rules. Its
+light-blocking cells join the fields' input as blocking furniture does, so a vehicle edit
+rechecks only the fields its cells reach, and glows that ignore furniture ignore vehicles too.
+Each layout-parked vehicle gets its own field because open sky outside every field would
+otherwise leave a car on open ground unshaded; layout vehicles keep their origin in play,
+so their fields can be fixed when the world is set up. A field rebuild is worker transport
+work, too costly to pay every frame for a moving vehicle; when a vehicle can be driven, it
+should leave the occluders while it moves and rejoin them, and gain a field where it stops,
+once it parks. See `packages/engine/src/core/skyField.ts`, `SkyFields.setOccluders`,
+`packages/engine/src/core/vehicleProjection.ts`, `VehicleOccupancy.boxes`, and
+`packages/engine/src/game/layoutVehicles.ts`, `layoutVehicleSkyBoxes`.
+
 Rules that ask whether a place is lit enough, such as reading a page or a sign, take the
 renderer's falloff and its content tuning, so light levels for the rules are never tuned
 apart from the light the player sees. A carried beam counts for its holder, because the
