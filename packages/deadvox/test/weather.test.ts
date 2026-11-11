@@ -161,6 +161,14 @@ describe('cloudiness and rain in the sky', () => {
     expect(chroma(overcast.dome.zenith)).toBeLessThan(chroma(clear.dome.zenith));
   });
 
+  it('darkens a noon overcast further when it rains: a dimmer light and a darker zenith', () => {
+    const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
+    const rain = skyInWeather(skyAt(NOON), { rain: 1 });
+    const sum = (colour: Rgb) => colour[0] + colour[1] + colour[2];
+    expect(rain.lightIntensity).toBeLessThan(overcast.lightIntensity);
+    expect(sum(rain.dome.zenith)).toBeLessThan(sum(overcast.dome.zenith));
+  });
+
   it('brings at least as much overcast with rain as the same cloudiness, cloud included', () => {
     for (const hour of HOURS) {
       for (const level of STEPS) {
