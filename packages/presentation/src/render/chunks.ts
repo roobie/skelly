@@ -247,6 +247,8 @@ export class ChunkMeshes implements ColumnReveal {
   private readonly meshes = new Map<string, Mesh>();
   /** Each mesh's tight box, in metres. */
   private readonly boxes = new Map<Mesh, Box3>();
+  /** Meshes whose column is revealed; kept with the reveal set so per-frame culls don't rebuild column keys. */
+  private readonly shown = new Set<Mesh>();
   readonly material: MeshLambertMaterial;
   private readonly blockSize: number;
   private readonly surfaceNoise: { value: DataTexture | null } = { value: null };
@@ -292,14 +294,21 @@ export class ChunkMeshes implements ColumnReveal {
     this.revealChanges += 1;
     this.changes += 1;
     for (const mesh of this.meshes.values()) {
-      if (!this.canReveal(mesh)) {
+      if (!this.markRevealed(mesh)) {
         mesh.visible = false;
       }
     }
   }
 
-  private canReveal(mesh: Mesh): boolean {
-    return this.isRevealed(mesh.position.x, mesh.position.z);
+  /** Records whether `mesh`'s column is revealed and returns it. */
+  private markRevealed(mesh: Mesh): boolean {
+    const revealed = this.isRevealed(mesh.position.x, mesh.position.z);
+    if (revealed) {
+      this.shown.add(mesh);
+    } else {
+      this.shown.delete(mesh);
+    }
+    return revealed;
   }
   /** Mesh replacement/removal notification, including meshes with zero triangles. Data arrivals belong to Streamer. */
   onChange?: (origin: Vec3) => void;
@@ -472,7 +481,7 @@ export class ChunkMeshes implements ColumnReveal {
     mesh.updateMatrix();
     mesh.frustumCulled = false; // `cull` does it, with the box
     mesh.receiveShadow = true; // every chunk receives; `selectShadowCasters` picks the ones that cast
-    mesh.visible = this.canReveal(mesh);
+    mesh.visible = this.markRevealed(mesh);
     // The group only scales, so a box in blocks becomes metres by the block size.
     const box = geometry.boundingBox!.clone().translate(mesh.position);
     box.min.multiplyScalar(this.blockSize);
@@ -494,7 +503,7 @@ export class ChunkMeshes implements ColumnReveal {
     this.material.shadowSide = side;
     let count = 0;
     for (const [mesh, box] of this.boxes) {
-      const on = this.canReveal(mesh) && casts(box);
+      const on = this.shown.has(mesh) && casts(box);
       mesh.castShadow = on;
       mesh.visible = on;
       count += on ? 1 : 0;
@@ -515,7 +524,7 @@ export class ChunkMeshes implements ColumnReveal {
     for (const [mesh, box] of this.boxes) {
       const dx = Math.max(box.min.x - x, 0, x - box.max.x);
       const dz = Math.max(box.min.z - z, 0, z - box.max.z);
-      mesh.visible = this.canReveal(mesh) && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
+      mesh.visible = this.shown.has(mesh) && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
     }
   }
 
@@ -529,6 +538,7 @@ export class ChunkMeshes implements ColumnReveal {
     mesh.geometry.dispose();
     this.meshes.delete(key);
     this.boxes.delete(mesh);
+    this.shown.delete(mesh);
     this.changes += 1;
   }
 }
