@@ -1,7 +1,7 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import { BlockEntities, type Facing } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
-import { Box3, Color, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, Color, InstancedMesh, Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
@@ -47,9 +47,8 @@ describe('furniture detail', () => {
       const size: [number, number, number] =
         facing === 'e' || facing === 'w' ? [def.size[2], def.size[1], def.size[0]] : [...def.size];
       const entity = entities.add({ type: def.id, size, pos: [index * 8, 2, 3], facing })!;
-      furniture.sync(entities);
-      furniture.group.updateMatrixWorld(true);
-      const mesh = furniture.group.children[index] as Mesh;
+      const mesh = furniture.pieceMesh(entity, def) as Mesh;
+      mesh.updateMatrixWorld(true);
       expect(mesh).toBeInstanceOf(Mesh);
       expect(mesh.geometry.groups).toEqual([]);
       expect(Array.isArray(mesh.material)).toBe(false);
@@ -74,23 +73,25 @@ describe('furniture detail', () => {
       reliefCenter.divideScalar(reliefVertices).sub(envelope.getCenter(new Vector3()));
       expect(reliefCenter.dot(outward[facing])).toBeGreaterThan(0);
     }
-    expect(furniture.group.children.filter((child) => child instanceof Mesh)).toHaveLength(definitions.length);
+    furniture.sync(entities);
+    expect(furniture.group.children.filter((child) => child instanceof InstancedMesh)).toHaveLength(definitions.length);
   });
 
-  it('reuses detail geometry across instances and search redraws, and leaves unchanged frames alone', () => {
+  it('draws every instance of a detail in one batch across search redraws, and leaves unchanged frames alone', () => {
     const { registry, entities, furniture } = fixture();
     const def = registry.furniture.get(definitions[0]!.id)! as FurnitureDef;
     const first = entities.add({ type: def.id, size: def.size, pos: [0, 0, 0], facing: 'n' })!;
     entities.add({ type: def.id, size: def.size, pos: [5, 0, 0], facing: 'n' });
+    const batches = () => furniture.group.children.filter((child) => child instanceof InstancedMesh);
     furniture.sync(entities);
-    const meshes = furniture.group.children.filter((child): child is Mesh => child instanceof Mesh);
-    const { geometry } = meshes[0]!;
-    expect(geometry).toBe(meshes[1]!.geometry);
+    const [batch] = batches();
+    expect(batches()).toHaveLength(1);
+    expect(batch!.count).toBe(2);
     furniture.sync(entities);
-    expect(furniture.group.children[0]).toBe(meshes[0]);
+    expect(batches()).toEqual([batch]);
     entities.markSearched(first);
     furniture.sync(entities);
-    expect((furniture.group.children[0] as Mesh).geometry).toBe(geometry);
+    expect(batches().map(({ geometry }) => geometry)).toEqual([batch!.geometry]);
   });
 
   it('paints shape boxes with their own colour, falling back to the furniture colour', () => {

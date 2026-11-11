@@ -20,6 +20,7 @@ import {
   DirectionalLight,
   Group,
   HemisphereLight,
+  InstancedMesh,
   type Mesh,
   PerspectiveCamera,
   Quaternion,
@@ -202,19 +203,22 @@ describe('movable furniture', () => {
     held.dispose();
   });
 
-  it('rebuilds only the moved piece, and nothing standing when the carried piece turns', () => {
+  it('draws the standing pieces without the lifted one, and redraws nothing when the carried piece turns', () => {
     const inventory = new Inventory(registry);
     const { entities } = inventory;
-    const still = inventory.furnish({ ...spec, pos: moved })!;
+    inventory.furnish({ ...spec, pos: moved });
     const piece = inventory.furnish(spec)!;
     const meshes = new FurnitureMeshes(formatWorldOptions.blockSize);
-    const meshOf = (entity: BlockEntity) => meshes.group.children[[...entities.all].indexOf(entity)];
+    const drawn = () =>
+      meshes.group.children
+        .filter((child): child is InstancedMesh => child instanceof InstancedMesh)
+        .reduce((count, batch) => count + batch.count, 0);
     meshes.sync(entities);
-    const stillMesh = meshOf(still);
+    expect(drawn()).toBe(2);
 
     expect(liftFurniture(mover(inventory), piece)).toBeUndefined();
     meshes.sync(entities);
-    expect(meshOf(still)).toBe(stillMesh);
+    expect(drawn()).toBe(1);
 
     const { standing } = entities;
     expect(turnCarried(inventory)).toBeUndefined();

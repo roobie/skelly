@@ -31,6 +31,7 @@
         "options": [false, true]
       },
       "fogFarPlaneScale": 1.5,
+      "furnitureSectorChunks": 4,
       "gore": {
         "dripSourceCap": 6,
         "dropletCap": 128,
