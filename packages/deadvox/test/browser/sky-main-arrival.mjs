@@ -316,8 +316,26 @@ function assertOverlayBoundary(packageSources, overlays, branchPaths) {
   }
 }
 
-/** Measurement hooks added to a served base startup source: engine readiness and first mesh delivery. */
+// Base startup reads one default fogginess from the branch's day-cycle content and one fogginess from the
+// branch's look controls; both became whole weather states (#1543). Content selectors and object members are
+// beyond export shims, so the base callers read the branch's weather instead. Drop once the base carries it.
+export function adaptMainWeather(source) {
+  return source
+    .replaceAll('{ fogginess: dayCycle.weather.defaultFogginess }', '{ ...dayCycle.weather.defaults }')
+    .replace(
+      'const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;',
+      'const defaultWeather = requireDayCycle(hooks.engine.registry).weather.defaults;',
+    )
+    .replaceAll('defaultFogginess,', 'defaultWeather,')
+    .replaceAll('fogginess: look.fogginess,', 'weather: look.weatherState,')
+    .replaceAll('look.fogginess', 'look.weatherState.fogginess');
+}
+
+/** Measurement hooks and contract adapters applied to a served base startup source. */
 const OVERLAY_ADAPTERS = {
+  'deadvox:bench/post.ts': adaptMainWeather,
+  'deadvox:debug/index.ts': adaptMainWeather,
+  'presentation:render/playView.ts': adaptMainWeather,
   'presentation:presentation/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',

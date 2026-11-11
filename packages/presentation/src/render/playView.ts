@@ -290,7 +290,7 @@ export const createPlayView = (
     mood.restore(moodOf(look));
     shadows.restore(DEFAULT_SHADOWS);
   }
-  const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
+  const weather: Weather = { ...dayCycle.weather.defaults };
   const playerFigure = claimed(registry.figures, 'player')!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);

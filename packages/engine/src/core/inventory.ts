@@ -14,6 +14,7 @@ import {
   skillEffectLevel,
   skillSaturation,
 } from './character.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
@@ -1774,7 +1775,7 @@ export class Inventory {
     }
     if (totals.size > 0) {
       output.craftedLiquids = [...totals]
-        .sort(([a], [b]) => a.localeCompare(b))
+        .sort(([a], [b]) => compareCodeUnits(a, b))
         .map(([liquid, volumeMicrolitres]) => ({ liquid, volumeMicrolitres }));
     }
     return [output];
@@ -2700,7 +2701,7 @@ const validDisassemblySnapshot = (
     work.liquids.every(
       ({ liquid, volumeMicrolitres }, index) =>
         registry.liquids.has(liquid) &&
-        (index === 0 || work.liquids[index - 1]!.liquid.localeCompare(liquid) < 0) &&
+        (index === 0 || compareCodeUnits(work.liquids[index - 1]!.liquid, liquid) < 0) &&
         volumeMicrolitres <= (liquids.find((amount) => amount.liquid === liquid)?.volumeMicrolitres ?? 0),
     )
   );

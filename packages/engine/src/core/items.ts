@@ -4,6 +4,7 @@
 
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
@@ -428,7 +429,7 @@ export const assertCraftedLiquids = (registry: Registry, state: ItemState): void
         (entry, index, records) =>
           !(entry && registry.liquids.has(entry.liquid) && Number.isSafeInteger(entry.volumeMicrolitres)) ||
           entry.volumeMicrolitres <= 0 ||
-          (index > 0 && records[index - 1]!.liquid.localeCompare(entry.liquid) >= 0),
+          (index > 0 && compareCodeUnits(records[index - 1]!.liquid, entry.liquid) >= 0),
       ))
   ) {
     throw new Error('Invalid saved crafted liquids');
