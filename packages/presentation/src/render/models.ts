@@ -257,8 +257,13 @@ export const instantiateSkin = (scene: Object3D) => {
 const parseTaggingLoader = (): GLTFLoader => {
   const loader = new GLTFLoader();
   const parse = loader.parse.bind(loader);
-  loader.parse = (data, path, onLoad, onError) =>
-    parse(data, path, onLoad, (error) => onError?.(asParseFailure(error) as ErrorEvent));
+  loader.parse = (data, path, onLoad, onError) => {
+    try {
+      parse(data, path, onLoad, (error) => onError?.(asParseFailure(error) as ErrorEvent));
+    } catch (error) {
+      throw asParseFailure(error); // GLTFLoader's load forwards a synchronous throw to its error callback.
+    }
+  };
   return loader;
 };
 

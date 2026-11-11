@@ -104,6 +104,13 @@ describe('model library fetch retry', () => {
     expect(report).toHaveBeenCalledTimes(1);
   });
 
+  it('does not retry a TypeError thrown synchronously while parsing a 200 response', async () => {
+    const { fetched, report } = start([new Response('{"asset":null}'), new Response('{"asset":null}')]);
+    await vi.runAllTimersAsync();
+    expect(fetched).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledTimes(1);
+  });
+
   it('drops a pending retry when the library is disposed during backoff', async () => {
     const { fetched, report, library } = start([new Response(null, { status: 503 }), new Response(malformed)]);
     await vi.advanceTimersByTimeAsync(0);
