@@ -60,6 +60,9 @@ export const GraphicsTuningSchema = strictObject({
     skyDrift: Fraction,
     zenithHeight: pipe(Positive, maxValue(1)),
     groundEdge: pipe(Positive, maxValue(1)),
+    strength: Positive,
+    horizonGain: Positive,
+    coatGrazing: Fraction,
   }),
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(

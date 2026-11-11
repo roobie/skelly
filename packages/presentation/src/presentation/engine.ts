@@ -140,6 +140,7 @@ export function createEngine(
         vehicleFinishes: new VehicleFinishes(
           new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection),
           MATERIALS,
+          graphicsTuning.vehicleReflection.coatGrazing,
         ),
       }
     : {};

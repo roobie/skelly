@@ -6,27 +6,42 @@ import type { ReflectionMap } from './skyReflection.ts';
 
 type Coat = NonNullable<ReturnType<typeof surfaceOf>['clearcoat']>;
 
-const DIFFUSE_IBL = 'iblIrradiance += getIBLIrradiance( geometryNormal );';
-if (!ShaderChunk.lights_fragment_maps.includes(DIFFUSE_IBL)) {
-  throw new Error('three.js changed lights_fragment_maps: vehicle finishes can no longer drop its diffuse term');
-}
-/** The hemisphere light stays the only ambient on a finish, so a reflection adds gloss without brightening the paint. */
-const SPECULAR_ONLY_MAPS = ShaderChunk.lights_fragment_maps.replace(DIFFUSE_IBL, '');
-
-const specularOnly: Material['onBeforeCompile'] = (shader) => {
-  shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_maps>', SPECULAR_ONLY_MAPS);
+const without = (chunk: string, term: string, replacement = ''): string => {
+  if (!chunk.includes(term)) {
+    throw new Error(`three.js changed a shader chunk: vehicle finishes can no longer find ${term}`);
+  }
+  return chunk.replace(term, replacement);
 };
 
+/**
+ * Only the coat samples the reflection. The hemisphere light stays the only ambient on a finish, and the layer under
+ * the coat keeps to direct light, because its broad rough lobe spreads the map over the panel as a pale film.
+ */
+const COAT_ONLY_MAPS = without(
+  without(ShaderChunk.lights_fragment_maps, 'iblIrradiance += getIBLIrradiance( geometryNormal );'),
+  'radiance += iblRadiance;',
+);
+
+/** A flat panel has no shape to break up what it mirrors, so at a grazing angle a full Fresnel swaps the paint for the sky. */
+const coatGrazing = (limit: number): string =>
+  without(
+    ShaderChunk.lights_physical_fragment,
+    'material.clearcoatF90 = 1.0;',
+    `material.clearcoatF90 = ${limit.toFixed(4)};`,
+  );
+
 /** The one recipe for a finished material, so warm-up stand-ins compile the very programs the vehicles draw with. */
-const finished = (loaded: MeshStandardMaterial, coat: Coat | undefined, reflection: ReflectionMap) => {
-  const material = coat && !(loaded instanceof MeshPhysicalMaterial) ? physicalCopy(loaded) : loaded.clone();
-  if (coat && material instanceof MeshPhysicalMaterial) {
-    material.clearcoat = coat.amount;
-    material.clearcoatRoughness = coat.roughness;
-    material.metalness = coat.metallic;
-  }
+const finished = (loaded: MeshStandardMaterial, coat: Coat, reflection: ReflectionMap, grazingLimit: number) => {
+  const material = loaded instanceof MeshPhysicalMaterial ? loaded.clone() : physicalCopy(loaded);
+  material.clearcoat = coat.amount;
+  material.clearcoatRoughness = coat.roughness;
+  material.metalness = coat.metallic;
   material.envMap = reflection.texture;
-  material.onBeforeCompile = specularOnly;
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <lights_fragment_maps>', COAT_ONLY_MAPS)
+      .replace('#include <lights_physical_fragment>', coatGrazing(grazingLimit));
+  };
   material.customProgramCacheKey = () => 'vehicle-finish';
   return material;
 };
@@ -41,12 +56,14 @@ const STAND_IN_COAT: Coat = { amount: 1, roughness: 1, metallic: 0 };
 export class VehicleFinishes {
   private readonly reflection: ReflectionMap;
   private readonly table: Readonly<Record<string, MaterialDef>>;
+  private readonly grazingLimit: number;
   private readonly copies = new WeakMap<Material, Material>();
   private on = false;
 
-  constructor(reflection: ReflectionMap, table: Readonly<Record<string, MaterialDef>>) {
+  constructor(reflection: ReflectionMap, table: Readonly<Record<string, MaterialDef>>, grazingLimit: number) {
     this.reflection = reflection;
     this.table = table;
+    this.grazingLimit = grazingLimit;
   }
 
   get enabled(): boolean {
@@ -78,17 +95,17 @@ export class VehicleFinishes {
 
   /** The finished programs a loaded material of this kind can take, for the scene's warm-up. */
   warmUpVariants = (plain: MeshStandardMaterial): Material[] => [
-    finished(plain, undefined, this.reflection),
-    ...(plain instanceof MeshPhysicalMaterial ? [] : [finished(plain, STAND_IN_COAT, this.reflection)]),
+    finished(plain, STAND_IN_COAT, this.reflection, this.grazingLimit),
   ];
 
   private copyOf(material: Material): Material {
-    if (!(material instanceof MeshStandardMaterial)) {
+    const coat = this.coatOf(material);
+    if (!(coat && material instanceof MeshStandardMaterial)) {
       return material;
     }
     let copy = this.copies.get(material);
     if (copy === undefined) {
-      copy = finished(material, this.coatOf(material), this.reflection);
+      copy = finished(material, coat, this.reflection, this.grazingLimit);
       this.copies.set(material, copy);
     }
     return copy;

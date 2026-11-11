@@ -64,7 +64,15 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
             itemPicture: { framing: 1.1 },
             modelLoadConcurrency: 2,
             unbuiltSkyCap: 0.5,
-            vehicleReflection: { cubeSize: 16, skyDrift: 0.1, zenithHeight: 0.5, groundEdge: 0.1 },
+            vehicleReflection: {
+              cubeSize: 16,
+              skyDrift: 0.1,
+              zenithHeight: 0.5,
+              groundEdge: 0.1,
+              strength: 1,
+              horizonGain: 2,
+              coatGrazing: 0.25,
+            },
             skyJobsInFlight: 2,
             skyPreloadRings: 1,
             itemViewer: {

@@ -117,10 +117,13 @@
         "options": [false, true]
       },
       "vehicleReflection": {
+        "coatGrazing": 0.050000000000000003,
         "cubeSize": 32,
-        "groundEdge": 0.02,
+        "groundEdge": 0.29999999999999999,
+        "horizonGain": 4.5,
         "skyDrift": 0.02,
-        "zenithHeight": 0.45000000000000001
+        "strength": 0.59999999999999998,
+        "zenithHeight": 0.080000000000000002
       }
     }
   ]

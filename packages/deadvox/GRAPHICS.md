@@ -103,11 +103,14 @@ A vehicle body read as matte plastic because nothing in the game gave it anythin
 
 - The reflection sits on the vehicle's own materials, never on the scene's environment. A scene environment also reaches every Lambert and Standard surface, so it would relight the terrain and every building.
 - Vehicles draw finished copies and models keep their shared originals, because the same model material also draws in hands, piles and the item viewer, and because off has to draw exactly what the game drew without the option.
-- The reflection is specular only. The hemisphere light is already the ambient term on these materials; a diffuse reflection term on top would brighten the paint in place of making it glossy.
-- Its source is the sky's own gradient, because the game has no sky image to reflect. A real sky bake (#1542) replaces it behind `packages/presentation/src/render/skyReflection.ts`, `ReflectionMap`.
+- Only the coat reflects. The hemisphere light is already the ambient term on these materials, and the rough layer under a coat spreads whatever it reflects evenly over the panel, so a reflection there reads as a pale film on the paint and lightens parts that were never glossy.
+- The coat's reflectance at grazing angles is capped below the physical limit, in content at `packages/engine/src/core/schema/graphics.ts`, `coatGrazing`. A voxel panel is flat, with no curve to break up what it mirrors, so a full Fresnel swaps the paint on a roof for one even sky colour, which reads as frost.
+- The map is made from the sky's colours, because the game has no sky image to reflect. A real sky bake (#1542) replaces it behind `packages/presentation/src/render/skyReflection.ts`, `ReflectionMap`.
+- The sky's colours are display colours, so the map rescales them to the hemisphere light's brightness; otherwise a reflection outshines what the same sky lights. See `packages/presentation/src/render/skyReflection.ts`, `GradientTuning`.
+- The map's horizon stands brighter than the rest of it. A flat panel sees a narrow range of directions, so an even map only tints it; the bright band is what moves across a body as a sheen.
 - The map follows the time of day by redrawing only when the sky has drifted visibly, because a redraw every frame is cost with nothing to see.
 - Reflections dim per fragment by the same sky visibility that dims ambient light, so a car in a garage does not mirror a sky it cannot see.
-- A coat is finish content because how glossy a paint is belongs with the paint. A coat carries its own metalness: the older finishes raised metalness to stand in for gloss, and under a real coat that stand-in would tint the highlight.
+- A coat is finish content because how glossy a paint is belongs with the paint. A coat carries its own metalness: the older finishes raised metalness to stand in for gloss, and under a real coat that stand-in would tint the highlight. Glass carries a coat too, so that windows reflect.
 - The finished programs compile in the scene's warm-up even with the option off, so switching it during play does not stall.
 
 ## Performance diagnostics

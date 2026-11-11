@@ -29,11 +29,22 @@ export interface GradientTuning {
   readonly skyDrift: number;
   /** The height of a view direction, as its sine, at which the horizon has given way to the zenith. */
   readonly zenithHeight: number;
-  /** Half the width of the band, as a sine, over which the ground gives way to the horizon. */
+  /** How far below the horizon, as a sine, the ground starts giving way to it. */
   readonly groundEdge: number;
+  /** The map's light against the hemisphere light's, where 1 makes a reflected colour as bright as it lights white. */
+  readonly strength: number;
+  /** How many times brighter the horizon stands than the rest of the map, the contrast that reads as gloss on a flat panel. */
+  readonly horizonGain: number;
 }
 
-const coloursOf = (sky: Sky): readonly Rgb[] => [sky.sky, sky.heightFogColor, sky.ambientGround];
+const readingsOf = (sky: Sky): readonly number[] => [
+  ...sky.sky,
+  ...sky.heightFogColor,
+  ...sky.ambientGround,
+  sky.ambientIntensity,
+];
+
+const lit = (colour: Rgb, scale: number): Color => new Color().setRGB(...colour, SRGBColorSpace).multiplyScalar(scale);
 
 const mixed = (from: Color, to: Color, amount: number): Color => from.clone().lerp(to, amount);
 
@@ -43,7 +54,7 @@ export class GradientSkyReflection implements ReflectionMap {
   private readonly source: DataTexture;
   private readonly target: WebGLRenderTarget;
   private readonly tuning: GradientTuning;
-  private shown: readonly Rgb[] | undefined;
+  private shown: readonly number[] | undefined;
 
   constructor(renderer: WebGLRenderer, tuning: GradientTuning) {
     this.tuning = tuning;
@@ -65,36 +76,37 @@ export class GradientSkyReflection implements ReflectionMap {
   }
 
   update(sky: Sky): void {
-    const colours = coloursOf(sky);
-    if (this.shown && !this.drifted(colours)) {
+    const readings = readingsOf(sky);
+    if (this.shown && !this.drifted(readings)) {
       return;
     }
-    this.shown = colours;
-    this.paint(colours);
+    this.shown = readings;
+    this.paint(sky);
     this.generator.fromEquirectangular(this.source, this.target);
   }
 
-  private drifted(colours: readonly Rgb[]): boolean {
-    return colours.some((colour, stop) =>
-      colour.some((channel, index) => Math.abs(channel - this.shown![stop]![index]!) > this.tuning.skyDrift),
-    );
+  private drifted(readings: readonly number[]): boolean {
+    return readings.some((reading, index) => Math.abs(reading - this.shown![index]!) > this.tuning.skyDrift);
   }
 
-  /** Every texel of a row shares one height, so a row is worked out once and repeated. */
-  private paint(colours: readonly Rgb[]): void {
-    const [zenith, horizon, ground] = colours.map((colour) => new Color().setRGB(...colour, SRGBColorSpace)) as [
-      Color,
-      Color,
-      Color,
-    ];
+  /**
+   * The sky's colours are display colours, unrelated to how brightly the scene is lit, so each is put on the footing of
+   * the hemisphere light: that light shows white at its intensity over pi. Every texel of a row shares one height, so a
+   * row is worked out once and repeated.
+   */
+  private paint(sky: Sky): void {
     const { width, height } = this.source.image;
     const data = this.source.image.data as Uint16Array;
-    const { zenithHeight, groundEdge } = this.tuning;
+    const { zenithHeight, groundEdge, strength, horizonGain } = this.tuning;
+    const light = (sky.ambientIntensity / Math.PI) * strength;
+    const zenith = lit(sky.sky, light);
+    const horizon = lit(sky.heightFogColor, light * horizonGain);
+    const ground = lit(sky.ambientGround, light);
     const opaque = DataUtils.toHalfFloat(1);
     for (let row = 0; row < height; row++) {
       const y = Math.sin(((row + 0.5) / height - 0.5) * Math.PI);
       const above = mixed(horizon, zenith, MathUtils.smoothstep(y, 0, zenithHeight));
-      const { r, g, b } = mixed(ground, above, MathUtils.smoothstep(y, -groundEdge, groundEdge));
+      const { r, g, b } = mixed(ground, above, MathUtils.smoothstep(y, -groundEdge, 0));
       const start = row * width * 4;
       data.set([DataUtils.toHalfFloat(r), DataUtils.toHalfFloat(g), DataUtils.toHalfFloat(b), opaque], start);
       for (let column = 1; column < width; column++) {

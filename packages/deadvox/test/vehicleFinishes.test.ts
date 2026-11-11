@@ -10,12 +10,14 @@ import {
   MeshStandardMaterial,
   PMREMGenerator,
   Texture,
+  type WebGLProgramParametersWithUniforms,
   type WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 
 const reflection = { texture: new Texture(), update: vi.fn() };
+const grazingLimit = 0.25;
 const colour = [0.5, 0.5, 0.5] as [number, number, number];
 const coat = { amount: 0.7, roughness: 0.2, metallic: 0.05 };
 const table = {
@@ -34,7 +36,7 @@ afterEach(() => {
 });
 
 it('leaves a vehicle on its shared materials while the option is off', () => {
-  const finishes = new VehicleFinishes(reflection, table);
+  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
   const mesh = meshOf('coated');
   const { material } = mesh;
   finishes.dress(new Group().add(mesh));
@@ -43,9 +45,9 @@ it('leaves a vehicle on its shared materials while the option is off', () => {
 });
 
 it('reflects on a finished copy and never on the material other views share', () => {
-  const finishes = new VehicleFinishes(reflection, table);
+  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
   finishes.setEnabled(true);
-  const mesh = meshOf('bare');
+  const mesh = meshOf('coated');
   const shared = mesh.material;
   finishes.dress(new Group().add(mesh));
   expect(mesh.material).not.toBe(shared);
@@ -54,10 +56,11 @@ it('reflects on a finished copy and never on the material other views share', ()
 });
 
 it('takes a coat, and the metalness under it, only from the finish content', () => {
-  const finishes = new VehicleFinishes(reflection, table);
+  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
   finishes.setEnabled(true);
   const [coated, bare] = [meshOf('coated'), meshOf('bare')];
   const shared = coated.material;
+  const uncoated = bare.material;
   finishes.dress(new Group().add(coated, bare));
   const material = coated.material as Material as MeshPhysicalMaterial;
   expect(material).toBeInstanceOf(MeshPhysicalMaterial);
@@ -65,22 +68,38 @@ it('takes a coat, and the metalness under it, only from the finish content', () 
   expect(material.clearcoatRoughness).toBe(coat.roughness);
   expect(material.metalness).toBe(coat.metallic);
   expect(shared.metalness).toBe(table.coated.finish.metallic);
-  expect(bare.material).not.toBeInstanceOf(MeshPhysicalMaterial);
-  expect((bare.material as MeshStandardMaterial).metalness).toBe(table.bare.finish.metallic);
+  expect(bare.material).toBe(uncoated);
 });
 
 it('keeps one finished copy per shared material, so a rebuilt vehicle compiles and uploads nothing new', () => {
-  const finishes = new VehicleFinishes(reflection, table);
+  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
   finishes.setEnabled(true);
-  const first = meshOf('bare');
-  const second = new Mesh(first.geometry, first.material);
+  const first = meshOf('coated');
+  const shared = first.material;
+  const second = new Mesh(first.geometry, shared);
   finishes.dress(new Group().add(first, second));
+  expect(first.material).not.toBe(shared);
   expect(second.material).toBe(first.material);
+});
+
+it('reflects from the coat alone and caps its grazing reflectance, so the paint under it keeps its colour', () => {
+  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
+  finishes.setEnabled(true);
+  const mesh = meshOf('coated');
+  finishes.dress(new Group().add(mesh));
+  const shader = {
+    fragmentShader: '#include <lights_physical_fragment>\n#include <lights_fragment_maps>',
+  } as WebGLProgramParametersWithUniforms;
+  (mesh.material as Material).onBeforeCompile(shader, {} as WebGLRenderer);
+  expect(shader.fragmentShader).toContain('clearcoatRadiance +=');
+  expect(shader.fragmentShader).not.toContain('radiance += iblRadiance;');
+  expect(shader.fragmentShader).not.toContain('iblIrradiance += getIBLIrradiance');
+  expect(shader.fragmentShader).toContain(`material.clearcoatF90 = ${grazingLimit.toFixed(4)};`);
 });
 
 it('follows the sky only while the option is on', () => {
   const update = vi.fn();
-  const finishes = new VehicleFinishes({ texture: reflection.texture, update }, table);
+  const finishes = new VehicleFinishes({ texture: reflection.texture, update }, table, grazingLimit);
   const sky = {} as Sky;
   finishes.update(sky);
   expect(update).not.toHaveBeenCalled();
@@ -98,9 +117,11 @@ it('redraws the reflection when the sky drifts past the threshold, into the text
     skyDrift,
     zenithHeight: 0.5,
     groundEdge: 0.1,
+    strength: 1,
+    horizonGain: 2,
   });
   const skyOf = (red: number) =>
-    ({ sky: [red, 0, 0], heightFogColor: [0, 0, 0], ambientGround: [0, 0, 0] }) as unknown as Sky;
+    ({ sky: [red, 0, 0], heightFogColor: [0, 0, 0], ambientGround: [0, 0, 0], ambientIntensity: 1 }) as unknown as Sky;
   const { texture } = gradient;
   gradient.update(skyOf(0.5));
   const drawn = bake.mock.calls.length;
