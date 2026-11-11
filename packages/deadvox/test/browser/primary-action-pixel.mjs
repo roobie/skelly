@@ -518,9 +518,18 @@ const fakePointerLock = () => {
   };
 };
 
-// Returns the parts of world readiness once all hold or loading has failed, or always when asked,
-// so a failed or timed-out wait names the part that stayed false.
-const worldReadiness = (always) => {
+// Every wait in this stage follows a page load or a software-rendered frame, whose duration scales with machine
+// load, so a Playwright timer only turns a busy runner into a failure. A hung wait is capped by the script's
+// outer `timeout`, and a failed world load ends its own wait through `worldReadiness`.
+const newStagePage = async (chromium, viewport) => {
+  const page = await chromium.newPage({ viewport });
+  page.setDefaultTimeout(0);
+  return page;
+};
+
+// Returns the parts of world readiness once all hold or loading has failed, so the assertion names the part
+// that stayed false.
+const worldReadiness = () => {
   const mask = document.querySelector('#world-loading');
   const parts = {
     testHook: Boolean(globalThis.primaryActionTest),
@@ -532,20 +541,12 @@ const worldReadiness = (always) => {
   };
   const ready =
     parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
-  return always || ready || parts.worldLoading === 'failed' ? parts : false;
+  return ready || parts.worldLoading === 'failed' ? parts : false;
 };
 
 const enterWorld = async (page) => {
   await page.locator('#go').click();
-  let parts;
-  try {
-    parts = await (await page.waitForFunction(worldReadiness, false)).jsonValue();
-  } catch (error) {
-    if (error.name !== 'TimeoutError') {
-      throw error;
-    }
-    parts = await page.evaluate(worldReadiness, true);
-  }
+  const parts = await (await page.waitForFunction(worldReadiness)).jsonValue();
   assert.equal(parts.worldLoading, 'ready', `the world becomes ready: ${JSON.stringify(parts)}`);
   assert.ok(
     parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.maskHidden,
@@ -554,7 +555,7 @@ const enterWorld = async (page) => {
 };
 
 const enterTestHouse = async (chromium, port) => {
-  const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
+  const page = await newStagePage(chromium, { width: 1280, height: 720 });
   const pageErrors = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
@@ -1022,7 +1023,7 @@ const opticZoomCheck = async (chromium, port) => {
 // Opens the lake scenario with the camera over the basin centre, so the small startup ring is the lake, and
 // enters the world. `hash` adds to the stage's own settings.
 const openLake = async (chromium, port, hash) => {
-  const page = await chromium.newPage({ viewport: { width: 640, height: 400 } });
+  const page = await newStagePage(chromium, { width: 640, height: 400 });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(fakePointerLock);
