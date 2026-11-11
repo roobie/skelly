@@ -189,6 +189,36 @@ it('lets replay drive terrain generation and unloading without live streaming si
   expect(liveUnloads).not.toHaveBeenCalled();
 });
 
+it('throttles terrain generation to columnsPerFrame columns per update', () => {
+  const scale = makeScale(0.5);
+  const budgeted = (columnsPerFrame: number) => {
+    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
+    return new Streamer({
+      world: new World(),
+      meshes: meshes as never,
+      mesher: quietMeshers,
+      seed: 17,
+      terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
+      shape: baseTerrainShape(),
+      colors: new Uint8Array(256 * 4),
+      patterns: new Uint8Array(256),
+      weatherable: new Uint8Array(256),
+      scale,
+      structures: [],
+      radius: 2,
+      preloadRings: 0,
+      columnsPerFrame,
+      hysteresis: 1,
+    });
+  };
+  const one = budgeted(1);
+  one.update(0, 0);
+  expect(one.generatedColumns()).toHaveLength(1);
+  const four = budgeted(4);
+  four.update(0, 0);
+  expect(four.generatedColumns()).toHaveLength(4);
+});
+
 describe('saved columns', () => {
   const scale = makeScale(0.5);
   const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };
