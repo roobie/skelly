@@ -5,8 +5,11 @@ import type { Site } from '@skelly/engine/internal/core/site.ts';
 import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
 import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { layoutVehicleSkyBoxes, registerLayoutVehicles } from '@skelly/engine/internal/game/layoutVehicles.ts';
+import { Inventory } from '@skelly/engine/inventory';
 import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
-import { BlockEntities, CHUNK, toChunk, type Vec3, World } from '@skelly/engine/world';
+import { VehicleOccupancy } from '@skelly/engine/vehicles';
+import { BlockEntities, CHUNK, Chunk, sitePalette, toChunk, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
@@ -82,6 +85,103 @@ it('keeps a built field without reading the world after changes outside its depe
   const reads = vi.spyOn(fixture.world, 'getChunk');
   expect(sky.current(0)).toBe(built);
   expect(reads).not.toHaveBeenCalled();
+});
+
+describe('parked vehicles', () => {
+  const near: SkyBounds = { min: [-12, 1, -12], max: [12, 8, 12] };
+  const far: SkyBounds = { min: [100, 1, -12], max: [124, 8, 12] };
+  const parked = () => {
+    const world = new World();
+    for (let cz = -2; cz <= 1; cz++) {
+      for (let cx = -2; cx <= 8; cx++) {
+        world.addChunk(new Chunk(cx, 0, cz));
+      }
+    }
+    const floor = sitePalette(registry).paving;
+    for (let z = -2 * CHUNK; z < 2 * CHUNK; z++) {
+      for (let x = -2 * CHUNK; x < 9 * CHUNK; x++) {
+        world.setBlock(x, 0, z, floor);
+      }
+    }
+    const sky = new SkyFields({ world, entities: new BlockEntities(registry), registry }, { bottom: 0, top: 31 }, [
+      near,
+      far,
+    ]);
+    const inventory = new Inventory(registry);
+    const light = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'light');
+    sky.setOccluders(light);
+    const [blueprint] = [...registry.vehicleBlueprints.keys()];
+    const id = inventory.registerVehicle({
+      placementKey: 'sky.parked',
+      blueprint: blueprint!,
+      origin: [0, 1, 0],
+      facing: 'n',
+    });
+    return { sky, inventory, light, id };
+  };
+  /** The footprint's middle column, just above the floor: under the body, wherever the content puts it. */
+  const underneath = (light: VehicleOccupancy): Vec3 => {
+    const boxes = light.boxes();
+    const middle = (axis: 0 | 2) =>
+      Math.floor((Math.min(...boxes.map((box) => box.min[axis])) + Math.max(...boxes.map((box) => box.max[axis]))) / 2);
+    return [middle(0) + 0.5, 1.5, middle(2) + 0.5];
+  };
+
+  it('shades the ground under a parked vehicle, though its body lets some sky through', () => {
+    const { sky, light } = parked();
+    const under = sky.visibilityAt(underneath(light));
+    expect(under).toBeGreaterThan(0);
+    expect(under).toBeLessThan(sky.visibilityAt([-10.5, 1.5, -10.5]));
+  });
+
+  it('gives every layout-parked vehicle a field around all of its light-blocking cells', () => {
+    const covered = [...registry.layouts.keys()].flatMap((site) => {
+      const boxes = layoutVehicleSkyBoxes(registry, site, scale.blockSize);
+      const inventory = new Inventory(registry);
+      registerLayoutVehicles(inventory, registry, site, scale.blockSize);
+      const cells = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'light').boxes();
+      return cells.map((cell) =>
+        boxes.some((box) =>
+          [0, 1, 2].every((axis) => cell.min[axis]! >= box.min[axis]! && cell.max[axis]! <= box.max[axis]!),
+        ),
+      );
+    });
+    expect(covered.length).toBeGreaterThan(0);
+    expect(covered.every(Boolean)).toBe(true);
+  });
+
+  it('gives a layout vehicle with no parts no field', () => {
+    const blueprint = registry.vehicleBlueprints.values().next().value!;
+    const site = registry.layouts.keys().next().value!;
+    const stripped = {
+      ...registry,
+      vehicleBlueprints: new Map([['stripped', { ...blueprint, id: 'stripped', fittings: [] }]]),
+      layouts: new Map([
+        [
+          site,
+          {
+            ...registry.layouts.get(site)!,
+            vehicles: [{ placementKey: 'stripped', blueprint: 'stripped', position: [0, 0, 0], facing: 'n' }],
+          },
+        ],
+      ]),
+    } as typeof registry;
+    expect(layoutVehicleSkyBoxes(stripped, site, scale.blockSize)).toEqual([]);
+  });
+
+  it('relights the old spot once the vehicle moves, rebuilding only the fields it reaches', () => {
+    const { sky, inventory, light, id } = parked();
+    const spot = underneath(light);
+    const shaded = sky.visibilityAt(spot);
+    sky.visibilityAt([112.5, 1.5, 0.5]);
+    const farBuilt = sky.current(1);
+    expect(farBuilt?.complete).toBe(true);
+    const vehicle = inventory.vehicles.get(id)!;
+    inventory.vehicles.replace(registry, id, { ...vehicle, origin: [vehicle.origin[0], 1, vehicle.origin[2] + 16] });
+    expect(sky.current(0)).toBeUndefined();
+    expect(sky.current(1)).toBe(farBuilt);
+    expect(sky.visibilityAt(spot)).toBeGreaterThan(shaded);
+  });
 });
 
 it('fails open outside every field, even inside a sealed room', () => {

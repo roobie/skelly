@@ -1,7 +1,7 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
-import type { SkyBounds } from './skylight.ts';
+import type { SkyBlocker, SkyBounds } from './skylight.ts';
 import {
   type CapturedSky,
   captureSky,
@@ -35,6 +35,12 @@ export interface SkyFieldOwner {
   registry: Registry;
 }
 
+/** Light blockers that are neither blocks nor standing pieces, such as parked vehicles; `version` changes whenever `boxes` may. */
+export interface SkyOccluders {
+  readonly version: number;
+  readonly boxes: () => readonly SkyBlocker[];
+}
+
 /** Hands a snapshot to an off-thread build; false when it cannot take one now. */
 export type SkySubmit = (input: SkySnapshot, receive: (result: SkyResult, ms: number) => void) => boolean;
 export interface SkySettled {
@@ -66,7 +72,7 @@ interface Entry extends SkyField {
 const COLUMN_STRIDE = 1 << 22;
 const columnOf = (cx: number, cz: number): number => cx * COLUMN_STRIDE + cz;
 const NO_ENTRIES: readonly never[] = [];
-const boxKey = ({ min, max }: SkyBounds): string => `${min.join()},${max.join()}`;
+const boxKey = ({ min, max, shade }: SkyBlocker): string => `${min.join()},${max.join()},${shade}`;
 
 /**
  * The simulation's sky-visibility cache: one field per sky box, each a pure function of world state.
@@ -75,7 +81,7 @@ const boxKey = ({ min, max }: SkyBounds): string => `${min.join()},${max.join()}
  * that snapshot is still current, so it is the result a synchronous build would give.
  *
  * A field is rechecked only after a change inside its dependency box: a chunk it reads, or a standing
- * piece's blocking box that overlaps it. Light loses all strength within `SKY_HALO` blocks, so nothing
+ * piece's or occluder's blocking box that overlaps it. Light loses all strength within `SKY_HALO` blocks, so nothing
  * further away can change a field's answer, and a world change elsewhere costs no field a recheck.
  */
 export class SkyFields {
@@ -86,11 +92,14 @@ export class SkyFields {
   /** The fields whose dependency box reaches into each world column. */
   private readonly columns = new Map<number, Entry[]>();
   private unwatch: (() => void) | undefined;
-  /** The standing blocking boxes by key, with how many pieces have each, at one `standing` version. */
+  private occluders: SkyOccluders | undefined;
+  /** Counts `setOccluders` calls, so a new source at an old source's version still rescans. */
+  private occluderSource = 0;
+  /** The blocking boxes by key, with how many blockers have each, at one standing and occluder version. */
   private standing = {
-    version: Number.NaN,
-    boxes: [] as SkyBounds[],
-    counts: new Map<string, { box: SkyBounds; count: number }>(),
+    version: '',
+    boxes: [] as SkyBlocker[],
+    counts: new Map<string, { box: SkyBlocker; count: number }>(),
   };
 
   constructor(owner: SkyFieldOwner, range: { bottom: number; top: number }, boxes: readonly SkyBounds[] = []) {
@@ -137,6 +146,15 @@ export class SkyFields {
         }
       });
     }
+  }
+
+  /**
+   * Adds blockers the world does not hold, such as a session's parked vehicles. A change to them rechecks only the
+   * fields whose dependency box a changed box reaches, as a standing piece's change does.
+   */
+  setOccluders(occluders: SkyOccluders | undefined): void {
+    this.occluders = occluders;
+    this.occluderSource += 1;
   }
 
   /** Stops watching the world; a cache dropped before its world calls this so the world does not keep it alive. */
@@ -241,15 +259,15 @@ export class SkyFields {
   }
 
   /**
-   * One furniture scan per standing change, shared by every field's capture and currency check. It marks stale
-   * each field that a box added or removed since the last scan overlaps; a field reads boxes as a set, so order
-   * does not matter.
+   * One scan of the blockers that are not blocks, per change to the standing pieces or the occluders, shared by
+   * every field's capture and currency check; transport treats them all as furniture. It marks stale each field
+   * that a box added or removed since the last scan overlaps; a field reads boxes as a set, so order does not matter.
    */
-  private furniture(): readonly SkyBounds[] {
-    const { standing } = this.owner.entities;
-    if (this.standing.version !== standing) {
-      const boxes = furnitureBounds(this.owner.entities);
-      const counts = new Map<string, { box: SkyBounds; count: number }>();
+  private furniture(): readonly SkyBlocker[] {
+    const version = `${this.owner.entities.standing}:${this.occluderSource}:${this.occluders?.version}`;
+    if (this.standing.version !== version) {
+      const boxes = [...furnitureBounds(this.owner.entities), ...(this.occluders?.boxes() ?? [])];
+      const counts = new Map<string, { box: SkyBlocker; count: number }>();
       for (const box of boxes) {
         const key = boxKey(box);
         const seen = counts.get(key);
@@ -265,7 +283,7 @@ export class SkyFields {
           this.staleAround(box);
         }
       }
-      this.standing = { version: standing, boxes, counts };
+      this.standing = { version, boxes, counts };
     }
     return this.standing.boxes;
   }

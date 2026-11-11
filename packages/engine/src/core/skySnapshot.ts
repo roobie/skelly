@@ -2,7 +2,7 @@ import type { BlockEntities } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, chunkKey, type Vec3 } from './coords.ts';
-import { SKY_LOSS, type SkyBounds } from './skylight.ts';
+import { SKY_LOSS, type SkyBlocker, type SkyBounds } from './skylight.ts';
 import type { World } from './world.ts';
 
 export const SKY_SHELL = 1;
@@ -44,22 +44,23 @@ export interface SkySnapshot {
   bottom: number;
   top: number;
   chunks: SkyChunk[];
-  furniture: SkyBounds[];
+  furniture: SkyBlocker[];
   opacity: Uint8Array;
   complete: boolean;
 }
 export interface CapturedSky {
   input: SkySnapshot;
   /** Pass `furnitureBounds` when several captures are checked against one standing state. */
-  current: (furniture?: readonly SkyBounds[]) => boolean;
+  current: (furniture?: readonly SkyBlocker[]) => boolean;
 }
-/** Every standing piece's light-blocking boxes. */
-export const furnitureBounds = (entities: BlockEntities): SkyBounds[] =>
+/** Every standing piece's light-blocking boxes, each opaque. */
+export const furnitureBounds = (entities: BlockEntities): SkyBlocker[] =>
   [...entities.all]
     .flatMap((entity) => entities.blockingBoxes(entity))
     .map(({ pos, size }) => ({
       min: [...pos] as Vec3,
       max: pos.map((value, axis) => value + size[axis]!) as Vec3,
+      shade: 1,
     }));
 
 /** Each continuation copies at most one chunk; transfers never own live chunk storage. */
@@ -67,12 +68,12 @@ export function* captureSky(
   { world, entities, registry }: { world: World; entities: BlockEntities; registry: Registry },
   bounds: SkyBounds,
   { bottom, top }: { bottom: number; top: number },
-  standing: readonly SkyBounds[] = furnitureBounds(entities),
+  standing: readonly SkyBlocker[] = furnitureBounds(entities),
 ): Generator<void, CapturedSky> {
   const dependency = skyDependencyBounds(bounds, top);
   const chunks: SkyChunk[] = [];
   const versions: { coords: Vec3; chunk: Chunk | undefined; revision: number | undefined }[] = [];
-  const nearby = (all: readonly SkyBounds[]) => all.filter((box) => overlapsSky(dependency, box));
+  const nearby = (all: readonly SkyBlocker[]) => all.filter((box) => overlapsSky(dependency, box));
   const furniture = nearby(standing);
   const furnitureKey = JSON.stringify(furniture);
   const opacity = Uint8Array.from(registry.blocks, (definition, id) =>
