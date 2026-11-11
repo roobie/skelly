@@ -1,5 +1,6 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
+import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import type { Inventory } from './inventory.ts';
 import type { Item } from './items.ts';
 import { lootPointStream, type Rolled, rollLoot } from './loot.ts';
@@ -32,6 +33,27 @@ const furnish = (inventory: Inventory, supply: Supply): (BlockEntity | undefined
   return pieces;
 };
 
+const authoredSupply = (owner: SupplyOwner, source: ColumnSource, column: Column): Supply => {
+  const [cx, cz] = column;
+  return {
+    column,
+    furniture: structuredClone(source.furnitureIn(cx, cz)),
+    ground: source
+      .lootPointsIn(cx, cz)
+      .filter((point) => point.channel === 'ground')
+      .map((point) => ({
+        pos: [...point.destination],
+        loot: rollLoot(owner.inventory.registry, point, lootPointStream(owner.seed, point), owner.blockSize),
+      })),
+  };
+};
+
+/** Every block where furnishing a supply can meet an existing owner: its pieces' origins and its piles. */
+const touchedBlocks = ({ furniture, ground }: Supply): Vec3[] => [
+  ...furniture.flatMap(({ spec }) => [spec.pos, furnitureSurfacePosition(spec)]),
+  ...ground.map(({ pos }) => pos),
+];
+
 const ownerState = (inventory: Inventory): string =>
   JSON.stringify([
     inventory.snapshotState(),
@@ -46,16 +68,21 @@ const ownerState = (inventory: Inventory): string =>
 /** Arrival and event planning share the same complete furnishing program. */
 export const createColumnSupply = (inventory: Inventory, consumed: Set<string>, seed: number, blockSize: number) => {
   const owner: SupplyOwner = { inventory, consumed, seed, blockSize };
-  const project = (source: ColumnSource) => new SupplyProjection(owner, source);
   return {
-    project,
+    project: (source: ColumnSource) => new SupplyProjection(owner, source),
+    /**
+     * Validates on the owners this column's supply can meet, then publishes, so a supply that throws publishes
+     * nothing and the cost follows the column, not the world.
+     */
     arrive(cx: number, cz: number, source: ColumnSource): void {
-      if (consumed.has(`${cx},${cz}`)) {
+      const column: Column = [cx, cz];
+      if (consumed.has(keyOf(column))) {
         return;
       }
-      const projection = project(source);
-      projection.include(cx, cz);
-      projection.publish(projection.revision, () => undefined);
+      const supply = authoredSupply(owner, source, column);
+      furnish(inventory.projectAt(touchedBlocks(supply)), supply);
+      furnish(inventory, supply);
+      consumed.add(keyOf(column));
     },
   };
 };
@@ -156,17 +183,7 @@ class SupplyProjection {
     const itemHandles = new Map<string, number>();
     const supplies = ordered(columns.values()).map((column): Supply => {
       const [cx, cz] = column;
-      const supply: Supply = {
-        column,
-        furniture: structuredClone(this.source.furnitureIn(cx, cz)),
-        ground: this.source
-          .lootPointsIn(cx, cz)
-          .filter((point) => point.channel === 'ground')
-          .map((point) => ({
-            pos: [...point.destination],
-            loot: rollLoot(view.registry, point, lootPointStream(this.owner.seed, point), this.owner.blockSize),
-          })),
-      };
+      const supply = authoredSupply(this.owner, this.source, column);
       const firstItem = view.factory.next;
       for (const [i, entity] of furnish(view, supply).entries()) {
         handles.set(this.handle(cx, cz, i), entity?.uid);

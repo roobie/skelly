@@ -199,7 +199,7 @@ export type Plan =
 
 export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
-const pileKey = (pos: Vec3) => pos.join(',');
+const pileKey = (pos: Readonly<Vec3>) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
 const spotPart = ({ at, reserved }: { at?: Spot; reserved?: true }) => ({
   ...(at ? { at: { ...at } } : {}),
@@ -327,6 +327,33 @@ export class Inventory {
       character: this.character,
       vehicles: this.vehicles.snapshotState(),
     });
+    const foodAt = this.foodClock();
+    projected.foodClock = () => foodAt;
+    projected.foodRate = this.foodRate;
+    return projected;
+  }
+
+  /**
+   * Planning owners for only the furniture origins and piles at these blocks, with the live allocators: all that
+   * furnishing there can meet, at a cost that does not grow with the world. Whole-tree validation is skipped because
+   * a slice of valid owners may hold one end of a cross-owner reference.
+   */
+  projectAt(blocks: readonly Readonly<Vec3>[]): Inventory {
+    const projected = new Inventory(
+      this.registry,
+      new ItemFactory(this.factory.next),
+      BlockEntities.restoreState(this.registry, this.entities.snapshotAt(blocks)),
+      this.character,
+    );
+    for (const pos of blocks) {
+      const pile = this.piles.get(pileKey(pos));
+      if (pile) {
+        projected.piles.set(pileKey(pos), {
+          pos: [...pile.pos],
+          items: pile.items.map((placed) => restorePlaced(this.registry, snapshotPlaced(placed))),
+        });
+      }
+    }
     const foodAt = this.foodClock();
     projected.foodClock = () => foodAt;
     projected.foodRate = this.foodRate;
