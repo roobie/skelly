@@ -20,12 +20,24 @@ import {
 
 const { createServer } = createRequire(new URL('../packages/deadvox/package.json', import.meta.url))('vite');
 
-it('main rendering overlays retain branch core API owners', () => {
-  assert.ok(mainSourceOverlays.length > 0);
+it('main startup keeps terrain construction on one revision while retaining unrelated branch core owners', () => {
+  const terrainBoundary = new Set([
+    'engine:core/authoredSite.ts',
+    'engine:core/citySite.ts',
+    'engine:core/forest.ts',
+    'engine:core/canonicalTerrain.ts',
+    'engine:game/weatheringTestSite.ts',
+  ]);
+  for (const key of ['engine:game/worldSetup.ts', 'engine:game/streamer.ts', ...terrainBoundary]) {
+    assert.ok(mainSourceOverlays.includes(key), `${key} must share main's terrain construction contract`);
+  }
   for (const key of mainSourceOverlays) {
     const separator = key.indexOf(':');
     assert.ok(separator > 0 && !key.slice(separator + 1).startsWith('/'), `${key} is not a package-qualified src path`);
-    assert.ok(!key.slice(separator + 1).startsWith('core/'), `${key} takes a branch core owner`);
+    assert.ok(
+      !key.slice(separator + 1).startsWith('core/') || terrainBoundary.has(key),
+      `${key} takes an unrelated branch core owner`,
+    );
   }
 });
 
