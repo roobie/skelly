@@ -10,7 +10,7 @@ import { revealedColumns } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
-import { extractPadded, extractWide } from '../core/meshInput.ts';
+import { detachNeighbourhood, neighbourhoodOf } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
@@ -215,6 +215,7 @@ export class Streamer {
         wireMeshes: opts.wireMeshes ?? [],
         liquids: opts.liquids ?? new Uint8Array(0),
         fencePosts: opts.fencePosts ?? [],
+        occluders: this.occluders,
       });
       this.workers.push(worker);
     }
@@ -557,17 +558,11 @@ export class Streamer {
       return;
     }
     this.inFlight.add(key);
-    const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
-    const wide = extractWide(world, [cx, cy, cz], scale.minCy, this.occluders);
+    // The worker builds the padded and wide arrays; the main thread only copies the chunks they read.
+    const [neighbourhood, transfer] = detachNeighbourhood(neighbourhoodOf(world, [cx, cy, cz], scale.minCy));
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
-    this.send(worker, {
-      type: 'mesh',
-      key,
-      version: this.versions.get(key) ?? 0,
-      padded,
-      wide,
-    });
+    this.send(worker, { type: 'mesh', key, version: this.versions.get(key) ?? 0, neighbourhood }, transfer);
   }
 
   private receive(worker: MesherPort, msg: FromMesher): void {
@@ -617,13 +612,9 @@ export class Streamer {
     this.refreshReveal();
   }
 
-  private send(worker: MesherPort, msg: ToMesher): void {
+  private send(worker: MesherPort, msg: ToMesher, transfer: ArrayBuffer[] = []): void {
     if (msg.type !== 'init') {
       this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
-    }
-    const transfer: ArrayBuffer[] = [];
-    if (msg.type === 'mesh') {
-      transfer.push(msg.padded.buffer as ArrayBuffer, msg.wide.buffer as ArrayBuffer);
     }
     if (msg.type === 'sky') {
       transfer.push(...msg.input.chunks.flatMap((chunk) => (chunk.raw ? [chunk.raw.buffer as ArrayBuffer] : [])));

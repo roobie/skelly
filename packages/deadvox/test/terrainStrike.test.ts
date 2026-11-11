@@ -10,7 +10,7 @@ import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { PILE_GRID } from '@skelly/engine/inventory';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh } from '@skelly/engine/mesh';
+import { buildMesh, paddedFrom, wideFrom } from '@skelly/engine/mesh';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import type { BlockBlow } from '@skelly/engine/sim';
@@ -360,7 +360,7 @@ const meshing = (f: Fixture) => {
     return request;
   };
   const reply = ({ worker, message }: ReturnType<typeof next>) => {
-    const mesh = buildMesh(message.padded, colors, { wide: message.wide });
+    const mesh = buildMesh(paddedFrom(message.neighbourhood), colors, { wide: wideFrom(message.neighbourhood) });
     worker.handlers?.message({ type: 'mesh', key: message.key, version: message.version, ms: 0, mesh });
     return mesh;
   };
@@ -459,7 +459,7 @@ describe('supply-aware terrain destruction', () => {
       edited.mockImplementation((chunks) => streamer.markEdited(chunks));
       const old = next();
       const index = paddedIndex(toLocal(cell[0]) + 1, toLocal(cell[1]) + 1, toLocal(cell[2]) + 1);
-      expect(old.message.padded[index]).toBe(f.floor);
+      expect(paddedFrom(old.message.neighbourhood)[index]).toBe(f.floor);
       if (state === 'drawn') {
         const mesh = reply(old);
         expect(meshes.set).toHaveBeenCalledWith(old.message.key, expect.any(Array), mesh);
@@ -477,7 +477,7 @@ describe('supply-aware terrain destruction', () => {
       const replacement = next();
       expect(replacement.message.key).toBe(old.message.key);
       expect(replacement.message.version).toBeGreaterThan(old.message.version);
-      expect(replacement.message.padded[index]).toBe(0);
+      expect(paddedFrom(replacement.message.neighbourhood)[index]).toBe(0);
       const mesh = reply(replacement);
       expect(meshes.set).toHaveBeenCalledExactlyOnceWith(replacement.message.key, expect.any(Array), mesh);
     },

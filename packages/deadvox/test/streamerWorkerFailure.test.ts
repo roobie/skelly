@@ -92,7 +92,7 @@ it('returns the key of a mesh build that throws in the worker and fails streamin
   streamer.update(0, 0);
   const waiting = streamer.pending;
   worker.run((message) =>
-    message.type === 'mesh' && message.key === '0,0,0' ? { ...message, padded: undefined as never } : message,
+    message.type === 'mesh' && message.key === '0,0,0' ? { ...message, neighbourhood: undefined as never } : message,
   );
   expect(streamer.pending).toBe(waiting + 1);
   expect(() => streamer.update(0, 0)).toThrow('World mesh worker failed on chunk 0,0,0');
