@@ -1,6 +1,6 @@
 import { type ActorDef, requireDayCycle, type WeatheringDef } from '@skelly/engine/content';
 import { debugSpawnActorRow, INPUT_REPLAY_MAX_BYTES } from '@skelly/engine/input';
-import { lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
+import { graphicsTuningOf, lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
 import { getBuildRevision } from '@skelly/engine/packs';
 import type { DebugNoclipStep } from '@skelly/engine/session';
 import {
@@ -1197,6 +1197,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const lookDefaults = lookDefaultsOf(hooks.engine.registry);
   const look = new LookControls(hooks.engine.renderer, hooks.engine.meshes, hooks.engine.mood, {
     defaults: lookDefaults,
+    sunShadow: graphicsTuningOf(hooks.engine.registry).sunShadow,
     weather: hooks.weather,
     ...(shadows ? { shadows } : {}),
     flashlight: hooks.flashlight,
@@ -1219,6 +1220,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const initialLook = parseLookParams(pageUrl().hash, {
     look: lookDefaults,
     defaultWeather,
+    sunShadow: graphicsTuningOf(hooks.engine.registry).sunShadow,
   });
   look.restore(initialLook);
   // The hash's `cam` puts the player at a saved view instead of the spawn or a save's position (the body moves;
@@ -1259,6 +1261,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       hash: writeLookParams(hash, lookState(), {
         look: lookDefaults,
         defaultWeather,
+        sunShadow: graphicsTuningOf(hooks.engine.registry).sunShadow,
         weathering: look.weatheringState,
         profiles: hooks.engine.registry.weathering,
       }),

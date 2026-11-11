@@ -58,6 +58,17 @@ export const GraphicsTuningSchema = strictObject({
   columnsPerFrame: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
+  sunShadow: pipe(
+    strictObject({
+      defaultReachMetres: pipe(number(), integer(), minValue(12), maxValue(96)),
+      debugReachMetres: pipe(array(pipe(number(), integer(), minValue(12), maxValue(96))), minLength(1)),
+    }),
+    check(
+      ({ defaultReachMetres, debugReachMetres }) =>
+        new Set(debugReachMetres).size === debugReachMetres.length && debugReachMetres.includes(defaultReachMetres),
+      'sun shadow reaches must be unique and include the default',
+    ),
+  ),
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({

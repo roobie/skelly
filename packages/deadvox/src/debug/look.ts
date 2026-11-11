@@ -10,7 +10,7 @@ import {
   clampExposure,
   clampGrade,
   clampTorch,
-  DEFAULT_SHADOWS,
+  defaultShadows,
   type LookDefaults,
   type LookState,
   lookOf,
@@ -18,6 +18,7 @@ import {
   moodOf,
   nextShadowDistance,
   type ShadowState,
+  type SunShadowTuning,
   TORCH_STEP,
 } from '@skelly/engine/look';
 import {
@@ -62,7 +63,7 @@ type MoodControls = Pick<
   | 'setCrackCheck'
 >;
 
-type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setSun' | 'setTorch' | 'stepDistance'>;
+type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setDistance' | 'setSun' | 'setTorch'>;
 
 type LookRenderer = Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>;
 type LookMeshes = Pick<
@@ -80,9 +81,10 @@ export class LookControls {
   private readonly mood: MoodControls | undefined;
   private readonly weather: Weather;
   private readonly shadows: ShadowControls | undefined;
+  private readonly sunShadow: SunShadowTuning | undefined;
   private readonly flashlight: { strength: number };
   private moodValue: MoodState;
-  private shadowValue: ShadowState = { ...DEFAULT_SHADOWS };
+  private shadowValue: ShadowState;
   private exposureValue: number;
   private linearColorsValue: boolean;
   private patternsValue: boolean;
@@ -100,6 +102,7 @@ export class LookControls {
     environment: {
       /** The content's default look, which the controls fall back to for what the renderer cannot tell. */
       defaults: LookDefaults;
+      sunShadow?: SunShadowTuning;
       weather: Weather;
       shadows?: ShadowControls;
       flashlight: { strength: number };
@@ -115,7 +118,11 @@ export class LookControls {
     this.mood = mood;
     this.weather = environment.weather;
     this.shadows = environment.shadows;
+    this.sunShadow = environment.sunShadow;
     this.flashlight = environment.flashlight;
+    if (!(environment.shadows || environment.sunShadow)) {
+      throw new Error('look controls need content-owned sun-shadow tuning without a shadow renderer');
+    }
     this.weatheringValue = environment.weathering?.state;
     this.weatheringProfiles = environment.weathering?.profiles ?? new Map();
     this.weatheringSplit = environment.weathering?.split;
@@ -140,7 +147,7 @@ export class LookControls {
         bloomClip: mood.bloomClip,
       };
     }
-    this.shadowValue = { ...(environment.shadows?.settings ?? DEFAULT_SHADOWS) };
+    this.shadowValue = { ...(environment.shadows?.settings ?? defaultShadows(environment.sunShadow!)) };
   }
 
   /** The mood pass as it is now, in the URL's terms. */
@@ -217,9 +224,12 @@ export class LookControls {
   /** Steps the sun's shadow distance through the allowed list, wrapping. */
   stepShadowDistance(): void {
     if (this.shadows) {
-      this.shadows.stepDistance();
+      this.shadows.setDistance(nextShadowDistance(this.shadowState.distance, this.sunShadow!));
     } else {
-      this.shadowValue = { ...this.shadowValue, distance: nextShadowDistance(this.shadowValue.distance) };
+      this.shadowValue = {
+        ...this.shadowValue,
+        distance: nextShadowDistance(this.shadowValue.distance, this.sunShadow!),
+      };
     }
   }
 

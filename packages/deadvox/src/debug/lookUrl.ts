@@ -16,7 +16,7 @@ import {
   clampGrade,
   clampShadowDistance,
   clampTorch,
-  DEFAULT_SHADOWS,
+  defaultShadows,
   DEFAULT_TORCH,
   type LookDefaults,
   type LookState,
@@ -24,6 +24,7 @@ import {
   type MoodState,
   moodOf,
   type ShadowState,
+  type SunShadowTuning,
 } from '@skelly/engine/look';
 import {
   clampWeatherLevel,
@@ -52,17 +53,18 @@ export interface LookUrlState extends LookState, MoodState {
 export interface LookUrlDefaults {
   look: LookDefaults;
   defaultWeather: Weather;
+  sunShadow: SunShadowTuning;
   weathering?: WeatheringUrlState | undefined;
   profiles?: ReadonlyMap<string, WeatheringDef>;
 }
 
 /** The state no key departs from: the content's look and weather, and the code's defaults for the rest. */
-export const defaultLookUrlState = ({ look, defaultWeather }: LookUrlDefaults): LookUrlState => ({
+export const defaultLookUrlState = ({ look, defaultWeather, sunShadow }: LookUrlDefaults): LookUrlState => ({
   ...lookOf(look),
   ...moodOf(look),
   weather: { ...defaultWeather },
   torch: DEFAULT_TORCH,
-  shadows: DEFAULT_SHADOWS,
+  shadows: defaultShadows(sunShadow),
   freeze: false,
   crackCheck: false,
   hotCheck: false,
@@ -99,10 +101,10 @@ const fixedBloomClip = (tone: string): number | null => (tone === AUTO_TONE ? nu
 const finite = (value: number | undefined): value is number => value !== undefined && Number.isFinite(value);
 
 /** Both shadows stay on unless the hash turns one off. */
-const shadowsOf = (hash: HashState): ShadowState => ({
+const shadowsOf = (hash: HashState, sunShadow: SunShadowTuning): ShadowState => ({
   sun: hash.sunshadow ?? true,
   torch: hash.torchshadow ?? true,
-  distance: clampShadowDistance(hash.shadowdist ?? Number.NaN),
+  distance: clampShadowDistance(hash.shadowdist ?? Number.NaN, sunShadow),
 });
 
 export const parseLookParams = (hash: HashState, defaults: LookUrlDefaults): LookUrlState => {
@@ -127,7 +129,7 @@ export const parseLookParams = (hash: HashState, defaults: LookUrlDefaults): Loo
     srgb: hash.srgb ?? base.srgb,
     patterns: hash.patterns ?? base.patterns,
     vao: hash.vao ?? base.vao,
-    shadows: shadowsOf(hash),
+    shadows: shadowsOf(hash, defaults.sunShadow),
     freeze: hash.freeze === true,
     crackCheck: hash.crackcheck === true,
     hotCheck: hash.hotcheck === true,
@@ -170,7 +172,7 @@ export const writeLookParams = (hash: HashState, state: LookUrlState, defaults: 
   set('torch', state.torch, state.torch === DEFAULT_TORCH);
   set('sunshadow', false, state.shadows.sun);
   set('torchshadow', false, state.shadows.torch);
-  set('shadowdist', state.shadows.distance, state.shadows.distance === DEFAULT_SHADOWS.distance);
+  set('shadowdist', state.shadows.distance, state.shadows.distance === base.shadows.distance);
   set('crackcheck', true, !state.crackCheck);
   set('hotcheck', true, !state.hotCheck);
   return {

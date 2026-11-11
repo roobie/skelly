@@ -3,7 +3,6 @@ import {
   MAX_EXPOSURE,
   MIN_BLOOM_CLIP,
   MIN_EXPOSURE,
-  SHADOW_DISTANCES,
 } from '@skelly/engine/internal/core/mood.ts';
 import {
   bloomClipFor,
@@ -11,7 +10,7 @@ import {
   clampExposure,
   clampShadowDistance,
   clampTorch,
-  DEFAULT_SHADOWS,
+  defaultShadows,
   DEFAULT_TORCH,
   type LookDefaults,
   lookOf,
@@ -34,7 +33,7 @@ import type { HashState } from '../src/hashState.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-import { LOOK_FIXTURE } from './lookFixture.ts';
+import { LOOK_FIXTURE, SUN_SHADOW_FIXTURE } from './lookFixture.ts';
 
 // Every switch off, against the parser's "on unless false" reading, and the exposure inside the clamp range, so a
 // parser that ignores the given default for a switch or an exposure fails instead of passing by coincidence.
@@ -49,7 +48,9 @@ const URL_LOOK: LookDefaults = {
   film: false,
 };
 const DEFAULT_WEATHER = BASE_DAY_CYCLE.weather.defaults;
-const URL_DEFAULTS = { look: URL_LOOK, defaultWeather: DEFAULT_WEATHER };
+const URL_DEFAULTS = { look: URL_LOOK, defaultWeather: DEFAULT_WEATHER, sunShadow: SUN_SHADOW_FIXTURE };
+const DEFAULT_SHADOWS = defaultShadows(SUN_SHADOW_FIXTURE);
+const SHADOW_DISTANCES = SUN_SHADOW_FIXTURE.debugReachMetres;
 const weatherFixture = () => ({ fogginess: 0.2, cloudiness: 0, rain: 0 });
 const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(URL_DEFAULTS);
 const parse = (hash: HashState) => parseLookParams(hash, URL_DEFAULTS);
@@ -146,7 +147,7 @@ describe('look hash keys', () => {
       expect(distance(stop)).toBe(stop);
     }
     for (const raw of [33.6, 1, -50, 500, 5000]) {
-      expect(distance(raw)).toBe(clampShadowDistance(raw));
+      expect(distance(raw)).toBe(clampShadowDistance(raw, SUN_SHADOW_FIXTURE));
       expect(Number.isInteger(distance(raw))).toBe(true);
     }
     expect(distance(1)).toBeGreaterThan(1);
