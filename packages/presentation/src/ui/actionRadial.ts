@@ -5,15 +5,16 @@ import { styleMap } from 'lit-html/directives/style-map.js';
 
 /**
  * The radial action menu. The centre ring stays dashed until the pull selects an entry, so the player can tell a
- * release in the dead zone will do nothing; the pull dot shows which way the pointer leans before it gets there.
+ * release in the dead zone will choose no entry; the pull dot shows which way the pointer leans before it gets there.
  */
 export const mountActionRadial =
-  (root: HTMLElement) =>
+  (root: HTMLElement, tuning: ActionMenuTuning) =>
   (
     entries: readonly RadialAction[],
     selectedId: string | undefined,
     pull: Readonly<{ x: number; y: number }>,
-    tuning: ActionMenuTuning,
+    /** What a release at the centre does, for a ring where that is more than cancelling. */
+    centreLabel?: string,
   ): void => {
     root.hidden = entries.length === 0;
     const selected = entries.find((entry) => entry.id === selectedId);
@@ -29,7 +30,9 @@ export const mountActionRadial =
     };
     render(
       html`<div class="radial-face" style=${styleMap(face)}>
-        <div class=${selected ? 'radial-centre selected' : 'radial-centre'}></div>
+        <div class=${selected ? 'radial-centre selected' : 'radial-centre'}>${
+          centreLabel === undefined ? nothing : html`<span class="radial-centre-label">${centreLabel}</span>`
+        }</div>
         ${
           pullLength > 0
             ? html`<div

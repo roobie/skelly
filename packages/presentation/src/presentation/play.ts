@@ -87,7 +87,7 @@ import {
   furnitureActionsFor,
   HeldActionPress,
   type HeldActionTrigger,
-  heldMenuActions,
+  heldRadialEntries,
   heldUsePressTaken,
   type InteractionTarget,
   interactionAffordance,
@@ -135,7 +135,6 @@ import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
-import { mountActionChildList } from '../ui/actionChildList.ts';
 import { mountActionRadial } from '../ui/actionRadial.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
@@ -853,10 +852,7 @@ const startPlayWith = (
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
   const heldMenuEntries = (item: Item): RadialAction[] =>
-    radialEntries(
-      heldMenuActions(survival.availableItemActions(item), screenText.actionMenu.treat),
-      actionMenuTuning.directions.held,
-    );
+    heldRadialEntries(survival.availableItemActions(item), screenText.actionMenu.treat, actionMenuTuning.directions);
   const openTarget = (source: 'furniture' | 'held'): number | undefined => {
     const { opened } = actionMenu;
     return opened?.source === source ? opened.uid : undefined;
@@ -1295,7 +1291,7 @@ const startPlayWith = (
   );
   input.setMouseLookOverride((movementX, movementY) => {
     // Look holds while a menu is open, so choosing cannot lose its target.
-    const entries = actionMenu.childOpen ? undefined : openMenuEntries();
+    const entries = openMenuEntries();
     if (entries) {
       actionMenu.point(entries, { x: movementX, y: movementY }, actionMenuTuning);
       return true;
@@ -1344,38 +1340,23 @@ const startPlayWith = (
   drawHudOptions();
   const prompt = $('prompt');
   const actionRadialRoot = $('action-radial');
-  const drawActionRadial = mountActionRadial(actionRadialRoot);
-  const drawActionChildList = mountActionChildList($('action-child-list'), (id) => {
-    const item = openHeldItem();
-    const children = item && actionMenu.childList(heldMenuEntries(item));
-    const chosen = children && actionMenu.chooseChild(id, children);
-    if (item && chosen) {
-      dispatchHeldAction(item, chosen.id);
-    }
-  });
-  let childListShown = false;
+  const drawActionRadial = mountActionRadial(actionRadialRoot, actionMenuTuning);
   /**
-   * Draws the open menu's ring, which follows the interaction hints' visibility, or its child list, which owns input
-   * like any other menu and so always shows. Opening or closing the list hands the pointer over.
+   * Draws the open menu's ring, which follows the interaction hints' visibility, or its child ring, which owns input
+   * like any other menu and so always shows.
    */
   const drawActionMenu = (ringVisible: boolean): void => {
     const entries = openMenuEntries() ?? [];
-    const item = openHeldItem();
-    const children = actionMenu.childList(entries);
-    const ring = ringVisible && !actionMenu.childOpen ? entries : [];
-    drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, actionMenuTuning);
-    drawActionChildList(item ? inventory.name(item) : '', children, screenText.actionMenu.back);
-    if (actionMenu.childOpen !== childListShown) {
-      childListShown = actionMenu.childOpen;
-      syncMenuState();
-    }
+    const ring = ringVisible || actionMenu.childOpen ? (actionMenu.ring(entries) ?? []) : [];
+    const centre = actionMenu.childOpen ? screenText.actionMenu.back : undefined;
+    drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, centre);
   };
-  /** Closes the held menu once its item leaves the hands or its child list has nothing left to offer. */
+  /** Closes the held menu once its item leaves the hands or its child ring has nothing left to offer. */
   const syncHeldActionMenu = (paused: boolean): void => {
     const item = openHeldItem();
     const inHand = item && survival.handOf(item) !== undefined ? item : undefined;
     actionMenu.sync('held', inHand?.uid, paused);
-    if (actionMenu.childOpen && !(inHand && actionMenu.childList(heldMenuEntries(inHand)))) {
+    if (actionMenu.childOpen && !(inHand && actionMenu.ring(heldMenuEntries(inHand)))) {
       actionMenu.close();
     }
   };
@@ -1795,7 +1776,7 @@ const startPlayWith = (
     const state = computeMenuState({
       started,
       mainMenuOpen,
-      inventoryOpen: screen.isOpen || actionMenu.childOpen,
+      inventoryOpen: screen.isOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
       reviewMapOpen,
@@ -2007,7 +1988,7 @@ const startPlayWith = (
     if (reading.isOpen) {
       return 'reading';
     }
-    if (screen.isOpen || actionMenu.childOpen) {
+    if (screen.isOpen) {
       return 'inventory';
     }
     if (compression.interruption !== undefined) {
@@ -2262,7 +2243,7 @@ const startPlayWith = (
   };
 
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
-    const selected = actionMenu.confirm(furnitureActions(entity));
+    const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     if (!selected) {
       return undefined;
     }
@@ -2496,7 +2477,7 @@ const startPlayWith = (
     }
   };
   const openFurnitureMenuHint = (entity: BlockEntity, key: HintText): HintText => {
-    const selected = actionMenu.choice(furnitureActions(entity));
+    const selected = actionMenu.choice(furnitureMenuEntries(entity));
     return selected
       ? html`${key}: ${selected.label} ${selected.id === 'repair' ? '' : nameOf(entity)}`
       : useText(entity);

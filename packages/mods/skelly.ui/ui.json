@@ -20,6 +20,14 @@
             "own": 0,
             "sharpen": 45,
             "treat": 270
+          },
+          "treat": {
+            "head": 0,
+            "leftArm": 300,
+            "leftLeg": 225,
+            "rightArm": 60,
+            "rightLeg": 135,
+            "torso": 180
           }
         },
         "entryCap": 8,

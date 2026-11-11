@@ -27,8 +27,6 @@ export interface ItemAction {
   /** Resuming a held, paused craft: the action menu is where a paused craft's status lives. */
   readonly continuing?: true;
   readonly workUid?: number;
-  /** A menu entry that opens a list of these instead of acting itself. */
-  readonly children?: readonly ItemAction[];
 }
 
 /** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */

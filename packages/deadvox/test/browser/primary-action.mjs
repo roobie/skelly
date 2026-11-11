@@ -19,7 +19,7 @@ import {
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { dispatchMenuPointerClick, dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
@@ -4276,32 +4276,31 @@ try {
           .map((action) => ({ id: action.id, region: action.treatment.region })),
       };
     });
-    const childListShown = (shown) =>
-      page.waitForFunction((expected) => !document.querySelector('#action-child-list').hidden === expected, shown);
-    // Treat gathers the wounds under one entry, whose list offers each one and a Back to the ring.
+    const ringEntriesShown = (ids) =>
+      page.waitForFunction(
+        (expected) =>
+          JSON.stringify(
+            [...document.querySelectorAll('#action-radial .radial-entry')].map((entry) => entry.dataset.action),
+          ) === JSON.stringify(expected),
+        ids,
+      );
+    // Treat gathers the wounds under one entry, whose child ring offers each one and returns to its parent at the centre.
     await chooseHeldAction(page, 'treat');
-    await childListShown(true);
-    assert.deepEqual(
-      await page
-        .locator('#action-child-list button:not([data-action="back"])')
-        .evaluateAll((buttons) => buttons.map((button) => button.dataset.action)),
-      treatment.wounds.map(({ id }) => id),
-      'the Treat list offers every treatable wound',
-    );
-    await pressWithDrawnCursor(page, '#action-child-list [data-action="back"]');
-    await childListShown(false);
-    await waitForActionRing(page);
+    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    const releaseAtCentre = await holdDominantUse(page);
+    await releaseAtCentre();
+    await page.waitForSelector('#action-radial .radial-entry[data-action="treat"]', { state: 'attached' });
     assert.notEqual(
       await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
       'treatment',
-      'Back returns to the ring without treating',
+      'the child ring centre returns to the parent ring without treating',
     );
     // A wound other than the default proves the choice, not the default, picks what is treated.
     const chosenWound = treatment.wounds.find(({ region }) => region !== treatment.defaultRegion);
     assert(chosenWound, 'the treatment fixture offers a wound besides the default');
     await chooseHeldAction(page, 'treat');
-    await childListShown(true);
-    await pressWithDrawnCursor(page, `#action-child-list [data-action="${chosenWound.id}"]`);
+    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    await chooseHeldAction(page, chosenWound.id);
     const selected = chosenWound.region;
     await page.waitForFunction(
       (uid) => {

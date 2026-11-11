@@ -9,6 +9,10 @@ const choices = [
   { id: 'sharpen', label: 'Sharpen' },
 ];
 const entries = radialEntries(choices, { own: 0, sharpen: 90 });
+const treat = [...choices, { id: 'treat', label: 'Treat' }];
+const treatEntries = radialEntries(treat, { own: 0, sharpen: 180, treat: 90 }).map((entry) =>
+  entry.id === 'treat' ? { ...entry, children: radialEntries([{ id: 'arm', label: 'Arm' }], { arm: 0 }) } : entry,
+);
 
 const fixture = (actions: readonly { id: string; label: string }[] = choices, menuEntries = entries) => {
   const menu = new ActionMenu();
@@ -75,9 +79,7 @@ describe('held item action press', () => {
     expect([...taps, ...acts]).toEqual([]);
   });
 
-  it('closes the held ring on cancel but keeps the child list its release opened', () => {
-    const treat = [...choices, { id: 'treat', label: 'Treat', children: [{ id: 'arm', label: 'Arm' }] }];
-    const treatEntries = radialEntries(treat, { own: 0, sharpen: 180, treat: 90 });
+  it('closes the held ring on cancel but keeps the child ring its release opened', () => {
     const held = fixture(treat, treatEntries);
     held.press.press('right', 'dominant', 0);
     held.press.update(HOLD_MS);
@@ -94,18 +96,18 @@ describe('held item action press', () => {
     expect(menu.childOpen).toBe(true);
   });
 
-  it('confirms the ring Back left open with the next press, without a new hold', () => {
-    const treat = [...choices, { id: 'treat', label: 'Treat', children: [{ id: 'arm', label: 'Arm' }] }];
-    const treatEntries = radialEntries(treat, { own: 0, sharpen: 180, treat: 90 });
+  it('confirms an open child ring, then the ring its centre returns to, each with the next press', () => {
     const { press, menu, acts } = fixture(treat, treatEntries);
     press.press('right', 'dominant', 0);
     press.update(HOLD_MS);
     menu.point(treatEntries, { x: tuning.radiusPixels, y: 0 }, tuning);
     press.release('dominant', HOLD_MS * 2);
-    menu.chooseChild(undefined, menu.childList(treatEntries)!);
     expect(press.press('right', 'dominant', HOLD_MS * 3)).toBe(true);
-    menu.point(treatEntries, { x: 0, y: tuning.radiusPixels }, tuning);
     press.release('dominant', HOLD_MS * 3 + 1);
+    expect(menu.childOpen).toBe(false);
+    expect(press.press('right', 'dominant', HOLD_MS * 4)).toBe(true);
+    menu.point(treatEntries, { x: 0, y: tuning.radiusPixels }, tuning);
+    press.release('dominant', HOLD_MS * 4 + 1);
     expect(acts).toEqual(['5:sharpen']);
   });
 

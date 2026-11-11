@@ -1,6 +1,6 @@
 import { ForwardReleaseWatch, isForwardButton, PressDedupe } from '@skelly/engine/input';
 import type { Item } from '@skelly/engine/inventory';
-import { ActionMenu, HeldActionPress } from '@skelly/engine/sim';
+import { ActionMenu, HeldActionPress, radialEntries } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { formatMouseDiag } from '../src/debug/mouseDiag.ts';
 
@@ -39,7 +39,7 @@ describe('ForwardReleaseWatch', () => {
       menu: new ActionMenu(),
       item: () => ({ uid: 1 }) as Item,
       actions: () => choices,
-      menuActions: () => choices,
+      menuActions: () => radialEntries(choices, { own: 0, unload: 180 }),
       holdRealMs: Number.POSITIVE_INFINITY,
       tap: (hand) => taps.push(hand),
       act: () => undefined,

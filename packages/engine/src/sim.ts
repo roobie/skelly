@@ -135,7 +135,7 @@ export {
 } from './core/time.ts';
 export {
   ActionMenu,
-  heldMenuActions,
+  heldRadialEntries,
   type RadialAction,
   radialEntries,
   radialEntryIndex,

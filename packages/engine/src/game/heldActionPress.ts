@@ -1,6 +1,6 @@
 import type { HandSide } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import type { ActionMenu } from './actionMenu.ts';
+import type { ActionMenu, RadialAction } from './actionMenu.ts';
 import type { ItemAction } from './itemActions.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
 
@@ -44,7 +44,7 @@ export interface HeldActionPressPorts {
   /** The item's raw actions, which decide whether its use opens a menu. */
   actions: (item: Item) => readonly ItemAction[];
   /** The entries its menu shows. */
-  menuActions: (item: Item) => readonly ItemAction[];
+  menuActions: (item: Item) => readonly RadialAction[];
   holdRealMs: number;
   /** The ordinary use the press would have made, run once on a tap. */
   tap: (hand: HandSide, trigger: HeldActionTrigger) => void;
@@ -55,7 +55,7 @@ export interface HeldActionPressPorts {
 /**
  * Owns the use press of a held item with a choice of actions: a tap keeps the ordinary use, a hold opens the item's
  * action menu, and the release confirms what the menu points at. Releasing at the centre chooses nothing. A ring
- * already open, as Back from a child list leaves it, is confirmed by the next press's release.
+ * already open, as a child ring or the parent ring its centre returns to, is confirmed by the next press's release.
  */
 export class HeldActionPress {
   private readonly ports: HeldActionPressPorts;
@@ -80,8 +80,7 @@ export class HeldActionPress {
       return false;
     }
     this.pressed = { hand, uid: item.uid, trigger };
-    if (this.ports.menu.isOpen('held', item.uid) && !this.ports.menu.childOpen) {
-      // Back from a child list leaves the ring open, so this press confirms it rather than starting a new gesture.
+    if (this.ports.menu.isOpen('held', item.uid)) {
       this.menuTrigger = trigger;
       return true;
     }
@@ -111,8 +110,8 @@ export class HeldActionPress {
   }
 
   /**
-   * Forgets the press and closes the ring it holds open, as losing focus or a refusal does. A child list its release
-   * opened is a menu of its own, closed by Back or Escape, so the input context change it causes cannot close it.
+   * Forgets the press and closes the ring it holds open, as losing focus or a refusal does. A ring open between
+   * presses waits for the next press or Escape.
    */
   cancel(): void {
     const ringHeld = this.menuTrigger !== undefined;

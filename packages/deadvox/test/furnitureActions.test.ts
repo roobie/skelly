@@ -2,7 +2,7 @@ import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import {
   ActionMenu,
   furnitureActionsFor,
-  heldMenuActions,
+  heldRadialEntries,
   radialEntries,
   radialEntryIndex,
   reachTuning,
@@ -13,7 +13,7 @@ import { baseRegistryWith } from './baseRegistry.ts';
 import { AMOUNT, DURABILITY, PIECE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
 
 const piece = { uid: 7 };
-const directions = { push: 0, drag: 180, lift: 270, own: 0, treat: 90 };
+const directions = { push: 0, drag: 180, lift: 270 };
 const tuning = { radiusPixels: 100, deadZonePixels: 20, selectionHalfAngleDegrees: 30 };
 const entries = radialEntries(
   [
@@ -153,35 +153,36 @@ describe('action menu lifetime', () => {
   });
 });
 
-describe('held treatment child list', () => {
+describe('held treatment child ring', () => {
+  const content = baseTuning.actionMenu;
   const treatments = [
-    { id: 'bandage:arm', label: 'Arm', treatment: { region: 'leftArm', itemType: 'bandage' } },
-    { id: 'bandage:leg', label: 'Leg', treatment: { region: 'leftLeg', itemType: 'bandage' } },
+    { id: 'bandage:leftArm', label: 'Left arm', treatment: { region: 'leftArm', itemType: 'bandage' } },
+    { id: 'bandage:leftLeg', label: 'Left leg', treatment: { region: 'leftLeg', itemType: 'bandage' } },
   ] as const;
-  const held = radialEntries(heldMenuActions([{ id: 'own', label: 'Use' }, ...treatments], 'Treat'), directions);
-  const openOnTreat = (): ActionMenu => {
-    const menu = new ActionMenu();
-    menu.open('held', { uid: 3 }, held);
-    menu.point(held, { x: tuning.radiusPixels, y: 0 }, tuning);
-    return menu;
+  const held = heldRadialEntries([{ id: 'own', label: 'Use' }, ...treatments], 'Treat', content.directions);
+  const toward = (degrees: number) => {
+    const radians = (degrees * Math.PI) / 180;
+    return { x: Math.sin(radians) * content.radiusPixels, y: -Math.cos(radians) * content.radiusPixels };
+  };
+  const confirmTreat = (menu: ActionMenu) => {
+    menu.point(held, toward(content.directions.held.treat), content);
+    return menu.confirm(held);
   };
 
-  it('opens the treatments under Treat and confirms the chosen one', () => {
-    const menu = openOnTreat();
-    expect(menu.confirm(held)).toBeUndefined();
+  it('chooses the wound pointed at by its region, and goes back to the parent ring at the centre', () => {
+    const menu = new ActionMenu();
+    menu.open('held', { uid: 3 }, held);
+    expect(confirmTreat(menu)).toBeUndefined();
     expect(menu.childOpen).toBe(true);
-    const children = menu.childList(held)!;
-    expect(children.map(({ id }) => id)).toEqual(treatments.map(({ id }) => id));
-    expect(menu.chooseChild(treatments[1].id, children)?.id).toBe(treatments[1].id);
-    expect(menu.opened).toBeUndefined();
-  });
-
-  it('goes back to the ring with nothing chosen and no action', () => {
-    const menu = openOnTreat();
-    menu.confirm(held);
-    expect(menu.chooseChild(undefined, menu.childList(held)!)).toBeUndefined();
+    expect(menu.confirm(held)).toBeUndefined();
     expect(menu.childOpen).toBe(false);
     expect(menu.isOpen('held', 3)).toBe(true);
     expect(menu.choice(held)).toBeUndefined();
+
+    expect(confirmTreat(menu)).toBeUndefined();
+    const [, wound] = treatments;
+    menu.point(held, toward(content.directions.treat[wound.treatment.region]), content);
+    expect(menu.confirm(held)?.id).toBe(wound.id);
+    expect(menu.opened).toBeUndefined();
   });
 });

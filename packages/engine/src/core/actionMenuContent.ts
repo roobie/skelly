@@ -1,4 +1,5 @@
 import { check, type InferOutput, integer, maxValue, minValue, number, pipe, strictObject } from 'valibot';
+import { BODY_REGIONS } from './body.ts';
 import { Positive } from './schema/primitives.ts';
 
 /**
@@ -35,6 +36,8 @@ export const ActionMenuTuningSchema = strictObject({
   directions: strictObject({
     furniture: directionsFor(ACTION_MENU_ACTIONS.furniture),
     held: directionsFor(ACTION_MENU_ACTIONS.held),
+    /** The child ring of the held menu's `treat` entry, one wound per body region. */
+    treat: directionsFor(BODY_REGIONS),
   }),
 });
 
