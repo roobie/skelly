@@ -1,6 +1,7 @@
 import type { BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from './character.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
@@ -55,7 +56,7 @@ export const pryPlan = (
   const toolNames = [...inventory.registry.items.values()]
     .filter((definition) => methods.some(([, method]) => meets(definition.id, method)))
     .map((definition) => definition.name)
-    .sort((a, b) => a.localeCompare(b));
+    .sort((a, b) => compareCodeUnits(a, b));
   const { registry } = inventory;
   const refuse = (reason: string): PryPlan => ({ ok: false, reason, toolNames });
   if (!(furniture.door && entity.lock?.locked)) {
@@ -74,7 +75,7 @@ export const pryPlan = (
     .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
     .map(({ item }) => item)
     .filter((item) => toolUid === undefined || item.uid === toolUid)
-    .sort((a, b) => defOf(inventory.registry, a.type).name.localeCompare(defOf(inventory.registry, b.type).name));
+    .sort((a, b) => compareCodeUnits(defOf(inventory.registry, a.type).name, defOf(inventory.registry, b.type).name));
   let fuelRefusal: string | undefined;
   for (const [method, tuning] of methods) {
     const capable = carried.filter((item) => meets(item.type, tuning));

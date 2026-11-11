@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildRegistry } from '@skelly/engine/content';
 import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
@@ -43,7 +44,7 @@ const orderUnderCollation = (collation: string, packageRoot: string) => {
     }));`;
   return JSON.parse(
     execFileSync(process.execPath, ['--input-type=module', '--eval', script], {
-      env: { ...process.env, LC_ALL: collation, LANG: collation },
+      env: { LC_ALL: collation, LANG: collation },
       encoding: 'utf8',
     }),
   ) as { build: string[]; browser: string[] };

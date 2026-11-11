@@ -1,6 +1,8 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
+
 import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import { allocateLiquids, type CraftLiquid, type LiquidDemand } from './craftLiquids.ts';
@@ -372,7 +374,7 @@ const allocateCombination = (
 ): Allocation | undefined => {
   const reserved = new Set(tools.map((tool) => tool.item.uid));
   const allocation: Allocation = { components: [], gather: 0 };
-  for (const [type, count] of [...requirements].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [type, count] of [...requirements].sort(([a], [b]) => compareCodeUnits(a, b))) {
     const picked = allocate(index.byType.get(type) ?? [], count, reserved, clockRatio);
     if (!picked) {
       return undefined;
@@ -507,7 +509,7 @@ export const planCraft = (
 
   const cache = cachedPlans(snapshot, recipe);
   const skillKey = recipeSkillRequirements(snapshot.player.inventory.registry, recipe)
-    .sort((a, b) => a.skill.localeCompare(b.skill))
+    .sort((a, b) => compareCodeUnits(a.skill, b.skill))
     .map(({ skill }) => [skill, skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)]);
   const key = JSON.stringify([
     Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)),
@@ -557,7 +559,7 @@ const bestCraftAllocation = (
   let best: CraftPlan | undefined;
   const toolNeeds = Object.entries(recipe.qualities)
     .filter(([quality, level]) => !snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level))
-    .sort(([a], [b]) => a.localeCompare(b));
+    .sort(([a], [b]) => compareCodeUnits(a, b));
   for (const { requirements, demands } of componentAlternatives({ recipe, prefer, index, sources })) {
     const liquids = allocateLiquids(demands);
     if (!liquids) {

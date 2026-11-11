@@ -1,7 +1,7 @@
-export { compareCodeUnits } from './core/codeUnitOrder.ts';
 export { getBuildRevision } from './core/buildInfo.ts';
 export { buildRevisionFromGit } from './core/buildRevision.ts';
 export { BundleAdmission, type BundleStamp, bundleSourceHash } from './core/bundleAdmission.ts';
+export { compareCodeUnits } from './core/codeUnitOrder.ts';
 export {
   admitPacks,
   admitWithFolderPacks,

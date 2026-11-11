@@ -211,7 +211,7 @@ export const readStackContentFiles = (packageRoot: string, stack: string) =>
 export const readStackContentSources = (packageRoot: string, stack: string) =>
   readStackContentFiles(packageRoot, stack)
     .map(({ file, data }) => ({ source: file, data }))
-    .sort((left, right) => left.source.localeCompare(right.source));
+    .sort((left, right) => compareCodeUnits(left.source, right.source));
 
 /**
  * The figure files of a registry built from a stack's content. Content files may be named as admission names them,

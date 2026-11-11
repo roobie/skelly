@@ -1,4 +1,5 @@
 import { smoothstep } from './authoredTerrain.mjs';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import type { SiteLayoutDef } from './schema.ts';
@@ -123,7 +124,7 @@ const catalogueProps = (registry: Registry, catalogue: CatalogueDef): ShowroomPr
   for (const { furniture } of registry.catalogueRows.values()) {
     const pieces = furniture
       .map((id) => ({ furniture: id, size: sizeOf(registry, id) }))
-      .sort((a, b) => b.size[2] - a.size[2] || a.furniture.localeCompare(b.furniture));
+      .sort((a, b) => b.size[2] - a.size[2] || compareCodeUnits(a.furniture, b.furniture));
     let used = Number.POSITIVE_INFINITY;
     for (const piece of pieces) {
       if (used + piece.size[0] > width) {
