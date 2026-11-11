@@ -17,7 +17,7 @@ import {
   Texture,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { thingModels } from './thingModels.ts';
 
 const table = {
@@ -149,7 +149,7 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     );
     expect([...new Set(keys)].filter((key) => !warmed.has(key))).toEqual([]);
   }
-  const finishes = new VehicleFinishes({ texture: new Texture(), update: () => {} }, MATERIALS);
+  const finishes = new VehicleFinishes({ texture: new Texture(), update: vi.fn() }, MATERIALS);
   finishes.setEnabled(true);
   const finishedMeshes = meshes.map((mesh) => mesh.clone());
   finishes.dress(new Group().add(...finishedMeshes));

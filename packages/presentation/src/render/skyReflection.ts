@@ -19,7 +19,7 @@ import {
 /** What vehicle finishes reflect. A real sky bake (#1542) replaces the source behind this and nothing else. */
 export interface ReflectionMap {
   readonly texture: Texture;
-  update(sky: Sky): void;
+  update: (sky: Sky) => void;
 }
 
 export interface GradientTuning {

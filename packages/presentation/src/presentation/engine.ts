@@ -133,25 +133,21 @@ export function createEngine(
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 
-  const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
-  const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
-  const vehicleFinishes = renderer
-    ? new VehicleFinishes(new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection), MATERIALS)
-    : undefined;
-  const graphics = new GraphicsControls(
-    graphicsTuning,
-    {
-      meshes,
-      ...(mood ? { mood } : {}),
-      ...(shadows ? { shadows } : {}),
-      ...(vehicleFinishes ? { vehicleFinishes } : {}),
-    },
-    { source: graphicsSource },
-  );
+  const drawing: Pick<Engine, 'mood' | 'shadows' | 'vehicleFinishes'> = renderer
+    ? {
+        mood: new Mood(renderer, scene, camera, graphicsTuning),
+        shadows: new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes),
+        vehicleFinishes: new VehicleFinishes(
+          new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection),
+          MATERIALS,
+        ),
+      }
+    : {};
+  const graphics = new GraphicsControls(graphicsTuning, { meshes, ...drawing }, { source: graphicsSource });
 
   const resize = () => {
     renderer?.setSize(view.clientWidth, view.clientHeight);
-    mood?.setSize(view.clientWidth, view.clientHeight);
+    drawing.mood?.setSize(view.clientWidth, view.clientHeight);
     camera.aspect = view.clientWidth / Math.max(view.clientHeight, 1);
     camera.updateProjectionMatrix();
   };
@@ -167,8 +163,6 @@ export function createEngine(
     meshes,
     graphics,
     sky,
-    ...(mood ? { mood } : {}),
-    ...(shadows ? { shadows } : {}),
-    ...(vehicleFinishes ? { vehicleFinishes } : {}),
+    ...drawing,
   };
 }
