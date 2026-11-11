@@ -964,14 +964,6 @@ try {
           open: reading.isOpen,
           readCalls,
           prompt: document.querySelector('#prompt')?.textContent ?? '',
-          diag: {
-            time: session.sim.time,
-            calendar: session.sim.calendar,
-            body: [...globalThis.readingWitness.body.pos],
-            illum: session.illuminationAt(globalThis.readingWitness.body.pos),
-            vis: session.skyFields.visibilityAt(globalThis.readingWitness.body.pos),
-            fixtures: session.power?.lights().length,
-          },
         };
       });
     const refusedRead = async (slot) => {
