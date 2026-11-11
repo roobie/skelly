@@ -10,7 +10,6 @@ import { RevealWindow } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
-import { detachNeighbourhood, neighbourhoodOf } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
@@ -21,6 +20,7 @@ import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import { DirtyChunks } from './dirtyChunks.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
+import { SentChunks } from './sentChunks.ts';
 
 /** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
 const withinRadius = (dx: number, dz: number, radius: number): boolean => dx * dx + dz * dz <= radius * radius;
@@ -121,6 +121,7 @@ export class Streamer {
   private readonly versions = new Map<string, number>();
   private readonly inFlight = new Set<string>();
   private readonly workers: MesherPort[] = [];
+  private readonly sentChunks = new Map<MesherPort, SentChunks>();
   private readonly maxInFlight: number;
   private generationFailed = false;
   failure: string | undefined;
@@ -228,6 +229,7 @@ export class Streamer {
         occluders: this.occluders,
       });
       this.workers.push(worker);
+      this.sentChunks.set(worker, new SentChunks());
     }
     this.maxInFlight = count * 2;
 
@@ -289,12 +291,9 @@ export class Streamer {
     this.dirtyReplayNeighbours(cx, cz);
     const pinned = world.isTouched(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
-      const key = chunkKey(cx, cy, cz);
-      meshes.remove(key);
+      meshes.remove(chunkKey(cx, cy, cz));
       if (!pinned) {
-        world.removeChunk(cx, cy, cz);
-        this.dirty.delete(cx, cy, cz);
-        this.versions.delete(key);
+        this.removeChunk(cx, cy, cz);
       }
     }
     this.refreshReveal();
@@ -521,18 +520,24 @@ export class Streamer {
     // The meshing dependency shell reaches less than a diagonal step past the preload disc.
     for (const col of farColumns(this.generated, this.center, radius + preloadRings + Math.SQRT2 + hysteresis)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
-      const pinned = world.isTouched(cx, cz);
-      for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
-        const key = chunkKey(cx, cy, cz);
-        if (!pinned) {
-          world.removeChunk(cx, cy, cz);
-          this.dirty.delete(cx, cy, cz);
-          this.versions.delete(key);
+      if (!world.isTouched(cx, cz)) {
+        for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+          this.removeChunk(cx, cy, cz);
         }
       }
       this.ungenerate(col);
       this.forgetComplete(cx, cz);
       this.onColumnUnload(cx, cz);
+    }
+  }
+
+  private removeChunk(cx: number, cy: number, cz: number): void {
+    const key = chunkKey(cx, cy, cz);
+    this.opts.world.removeChunk(cx, cy, cz);
+    this.dirty.delete(cx, cy, cz);
+    this.versions.delete(key);
+    for (const sent of this.sentChunks.values()) {
+      sent.drop(key);
     }
   }
 
@@ -625,10 +630,10 @@ export class Streamer {
       return;
     }
     this.inFlight.add(key);
-    // The worker builds the padded and wide arrays; the main thread only copies the chunks they read.
-    const [neighbourhood, transfer] = detachNeighbourhood(neighbourhoodOf(world, [cx, cy, cz], scale.minCy));
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
+    // The worker builds the padded and wide arrays; the main thread only copies the chunks they read that it lacks.
+    const [neighbourhood, transfer] = this.sentChunks.get(worker)!.send(world, [cx, cy, cz], scale.minCy);
     this.send(worker, { type: 'mesh', key, version: this.versions.get(key) ?? 0, neighbourhood }, transfer);
   }
 

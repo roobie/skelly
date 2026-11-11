@@ -2,7 +2,7 @@ import { PADDED, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE, wideIndex } from '@skelly/engine/internal/core/occlusion.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh, buildRequestedMesh, type MeshData, wideFrom } from '@skelly/engine/mesh';
+import { buildMesh, buildRequestedMesh, HeldChunks, type MeshData, wideFrom } from '@skelly/engine/mesh';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
@@ -60,7 +60,9 @@ describe('liquid enclosure', () => {
     }
     streamer.update(0, 0);
     const init = posted.find((message) => message.type === 'init');
-    const bed = posted.find((message) => message.type === 'mesh' && message.key === '0,1,0');
+    const held = new HeldChunks();
+    const received = posted.flatMap((message) => (message.type === 'mesh' ? [held.receive(message)] : []));
+    const bed = received.find((request) => request.key === '0,1,0');
     const layers = [1, 2].map((cy) => world.getChunk(0, cy, 0)?.uniformId);
     return { init, bed, layers };
   };

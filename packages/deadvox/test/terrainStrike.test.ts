@@ -9,8 +9,8 @@ import { affectedChunks } from '@skelly/engine/internal/core/world.ts';
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { PILE_GRID } from '@skelly/engine/inventory';
-import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh, paddedFrom, wideFrom } from '@skelly/engine/mesh';
+import type { MesherPort, ReceivedMeshRequest, ToMesher } from '@skelly/engine/mesh';
+import { buildMesh, HeldChunks, paddedFrom, wideFrom } from '@skelly/engine/mesh';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import type { BlockBlow } from '@skelly/engine/sim';
@@ -317,16 +317,16 @@ const restore = async (f: Fixture, variant: Variant) => {
 };
 
 const meshing = (f: Fixture) => {
-  type Request = Extract<ToMesher, { type: 'mesh' }>;
-  const requests: { worker: ControlledWorker; message: Request }[] = [];
+  const requests: { worker: ControlledWorker; message: ReceivedMeshRequest }[] = [];
   class ControlledWorker implements MesherPort {
     handlers: MesherHandlers | undefined;
+    private readonly held = new HeldChunks();
     listen(handlers: MesherHandlers): void {
       this.handlers = handlers;
     }
     post(message: ToMesher): void {
       if (message.type === 'mesh') {
-        requests.push({ worker: this, message });
+        requests.push({ worker: this, message: this.held.receive(message) });
       }
     }
   }
