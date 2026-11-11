@@ -538,7 +538,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     for (const source of [
       'index.html',
       'presentation:presentation/engine.ts',
-  'presentation:render/distanceFog.ts',
+      'presentation:render/distanceFog.ts',
       'presentation:presentation/play.ts',
       'presentation:render/playView.ts',
       'engine:game/streamer.ts',
