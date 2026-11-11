@@ -47,6 +47,7 @@ describe('liquid enclosure', () => {
       structures: [],
       radius: 0,
       preloadRings: 0,
+      columnsPerFrame: 2,
       hysteresis: 1,
       surface: {
         height: () => (top === 'water' ? 2 * CHUNK - 1 : 3 * CHUNK - 1),

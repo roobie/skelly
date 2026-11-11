@@ -76,6 +76,7 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
     structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
@@ -170,6 +171,7 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     structures: [],
     radius: 2,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
     surface: { height: () => -1, top: () => undefined },
     stamp: (chunk) => chunk.set(1, 1, 1, 1),
@@ -258,6 +260,7 @@ function skyStreamer(meshers: number) {
     structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });

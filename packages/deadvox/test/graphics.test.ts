@@ -57,6 +57,7 @@ const source = (options: GraphicsOptions) => ({
         unbuiltSkyCap: 0.5,
         skyJobsInFlight: 2,
         skyPreloadRings: 1,
+        columnsPerFrame: 2,
         itemViewer: {
           framing: 1,
           startYawDegrees: 0,
