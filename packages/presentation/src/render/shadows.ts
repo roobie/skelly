@@ -5,11 +5,10 @@
 // are not used). Its centre snaps to the map's texel grid in light space so shadow edges don't
 // shimmer as the player walks. Only the shadow casters inside that box are drawn into it.
 //
-// three.js draws shadow maps from inside `renderer.render`, skipping meshes the *camera* has culled
-// (`visible` false), which would drop the chunks behind you that shade what is in front. So this
+// Culling chunks to the camera would drop the ones behind you that shade what is in front. So this
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
-// `selectShadowCasters`), draws one map per light through it, and leaves the main pass's already
-// queued draw list alone. A light's `castShadow` stays true while its setting is on, so the hour
+// `selectShadowCasters`) and draws one map per light through it; the chunk batch draws each pass's
+// own set (chunkBatch.ts), so the main pass keeps the camera's chunks. A light's `castShadow` stays true while its setting is on, so the hour
 // doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
 // stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets

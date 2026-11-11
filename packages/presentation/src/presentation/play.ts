@@ -2650,7 +2650,7 @@ const startPlayWith = (
         blockSize: s,
         calendar: displayCalendar(),
         chunks: engine.world.chunks.values(),
-        drawn: engine.meshes.group.children,
+        drawn: [engine.meshes.batch],
         revealedPositions: revealActors
           ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],

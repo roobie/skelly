@@ -92,7 +92,7 @@ engine.scene.onBeforeRender = function(...args) {
   if(args[2] !== engine.camera) return;
   const s = engine.config.scale.blockSize;
   if(Math.hypot(engine.camera.position.x/s-155,engine.camera.position.z/s-122)>1) return;
-  if(!engine.meshes.group.children.some(mesh=>mesh.position.x===128&&mesh.position.y===32&&mesh.position.z===96)) return;
+  if(!engine.meshes.origins().some(([x,y,z])=>x===128&&y===32&&z===96)) return;
   const point=[151.5,43.5,121.5];
   const fields=engine.skylight.inspect().filter(({bounds})=>point.every((v,a)=>v>=bounds.min[a]&&v<bounds.max[a]));
   if(!fields.length) throw new Error('Camo arrival witness has no eligible field');
@@ -412,9 +412,9 @@ try {
     page.waitForFunction(
       (lighting) =>
         [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
-          globalThis.stairsWitness.engine.meshes.group.children.some(
-            (mesh) => mesh.position.x === x && mesh.position.y === y && mesh.position.z === z,
-          ),
+          globalThis.stairsWitness.engine.meshes
+            .origins()
+            .some(([chunkX, chunkY, chunkZ]) => chunkX === x && chunkY === y && chunkZ === z),
         ),
       isLightingMode,
       { timeout: 60_000 },
@@ -934,7 +934,7 @@ try {
             body: [...session.body.pos],
             velocity: [...session.body.vel],
             calendar: session.sim.calendar,
-            meshes: engine.meshes.group.children.length,
+            meshes: engine.meshes.count,
             film: engine.mood.film,
             grain: engine.mood.gradePass?.uniforms.uGrain.value,
             grainSeed: engine.mood.gradePass?.uniforms.uSeed.value,

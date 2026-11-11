@@ -99,7 +99,7 @@ export function createEngine(
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
   const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), stats);
-  scene.add(meshes.group);
+  scene.add(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
   const skylight =

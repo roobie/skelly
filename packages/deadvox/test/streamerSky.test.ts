@@ -214,16 +214,14 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     }
     expect(inventory.snapshotState()).toEqual(snapshot);
     meshes.selectShadowCasters(() => true, DoubleSide);
-    const shadows = meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray());
+    const shadows = meshes.origins('shadow');
     const camera = new OrthographicCamera(-200, 200, 200, -200, 0.1, 1000);
     camera.position.set(0, 100, 100);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld();
     meshes.cull(camera);
-    expect(meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray())).toEqual(
-      shadows,
-    );
-    return shadows.map(([x, , z]) => `${x! / CHUNK},${z! / CHUNK}`);
+    expect(meshes.origins('main')).toEqual(shadows);
+    return shadows.map(([x, , z]) => `${x / CHUNK},${z / CHUNK}`);
   };
   drain(missing);
   expect(worker.waiting.some((message) => message.type === 'mesh' && message.key === missing)).toBe(true);

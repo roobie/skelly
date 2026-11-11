@@ -68,6 +68,7 @@ const meshFixture = () => ({
   setOcclusion: vi.fn(),
   revealVersion: 0,
   isRevealed: () => true,
+  dispose: vi.fn(),
 });
 
 const syncActor = (view: ReturnType<typeof createPlayView>, camera: PerspectiveCamera) => {
@@ -587,8 +588,8 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('releases owned pictures, pile and case instances on pagehide', () => {
-    const { page, view } = fixture();
+  it('releases owned pictures, pile and case instances on pagehide and keeps the terrain the page plays on with', () => {
+    const { page, view, engine } = fixture();
     const pictures = vi.spyOn(view.pictures!, 'dispose');
     const piles = vi.spyOn(view.piles, 'dispose');
     const cases = vi.spyOn(view.caseEffects, 'dispose');
@@ -598,6 +599,7 @@ describe('play presentation ownership', () => {
     expect(pictures).toHaveBeenCalledTimes(1);
     expect(piles).toHaveBeenCalledTimes(1);
     expect(cases).toHaveBeenCalledTimes(1);
+    expect(engine.meshes.dispose).not.toHaveBeenCalled();
   });
 
   it('passes stride, stance and ADS posture to the body without rolling the camera', () => {
