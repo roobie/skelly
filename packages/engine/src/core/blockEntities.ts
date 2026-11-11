@@ -303,22 +303,55 @@ export class BlockEntities {
   /** Each piece's place in `byOrigin`, so a by-column lookup lists pieces in the order `all` does. */
   private readonly sequence = new Map<BlockEntity, number>();
   private sequenced = 0;
+  /** Derived from the pieces' `carried`, never saved, so asking for the carried piece doesn't scan them all. */
+  private held: BlockEntity | undefined;
   private nextUid = 1;
+  /**
+   * Derived, never saved: the piece each `standing` step after `journalFrom` changed, oldest first, so a view can
+   * redraw only those (`standingChangesSince`).
+   */
+  private readonly journal: BlockEntity[] = [];
+  private journalFrom = 0;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
-  /**
-   * Goes up when the standing pieces' cells, poses or blocking change. Turning the carried piece, searching or a
-   * lock leaves it, so collision and sky light don't rebuild for what can't change them.
-   */
-  standing = 0;
 
   constructor(registry: Registry) {
     this.registry = registry;
   }
 
-  /** The pieces standing in the world; a carried piece is in the player's hands instead. */
+  /**
+   * Goes up when the standing pieces' cells, poses or blocking change. Turning the carried piece, searching or a
+   * lock leaves it, so collision and sky light don't rebuild for what can't change them.
+   */
+  get standing(): number {
+    return this.journalFrom + this.journal.length;
+  }
+
+  /**
+   * The pieces whose cells, pose or blocking changed since `standing` had the given value, repeats included; undefined
+   * when the journal no longer reaches back that far, after a restore or for a reader far behind, so the reader must
+   * look at every piece.
+   */
+  standingChangesSince(standing: number): readonly BlockEntity[] | undefined {
+    return standing < this.journalFrom || standing > this.standing
+      ? undefined
+      : this.journal.slice(standing - this.journalFrom);
+  }
+
+  /**
+   * The pieces standing in the world; a carried piece is in the player's hands instead. It walks the pieces lazily, so
+   * a caller that adds or removes pieces on the way copies it first.
+   */
   get all(): IterableIterator<BlockEntity> {
-    return [...this.byOrigin.values()].filter((entity) => !entity.carried).values();
+    return this.standingPieces();
+  }
+
+  private *standingPieces(): Generator<BlockEntity, undefined, undefined> {
+    for (const entity of this.byOrigin.values()) {
+      if (entity !== this.held) {
+        yield entity;
+      }
+    }
   }
 
   /** Furniture's own content mass plus every item it contains. */
@@ -359,12 +392,22 @@ export class BlockEntities {
         }
       }
     }
-    return [...found].sort((a, b) => this.sequence.get(a)! - this.sequence.get(b)!);
+    return this.listed(found);
+  }
+
+  /** Live pieces in the order `all` lists them. */
+  listed(pieces: Iterable<BlockEntity>): BlockEntity[] {
+    return [...pieces].sort((a, b) => this.sequence.get(a)! - this.sequence.get(b)!);
   }
 
   /** The piece in the player's hands. */
   carrying(): BlockEntity | undefined {
-    return [...this.byOrigin.values()].find((entity) => entity.carried);
+    return this.held;
+  }
+
+  /** Whether a piece stands in this world: live and not carried. */
+  stands(entity: BlockEntity): boolean {
+    return this.uids.get(entity.uid) === entity && entity !== this.held;
   }
 
   snapshotState(foodAt?: number): Readonly<BlockEntitiesState> {
@@ -427,7 +470,9 @@ export class BlockEntities {
     this.nextUid = restored.nextUid;
     // A restored count could repeat one a view cached for another state, and the view would keep the stale state.
     this.version = Math.max(this.version, restored.version) + 1;
-    this.standing += 1;
+    // Every piece is new, so the journal restarts past every step a view could have drawn.
+    this.journalFrom = this.standing + 1;
+    this.journal.length = 0;
   }
 
   static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
@@ -453,6 +498,7 @@ export class BlockEntities {
     this.uids.clear();
     this.columns.clear();
     this.sequence.clear();
+    this.held = undefined;
     for (const entity of this.byOrigin.values()) {
       this.track(entity);
       if (!entity.carried) {
@@ -465,6 +511,20 @@ export class BlockEntities {
     this.uids.set(entity.uid, entity);
     this.sequence.set(entity, this.sequenced);
     this.sequenced += 1;
+    if (entity.carried) {
+      this.held = entity;
+    }
+  }
+
+  /** Records a change to a piece's cells, pose or blocking: a `standing` step. */
+  private standingChanged(entity: BlockEntity): void {
+    this.journal.push(entity);
+    if (this.journal.length > this.byOrigin.size) {
+      // Past one step per piece, replaying the journal costs a reader more than looking at every piece.
+      const dropped = Math.ceil(this.journal.length / 2);
+      this.journal.splice(0, dropped);
+      this.journalFrom += dropped;
+    }
   }
 
   private index(entity: BlockEntity, filled: boolean): void {
@@ -620,7 +680,7 @@ export class BlockEntities {
       this.occupy(entity, true);
     }
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return entity;
   }
 
@@ -659,9 +719,10 @@ export class BlockEntities {
     }
     this.occupy(entity, false);
     entity.carried = true;
+    this.held = entity;
     entity.floorLocked = floorLocked ? true : undefined;
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** Records a floor-drag step, so canceling a drag leaves the piece there. */
@@ -710,10 +771,11 @@ export class BlockEntities {
     }
     entity.pos = [...pos];
     entity.carried = false;
+    this.held = undefined;
     entity.floorLocked = undefined;
     this.occupy(entity, true);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** Reindexes a standing floor step without ever claiming the player's hands. */
@@ -722,7 +784,7 @@ export class BlockEntities {
     entity.pos = [...pos];
     this.occupy(entity, true);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** Moves a standing piece straight down, for a piece whose support was taken. */
@@ -731,7 +793,7 @@ export class BlockEntities {
     entity.pos = [entity.pos[0], y, entity.pos[2]];
     this.occupy(entity, true);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /**
@@ -790,7 +852,7 @@ export class BlockEntities {
     this.uids.delete(entity.uid);
     this.sequence.delete(entity);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** The entity covering a cell: a piece barricading a doorway, rather than its door. */
@@ -1008,7 +1070,7 @@ export class BlockEntities {
     }
     entity.open = open;
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return undefined;
   }
 
@@ -1030,7 +1092,7 @@ export class BlockEntities {
     }
     entity.bar = { side: this.sideOf(entity, from), item };
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return undefined;
   }
 
@@ -1043,7 +1105,7 @@ export class BlockEntities {
     const { item } = entity.bar!;
     entity.bar = undefined;
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return { item };
   }
 
@@ -1108,7 +1170,7 @@ export class BlockEntities {
     entity.damage = share === 0 ? undefined : share * this.defOf(entity).breach.durability;
     this.version += 1;
     if (this.wearOf(entity) !== worn) {
-      this.standing += 1;
+      this.standingChanged(entity);
     }
   }
 
@@ -1142,7 +1204,7 @@ export class BlockEntities {
     entity.damage = remaining === 0 ? undefined : remaining;
     this.version += 1;
     if (this.wearOf(entity) !== worn) {
-      this.standing += 1;
+      this.standingChanged(entity);
     }
     return true;
   }
@@ -1170,7 +1232,7 @@ export class BlockEntities {
       const worn = this.wearOf(entity);
       entity.damage = Math.min(damage, breach.durability);
       if (this.wearOf(entity) !== worn) {
-        this.standing += 1;
+        this.standingChanged(entity);
       }
       return damage < breach.durability ? 'damaged' : 'ruined';
     }
@@ -1179,7 +1241,7 @@ export class BlockEntities {
     entity.lock = undefined;
     entity.bar = undefined;
     entity.open = true;
-    this.standing += 1;
+    this.standingChanged(entity);
     return 'broken';
   }
 
