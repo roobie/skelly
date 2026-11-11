@@ -77,6 +77,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
@@ -124,6 +125,7 @@ it('reports generated-column transitions that match the generated-column snapsho
     structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
   });
   const observedGenerated = new Set<string>();
@@ -162,6 +164,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
     structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
@@ -207,6 +210,7 @@ describe('saved columns', () => {
       structures: [],
       radius: 0,
       preloadRings: 0,
+      columnsPerFrame: 2,
       hysteresis: 1,
       stamp,
     });

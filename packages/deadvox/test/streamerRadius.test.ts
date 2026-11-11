@@ -65,6 +65,7 @@ const liveStreamer = (preloadRings = 0) => {
     structures: [],
     radius: RADIUS,
     preloadRings,
+    columnsPerFrame: 2,
     hysteresis: HYSTERESIS,
     surface: { height: () => 4, top: () => undefined },
   });
