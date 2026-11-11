@@ -519,10 +519,19 @@ describe('using what you hold', () => {
     const battery = hold('aa_battery', 'left');
     const original = batteryOf(light);
     original.charges = 0;
-    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
+    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadHeldSpare'));
     expect(queue.jobs).toEqual([]);
     expect(light.slots?.battery).toBe(original);
     expect(inventory.locate(battery)?.kind).toBe('hand');
+  });
+
+  it('a dead light with a dead battery in the other hand names no spare', () => {
+    const { survival, hold } = setup();
+    const light = hold('flashlight');
+    const battery = hold('aa_battery', 'left');
+    batteryOf(light).charges = 0;
+    battery.charges = 0;
+    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
   });
 
   it('a hand load refuses once an earlier queued move has put the light down', () => {
@@ -599,6 +608,14 @@ describe('taking the battery out of a held light', () => {
 
     expect(t.survival.availableItemActions(light).some((action) => action.battery === 'unload')).toBe(false);
     expect(t.survival.wieldedItemActionHint()).toBeUndefined();
+  });
+
+  it('an empty light with a charged battery in the other hand names that spare', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    unload(t, light);
+    t.hold('aa_battery', 'left');
+    expect(t.survival.use(light)).toBe(coreMessage(registry, 'noBatteryHeldSpare'));
   });
 
   it('leaves the light empty: it says so, and a battery goes back in through the slot', () => {
