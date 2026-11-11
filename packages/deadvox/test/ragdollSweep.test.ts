@@ -37,7 +37,7 @@ it('stages ragdoll mechanisms using actor figure variants, not anatomy keys', ()
   const add = vi.spyOn(system, 'add');
   stageRagdollSweep({
     system,
-    renderer: { group: new Group(), sync: vi.fn() },
+    renderer: { group: new Group(), sync: vi.fn(), selectShadowCasters: () => undefined },
     registry,
     origin: [0, 0, 0],
     blockSize: scale.blockSize,

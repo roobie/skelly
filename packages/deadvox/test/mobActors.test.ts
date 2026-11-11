@@ -41,8 +41,10 @@ import {
 } from '@skelly/presentation/internal/render/mobActors.ts';
 import { initializeRagdollPhysics } from '@skelly/presentation/internal/render/ragdoll.ts';
 import RAPIER from '@skelly/presentation/internal/render/ragdollRapier.ts';
+import { SHADOW_CROWD_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import { ActorMeshes, ChunkMeshes, MobActorMeshes as RenderMobActorMeshes } from '@skelly/presentation/render';
 import {
+  type Box3,
   type BufferGeometry,
   type DataTexture,
   type InstancedBufferAttribute,
@@ -1160,6 +1162,52 @@ describe('MobActorMeshes', () => {
         const state = internals.states.get(ids[i]!)!;
         expect(internals.variants[state.variantIndex]!.body.seed).toBe(persisted[i]);
       }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it("casts shadows only through the twin a light's pass selects, never the crowd mesh itself", () => {
+    const renderer = new MobActorMeshes(0.5, 8, { actors: registry.actors });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const near = store.add(makeActor([1, 0, 0]));
+      store.add(makeActor([400, 0, 0])); // 200 m out: past any 24 m shadow volume
+      renderer.sync(store, 0, 1);
+      const internals = renderer as unknown as {
+        states: Map<number, { variantIndex: number; globalRow: number }>;
+        variants: readonly {
+          mesh: InstancedMesh;
+          shadowMesh: InstancedMesh;
+          shadowSlotAttr: InstancedBufferAttribute;
+        }[];
+      };
+      const variant = internals.variants[internals.states.get(near)!.variantIndex]!;
+      // The crowd mesh never casts: its bone-placed instances are un-cullable, so three.js would draw
+      // every figure into every shadow map. The twin is the only caster, on the shadow-only layer.
+      expect(variant.mesh.castShadow).toBe(false);
+      expect(variant.shadowMesh.castShadow).toBe(true);
+      expect(variant.shadowMesh.frustumCulled).toBe(false);
+      expect(variant.shadowMesh.layers.mask).toBe(1 << SHADOW_CROWD_LAYER);
+
+      const nearRow = internals.states.get(near)!.globalRow;
+      let tested = 0;
+      const casts = (box: Box3): boolean => {
+        tested += 1;
+        return Math.hypot((box.min.x + box.max.x) / 2, (box.min.z + box.max.z) / 2) <= 20;
+      };
+      renderer.selectShadowCasters(casts);
+      const rows = Array.from(variant.shadowSlotAttr.array as Float32Array).slice(0, variant.shadowMesh.count);
+      expect(tested).toBeGreaterThanOrEqual(2); // every live holder was tested by its world box
+      expect(variant.mesh.count).toBe(2); // the crowd's own instances are untouched
+      expect(variant.shadowMesh.count).toBe(1);
+      expect(variant.shadowMesh.visible).toBe(true);
+      expect(rows).toEqual([nearRow]); // the twin reads the same revealed row the crowd draws
+
+      // A pass that selects nothing (a map drawn only to be allocated) empties the twin.
+      renderer.selectShadowCasters(() => false);
+      expect(variant.shadowMesh.count).toBe(0);
+      expect(variant.shadowMesh.visible).toBe(false);
     } finally {
       renderer.dispose();
     }
