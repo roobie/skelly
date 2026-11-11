@@ -128,6 +128,11 @@ export class Streamer {
     return this.offsets.length + this.meshOffsets.length * (this.opts.scale.maxCy - this.opts.scale.minCy + 1);
   }
   private replayControlled = false;
+  /**
+   * The last `update` found nothing to load, mesh or unload, and nothing since has changed that
+   * (every mutation outside `update` clears it), so the next `update` in the same column skips the full pass.
+   */
+  private settled = false;
   /** The generated ring, nearest first. */
   private readonly offsets: [number, number][];
   private readonly offsetKeys: Set<string>;
@@ -231,6 +236,7 @@ export class Streamer {
   }
 
   setReplayControlled(): void {
+    this.settled = false;
     this.replayControlled = true;
   }
 
@@ -247,6 +253,7 @@ export class Streamer {
 
   /** Generates replay-required terrain without applying its load-time simulation effects. */
   generateForReplay(cx: number, cz: number): boolean {
+    this.settled = false;
     if (this.generated.has(`${cx},${cz}`)) {
       return true;
     }
@@ -260,6 +267,7 @@ export class Streamer {
 
   /** Removes replay-unloaded terrain without applying its unload-time simulation effects. */
   unloadForReplay(cx: number, cz: number): void {
+    this.settled = false;
     const col = `${cx},${cz}`;
     if (!(this.replayControlled && this.generated.delete(col))) {
       return;
@@ -338,6 +346,7 @@ export class Streamer {
 
   /** Call after editing blocks with the chunks World.setBlock returned. */
   markEdited(chunks: Vec3[]): void {
+    this.settled = false;
     for (const [cx, cy, cz] of chunks) {
       const key = chunkKey(cx, cy, cz);
       this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
@@ -356,14 +365,25 @@ export class Streamer {
     }
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
+    const moved = pcx !== this.center[0] || pcz !== this.center[1];
 
+    // Sky prebuild depends on state outside the streamer, so it runs even when the streamer is settled.
+    if (this.settled && !moved) {
+      this.onTerrainReady?.(x, z);
+      this.dispatchSky();
+      return;
+    }
+
+    let worked = moved;
     let budget = COLUMNS_PER_FRAME;
     for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
       if (this.generationFailed || budget === 0) {
+        worked = true; // columns may remain
         break;
       }
       if (this.generate(pcx + dx, pcz + dz)) {
         budget -= 1;
+        worked = true;
       }
     }
 
@@ -374,6 +394,7 @@ export class Streamer {
     this.dispatchSky();
     for (const [dx, dz] of this.meshOffsets) {
       if (this.occupied >= this.maxInFlight) {
+        worked = true; // dirty chunks may remain
         break;
       }
       const cx = pcx + dx;
@@ -385,11 +406,12 @@ export class Streamer {
         const key = chunkKey(cx, cy, cz);
         if (this.dirty.has(key) && !this.inFlight.has(key)) {
           this.requestMesh(key, cx, cy, cz);
+          worked = true;
         }
       }
     }
 
-    if (pcx !== this.center[0] || pcz !== this.center[1]) {
+    if (moved) {
       this.center = [pcx, pcz];
       for (const key of [...this.opts.meshes.keys()]) {
         const [cx, , cz] = key.split(',').map(Number) as Vec3;
@@ -404,6 +426,7 @@ export class Streamer {
       }
     }
     this.refreshReveal();
+    this.settled = !worked;
   }
 
   private refreshReveal(): void {
@@ -548,6 +571,7 @@ export class Streamer {
   }
 
   private receive(worker: MesherPort, msg: FromMesher): void {
+    this.settled = false;
     this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
     if (msg.type === 'sky') {
       const callback = this.skyReplies.get(msg.id);
