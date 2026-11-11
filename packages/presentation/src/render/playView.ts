@@ -338,6 +338,7 @@ export const createPlayView = (
     pictures?.dispose();
     piles.dispose();
     furniture.dispose();
+    corpses.dispose();
     vehicles.dispose();
     caseEffects.dispose();
     gore.dispose();
