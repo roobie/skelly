@@ -1,14 +1,24 @@
 import type { Registry } from '@skelly/engine/content';
-import { projectVehicleParts, type VehicleInstances, type VehiclePartProjection } from '@skelly/engine/vehicles';
-import { Group, type Object3D } from 'three';
+import {
+  projectVehicleParts,
+  type VehicleInstances,
+  VehicleOccupancy,
+  type VehiclePartProjection,
+} from '@skelly/engine/vehicles';
+import { type BufferGeometry, Group, type Material, Mesh, type Object3D } from 'three';
 import { itemFinishLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
+import { addSkyCellAnchors, skyAnchoredCopy } from './skyAnchor.ts';
 
 interface RenderedVehicle {
   readonly signature: string;
   readonly group: Group;
+  /** The anchored geometry and material copies made for this build alone, freed with it. */
+  readonly owned: readonly (BufferGeometry | Material)[];
 }
+
+const materialsOf = (mesh: Mesh): Material[] => (Array.isArray(mesh.material) ? mesh.material : [mesh.material]);
 
 const signatureOf = (parts: readonly VehiclePartProjection[], modelVersion: number): string =>
   JSON.stringify([
@@ -33,6 +43,7 @@ export class VehicleMeshes {
   private readonly registry: Registry;
   private readonly models: ModelLibrary;
   private readonly blockSize: number;
+  private occupied: { vehicles: VehicleInstances; light: VehicleOccupancy } | undefined;
 
   constructor(registry: Registry, models: ModelLibrary, blockSize: number) {
     this.registry = registry;
@@ -45,15 +56,18 @@ export class VehicleMeshes {
   }
 
   sync(vehicles: VehicleInstances): void {
+    if (this.occupied?.vehicles !== vehicles) {
+      this.occupied = { vehicles, light: new VehicleOccupancy(this.registry, vehicles, this.blockSize, 'light') };
+    }
     const live = new Set<number>();
     for (const [id, vehicle] of vehicles.records) {
       live.add(id);
-      this.syncVehicle(id, vehicle);
+      this.syncVehicle(id, vehicle, this.occupied.light);
     }
     this.removeMissing(live);
   }
 
-  private syncVehicle(id: number, vehicle: ReturnType<VehicleInstances['get']>): void {
+  private syncVehicle(id: number, vehicle: ReturnType<VehicleInstances['get']>, light: VehicleOccupancy): void {
     if (!vehicle) {
       return;
     }
@@ -89,25 +103,67 @@ export class VehicleMeshes {
       group.add(holder);
     }
     if (previous) {
-      this.group.remove(previous.group);
-      disposeItemStateMaterials(previous.group);
+      this.drop(previous);
     }
     this.group.add(group);
-    this.rendered.set(id, { signature, group });
+    this.rendered.set(id, { signature, group, owned: this.anchorToSky(group, light) });
+  }
+
+  /**
+   * Moves each part's sky sample out of the light-blocking cells the vehicles add to the sky field (see
+   * `addSkyCellAnchors`), so a parked car shades the ground under it without darkening its own body.
+   */
+  private anchorToSky(group: Group, light: VehicleOccupancy): (BufferGeometry | Material)[] {
+    group.updateWorldMatrix(true, true);
+    const meshes: Mesh[] = [];
+    group.traverse((object) => {
+      if (object instanceof Mesh) {
+        meshes.push(object);
+      }
+    });
+    const copies = new Map<Material, Material>();
+    for (const material of meshes.flatMap(materialsOf)) {
+      if (!copies.has(material)) {
+        copies.set(material, skyAnchoredCopy(material));
+      }
+    }
+    // The anchored copies stand in for any state-owned material, which nothing draws once they do.
+    disposeItemStateMaterials(group);
+    const anchored = (material: Material): Material => copies.get(material) ?? material;
+    const geometries = meshes.map((mesh) => {
+      const geometry = mesh.geometry.clone();
+      addSkyCellAnchors(geometry, {
+        toWorld: mesh.matrixWorld,
+        blocked: (x, y, z) => light.isSolid(x, y, z),
+        blockSize: this.blockSize,
+      });
+      mesh.geometry = geometry;
+      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(anchored) : anchored(mesh.material);
+      return geometry;
+    });
+    return [...geometries, ...copies.values()];
+  }
+
+  private drop(rendered: RenderedVehicle): void {
+    this.group.remove(rendered.group);
+    for (const resource of rendered.owned) {
+      resource.dispose();
+    }
   }
 
   private removeMissing(live: ReadonlySet<number>): void {
     for (const [id, rendered] of this.rendered) {
       if (!live.has(id)) {
-        this.group.remove(rendered.group);
-        disposeItemStateMaterials(rendered.group);
+        this.drop(rendered);
         this.rendered.delete(id);
       }
     }
   }
 
   dispose(): void {
-    disposeItemStateMaterials(this.group);
+    for (const rendered of this.rendered.values()) {
+      this.drop(rendered);
+    }
     this.group.clear();
     this.rendered.clear();
   }

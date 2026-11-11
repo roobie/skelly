@@ -2,10 +2,10 @@ import type { FurnitureDef } from '@skelly/engine/content';
 import type { SkyVolume } from '@skelly/engine/internal/core/skylight.ts';
 import { containsSky, sampleSky } from '@skelly/engine/sky';
 import { BLOCK_SIZE, type BlockEntity, type Vec3 } from '@skelly/engine/world';
-import { BoxGeometry, type Mesh, type MeshLambertMaterial } from 'three';
+import { BoxGeometry, Matrix3, Matrix4, type Mesh, type MeshLambertMaterial, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
+import { addSkyCellAnchors, addSkyOpeningAnchors, SKY_ANCHOR_ATTRIBUTE } from '../src/render/skyAnchor.ts';
 
 // A slim shaft and a crossarm standing in a wide envelope: the shaft's faces are set back from the envelope's
 // edge by more than the half block the receiver steps out along its normal.
@@ -142,4 +142,30 @@ it('lights every upward and sideways face of a shaped piece set back inside its 
     sampled += 1;
   }
   expect(sampled).toBeGreaterThan(0);
+});
+
+it('samples a placed body from open cells outside the cells it blocks, turned and mirrored as it stands', () => {
+  // A body set back inside a 3 x 2 x 3 block of blocked cells by more than the receiver's half-block step.
+  const blockSize = 0.5;
+  const blocked = (x: number, y: number, z: number) => x >= 0 && x < 3 && y >= 0 && y < 2 && z >= 0 && z < 3;
+  const geometry = new BoxGeometry(0.75, 0.75, 0.5);
+  const toWorld = new Matrix4().compose(
+    new Vector3(0.75, 0.5, 0.75),
+    new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2),
+    new Vector3(-1, 1, 1),
+  );
+  addSkyCellAnchors(geometry, { toWorld, blocked, blockSize });
+  const anchor = geometry.getAttribute(SKY_ANCHOR_ATTRIBUTE)!;
+  const normal = geometry.getAttribute('normal');
+  const normalToWorld = new Matrix3().getNormalMatrix(toWorld);
+  for (let vertex = 0; vertex < anchor.count; vertex++) {
+    const step = new Vector3().fromBufferAttribute(normal, vertex).applyMatrix3(normalToWorld).normalize();
+    const sample = new Vector3()
+      .fromBufferAttribute(anchor, vertex)
+      .applyMatrix4(toWorld)
+      .divideScalar(blockSize)
+      .addScaledVector(step, 0.5);
+    const cell = sample.toArray().map(Math.floor) as Vec3;
+    expect(blocked(...cell), `vertex ${vertex} samples blocked cell ${cell}`).toBe(false);
+  }
 });

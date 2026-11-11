@@ -1,5 +1,5 @@
 import { BLOCK_SIZE } from '@skelly/engine/world';
-import { BufferAttribute, type BufferGeometry } from 'three';
+import { BufferAttribute, type BufferGeometry, type Material, Matrix3, type Matrix4, Vector3 } from 'three';
 
 /** Vertex attribute holding where a surface samples the sky from; the sky receiver patch reads it when `SKY_ANCHOR` is defined. */
 export const SKY_ANCHOR_ATTRIBUTE = 'skyAnchor';
@@ -32,6 +32,57 @@ export const addSkyAnchors = (geometry: BufferGeometry, size: readonly [number, 
     }
   }
   geometry.setAttribute(SKY_ANCHOR_ATTRIBUTE, new BufferAttribute(anchors, 3));
+};
+
+/** How far, in blocks, a surface looks along its normal for an open cell, and how finely. */
+const CELL_EXIT_REACH = 2;
+const CELL_EXIT_STEP = 0.25;
+
+/**
+ * Gives a placed model's geometry a sky anchor per vertex: the vertex carried along its normal out of the cells the
+ * sky field counts as blocked, as `addSkyAnchors` does for an envelope, so a body that blocks sky light doesn't
+ * shade its own skin. `toWorld` places the geometry; `blocked` takes a cell in blocks. A surface with no open cell
+ * within reach keeps its own position and reads as enclosed.
+ */
+export const addSkyCellAnchors = (
+  geometry: BufferGeometry,
+  {
+    toWorld,
+    blocked,
+    blockSize,
+  }: { toWorld: Matrix4; blocked: (x: number, y: number, z: number) => boolean; blockSize: number },
+): void => {
+  const position = geometry.getAttribute('position');
+  const normal = geometry.getAttribute('normal');
+  const toLocal = toWorld.clone().invert();
+  const normalToWorld = new Matrix3().getNormalMatrix(toWorld);
+  const point = new Vector3();
+  const direction = new Vector3();
+  const probe = new Vector3();
+  const anchors = new Float32Array(position.count * 3);
+  for (let vertex = 0; vertex < position.count; vertex++) {
+    point.fromBufferAttribute(position, vertex).applyMatrix4(toWorld).divideScalar(blockSize);
+    direction.fromBufferAttribute(normal, vertex).applyMatrix3(normalToWorld).normalize();
+    for (let reach = 0; reach <= CELL_EXIT_REACH; reach += CELL_EXIT_STEP) {
+      probe.copy(direction).multiplyScalar(reach).add(point);
+      if (!blocked(Math.floor(probe.x), Math.floor(probe.y), Math.floor(probe.z))) {
+        point.copy(probe);
+        break;
+      }
+    }
+    point
+      .multiplyScalar(blockSize)
+      .applyMatrix4(toLocal)
+      .toArray(anchors, vertex * 3);
+  }
+  geometry.setAttribute(SKY_ANCHOR_ATTRIBUTE, new BufferAttribute(anchors, 3));
+};
+
+/** A copy of `material` that draws with the sky anchors its geometry carries. */
+export const skyAnchoredCopy = <M extends Material>(material: M): M => {
+  const copy = material.clone() as M;
+  copy.defines = { ...material.defines, SKY_ANCHOR: '' };
+  return copy;
 };
 
 type Point = [number, number, number];
