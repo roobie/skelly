@@ -7,7 +7,7 @@ import { type PlacementQueries, placeShamblerRing } from '../bench/shamblerPlace
 
 /** What a debug spawn needs: the engine's content, the session's solid rule, the player to keep clear of and the actors to join. */
 export interface SpawnContext {
-  readonly engine: Engine;
+  readonly engine: Omit<Engine, 'isSolid' | 'isOpaque'>;
   readonly queries: PlacementQueries;
   readonly player: Body;
   readonly actors: ActorSystem;

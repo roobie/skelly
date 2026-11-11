@@ -4,8 +4,13 @@ import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } f
 import { type Body, bodyOverlapsBlock, makeScale } from '@skelly/engine/world';
 import type { Engine } from '@skelly/presentation/play';
 import { describe, expect, it } from 'vitest';
-import { bodyIsClear, placeShamblerRing, SHAMBLER_PROBE_BODY_METRES } from '../src/bench/shamblerPlacement.ts';
-import { spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
+import {
+  bodyIsClear,
+  type PlacementQueries,
+  placeShamblerRing,
+  SHAMBLER_PROBE_BODY_METRES,
+} from '../src/bench/shamblerPlacement.ts';
+import { type SpawnContext, spawnActorType, spawnShamblers } from '../src/debug/shamblerSpawning.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -34,6 +39,13 @@ const testEngine = (isSolid: (x: number, y: number, z: number) => boolean, seed 
     isSolid,
     isOpaque: isSolid,
   }) as unknown as Engine;
+
+const contextFor = (
+  engine: Engine,
+  player: Body,
+  actors: ActorSystem,
+  queries: PlacementQueries = engine,
+): SpawnContext => ({ engine, queries, player, actors });
 
 const actorsFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: number, z: number) => boolean) =>
   new ActorSystem({
@@ -68,7 +80,7 @@ describe('debug shambler spawning', () => {
     const body = player();
     const actors = actorsFor(body, solid);
 
-    expect(spawnShamblers({ engine, queries: engine, player: body, actors }, 25)).toBe(25);
+    expect(spawnShamblers(contextFor(engine, body, actors), 25)).toBe(25);
     const bodies = [body, ...[...actors.store.entries()].map(([, actor]) => actor.body)];
     expect(bodies).toHaveLength(26);
     for (let i = 0; i < bodies.length; i++) {
@@ -85,8 +97,8 @@ describe('debug shambler spawning', () => {
     const body = player();
     const actors = actorsFor(body, solid);
 
-    expect(spawnShamblers({ engine, queries: engine, player: body, actors }, 10)).toBe(10);
-    expect(spawnShamblers({ engine, queries: engine, player: body, actors }, 10)).toBe(10);
+    expect(spawnShamblers(contextFor(engine, body, actors), 10)).toBe(10);
+    expect(spawnShamblers(contextFor(engine, body, actors), 10)).toBe(10);
     const bodies = [body, ...[...actors.store.entries()].map(([, actor]) => actor.body)];
     for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {
@@ -101,9 +113,7 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const actors = actorsFor(body, solid);
 
-    expect(
-      spawnActorType({ engine, queries: engine, player: body, actors }, { typeId: largestType.id, count: 1 }),
-    ).toBe(1);
+    expect(spawnActorType(contextFor(engine, body, actors), { typeId: largestType.id, count: 1 })).toBe(1);
     const [id, actor] = [...actors.store.entries()][0]!;
     const initialDistance =
       Math.hypot(body.pos[0] - actor.body.pos[0], body.pos[2] - actor.body.pos[2]) * SCALE.blockSize;
@@ -169,7 +179,7 @@ describe('debug shambler spawning', () => {
     const engine = testEngine(solid, 73);
     const actors = actorsFor(body, solid);
 
-    expect(spawnActorType({ engine, queries: engine, player: body, actors }, { typeId: type.id, count: 1 })).toBe(1);
+    expect(spawnActorType(contextFor(engine, body, actors), { typeId: type.id, count: 1 })).toBe(1);
     expect(bodyIsClear([...actors.store.entries()][0]![1].body, solid)).toBe(true);
   });
 
@@ -191,7 +201,7 @@ describe('debug shambler spawning', () => {
     });
     const body = player();
     const actors = actorsFor(body, crowdedEngine.isSolid);
-    expect(spawnShamblers({ engine: crowdedEngine, queries: crowdedEngine, player: body, actors }, 3)).toBe(1);
+    expect(spawnShamblers(contextFor(crowdedEngine, body, actors), 3)).toBe(1);
     expect(actors.store.size).toBe(1);
   });
 
@@ -201,10 +211,7 @@ describe('debug shambler spawning', () => {
     const body = player();
 
     expect(
-      spawnShamblers(
-        { engine, queries: { isSolid: () => true, isOpaque: () => true }, player: body, actors: actorsFor(body, open) },
-        3,
-      ),
+      spawnShamblers(contextFor(engine, body, actorsFor(body, open), { isSolid: () => true, isOpaque: () => true }), 3),
     ).toBe(0);
   });
 });

@@ -11,7 +11,7 @@ export interface ShamblerPlacementWorld {
   isOpaque: SolidAt;
 }
 
-/** The solid and sight rule placement checks against: callers pass the session's vehicle-aware pair. */
+/** The solid and sight rule placement checks against: callers pass a vehicle-aware pair. */
 export type PlacementQueries = Pick<ShamblerPlacementWorld, 'isSolid' | 'isOpaque'>;
 
 export const bodyIsClear = (body: Body, isSolid: SolidAt): boolean => {

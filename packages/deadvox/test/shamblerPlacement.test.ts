@@ -1,3 +1,4 @@
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { projectVehicleParts } from '@skelly/engine/vehicles';
 import { BlockEntities, makeScale, registerLayoutVehicles, type Vec3, World, worldSolid } from '@skelly/engine/world';
@@ -51,14 +52,12 @@ describe('shared shambler benchmark placement', () => {
     const fixture = {
       ...registry,
       layouts: new Map([
-        ...registry.layouts,
         [
           site,
           {
-            ...registry.layouts.get('testHouse')!,
             id: site,
-            vehicles: [{ blueprint: 'hatchback', placementKey: 'fixture', position: [0, 0, 0], facing: 'n' as const }],
-          },
+            vehicles: [{ blueprint: 'hatchback', placementKey: 'fixture', position: [0, 0, 0], facing: 'n' }],
+          } as unknown as SiteLayoutDef,
         ],
       ]),
     };
