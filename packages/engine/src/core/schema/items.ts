@@ -859,7 +859,11 @@ export const ItemSchema = strictObject({
       /** Channel-specific blockers; a physical fitting need not hide, shade, hear or stop a strike. */
       obstruction: strictObject({
         sight: vBoolean(),
-        light: vBoolean(),
+        /**
+         * The share of diffuse sky light each of the part's cells stops; any share blocks direct light. A part's
+         * cells are coarse and mostly air around thin panels, so only content can say how much sky gets past.
+         */
+        light: Fraction,
         sound: vBoolean(),
         combat: vBoolean(),
       }),

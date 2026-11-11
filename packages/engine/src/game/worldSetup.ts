@@ -21,6 +21,7 @@ import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
 import { World } from '../core/world.ts';
 import { worldGroundAt } from '../core/worldgen.ts';
 import type { DebugStart, GameConfig } from './config.ts';
+import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
 import type { MesherSource } from './mesherProtocol.ts';
 import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
@@ -146,7 +147,10 @@ export function createWorldSetup(
     skyFields: new SkyFields(
       { world, entities, registry },
       { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK - 1 },
-      authoredSkyBoxes(built?.authoredPlacements ?? []),
+      [
+        ...authoredSkyBoxes(built?.authoredPlacements ?? []),
+        ...layoutVehicleSkyBoxes(registry, config.site, scale.blockSize),
+      ],
     ),
     site: built,
     groundAt,
