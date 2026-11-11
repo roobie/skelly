@@ -1,8 +1,9 @@
+import { illuminationAt } from '@skelly/engine/internal/core/illumination.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '@skelly/engine/internal/core/sitePower.ts';
-import { compileAssembly } from '@skelly/engine/internal/core/templates.ts';
-import { Inventory } from '@skelly/engine/inventory';
+import { compileAssembly, type Facing } from '@skelly/engine/internal/core/templates.ts';
+import { claimed, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { SitePower } from '@skelly/engine/world';
+import { SitePower, type Vec3 } from '@skelly/engine/world';
 import { LightPool } from '@skelly/presentation/render';
 import { PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -124,6 +125,84 @@ describe('authored facility power', () => {
     expect(power.network.snapshot().devices.find(({ type }) => type === 'fixture_supply')!.fuelUnits).toBe(0);
     pool.update(runtime.inventory, { ...context, fixtures: power.lights() });
     expect(pool.lights.every(({ intensity }) => intensity === 0)).toBe(true);
+  });
+
+  describe('light emitter', () => {
+    const lit = (light: { offset?: Vec3 }, size: Vec3, device: Omit<PlacedPowerDevice, 'type'>) => {
+      const shining = {
+        ...furniture,
+        id: lamp,
+        size,
+        power: {
+          device: 'fixture_load',
+          fuelLitres: 0,
+          enabled: true,
+          light: { color: '#ffffff', intensity: 20, radius: 8, ...light },
+        },
+      };
+      const stack = { ...fixtureRegistry, furniture: new Map(fixtureRegistry.furniture).set(lamp, shining) };
+      const inventory = new Inventory(stack);
+      const power = new SitePower({
+        registry: stack,
+        inventory,
+        devices: [
+          { type: generator, pos: [8, 16, 0] },
+          { type: lamp, ...device },
+        ],
+        clock: BASE_CLOCK,
+        cycle: BASE_DAY_CYCLE,
+      });
+      return { inventory, power };
+    };
+    const spec = (pos: Vec3, size: Vec3, facing: Facing) => ({ pos, entitySpec: { type: lamp, pos, size, facing } });
+
+    /** Where the renderer's slot sits, in blocks, and whether gameplay reads the light's full strength at `point`. */
+    const emission = ({ inventory, power }: ReturnType<typeof lit>, point: Vec3) => {
+      const [fixture] = power.lights();
+      const blockSize = 0.5;
+      const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);
+      pool.update(inventory, {
+        held: { lightPositionOf: () => false },
+        camera: new PerspectiveCamera(),
+        blockSize,
+        daylightScale: 1,
+        fixtures: power.lights(),
+      });
+      const [slot] = pool.lights.filter(({ intensity }) => intensity > 0);
+      const { pointDecay, nearFieldMetres } = claimed(inventory.registry.senses, 'player')!.light.illumination;
+      const scene = {
+        inventory,
+        sky: { visibilityAt: () => 0 },
+        gameHour: 0,
+        cycle: BASE_DAY_CYCLE,
+        fixtures: power.lights(),
+        isBlocking: () => false,
+        blockSize,
+        holder: point,
+      };
+      const full = fixture!.intensity / nearFieldMetres ** pointDecay;
+      return {
+        rendered: slot!.position.toArray().map((value) => value / blockSize),
+        fullStrength: Math.abs(illuminationAt(scene, point) - full) < 1e-9,
+      };
+    };
+
+    it('shines from the centre of its origin cell when no offset is authored', () => {
+      const point: Vec3 = [2.5, 4.5, 6.5];
+      expect(emission(lit({}, [1, 3, 1], { pos: [2, 4, 6] }), point)).toEqual({ rendered: point, fullStrength: true });
+    });
+
+    it('moves both the rendered light and the light gameplay reads by an authored offset', () => {
+      const point: Vec3 = [2.75, 6.5, 6.25];
+      const moved = lit({ offset: [0.25, 2, -0.25] }, [1, 3, 1], { pos: [2, 4, 6] });
+      expect(emission(moved, point)).toEqual({ rendered: point, fullStrength: true });
+    });
+
+    it('turns an authored offset with the piece', () => {
+      const point: Vec3 = [2.5, 4.5, 6.75];
+      const turned = lit({ offset: [0.25, 0, 0] }, [2, 1, 1], spec([2, 4, 6], [1, 1, 2], 'e'));
+      expect(emission(turned, point)).toEqual({ rendered: point, fullStrength: true });
+    });
   });
 
   it('round-trips partial fuel and grid state through the save format and continues to the same blackout', async () => {
