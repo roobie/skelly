@@ -5,6 +5,7 @@ import type { Site } from '@skelly/engine/internal/core/site.ts';
 import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
 import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { layoutVehicleSkyBoxes } from '@skelly/engine/internal/game/layoutVehicles.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
 import { VehicleOccupancy } from '@skelly/engine/vehicles';
@@ -13,6 +14,7 @@ import {
   CHUNK,
   Chunk,
   generateColumn,
+  registerLayoutVehicles,
   sitePalette,
   terrainShapeOf,
   toChunk,
@@ -139,6 +141,22 @@ describe('parked vehicles', () => {
     const { sky, light } = parked();
     expect(sky.visibilityAt(underneath(light))).toBeLessThan(LIT);
     expect(sky.visibilityAt([-10.5, 1.5, -10.5])).toBeGreaterThan(LIT);
+  });
+
+  it('gives every layout-parked vehicle a field around all of its light-blocking cells', () => {
+    const covered = [...registry.layouts.keys()].flatMap((site) => {
+      const boxes = layoutVehicleSkyBoxes(registry, site, scale.blockSize);
+      const inventory = new Inventory(registry);
+      registerLayoutVehicles(inventory, registry, site, scale.blockSize);
+      const cells = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'light').boxes();
+      return cells.map((cell) =>
+        boxes.some((box) =>
+          [0, 1, 2].every((axis) => cell.min[axis]! >= box.min[axis]! && cell.max[axis]! <= box.max[axis]!),
+        ),
+      );
+    });
+    expect(covered.length).toBeGreaterThan(0);
+    expect(covered.every(Boolean)).toBe(true);
   });
 
   it('relights the old spot once the vehicle moves, rebuilding only the fields it reaches', () => {
