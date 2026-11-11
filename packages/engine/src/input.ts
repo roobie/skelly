@@ -1,4 +1,5 @@
 export { type ActionText, actionText, fillText } from './core/actionText.ts';
+export { ForwardReleaseWatch } from './core/forwardReleaseWatch.ts';
 export {
   type Binding,
   bindingIsDebugOnly,

@@ -9,6 +9,7 @@ import {
   CrouchProneInput,
   createReplayPlayStateBinding,
   encodeInputReplay,
+  ForwardReleaseWatch,
   fillText,
   type InputContext,
   InputReplayDriver,
@@ -768,6 +769,25 @@ export const startPlay = async (
   assertPracticeIsolation(options, Boolean(engine.site?.guidance));
   const actorFigureFiles = await fetchActorFigureFiles(engine.registry, options.assets.figures);
   return startPlayWith(engine, debugModule, options, actorFigureFiles);
+};
+
+/**
+ * Calls `release` when the forward button lets go. Cancelling the side button's pointerdown suppresses its mouseup,
+ * so pointer events are read too, and a release under another held button arrives only as a pointermove.
+ */
+const listenForwardRelease = (release: (at: number) => void): void => {
+  const watch = new ForwardReleaseWatch();
+  for (const type of ['pointerdown', 'mousedown', 'pointermove', 'pointerup', 'mouseup']) {
+    document.addEventListener(
+      type,
+      (e) => {
+        if (watch.released(e as MouseEvent)) {
+          release(e.timeStamp);
+        }
+      },
+      true,
+    );
+  }
 };
 
 const startPlayWith = (
@@ -2377,15 +2397,7 @@ const startPlayWith = (
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
-  // Cancelling the side button's pointerdown suppresses its mouseup, so the release is heard on pointerup as well. A
-  // second release of the same press is ignored.
-  const onForwardRelease = (e: MouseEvent) => {
-    if (isForwardButton(e)) {
-      heldActionPress.release('forward', e.timeStamp);
-    }
-  };
-  document.addEventListener('pointerup', onForwardRelease, true);
-  document.addEventListener('mouseup', onForwardRelease, true);
+  listenForwardRelease((at) => heldActionPress.release('forward', at));
   inputTarget.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitKey()) {
       return;
