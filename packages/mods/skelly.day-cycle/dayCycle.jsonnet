@@ -136,7 +136,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       cloudy: {
         cloudiness: 0.5,
         kind: 'scatter',
-        clouds: { cover: 0.3, opacity: 1 },
+        clouds: { cover: 0.15, opacity: 1 },
         physicalWeight: 0.8,
         sun: 0.85,
         light: 0.8,

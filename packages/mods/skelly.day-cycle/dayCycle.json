@@ -370,7 +370,7 @@
         "ambient": 0.94999999999999996,
         "cloudiness": 0.5,
         "clouds": {
-          "cover": 0.29999999999999999,
+          "cover": 0.14999999999999999,
           "opacity": 1
         },
         "kind": "scatter",
