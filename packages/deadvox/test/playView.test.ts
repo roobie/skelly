@@ -10,7 +10,9 @@ import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine
 import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
 import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
 import { ITEM_POINT_LIGHTS } from '@skelly/presentation/internal/render/lightPool.ts';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { createPlayView } from '@skelly/presentation/internal/render/playView.ts';
+import type { SkyEnvironment } from '@skelly/presentation/internal/render/skyEnvironment.ts';
 import type { Engine } from '@skelly/presentation/play';
 import { flashlightDaylightScale, Skylight } from '@skelly/presentation/render';
 import {
@@ -64,7 +66,13 @@ vi.mock('@skelly/presentation/internal/render/models.ts', async (importOriginal)
 // The fake renderer has no GPU to bake the sky's reflection on, so the play view gets an environment that never bakes.
 vi.mock('@skelly/presentation/internal/render/skyEnvironment.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@skelly/presentation/internal/render/skyEnvironment.ts')>()),
-  createSkyEnvironment: () => ({ refresh: () => false, light: () => undefined, dispose: () => undefined }),
+  createSkyEnvironment: () =>
+    ({
+      refresh: () => false,
+      patchNow: () => undefined,
+      light: () => undefined,
+      dispose: () => undefined,
+    }) satisfies SkyEnvironment,
 }));
 
 const meshFixture = () => ({
@@ -204,6 +212,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const aim: Vec3 = geometry === 'doorway' ? [1, 0, 0] : [0, 0, -1];
   camera.position.set(...cameraPosition);
   camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
+  const materialPatches = new MaterialPatches();
   const sky = new Skylight(
     new SkyFields(owner, { bottom: 0, top: 31 }, [box]),
     {
@@ -215,6 +224,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     },
     {
       clock: () => 0,
+      patches: materialPatches,
       submit: (input, receive) => {
         pending.push({ input, receive });
         return true;
@@ -251,6 +261,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       farPlaneScale: FAR_PLANE_SCALE,
     },
     skylight: sky,
+    materialPatches,
     isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },
     meshes: meshFixture(),

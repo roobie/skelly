@@ -225,6 +225,7 @@ type PlayViewEngine = Readonly<
     | 'isSolid'
     | 'entities'
     | 'skylight'
+    | 'materialPatches'
     | 'site'
     | 'scenario'
   >
@@ -274,7 +275,7 @@ export const createPlayView = (
   if (renderer) {
     skyDome = createSkyDome(dayCycle.clouds, dayCycle.domeShape);
     scene.add(skyDome.mesh);
-    skyEnvironment = createSkyEnvironment(renderer, skyDome.openSky, dayCycle.environment);
+    skyEnvironment = createSkyEnvironment(renderer, skyDome.openSky, dayCycle.environment, engine.materialPatches);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,
     });
@@ -330,6 +331,7 @@ export const createPlayView = (
   const lightWithSky = (cameraSkyVisibility: number) => {
     skyEnvironment?.light(scene, 1);
     skyEnvironment?.light(held.warmUpTarget.scene, cameraSkyVisibility);
+    skyEnvironment?.patchNow(held.warmUpTarget.scene);
   };
   scene.add(
     caseEffects.mesh,
@@ -775,6 +777,7 @@ export const createPlayView = (
         return Promise.resolve();
       }
       lightWithSky(1);
+      skyEnvironment?.patchNow(scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

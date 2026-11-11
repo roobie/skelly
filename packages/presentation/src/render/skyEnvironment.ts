@@ -1,15 +1,4 @@
-// The sky's reflection on models. Metal has nothing to reflect without an environment, so it draws near black; a
-// prefiltered map of the dome gives it the sky. The map is baked from the dome alone, never the world, so it stands
-// for open sky, and sky exposure dims it where the sky cannot reach (`src/render/skylight.ts`, `Skylight`), as it
-// dims the hemisphere light, so metal does not glow indoors.
-//
-// A bake draws six faces and prefilters them, too much for every frame, so it is redone only once the drawn sky has
-// moved past the day cycle's `environment.rebakeChange`. Measuring the change rather than baking at set hours keeps the
-// reflection as close behind a fast twilight as behind a slow noon. Clouds bake as they stand; their drift between
-// bakes is too slow to see in a blurred reflection.
-//
-// The environment reaches every lit material in the scenes it serves, but the hemisphere light already owns the
-// diffuse sky light, so those materials take the reflection only (`reflectOnly`).
+// The sky's reflection on models; the why is in `packages/deadvox/GRAPHICS.md`, "Look decisions".
 
 import type { Sky, SkyEnvironmentTuning } from '@skelly/engine/sky';
 import {
@@ -23,6 +12,7 @@ import {
   type WebGLRenderer,
   type WebGLRenderTarget,
 } from 'three';
+import { MaterialPatches, materialPatch } from './materialPatches.ts';
 
 /** The parts of a sky the dome draws from; fog distance, bloom and tone change nothing in it. */
 const DRAWN: readonly (keyof Sky)[] = [
@@ -56,8 +46,7 @@ const largestChange = (a: unknown, b: unknown): number => {
 };
 
 /** How far the drawn sky has moved between two skies: the largest change in any value the dome draws from. */
-export const drawnSkyChange = (a: Sky, b: Sky): number =>
-  Math.max(...DRAWN.map((key) => largestChange(a[key], b[key])));
+const drawnSkyChange = (a: Sky, b: Sky): number => Math.max(...DRAWN.map((key) => largestChange(a[key], b[key])));
 
 /**
  * Decides when the reflection is stale, measured against the sky last baked so slow drift adds up to a bake. The
@@ -74,28 +63,18 @@ export const skyBakeSchedule = (threshold: number): ((sky: Sky) => boolean) => {
   };
 };
 
-/** Keeps the environment out of a material's diffuse light. */
-const reflectOnly = (material: Material): void => {
-  const compile = material.onBeforeCompile;
-  const key = material.customProgramCacheKey;
-  material.onBeforeCompile = (shader, renderer) => {
-    compile.call(material, shader, renderer);
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <lights_fragment_maps>',
-      '#include <lights_fragment_maps>\niblIrradiance = vec3( 0.0 );',
-    );
-  };
-  material.customProgramCacheKey = () => `${key.call(material)}:reflection-only`;
-  material.needsUpdate = true;
-};
+const LIGHT_MAPS_CHUNK = '#include <lights_fragment_maps>';
+
+/** The materials three lights from the scene's environment. */
+const takesEnvironment = (material: Material): boolean =>
+  'isMeshStandardMaterial' in material || 'isMeshLambertMaterial' in material || 'isMeshPhongMaterial' in material;
 
 export interface SkyEnvironment {
   /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. */
   refresh: (sky: Sky) => boolean;
-  /**
-   * Gives a scene the reflection at `exposure`, the sky exposure the scene does not apply per fragment itself, and
-   * keeps every material it holds reflection-only; call it whenever materials may have joined, and before warm-up.
-   */
+  /** Keeps the environment out of the diffuse light of a scene's materials now, for scenes the shared patches do not walk or before warm-up. */
+  patchNow: (scene: Scene) => void;
+  /** Gives a scene the reflection at `exposure`, the sky exposure the scene does not apply per fragment itself. */
   light: (scene: Scene, exposure: number) => void;
   dispose: () => void;
 }
@@ -108,6 +87,7 @@ export const createSkyEnvironment = (
   renderer: WebGLRenderer,
   openSky: Mesh,
   { faceSize, rebakeChange, strength }: SkyEnvironmentTuning,
+  patches: MaterialPatches,
 ): SkyEnvironment => {
   const scene = new Scene();
   scene.add(openSky);
@@ -121,8 +101,26 @@ export const createSkyEnvironment = (
   };
   const prefiltered = bake();
   const lit = new Set<Scene>();
-  const patched = new WeakSet<Material>();
+  const patch = materialPatch({
+    applies: takesEnvironment,
+    compile: (shader) => {
+      if (!shader.fragmentShader.includes(LIGHT_MAPS_CHUNK)) {
+        throw new Error(
+          `three renamed ${LIGHT_MAPS_CHUNK}; the sky reflection cannot keep the environment out of diffuse`,
+        );
+      }
+      shader.fragmentShader = shader.fragmentShader.replace(
+        LIGHT_MAPS_CHUNK,
+        `${LIGHT_MAPS_CHUNK}\niblIrradiance = vec3( 0.0 );`,
+      );
+    },
+    key: () => 'reflection-only',
+  });
+  patches.add(patch);
+  const own = new MaterialPatches();
+  own.add(patch);
   return {
+    patchNow: (served) => own.apply(served),
     refresh(sky) {
       if (!due(sky)) {
         return false;
@@ -134,15 +132,6 @@ export const createSkyEnvironment = (
       lit.add(served);
       served.environment = prefiltered.texture;
       served.environmentIntensity = strength * exposure;
-      served.traverse((object) => {
-        const { material } = object as Mesh;
-        for (const entry of material ? [material].flat() : []) {
-          if (!patched.has(entry)) {
-            patched.add(entry);
-            reflectOnly(entry);
-          }
-        }
-      });
     },
     dispose() {
       for (const served of lit) {

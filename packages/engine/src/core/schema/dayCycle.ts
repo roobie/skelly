@@ -185,7 +185,10 @@ const WeatherTuningSchema = strictObject({
 
 /** The sky's reflection on models: a prefiltered map of the dome alone, redrawn only once the look has moved enough to show. */
 const SkyEnvironmentSchema = strictObject({
-  /** Cube face edge in pixels; prefiltering halves it per level, so a size between powers of two would be wasted. */
+  /**
+   * Cube face edge in pixels; prefiltering halves it per level, so a size between powers of two would be wasted. Below
+   * 16 is under three's smallest prefilter level; above 256 only costs more per bake, since the reflection is blurred.
+   */
   faceSize: pipe(
     Count,
     minValue(16),

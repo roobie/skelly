@@ -35,18 +35,12 @@ const skyWithZenith = (blue: number): Sky => {
 };
 
 describe('the sky reflection bake schedule', () => {
-  it('re-bakes once the drawn sky moves past the threshold, and not for a smaller move', () => {
+  it('bakes the first sky, then re-bakes only once the drawn sky has moved past the threshold since the last bake', () => {
     const due = skyBakeSchedule(THRESHOLD);
-    expect(due(skyWithZenith(0.5))).toBe(true);
-    expect(due(skyWithZenith(0.5 + THRESHOLD / 2))).toBe(false);
-    expect(due(skyWithZenith(0.5 + THRESHOLD * 2))).toBe(true);
-  });
-
-  it('measures from the last bake, so moves each below the threshold add up to a re-bake', () => {
-    const due = skyBakeSchedule(THRESHOLD);
-    due(skyWithZenith(0.5));
     const step = THRESHOLD * 0.6;
+    expect(due(skyWithZenith(0.5))).toBe(true);
     expect(due(skyWithZenith(0.5 + step))).toBe(false);
     expect(due(skyWithZenith(0.5 + step * 2))).toBe(true);
+    expect(due(skyWithZenith(0.5 + step * 2 + THRESHOLD / 2))).toBe(false);
   });
 });
