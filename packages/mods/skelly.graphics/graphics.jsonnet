@@ -14,6 +14,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     itemPictureCacheCapacity: 128,
     itemPicture: { framing: 1.1 },
     modelLoadConcurrency: 8,
+    modelFetchRetry: { retries: 3, backoffMs: 500 },
     skyJobsInFlight: 3,
     skyPreloadRings: 1,
     unbuiltSkyCap: 0.5,

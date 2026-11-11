@@ -22,6 +22,7 @@ import {
 import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { bundledAssetUrl, type PackAssetFiles } from '../presentation/bundledAssets.ts';
+import { type FetchRetry, retrying } from './fetchRetry.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
 import { fittedStateGroup } from './itemStateLook.ts';
@@ -31,6 +32,12 @@ import { applyModelMaterials } from './modelMaterials.ts';
  * A fixture's model URLs keyed by the model's `file`, or the product's bundled ones (`PresentationAssets`, `models`).
  */
 export type ModelFiles = Readonly<Record<string, string>> | { readonly packAssets: PackAssetFiles };
+
+/** The graphics tunables that shape how models are fetched (`packages/engine/src/core/schema/graphics.ts`). */
+export interface ModelLoading {
+  readonly modelLoadConcurrency: number;
+  readonly modelFetchRetry: FetchRetry;
+}
 
 export interface GroundModelPart {
   readonly geometry: BufferGeometry;
@@ -258,7 +265,7 @@ export class ModelLibrary {
   private readonly loadNext: () => void;
 
   /** `report` hears about models that can't be drawn; it's never called during construction. */
-  constructor(registry: Registry, report: (message: string) => void, files: ModelFiles, loadConcurrency: number) {
+  constructor(registry: Registry, report: (message: string) => void, files: ModelFiles, loading: ModelLoading) {
     const loader = new GLTFLoader();
     const packAssets = typeof files.packAssets === 'object' ? files.packAssets : undefined;
     this.pending = [...registry.models.values()].flatMap((def) => {
@@ -271,6 +278,11 @@ export class ModelLibrary {
       }
       return [[def, url] as [ModelDef, string]];
     });
+    const load = retrying<GLTF>(
+      (target, onLoad, onError) => loader.load(target, onLoad, undefined, onError),
+      loading.modelFetchRetry,
+      (ms, then) => setTimeout(then, ms),
+    );
     this.loadNext = (): void => {
       const entry = this.pending[this.next];
       this.next += 1;
@@ -279,7 +291,7 @@ export class ModelLibrary {
       }
       const [def, url] = entry;
       const finish = () => this.loadNext();
-      loader.load(
+      load(
         url,
         (gltf) => {
           try {
@@ -306,14 +318,13 @@ export class ModelLibrary {
             finish();
           }
         },
-        undefined,
         (error) => {
           report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`);
           finish();
         },
       );
     };
-    for (let slot = 0; slot < loadConcurrency; slot += 1) {
+    for (let slot = 0; slot < loading.modelLoadConcurrency; slot += 1) {
       this.loadNext();
     }
   }

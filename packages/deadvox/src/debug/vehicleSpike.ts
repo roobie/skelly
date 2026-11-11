@@ -478,7 +478,7 @@ const partModels = new ModelLibrary(
     renderPanel();
   },
   { packAssets: productAssets.models },
-  graphicsTuningOf(registry).modelLoadConcurrency,
+  graphicsTuningOf(registry),
 );
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
 interface ContentFitting {

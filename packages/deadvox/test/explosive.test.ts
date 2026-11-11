@@ -228,7 +228,7 @@ describe('hand grenade', () => {
         throw new Error(message);
       },
       { [def.file]: def.file },
-      1,
+      { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffMs: 0 } },
     );
     spy.mockRestore();
     await Promise.all(loads);
