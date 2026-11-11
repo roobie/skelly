@@ -1064,10 +1064,12 @@ const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
 // The sky dome stands in for the flat background, so where nothing covers the horizon it must read as the flat
 // background, which is the fog colour, with post on and off. The reference is the same view with the dome's
 // material hidden. Higher up the dome must differ from it, or the horizon match could pass with no dome drawn.
+// The page runs a tone mapper at an exposure other than 1 with bloom, so the post chain's colour scale and the
+// sky's bloom rule are in play: a dome left unscaled, or bright enough to bloom, would not meet the fog colour.
 const HORIZON_PITCH = 0;
 const HIGH_PITCH = 0.7;
 const horizonTolerance = 3;
-const skyHorizonCheck = async (lake, level) => {
+const skyHorizonCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
     async ({ surface, horizonPitch, highPitch }) => {
       const { engine } = globalThis.primaryActionTest;
@@ -1109,15 +1111,22 @@ const skyHorizonCheck = async (lake, level) => {
       `${mode}: higher up the dome differs from the flat background`,
     );
   }
+  assert.deepEqual(lakeErrors, []);
 };
 
 const lakeChecks = (chromium, port) =>
   timePhase('lake-pixels', async () => {
-    const { page: lake, errors } = await openLake(chromium, port, { post: false, crackcheck: true });
+    const { page: lake, errors } = await openLake(chromium, port, {
+      post: false,
+      crackcheck: true,
+      tone: 'aces',
+      exposure: 0.5,
+      bloom: true,
+    });
     try {
       const level = await lake.evaluate(installLakeLook);
       await timePhase('underwater-surface-pixels', () => lakeSurfaceCheck(lake, level, errors));
-      await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, level));
+      await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, level, errors));
     } finally {
       await lake.close();
     }
