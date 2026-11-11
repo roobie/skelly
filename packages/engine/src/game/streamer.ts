@@ -149,6 +149,11 @@ export class Streamer {
   /** Admission seam for lighting; neighbour residency policy is separate. */
   onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
   private revealed = new Set<string>();
+  private readonly revealKeys: Set<string>;
+  /** Columns whose meshed state may have just turned true, awaiting `refreshReveal`. */
+  private readonly recheck = new Set<string>();
+  private centerChanged = true;
+  private revealStale = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
   onSkyService: ((realMs: number) => void) | undefined;
@@ -222,6 +227,7 @@ export class Streamer {
 
     this.meshOffsets = discOffsets(opts.radius);
     this.revealOffsets = grownOffsets(this.meshOffsets);
+    this.revealKeys = new Set(this.revealOffsets.map(([dx, dz]) => `${dx},${dz}`));
     this.offsets = grownOffsets(discOffsets(opts.radius + opts.preloadRings));
     this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
@@ -273,7 +279,7 @@ export class Streamer {
       return;
     }
     const { world, scale, meshes } = this.opts;
-    this.completeColumns.delete(col);
+    this.forgetComplete(col);
     this.dirtyReplayNeighbours(cx, cz);
     const pinned = world.isTouched(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
@@ -413,11 +419,12 @@ export class Streamer {
 
     if (moved) {
       this.center = [pcx, pcz];
+      this.centerChanged = true;
       for (const key of [...this.opts.meshes.keys()]) {
         const [cx, , cz] = key.split(',').map(Number) as Vec3;
         if (!this.inRange(cx, cz)) {
           this.opts.meshes.remove(key);
-          this.completeColumns.delete(`${cx},${cz}`);
+          this.forgetComplete(`${cx},${cz}`);
           this.dirty.add(key); // remesh when we come back
         }
       }
@@ -429,15 +436,43 @@ export class Streamer {
     this.settled = !worked;
   }
 
-  private refreshReveal(): void {
-    for (const [dx, dz] of this.revealOffsets) {
-      const cx = this.center[0] + dx;
-      const cz = this.center[1] + dz;
-      const key = `${cx},${cz}`;
-      if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
-        this.completeColumns.add(key);
-      }
+  private forgetComplete(col: string): void {
+    this.revealStale = this.completeColumns.delete(col) || this.revealStale;
+  }
+
+  private markComplete(cx: number, cz: number): void {
+    const key = `${cx},${cz}`;
+    if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
+      this.completeColumns.add(key);
+      this.revealStale = true;
     }
+  }
+
+  /**
+   * Only a column event (generated, meshed, unloaded) or a move changes which columns are complete,
+   * so the window is rescanned after a move and otherwise only the columns an event touched.
+   */
+  private refreshReveal(): void {
+    if (this.centerChanged) {
+      this.centerChanged = false;
+      this.revealStale = true;
+      this.recheck.clear();
+      for (const [dx, dz] of this.revealOffsets) {
+        this.markComplete(this.center[0] + dx, this.center[1] + dz);
+      }
+    } else {
+      for (const key of this.recheck) {
+        const [cx, cz] = key.split(',').map(Number) as [number, number];
+        if (this.revealKeys.has(`${cx - this.center[0]},${cz - this.center[1]}`)) {
+          this.markComplete(cx, cz);
+        }
+      }
+      this.recheck.clear();
+    }
+    if (!this.revealStale) {
+      return;
+    }
+    this.revealStale = false;
     const columns = revealedColumns(this.center, this.revealOffsets, (cx, cz) =>
       this.completeColumns.has(`${cx},${cz}`),
     );
@@ -470,7 +505,7 @@ export class Streamer {
         }
       }
       this.generated.delete(col);
-      this.completeColumns.delete(col);
+      this.forgetComplete(col);
       this.onColumnUnload(cx, cz);
     }
   }
@@ -510,6 +545,7 @@ export class Streamer {
         }
       }
       this.generated.add(col);
+      this.recheck.add(col);
       if (notify) {
         this.onColumn(cx, cz);
       }
@@ -549,11 +585,17 @@ export class Streamer {
     return chunks;
   }
 
+  private recheckChunkColumn(chunkKeyText: string): void {
+    const [cx, , cz] = chunkKeyText.split(',');
+    this.recheck.add(`${cx},${cz}`);
+  }
+
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
     this.dirty.delete(key);
     const { world, scale, meshes } = this.opts;
     if (isEnclosed(world, [cx, cy, cz], scale.minCy, this.occluders)) {
       meshes.remove(key); // nothing visible; skip the worker entirely
+      this.recheckChunkColumn(key);
       return;
     }
     this.inFlight.add(key);
@@ -595,6 +637,7 @@ export class Streamer {
 
   private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
     this.inFlight.delete(msg.key);
+    this.recheckChunkColumn(msg.key);
     const { stats } = this.opts;
     if (stats) {
       stats.meshMs.push(msg.ms);
