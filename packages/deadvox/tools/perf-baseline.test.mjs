@@ -75,7 +75,7 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
   const engine = {
     renderer,
     scene,
-    meshes: { group: { userData: {} } },
+    meshes: { batch: { userData: {} } },
     shadows: { drawMaps: () => undefined },
     mood: { renderScale: 1 },
   };
