@@ -88,6 +88,10 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Heard-sound record and occlusion, reached only from the WebAudio adapter, which no simulation entry reaches.',
   'engine/game/bindingRegistry.ts':
     'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
+  'engine/game/actionMenu.ts':
+    'Live-input pointing and choice of the radial action menu; replay applies the recorded command, not the gesture.',
+  'engine/game/heldActionPress.ts':
+    'Live-input tap-or-hold of a held use press; replay applies the recorded hand.action, not the press.',
   'engine/game/voiceCaps.ts':
     'Playback voice caps, reached only from the WebAudio adapter, which no simulation entry reaches.',
   'engine/core/schedulerIds.ts':
