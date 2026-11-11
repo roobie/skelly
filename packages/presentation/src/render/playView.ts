@@ -754,6 +754,7 @@ export const createPlayView = (
       if (!shadows) {
         return Promise.resolve();
       }
+      engine.skylight?.patchMaterials(scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

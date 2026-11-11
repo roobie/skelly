@@ -330,6 +330,11 @@ export class Skylight {
       this.refreshMetadata();
     }
     this.prepare(position);
+    this.patchMaterials(scene);
+    this.onService?.(this.clock() - start);
+  }
+  /** The patch joins a material's program key, so a warm-up that runs before it compiles programs nothing draws. */
+  patchMaterials(scene: Scene): void {
     scene.traverse((object) => {
       const { material } = object as Mesh;
       if (material) {
@@ -338,7 +343,6 @@ export class Skylight {
         }
       }
     });
-    this.onService?.(this.clock() - start);
   }
   private refreshMetadata(): void {
     const data = this.regions.value.image.data!;
