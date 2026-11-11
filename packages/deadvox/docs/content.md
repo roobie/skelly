@@ -21,6 +21,7 @@ read_if:
   - you author or change the day cycle, the sky looks or the weather fog tuning
   - you change the debug kit ownership view
   - you change settlement building eligibility, city collections, building door resistance or benchmark candidate admission
+  - you change city terrain evaluation or authored lot paving
   - you author the police station's armoury or roof access
 ---
 
@@ -384,7 +385,7 @@ Loose furniture in abandoned buildings and yards should suggest abrupt flight ra
 
 The lab's surface enclosure follows the underground footprint rather than just the service building, so the slab reads as one abandoned compound. Keep the apron and named perimeter crossings usable so fencing does not obscure the way down or turn the yard into a trap. Lot and service-yard openings share the same reach-and-sweep certificate so an alternate entrance cannot hide a blocked crossing. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-yard.libsonnet`, `slots` and `routes`, and `packages/engine/src/core/cityLots.ts`, `perimeterRouteIssues`.
 
-Authored lots separate the arrangement from the building draw: a designed street and yard should not move when a seed changes its houses. Empty reservations protect intentional open ground, and pool guarantees must fit the actual lot footprints rather than borrowing capacity from another row. Fixed service placement keeps a designed destination on its intended approach. A validation pass shares immutable leaf compilation so a compound's nested assemblies do not repeatedly pay for the same authored geometry; a later admission must still see registry edits. See `packages/engine/src/core/mapKit.ts`, `mapKitIssues`. Off-rhythm paving belongs to the same plan as stamping, so the walked alleys cannot disagree with the arrangement. See `packages/engine/src/core/cityLots.ts`, `placeCityLots` and `cityLotIssues`; `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`; and `packages/engine/src/core/citySite.ts`, `surface`.
+Authored lots separate the arrangement from the building draw: a designed street and yard should not move when a seed changes its houses. Empty reservations protect intentional open ground, and pool guarantees must fit the actual lot footprints rather than borrowing capacity from another row. Fixed service placement keeps a designed destination on its intended approach. A validation pass shares immutable leaf compilation so a compound's nested assemblies do not repeatedly pay for the same authored geometry; a later admission must still see registry edits. See `packages/engine/src/core/mapKit.ts`, `mapKitIssues`. Off-rhythm paving belongs to the same plan as stamping, so the walked alleys cannot disagree with the arrangement. See `packages/engine/src/core/cityLots.ts`, `placeCityLots` and `cityLotIssues`; `packages/engine/src/core/cityPlan.ts`, `buildCityPlan`; and `packages/engine/src/core/terrainEvaluator.ts`, `createCitySurface`.
 
 Keep geometry, collection and consumer independently overridable so a prevalence edit need not restate a building or a scenario. See `mods/skelly.deadvox.scenario.gauntlet.city/scenarios.jsonnet`, `mapPools`, and `packages/engine/src/core/content.ts`, `buildRegistry`.
 
