@@ -718,7 +718,7 @@ export class Gore {
     const x = (origin[0] + (cell % dims[0])) * metres + offsetX;
     const y = (origin[1] + (Math.floor(cell / dims[0]) % dims[1])) * metres + offsetY;
     const z = (origin[2] + Math.floor(cell / (dims[0] * dims[1]))) * metres + offsetZ;
-    const yaw = Math.atan2(-actor.facing[0], -actor.facing[2]);
+    const yaw = Math.atan2(actor.facing[0], actor.facing[2]);
     const c = Math.cos(yaw);
     const sin = Math.sin(yaw);
     const s = this.blockSize;

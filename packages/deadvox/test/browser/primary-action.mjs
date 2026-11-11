@@ -1865,8 +1865,8 @@ const verifyVehicleService = async (page) => {
     const part = parts.find(({ fittingId }) => fittingId === site.id);
     const { min, max } = part.boxes[0];
     const centre = [0, 1, 2].map((axis) => (min[axis] + max[axis]) / 2);
-    // Out from the car's side by the part's half width plus a body's clearance.
-    const side = [Math.sin(part.transform.yaw), Math.cos(part.transform.yaw)];
+    // Out from the car's side by the part's half width plus a body's clearance: along the vehicle's x, across it.
+    const side = [Math.cos(part.transform.yaw), -Math.sin(part.transform.yaw)];
     const outward = Math.sign(
       (centre[0] - vehicle.origin[0] * s) * side[0] + (centre[2] - vehicle.origin[2] * s) * side[1],
     );

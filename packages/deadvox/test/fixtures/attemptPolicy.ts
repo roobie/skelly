@@ -23,7 +23,7 @@ export const makeAttemptLayout = (overrides: Partial<SiteLayoutDef> = {}): SiteL
   terrain: [],
   buildings: [],
   player: { position: [0, 1, 0], bearing: 0 },
-  shamblers: [],
+  actors: [],
   woodlands: [],
   tracks: [],
   attemptPolicy: makeAttemptPolicy(),

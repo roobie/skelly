@@ -1,7 +1,7 @@
 import type { ItemDef, Registry } from './content.ts';
 import { assertCraftedLiquids, assertSavedLiquidContents, couldFit, ItemFactory, snapshotItem } from './items.ts';
 import { type LootContext, placedTypeIssue, withLootDepth } from './loot.ts';
-import { slotsReason } from './magazine.ts';
+import { magazineSpec, slotsReason } from './magazine.ts';
 import { groundPileIssue } from './pileBound.ts';
 import { reachTuning } from './reach.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
@@ -45,6 +45,33 @@ const fixedLiquidIssue = (registry: Registry, fixed: FixedLootItemDef): string |
   return undefined;
 };
 
+/** A named cartridge or load belongs to the row's magazine, or the one fitted in it, and must fit that magazine. */
+const fixedContentsIssue = (registry: Registry, fixed: FixedLootItemDef): string | undefined => {
+  if (fixed.cartridge === undefined && fixed.load === undefined && fixed.cartridgeOdds === undefined) {
+    return undefined;
+  }
+  if (fixed.cartridge !== undefined && fixed.cartridgeOdds !== undefined) {
+    return 'names both a cartridge and cartridge odds';
+  }
+  const notCartridge = fixed.cartridgeOdds?.find(({ item }) => registry.items.get(item)?.ammo === undefined);
+  if (notCartridge !== undefined) {
+    return `"${notCartridge.item}" is not a cartridge`;
+  }
+  const magazine = [fixed.item, fixed.fitted?.magazine].find(
+    (type) => type !== undefined && magazineSpec(registry, type) !== undefined,
+  );
+  if (magazine === undefined) {
+    return `"${fixed.item}" has no magazine to load`;
+  }
+  const { calibre, capacity } = magazineSpec(registry, magazine)!;
+  if ((fixed.load ?? 0) > capacity) {
+    return `"${magazine}" holds ${capacity} cartridges at most`;
+  }
+  return fixed.cartridge === undefined || registry.items.get(fixed.cartridge)?.ammo?.calibre === calibre
+    ? undefined
+    : `"${fixed.cartridge}" is not a ${calibre} cartridge`;
+};
+
 const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: LootContext): string | undefined => {
   if (!registry.items.has(fixed.item)) {
     return `no item "${fixed.item}"`;
@@ -66,6 +93,10 @@ const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: Lo
     if (issue) {
       return issue;
     }
+  }
+  const contentsIssue = fixedContentsIssue(registry, fixed);
+  if (contentsIssue !== undefined) {
+    return contentsIssue;
   }
   if (fixed.charge !== undefined) {
     const item = new ItemFactory().create(registry, fixed.item);

@@ -4,8 +4,8 @@ manifest(
   id='skelly.deadvox.actors',
   tier='product',
   content=[
-    'actors-items', 'actors-sounds', 'enemies', 'figures-actors', 'footstep-sounds', 'graphics-actors', 'item-economy',
-    'models-actors',
+    'actors-items', 'actors-sounds', 'controls-actors', 'enemies', 'figures-actors', 'footstep-sounds', 'graphics-actors',
+    'item-economy', 'models-actors',
   ],
   assets=assets,
   json=['assets/manifest.json', 'presentation/item-materials.json'],

@@ -3,6 +3,8 @@ import {
   check,
   finite,
   literal,
+  ltValue,
+  maxLength,
   maxValue,
   minLength,
   minValue,
@@ -14,6 +16,7 @@ import {
   strictObject,
   string,
   transform,
+  tuple,
 } from 'valibot';
 import { Degrees } from './layouts.ts';
 import { Count, GameTimeOfDay, NonNegative, Positive } from './primitives.ts';
@@ -37,6 +40,33 @@ const SkyColour = pipe(
 
 const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
 
+/** The dome's physical (Preetham) sky model in its own terms, so hazier air at a low sun is content, not code. */
+const PhysicalSkySchema = strictObject({
+  /** 0 draws the keyed gradient only, 1 the physical sky. */
+  weight: UnitFraction,
+  turbidity: NonNegative,
+  rayleigh: NonNegative,
+  mie: NonNegative,
+  /** The model's Henyey-Greenstein asymmetry, which is undefined at 1. */
+  mieDirectional: pipe(NonNegative, ltValue(1, 'must be below 1')),
+});
+
+/** The sky dome of one look: the gradient between the fog colour and the zenith, the physical sky, clouds and stars. */
+const DomeLookSchema = strictObject({
+  zenith: SkyColour,
+  /** The band just above the horizon, between the look's fog colour (`sky`) and the zenith. */
+  horizonGlow: SkyColour,
+  physical: PhysicalSkySchema,
+  clouds: strictObject({
+    /** Moves the cloud threshold: 0 is clear, 1 overcast. */
+    cover: UnitFraction,
+    /** Scales every cloud layer's own opacity. */
+    opacity: UnitFraction,
+  }),
+  /** Star brightness. */
+  stars: UnitFraction,
+});
+
 /** One sky look: the keyframe values the time of day blends between (core/sky.ts owns the blend). */
 const SkyLookSchema = strictObject({
   sky: SkyColour,
@@ -51,6 +81,25 @@ const SkyLookSchema = strictObject({
   heightFogColor: SkyColour,
   bloom: NonNegative,
   tone: UnitFraction,
+  dome: DomeLookSchema,
+});
+
+const FiniteNumber = pipe(number(), finite());
+
+/** One cloud layer of the field; the layers are drawn from the same warped noise at their own scale, angle and drift. */
+const CloudLayerSchema = strictObject({
+  scale: Positive,
+  angle: FiniteNumber,
+  /** Texture-space drift per second along x and y. */
+  drift: tuple([FiniteNumber, FiniteNumber]),
+  opacity: UnitFraction,
+});
+
+/** The cloud field's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
+const CloudsSchema = strictObject({
+  warp: NonNegative,
+  /** The sky dome (#1505) draws its layers one by one in its shader, so four is that shader's limit, not a design choice. */
+  layers: pipe(array(CloudLayerSchema), minLength(1), maxLength(4)),
 });
 
 /** The weather's fog on top of the looks; fractions only shrink the distance fog, so both stay below 1. */
@@ -112,6 +161,7 @@ export const DayCycleSchema = strictObject({
   /** Which look sits where in its phase, in cycle order; timing tuning, with the order the blend needs enforced here. */
   keys: SkyKeysSchema,
   weather: WeatherTuningSchema,
+  clouds: CloudsSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,
   /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */

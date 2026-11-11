@@ -250,6 +250,6 @@ local assembly = {
       { item: 'cartridge_5_d_56x45', weight: 2, count: [6, 14] }, { item: 'cartridge_7_d_62x39', weight: 2, count: [6, 14] },
       { item: 'magazine_stanag_30', weight: 1, condition: [0.4, 0.8] }, { item: 'magazine_akm_30', weight: 1, condition: [0.4, 0.8] },
       { nothing: true, weight: 3 },
-    ] },
+    ], cartridgeOdds: [{ item: 'cartridge_5_d_56x45', weight: 1 }, { item: 'cartridge_7_d_62x39', weight: 1 }] },
   ],
 }

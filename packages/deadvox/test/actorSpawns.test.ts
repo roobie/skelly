@@ -20,7 +20,7 @@ const layout: SiteLayoutDef = {
   terrain: [],
   buildings: [],
   player: { position: [1, 0.5, 1], bearing: 0 },
-  shamblers: [
+  actors: [
     { type: markerType, position: [chunkMetres / 4, 0.5, chunkMetres / 2], chance: 1 },
     { type: markerType, position: [chunkMetres / 2, 0.5, chunkMetres / 2], chance: 1 },
     { type: markerType, position: [chunkMetres * 1.5, 0.5, chunkMetres / 2], chance: 1 },
@@ -29,8 +29,8 @@ const layout: SiteLayoutDef = {
   tracks: [],
 };
 const site = new AuthoredSite(1, registry, scale, layout);
-const cz = toChunk(layout.shamblers[0]!.position[2] / scale.blockSize);
-const markerColumns = [...new Set(layout.shamblers.map(({ position }) => toChunk(position[0] / scale.blockSize)))];
+const cz = toChunk(layout.actors[0]!.position[2] / scale.blockSize);
+const markerColumns = [...new Set(layout.actors.map(({ position }) => toChunk(position[0] / scale.blockSize)))];
 
 interface Spawned {
   type: string;
@@ -54,7 +54,7 @@ const load = (spawner: ActorSpawner, spawned: Spawned[], cx: number) => {
 describe('authored actor spawn persistence', () => {
   it('spawns every authored marker on its first column load only, in either load order', () => {
     expect(markerColumns).toHaveLength(2);
-    expect(markerColumns.flatMap(markersIn)).toHaveLength(layout.shamblers.length);
+    expect(markerColumns.flatMap(markersIn)).toHaveLength(layout.actors.length);
     const [west, east] = markerColumns as [number, number];
     for (const order of [
       [east, west, east],

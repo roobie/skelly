@@ -482,7 +482,7 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
       expect(def.gun!.internalMagazine!.capacity).toBeGreaterThan(0);
       expect(def.gun?.calibre).toBeDefined();
       expect(def.gun?.sight?.kind).toBe('iron');
-      expect(def.gun?.sight?.direction[0]).toBeGreaterThan(0);
+      expect(def.gun?.sight?.direction[2]).toBeGreaterThan(0);
       for (const part of Object.values(def.gun!.action!.parts)) {
         const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
         expect(index).toBeGreaterThanOrEqual(0);
@@ -498,11 +498,11 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
         expect(part.strokeMetres).toBeGreaterThan(0);
       }
       const raw = new Box3().setFromObject(gltf.scene);
-      expect(def.anchors!.muzzle![0]).toBeCloseTo(raw.max.x, 5);
+      expect(def.anchors!.muzzle![2]).toBeCloseTo(raw.max.z, 5);
       const prepared = prepareModel(def, gltf.scene);
       const ground = new Box3().setFromObject(prepared.ground);
       expect(ground.min.y).toBeCloseTo(0, 9);
-      expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.x - raw.min.x, 9);
+      expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.z - raw.min.z, 9);
       expect(new Box3().setFromObject(prepared.held).isEmpty()).toBe(false);
     }),
   );
@@ -598,7 +598,7 @@ describe('model forms', () => {
     expect(box.min.y).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
-    expect(box.max.x - box.min.x).toBeCloseTo(0.3); // long side along x
+    expect(box.max.x - box.min.x).toBeCloseTo(0.3); // its long side, +z in the file, turned onto x
   });
 
   it('stands a model that rests upright on its back end, its front end up and centred over its origin', async () => {
@@ -609,10 +609,10 @@ describe('model forms', () => {
     ground.updateMatrixWorld(true);
     const box = new Box3().setFromObject(ground);
     expect(box.min.y).toBeCloseTo(0);
-    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.x - raw.min.x);
+    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.z - raw.min.z);
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
-    const front = groundModelFrame(ground).localToWorld(new Vector3(raw.max.x, 0, 0));
+    const front = groundModelFrame(ground).localToWorld(new Vector3(0, 0, raw.max.z));
     expect(front.y).toBeCloseTo(box.max.y);
   });
 
@@ -641,7 +641,7 @@ describe('model forms', () => {
   it('is held at its grip, pointing forward', async () => {
     const { held } = await load();
     held.updateMatrixWorld(true);
-    // The fixture's box runs 0.3 m along x; the grip is 0.05 m from its back end.
+    // The fixture's box runs 0.3 m along z; the grip is 0.05 m from its back end.
     const box = new Box3().setFromObject(held);
     expect(box.min.z).toBeCloseTo(-0.25);
     expect(box.max.z).toBeCloseTo(0.05);
@@ -809,7 +809,7 @@ describe('base pack melee', () => {
   });
 
   it.each(models.map((model) => [model.id, model] as const))(
-    '%s loads, rests on x, and has usable palm and strike anchors at real-world scale',
+    '%s loads, lies along z, and has usable palm and strike anchors at real-world scale',
     async (_, def) => {
       const bytes = modFileBytes(def.file);
       const { scene } = await parseGlb(bytes);
@@ -822,7 +822,7 @@ describe('base pack melee', () => {
 
       expect(grip).toBeDefined();
       expect(strike).toBeDefined();
-      expect(strike![0]).toBeGreaterThan(grip![0]);
+      expect(strike![2]).toBeGreaterThan(grip![2]);
       const anchors = Object.values(def.anchors ?? {});
       expect(
         [grip!, ...anchors].every((anchor) => anchorIsInBounds(anchor, sourceBox)),
@@ -873,24 +873,27 @@ describe('base pack melee', () => {
   it.each(['forward', 'upright'] as const)(
     'preserves fixture scale and palm-to-strike displacement when held %s',
     (hold) => {
-      const scene = new Mesh(new BoxGeometry(0.8, 0.12, 0.06));
-      const grip: [number, number, number] = [-0.3, 0, 0];
-      const strike: [number, number, number] = [0.4, 0, 0];
+      const scene = new Mesh(new BoxGeometry(0.06, 0.12, 0.8));
+      const grip: [number, number, number] = [0, 0, -0.3];
+      const strike: [number, number, number] = [0, 0, 0.4];
       const { held, ground } = prepareModel({ id: 'fixture', file: 'fixture.glb', hold, grip: { at: grip } }, scene);
       held.updateMatrixWorld(true);
       const frame = heldModelFrame(held);
       expect(frame.localToWorld(new Vector3(...grip)).length()).toBeCloseTo(0);
       const contact = frame.localToWorld(new Vector3(...strike));
-      expect(contact.length()).toBeCloseTo(strike[0] - grip[0]);
+      expect(contact.length()).toBeCloseTo(strike[2] - grip[2]);
       expect(contact.x).toBeCloseTo(0);
       expect(hold === 'forward' ? contact.z : contact.y).toBeCloseTo(
-        (hold === 'forward' ? -1 : 1) * (strike[0] - grip[0]),
+        (hold === 'forward' ? -1 : 1) * (strike[2] - grip[2]),
       );
       const bounds = new Box3().setFromObject(ground);
       expect(bounds.min.y).toBeCloseTo(0);
-      expect(bounds.getSize(new Vector3()).toArray()).toEqual(
-        new Box3().setFromObject(scene).getSize(new Vector3()).toArray(),
-      );
+      // The ground form turns the fixture's long side, its z, onto x.
+      const { x, y, z } = new Box3().setFromObject(scene).getSize(new Vector3());
+      const size = bounds.getSize(new Vector3());
+      expect(size.x).toBeCloseTo(z);
+      expect(size.y).toBeCloseTo(y);
+      expect(size.z).toBeCloseTo(x);
     },
   );
 });
@@ -959,12 +962,12 @@ it('loads both exported STANAG magazine GLBs with the same body width', async ()
       expect(size.x).toBeGreaterThan(0);
       expect(size.y).toBeGreaterThan(0);
       expect(size.z).toBeGreaterThan(0);
-      expect(size.z).toBeLessThan(size.x);
-      expect(size.z).toBeLessThan(size.y);
+      expect(size.x).toBeLessThan(size.z);
+      expect(size.x).toBeLessThan(size.y);
       return size;
     }),
   );
-  expect(sizes[0]!.z).toBeCloseTo(sizes[1]!.z, 7);
+  expect(sizes[0]!.x).toBeCloseTo(sizes[1]!.x, 7);
 });
 
 describe('base pack guns', () => {

@@ -222,7 +222,7 @@ try {
           }
           if (workload.driver !== 'sky') {
             if (workload.spawnCount) {
-              perf.debug.handleAction('debug.spawn-shamblers');
+              perf.debug.handleAction('debug.spawn-actors');
             }
             perf.session.body.pos[1] += (workload.liftMetres ?? 0) / perf.engine.config.scale.blockSize;
           }

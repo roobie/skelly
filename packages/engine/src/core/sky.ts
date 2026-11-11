@@ -10,6 +10,19 @@ import type { DayCycleDef } from './schema.ts';
 /** sRGB in [0, 1], as in CSS hex colours. */
 export type Rgb = readonly [number, number, number];
 
+/** The sky dome of one look (`packages/engine/src/core/schema/dayCycle.ts`, `DomeLookSchema`); the cloud field's shape is the cycle's `clouds`. */
+export interface Dome {
+  /** Colour straight up. */
+  zenith: Rgb;
+  /** Colour of the band just above the horizon, between the fog colour and the zenith. */
+  horizonGlow: Rgb;
+  /** The physical sky: weight 0 is the keyed gradient only, 1 the physical sky; the rest are the model's own terms. */
+  physical: { weight: number; turbidity: number; rayleigh: number; mie: number; mieDirectional: number };
+  /** Cloud threshold shift and the scale of every layer's opacity. */
+  clouds: { cover: number; opacity: number };
+  stars: number;
+}
+
 export interface Sky {
   dayPhase: DayPhase;
   /** Background colour; the fog fades to it. */
@@ -40,6 +53,7 @@ export interface Sky {
    * its depth (render/autoTone.ts). Time of day only: the weather does not move it.
    */
   tone: number;
+  dome: Dome;
 }
 
 type Look = Omit<Sky, 'light' | 'dayPhase'>;
@@ -64,6 +78,20 @@ const phaseRange = (state: DayPhaseState, phase: DayPhase): readonly [number, nu
   }
 };
 
+const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
+  zenith: mixRgb(a.zenith, b.zenith, t),
+  horizonGlow: mixRgb(a.horizonGlow, b.horizonGlow, t),
+  physical: {
+    weight: mix(a.physical.weight, b.physical.weight, t),
+    turbidity: mix(a.physical.turbidity, b.physical.turbidity, t),
+    rayleigh: mix(a.physical.rayleigh, b.physical.rayleigh, t),
+    mie: mix(a.physical.mie, b.physical.mie, t),
+    mieDirectional: mix(a.physical.mieDirectional, b.physical.mieDirectional, t),
+  },
+  clouds: { cover: mix(a.clouds.cover, b.clouds.cover, t), opacity: mix(a.clouds.opacity, b.clouds.opacity, t) },
+  stars: mix(a.stars, b.stars, t),
+});
+
 const interpolate = (a: Look, b: Look, t: number): Look => ({
   sky: mixRgb(a.sky, b.sky, t),
   lightColor: mixRgb(a.lightColor, b.lightColor, t),
@@ -77,6 +105,7 @@ const interpolate = (a: Look, b: Look, t: number): Look => ({
   heightFogColor: mixRgb(a.heightFogColor, b.heightFogColor, t),
   bloom: mix(a.bloom, b.bloom, t),
   tone: mix(a.tone, b.tone, t),
+  dome: interpolateDome(a.dome, b.dome, t),
 });
 
 const lookAt = (state: DayPhaseState, time: number, cycle: DayCycleDef): Look => {

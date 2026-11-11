@@ -69,7 +69,7 @@ export const setPlayerFigurePosition = (
   );
 };
 
-/** A shambler leg box's `at` is its top, at the hip; a region box's `at` is its centre. */
+/** An actor leg box's `at` is its top, at the hip; a region box's `at` is its centre. */
 const legRegion = ({ size, at }: FigureBox): FigureBox => ({ size, at: [at[0], at[1] - size[1] / 2, at[2]] });
 
 /** The body regions' boxes in the figure frame; gore lands on them, and the body simulation decides hits. */

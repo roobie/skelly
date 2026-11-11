@@ -11,8 +11,7 @@ import { BindingRegistry } from '@skelly/engine/input';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
 import { resolveSpawnTime } from '@skelly/engine/internal/core/clock.ts';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
-import { corpseLootPoint, lootTypeIssue } from '@skelly/engine/internal/core/loot.ts';
-import { militaryLootItems } from '@skelly/engine/internal/core/magazine.ts';
+import { corpseLootPoint, lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
 import { blockPatterns, blockWeatherability } from '@skelly/engine/internal/core/meshInput.ts';
 import { checkReachability } from '@skelly/engine/internal/core/reachability.ts';
 import {
@@ -382,7 +381,7 @@ describe('content', () => {
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
-      layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
+      layout.actors.some(({ type }) => type === soldier.id) ? [layout] : [],
     );
     const soldierSite = (id: string) => id.startsWith('camp_') || id.startsWith('crisis_hq');
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
@@ -1290,7 +1289,7 @@ describe('content', () => {
         terrain: [],
         buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
         player: { position: [8, 0.5, 8], bearing: 0 },
-        shamblers: [],
+        actors: [],
         woodlands: [],
         tracks: [],
       },

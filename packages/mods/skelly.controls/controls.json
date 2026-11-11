@@ -736,7 +736,7 @@
       ]
     },
     {
-      "id": "debug.spawn-unaware-shambler",
+      "id": "debug.spawn-unaware-actor",
       "keys": [
         {
           "code": "Numpad3"
@@ -776,42 +776,10 @@
       ]
     },
     {
-      "id": "debug.spawn-shamblers",
+      "id": "debug.spawn-actors",
       "keys": [
         {
           "code": "KeyV"
-        }
-      ]
-    },
-    {
-      "id": "debug.spawn-actor.runner",
-      "keys": [
-        {
-          "code": "Numpad1"
-        }
-      ]
-    },
-    {
-      "id": "debug.spawn-actor.crawler",
-      "keys": [
-        {
-          "code": "Numpad2"
-        }
-      ]
-    },
-    {
-      "id": "debug.spawn-actor.amalgam",
-      "keys": [
-        {
-          "code": "Numpad4"
-        }
-      ]
-    },
-    {
-      "id": "debug.spawn-actor.acid_zombie",
-      "keys": [
-        {
-          "code": "Numpad6"
         }
       ]
     },
@@ -824,7 +792,7 @@
       ]
     },
     {
-      "id": "debug.freeze-shamblers",
+      "id": "debug.freeze-actors",
       "keys": [
         {
           "code": "KeyO"

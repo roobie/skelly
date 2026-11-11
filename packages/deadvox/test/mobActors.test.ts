@@ -416,9 +416,11 @@ const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward:
   };
   const state = internal.states.get(id)!;
   const head = boneTransforms(internal.variants[state.variantIndex]!.bones, state.lastPose!).get('head')!;
+  // The pose is root-local and faces +z; these actors face -z, a half turn from it.
+  const turned = ([x, y, z]: readonly number[]): Vec3 => [-x!, y!, -z!];
   return {
-    forward: [...mulMV(head.r, [0, 0, -1])] as Vec3,
-    center: [...applyPoint(head, [0, 0, 0])] as Vec3,
+    forward: turned(mulMV(head.r, [0, 0, 1])),
+    center: turned(applyPoint(head, [0, 0, 0])),
   };
 };
 
@@ -430,7 +432,7 @@ describe('facing convention', () => {
       const id = store.add(makeActor([0, 0, 0], [1, 0, 0]));
       renderer.sync(store, 0, 1);
       const pelvis = renderer.boneMatrix(id, 'pelvis')!;
-      const forward: Vec3 = [-pelvis[2]!, -pelvis[6]!, -pelvis[10]!];
+      const forward: Vec3 = [pelvis[2]!, pelvis[6]!, pelvis[10]!];
       expect(forward[0]).toBeCloseTo(1, 9);
       expect(forward[1]).toBeCloseTo(0, 9);
       expect(forward[2]).toBeCloseTo(0, 9);

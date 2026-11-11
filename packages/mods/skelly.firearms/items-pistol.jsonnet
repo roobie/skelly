@@ -54,8 +54,9 @@ local pistol = import 'packages/skelly-assets/built/skelly.firearms/gungen/pisto
         // Held at arm's length, the pistol comes up to the firing eye with the shoulders and head level.
         ads: { cameraOffsetLimitMetres: 0.3, torsoRollDegrees: 0, headRollDegrees: 0 },
         adsViewEyeReliefMetres: 0.2,
-        firing: { at: [pistol.grip.at[0] - 0.03, pistol.grip.at[1] - 0.04, 0.016], palm: [0, 0, -1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolWrap' },
-        support: { at: [pistol.grip.at[0] - 0.026, pistol.grip.at[1] - 0.051, -0.04], palm: [0, 0, 1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolCup' },
+        // Model frame: bore along +z, the gun's right at -x.
+        firing: { at: [-0.016, pistol.grip.at[1] - 0.04, pistol.grip.at[2] - 0.03], palm: [1, 0, 0], fingers: [0, 0.5, 0.8660254037844386], pose: 'pistolWrap' },
+        support: { at: [0.04, pistol.grip.at[1] - 0.051, pistol.grip.at[2] - 0.026], palm: [-1, 0, 0], fingers: [0, 0.5, 0.8660254037844386], pose: 'pistolCup' },
       },
     },
     import 'packages/skelly-assets/built/skelly.firearms/gungen/magazine_pistol_9.model.json',

@@ -129,7 +129,7 @@ export interface DebugRuntime {
   readonly aimEnabled: boolean;
   updateAim: (aim: ActorAim | undefined) => void;
   setCrosshairVisible: (visible: boolean) => void;
-  /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
+  /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when an actor is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
   readonly interactionRayEnabled: boolean;
   drawInteractionRay: (options: {

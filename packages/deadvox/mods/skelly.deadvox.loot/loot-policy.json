@@ -1,0 +1,9 @@
+{
+  "lootPolicy": [
+    {
+      "capability": "magazines",
+      "id": "deadvox_loot",
+      "magazineLoad": [0, 1]
+    }
+  ]
+}

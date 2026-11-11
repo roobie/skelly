@@ -19,7 +19,8 @@ const boreModel = {
   hold: 'upright',
   grip: { at: [0, 0, 0] },
   anchors: { muzzle: [0, 0, 0] },
-  gun: { muzzleDirection: [0, 0, -1] },
+  // Held upright, the model's +x turns to the view's front.
+  gun: { muzzleDirection: [1, 0, 0] },
 } as unknown as ModelDef;
 
 it('chooses a bore-line zombie in front of a far wall', () => {

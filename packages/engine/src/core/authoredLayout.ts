@@ -253,13 +253,13 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       }
     }
   });
-  layout.shamblers.forEach((spawn, i) => {
+  layout.actors.forEach((spawn, i) => {
     const type = registry.actors.get(spawn.type);
     if (!type) {
-      issues.push([`.shamblers[${i}].type`, `no actor type "${spawn.type}"`]);
+      issues.push([`.actors[${i}].type`, `no actor type "${spawn.type}"`]);
     }
-    checkSpawn([spawn.position[0], spawn.position[2]], `.shamblers[${i}].position`);
-    supported(spawn.position, `.shamblers[${i}].position`);
+    checkSpawn([spawn.position[0], spawn.position[2]], `.actors[${i}].position`);
+    supported(spawn.position, `.actors[${i}].position`);
     if (type) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(spawn.position),
@@ -267,7 +267,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
         solidAt,
       );
       if (blocked) {
-        issues.push([`.shamblers[${i}].position`, `spawn body overlaps solid cell [${blocked.join(',')}]`]);
+        issues.push([`.actors[${i}].position`, `spawn body overlaps solid cell [${blocked.join(',')}]`]);
       }
     }
   });

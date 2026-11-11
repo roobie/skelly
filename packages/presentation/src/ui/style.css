@@ -2138,7 +2138,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root .debug-panel .debug-panel-header,
 #debug-ui-root .debug-readout,
-#debug-ui-root .debug-shambler-count,
+#debug-ui-root .debug-actor-count,
 #debug-ui-root .debug-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2205,8 +2205,8 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root .debug-panel .debug-readout span,
 #debug-ui-root .debug-panel .debug-readout button,
-#debug-ui-root .debug-panel .debug-shambler-count button,
-#debug-ui-root .debug-panel .debug-shambler-count output,
+#debug-ui-root .debug-panel .debug-actor-count button,
+#debug-ui-root .debug-panel .debug-actor-count output,
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-panel-header button {
   padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
@@ -2220,13 +2220,13 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-readout button,
-#debug-ui-root .debug-panel .debug-shambler-count button {
+#debug-ui-root .debug-panel .debug-actor-count button {
   cursor: pointer;
 }
-#debug-ui-root .debug-panel .debug-shambler-count {
+#debug-ui-root .debug-panel .debug-actor-count {
   align-items: center;
 }
-#debug-ui-root .debug-panel .debug-shambler-count button:disabled {
+#debug-ui-root .debug-panel .debug-actor-count button:disabled {
   opacity: 0.5;
   cursor: default;
 }

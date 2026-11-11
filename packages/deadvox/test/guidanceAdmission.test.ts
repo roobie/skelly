@@ -42,7 +42,7 @@ it('rejects unresolved guidance item and action references at content admission'
             id: 'fixture_guidance',
             startTimeGameTimeOfDay: undefined,
             buildings: [],
-            shamblers: [],
+            actors: [],
             tracks: [],
             guidance,
           },

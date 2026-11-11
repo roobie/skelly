@@ -43,7 +43,7 @@ export const observationPlugin = {
         tracks: [],
         player: { position: [8, 20.5, 8], bearing: 0 },
         // Its own column is generated, but the outward neighbour is not: replay must preserve that gate.
-        shamblers: [{ type: 'shambler', position: [streamEdgeActorX, 20.5, 8] }],
+        actors: [{ type: 'shambler', position: [streamEdgeActorX, 20.5, 8] }],
       });
       return JSON.stringify(data);
     }

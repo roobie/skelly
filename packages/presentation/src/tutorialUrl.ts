@@ -1,1 +1,1 @@
-export { tutorialUrl } from './presentation/tutorialUrl.ts';
+export { logPracticeWarnings, stagePracticeLink, tutorialUrl } from './presentation/tutorialUrl.ts';

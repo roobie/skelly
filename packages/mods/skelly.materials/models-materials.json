@@ -48,7 +48,7 @@
       "file": "assets/models/rag.glb",
       "grip": {
         "at": [-0.050000000000000003, 0.02, 0.039999999999999994],
-        "turn": [0, 0, 0]
+        "turn": [0, -90, 0]
       },
       "hold": "upright",
       "id": "rag",
@@ -72,7 +72,7 @@
       "file": "assets/models/duct_tape.glb",
       "grip": {
         "at": [0.037000000000000005, 0.025000000000000001, 0],
-        "turn": [0, 0, 0]
+        "turn": [0, -90, 0]
       },
       "hold": "upright",
       "id": "duct_tape",
@@ -95,7 +95,7 @@
     {
       "file": "assets/models/nails.glb",
       "grip": {
-        "at": [0.037000000000000005, 0, 0],
+        "at": [0, 0, 0.037000000000000005],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -109,7 +109,7 @@
       },
       "parts": {
         "material": {
-          "centreOfMass": [0.039666666666666663, 0, 0],
+          "centreOfMass": [0, 0, 0.039666666666666663],
           "massKg": 0.0050000000000000001,
           "node": "material:turnedStock"
         }
@@ -120,7 +120,7 @@
       "file": "assets/models/scrap_metal.glb",
       "grip": {
         "at": [-0.059999999999999998, 0.01, -0.035000000000000003],
-        "turn": [0, 0, 0]
+        "turn": [0, -90, 0]
       },
       "hold": "upright",
       "id": "scrap_metal",
@@ -143,7 +143,7 @@
     {
       "file": "assets/models/stick.glb",
       "grip": {
-        "at": [0.20000000000000001, 0, 0],
+        "at": [0, 0, 0.20000000000000001],
         "turn": [0, 0, 0]
       },
       "hold": "upright",
@@ -157,7 +157,7 @@
       },
       "parts": {
         "material": {
-          "centreOfMass": [0.193, 9.0909090909090958e-5, 9.0909090909090958e-5],
+          "centreOfMass": [-9.0909090909090958e-5, 9.0909090909090958e-5, 0.193],
           "massKg": 0.20000000000000001,
           "node": "material:turnedStock"
         }

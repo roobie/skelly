@@ -1,5 +1,5 @@
 // The simulation half of a play session, without the DOM: the clock and scheduler, the
-// player's body, inventory, needs, rest, the shamblers and their spawns. `startPlay`
+// player's body, inventory, needs, rest, the actors and their spawns. `startPlay`
 // (the game) and the snapshot tests build the same object from here, so what a save
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
@@ -558,7 +558,7 @@ export interface SessionOptions {
   onBlock?: (jolt: BlockJolt, full: boolean) => void;
   onAcidImpact?: (position: Vec3, type: Actor['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
-  /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
+  /** Presentation hooks for what the actors' rules decide; they only draw, and change no state. */
   actorEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
     onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
@@ -1004,7 +1004,7 @@ export const createSession = (options: SessionOptions) => {
   const trapInterrupts = sim.events.reader();
   const soundPicker = new SoundPicker(seed, registry.sounds);
 
-  // The player's own noise, which shamblers can hear. Saved with the character.
+  // The player's own noise, which actors can hear. Saved with the character.
   const {
     playerAudio,
     footstepClock: savedFootstepClock,
@@ -1592,17 +1592,17 @@ export const createSession = (options: SessionOptions) => {
   };
   const traps = new BearTraps(inventory);
   const actorReady = actorReadinessFor(options);
-  const placeActorDrop = (item: Item, pos: Vec3): void => {
+  const placeActorDrop = (item: Item, pos: Vec3): 'placed' | 'discarded' => {
     const landed = freshDropTarget(inventory, item, pos);
     if (!landed) {
-      return;
+      return 'discarded';
     }
     if (inventory.planAdd(item, landed).ok) {
       inventory.add(item, landed);
-      return;
+      return 'placed';
     }
     if (!actorReady(pos[0], pos[2])) {
-      return;
+      return 'discarded';
     }
     const landings = dropSpots(pos).flatMap((spot) => {
       const floor = inventory.landing(spot);
@@ -1612,9 +1612,10 @@ export const createSession = (options: SessionOptions) => {
       const target = { kind: 'pile' as const, pos: cell };
       if (inventory.planAdd(item, target).ok) {
         inventory.add(item, target);
-        return;
+        return 'placed';
       }
     }
+    return 'discarded';
   };
   const actorSystem = new ActorSystem({
     activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
@@ -1898,11 +1899,11 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
-  /** A downed body lies on the floor: the player walks over it and a door closes on it, as shamblers already do. */
+  /** A downed body lies on the floor: the player walks over it and a door closes on it, as actors already do. */
   const standingActorBodies = (): Body[] =>
     [...actorStore.entries()].filter(([, actor]) => !actor.incapacitated).map(([, actor]) => actor.body);
 
-  /** A world sound that shamblers hear when its content gives it a noise. */
+  /** A world sound that actors hear when its content gives it a noise. */
   const playNoisyWorldSound = (event: SoundId, position: Vec3): void => {
     const noise = registry.sounds.get(event)?.noise;
     playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
@@ -2827,7 +2828,7 @@ export const createSession = (options: SessionOptions) => {
     entityDistance,
     playWorldSound,
     playPlayerSound,
-    /** Time of the last shambler step, for render interpolation. */
+    /** Time of the last actor step, for render interpolation. */
     get lastActorStep() {
       return lastActorStep;
     },

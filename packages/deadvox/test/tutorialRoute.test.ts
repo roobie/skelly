@@ -50,14 +50,14 @@ it('the static firing line has a solid backstop between every firing position an
   const { site, world, registry, entities, s, layout } = practiceWorld();
   const line = site.playtestMarks.beats.find((beat) => beat.id === 'tutorial_firing_line')!.area;
   const solid = worldSolid(world, registry, entities);
-  expect(layout.shamblers.length).toBeGreaterThan(0);
+  expect(layout.actors.length).toBeGreaterThan(0);
   expect(line.x1).toBeGreaterThan(line.x0);
   expect(line.z1).toBeGreaterThan(line.z0);
   for (let x = line.x0; x < line.x1; x += 1) {
     for (let z = line.z0; z < line.z1; z += 1) {
       const origin: Vec3 = [x, 4, z];
       expect(solid(...origin)).toBe(false);
-      for (const threat of layout.shamblers) {
+      for (const threat of layout.actors) {
         const target = threat.position.map((v, axis) => v / s + (axis === 1 ? 2 : 0)) as Vec3;
         const delta = target.map((v, axis) => v - origin[axis]!) as Vec3;
         const distance = Math.hypot(...delta);
