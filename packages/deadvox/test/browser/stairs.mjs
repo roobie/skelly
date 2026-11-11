@@ -1015,9 +1015,7 @@ try {
     });
   }
   const walk = async (actionId, targetX, ascending, targetFeet) => {
-    const release = await holdAction(page, actionId);
     try {
-      const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await waitForSimulation(
         page,
         ({ x, increasing }) => {
@@ -1029,13 +1027,7 @@ try {
           };
         },
         { x: targetX, increasing: ascending },
-        {
-          seconds: 10,
-          from: keyDownTime,
-          label: `arrival ${actionId} x=${targetX}`,
-          record: state,
-          stop: release,
-        },
+        { seconds: 10, label: `arrival ${actionId} x=${targetX}`, record: state, hold: actionId },
       );
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await waitForSimulation(
@@ -1049,11 +1041,8 @@ try {
         { seconds: 3, from: start, label: `settle ${actionId} x=${targetX} feet=${targetFeet}`, record: state },
       );
     } catch (error) {
-      await release();
       await state(`walk/settle failure ${actionId} x=${targetX} feet=${targetFeet}: ${error}`);
       throw error;
-    } finally {
-      await release();
     }
   };
   const openResidentDoor = async (residentId) => {
@@ -1118,66 +1107,61 @@ try {
       input.controls.pitch = 0;
       return session.sim.time;
     }, target);
-    const releaseForward = await holdAction(page, 'movement.forward');
-    try {
-      await waitForSimulation(
-        page,
-        ({ target: destination, from, seconds }) => {
-          const { body, session, input, engine } = globalThis.stairsWitness;
-          const dx = destination[0] - body.pos[0];
-          const dz = destination[2] - body.pos[2];
-          input.controls.yaw = Math.atan2(-dx, -dz);
-          const distance = Math.hypot(dx, dz);
-          const reached = distance < 0.5;
-          const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
-          if (!terminal) {
-            return { time: session.sim.time, paused: session.sim.paused, reached, distance };
-          }
-          const supportCell = (position) => [
-            Math.floor(position[0]),
-            Math.floor(position[1] - 1),
-            Math.floor(position[2]),
-          ];
-          const playerSupport = supportCell(body.pos);
-          const targetSupport = supportCell(destination);
-          const intent = input.controls.intent();
-          return {
-            time: session.sim.time,
-            paused: session.sim.paused,
-            reached,
-            distance,
-            position: [...body.pos],
-            target: [...destination],
-            onGround: body.onGround,
-            velocity: [...body.vel],
-            path: {
-              from: [body.pos[0], body.pos[2]],
-              to: [destination[0], destination[2]],
-              delta: [dx, dz],
-              yaw: input.controls.yaw,
-              forward: intent.forward,
-              sprint: intent.sprint,
-            },
-            readiness: {
-              playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
-              playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
-              playerSupport: engine.isSolid(...playerSupport),
-              targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
-              targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
-              targetSupport: engine.isSolid(...targetSupport),
-            },
-            residents: [...session.actorStore.entries()].map(([, resident]) => ({
-              position: [...resident.body.pos],
-              mode: resident.agent.mode,
-            })),
-          };
-        },
-        { target, from: start, seconds: 12 },
-        { seconds: 12, from: start, label, record: state, stop: releaseForward },
-      );
-    } finally {
-      await releaseForward();
-    }
+    await waitForSimulation(
+      page,
+      ({ target: destination, from, seconds }) => {
+        const { body, session, input, engine } = globalThis.stairsWitness;
+        const dx = destination[0] - body.pos[0];
+        const dz = destination[2] - body.pos[2];
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        const distance = Math.hypot(dx, dz);
+        const reached = distance < 0.5;
+        const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
+        if (!terminal) {
+          return { time: session.sim.time, paused: session.sim.paused, reached, distance };
+        }
+        const supportCell = (position) => [
+          Math.floor(position[0]),
+          Math.floor(position[1] - 1),
+          Math.floor(position[2]),
+        ];
+        const playerSupport = supportCell(body.pos);
+        const targetSupport = supportCell(destination);
+        const intent = input.controls.intent();
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached,
+          distance,
+          position: [...body.pos],
+          target: [...destination],
+          onGround: body.onGround,
+          velocity: [...body.vel],
+          path: {
+            from: [body.pos[0], body.pos[2]],
+            to: [destination[0], destination[2]],
+            delta: [dx, dz],
+            yaw: input.controls.yaw,
+            forward: intent.forward,
+            sprint: intent.sprint,
+          },
+          readiness: {
+            playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
+            playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
+            playerSupport: engine.isSolid(...playerSupport),
+            targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
+            targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
+            targetSupport: engine.isSolid(...targetSupport),
+          },
+          residents: [...session.actorStore.entries()].map(([, resident]) => ({
+            position: [...resident.body.pos],
+            mode: resident.agent.mode,
+          })),
+        };
+      },
+      { target, from: start, seconds: 12 },
+      { seconds: 12, from: start, label, record: state, hold: 'movement.forward' },
+    );
     const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
       page,
@@ -1402,31 +1386,24 @@ try {
     );
     await state('upper resident and lower-floor/stair collision ready', { upperAnchor });
     await openResidentDoor(residentId);
-    const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-    const releaseForward = await holdAction(page, 'movement.forward');
-    try {
-      await waitForSimulation(
-        page,
-        (id) => {
-          const { body, session } = globalThis.stairsWitness;
-          const target = session.actorStore.get(id)?.agent.lastPerceived;
-          const distance = target
-            ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
-            : Number.POSITIVE_INFINITY;
-          return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
-        },
-        residentId,
-        {
-          seconds: 8,
-          from: approachStart,
-          label: 'resident hears the player at the open doorway',
-          record: state,
-          stop: releaseForward,
-        },
-      );
-    } finally {
-      await releaseForward();
-    }
+    await waitForSimulation(
+      page,
+      (id) => {
+        const { body, session } = globalThis.stairsWitness;
+        const target = session.actorStore.get(id)?.agent.lastPerceived;
+        const distance = target
+          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
+          : Number.POSITIVE_INFINITY;
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
+      },
+      residentId,
+      {
+        seconds: 8,
+        label: 'resident hears the player at the open doorway',
+        record: state,
+        hold: 'movement.forward',
+      },
+    );
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
