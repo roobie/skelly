@@ -5,10 +5,13 @@ import type { Site } from '@skelly/engine/internal/core/site.ts';
 import { authoredSkyBoxes } from '@skelly/engine/internal/core/skyField.ts';
 import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
 import { captureSky, growSky, SKY_SHELL, skyDependencyBounds } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { Inventory } from '@skelly/engine/inventory';
 import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
+import { VehicleOccupancy } from '@skelly/engine/vehicles';
 import {
   BlockEntities,
   CHUNK,
+  Chunk,
   generateColumn,
   sitePalette,
   terrainShapeOf,
@@ -90,6 +93,67 @@ it('keeps a built field without reading the world after changes outside its depe
   const reads = vi.spyOn(fixture.world, 'getChunk');
   expect(sky.current(0)).toBe(built);
   expect(reads).not.toHaveBeenCalled();
+});
+
+describe('parked vehicles', () => {
+  const near: SkyBounds = { min: [-12, 1, -12], max: [12, 8, 12] };
+  const far: SkyBounds = { min: [100, 1, -12], max: [124, 8, 12] };
+  const parked = () => {
+    const world = new World();
+    for (let cz = -2; cz <= 1; cz++) {
+      for (let cx = -2; cx <= 8; cx++) {
+        world.addChunk(new Chunk(cx, 0, cz));
+      }
+    }
+    const floor = sitePalette(registry).paving;
+    for (let z = -2 * CHUNK; z < 2 * CHUNK; z++) {
+      for (let x = -2 * CHUNK; x < 9 * CHUNK; x++) {
+        world.setBlock(x, 0, z, floor);
+      }
+    }
+    const sky = new SkyFields({ world, entities: new BlockEntities(registry), registry }, { bottom: 0, top: 31 }, [
+      near,
+      far,
+    ]);
+    const inventory = new Inventory(registry);
+    const light = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize, 'light');
+    sky.setOccluders(light);
+    const [blueprint] = [...registry.vehicleBlueprints.keys()];
+    const id = inventory.registerVehicle({
+      placementKey: 'sky.parked',
+      blueprint: blueprint!,
+      origin: [0, 1, 0],
+      facing: 'n',
+    });
+    return { sky, inventory, light, id };
+  };
+  /** The footprint's middle column, just above the floor: under the body, wherever the content puts it. */
+  const underneath = (light: VehicleOccupancy): Vec3 => {
+    const boxes = light.boxes();
+    const middle = (axis: 0 | 2) =>
+      Math.floor((Math.min(...boxes.map((box) => box.min[axis])) + Math.max(...boxes.map((box) => box.max[axis]))) / 2);
+    return [middle(0) + 0.5, 1.5, middle(2) + 0.5];
+  };
+
+  it('shades the ground under a parked vehicle that lets no light through its body', () => {
+    const { sky, light } = parked();
+    expect(sky.visibilityAt(underneath(light))).toBeLessThan(LIT);
+    expect(sky.visibilityAt([-10.5, 1.5, -10.5])).toBeGreaterThan(LIT);
+  });
+
+  it('relights the old spot once the vehicle moves, rebuilding only the fields it reaches', () => {
+    const { sky, inventory, light, id } = parked();
+    const spot = underneath(light);
+    sky.visibilityAt(spot);
+    sky.visibilityAt([112.5, 1.5, 0.5]);
+    const farBuilt = sky.current(1);
+    expect(farBuilt?.complete).toBe(true);
+    const vehicle = inventory.vehicles.get(id)!;
+    inventory.vehicles.replace(registry, id, { ...vehicle, origin: [vehicle.origin[0], 1, vehicle.origin[2] + 16] });
+    expect(sky.current(0)).toBeUndefined();
+    expect(sky.current(1)).toBe(farBuilt);
+    expect(sky.visibilityAt(spot)).toBeGreaterThan(LIT);
+  });
 });
 
 it('fails open outside every field, even inside a sealed room', () => {

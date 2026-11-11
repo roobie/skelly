@@ -13,6 +13,7 @@ export {
   type SkyField,
   type SkyFieldOwner,
   SkyFields,
+  type SkyOccluders,
   type SkySubmit,
   skyRoofAt,
 } from './core/skyField.ts';

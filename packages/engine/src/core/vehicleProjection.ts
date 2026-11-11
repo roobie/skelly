@@ -2,6 +2,7 @@ import type { ModelBox } from '@skelly/thing-core/schema';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Item } from './items.ts';
+import type { SkyBounds } from './skylight.ts';
 import { type PlacedFitting, placeFitting } from './vehicleBlueprint.ts';
 import type { VehicleInstance, VehicleInstances } from './vehicleInstances.ts';
 
@@ -170,6 +171,7 @@ export type VehicleObstructionChannel = 'sight' | 'light' | 'sound' | 'combat';
 export class VehicleOccupancy {
   private readonly cells = new Map<string, Set<number>>();
   private seenVersion = -1;
+  private runs: { version: number; boxes: readonly SkyBounds[] } = { version: -1, boxes: [] };
 
   private readonly registry: Registry;
   private readonly vehicles: VehicleInstances;
@@ -183,9 +185,46 @@ export class VehicleOccupancy {
     this.channel = channel;
   }
 
+  /** The vehicle collection's revision, which every answer here follows. */
+  get version(): number {
+    return this.vehicles.version;
+  }
+
   isSolid(x: number, y: number, z: number): boolean {
     this.rebuild();
     return this.cells.has(`${x},${y},${z}`);
+  }
+
+  /** The occupied cells as vertical runs, one box per unbroken run in a column, in blocks. */
+  boxes(): readonly SkyBounds[] {
+    this.rebuild();
+    if (this.runs.version !== this.seenVersion) {
+      const columns = new Map<string, number[]>();
+      for (const key of this.cells.keys()) {
+        const [x, y, z] = key.split(',').map(Number) as Vec3;
+        const column = `${x},${z}`;
+        const heights = columns.get(column);
+        if (heights) {
+          heights.push(y);
+        } else {
+          columns.set(column, [y]);
+        }
+      }
+      const boxes: SkyBounds[] = [];
+      for (const [column, heights] of columns) {
+        const [x, z] = column.split(',').map(Number) as [number, number];
+        heights.sort((a, b) => a - b);
+        let start = 0;
+        for (let at = 1; at <= heights.length; at++) {
+          if (at === heights.length || heights[at]! !== heights[at - 1]! + 1) {
+            boxes.push({ min: [x, heights[start]!, z], max: [x + 1, heights[at - 1]! + 1, z + 1] });
+            start = at;
+          }
+        }
+      }
+      this.runs = { version: this.seenVersion, boxes };
+    }
+    return this.runs.boxes;
   }
 
   /** Solid because of some vehicle other than this one, so a car's own body can be ignored without ignoring its neighbours. */
