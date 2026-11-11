@@ -46,6 +46,7 @@ export type {
   PlayerDef,
   RecipeCategoryDef,
   RecipeDef,
+  RecoveryWork,
   ScenarioDef,
   SenseDef,
   SiteLayoutDef,

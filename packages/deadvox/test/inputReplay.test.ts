@@ -168,6 +168,7 @@ const applyCommand = (
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftRepairEntity: (recipeId, entityUid, preference) =>
       runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
+    craftTakeApartEntity: (entityUid) => runtime.session.crafting.takeApartEntity(entityUid),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
       return uid === undefined ? undefined : runtime.session.crafting.act(uid, 'continue');

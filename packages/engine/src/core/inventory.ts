@@ -22,8 +22,11 @@ import {
   disassemblyLiquidOutputs,
   disassemblyOutputs,
   disassemblyWorkTime,
+  pieceDisassemblyOutputs,
+  pieceRecoveryWork,
   sameDisassemblyOutputs,
   validDisassemblyToolLevels,
+  validPieceToolLevels,
 } from './disassembly.ts';
 import { isLongGun, slingFitted } from './firearmFitting.ts';
 import {
@@ -188,6 +191,19 @@ export interface VehicleTransfer {
   output?: Target;
 }
 
+/** Every work kind starts its progress the same way; `length` is the work payload's full duration. */
+const unstarted = (length: number): Pick<NonNullable<Item['work']>, 'elapsed' | 'duration'> => ({
+  elapsed: 0,
+  duration: length,
+});
+
+/** Where a released job's things land; `retirePiece` is the world's remover for a finished take-apart's piece. */
+export interface WorkRelease {
+  feet: Vec3;
+  calendar?: number;
+  retirePiece?: (entity: BlockEntity) => string | undefined;
+}
+
 type Place =
   | { kind: 'pile'; pile: Pile }
   | { kind: 'furniture'; entity: BlockEntity }
@@ -211,7 +227,7 @@ const chargingBattery = (from: Location): boolean =>
   from.kind === 'furniture' && from.entity.charging?.batteryUid === from.placed.item.uid;
 
 const heldInPlace = (registry: Registry, item: Item, from: Location): string | undefined => {
-  if (from.kind === 'work' || chargingBattery(from)) {
+  if (from.kind === 'work' || from.kind === 'pieceWork' || chargingBattery(from)) {
     return coreMessage(registry, 'inWork');
   }
   if (from.kind === 'slot') {
@@ -813,6 +829,8 @@ export class Inventory {
         };
       case 'work':
         throw new Error('Work inputs have no independent target');
+      case 'pieceWork':
+        throw new Error('A world job has no independent target');
       case 'slot':
       case 'vehicle':
         throw new Error('A fitted item has no independent target');
@@ -1482,12 +1500,55 @@ export class Inventory {
     );
   }
 
+  /** Ownership only: what may stand in the way of removing the piece is its mover's to refuse. */
+  private validPieceDisassemblyPlan(plan: Extract<WorkPlan, { kind: 'pieceDisassembly' }>): boolean {
+    const { entity } = plan;
+    return (
+      this.entities.byUid(entity.uid) === entity &&
+      !entity.carried &&
+      !this.entities.useRefusal(entity) &&
+      this.canReachEntity(entity)
+    );
+  }
+
+  private validWorkPlan(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): boolean {
+    switch (plan.kind) {
+      case 'craft':
+        return this.validCraftPlan(plan, repair);
+      case 'disassembly':
+        return !repair && this.validDisassemblyPlan(plan);
+      case 'pieceDisassembly':
+        return !repair && this.validPieceDisassemblyPlan(plan);
+      default:
+        return false;
+    }
+  }
+
+  /** The piece a world job lives on, running or paused (`packages/deadvox/DESIGN.md`, "World repair selection"). */
+  private workHost(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): BlockEntity | undefined {
+    if (plan.kind === 'pieceDisassembly') {
+      return plan.entity;
+    }
+    return repair?.target.kind === 'entity' ? this.entities.byUid(repair.target.uid) : undefined;
+  }
+
   /** The payload `beginWork` stores; restore checks the same shape with `validateWorkItem`. */
   private workPayload(
     plan: WorkPlan,
     components: Item[],
     repair?: import('./longAction.ts').CraftRepair,
   ): NonNullable<Item['work']> {
+    if (plan.kind === 'pieceDisassembly') {
+      return {
+        kind: 'pieceDisassembly',
+        furniture: plan.entity.type,
+        skillLevel: plan.skillLevel,
+        toolLevels: { ...plan.toolLevels },
+        outputs: plan.outputs.map((output) => ({ ...output })),
+        ...unstarted(plan.timeGameMinutes),
+        components,
+      };
+    }
     if (plan.kind === 'disassembly') {
       return {
         kind: 'disassembly',
@@ -1500,8 +1561,7 @@ export class Inventory {
         toolLevels: { ...plan.toolLevels },
         gather: plan.gather,
         outputs: plan.outputs.map((output) => ({ ...output })),
-        elapsed: 0,
-        duration: plan.duration,
+        ...unstarted(plan.duration),
         components,
       };
     }
@@ -1514,8 +1574,7 @@ export class Inventory {
         volumeMicrolitres: draw.volumeMicrolitres,
         sources: draw.sources.map((source) => ({ uid: source.item.uid, volumeMicrolitres: source.volumeMicrolitres })),
       })),
-      elapsed: 0,
-      duration: plan.gather + plan.work,
+      ...unstarted(plan.gather + plan.work),
       components,
       ...(repair ? { repairTarget: { ...repair.target }, repairAmount: repair.amount } : {}),
     };
@@ -1523,10 +1582,16 @@ export class Inventory {
 
   /** Whether restore would accept the work item this plan makes, judged before any input moves. */
   private restorableWork(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): boolean {
-    const components =
-      plan.kind === 'craft'
-        ? plan.components.map(({ item, count }) => ({ ...item, count }))
-        : [{ ...plan.source, count: 1 }];
+    const components = ((): Item[] => {
+      switch (plan.kind) {
+        case 'craft':
+          return plan.components.map(({ item, count }) => ({ ...item, count }));
+        case 'disassembly':
+          return [{ ...plan.source, count: 1 }];
+        default:
+          return [];
+      }
+    })();
     const work = this.workPayload(plan, components, repair);
     try {
       validateWorkItem(this.registry, {
@@ -1576,33 +1641,39 @@ export class Inventory {
     work.work = this.workPayload(plan, [input]);
   }
 
-  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
+  /**
+   * Escrow through the mutation owner; no duplicate trees in the other hand or job. Work aimed at a piece lives on
+   * that piece and so reserves it; other work lives in the dominant hand.
+   */
   beginWork(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): Item | undefined {
     if (this.hands.left || this.hands.right) {
       return undefined;
     }
-    if (plan.kind === 'craft') {
-      if (!this.validCraftPlan(plan, repair)) {
-        return undefined;
-      }
-    } else if (repair || !this.validDisassemblyPlan(plan)) {
+    if (!(this.validWorkPlan(plan, repair) && this.restorableWork(plan, repair))) {
       return undefined;
     }
-    if (!this.restorableWork(plan, repair)) {
-      return undefined;
-    }
+    const host = this.workHost(plan, repair);
     const work = this.create(workInProgressItem(this.registry).id);
     if (plan.kind === 'craft') {
       this.escrowCraft(plan, work, repair);
-    } else {
+    } else if (plan.kind === 'disassembly') {
       this.escrowDisassembly(plan, work);
+    } else {
+      work.work = this.workPayload(plan, []);
     }
-    this.hands[dominantSide(this.character)] = work;
+    if (host) {
+      this.entities.hostWork(host, work);
+    } else {
+      this.hands[dominantSide(this.character)] = work;
+    }
     this.version += 1;
     return work;
   }
 
   private workDrops(work: Item, outputs: readonly Item[], feet: Vec3): { item: Item; pos: Vec3; spot: Spot }[] {
+    if (outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
+      throw new Error('An input or result is too large to put down');
+    }
     const drops: { item: Item; pos: Vec3; spot: Spot }[] = [];
     const grids = new Map<string, Placed[]>();
     const landings = dropSpots(feet).flatMap((spot) => {
@@ -1689,7 +1760,7 @@ export class Inventory {
     if (!finish) {
       return payload.components;
     }
-    if (payload.kind === 'disassembly') {
+    if (payload.kind !== 'craft') {
       return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
     }
     if (payload.repairTarget !== undefined) {
@@ -1720,14 +1791,14 @@ export class Inventory {
     return target;
   }
 
-  private completeEntityRepair(payload: NonNullable<Item['work']>): boolean {
+  private completeEntityRepair(work: Item, payload: NonNullable<Item['work']>): boolean {
     if (payload.kind !== 'craft' || payload.repairTarget?.kind !== 'entity') {
       return true;
     }
     const entity = this.entities.byUid(payload.repairTarget.uid);
     return Boolean(
       entity &&
-        !this.entities.useRefusal(entity) &&
+        !this.entities.useRefusal(entity, work) &&
         this.canReachEntity(entity) &&
         this.entities.repair(entity, payload.repairAmount!),
     );
@@ -1737,7 +1808,7 @@ export class Inventory {
     payload: NonNullable<Item['work']>,
     finish: boolean,
   ): { item: Item; contents: NonNullable<Item['liquidContents']> }[] {
-    if (!finish) {
+    if (!finish || payload.kind === 'pieceDisassembly') {
       return [];
     }
     if (payload.kind === 'disassembly') {
@@ -1771,34 +1842,40 @@ export class Inventory {
     }
   }
 
+  /** The world's refusal to remove a finished job's piece puts the job back on it, so nothing is lost. */
+  private retireHost(entity: BlockEntity, work: Item, retirePiece: WorkRelease['retirePiece']): void {
+    const refusal = retirePiece ? retirePiece(entity) : 'No remover for a piece taken apart';
+    if (refusal) {
+      this.entities.hostWork(entity, work);
+      throw new Error(refusal);
+    }
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
-  releaseWork(work: Item, complete: boolean, feet: Vec3, calendar = 0): void {
+  releaseWork(work: Item, finish: boolean, { feet, calendar = 0, retirePiece }: WorkRelease): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
       return;
     }
-    const finish = complete;
     const balances = this.workLiquidAdmission(payload, finish);
     const repairing = payload.kind === 'craft' && payload.repairTarget !== undefined;
     const target = this.repairTargetForWork(payload, finish);
     const outputs = this.workOutputs(payload, finish, calendar);
     const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
-    if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
-      throw new Error('An input or result is too large to put down');
-    }
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
-    if (finish && !this.completeEntityRepair(payload)) {
-      this.releaseWork(work, false, feet, calendar);
+    if (finish && !this.completeEntityRepair(work, payload)) {
+      this.releaseWork(work, false, { feet, calendar });
       return;
     }
     if (finish) {
       // All admissions precede world repair and this non-refusing balance commit.
-      for (const { item, contents } of balances) {
-        item.liquidContents = { ...contents };
-      }
+      commitBalances(balances);
     }
     this.remove(at);
+    if (finish && payload.kind === 'pieceDisassembly' && at.kind === 'pieceWork') {
+      this.retireHost(at.entity, work, retirePiece);
+    }
     work.work = undefined;
     this.applyWorkRepair(payload, target, finish);
     this.version += 1;
@@ -1818,6 +1895,7 @@ export class Inventory {
       case 'pile':
         return { kind: 'pile', pile: location.pile };
       case 'furniture':
+      case 'pieceWork':
         return { kind: 'furniture', entity: location.entity };
       case 'work':
       case 'slot':
@@ -2037,7 +2115,13 @@ export class Inventory {
   }
 
   private canMoveDisplaced(item: Item, from: Location, source: Location): boolean {
-    if (from.kind === 'work' || from.kind === 'slot' || from.kind === 'vehicle' || chargingBattery(from)) {
+    if (
+      from.kind === 'work' ||
+      from.kind === 'pieceWork' ||
+      from.kind === 'slot' ||
+      from.kind === 'vehicle' ||
+      chargingBattery(from)
+    ) {
       return false;
     }
     const sourceTarget = this.targetForLocation(source);
@@ -2399,6 +2483,9 @@ export class Inventory {
     if (from.kind === 'hand') {
       return this.hands[from.side];
     }
+    if (from.kind === 'pieceWork') {
+      return from.entity.work;
+    }
     return from.kind === 'worn' ? this.worn[from.slot] : undefined;
   }
 
@@ -2424,6 +2511,9 @@ export class Inventory {
         grid.splice(grid.indexOf(from.placed), 1);
         return;
       }
+      case 'pieceWork':
+        this.entities.hostWork(from.entity, undefined);
+        return;
       case 'work':
         throw new Error('Craft inputs are owned by the work item');
       case 'vehicle':
@@ -2490,10 +2580,31 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
   }
 };
 
+const commitBalances = (balances: readonly { item: Item; contents: NonNullable<Item['liquidContents']> }[]): void => {
+  for (const { item, contents } of balances) {
+    item.liquidContents = { ...contents };
+  }
+};
+
+const validateWorkHosting = (state: InventoryState, tree: readonly { item: ItemState }[]): void => {
+  const hosted = new Set(state.entities.entities.flatMap(({ work }) => (work ? [work.uid] : [])));
+  for (const { item } of tree) {
+    if (item.work && worldJob(item.work) !== hosted.has(item.uid)) {
+      throw new Error('A world job must live on its piece, and a piece holds only a world job');
+    }
+  }
+  for (const entity of state.entities.entities) {
+    if (entity.work && !jobNamesPiece(entity.work.work, entity)) {
+      throw new Error('A piece holds only its own world job');
+    }
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState, vehicles: VehicleInstancesState): void => {
   itemIds(savedItemTree(state, vehicles), state.nextItemUid);
   const tree = [...savedItemTree(state, vehicles)];
   validateRepairTargets(registry, tree);
+  validateWorkHosting(state, tree);
   const grid = (placed: readonly PlacedState[], size: GridSize) => {
     const previous: Placed[] = [];
     for (const entry of placed) {
@@ -2545,6 +2656,15 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     pockets(entity.type, entity.pockets, def.container?.pockets);
   }
 };
+
+/** Work aimed at a piece in the world, which lives on that piece (`packages/deadvox/DESIGN.md`, "World repair selection"). */
+const worldJob = (work: NonNullable<ItemState['work']>): boolean =>
+  work.kind === 'pieceDisassembly' || work.repairTarget?.kind === 'entity';
+
+const jobNamesPiece = (work: ItemState['work'], entity: { uid: number; type: string }): boolean =>
+  work?.kind === 'pieceDisassembly'
+    ? work.furniture === entity.type
+    : work?.repairTarget?.kind === 'entity' && work.repairTarget.uid === entity.uid;
 
 const validDisassemblyComponents = (work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>): boolean =>
   work.components.length === 1 && work.components[0]!.type === work.source && work.components[0]!.count === 1;
@@ -2731,20 +2851,46 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
     work.elapsed > work.duration ||
     work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length));
   if (commonInvalid) {
-    throw new Error(work.kind === 'disassembly' ? 'Invalid disassembly work payload' : 'Invalid craft work payload');
+    throw new Error(work.kind === 'craft' ? 'Invalid craft work payload' : 'Invalid disassembly work payload');
   }
-  if (work.kind === 'craft') {
-    validateCraftWorkItem(registry, work);
-  } else {
-    validateDisassemblyWorkItem(registry, work);
+  switch (work.kind) {
+    case 'craft':
+      validateCraftWorkItem(registry, work);
+      return;
+    case 'disassembly':
+      validateDisassemblyWorkItem(registry, work);
+      return;
+    case 'pieceDisassembly':
+      validatePieceDisassemblyWorkItem(registry, work);
+      return;
+    default:
+      throw new Error('Unknown work kind');
+  }
+};
+
+const validatePieceDisassemblyWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'pieceDisassembly' }>,
+): void => {
+  const recovery = pieceRecoveryWork(registry, work.furniture);
+  if (
+    !recovery ||
+    work.components.length > 0 ||
+    work.repairTarget !== undefined ||
+    work.duration !== recovery.timeGameMinutes ||
+    !Number.isSafeInteger(work.skillLevel) ||
+    work.skillLevel < SKILL_LEVEL_MIN ||
+    work.skillLevel > SKILL_LEVEL_LEGENDARY ||
+    !validPieceToolLevels(recovery, work.toolLevels) ||
+    !sameDisassemblyOutputs(pieceDisassemblyOutputs(recovery, work.skillLevel, work.toolLevels), work.outputs)
+  ) {
+    throw new Error('Invalid disassembly work payload');
   }
 };
 
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work' || at.kind === 'slot' || at.kind === 'vehicle'
-    ? undefined
-    : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
+  'placed' in at ? { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated } : undefined;
 
 /** A target in the same grid as a location, at a spot: for turning an item where it lies. */
 export const sameGrid = (at: Location, spot: Spot | undefined): Target | undefined => {

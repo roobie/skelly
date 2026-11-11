@@ -2072,6 +2072,20 @@ export class InventoryScreen {
     };
   }
 
+  private workLine(work: NonNullable<Item['work']>): string {
+    const text = this.text();
+    switch (work.kind) {
+      case 'craft':
+        return fillText(text.recipe, { recipe: work.recipe });
+      case 'disassembly':
+        return fillText(text.takingApart, { item: defOf(this.inv.registry, work.source).name });
+      case 'pieceDisassembly':
+        return fillText(text.takingApart, { item: this.inv.registry.furniture.get(work.furniture)!.name });
+      default:
+        throw new Error('Unknown work kind');
+    }
+  }
+
   private inspect(item: Item): string[] {
     const def = defOf(this.inv.registry, item.type);
     const text = this.text();
@@ -2085,9 +2099,7 @@ export class InventoryScreen {
     ];
     if (item.work) {
       lines.push(
-        item.work.kind === 'craft'
-          ? fillText(text.recipe, { recipe: item.work.recipe })
-          : fillText(text.takingApart, { item: defOf(this.inv.registry, item.work.source).name }),
+        this.workLine(item.work),
         fillText(text.progress, {
           done: decimalText(item.work.elapsed),
           total: decimalText(item.work.duration),
