@@ -1,12 +1,12 @@
 // The sky dome: one camera-following sphere that stands in for the flat background. A look's `dome` block
-// (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars and moon; the
-// day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density and the
-// cloud light. The rules that stay in code are the physical sky giving way to the gradient around a low sun, the
+// (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars, moon and
+// sun; the day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density,
+// the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the gradient around a low sun, the
 // fade into the fog colour at the horizon, and cloud light from the main light.
 //
 // The sun and its glow are painted rather than taken from the physical sky. Around a low sun the model's radiance
-// falls by a hundred times within twenty degrees and swings from red through green to blue, which reads only when a
-// per-channel curve burns it to white; and its disc takes the air's extinction, which leaves it redder and darker than
+// falls off steeply with angle and swings from red through green to blue, which reads only when a per-channel curve
+// burns it to white; and its disc takes the air's extinction, which leaves it redder and darker than
 // the sky beside it. Bloom cannot supply the glow either, because the sky stays out of bloom.
 //
 // It is drawn the way the background it replaces is: never tone-mapped on the screen path, and in the post chain
@@ -256,7 +256,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     float sunCos = clamp( dot( dir, uSunDir ), 0.0, 1.0 );
     col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness + sunDisc( sunCos );
 
-    // Clouds come last, so they cover the stars, the moon and the sun behind them.
+    // Clouds cover the stars, the moon and the sun's disc behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
     vec3 litCloud = uCloudAmbient + uCloudLight * ( 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
     vec2 plane = dir.xz / max( dir.y, 0.06 );

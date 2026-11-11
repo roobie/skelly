@@ -16,7 +16,11 @@ export interface Dome {
   zenith: Rgb;
   /** Colour of the band just above the horizon, between the fog colour and the zenith. */
   horizonGlow: Rgb;
-  /** The physical sky: weight 0 is the keyed gradient only, 1 the physical sky; the rest are the model's own terms. */
+  /**
+   * The physical sky: weight 0 is the keyed gradient only, 1 the physical sky once the sun is high enough; the dome
+   * scales it by how far the sun is up the `physicalBand`, so a low sun draws the gradient whatever the weight. The
+   * rest are the model's own terms.
+   */
   physical: {
     weight: number;
     exposure: number;

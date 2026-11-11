@@ -46,7 +46,7 @@ const FiniteNonNegative = pipe(NonNegative, finite('must be finite'));
 const PhysicalSkySchema = strictObject({
   /** Scales the model's radiance before it is mapped into display range; the model's own units are arbitrary. */
   exposure: FiniteNonNegative,
-  /** 0 draws the keyed gradient only, 1 the physical sky. */
+  /** 0 draws the keyed gradient only, 1 the physical sky; the dome scales it by the sun's height in `physicalBand`, so a low sun draws the gradient at any weight. */
   weight: UnitFraction,
   turbidity: FiniteNonNegative,
   rayleigh: FiniteNonNegative,
