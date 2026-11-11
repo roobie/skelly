@@ -3045,7 +3045,7 @@ const startPlayWith = (
       worldFeedsSkylight: Boolean(renderer),
       skylight: () => engine.skylight?.update([camera.position.x / s, camera.position.y / s, camera.position.z / s]),
       world: () => {
-        view.prepareLighting(sky);
+        view.prepareLighting(sky, now);
         view.updateShadows(sky);
         renderMs = view.render();
       },

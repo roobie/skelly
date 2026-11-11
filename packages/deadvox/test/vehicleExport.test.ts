@@ -39,7 +39,7 @@ const modPart = (
       vehicle: {
         drops: { default: 'item_drop_wood' },
         capabilities,
-        obstruction: { sight: true, light: true, sound: true, combat: true },
+        obstruction: { sight: true, light: 1, sound: true, combat: true },
         ...vehicle,
       },
     },

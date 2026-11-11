@@ -13,10 +13,12 @@ it('fails every playable-run certificate closed at the missing start without bui
     registry: baseRegistry(),
     placements: [],
     seed: 0,
-    surface: undefined,
+    terrain: { kind: 'natural' },
     plan: { composition: {}, service: {}, portal: {} },
   } as unknown as CitySite;
   for (const certify of [scenarioCertificate, scenarioStartCertificate, scenarioLotResourceCertificate]) {
-    expect(certify(site).issues.map(([path]) => path)).toEqual(['.composition.start']);
+    const certificate = certify(site);
+    expect(certificate.issues.map(([path]) => path)).toEqual(['.composition.start']);
+    expect(certificate.space.world.chunks.size).toBe(0);
   }
 });

@@ -1,9 +1,17 @@
 import { buildRegistry } from '@skelly/engine/content';
 import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
-import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import { BLUEPRINTS } from '@skelly/engine/vehicles';
-import { CHUNK, type Chunk, CitySite, footprint, makeScale, terrainShapeOf, toChunk } from '@skelly/engine/world';
+import {
+  CHUNK,
+  type Chunk,
+  CitySite,
+  createTerrainEvaluator,
+  footprint,
+  makeScale,
+  terrainShapeOf,
+  toChunk,
+} from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
@@ -79,13 +87,14 @@ it('keeps the street surface under every placed item standing on a street cell',
   });
   const scale = makeScale(0.5);
   const site = new CitySite(1, registry, scale, plan);
-  const terrain = {
+  const terrain = createTerrainEvaluator({
     seed: 1,
     shape: terrainShapeOf(registry),
     scale,
-    surface: site.surface,
+    site: site.terrain,
+    structures: [],
     blocks: { grass: 1000, dirt: 1001, rock: 1002, sand: 1003, water: 1004 },
-  };
+  });
   const mismatches: string[] = [];
   let checked = 0;
   for (const placement of plan.placements) {
@@ -96,7 +105,7 @@ it('keeps the street surface under every placed item standing on a street cell',
       (_, i) => [origin[0] + (i % w), origin[2] + Math.floor(i / w)] as const,
     );
     const padOnly = !template.blocks.slice(template.size[0] * template.size[2]).some((block) => block !== 0);
-    if (!padOnly || template.pieces.length === 0 || !cells.every(([x, z]) => site.surface.top(x, z) !== undefined)) {
+    if (!padOnly || template.pieces.length === 0 || !cells.every(([x, z]) => terrain.top(x, z) !== undefined)) {
       continue;
     }
     const chunks = new Map<string, Chunk>();
@@ -104,13 +113,12 @@ it('keeps the street surface under every placed item standing on a street cell',
       const [cx, cy, cz] = [toChunk(x), toChunk(origin[1]), toChunk(z)];
       const key = `${cx},${cy},${cz}`;
       if (!chunks.has(key)) {
-        const chunk = generateChunk(terrain, [cx, cy, cz]);
-        site.stamp(chunk);
+        const chunk = terrain.generateChunk([cx, cy, cz]);
         chunks.set(key, chunk);
       }
       const chunk = chunks.get(key)!;
       checked += 1;
-      if (chunk.get(mod(x, CHUNK), mod(origin[1], CHUNK), mod(z, CHUNK)) !== site.surface.top(x, z)) {
+      if (chunk.get(mod(x, CHUNK), mod(origin[1], CHUNK), mod(z, CHUNK)) !== terrain.top(x, z)) {
         mismatches.push(template.id);
       }
     }

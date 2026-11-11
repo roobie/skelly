@@ -173,6 +173,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
     environment: {
       faceSize: 64,
       rebakeChange: 0.02,
+      rebakeRealSeconds: 0.5,
       strength: 1,
     },
     clouds: {

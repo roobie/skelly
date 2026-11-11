@@ -1,19 +1,10 @@
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
-import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import { createSession, IDLE } from '@skelly/engine/session';
-import {
-  BlockEntities,
-  raycast,
-  sitePalette,
-  terrainShapeOf,
-  type Vec3,
-  World,
-  worldOpaque,
-  worldSolid,
-} from '@skelly/engine/world';
+import { BlockEntities, raycast, type Vec3, World, worldOpaque, worldSolid } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { configOnSite } from './fixtures/startupContent.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const practiceWorld = () => {
@@ -23,22 +14,14 @@ const practiceWorld = () => {
   const site = new AuthoredSite(config.seed, registry, config.scale, layout);
   const world = new World();
   const entities = new BlockEntities(registry);
-  const terrain = {
-    seed: config.seed,
-    shape: terrainShapeOf(registry),
-    scale: config.scale,
-    surface: site.surface,
-    blocks: sitePalette(registry).terrain,
-    stamp: (chunk: Parameters<AuthoredSite['stamp']>[0]) => site.stamp(chunk),
-  };
+  const terrain = terrainFor(site, registry, config.scale, config.seed);
   const s = config.scale.blockSize;
   const columns: [number, number][] = [];
   for (let cx = Math.floor(layout.bounds.x0 / (32 * s)); cx <= Math.floor(layout.bounds.x1 / (32 * s)); cx++) {
     for (let cz = Math.floor(layout.bounds.z0 / (32 * s)); cz <= Math.floor(layout.bounds.z1 / (32 * s)); cz++) {
       columns.push([cx, cz]);
       for (const cy of [-1, 0, 1]) {
-        const chunk = generateChunk(terrain, [cx, cy, cz]);
-        site.stamp(chunk);
+        const chunk = terrain.generateChunk([cx, cy, cz]);
         world.addChunk(chunk);
       }
     }

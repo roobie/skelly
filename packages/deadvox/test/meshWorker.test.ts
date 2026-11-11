@@ -17,7 +17,7 @@ import {
 } from '@skelly/engine/mesh';
 import { CHUNK, Chunk, chunkKey, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
-import { baseTerrainShape } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 const WATER = 5;
 
@@ -226,19 +226,15 @@ it('draws the blocks as they are after an edit lands while their chunk is being 
     world,
     meshes: meshes as never,
     mesher: { count: 1, create: () => mesher },
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: WATER },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20, blocks: { grass: 1, dirt: 2, rock: 3, sand: 4, water: WATER } }),
     colors: new Uint8Array(256 * 3).fill(200),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
     columnsPerFrame: 1,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const nextRequest = () => {
     for (let step = 0; step < 32 && mesher.waiting.length === 0; step += 1) {
