@@ -400,8 +400,9 @@ export class Mood {
     // threshold and brighten it against the no-post frame. Scaled by 1 / exposure for this frame,
     // they come out as the sky's own colour. Without a tone mapper nothing applies exposure, so
     // nothing is undone. All three, and the sky dome standing in for the background, scale alike, so
-    // geometry still fades into the background exactly at the far plane. The originals are put back afterwards (scene.background is the fog's
-    // own Color, see applySky), so the post-off path and the next frame see the unscaled sky.
+    // geometry still fades into the sky exactly at the far plane on the horizon, where the dome is the
+    // fog colour. The originals are put back afterwards (scene.background is the fog's own Color, see
+    // applySky), so the post-off path and the next frame see the unscaled sky.
     const scale = this.chainColorScale();
     const fogColor = this.scene.fog?.color;
     const mist = heightFogUniforms.uHeightFogColor.value;
