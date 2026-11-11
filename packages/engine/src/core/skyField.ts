@@ -62,7 +62,10 @@ interface Entry extends SkyField {
   request: { captured: CapturedSky; submitted: boolean } | undefined;
 }
 
-const columnOf = (cx: number, cz: number): string => `${cx},${cz}`;
+/** One number per world column, so the watcher's lookup builds no string; chunk coordinates stay far below the stride. */
+const COLUMN_STRIDE = 1 << 22;
+const columnOf = (cx: number, cz: number): number => cx * COLUMN_STRIDE + cz;
+const NO_ENTRIES: readonly never[] = [];
 const boxKey = ({ min, max }: SkyBounds): string => `${min.join()},${max.join()}`;
 
 /**
@@ -81,7 +84,8 @@ export class SkyFields {
   private readonly entries: Entry[];
   private readonly owner: SkyFieldOwner;
   /** The fields whose dependency box reaches into each world column. */
-  private readonly columns = new Map<string, Entry[]>();
+  private readonly columns = new Map<number, Entry[]>();
+  private unwatch: (() => void) | undefined;
   /** The standing blocking boxes by key, with how many pieces have each, at one `standing` version. */
   private standing = {
     version: Number.NaN,
@@ -114,18 +118,31 @@ export class SkyFields {
       for (let cz = z0; cz <= z1; cz++) {
         for (let cx = x0; cx <= x1; cx++) {
           const key = columnOf(cx, cz);
-          this.columns.set(key, [...(this.columns.get(key) ?? []), entry]);
+          const column = this.columns.get(key);
+          if (column) {
+            column.push(entry);
+          } else {
+            this.columns.set(key, [entry]);
+          }
         }
       }
     }
     if (this.entries.length > 0) {
-      // A cache lives as long as the world it reads, so it never unsubscribes.
-      owner.world.watchChunks((cx, cy, cz) => {
-        for (const entry of this.columns.get(columnOf(cx, cz)) ?? []) {
-          entry.stale ||= cy >= entry.chunks.min[1] && cy <= entry.chunks.max[1];
+      this.unwatch = owner.world.watchChunks((cx, cy, cz) => {
+        const column = this.columns.get(columnOf(cx, cz)) ?? NO_ENTRIES;
+        for (const entry of column) {
+          if (!entry.stale && cy >= entry.chunks.min[1] && cy <= entry.chunks.max[1]) {
+            entry.stale = true;
+          }
         }
       });
     }
+  }
+
+  /** Stops watching the world; a cache dropped before its world calls this so the world does not keep it alive. */
+  dispose(): void {
+    this.unwatch?.();
+    this.unwatch = undefined;
   }
 
   /**
