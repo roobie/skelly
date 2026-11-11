@@ -2,7 +2,7 @@ import type { FurnitureDef } from '@skelly/engine/content';
 import type { ColumnReveal } from '@skelly/engine/mesh';
 import { BLOCK_SIZE, BlockEntities, type BlockEntity, CHUNK, type Facing, type Vec3 } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
-import { InstancedMesh, Matrix4, type Mesh } from 'three';
+import { type EventDispatcher, InstancedMesh, type Material, Matrix4, type Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
@@ -131,5 +131,43 @@ describe('furniture batches', () => {
     expect(drawsOf(furniture, still, def)).toHaveLength(1);
     expect(drawsOf(furniture, slid, def)).toHaveLength(1);
     expect(drawnInstances(furniture).filter(({ matrix }) => sameMatrix(matrix, before.matrixWorld))).toEqual([]);
+  });
+
+  it('frees a replaced batch alone, and on teardown frees each batch and shared resource once', () => {
+    const { registry, entities } = fixture();
+    const def = registry.furniture.get(plain.id)!;
+    const shapedDef = registry.furniture.get(shaped.id)!;
+    entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
+    const moved = entities.add({ type: def.id, size: def.size, pos: [1, 1, 3], facing: 'n' })!;
+    entities.add({ type: shapedDef.id, size: shapedDef.size, pos: [1, 1, 6], facing: 'n' });
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, 1);
+    const freed = new Map<object, number>();
+    const watch = (resource: EventDispatcher<{ dispose: object }>) => {
+      if (!freed.has(resource)) {
+        freed.set(resource, 0);
+        resource.addEventListener('dispose', () => freed.set(resource, freed.get(resource)! + 1));
+      }
+    };
+    const batches = () =>
+      furniture.group.children.filter((child): child is InstancedMesh => child instanceof InstancedMesh);
+    const watchDrawn = () => {
+      for (const batch of batches()) {
+        watch(batch);
+        watch(batch.geometry);
+        watch(batch.material as Material);
+      }
+    };
+    furniture.sync(entities);
+    watchDrawn();
+    const replaced = batches().find((batch) => batch.count === 2)!;
+
+    entities.slide(moved, [CHUNK + 1, 1, 3]);
+    furniture.sync(entities);
+    watchDrawn();
+    expect([...freed].filter(([, count]) => count > 0)).toEqual([[replaced, 1]]);
+
+    furniture.dispose();
+    expect([...freed.values()].every((count) => count === 1)).toBe(true);
+    expect(furniture.group.children).toEqual([]);
   });
 });

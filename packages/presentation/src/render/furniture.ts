@@ -254,6 +254,40 @@ export class FurnitureMeshes {
     return { pose, mesh, batch: `${mesh.geometry.uuid}:${mesh.material.uuid}:${sector}` };
   }
 
+  /**
+   * Frees the batches, then each geometry and material this owner made, once. Pieces from `pieceMesh` borrow those,
+   * so they go with it; vehicle and lift parts belong to their modules (workshopVehicle.ts) and stay.
+   */
+  dispose(): void {
+    for (const { mesh } of this.batches.values()) {
+      mesh.dispose();
+    }
+    this.batches.clear();
+    this.pieces.clear();
+    this.group.clear();
+    const geometries = new Set<BufferGeometry>([
+      this.geometry,
+      this.marker.geometry,
+      ...this.shapeGeometries.values(),
+      ...this.doorGeometries.values(),
+    ]);
+    const materials = new Set<MeshLambertMaterial>([
+      this.marker.material,
+      ...this.materials.values(),
+      ...this.anchoredMaterials.values(),
+    ]);
+    for (const geometry of geometries) {
+      geometry.dispose();
+    }
+    for (const material of materials) {
+      material.dispose();
+    }
+    this.shapeGeometries.clear();
+    this.doorGeometries.clear();
+    this.materials.clear();
+    this.anchoredMaterials.clear();
+  }
+
   /** A piece built as it would stand, for drawing it away from the world; it shares this owner's geometry and materials. */
   pieceMesh(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
     return this.meshFor(entity, def, false);
