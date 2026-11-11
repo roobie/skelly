@@ -234,10 +234,28 @@ The base-building playtest, the third playtest round, is scoped in #1332.
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes
-  supply random; distant stockpiles give excursions a deliberate target. How
-  resources are placed around a settlement, as CDDA does with hardware stores,
-  building sites and ruins, is a study still open under #1332; the sources are
-  settled, their placement is not.
+  supply random; distant stockpiles give excursions a deliberate target.
+- **Supply sites:** a hardware store, a construction site and a ruin ring by the
+  shelter, each its own template placed by the site layout, so each kind tells the
+  player what to find there and an author changes one without touching the others.
+- **Stockpile distance:** a small starter pile sits by the shelter and bulk stock
+  lies an excursion away, so arrival can start fortifying under "Early session"
+  while bulk still needs the excursion #1332 names.
+- **Bulk stock:** stacks of material are pieces taken apart through work. The
+  take-apart command comes first, so no bulk-stock piece is faked by bashing and
+  reworked once the command exists.
+- **Break yields:** every block material and piece yields materials when broken,
+  but breaking costs far more time per unit than looting stock, so looting stays
+  the efficient path and tearing down walls a slow fallback. The yields per
+  material and the time they cost are content under
+  `PILLARS.md`, "Content forward compatibility" (repo root).
+- **Material loot usage:** building materials get a loot usage of their own, so a
+  hardware store or construction site keeps a place-specific promise and the stock
+  does not drift into workshop crates.
+- **Rubble:** fallen material stays solid until cleared, and clearing is the
+  take-apart command applied to rubble, so it waits on that command and adds no
+  second destruction verb; see
+  `DESIGN.md`, "Damage, destruction and dismemberment".
 - **Early session:** a first base-building session runs once world repair,
   take-apart and the first wave work, before fire, power controls and the brute
   land, because the building UI is what blocks this playtest and early feedback on
@@ -340,8 +358,10 @@ lane the order is a dependency; across lanes only the joins named here hold.
   only on its branch and is adopted, held items too. Taking a world piece apart
   through work follows, as a recorded command over the existing reservation and yield
   contract; see `packages/engine/src/core/disassembly.ts`, `planDisassembly`, and
-  `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`. Cell
-  repair, placement and the kit content come after. Player-facing repair, the Repair
+  `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`.
+  Bulk-stock pieces and rubble clearing build on that command, under "Settled
+  base-building playtest rules". Cell repair, placement and the kit content come
+  after. Player-facing repair, the Repair
   entry and its pinned view, returns with the #1469 crafting view and queues behind
   it; see `DESIGN.md`, "World repair selection". Engine rounds do not.
 - **Built systems.** Appliance controls and processes after placement; brute
@@ -349,7 +369,9 @@ lane the order is a dependency; across lanes only the joins named here hold.
   under "Settled fire and exposure rules".
 - **Playtest pack.** A scenario pack adopting the first wave on an existing authored
   site first, so the other lanes have a shipped scenario to test in; recurrence and
-  escalation next; the new small site and its supplies after; then the region proofs
+  escalation next; the new small site and its supplies after, joined to the
+  construction lane's take-apart command because bulk stock and rubble clearing go
+  through it; then the region proofs
   of package 7. The site stays a content value so the later site round changes
   content, not the pack's rules.
 

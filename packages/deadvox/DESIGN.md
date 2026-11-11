@@ -2567,9 +2567,12 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   Resistance precedes the strength gate so an ineffective blow does not accumulate
   damage. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`; `packages/engine/src/core/content.ts`,
   `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
-- **Rubble preserves wreckage.** A material's fallen form is solid rubble because
-  wreckage should still provide cover; falling alone is not loose salvage. Strikes
-  and deconstruction are the intended routes to loose resources. See
+- **Rubble preserves wreckage.** A material's fallen form is solid rubble until
+  cleared, because wreckage should still provide cover; falling alone is not loose
+  salvage. Clearing is the take-apart command applied to rubble, so it arrives with
+  that command and adds no second destruction verb. Breaking also yields, at far
+  more time per unit than looting stock, so looting stays the efficient path; see
+  `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
