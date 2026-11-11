@@ -1063,8 +1063,11 @@ const lakeSurfaceCheck = (chromium, port) =>
         const [x, z] = layout.terrain[0].centre;
         const eye = engine.camera.position.y - body.pos[1] * s;
         const gl = engine.renderer.getContext();
-        // Reads the drawing buffer right after the held layer, the frame's last draw; the HUD is DOM, not in it.
-        // The second frame after the move is read, so the camera has followed the body.
+        // Reads the drawing buffer once the frame's draws have finished; the HUD is DOM, not in it. On the
+        // held layer's stack the frame is not complete: below render scale 1 the scene is drawn into a
+        // sub-viewport that only a later upscale covers (render/screenScale.ts, ScreenScale.render), and
+        // the centre pixel can sit outside that viewport. The second frame after the move is read, so
+        // the camera has followed the body.
         const look = (eyeAt, pitch) =>
           new Promise((done) => {
             body.pos = [x / s, (eyeAt - eye) / s, z / s];
@@ -1080,18 +1083,20 @@ const lakeSurfaceCheck = (chromium, port) =>
                 return;
               }
               held.render = render;
-              const pixel = new Uint8Array(4);
-              gl.readPixels(
-                gl.drawingBufferWidth >> 1,
-                gl.drawingBufferHeight >> 1,
-                1,
-                1,
-                gl.RGBA,
-                gl.UNSIGNED_BYTE,
-                pixel,
-              );
-              const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
-              done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
+              queueMicrotask(() => {
+                const pixel = new Uint8Array(4);
+                gl.readPixels(
+                  gl.drawingBufferWidth >> 1,
+                  gl.drawingBufferHeight >> 1,
+                  1,
+                  1,
+                  gl.RGBA,
+                  gl.UNSIGNED_BYTE,
+                  pixel,
+                );
+                const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
+                done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
+              });
             };
           });
         const surface = layout.water[0].level;
