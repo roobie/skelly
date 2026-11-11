@@ -26,5 +26,16 @@ local debugHouse = layout + {
       id: 'testHouseAmalgam',
       player: { position: [amalgam.position[0] + 7, 21, amalgam.position[2]], bearing: 270 },
     },
+    // The vehicle finishes look's fixture site: a gloss car and a flat military body in the open south of the garden
+    // wall, with the house's own hatchback under the garage roof to show a reflection the sky cannot reach.
+    debugHouse + {
+      id: 'testHouseFinishes',
+      shamblers: [],
+      vehicles: layout.vehicles + [
+        { blueprint: 'hatchback', placementKey: 'testHouse.finishes-gloss', position: [-8, 21, 14], facing: 'e' },
+        { blueprint: 'fixture_tactical_vehicle', placementKey: 'testHouse.finishes-flat', position: [-8, 21, 20], facing: 'e' },
+      ],
+      player: { position: [-1, 21, 17], bearing: 270 },
+    },
   ],
 }

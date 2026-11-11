@@ -461,6 +461,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/vehicles-look.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/vehicles-look.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.json"
     },
