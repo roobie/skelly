@@ -50,9 +50,14 @@ export const stepActionMenuTo = async (page, actionId, step) => {
   throw new Error(`Stepping the action ring never reached ${actionId}`);
 };
 
-/** Holds the dominant use on the locked surface the flow's clicks use; the returned function releases it. */
+/**
+ * Holds the dominant use on the locked surface the flow's clicks use; the returned function releases it. An open ring
+ * takes mouse movement as its pull, so the press then lands where the mouse already is.
+ */
 export const holdDominantUse = async (page) => {
-  await page.mouse.move(640, 450);
+  if (!(await actionRingShown(page))) {
+    await page.mouse.move(640, 450);
+  }
   await page.mouse.down();
   return () => page.mouse.up();
 };
