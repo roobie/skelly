@@ -28,7 +28,7 @@
 // another per-frame shadow pass. Its point-light copies do not cast shadows. The player's world figure is on
 // its own layer (shadowFlags.ts): the sun's pass sees it, the torch's pass doesn't.
 
-import type { ShadowState } from '@skelly/engine/look';
+import { SHADOW_DISTANCE_RANGE, type ShadowState } from '@skelly/engine/look';
 import {
   BackSide,
   type Box3,
@@ -139,7 +139,7 @@ export class Shadows {
   /** Holds the sun and its target, so moving it moves the shadow box without changing the light's direction. */
   private readonly rig: Object3D;
   private readonly meshes: ChunkMeshes;
-  private state: ShadowState = { sun: false, torch: false, distance: 0 };
+  private state: ShadowState = { sun: false, torch: false, distance: SHADOW_DISTANCE_RANGE.min };
   private torches: readonly SpotLight[] = [];
   /** What the flashlight's pass looks through: only layer 0, so the player's figure (layer 1) is left out. */
   private readonly torchView = new PerspectiveCamera();
@@ -243,7 +243,6 @@ export class Shadows {
   setDistance(metres: number): void {
     this.restore({ ...this.state, distance: metres });
   }
-
 
   /**
    * Sets the sun's shadows to `strength` (core/sky.ts `sunShadowStrength`), puts its box on the player

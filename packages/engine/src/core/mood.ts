@@ -107,8 +107,7 @@ export interface SunShadowTuning {
   readonly debugReachMetres: readonly number[];
 }
 
-const MIN_SHADOW_DISTANCE = 12;
-const MAX_SHADOW_DISTANCE = 96;
+export const SHADOW_DISTANCE_RANGE = { min: 12, max: 96 } as const;
 
 /** The untouched shadow switches with the reach content selects. */
 export const defaultShadows = ({ defaultReachMetres }: SunShadowTuning): ShadowState => ({
@@ -120,7 +119,7 @@ export const defaultShadows = ({ defaultReachMetres }: SunShadowTuning): ShadowS
 /** A whole number of metres within the renderer's supported range; a non-number returns the content default. */
 export const clampShadowDistance = (value: number, tuning: SunShadowTuning): number =>
   Number.isFinite(value)
-    ? Math.min(MAX_SHADOW_DISTANCE, Math.max(MIN_SHADOW_DISTANCE, Math.round(value)))
+    ? Math.min(SHADOW_DISTANCE_RANGE.max, Math.max(SHADOW_DISTANCE_RANGE.min, Math.round(value)))
     : tuning.defaultReachMetres;
 
 /** The next content-owned debug reach above `current`, wrapping to the first. */

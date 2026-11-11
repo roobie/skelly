@@ -1,6 +1,6 @@
 import { type ActorDef, requireDayCycle, type WeatheringDef } from '@skelly/engine/content';
 import { debugSpawnActorRow, INPUT_REPLAY_MAX_BYTES } from '@skelly/engine/input';
-import { graphicsTuningOf, lookDefaultsOf, type ShadowState } from '@skelly/engine/look';
+import { graphicsTuningOf, lookDefaultsOf, SHADOW_DISTANCE_RANGE, type ShadowState } from '@skelly/engine/look';
 import { getBuildRevision } from '@skelly/engine/packs';
 import type { DebugNoclipStep } from '@skelly/engine/session';
 import {
@@ -962,7 +962,7 @@ export const createDebugActions = ({
         id: 'debug.shadow-distance-cycle',
         label: 'Sun shadow distance',
         group: 'lighting',
-        param: 'shadowdist:12..96',
+        param: `shadowdist:${SHADOW_DISTANCE_RANGE.min}..${SHADOW_DISTANCE_RANGE.max}`,
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },

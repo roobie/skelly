@@ -81,7 +81,7 @@ export class LookControls {
   private readonly mood: MoodControls | undefined;
   private readonly weather: Weather;
   private readonly shadows: ShadowControls | undefined;
-  private readonly sunShadow: SunShadowTuning | undefined;
+  private readonly sunShadow: SunShadowTuning;
   private readonly flashlight: { strength: number };
   private moodValue: MoodState;
   private shadowValue: ShadowState;
@@ -102,7 +102,7 @@ export class LookControls {
     environment: {
       /** The content's default look, which the controls fall back to for what the renderer cannot tell. */
       defaults: LookDefaults;
-      sunShadow?: SunShadowTuning;
+      sunShadow: SunShadowTuning;
       weather: Weather;
       shadows?: ShadowControls;
       flashlight: { strength: number };
@@ -120,9 +120,6 @@ export class LookControls {
     this.shadows = environment.shadows;
     this.sunShadow = environment.sunShadow;
     this.flashlight = environment.flashlight;
-    if (!(environment.shadows || environment.sunShadow)) {
-      throw new Error('look controls need content-owned sun-shadow tuning without a shadow renderer');
-    }
     this.weatheringValue = environment.weathering?.state;
     this.weatheringProfiles = environment.weathering?.profiles ?? new Map();
     this.weatheringSplit = environment.weathering?.split;
@@ -147,7 +144,7 @@ export class LookControls {
         bloomClip: mood.bloomClip,
       };
     }
-    this.shadowValue = { ...(environment.shadows?.settings ?? defaultShadows(environment.sunShadow!)) };
+    this.shadowValue = { ...(environment.shadows?.settings ?? defaultShadows(environment.sunShadow)) };
   }
 
   /** The mood pass as it is now, in the URL's terms. */
@@ -224,11 +221,11 @@ export class LookControls {
   /** Steps the sun's shadow distance through the allowed list, wrapping. */
   stepShadowDistance(): void {
     if (this.shadows) {
-      this.shadows.setDistance(nextShadowDistance(this.shadowState.distance, this.sunShadow!));
+      this.shadows.setDistance(nextShadowDistance(this.shadowState.distance, this.sunShadow));
     } else {
       this.shadowValue = {
         ...this.shadowValue,
-        distance: nextShadowDistance(this.shadowValue.distance, this.sunShadow!),
+        distance: nextShadowDistance(this.shadowValue.distance, this.sunShadow),
       };
     }
   }

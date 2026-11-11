@@ -64,6 +64,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
             modelLoadConcurrency: 2,
             modelFetchRetry: { retries: 1, backoffRealSeconds: 1 },
             unbuiltSkyCap: 0.5,
+            sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
             skyJobsInFlight: 2,
             skyPreloadRings: 1,
             columnsPerFrame: 2,

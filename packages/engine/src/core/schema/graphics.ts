@@ -12,6 +12,7 @@ import {
   strictObject,
 } from 'valibot';
 import { GraphicsOptionsSchema } from '../graphics.ts';
+import { SHADOW_DISTANCE_RANGE } from '../mood.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
 import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
@@ -60,8 +61,16 @@ export const GraphicsTuningSchema = strictObject({
   unbuiltSkyCap: Fraction,
   sunShadow: pipe(
     strictObject({
-      defaultReachMetres: pipe(number(), integer(), minValue(12), maxValue(96)),
-      debugReachMetres: pipe(array(pipe(number(), integer(), minValue(12), maxValue(96))), minLength(1)),
+      defaultReachMetres: pipe(
+        number(),
+        integer(),
+        minValue(SHADOW_DISTANCE_RANGE.min),
+        maxValue(SHADOW_DISTANCE_RANGE.max),
+      ),
+      debugReachMetres: pipe(
+        array(pipe(number(), integer(), minValue(SHADOW_DISTANCE_RANGE.min), maxValue(SHADOW_DISTANCE_RANGE.max))),
+        minLength(1),
+      ),
     }),
     check(
       ({ defaultReachMetres, debugReachMetres }) =>

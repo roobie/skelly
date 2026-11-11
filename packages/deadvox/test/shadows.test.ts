@@ -83,9 +83,7 @@ describe('shadow settings', () => {
     expect(distances.slice(0, -1).map((distance) => nextShadowDistance(distance, SUN_SHADOW))).toEqual(
       distances.slice(1),
     );
-    expect(nextShadowDistance(SUN_SHADOW.debugReachMetres.at(-1)!, SUN_SHADOW)).toBe(
-      SUN_SHADOW.debugReachMetres[0],
-    );
+    expect(nextShadowDistance(SUN_SHADOW.debugReachMetres.at(-1)!, SUN_SHADOW)).toBe(SUN_SHADOW.debugReachMetres[0]);
   });
 
   it('clamps a distance to whole metres and a non-number to the content default', () => {
