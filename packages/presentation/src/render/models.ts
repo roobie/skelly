@@ -345,6 +345,9 @@ export class ModelLibrary {
 
   /** Stops loading: pending retries are dropped, and late loader callbacks neither publish, report nor load on. */
   dispose(): void {
+    for (const cancel of this.cancels) {
+      cancel();
+    }
     this.cancels.clear();
   }
 
