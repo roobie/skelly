@@ -4,17 +4,13 @@ import { terrainShapeOf } from '../core/sitePalette.ts';
 import type { MetreBox } from '../core/structure.ts';
 import { rasterize } from '../core/structure.ts';
 import type { SiteTerrainPlan } from '../core/terrainPlan.ts';
-import { createWeatheringTerrain } from '../core/weatheringTerrainEvaluator.ts';
-import type { Surface } from '../core/worldgen.ts';
 import { terrainHeightMetres } from '../core/worldgen.ts';
 import type { GameConfig } from './config.ts';
 
 /** Concrete, brick and wood comparison bands share a world-x split and one viewing pad. */
 export class DebugWeatheringTestSite implements Site {
   readonly spawn: Site['spawn'];
-  readonly surface: Surface;
   readonly terrain: SiteTerrainPlan;
-  private readonly stampTerrain: Site['stamp'];
   readonly weatheringMaterialBoxes: readonly {
     id: 'concrete' | 'brick' | 'planks';
     min: readonly [number, number, number];
@@ -64,14 +60,7 @@ export class DebugWeatheringTestSite implements Site {
       structures: rasterize(boxes, blockSize),
     };
     this.terrain = { kind: 'weathering-pad', data };
-    const evaluated = createWeatheringTerrain(data);
-    this.surface = evaluated.surface;
-    this.stampTerrain = evaluated.stamp;
     this.spawn = { pos: [0, floor, 12], yaw: 0 };
-  }
-
-  stamp(chunk: Parameters<Site['stamp']>[0]): void {
-    this.stampTerrain(chunk);
   }
 
   lootPointsIn() {

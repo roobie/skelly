@@ -13,7 +13,7 @@ Curated pieces own stair geometry and overhead openings, just as they own walls 
 
 Templates awaiting the scoped migration in #712 retain their named-flight compiler. That exception is not permission to generate architecture for new curated pieces. See `packages/engine/src/core/stairFlight.ts`, `planFlight` and `constructFlight`, and `../../../docs/jsonnet.md`, "Curated map features".
 
-Template coordinates are blocks; site placement remains in metres. Storey height is standing-feet height, while layer indices identify support layers. Placement lowers the template origin for below-ground floors. Air cells in the authored template carve the cellar consistently, including across chunk borders; the surrounding terrain and structure remain. See `packages/engine/src/core/templates.ts`, `compileTemplate`, and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite.stamp`.
+Owned air must carve a cellar across chunk borders without overwriting surrounding terrain or another owner's structure. See `packages/engine/src/core/templates.ts`, `stampPlacement`, and `packages/engine/src/core/terrainEvaluator.ts`, `createTerrainEvaluator`.
 
 Validation checks standing clearance and reachable floor space through openings, doors and stairs. This is a construction check, not runtime pathfinding. Doors remain openable for validation, while other solid furniture blocks a route. An upper-floor opening must stay inside the incoming flight's footprint and headroom, or it leaves a gap at the top of the stairs. See `packages/engine/src/core/templateSpatial.ts`, `upperFloorOpeningIssues`.
 

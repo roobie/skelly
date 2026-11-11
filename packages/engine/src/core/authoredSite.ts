@@ -2,9 +2,8 @@
 import { inPolygon } from './authoredLayout.ts';
 import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, LOT_APRON_M, lotOf, polylineDistance, rectDistance } from './authoredTerrain.mjs';
-import { type AuthoredGroundData, createAuthoredGround, createAuthoredTerrain } from './authoredTerrainEvaluator.ts';
+import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrainEvaluator.ts';
 import { claimed, claimedId } from './capabilities.ts';
-import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
@@ -40,7 +39,6 @@ import { sitePalette } from './sitePalette.ts';
 import { type Placement, placedPieces, placedSpawns } from './templates.ts';
 import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
 import { forestDensityAt, type TreePlacement, vegetationPlacements } from './vegetation.ts';
-import type { Surface } from './worldgen.ts';
 
 const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
   const { showroom } = layout;
@@ -53,7 +51,6 @@ const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
 
 export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
-  readonly surface: Surface;
   readonly terrain: SiteTerrainPlan;
   readonly placements: readonly Placement[];
   readonly publicCartography: readonly PublicCartographicFeature[];
@@ -66,7 +63,6 @@ export class AuthoredSite implements Site {
   private readonly spawns: readonly ActorSpawn[];
   private readonly hordes: readonly HordeSpawn[];
   private readonly terrainTrees: readonly TreePlacement[];
-  private readonly stampTerrain: (chunk: Chunk) => void;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
@@ -233,22 +229,12 @@ export class AuthoredSite implements Site {
     });
     this.terrainTrees = trees;
     const { leafLitter: litter, terrain } = sitePalette(registry);
-    const evaluated = createAuthoredTerrain({
-      ground,
-      catalogue: catalogue?.terrain,
-      trees,
-      litter,
-      sand: terrain.sand,
-      placements: this.placements,
-    });
     this.terrain = {
       kind: 'authored',
       ground: groundData,
       data: { catalogue: catalogue?.terrain, trees, litter, sand: terrain.sand },
       placements: terrainPlacements(this.placements),
     };
-    this.surface = evaluated.surface;
-    this.stampTerrain = evaluated.stamp;
     const markers = this.placements.flatMap(placedSpawns).map((marker) => ({
       type: marker.actor,
       pos: marker.pos,
@@ -282,10 +268,6 @@ export class AuthoredSite implements Site {
       (focusPose(this.slots, furniture, this.showroom.focusDistance) ??
         (this.catalogue && focusPose(this.catalogue.props, furniture, this.showroom.focusDistance)));
     return pose && { pos: [...pose.pos], yaw: pose.yaw };
-  }
-
-  stamp(chunk: Chunk): void {
-    this.stampTerrain(chunk);
   }
 
   supplySourcesIn(area: Rect) {

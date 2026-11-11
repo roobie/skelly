@@ -8,6 +8,8 @@ import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { CitySite, footprint, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { fixturePool, fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { terrainFor } from './fixtures/terrain.ts';
+import { scale } from './snapshotTestSupport.ts';
 
 const QUOTA_CANNOT_FIT = /quota cannot fit/;
 type Lot = NonNullable<ScenarioDef['city']['lots']>[number];
@@ -165,7 +167,9 @@ describe('authored city lots', () => {
     scenario.city.paving = [{ x0: -18, z0: -18, x1: -15, z1: -15 }];
     const plan = buildCityPlan({ seed: 2, registry, floor: 12, grid: cityGridOf(registry, scenario.city) });
     const site = new CitySite(2, registry, makeScale(0.5), plan);
-    expect(site.surface.top(-17, -17)).toBe(registry.blockIds.get('asphalt'));
-    expect(site.surface.top(-14, -17)).toBeUndefined();
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(-17, -17)).toBe(
+      registry.blockIds.get('asphalt'),
+    );
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(-14, -17)).toBeUndefined();
   });
 });

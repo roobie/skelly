@@ -51,13 +51,6 @@ export const readingWorld = (registry: Registry, seed: number, scale: Scale): Si
         structures: [],
       },
     },
-    surface: {
-      height: () => fixture.floor / scale.blockSize - 1,
-      top: () => blockId(registry, fixture.ground),
-    },
-    stamp: () => {
-      // The authored terrain is the entire walking surface; no structure stamps are needed.
-    },
     supplySourcesIn: (area) => new SupplyFootprints(furniture, [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) =>

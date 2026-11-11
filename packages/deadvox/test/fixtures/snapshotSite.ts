@@ -1,7 +1,7 @@
 import type { Registry } from '@skelly/engine/content';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
-import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
-import { CHUNK, type Chunk, type Scale, type SiteTerrainPlan } from '@skelly/engine/world';
+import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
+import { CHUNK, type Scale, type SiteTerrainPlan } from '@skelly/engine/world';
 import { withTerrainBoxes } from './terrain.ts';
 
 /** A small authored world with independent furniture, zombie and foliage columns. */
@@ -34,9 +34,5 @@ export class SnapshotSite extends AuthoredSite {
     return cz === 0 && (cx === 8 || cx === 9)
       ? [{ type: 'shambler', pos: [cx * CHUNK + 12, 41, 8] as [number, number, number] }]
       : [];
-  }
-  override stamp(chunk: Chunk): void {
-    super.stamp(chunk);
-    stampChunk(chunk, this.hedges);
   }
 }

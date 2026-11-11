@@ -1,4 +1,3 @@
-import type { Chunk } from './chunk.ts';
 import type { CityPlan } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -17,9 +16,7 @@ import {
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { footprint, type Placement, placedPieces } from './templates.ts';
-import { createCitySurface, stampCityTerrain } from './terrainEvaluator.ts';
 import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
-import type { Surface } from './worldgen.ts';
 
 export class CitySite implements Site {
   readonly terrain: SiteTerrainPlan;
@@ -125,14 +122,6 @@ export class CitySite implements Site {
   }
   get floor() {
     return this.plan.floor;
-  }
-
-  get surface(): Surface {
-    return createCitySurface(this.plan, this.paving);
-  }
-
-  stamp(chunk: Chunk): void {
-    stampCityTerrain(chunk, this.plan.structures, this.byColumn.get(`${chunk.cx},${chunk.cz}`) ?? []);
   }
 
   supplySourcesIn(area: Rect) {

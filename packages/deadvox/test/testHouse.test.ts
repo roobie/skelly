@@ -4,10 +4,11 @@ import { Inventory } from '@skelly/engine/inventory';
 import { CHUNK, footprint, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
 const registry = baseRegistry();
-const { layout, s, site, at, solid, furniture, insideLot, walkable } = testHouseSite(registry);
+const { layout, scale, s, site, at, solid, furniture, insideLot, walkable } = testHouseSite(registry);
 const reachable = (start: Vec3): Vec3[] => {
   // Traverse the buildings and their immediate approaches, not the surrounding landscape.
   const bounds = site.placements.map((placement) => {
@@ -127,7 +128,10 @@ describe('authored test house', () => {
       const [ox, oy, oz] = placement.origin;
       for (let x = ox; x < ox + width; x++) {
         for (let z = oz; z < oz + depth; z++) {
-          expect(site.surface.height(x, z, layout.ground / s), `foundation at ${x},${z}`).toBe(oy);
+          expect(
+            terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, layout.ground / s),
+            `foundation at ${x},${z}`,
+          ).toBe(oy);
         }
       }
     }

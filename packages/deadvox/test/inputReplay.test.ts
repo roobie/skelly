@@ -995,9 +995,7 @@ describe('input replay', () => {
     };
     const site: Site = {
       terrain: fixtureSite.terrain,
-      surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
@@ -1264,9 +1262,7 @@ describe('input replay', () => {
     };
     const site: Site = {
       terrain: fixtureSite.terrain,
-      surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),

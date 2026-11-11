@@ -19,19 +19,15 @@ import {
   placedBlockAt,
   placedPieces,
 } from '@skelly/engine/internal/core/templates.ts';
-import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import {
   type BlockBox,
   CHUNK,
-  type Chunk,
   CitySite,
   footprint,
   makeScale,
   type Placement,
   placedPoint,
   type SiteTerrainPlan,
-  sitePalette,
-  terrainShapeOf,
   toChunk,
   type Vec3,
 } from '@skelly/engine/world';
@@ -41,7 +37,7 @@ import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
-import { withTerrainBoxes } from './fixtures/terrain.ts';
+import { terrainFor, withTerrainBoxes } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
@@ -95,17 +91,6 @@ const expectQuietWhenHealthy = (phases: readonly CertificatePhase[], rule: (path
   // biome-ignore lint/suspicious/noMisplacedAssertion: shared control, only ever called from inside a test case
   expect(healthyPaths.get(key)!.filter(rule)).toEqual([]);
 };
-const obstruct = (chunk: Chunk, point: Readonly<Vec3>): void => {
-  const cell = point.map(Math.floor) as Vec3;
-  if (toChunk(cell[0]) === chunk.cx && toChunk(cell[1]) === chunk.cy && toChunk(cell[2]) === chunk.cz) {
-    chunk.set(
-      cell[0] - chunk.cx * CHUNK,
-      cell[1] - chunk.cy * CHUNK,
-      cell[2] - chunk.cz * CHUNK,
-      registry.blockIds.get('stone')!,
-    );
-  }
-};
 const ownedCells = (placement: Placement, y: number): Vec3[] => {
   const [width, depth] = footprint(placement);
   const [x0, , z0] = placement.origin;
@@ -130,10 +115,6 @@ class ObstructedSite extends CitySite {
     this.terrain = withTerrainBoxes(this, [
       { min, max: min.map((value) => value + 1) as Vec3, block: registry.blockIds.get('stone')! },
     ]).terrain;
-  }
-  override stamp(chunk: Chunk): void {
-    super.stamp(chunk);
-    obstruct(chunk, this.obstruction);
   }
 }
 
@@ -682,17 +663,10 @@ it('resolves production service ownership, furnished loot and terrain stamps ind
   });
   const before = structuredClone(selected(first));
   const request = (site: CitySite, order: readonly Vec3[]) => {
-    const terrain = {
-      seed: site.seed,
-      shape: terrainShapeOf(registry),
-      scale,
-      surface: site.surface,
-      blocks: sitePalette(registry).terrain,
-    };
+    const terrain = terrainFor(site, registry, scale, site.seed);
     return new Map(
       order.map((cell) => {
-        const chunk = generateChunk(terrain, cell);
-        site.stamp(chunk);
+        const chunk = terrain.generateChunk(cell);
         return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
       }),
     );

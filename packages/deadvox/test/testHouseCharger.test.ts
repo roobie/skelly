@@ -1,13 +1,6 @@
 import { batteryCapacityMicrojoules, batteryEnergy } from '@skelly/engine/inventory';
 import { createSession, IDLE } from '@skelly/engine/session';
-import {
-  createWorldSetup,
-  generateColumn,
-  playerStartFromWorld,
-  sitePalette,
-  terrainShapeOf,
-  toChunk,
-} from '@skelly/engine/world';
+import { createWorldSetup, playerStartFromWorld, toChunk } from '@skelly/engine/world';
 import { ChunkMeshes } from '@skelly/presentation/render';
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -52,19 +45,7 @@ it('lets a player charge a nearby rechargeable cell from the test-house spawn', 
   ]);
   for (const column of columns) {
     const [cx, cz] = column.split(',').map(Number) as [number, number];
-    for (const chunk of generateColumn(
-      {
-        seed: config.seed,
-        scale: config.scale,
-        blocks: sitePalette(registry).terrain,
-        shape: terrainShapeOf(registry),
-        surface: source.site?.surface,
-        stamp: source.site ? (generated) => source.site!.stamp(generated) : undefined,
-      },
-      cx,
-      cz,
-      [],
-    )) {
+    for (const chunk of source.canonicalTerrain.terrain.generateColumn(cx, cz)) {
       source.world.addChunk(chunk);
     }
     session.onColumn(cx, cz, source);

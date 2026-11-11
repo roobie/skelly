@@ -3,6 +3,7 @@ import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan
 import { CHUNK, CitySite, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 
 const profile = fixtureScenario();
 const { registry, issues } = buildRegistry(fixtureScenarioSources(profile));
@@ -27,8 +28,12 @@ describe('the city surface beyond its bounds', () => {
     const { bounds } = site;
     for (const out of [1, 8, 16, 17, 200]) {
       for (const natural of naturals) {
-        expect(site.surface.height(bounds.x1 + out, bounds.z0, natural)).toBe(floor);
-        expect(site.surface.height(bounds.x0 - out, bounds.z1, natural)).toBe(floor);
+        expect(
+          terrainFor(site, site.registry, scale, site.seed).surface!.height(bounds.x1 + out, bounds.z0, natural),
+        ).toBe(floor);
+        expect(
+          terrainFor(site, site.registry, scale, site.seed).surface!.height(bounds.x0 - out, bounds.z1, natural),
+        ).toBe(floor);
       }
     }
   });
@@ -37,9 +42,15 @@ describe('the city surface beyond its bounds', () => {
     const site = siteWith(false);
     const { bounds } = site;
     for (const natural of naturals) {
-      expect(site.surface.height(bounds.x1 + 1, bounds.z0, natural)).not.toBe(natural);
-      expect(site.surface.height(bounds.x1 + 16, bounds.z0, natural)).toBe(natural);
-      expect(site.surface.height(bounds.x1 + 200, bounds.z0, natural)).toBe(natural);
+      expect(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(bounds.x1 + 1, bounds.z0, natural),
+      ).not.toBe(natural);
+      expect(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(bounds.x1 + 16, bounds.z0, natural),
+      ).toBe(natural);
+      expect(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(bounds.x1 + 200, bounds.z0, natural),
+      ).toBe(natural);
     }
   });
 
@@ -47,7 +58,9 @@ describe('the city surface beyond its bounds', () => {
     for (const flat of [true, false]) {
       const site = siteWith(flat);
       const { bounds } = site;
-      expect(site.surface.height(bounds.x0, bounds.z0, floor + 9)).toBe(floor);
+      expect(terrainFor(site, site.registry, scale, site.seed).surface!.height(bounds.x0, bounds.z0, floor + 9)).toBe(
+        floor,
+      );
     }
   });
 });

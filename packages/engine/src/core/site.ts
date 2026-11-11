@@ -5,7 +5,6 @@
 
 import { rectDistance as cellDistance } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
-import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
@@ -25,7 +24,6 @@ import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import type { StageMark } from './stageMarks.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { SiteTerrainPlan } from './terrainPlan.ts';
-import type { Surface } from './worldgen.ts';
 
 /** A rectangle of block columns. */
 export interface Rect {
@@ -90,17 +88,14 @@ export interface Site {
   readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */
   readonly playtestMarks?: PlaytestMarks;
-  /** The ground under the site, blended into the natural ground around it. */
+  /** Resolved terrain data, independent of gameplay ownership. */
   readonly terrain: SiteTerrainPlan;
-  readonly surface: Surface;
   /** Deliberately published roads and tracks, separate from generated blocks and private structures. */
   readonly publicCartography?: readonly PublicCartographicFeature[];
   /** Where the player starts: feet in metres, and a yaw. */
   readonly spawn: { pos: Vec3; yaw: number };
   /** A start facing a showroom prop of this furniture type; undefined when the site shows none. */
   focus?: (furniture: string) => { pos: Vec3; yaw: number } | undefined;
-  /** Writes the site's blocks that fall inside a chunk. */
-  stamp: (chunk: Chunk) => void;
   /** Descriptions include empty containers and do not roll or materialize supply. */
   lootPointsIn: (cx: number, cz: number) => readonly LootSpawnPoint[];
   /** Furniture anchored in the column (cx, cz), with its loot. */

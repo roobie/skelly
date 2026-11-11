@@ -4,9 +4,9 @@ import { type StartDescent, scenarioStartIssues } from '@skelly/engine/internal/
 import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
 import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
 import { startIssues } from '@skelly/engine/internal/core/startIssues.ts';
-import { type BlockBox, stampChunk } from '@skelly/engine/internal/core/structure.ts';
+import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
 import { templateReachableStandingPositions } from '@skelly/engine/internal/core/templateSpatial.ts';
-import { type Chunk, CitySite, makeScale, type SiteTerrainPlan, type Vec3 } from '@skelly/engine/world';
+import { CitySite, makeScale, type SiteTerrainPlan, type Vec3 } from '@skelly/engine/world';
 import { parse } from 'valibot';
 import { expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -39,10 +39,6 @@ class ObstructedStartSite extends CitySite {
     super(9, registry, scale, ownPlan);
     this.obstructions = obstructions;
     this.terrain = withTerrainBoxes(this, obstructions).terrain;
-  }
-  override stamp(chunk: Chunk): void {
-    super.stamp(chunk);
-    stampChunk(chunk, this.obstructions);
   }
 }
 const certificate = (

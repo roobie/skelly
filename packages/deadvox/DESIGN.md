@@ -848,8 +848,8 @@ rule predicting whether a jump can clear the wall. Sounds and crowds beyond the 
 are a separate decision. The ground around the wall is flat at the city floor, because the
 gauntlet is a confined playtest area and relief beyond the wall would only be
 unreachable scenery; a distant ridge can return later as an authored feature. The
-scenario opts in, so other sites keep their natural ground; see `packages/engine/src/core/citySite.ts`,
-`surface` and `packages/engine/src/core/schema/scenarios.ts`, `flatSurroundings`.
+scenario opts in, so other sites keep their natural ground; see `packages/engine/src/core/terrainEvaluator.ts`,
+`createCitySurface` and `packages/engine/src/core/schema/scenarios.ts`, `flatSurroundings`.
 See `packages/engine/src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.

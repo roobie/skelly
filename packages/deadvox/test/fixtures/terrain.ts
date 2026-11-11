@@ -1,11 +1,25 @@
+import type { Registry } from '@skelly/engine/content';
+import type { Site } from '@skelly/engine/sim';
 import {
   type BlockBox,
   createTerrainEvaluator,
   type Scale,
   type SiteTerrainPlan,
+  sitePalette,
   type TerrainPlan,
+  terrainShapeOf,
 } from '@skelly/engine/world';
 import { baseTerrainShape } from '../baseRegistry.ts';
+
+export const terrainFor = (site: Site, registry: Registry, scale: Scale, seed: number) =>
+  createTerrainEvaluator({
+    seed,
+    scale,
+    site: site.terrain,
+    blocks: sitePalette(registry).terrain,
+    shape: terrainShapeOf(registry),
+    structures: [],
+  });
 
 /** Small real terrain evaluator for consumer tests, without building a gameplay Site. */
 export function withTerrainBoxes<T extends { readonly terrain: SiteTerrainPlan }>(
