@@ -11,6 +11,7 @@ import {
   panelFor,
   poseKey,
   rotationOf,
+  toChunk,
   type Vec3,
 } from '@skelly/engine/world';
 import {
@@ -69,6 +70,18 @@ interface Piece {
   readonly mesh: Group | Mesh;
   /** The batch a piece that never moves between syncs is drawn in. */
   readonly batch?: string;
+  /** The column its lowest corner stands in, which decides whether it is revealed. */
+  readonly column: RevealColumn;
+}
+
+/** The drawn pieces whose lowest corner stands in one chunk column, which `ColumnReveal` reveals as a whole. */
+interface RevealColumn {
+  readonly key: string;
+  /** The column's lowest corner, in blocks. */
+  readonly x: number;
+  readonly z: number;
+  revealed: boolean;
+  readonly pieces: Set<BlockEntity>;
 }
 
 interface Batch {
@@ -96,8 +109,11 @@ export class FurnitureMeshes {
   private drawnReveal = -1;
   private readonly reveal: ColumnReveal | undefined;
   private readonly sectorBlocks: number | undefined;
-  private pieces = new Map<BlockEntity, Piece>();
-  private batches = new Map<string, Batch>();
+  private readonly pieces = new Map<BlockEntity, Piece>();
+  private readonly columns = new Map<string, RevealColumn>();
+  /** Every drawn piece of each batch, revealed or not. */
+  private readonly batched = new Map<string, Set<BlockEntity>>();
+  private readonly batches = new Map<string, Batch>();
 
   /**
    * `vehicles` meshes vehicle displays; with a worker behind it a vehicle appears when its mesh arrives.
@@ -169,89 +185,153 @@ export class FurnitureMeshes {
   /**
    * Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. Pieces that never move
    * between syncs are drawn as one instanced batch per geometry, material and sector, so a frame draws, culls and
-   * updates a batch rather than each piece; a batch whose revealed members did not change is kept.
+   * updates a batch rather than each piece; a batch whose revealed members did not change is kept. Every explored
+   * piece stays in memory, so a sync looks only at the pieces `standingChangesSince` names and the columns whose
+   * reveal changed, and draws what looking at every piece would.
    */
   sync(entities: BlockEntities): void {
     const revealVersion = this.reveal?.revealVersion ?? 0;
-    if (entities.standing === this.drawn && revealVersion === this.drawnReveal) {
+    if (entities === this.entities && entities.standing === this.drawn && revealVersion === this.drawnReveal) {
       return;
     }
+    const changed = entities === this.entities ? entities.standingChangesSince(this.drawn) : undefined;
     this.entities = entities;
     this.drawn = entities.standing;
-    this.drawnReveal = revealVersion;
-    const pieces = new Map<BlockEntity, Piece>();
-    const members = new Map<string, Piece[]>();
-    for (const entity of entities.all) {
-      const piece = this.pieceFor(entity, entities);
-      pieces.set(entity, piece);
-      const revealed = this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true;
-      if (piece.batch === undefined) {
-        piece.mesh.visible = revealed;
-      } else if (revealed) {
-        const list = members.get(piece.batch) ?? [];
-        list.push(piece);
-        members.set(piece.batch, list);
-      }
+    const redraw = new Set<string>();
+    for (const entity of new Set(changed ?? [...this.pieces.keys(), ...entities.all])) {
+      this.restage(entity, entities, redraw);
     }
-    for (const [entity, gone] of this.pieces) {
-      if (!pieces.has(entity) && gone.batch === undefined) {
-        this.group.remove(gone.mesh);
-      }
+    if (revealVersion !== this.drawnReveal) {
+      this.drawnReveal = revealVersion;
+      this.recheckReveal(redraw);
     }
-    this.pieces = pieces;
-    this.drawBatches(members);
+    for (const key of redraw) {
+      this.redrawBatch(key, entities);
+    }
     if (this.group.children.at(-1) !== this.marker) {
       this.group.add(this.marker);
     }
   }
 
-  /** The entity's piece: kept while its pose is unchanged, else rebuilt in place of the old one. */
-  private pieceFor(entity: BlockEntity, entities: BlockEntities): Piece {
-    const pose = poseKey(entity, entities.wearOf(entity));
+  /** Keeps an entity's piece while its pose is unchanged, else rebuilds it, or drops it once the entity stops standing. */
+  private restage(entity: BlockEntity, entities: BlockEntities, redraw: Set<string>): void {
+    const pose = entities.stands(entity) ? poseKey(entity, entities.wearOf(entity)) : undefined;
     const kept = this.pieces.get(entity);
     if (kept?.pose === pose) {
-      return kept;
+      return;
     }
-    const piece = this.piece(entity, entities.defOf(entity), pose);
-    if (kept && kept.batch === undefined) {
-      this.group.remove(kept.mesh);
+    if (kept) {
+      this.unstage(entity, kept, redraw);
     }
-    if (piece.batch === undefined) {
-      this.group.add(piece.mesh);
+    if (pose !== undefined) {
+      this.stage(entity, this.piece(entity, entities.defOf(entity), pose), redraw);
     }
-    return piece;
   }
 
-  /** Adds a batch per key of `members`, keeping each drawn batch whose members are the same, and disposes the rest. */
-  private drawBatches(members: ReadonlyMap<string, readonly Piece[]>): void {
-    const batches = new Map<string, Batch>();
-    for (const [key, list] of members) {
-      const kept = this.batches.get(key);
-      const batch = kept && sameMembers(kept.members, list) ? kept : { members: list, mesh: batchMesh(list) };
-      batches.set(key, batch);
-      if (batch !== kept) {
-        this.group.add(batch.mesh);
+  private stage(entity: BlockEntity, piece: Piece, redraw: Set<string>): void {
+    this.pieces.set(entity, piece);
+    piece.column.pieces.add(entity);
+    if (piece.batch === undefined) {
+      piece.mesh.visible = piece.column.revealed;
+      this.group.add(piece.mesh);
+      return;
+    }
+    let members = this.batched.get(piece.batch);
+    if (!members) {
+      members = new Set();
+      this.batched.set(piece.batch, members);
+    }
+    members.add(entity);
+    redraw.add(piece.batch);
+  }
+
+  private unstage(entity: BlockEntity, piece: Piece, redraw: Set<string>): void {
+    this.pieces.delete(entity);
+    piece.column.pieces.delete(entity);
+    if (piece.column.pieces.size === 0) {
+      this.columns.delete(piece.column.key);
+    }
+    if (piece.batch === undefined) {
+      this.group.remove(piece.mesh);
+      return;
+    }
+    const members = this.batched.get(piece.batch)!;
+    members.delete(entity);
+    if (members.size === 0) {
+      this.batched.delete(piece.batch);
+    }
+    redraw.add(piece.batch);
+  }
+
+  /** Shows or hides the pieces of each column whose reveal changed. */
+  private recheckReveal(redraw: Set<string>): void {
+    for (const column of this.columns.values()) {
+      const revealed = this.revealedAt(column.x, column.z);
+      if (revealed === column.revealed) {
+        continue;
+      }
+      column.revealed = revealed;
+      for (const entity of column.pieces) {
+        const piece = this.pieces.get(entity)!;
+        if (piece.batch === undefined) {
+          piece.mesh.visible = revealed;
+        } else {
+          redraw.add(piece.batch);
+        }
       }
     }
-    for (const [key, { mesh }] of this.batches) {
-      if (batches.get(key)?.mesh !== mesh) {
-        this.group.remove(mesh);
-        mesh.dispose();
-      }
+  }
+
+  /**
+   * Draws a batch's revealed pieces in the order `all` lists them, keeping the drawn batch when they are the same and
+   * disposing it otherwise.
+   */
+  private redrawBatch(key: string, entities: BlockEntities): void {
+    const revealed = [...(this.batched.get(key) ?? [])].filter((entity) => this.pieces.get(entity)!.column.revealed);
+    const members = entities.listed(revealed).map((entity) => this.pieces.get(entity)!);
+    const kept = this.batches.get(key);
+    if (kept && sameMembers(kept.members, members)) {
+      return;
     }
-    this.batches = batches;
+    if (kept) {
+      this.group.remove(kept.mesh);
+      kept.mesh.dispose();
+      this.batches.delete(key);
+    }
+    if (members.length > 0) {
+      const batch = { members, mesh: batchMesh(members) };
+      this.batches.set(key, batch);
+      this.group.add(batch.mesh);
+    }
   }
 
   private piece(entity: BlockEntity, def: FurnitureDef, pose: string): Piece {
+    const column = this.columnOf(entity);
     if (!standsStill(def)) {
-      return { pose, mesh: castsAndReceives(this.meshFor(entity, def)) };
+      return { pose, mesh: castsAndReceives(this.meshFor(entity, def)), column };
     }
     const mesh = this.standingMesh(entity, def);
     mesh.updateMatrix();
     const sector = this.sectorBlocks
       ? `${Math.floor(entity.pos[0] / this.sectorBlocks)}:${Math.floor(entity.pos[2] / this.sectorBlocks)}`
       : '';
-    return { pose, mesh, batch: `${mesh.geometry.uuid}:${mesh.material.uuid}:${sector}` };
+    return { pose, mesh, batch: `${mesh.geometry.uuid}:${mesh.material.uuid}:${sector}`, column };
+  }
+
+  private columnOf(entity: BlockEntity): RevealColumn {
+    const x = toChunk(entity.pos[0]) * CHUNK;
+    const z = toChunk(entity.pos[2]) * CHUNK;
+    const key = `${x},${z}`;
+    let column = this.columns.get(key);
+    if (!column) {
+      column = { key, x, z, revealed: this.revealedAt(x, z), pieces: new Set() };
+      this.columns.set(key, column);
+    }
+    return column;
+  }
+
+  private revealedAt(x: number, z: number): boolean {
+    return this.reveal?.isRevealed(x, z) ?? true;
   }
 
   /**
@@ -263,7 +343,9 @@ export class FurnitureMeshes {
       mesh.dispose();
     }
     this.batches.clear();
+    this.batched.clear();
     this.pieces.clear();
+    this.columns.clear();
     this.group.clear();
     const geometries = new Set<BufferGeometry>([
       this.geometry,

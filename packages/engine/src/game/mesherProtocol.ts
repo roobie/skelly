@@ -19,11 +19,31 @@ export interface MesherInit {
   occluders: Uint8Array;
 }
 
+/**
+ * One neighbour of a requested chunk: its uniform id, blocks the mesher keeps for that chunk from
+ * then on, or null for the blocks the mesher already keeps for it.
+ */
+export type SentChunk = number | Uint16Array | null;
+
+/** A `Neighbourhood` as a request carries it to a mesher that keeps the blocks earlier requests sent. */
+export interface SentNeighbourhood {
+  /** Ordered by `neighbourIndex`. */
+  readonly chunks: readonly SentChunk[];
+  readonly onFloor: boolean;
+  /** Chunk keys whose blocks the mesher stops keeping, before it reads `chunks`. */
+  readonly dropped: readonly string[];
+}
+
 /** One chunk to mesh, with its neighbours' blocks as they were when it was requested. */
 export interface MeshRequest {
   type: 'mesh';
   key: string;
   version: number;
+  neighbourhood: SentNeighbourhood;
+}
+
+/** A mesh request as its mesher reads it, with every neighbour's blocks in hand. */
+export interface ReceivedMeshRequest extends Omit<MeshRequest, 'neighbourhood'> {
   neighbourhood: Neighbourhood;
 }
 

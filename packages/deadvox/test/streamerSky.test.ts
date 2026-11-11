@@ -1,8 +1,15 @@
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import type { FromMesher, MesherInit, MesherPort, MesherSource, ToMesher } from '@skelly/engine/mesh';
-import { buildRequestedMesh } from '@skelly/engine/mesh';
+import type {
+  FromMesher,
+  MesherInit,
+  MesherPort,
+  MesherSource,
+  ReceivedMeshRequest,
+  ToMesher,
+} from '@skelly/engine/mesh';
+import { buildRequestedMesh, HeldChunks } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
@@ -16,9 +23,10 @@ import { skyFixture } from './fixtures/sky.ts';
 class OwnedWorker implements MesherPort {
   static instances: OwnedWorker[] = [];
   handlers: MesherHandlers | undefined;
-  readonly waiting: Exclude<ToMesher, { type: 'init' }>[] = [];
+  readonly waiting: (Exclude<ToMesher, { type: 'init' | 'mesh' }> | ReceivedMeshRequest)[] = [];
   readonly posted: string[] = [];
   init: MesherInit | undefined;
+  private readonly held = new HeldChunks();
   constructor() {
     OwnedWorker.instances.push(this);
   }
@@ -31,7 +39,7 @@ class OwnedWorker implements MesherPort {
       this.init = copy;
       return;
     }
-    this.waiting.push(copy);
+    this.waiting.push(copy.type === 'mesh' ? this.held.receive(copy) : copy);
     this.posted.push(copy.type);
   }
   replyNext(index = 0) {

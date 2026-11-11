@@ -1,18 +1,21 @@
-import { BEDROCK, detachNeighbourhood, neighbourhoodOf, PADDED } from '@skelly/engine/internal/core/meshInput.ts';
+import { BEDROCK, type Neighbourhood, neighbourhoodOf, PADDED } from '@skelly/engine/internal/core/meshInput.ts';
 import { OCCLUSION_RADIUS, WIDE } from '@skelly/engine/internal/core/occlusion.ts';
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { SentChunks } from '@skelly/engine/internal/game/sentChunks.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { hash3 } from '@skelly/engine/math';
 import {
   buildMesh,
   buildRequestedMesh,
+  HeldChunks,
   type MeshData,
   type MesherInit,
   type MesherPort,
   type MeshRequest,
+  type ReceivedMeshRequest,
   type ToMesher,
 } from '@skelly/engine/mesh';
-import { CHUNK, Chunk, makeScale, type Vec3, World } from '@skelly/engine/world';
+import { CHUNK, Chunk, chunkKey, makeScale, type Vec3, World } from '@skelly/engine/world';
 import { expect, it, vi } from 'vitest';
 import { baseTerrainShape } from './baseRegistry.ts';
 
@@ -35,6 +38,19 @@ const cube = <T extends Uint8Array | Uint16Array>(
   return out;
 };
 
+const base64 = (array: ArrayBufferView): string =>
+  Buffer.from(array.buffer, array.byteOffset, array.byteLength).toString('base64');
+
+/** A mesh as one string per array: element-wise equality on whole meshes would cost more than meshing them. */
+const meshBytes = (mesh: MeshData): Record<string, string> =>
+  Object.fromEntries(Object.entries(mesh).map(([name, array]: [string, ArrayBufferView]) => [name, base64(array)]));
+
+/** Each neighbour slot's blocks as a number (uniform or missing) or a string of its bytes. */
+const neighbourBytes = ({ chunks, onFloor }: Neighbourhood) => ({
+  onFloor,
+  chunks: chunks.map((blocks) => (typeof blocks === 'number' ? blocks : base64(blocks))),
+});
+
 /** The mesh of a chunk built from per-block world reads, independent of how a mesh request carries its blocks. */
 const referenceMesh = (world: World, [cx, cy, cz]: Vec3, bottomCy: number, init: MesherInit): MeshData => {
   const underFloor = (y: number) => cy - 1 < bottomCy && y < 0;
@@ -54,11 +70,51 @@ const referenceMesh = (world: World, [cx, cy, cz]: Vec3, bottomCy: number, init:
   });
 };
 
+/** Block tables for ids 1 to WATER, the last of them a liquid. */
+const waterInit = (): MesherInit => {
+  const liquids = Uint8Array.from({ length: WATER + 1 }, (_, id) => Number(id === WATER));
+  return {
+    type: 'init',
+    colors: Uint8Array.from({ length: (WATER + 1) * 3 }, (_, i) => 40 * (i % 6)),
+    patterns: new Uint8Array(WATER + 1),
+    weatherable: new Uint8Array(WATER + 1),
+    wireMeshes: [],
+    liquids,
+    fencePosts: [],
+    occluders: Uint8Array.from(liquids, (liquid, id) => Number(id !== 0 && !liquid)),
+  };
+};
+
+/** Both ends of one mesher's kept chunk blocks. */
+interface ChunkLink {
+  sent: SentChunks;
+  held: HeldChunks;
+}
+
+const chunkLink = (): ChunkLink => ({ sent: new SentChunks(), held: new HeldChunks() });
+
+/**
+ * The mesh request for `coords` as `held` receives it from `sent`, cloned with its buffers transferred
+ * as a browser worker gets it, and how many neighbours it left to the blocks `held` keeps.
+ */
+const sendRequest = (
+  { sent, held }: ChunkLink,
+  world: World,
+  coords: Vec3,
+  bottomCy: number,
+): [ReceivedMeshRequest, number] => {
+  const [neighbourhood, transfer] = sent.send(world, coords, bottomCy);
+  const request: MeshRequest = { type: 'mesh', key: chunkKey(...coords), version: 0, neighbourhood };
+  const kept = neighbourhood.chunks.filter((blocks) => blocks === null).length;
+  return [held.receive(structuredClone(request, { transfer })), kept];
+};
+
 /** A mesher that receives requests as a browser worker does (cloned, buffers transferred) and replies when told. */
 class CloningMesher implements MesherPort {
   handlers: MesherHandlers | undefined;
   init: MesherInit | undefined;
-  readonly waiting: MeshRequest[] = [];
+  readonly waiting: ReceivedMeshRequest[] = [];
+  private readonly held = new HeldChunks();
   listen(handlers: MesherHandlers): void {
     this.handlers = handlers;
   }
@@ -67,10 +123,10 @@ class CloningMesher implements MesherPort {
     if (copy.type === 'init') {
       this.init = copy;
     } else if (copy.type === 'mesh') {
-      this.waiting.push(copy);
+      this.waiting.push(this.held.receive(copy));
     }
   }
-  reply(request: MeshRequest): MeshData {
+  reply(request: ReceivedMeshRequest): MeshData {
     const mesh = buildRequestedMesh(this.init!, request);
     this.handlers?.message({ type: 'mesh', key: request.key, version: request.version, mesh, ms: 0 });
     return mesh;
@@ -99,22 +155,66 @@ it.each([
     }
   }
   world.removeChunk(1, 1, 1);
-  const liquids = Uint8Array.from({ length: WATER + 1 }, (_, id) => Number(id === WATER));
-  const init: MesherInit = {
-    type: 'init',
-    colors: Uint8Array.from({ length: (WATER + 1) * 3 }, (_, i) => 40 * (i % 6)),
-    patterns: new Uint8Array(WATER + 1),
-    weatherable: new Uint8Array(WATER + 1),
-    wireMeshes: [],
-    liquids,
-    fencePosts: [],
-    occluders: Uint8Array.from(liquids, (liquid, id) => Number(id !== 0 && !liquid)),
-  };
-  const [neighbourhood, transfer] = detachNeighbourhood(neighbourhoodOf(world, [0, 0, 0], bottomCy));
-  const request = structuredClone({ type: 'mesh', key: '0,0,0', version: 0, neighbourhood } as const, { transfer });
+  const init = waterInit();
+  const [request] = sendRequest(chunkLink(), world, [0, 0, 0], bottomCy);
   const mesh = buildRequestedMesh(init, request);
   expect(mesh.indices.length).toBeGreaterThan(0);
-  expect(mesh).toEqual(referenceMesh(world, [0, 0, 0], bottomCy, init));
+  expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, [0, 0, 0], bottomCy, init)));
+});
+
+it('hands the mesher the blocks the world holds when requests rely on kept blocks', () => {
+  const bottomCy = -1;
+  const world = new World();
+  const scattered = (cx: number, cy: number, cz: number, salt: number) => {
+    const blocks = new Uint16Array(CHUNK ** 3);
+    for (let i = 0; i < blocks.length; i++) {
+      blocks[i] = hash3(salt, i, cx * 7 + cy * 13, cz) < 0.01 ? 1 + (i % WATER) : 0;
+    }
+    return Chunk.fromArray(cx, cy, cz, blocks);
+  };
+  for (let cy = -1; cy <= 1; cy++) {
+    for (let cz = -1; cz <= 1; cz++) {
+      for (let cx = -1; cx <= 2; cx++) {
+        world.addChunk(scattered(cx, cy, cz, 0));
+      }
+    }
+  }
+  const init = waterInit();
+  const link = chunkLink();
+  const west: Vec3 = [0, 0, 0];
+  const east: Vec3 = [1, 0, 0];
+  // Each change lands in a chunk that the request after it reads and an earlier request already sent.
+  const steps: [() => unknown, Vec3][] = [
+    [() => undefined, west],
+    [() => undefined, east],
+    [() => world.setBlock(CHUNK, CHUNK / 2, CHUNK / 2, 3), west],
+    [() => world.addChunk(new Chunk(0, 1, 0, 2)), west],
+    [() => world.setBlock(CHUNK / 2, CHUNK, CHUNK / 2, 0), west],
+    // A reload whose new chunk has the revision of the one it replaces.
+    [() => world.addChunk(scattered(2, 0, 0, 1)), east],
+    [() => world.addChunk(scattered(0, 1, 0, 2)), west],
+    [
+      () => {
+        world.removeChunk(1, 1, 0);
+        link.sent.drop(chunkKey(1, 1, 0));
+      },
+      east,
+    ],
+    [() => world.addChunk(scattered(1, 1, 0, 3)), east],
+  ];
+  let kept = 0;
+  let last: ReceivedMeshRequest | undefined;
+  for (const [change, coords] of steps) {
+    change();
+    const [request, keptNeighbours] = sendRequest(link, world, coords, bottomCy);
+    kept += keptNeighbours;
+    expect(neighbourBytes(request.neighbourhood)).toEqual(neighbourBytes(neighbourhoodOf(world, coords, bottomCy)));
+    last = request;
+  }
+  expect(kept).toBeGreaterThan(0);
+  const mesh = buildRequestedMesh(init, last!);
+  expect(mesh.indices.length).toBeGreaterThan(0);
+  expect(meshBytes(mesh)).toEqual(meshBytes(referenceMesh(world, east, bottomCy, init)));
 });
 
 it('draws the blocks as they are after an edit lands while their chunk is being meshed', () => {
@@ -156,7 +256,7 @@ it('draws the blocks as they are after an edit lands while their chunk is being 
   expect(current.key).toBe('0,0,0');
   const mesh = mesher.reply(current);
   const expected = referenceMesh(world, [0, 0, 0], scale.minCy, mesher.init!);
-  expect(expected).not.toEqual(staleMesh);
-  expect(mesh).toEqual(expected);
+  expect(meshBytes(expected)).not.toEqual(meshBytes(staleMesh));
+  expect(meshBytes(mesh)).toEqual(meshBytes(expected));
   expect(meshes.set).toHaveBeenCalledExactlyOnceWith('0,0,0', [0, 0, 0], mesh);
 });
