@@ -1133,17 +1133,20 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
   assert.deepEqual(lakeErrors, []);
 };
 
-// The sun's disc is in frame, brighter than the sky beside it, or the check below proves nothing.
+// The sun's disc is in frame, brighter than the sky beside it, or the checks below prove nothing.
 //
-// The sky stays out of bloom through `toDisplay`, whatever radiance the physical sky has. The second look is
-// test-owned and drawn only inside this page: full physical weight at an exposure far past the bloom threshold,
-// so an unmapped sky would glow and a mapped one cannot. A sky pixel beside the sun then reads the same with
-// bloom on and off.
-const BRIGHT_SKY_EXPOSURE = 1000;
+// The sky stays out of bloom through `toDisplay`, whatever radiance it has. Only a small bright body against a sky
+// with headroom can show that: a saturated pixel reads the same with bloom on and off, and radiance past half-float
+// range blacks the frame instead of glowing. So the test-owned look, drawn only inside this page, is a clear keyed
+// sky with no painted glow and a disc far past the bloom threshold, and the sky beside it reads the same either way.
+//
+// Bloom cannot light the sky, so the painted glow is all the glow the sun has; on the ordinary look it brightens
+// that same pixel.
+const BRIGHT_SUN = 100;
 const BESIDE_PIXELS = 24;
 const skySunGlowCheck = async (lake, level, lakeErrors) => {
   const views = await lake.evaluate(
-    async ({ surface, exposure }) => {
+    async ({ surface, sunBrightness }) => {
       const { engine } = globalThis.primaryActionTest;
       engine.mood.setCrackCheck(false);
       engine.mood.setFilm(false);
@@ -1155,33 +1158,46 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
       const pitch = Math.asin(y);
       const yaw = Math.atan2(-x, -z);
       const look = () => globalThis.lakeLook(surface + 2, pitch, yaw);
+      const { onBeforeRender } = dome;
+      const lookWith = async (overrides) => {
+        // Runs at the draw, after the frame's own update has set the uniforms.
+        dome.onBeforeRender = () => {
+          for (const [name, value] of Object.entries(overrides)) {
+            uniforms[name].value = value;
+          }
+        };
+        const view = await look();
+        dome.onBeforeRender = onBeforeRender;
+        return view;
+      };
+      const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: sunBrightness };
       engine.mood.setBloom(false);
       const disc = await look();
-      // Runs at the draw, after the frame's own update has set the uniforms.
-      const { onBeforeRender } = dome;
-      dome.onBeforeRender = () => {
-        uniforms.uPhysicalWeight.value = 1;
-        uniforms.uPhysicalExposure.value = exposure;
-      };
-      const byBloom = {};
-      for (const bloom of [false, true]) {
-        engine.mood.setBloom(bloom);
-        byBloom[bloom ? 'bloom' : 'plain'] = await look();
-      }
-      dome.onBeforeRender = onBeforeRender;
-      return { disc, ...byBloom };
+      const unglowed = await lookWith({ uSunGlow: 0 });
+      const glowing = await lookWith({ uSunGlow: 1 });
+      const plain = await lookWith(brightSun);
+      engine.mood.setBloom(true);
+      const bloom = await lookWith(brightSun);
+      return { disc, unglowed, glowing, plain, bloom };
     },
-    { surface: level, exposure: BRIGHT_SKY_EXPOSURE },
+    { surface: level, sunBrightness: BRIGHT_SUN },
   );
   process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
   const brightness = ({ r, g, b }) => r + g + b;
+  const visiblyBrighter = (lit, dim) => brightness(lit) > brightness(dim) + 3 * horizonTolerance;
   assert.ok(
-    brightness(views.disc.colour) > brightness(views.disc.beside) + 3 * horizonTolerance,
+    visiblyBrighter(views.disc.colour, views.disc.beside),
     'the sun disc is in frame, brighter than the sky beside it',
   );
+  const besidePeak = Math.max(...Object.values(views.plain.beside));
+  assert.ok(besidePeak + horizonTolerance < 255, 'the sky beside the sun has headroom for bloom to show');
   assert.ok(
     apart(views.bloom.beside, views.plain.beside) <= horizonTolerance,
-    'the bright sky beside the sun gains no glow from bloom',
+    'the sky beside a very bright sun gains no glow from bloom',
+  );
+  assert.ok(
+    visiblyBrighter(views.glowing.beside, views.unglowed.beside),
+    'the painted glow brightens the sky beside the sun',
   );
   assert.deepEqual(lakeErrors, []);
 };
