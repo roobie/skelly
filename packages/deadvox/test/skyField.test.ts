@@ -160,11 +160,11 @@ describe('parked vehicles', () => {
   });
 
   it('gives a layout vehicle with no parts no field', () => {
-    const hatchback = registry.vehicleBlueprints.get('hatchback')!;
+    const blueprint = registry.vehicleBlueprints.values().next().value!;
     const site = registry.layouts.keys().next().value!;
     const stripped = {
       ...registry,
-      vehicleBlueprints: new Map([['stripped', { ...hatchback, id: 'stripped', fittings: [] }]]),
+      vehicleBlueprints: new Map([['stripped', { ...blueprint, id: 'stripped', fittings: [] }]]),
       layouts: new Map([
         [
           site,
