@@ -4,7 +4,7 @@
       "file": "assets/models/apple.glb",
       "grip": {
         "at": [0, 0.035000000000000003, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "apple",

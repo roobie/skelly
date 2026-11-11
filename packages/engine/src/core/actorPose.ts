@@ -313,7 +313,8 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 
 // ---- composition ----
 
-const yawOf = (facing: Vec3): Mat3 => rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI);
+/** Actor files face +z, so the yaw turns +z onto `facing`. */
+const yawOf = (facing: Vec3): Mat3 => rotY((Math.atan2(facing[0], facing[2]) * 180) / Math.PI);
 
 const withHeadYaw = (
   pose: Pose,

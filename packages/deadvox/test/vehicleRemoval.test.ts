@@ -59,7 +59,7 @@ const fixture = ({
           massKg: 1,
           centreOfMass: [0, 0, 0],
           voxelGrain: scale.blockSize,
-          collision: [{ min: [0, 0, 0], max: [scale.blockSize, scale.blockSize, scale.blockSize] }],
+          collision: [{ min: [-scale.blockSize, 0, 0], max: [0, scale.blockSize, scale.blockSize] }],
         },
       },
     }),

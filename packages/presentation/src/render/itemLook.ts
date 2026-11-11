@@ -11,7 +11,21 @@ export interface ItemStateLook {
   readonly glow?: { readonly color: string; readonly intensity: number };
   readonly wear?: number;
   readonly supply?: number | 'absent' | 'present';
+  /** The paint this copy's `paintable` materials take. */
+  readonly finish?: FinishLook;
 }
+
+export type FinishLook = Omit<NonNullable<ReturnType<Registry['vehicleFinishes']['get']>>, 'id'>;
+
+/** A part's own paint; none, or a name no pack provides, leaves its authored materials. */
+export const itemFinishLook = (registry: Registry, item: Item): FinishLook | undefined => {
+  const finish = item.finish === undefined ? undefined : registry.vehicleFinishes.get(item.finish);
+  if (!finish) {
+    return undefined;
+  }
+  const { id: _id, ...look } = finish;
+  return look;
+};
 
 const bandOf = (bands: readonly { readonly from: number }[], share: number): number =>
   Math.max(
@@ -24,6 +38,7 @@ export const itemStateLook = (registry: Registry, item: Item, model: string): It
   const presentation = registry.models.get(model)?.itemPresentation;
   const wear = presentation && registry.itemWear.get(presentation.wear);
   const supply = supplyShare(registry, item);
+  const finish = itemFinishLook(registry, item);
   let supplyLook: ItemStateLook['supply'];
   if (supply?.kind === 'absent') {
     supplyLook = 'absent';
@@ -38,6 +53,7 @@ export const itemStateLook = (registry: Registry, item: Item, model: string): It
       : {}),
     ...(wear ? { wear: bandOf(wear.bands, item.condition) } : {}),
     ...(supplyLook === undefined ? {} : { supply: supplyLook }),
+    ...(finish ? { finish } : {}),
   };
 };
 

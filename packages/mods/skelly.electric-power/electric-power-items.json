@@ -106,7 +106,7 @@
           "frame": "head",
           "model": "headlamp",
           "pivot": [0, 0, 0],
-          "turn": [0, 0, 0]
+          "turn": [0, 180, 0]
         }
       ],
       "id": "headlamp",

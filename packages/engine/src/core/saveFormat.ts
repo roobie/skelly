@@ -400,6 +400,7 @@ itemSchema = obj({
     ),
   ),
   cargo: opt(arr(positiveInt)),
+  finish: opt(str({ nonEmpty: true })),
   slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
     obj({
