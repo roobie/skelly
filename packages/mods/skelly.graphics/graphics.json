@@ -92,7 +92,7 @@
         "options": [false, true]
       },
       "vehicleReflection": {
-        "cubeSize": 64,
+        "cubeSize": 32,
         "groundEdge": 0.02,
         "skyDrift": 0.02,
         "zenithHeight": 0.45000000000000001
