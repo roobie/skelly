@@ -54,6 +54,10 @@
       "mobActors": {
         "maxCorpses": 16
       },
+      "modelFetchRetry": {
+        "backoffRealSeconds": 0.5,
+        "retries": 3
+      },
       "modelLoadConcurrency": 8,
       "nearPlaneMetres": 0.01,
       "opticLens": {

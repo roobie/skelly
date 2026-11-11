@@ -50,6 +50,7 @@ export const TEMPORAL_FIELDS = [
     unit: 'PerSecond',
     dimension: 'rate',
   },
+  { path: 'graphics[].modelFetchRetry.backoffRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'graphics[].gore.chunks.lifetimeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'graphics[].gore.chunks.fadeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'scenarios.outbreakAgeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },

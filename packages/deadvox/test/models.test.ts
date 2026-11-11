@@ -531,7 +531,7 @@ it('bounds model fetches, advances after success and gives requested models prio
       { ...registry, models: new Map(defs.map((def) => [def.id, def])) },
       (message) => reports.push(message),
       Object.fromEntries(defs.map((def) => [def.file, def.file])),
-      2,
+      { modelLoadConcurrency: 2, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
     );
     expect(started).toEqual(['assets/models/first.glb', 'assets/models/second.glb']);
     expect(models.has('fourth')).toBe(false);
@@ -569,7 +569,7 @@ it("draws a grenade without the pin and lever it has shed, by the exported glb's
       throw new Error(message);
     },
     { [def.file]: def.file },
-    1,
+    { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
   );
   spy.mockRestore();
   await Promise.all(loads);

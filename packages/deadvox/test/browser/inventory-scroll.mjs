@@ -1594,7 +1594,7 @@ try {
             throw new Error(message);
           },
           { packAssets: productAssets.models },
-          ids.size,
+          { modelLoadConcurrency: ids.size, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
         );
         screen.hooks.pictures = new ItemPictures(registry, models, 1);
       },
