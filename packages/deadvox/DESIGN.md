@@ -482,8 +482,12 @@ must not become saved edits merely because an admission check reached them. See
 Authored supply must have one truth before and after arrival. A speculative check
 cannot allocate live items, and an emptied source must not regenerate its original
 stock. Owner-controlled publication preserves existing item aliases rather than
-replacing the live inventory with a private copy. See `packages/engine/src/core/columnSupply.ts`,
-`createColumnSupply`; `packages/engine/src/game/session.ts`, `rolledColumns`; and
+replacing the live inventory with a private copy. Arrival checks a column's supply
+before publishing it, so a supply that fails publishes nothing, and checks it against
+only the owners that supply can meet, so a far view's many arrivals stay cheap however
+much of the world is explored. See `packages/engine/src/core/columnSupply.ts`,
+`createColumnSupply`; `packages/engine/src/core/inventory.ts`, `Inventory.projectAt`;
+`packages/engine/src/game/session.ts`, `rolledColumns`; and
 `packages/engine/src/core/saveState.ts`, `SaveSnapshot`.
 
 Voluntary removal protects what relies on a piece rather than stranding or losing it.
