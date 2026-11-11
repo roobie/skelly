@@ -55,6 +55,7 @@ const harness = () => {
     structures: [],
     radius: RADIUS,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: HYSTERESIS,
     surface: { height: () => 4, top: () => undefined },
   });
