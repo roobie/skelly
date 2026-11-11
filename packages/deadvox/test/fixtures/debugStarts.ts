@@ -38,11 +38,9 @@ export const grenadeStart = (): StartDef =>
 
 export const fitFixtureOptic = (inventory: Inventory, firearm: Item, type: string): void => {
   for (const [slot, child] of Object.entries(firearm.slots ?? {})) {
-    if (
-      child &&
-      inventory.registry.models.get(defOf(inventory.registry, child.type).model ?? '')?.gun?.attachment?.kind ===
-        'optic'
-    ) {
+    const kind =
+      child && inventory.registry.models.get(defOf(inventory.registry, child.type).model ?? '')?.gun?.attachment?.kind;
+    if (kind === 'optic' || kind === 'iron-sight') {
       inventory.fitSlot(firearm, slot, undefined);
     }
   }

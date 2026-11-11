@@ -1381,7 +1381,9 @@ describe('inventory screen Lit rendering', () => {
     test.screen.selected = firearm;
     test.screen.update();
 
-    const fit = test.root.querySelector<HTMLButtonElement>('.inv-details [data-attachment-slot] button.inv-option');
+    const fit = test.root.querySelector<HTMLButtonElement>(
+      '.inv-details [data-attachment-slot][data-occupied="false"] button.inv-option',
+    );
     if (!fit) {
       throw new Error('Fixture firearm did not render a fit action');
     }

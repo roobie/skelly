@@ -16,7 +16,7 @@ const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
 // content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
+const FIXTURE_BASE = ['vehicles.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
@@ -84,7 +84,7 @@ describe('vehicle export contract', () => {
   it('loads a mod-authored part and blueprint with no code edit', () => {
     const { issues, registry } = withMod({
       ...modPart('fixture_cell', ['electricity']),
-      ...blueprint(fitting('tray', 'hatchback_battery_tray'), fitting('cell', 'fixture_cell', ['tray'])),
+      ...blueprint(fitting('tray', 'battery_tray'), fitting('cell', 'fixture_cell', ['tray'])),
     });
     expect(issues).toEqual([]);
     expect(fittingOf(registry, 'fixture_cart', 'cell').capabilities).toEqual(['electricity']);
@@ -144,7 +144,7 @@ describe('vehicle export contract', () => {
     ],
     [
       'a support cycle',
-      blueprint(fitting('a', 'car_battery', ['b']), fitting('b', 'hatchback_battery_tray', ['a'])),
+      blueprint(fitting('a', 'car_battery', ['b']), fitting('b', 'battery_tray', ['a'])),
       'vehicleBlueprints[0].fittings',
     ],
     [
