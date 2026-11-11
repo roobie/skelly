@@ -1506,7 +1506,7 @@ held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. Clear glass does not hide a flame because it still shows ignition.
 The lamp's authored grip must leave the flame visible; see
-`packages/skelly-assets/models/lights.libsonnet`, `oil_lamp`, and `packages/presentation/src/render/modelFlame.ts`, `ModelFlames`.
+`packages/skelly-assets/models/catalogue/sets/lights.libsonnet`, `oil_lamp`, and `packages/presentation/src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
 punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
@@ -1562,7 +1562,7 @@ Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
 its mass on an empty vessel; shell and food tuning must remain independent.
 Game content owns these atoms' inventory mass so geometry-helper refactors cannot
-remove carried-weight tuning. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
+remove carried-weight tuning. See `packages/mods/skelly.basic-foods/models-basic-foods.jsonnet`, `partless`,
 `packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet`, `canShellGrams`,
 `packages/engine/src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
@@ -1570,7 +1570,7 @@ An opened vessel must read as opened even after its food is gone, so the lid
 stays attached and raised rather than relying on a food surface or an item name.
 The dedicated opener needs the silhouette of a hand tool rather than a storage
 bundle. These are visual distinctions, not extra inventory parts or mass sources.
-See `packages/skelly-assets/models/cans.libsonnet`,
+See `packages/skelly-assets/models/catalogue/sets/cans.libsonnet`,
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
@@ -1714,7 +1714,7 @@ scatter is involved. See `packages/engine/src/core/pileDisplay.ts`, `effectivePi
 Pill medicines show a blister strip or bottle regardless of stack size, including
 when one item is one pill. A pack is easier to see and reads as medicine; the
 visual pack does not change dose counts or carried mass. See
-`packages/skelly-assets/models/food-medical.libsonnet`, `bottle`, and
+`packages/skelly-assets/models/catalogue/sets/food-medical.libsonnet`, `bottle`, and
 `packages/mods/skelly.medicine/medicine-items.jsonnet`, `pillPack`.
 
 Food portions depict food rather than a second vessel, so a serving does not
@@ -1742,7 +1742,7 @@ lose its presentation. Copies belong to the rendered instance, not the library;
 replacing a viewer model or painting a still must release them without disposing
 shared geometry. Recipe-owned geometry must stay in its recipe so refresh and
 export checks agree; hand-authored assets retain a separate preparation owner.
-See `packages/skelly-assets/models/handhelds.libsonnet`, `carrier`,
+See `packages/skelly-assets/models/catalogue/sets/handhelds.libsonnet`, `carrier`,
 `tools/item-fuel-models.mjs`, `recipes`, `tools/item-model-metadata.mjs`, `metadata`,
 `packages/engine/src/core/itemPresentation.ts`, `modelPresentationAssetIssues`, and
 `packages/presentation/src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
@@ -3641,7 +3641,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `packages/engine/src/core/schema/graphics.ts`,
   `GraphicsTuningSchema`; `packages/presentation/src/presentation/engine.ts`, `createEngine`; and `packages/presentation/src/render/hands.ts`, `HeldItems`.
 - **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `packages/presentation/src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
-- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
+- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/tools/packages/../../models/guns/tables/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
