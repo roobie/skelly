@@ -348,12 +348,13 @@
     "twilight": "nautical",
     "weather": {
       "cloudiness": {
+        "ambient": 0.75,
         "clouds": {
           "cover": 0.65000000000000002,
           "opacity": 1
         },
         "fair": 0.20000000000000001,
-        "light": 0.45000000000000001,
+        "light": 0.25,
         "physicalWeight": 0.14999999999999999,
         "skyColour": {
           "brightness": 0.90000000000000002,
@@ -371,11 +372,12 @@
         "nearTighten": 0.84999999999999998
       },
       "rain": {
+        "ambient": 0.69999999999999996,
         "clouds": {
           "cover": 1,
           "opacity": 1
         },
-        "light": 0.59999999999999998,
+        "light": 0.20000000000000001,
         "physicalWeight": 0,
         "skyColour": {
           "brightness": 0.69999999999999996,

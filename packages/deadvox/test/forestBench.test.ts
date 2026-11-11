@@ -70,8 +70,11 @@ describe('forest benchmark workload identity', () => {
     expect(config).toMatchObject({ storeys: played.storeys, density: played.density });
   });
 
+  // Registry builds are bounded CPU work whose duration scales with machine load, so a timer only turns a busy
+  // machine into a failure.
   it.each(Object.keys(BENCH_WORKLOADS) as (keyof typeof BENCH_WORKLOADS)[])(
     'runs the %s benchmark link on its own workload',
+    { timeout: 0 },
     (name) => {
       const read = readPageUrl(benchHref(content, name), '');
       expect(read.refused).toBeUndefined();

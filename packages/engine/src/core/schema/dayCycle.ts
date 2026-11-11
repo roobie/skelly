@@ -192,6 +192,11 @@ const WeatherSkySchema = strictObject({
   sun: UnitFraction,
   /** What is left of the main light, so the world under it reads flat. */
   light: UnitFraction,
+  /**
+   * What is left of the ambient light, which lights the cloud deck as well as the world, so the deck dims with the
+   * greyed fog below it instead of standing brighter at the horizon.
+   */
+  ambient: UnitFraction,
   /** The sky's colours: the fog and mist colours and the dome's gradient. */
   skyColour: strictObject({
     /** What is left of their saturation, so they read grey. */
