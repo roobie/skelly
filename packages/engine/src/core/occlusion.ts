@@ -2,7 +2,7 @@
 // much of the half-space in front of the face is solid, and gets back a small quantized level.
 //
 // The mesher is handed a solidity array that reaches OCCLUSION_RADIUS blocks beyond the chunk
-// (world.ts `extractWide`), and a summed-volume table over it, so every box query is 8 lookups
+// (meshInput.ts `wideFrom`), and a summed-volume table over it, so every box query is 8 lookups
 // whatever the radius. This is the crude "how enclosed is this spot" term (rooms, canyons, under
 // overhangs); the 3-neighbour corner AO baked into vertex colours (mesher.ts) stays as it is.
 

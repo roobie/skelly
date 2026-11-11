@@ -1,8 +1,8 @@
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import type { FromMesher, MesherPort, MesherSource, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh } from '@skelly/engine/mesh';
+import type { FromMesher, MesherInit, MesherPort, MesherSource, ToMesher } from '@skelly/engine/mesh';
+import { buildRequestedMesh } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
@@ -18,9 +18,7 @@ class OwnedWorker implements MesherPort {
   handlers: MesherHandlers | undefined;
   readonly waiting: Exclude<ToMesher, { type: 'init' }>[] = [];
   readonly posted: string[] = [];
-  colors: Uint8Array = new Uint8Array();
-  patterns: Uint8Array = new Uint8Array();
-  weatherable: Uint8Array = new Uint8Array();
+  init: MesherInit | undefined;
   constructor() {
     OwnedWorker.instances.push(this);
   }
@@ -30,9 +28,7 @@ class OwnedWorker implements MesherPort {
   post(message: ToMesher, transfer: readonly ArrayBuffer[]) {
     const copy = structuredClone(message, { transfer: [...transfer] });
     if (copy.type === 'init') {
-      this.colors = copy.colors;
-      this.patterns = copy.patterns;
-      this.weatherable = copy.weatherable;
+      this.init = copy;
       return;
     }
     this.waiting.push(copy);
@@ -50,11 +46,7 @@ class OwnedWorker implements MesherPort {
             key: message.key,
             version: message.version,
             ms: 0,
-            mesh: buildMesh(message.padded, this.colors, {
-              patterns: this.patterns,
-              wide: message.wide,
-              weatherable: this.weatherable,
-            }),
+            mesh: buildRequestedMesh(this.init!, message),
           }
         : { type: 'sky', id: message.id, result: buildSkyResult(message.input), workerRealMs: 0 };
     this.handlers?.message(data as FromMesher);
