@@ -151,6 +151,11 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       cloudLight: { light: 0.8, ambient: 0.25, facing: 0.4 },
       cloudShape: { coverGain: 1.2, edgeSoftness: 0.3, horizonFade: [0.02, 0.14] },
     },
+    environment: {
+      faceSize: 64,
+      rebakeChange: 0.02,
+      strength: 1,
+    },
     clouds: {
       warp: 0.6,
       layers: [

@@ -73,6 +73,11 @@
         }
       }
     },
+    "environment": {
+      "faceSize": 64,
+      "rebakeChange": 0.02,
+      "strength": 1
+    },
     "keys": [
       {
         "at": 0,
