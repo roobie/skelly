@@ -97,7 +97,8 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
       await decoded.decode();
       const x = Math.round(((point.x + 1) / 2) * decoded.naturalWidth);
       const y = Math.round(((1 - point.y) / 2) * decoded.naturalHeight);
-      const radius = 6;
+      // Sized for the test house's 640x360 viewport: a software-rendered frame costs time in proportion to its pixels.
+      const radius = 3;
       if (x < radius || y < radius || x + radius >= decoded.naturalWidth || y + radius >= decoded.naturalHeight) {
         throw new Error(`Floor sample projects outside the canvas: ${x},${y}`);
       }
@@ -567,13 +568,21 @@ const enterWorld = async (page) => {
 };
 
 const enterTestHouse = async (chromium, port) => {
-  const page = await newStagePage(chromium, { width: 1280, height: 720 });
+  const page = await newStagePage(chromium, { width: 640, height: 360 });
   const pageErrors = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
     process.stdout.write(`PAGE_ERROR ${error.stack}\n`);
   });
   await page.addInitScript(fakePointerLock);
+  // At this viewport the HUD's quickbar covers the floor sample, and its pixels would drown the glow.
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const hudless = document.createElement('style');
+      hudless.textContent = '#hud, #quickbar, #prompt { visibility: hidden }';
+      document.head.append(hudless);
+    });
+  });
   await timePhase('testHouse-pixel-boot', async () => {
     await page.goto(
       browserStageUrl(
