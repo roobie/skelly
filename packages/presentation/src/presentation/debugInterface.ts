@@ -41,7 +41,7 @@ export interface DebugHooks {
   readonly engine: Engine;
   /** The page's keyboard; the panel shows its keys and traces its presses. */
   readonly keyboard: KeyboardInput;
-  /** The weather play renders with; the debug look controls set its fogginess. */
+  /** The weather play renders with; the debug look controls set all three levels from the hash. */
   readonly weather: Weather;
   /** The held light's beam; the debug look controls set its strength multiplier. */
   readonly flashlight: { strength: number };

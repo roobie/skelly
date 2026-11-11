@@ -347,9 +347,42 @@
     "noonGameTimeOfDay": "12:00",
     "twilight": "nautical",
     "weather": {
-      "defaultFogginess": 0.20000000000000001,
-      "farTighten": 0.59999999999999998,
-      "nearTighten": 0.84999999999999998
+      "cloudiness": {
+        "clouds": {
+          "cover": 0.65000000000000002,
+          "opacity": 1
+        },
+        "fair": 0.20000000000000001,
+        "light": 0.45000000000000001,
+        "physicalWeight": 0.14999999999999999,
+        "skyColour": {
+          "brightness": 0.90000000000000002,
+          "saturation": 0.45000000000000001
+        },
+        "sun": 0.10000000000000001
+      },
+      "defaults": {
+        "cloudiness": 0.20000000000000001,
+        "fogginess": 0.20000000000000001,
+        "rain": 0
+      },
+      "fog": {
+        "farTighten": 0.59999999999999998,
+        "nearTighten": 0.84999999999999998
+      },
+      "rain": {
+        "clouds": {
+          "cover": 1,
+          "opacity": 1
+        },
+        "light": 0.59999999999999998,
+        "physicalWeight": 0,
+        "skyColour": {
+          "brightness": 0.69999999999999996,
+          "saturation": 0.59999999999999998
+        },
+        "sun": 0
+      }
     }
   }
 }
