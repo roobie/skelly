@@ -218,24 +218,16 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       inventory.add(inventory.create(wear), { kind: 'worn' });
     }
   }
-  // The first optic goes onto a gun stripped of its sights; later ones replace its predecessor.
-  const rifle = rifleUid === undefined ? r.scopedGunAtAnyStation(gunType, opticType) : inventory.itemByUid(rifleUid);
-  const scope = inventory.create(opticType);
-  const definition = inventory.registry.items.get(gunType);
-  const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
-  const fitOptic = () => {
-    for (const slot of stations) {
-      try {
-        inventory.fitSlot(rifle, slot, scope);
-        return;
-      } catch {
-        // Another station may fit.
-      }
-    }
-    throw new Error(`Could not fit ${opticType}`);
-  };
-  if (rifleUid !== undefined) {
-    fitOptic();
+  // The first optic is fitted with its gun, stripped of its sights; later ones replace their predecessor.
+  let rifle;
+  let scope;
+  if (rifleUid === undefined) {
+    rifle = r.scopedGunAtAnyStation(gunType, opticType);
+    scope = Object.values(rifle.slots).find((child) => child?.type === opticType);
+  } else {
+    rifle = inventory.itemByUid(rifleUid);
+    scope = inventory.create(opticType);
+    r.fitAtAnyStation(rifle, scope);
   }
   r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'ads') {
