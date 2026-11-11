@@ -23,7 +23,7 @@ it('draws the shared cache for an above-ground authored placement without an ind
     terrain: [],
     woodlands: [],
     tracks: [],
-    shamblers: [],
+    actors: [],
     player: { position: [8, 1, 8], bearing: 0 },
     buildings: [
       {

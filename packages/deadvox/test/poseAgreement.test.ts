@@ -215,7 +215,10 @@ describe('rendered and hit shambler poses', () => {
     const basePose = posedActor(baseInput);
     const recovered = posedActor({ ...input, hitFlinchTime: flinchDuration });
     expect(flinched.pose.rotations.head).not.toEqual(basePose.pose.rotations.head);
-    expect(recovered.transforms).toEqual(basePose.transforms);
+    // A recovered flinch may leave a zero angle signed by its side; -0 turns a bone exactly as 0 does.
+    const unsigned = (transforms: typeof basePose.transforms) =>
+      new Map([...transforms].map(([bone, { r, t }]) => [bone, { r: r.map((v) => v + 0), t: t.map((v) => v + 0) }]));
+    expect(unsigned(recovered.transforms)).toEqual(unsigned(basePose.transforms));
 
     const renderer = rendererFor(actor);
     try {

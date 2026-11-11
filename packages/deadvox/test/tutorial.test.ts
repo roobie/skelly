@@ -12,7 +12,7 @@ import {
   GuidedSteps as Tutorial,
   type GuidanceObservation as TutorialObservation,
 } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
-import { tutorialUrl } from '@skelly/presentation/tutorialUrl';
+import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import { Simulation } from './simulationFixture.ts';
 
 const observation = (): TutorialObservation => ({
@@ -221,11 +221,65 @@ describe('practice objectives', () => {
     expect(tutorial.stage).toBe('escape');
   });
 
-  it('links practice after the page mods', () => {
-    for (const mods of [null, 'scenario', 'scenario,beginner']) {
+  it('keeps non-start mods and reports each replaced start pack once', () => {
+    const packs = [
+      { id: 'scenario', defaultStart: 'fixture_start' },
+      { id: 'other', defaultStart: 'fixture_other' },
+      { id: 'beginner' },
+    ];
+    for (const mods of [null, 'beginner', 'scenario,other,scenario,beginner,practice']) {
       const page = `https://example.org/deadvox/${mods === null ? '' : `?mods=${mods}`}`;
-      const entered = new URL(tutorialUrl(page, 'practice'));
-      expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : `${mods},practice`);
+      const link = tutorialUrl(page, 'practice', packs);
+      const entered = new URL(link.href);
+      expect(entered.searchParams.get('mods')).toBe(mods === null ? 'practice' : 'beginner,practice');
+      const listed = mods?.split(',') ?? [];
+      expect(link.droppedPacks).toEqual(
+        packs.filter(({ defaultStart, id }) => defaultStart !== undefined && listed.includes(id)).map(({ id }) => id),
+      );
+    }
+  });
+
+  it('keeps the practice href and warns on departure when staging storage throws', () => {
+    const link = tutorialUrl('https://example.org/deadvox/?mods=scenario', 'practice', [
+      { id: 'scenario', defaultStart: 'fixture_start' },
+    ]);
+    const stash = () => ({
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('Storage unavailable', 'SecurityError');
+      },
+      removeItem: () => undefined,
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(stagePracticeLink(link, stash)).toBe(link.href);
+      expect(warning).toHaveBeenCalledTimes(link.droppedPacks.length);
+      for (const id of link.droppedPacks) {
+        expect(warning.mock.calls.flat().some((value) => String(value).includes(id))).toBe(true);
+      }
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it('discards a warning handoff loaded at a different destination', () => {
+    const data = new Map<string, string>();
+    const stash = () => ({
+      getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => data.set(key, value),
+      removeItem: (key: string) => data.delete(key),
+    });
+    const link = tutorialUrl('https://example.org/deadvox/?mods=scenario', 'practice', [
+      { id: 'scenario', defaultStart: 'fixture_start' },
+    ]);
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const href = stagePracticeLink(link, stash);
+      logPracticeWarnings('https://example.org/deadvox/', stash);
+      logPracticeWarnings(href, stash);
+      expect(warning).not.toHaveBeenCalled();
+    } finally {
+      warning.mockRestore();
     }
   });
 
@@ -234,7 +288,8 @@ describe('practice objectives', () => {
       tutorialUrl(
         'https://example.org/deadvox/?start-mod=fixture.start&skyRoute=1&save-backend=indexeddb&render=webgl#{debug:true}',
         'practice',
-      ),
+        [],
+      ).href,
     );
     expect(entered.pathname).toBe('/deadvox/');
     expect([...entered.searchParams.keys()]).toEqual(['render', 'mods']);

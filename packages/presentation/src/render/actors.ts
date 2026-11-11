@@ -27,7 +27,7 @@ const REGION_FOR_PART: Readonly<Record<Part, HumanoidHitRegion>> = {
   rightLeg: 'rightLeg',
 };
 
-/** Six instanced boxes, never one draw object per shambler. */
+/** Six instanced boxes, never one draw object per actor. */
 export class ActorMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<Part, InstancedMesh>();

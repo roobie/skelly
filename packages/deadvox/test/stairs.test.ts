@@ -66,7 +66,7 @@ const layoutFixture = (): SiteLayoutDef => ({
   terrain: [],
   tracks: [],
   woodlands: [],
-  shamblers: [],
+  actors: [],
 });
 const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) => {
   template.blocks[x + template.size[0] * (z + template.size[2] * y)] = id;

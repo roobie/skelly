@@ -199,7 +199,7 @@ const BOUNDING_RADIUS_M = 1.2;
 export const mobFigurePoolSizeThrough = (figureSeeds: readonly number[], figureSeed: number): number => {
   const index = figureSeeds.indexOf(figureSeed);
   if (index < 0) {
-    throw new RangeError(`Unknown shambler figure seed: ${figureSeed}`);
+    throw new RangeError(`Unknown actor figure seed: ${figureSeed}`);
   }
   return index + 1;
 };
@@ -896,7 +896,7 @@ export class MobActorMeshes implements ActorRenderer {
 
   /** Test-only: `boneId`'s *rotation* submatrix (row-major, the Mat3 convention of
    * packages/engine/src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live actor or a corpse) —
-   * the world rotation, not just this bone's own local pose delta, but since an actor facing along -Z has
+   * the world rotation, not just this bone's own local pose delta, but since an actor facing along +Z has
    * yaw 0 (packCrowdBoneMatrix contributes no extra rotation at yaw 0 — see its own comment), comparing this
    * against IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
    * used to assert the old bind/A-pose (every bone left at its raw rest orientation) never reappears.
@@ -1135,7 +1135,7 @@ export class MobActorMeshes implements ActorRenderer {
       yaw: rotY((placement.yaw * 180) / Math.PI),
       position: placement.worldPos,
     });
-    const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
+    const facing: Vec3 = [Math.sin(placement.yaw), 0, Math.cos(placement.yaw)];
     const pose = fusedMassTentaclePose({
       start,
       target,
@@ -1338,7 +1338,7 @@ export class MobActorMeshes implements ActorRenderer {
       instanceIndex: state.instanceIndex,
       basePose,
       worldPos,
-      yaw: Math.atan2(-actor.facing[0], -actor.facing[2]),
+      yaw: Math.atan2(actor.facing[0], actor.facing[2]),
       direction: fallDirectionAwayFromPlayer(actor.facing, actor.body.pos, undefined),
       launch: this.hitDirections.get(id),
       poseSeed: id ^ actor.figureSeed,
@@ -1405,7 +1405,7 @@ export class MobActorMeshes implements ActorRenderer {
       instanceIndex: state.instanceIndex,
       basePose,
       worldPos,
-      yaw: Math.atan2(-actor.facing[0], -actor.facing[2]),
+      yaw: Math.atan2(actor.facing[0], actor.facing[2]),
       direction: fallDirectionAwayFromPlayer(actor.facing, actor.body.pos, playerPos),
       launch: this.hitDirections.get(id),
       poseSeed: id ^ actor.figureSeed,
@@ -1816,8 +1816,8 @@ export class MobActorMeshes implements ActorRenderer {
       previous.pos[1] + (actor.body.pos[1] - previous.pos[1]) * blend,
       previous.pos[2] + (actor.body.pos[2] - previous.pos[2]) * blend,
     ];
-    const yawBefore = Math.atan2(-previous.facing[0], -previous.facing[2]);
-    const yawAfter = Math.atan2(-actor.facing[0], -actor.facing[2]);
+    const yawBefore = Math.atan2(previous.facing[0], previous.facing[2]);
+    const yawAfter = Math.atan2(actor.facing[0], actor.facing[2]);
     const yawDelta = Math.atan2(Math.sin(yawAfter - yawBefore), Math.cos(yawAfter - yawBefore));
     const yaw = yawBefore + yawDelta * blend;
     const headYaw = previous.headYaw + (actor.headYaw - previous.headYaw) * blend;
@@ -1942,7 +1942,7 @@ export class MobActorMeshes implements ActorRenderer {
     const posed = posedActor(
       actorPoseInputFor(actor, state.id, this.poseScene, {
         position,
-        facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
+        facing: [Math.sin(yaw), 0, Math.cos(yaw)],
         headYaw,
       }),
     );

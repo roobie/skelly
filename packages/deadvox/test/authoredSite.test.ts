@@ -56,7 +56,7 @@ const validationLayout = (id: string): SiteLayoutDef => ({
   terrain: [],
   buildings: [],
   player: { position: [5, 0.5, 5], bearing: 0 },
-  shamblers: [],
+  actors: [],
   woodlands: [],
   tracks: [],
 });
@@ -88,7 +88,7 @@ it('refuses unsupported parking bays', () => {
 });
 
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
-const layoutActorIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutActorIds = new Set(layout.actors.map(({ type }) => type));
 const layoutValidationBase = [
   // Named spawn windows resolve against a day cycle.
   base.find(({ source }) => source === 'dayCycle.json')!,
@@ -218,7 +218,7 @@ const expectSpawnMarginsUnnoised = (terrain: AuthoredTerrainCase): void => {
   const spawnClearanceRadiusMetres = 2;
   const spawnPoints = [
     [terrain.sourceLayout.player.position[0], terrain.sourceLayout.player.position[2]],
-    ...terrain.sourceLayout.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
+    ...terrain.sourceLayout.actors.map((spawn) => [spawn.position[0], spawn.position[2]]),
     ...terrain.site.placements
       .flatMap(placedSpawns)
       .map((marker) => [marker.pos[0] * scale.blockSize, marker.pos[2] * scale.blockSize]),
@@ -362,7 +362,7 @@ const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, numbe
       placement.origin[2] + depth - 1,
     );
   }
-  for (const spawn of fixture.shamblers) {
+  for (const spawn of fixture.actors) {
     const x = Math.floor(spawn.position[0] / scale.blockSize);
     const z = Math.floor(spawn.position[2] / scale.blockSize);
     addRange(x, x, z, z);
@@ -405,7 +405,7 @@ describe('authored layout acceptance', () => {
       layouts: SiteLayoutDef[];
     };
     const camp = playtest.layouts[0]!;
-    const amalgams = camp.shamblers.filter(({ type }) => type === 'amalgam');
+    const amalgams = camp.actors.filter(({ type }) => type === 'amalgam');
     expect(amalgams.length).toBeGreaterThan(0);
     const { blockSize } = makeScale(0.5);
     for (const marker of amalgams) {
@@ -454,12 +454,12 @@ describe('authored layout acceptance', () => {
   });
   it('carries a spawn window from an authored marker into its world column', () => {
     const marker = {
-      ...layout.shamblers[0]!,
+      ...layout.actors[0]!,
       position: [5, 0.5, 5] as const,
       chance: 1,
       window: { fromGameTimeOfDay: 'dusk' },
     };
-    const timedLayout = { ...validationLayout('timed_spawn_fixture'), shamblers: [marker] };
+    const timedLayout = { ...validationLayout('timed_spawn_fixture'), actors: [marker] };
     const result = buildRegistry([
       ...layoutValidationBase,
       { source: 'layout-test.json', data: { layouts: [timedLayout] } },
@@ -480,7 +480,7 @@ describe('authored layout acceptance', () => {
     const noon = registry.dayCycle!.noonGameTimeOfDay;
     const clockNoon = `${String(Math.floor(noon / 3600)).padStart(2, '0')}:${String(Math.floor((noon % 3600) / 60)).padStart(2, '0')}`;
     const marker = {
-      ...layout.shamblers[0]!,
+      ...layout.actors[0]!,
       position: [5, 0.5, 5] as const,
       window: { fromGameTimeOfDay: 'noon', toGameTimeOfDay: clockNoon },
     };
@@ -488,11 +488,11 @@ describe('authored layout acceptance', () => {
       ...layoutValidationBase,
       {
         source: 'layout-test.json',
-        data: { layouts: [{ ...validationLayout('equal_window_fixture'), shamblers: [marker] }] },
+        data: { layouts: [{ ...validationLayout('equal_window_fixture'), actors: [marker] }] },
       },
     ]);
     expect(result.issues.map(({ path, message }) => [path, message])).toContainEqual([
-      expect.stringContaining('.shamblers[0].window'),
+      expect.stringContaining('.actors[0].window'),
       'from and to must differ',
     ]);
   });
@@ -584,25 +584,25 @@ describe('authored layout acceptance', () => {
       ...validationLayout('spawn_clearance_fixture'),
       buildings: [{ template: template.id, position: [4, 0, 4] as [number, number, number], rotation: 0, storeys: 1 }],
       player: { position: [2, 0.5, 2], bearing: 0 },
-      shamblers: [{ type: 'amalgam', position: [4.8, 0.5, 4.5], chance: 1 }],
+      actors: [{ type: 'amalgam', position: [4.8, 0.5, 4.5], chance: 1 }],
     } as SiteLayoutDef;
 
     const amalgamIssues = authoredLayoutIssues(site, fixtureRegistry).map(([path]) => path);
     const smallActorSite = {
       ...site,
-      shamblers: [{ ...site.shamblers[0]!, type: 'shambler' }],
+      actors: [{ ...site.actors[0]!, type: 'shambler' }],
     };
 
     expect(authoredLayoutIssues(smallActorSite, fixtureRegistry).map(([path]) => path)).not.toContain(
-      '.shamblers[0].position',
+      '.actors[0].position',
     );
-    expect(amalgamIssues).toContain('.shamblers[0].position');
+    expect(amalgamIssues).toContain('.actors[0].position');
   });
   it('rejects an elevated shambler spawn without support', () => {
     const supported = validationLayout('shambler_support_fixture');
     const unsupported = {
       ...supported,
-      shamblers: [{ ...layout.shamblers[0]!, position: [5, 10.5, 5] as const }],
+      actors: [{ ...layout.actors[0]!, position: [5, 10.5, 5] as const }],
     };
     const accepted = buildRegistry([
       ...layoutValidationBase,
@@ -746,9 +746,9 @@ describe('authored layout acceptance', () => {
   it('validates optional windows on authored shambler markers', () => {
     const timed = {
       ...validationLayout('timed_marker_fixture'),
-      shamblers: [
+      actors: [
         {
-          ...layout.shamblers[0]!,
+          ...layout.actors[0]!,
           position: [5, 0.5, 5],
           window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' },
         },
@@ -757,19 +757,19 @@ describe('authored layout acceptance', () => {
     const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [timed] } }]);
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
+      { ...layout, actors: [{ ...layout.actors[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
       'expected a named game time or HH:MM',
     );
     invalid(
       {
         ...layout,
-        shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }],
+        actors: [{ ...layout.actors[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }],
       },
       'from and to must differ',
     );
   });
   it('rejects an unknown shambler type', () => {
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], type: 'missing' }] }, 'no actor type');
+    invalid({ ...layout, actors: [{ ...layout.actors[0], type: 'missing' }] }, 'no actor type');
   });
   it('rejects a building whose rotated depth leaves the bounds', () => {
     const fixture = acceptedSiteFixture();
@@ -802,7 +802,7 @@ describe('authored layout acceptance', () => {
     invalid(
       {
         ...fixture,
-        shamblers: [{ ...layout.shamblers[0]!, position: [fixture.bounds.x1 + 1, y, z], chance: 0 }],
+        actors: [{ ...layout.actors[0]!, position: [fixture.bounds.x1 + 1, y, z], chance: 0 }],
       },
       'outside site bounds',
     );
@@ -874,7 +874,7 @@ describe('authored layout acceptance', () => {
     invalid({ ...layout, woodlands: [{ ...layout.woodlands[0], density: 1.1 }] }, 'must be 0 to 1');
   });
   it('rejects shambler chance outside 0..1', () => {
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], chance: 1.1 }] }, 'must be 0 to 1');
+    invalid({ ...layout, actors: [{ ...layout.actors[0], chance: 1.1 }] }, 'must be 0 to 1');
   });
   it('rejects a zero-width track', () => {
     invalid({ ...layout, tracks: [{ ...layout.tracks[0], width: 0 }] }, 'Invalid value');
@@ -923,7 +923,7 @@ it('keeps authored trees grounded and clear of buildings, roads and spawn', () =
   });
   const spawnPoints = [
     [ridge.player.position[0], ridge.player.position[2]],
-    ...ridge.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
+    ...ridge.actors.map((spawn) => [spawn.position[0], spawn.position[2]]),
     ...site.placements.flatMap(placedSpawns).map((marker) => [marker.pos[0] * s, marker.pos[2] * s]),
   ];
   const spawnMargin = registry.siteGeneration.get('authored')!.vegetation.obstacleMarginMetres;
@@ -959,7 +959,7 @@ it('keeps trees out of an authored building covered by woodland', () => {
     id: 'building-in-woodland-fixture',
     buildings: [],
     tracks: [],
-    shamblers: [],
+    actors: [],
     woodlands: [
       {
         polygon: [
@@ -1230,7 +1230,7 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
 
   const optionalLayout = {
     ...layout,
-    shamblers: layout.shamblers.map((spawn) => ({ ...spawn, chance: 0 })),
+    actors: layout.actors.map((spawn) => ({ ...spawn, chance: 0 })),
   };
   const optional = new AuthoredSite(1, registry, scale, optionalLayout);
   const optionalColumns = siteColumns(optional, optionalLayout);

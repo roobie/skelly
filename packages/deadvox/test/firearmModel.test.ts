@@ -66,7 +66,7 @@ describe('exported firearm presentation', () => {
       const top = topHits[0]!.point.y;
       const bottom = bottomHits[0]!.point.y;
       const palm = model.hands!.firing.at;
-      expect(palm[0], type).toBeCloseTo(x);
+      expect(palm[2], type).toBeCloseTo(z);
       expect(palm[1], type).toBeGreaterThanOrEqual(bottom);
       expect(palm[1], type).toBeLessThanOrEqual(bottom + (top - bottom) / 3);
     },

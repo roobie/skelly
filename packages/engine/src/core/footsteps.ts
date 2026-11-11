@@ -105,7 +105,7 @@ export interface ActorFootstepClock {
   nextLongStep: boolean;
 }
 
-/** Alternating short/long strides make the shamblers' ground cadence uneven, without a wall-clock timer. */
+/** Alternating short/long strides make the actors' ground cadence uneven, without a wall-clock timer. */
 export const initialActorFootstepClock = (stepLengthMetres: number): ActorFootstepClock => ({
   distanceUntilStep: stepLengthMetres * 0.72,
   nextLongStep: true,

@@ -14,7 +14,7 @@ export const controlIssues = (
   for (const control of registry.controls.values()) {
     const origin = origins.get(`controls:${control.id}`)!;
     const message = baseSources.has(origin.source)
-      ? controlRowIssue(control.id, control.keys)
+      ? controlRowIssue(control.id, control.keys, registry.actors)
       : "only the base pack sets default keys; mods can't yet";
     if (message) {
       issues.push({ source: origin.source, path: origin.path, message });

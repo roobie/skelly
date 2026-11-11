@@ -21,7 +21,7 @@ export class SnapshotSite extends AuthoredSite {
         { template: 'shed', position: [144, 20, -8], rotation: 0 },
       ],
       player: { position: [112, 20.5, 0], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     });

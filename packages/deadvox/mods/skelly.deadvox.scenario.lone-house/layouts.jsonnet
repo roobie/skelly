@@ -46,7 +46,7 @@
         }
       ],
       "attemptPolicy": (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
-      "shamblers": [
+      "actors": [
         {
           "type": "shambler",
           "position": [58, 25, 59.5],

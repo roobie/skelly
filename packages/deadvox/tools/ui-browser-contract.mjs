@@ -888,23 +888,23 @@ try {
   );
   assert.equal(await evaluate('window.scrollY'), 0, 'debug wheel does not scroll the page');
   assert.equal(
-    await evaluate("Boolean(document.querySelector('.debug-shambler-count output'))"),
+    await evaluate("Boolean(document.querySelector('.debug-actor-count output'))"),
     true,
     'debug panel has a shambler count control',
   );
-  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
+  assert.equal(await evaluate("document.querySelector('.debug-actor-count output').textContent"), '1');
   const spawnActionLabel = async () =>
     evaluate(`import('/src/product/input.ts').then(({ inputBindings }) => {
-    const label = document.querySelector('[data-debug-action="debug.spawn-shamblers"]').textContent;
-    return label.includes(inputBindings.label('debug.spawn-shamblers')) &&
-      label.includes(document.querySelector('.debug-shambler-count output').textContent);
+    const label = document.querySelector('[data-debug-action="debug.spawn-actors"]').textContent;
+    return label.includes(inputBindings.label('debug.spawn-actors')) &&
+      label.includes(document.querySelector('.debug-actor-count output').textContent);
   })`);
   assert.equal(await spawnActionLabel(), true, 'spawn label includes the selected count and effective binding');
   await evaluate(
     `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
   );
   await clickAt('[aria-label="Increase shambler count"]');
-  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
+  assert.equal(await evaluate("document.querySelector('.debug-actor-count output').textContent"), '2');
   assert.equal(await evaluate("localStorage.getItem('skelly.shambler-spawn-count')"), '2');
   assert.equal(await spawnActionLabel(), true, 'spawn label follows the changed count and effective binding');
   await action('debug.panel-toggle');
@@ -915,7 +915,7 @@ try {
   );
   await action('debug.panel-toggle');
   assert.equal(
-    await evaluate("document.querySelector('.debug-shambler-count output').textContent"),
+    await evaluate("document.querySelector('.debug-actor-count output').textContent"),
     '2',
     'spawn count remains selected',
   );
@@ -923,14 +923,14 @@ try {
     `document.querySelector('[aria-label="Decrease shambler count"]').scrollIntoView({ block: 'center' })`,
   );
   await clickAt('[aria-label="Decrease shambler count"]');
-  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '1');
+  assert.equal(await evaluate("document.querySelector('.debug-actor-count output').textContent"), '1');
   assert.equal(await evaluate('document.querySelector(\'[aria-label="Decrease shambler count"]\').disabled'), true);
   await evaluate(
     `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
   );
   await clickAt('[aria-label="Increase shambler count"]');
-  assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
-  await action('debug.spawn-shamblers');
+  assert.equal(await evaluate("document.querySelector('.debug-actor-count output').textContent"), '2');
+  await action('debug.spawn-actors');
   const spawnStatus = await evaluate('window.uiContractDebug.spawnStatus');
   assert.notEqual(spawnStatus, '', 'spawn action produces a status');
   assert.equal(
@@ -938,7 +938,7 @@ try {
     spawnStatus,
     'spawn status renders the owner result',
   );
-  await action('debug.freeze-shamblers');
+  await action('debug.freeze-actors');
   await action('debug.panel-toggle');
   assert.deepEqual(
     await evaluate('window.__pointerCalls'),

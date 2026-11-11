@@ -28,7 +28,7 @@ export interface FusedMassFigure {
   readonly originOffset: Vec3;
   /** A point inside the core's voxels, in unscaled figure space: the tentacle's root. */
   readonly coreInteriorPoint: Vec3;
-  /** That point at rest pose, in metres from the ground origin, facing -z (see `fusedMassStrikeOrigin`). */
+  /** That point at rest pose, in metres from the ground origin, facing +z (see `fusedMassStrikeOrigin`). */
   readonly restStrikeOrigin: Vec3;
   readonly grid: FusedMassGrid;
 }
@@ -65,7 +65,7 @@ export const fusedMassFigureOf = (body: ActorBody): FusedMassFigure => {
  * render poses the core first, so the two part only during a hit flinch.
  */
 export const fusedMassStrikeOrigin = (figure: Pick<FusedMassFigure, 'restStrikeOrigin'>, facing: Vec3): Vec3 => {
-  const [x, y, z] = mulMV(rotY((Math.atan2(-facing[0], -facing[2]) * 180) / Math.PI), figure.restStrikeOrigin);
+  const [x, y, z] = mulMV(rotY((Math.atan2(facing[0], facing[2]) * 180) / Math.PI), figure.restStrikeOrigin);
   return [x, y, z];
 };
 

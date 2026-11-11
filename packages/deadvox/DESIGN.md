@@ -673,11 +673,6 @@ because rearranging a room should not require destroying its contents. See `pack
   rule as lifting: what remains supported stays, and what loses support settles
   instead of riding the piece. A fall with no loaded floor is refused, because
   an unloaded chunk reads as air. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
-- **Nothing falls on a body.** Hurting the player with their own tidying would
-  punish an action the game wants them to take, and crushing shamblers with a
-  stack would be a cheaper weapon than any the game balances. Lifting and floor
-  steps therefore share the fall refusal; see `packages/engine/src/core/furnitureMove.ts`,
-  `fallRefusal`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
@@ -2572,9 +2567,12 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   Resistance precedes the strength gate so an ineffective blow does not accumulate
   damage. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`; `packages/engine/src/core/content.ts`,
   `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
-- **Rubble preserves wreckage.** A material's fallen form is solid rubble because
-  wreckage should still provide cover; falling alone is not loose salvage. Strikes
-  and deconstruction are the intended routes to loose resources. See
+- **Rubble preserves wreckage.** A material's fallen form is solid rubble until
+  cleared, because wreckage should still provide cover; falling alone is not loose
+  salvage. Clearing is the take-apart command applied to rubble, so it arrives with
+  that command and adds no second destruction verb. Breaking also yields, at far
+  more time per unit than looting stock, so looting stays the efficient path; see
+  `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
@@ -2883,8 +2881,10 @@ matters for a far kill at the loaded edge together with full supported spots,
 so the case is rare; loss is already the outcome when no room is found.
 Readiness uses the replay-aware zombie rule.
 
-With no supported landing or no room found by the permitted search, the item is
-lost: the zombie has been removed or the limb cut, so no owner can retain it.
+With no supported landing or no room found by the permitted search, including an
+unready column that cannot search farther, discard the item. The zombie has been
+removed or the limb cut, so no owner can retain it. Discarding avoids a pending-drop
+queue in saves; pre-pre-alpha accepts loot lost at the loaded edge.
 Loss adds neither a notice nor a sound. Zombie loot can yield nothing, and a
 line about an unseen body would narrate what the character cannot know; see
 `INTERFACE.md`, "Text". Zombie drops search wider because they have no retained
@@ -3436,6 +3436,27 @@ or free-form-building follow-up, not a permanently excluded interaction. Start w
 useful fitted cargo; further compartments extend the same ownership model rather
 than turning the entire wreck into a container.
 
+**Part finish.** The fitted spot sets the paint at spawn, and after that the part owns
+it: a fitting may name a finish, which becomes that copy's paint when the vehicle is
+spawned. A door pulled off a red car stays red, loose and in saves, and fitted to
+another car keeps its red until something repaints it. One part model painted per
+vehicle lets paint-only near-duplicates merge, and it matches how vehicles already
+choose their parts. See `packages/engine/src/core/items.ts`, `ItemState`, and
+`packages/engine/src/core/inventory.ts`, `Inventory.registerVehicle`.
+
+Paint is cosmetic and per copy, so no copy shares another's paint: it replaces only
+materials the asset marks `paintable`, and mass, strength and collision never read it.
+Wear and damage draw over paint where they are drawn; a fitted part draws no wear. See
+`packages/presentation/src/render/itemStateLook.ts`, `applyItemStateLook`, and
+`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`. A finish names a library
+entry and wears all of it, as a model's own material would, so any entry looks the same
+painted or authored. A mod adds one without engine change; a part with none, or naming
+one no pack provides, shows its own authored material. See
+`packages/presentation/src/render/modelMaterials.ts`, `paintedCopy`,
+`packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
+`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `vehicleFinishes`. Finishes
+apply to vehicles only.
+
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
 structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built
 frames are in the goal (point 1) but come after factory structures (point 8); #322
@@ -3778,7 +3799,7 @@ Holding world interaction opens the action list on every movable piece, intact o
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
+No Repair entry is offered to players until the #1469 crafting view settles input selection: a one-click repair look before that view would fix the input-choice flow prematurely. The entry returns with that view, together with the turnable 3D view of the target beside its requirements, so the player can inspect the piece they are committing supplies to. Keyboard arrow aiming is not a second target-selection path: the action-list choice already names the piece.
 
 ## UI principles
 

@@ -91,6 +91,11 @@ const fittingIssues = (registry: Registry, fittings: readonly VehicleFittingDef[
     const message = cargoSizeIssue(item, fitting);
     return message ? [[`.fittings[${i}].cargo`, message]] : [];
   }),
+  ...fittings.flatMap(({ finish }, i): PathIssue[] =>
+    finish === undefined || registry.vehicleFinishes.has(finish)
+      ? []
+      : [[`.fittings[${i}].finish`, `no vehicle finish "${finish}"`]],
+  ),
   ...supportProblems(fittings).map((message): PathIssue => ['.fittings', message]),
   ...bracingIssue(registry, fittings),
 ];
@@ -185,9 +190,9 @@ export interface LoadedVehicle {
 }
 
 const place = ({ at, mirror }: VehicleFittingDef, [x, y, z]: Vec3): Vec3 => [
-  at[0] + x,
+  mirror ? at[0] - x : at[0] + x,
   at[1] + y,
-  mirror ? at[2] - z : at[2] + z,
+  at[2] + z,
 ];
 
 const placeBox = (fitting: VehicleFittingDef, { min, max }: ModelBox): ModelBox => {

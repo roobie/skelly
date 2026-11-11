@@ -38,6 +38,9 @@ const lookFields = (sky: ReturnType<typeof skyAt>) => {
   return look;
 };
 
+const numbersOf = (value: unknown): number[] =>
+  typeof value === 'number' ? [value] : Object.values(value as object).flatMap(numbersOf);
+
 describe('sky', () => {
   it('keys the sky look to phase position across different solar cycles', () => {
     const reference = phaseSamples(BASE_DAY_CYCLE);
@@ -46,16 +49,9 @@ describe('sky', () => {
       expect(comparison[index]!.phase).toBe(phase);
       const first = lookFields(skyAt(hourAt(time), BASE_DAY_CYCLE));
       const second = lookFields(skyAt(hourAt(comparison[index]!.time), otherCycle));
-      for (const key of Object.keys(first) as (keyof typeof first)[]) {
-        const a = first[key];
-        const b = second[key];
-        if (Array.isArray(a) && Array.isArray(b)) {
-          for (const [componentIndex, value] of a.entries()) {
-            expect(value).toBeCloseTo(b[componentIndex]!, 8);
-          }
-        } else {
-          expect(a).toBeCloseTo(b as number, 8);
-        }
+      const expected = numbersOf(second);
+      for (const [numberIndex, value] of numbersOf(first).entries()) {
+        expect(value).toBeCloseTo(expected[numberIndex]!, 8);
       }
     });
   });

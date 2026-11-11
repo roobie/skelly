@@ -50,8 +50,8 @@ const boxCorners = (box: Box3): Vector3[] =>
     [box.min.y, box.max.y].flatMap((y) => [box.min.z, box.max.z].map((z) => new Vector3(x, y, z))),
   );
 const weaponRollDegrees = (rest: Quaternion, current: Quaternion): number => {
-  const restLong = new Vector3(1, 0, 0).applyQuaternion(rest).normalize();
-  const currentLong = new Vector3(1, 0, 0).applyQuaternion(current).normalize();
+  const restLong = new Vector3(0, 0, 1).applyQuaternion(rest).normalize();
+  const currentLong = new Vector3(0, 0, 1).applyQuaternion(current).normalize();
   const restEdge = new Vector3(0, 1, 0).applyQuaternion(rest).normalize();
   const currentEdge = new Vector3(0, 1, 0).applyQuaternion(current).normalize();
   const swing = new Quaternion().setFromUnitVectors(restLong, currentLong);

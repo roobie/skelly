@@ -728,7 +728,8 @@ export class ActorAnimator {
     if (!(type && object)) {
       return undefined;
     }
-    object.rotation.z = seat.tiltRadians;
+    // Tilt turns about the magazine's right, its file's -x.
+    object.rotation.x = -seat.tiltRadians;
     addShadowReceiver(seat.seat, object);
     this.magazineRound = { object, type, uid };
     return object;

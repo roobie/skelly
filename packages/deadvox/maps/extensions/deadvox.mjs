@@ -218,7 +218,7 @@ function addSpawn(object, info, context) {
     fromGameTimeOfDay === undefined
       ? undefined
       : Object.assign({ fromGameTimeOfDay }, toGameTimeOfDay === undefined ? {} : { toGameTimeOfDay });
-  layout.shamblers.push(Object.assign({ type, position, chance }, window ? { window } : {}));
+  layout.actors.push(Object.assign({ type, position, chance }, window ? { window } : {}));
 }
 function addHorde(object, info, { layout, pack }) {
   const { name, x, z } = info;
@@ -364,7 +364,7 @@ export function exportLayout(map) {
   if (startTimeGameTimeOfDay) {
     layout.startTimeGameTimeOfDay = startTimeGameTimeOfDay;
   }
-  layout.shamblers = [];
+  layout.actors = [];
   layout.hordes = [];
   const context = { layout, pack: content(), footprints: [], beats: [] };
   const writers = {

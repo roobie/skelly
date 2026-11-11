@@ -1,9 +1,25 @@
 // biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
 
-import { type Binding, bindingIsDebugOnly, type Chord, INPUT_ACTIONS, type Modifier } from '../core/inputActions.ts';
+import {
+  type Binding,
+  bindingIsDebugOnly,
+  type Chord,
+  debugSpawnActorRow,
+  debugSpawnActorType,
+  INPUT_ACTIONS,
+  type Modifier,
+} from '../core/inputActions.ts';
 
-const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
-  INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] }));
+// The keyboard exists before content loads, so a keyed spawn row holds its bare id until `setSpawnActorNames`.
+const keyedSpawnRows = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] =>
+  [...defaults].flatMap(([id, keys]) => {
+    const typeId = debugSpawnActorType(id);
+    return typeId === undefined ? [] : [{ ...debugSpawnActorRow(typeId, typeId), defaults: keys }];
+  });
+const withDefaults = (defaults: ReadonlyMap<string, readonly Chord[]>): readonly Binding[] => [
+  ...INPUT_ACTIONS.map((action) => ({ ...action, defaults: defaults.get(action.id) ?? [] })),
+  ...keyedSpawnRows(defaults),
+];
 /** A controls file: each action's default keys. */
 export interface ControlsFile {
   readonly controls: readonly { readonly id: string; readonly keys: readonly Chord[] }[];
@@ -174,8 +190,14 @@ export const bindingConflict = (
   return undefined;
 };
 const ACTION_IDS: ReadonlySet<string> = new Set(INPUT_ACTIONS.map(({ id }) => id));
-export const controlRowIssue = (id: string, keys: readonly Chord[]): string | undefined => {
-  if (!ACTION_IDS.has(id)) {
+/** `actors` are the loaded actor types, which a debug spawn row must name. */
+export const controlRowIssue = (
+  id: string,
+  keys: readonly Chord[],
+  actors: ReadonlyMap<string, unknown>,
+): string | undefined => {
+  const spawned = debugSpawnActorType(id);
+  if (spawned === undefined ? !ACTION_IDS.has(id) : !actors.has(spawned)) {
     return `unknown action ${id}`;
   }
   for (const chord of keys) {
@@ -273,7 +295,7 @@ const codeLabel = (code: string, layout?: ReadonlyMap<string, string>): string =
 const preferenceObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 export class BindingRegistry {
-  readonly bindings: readonly Binding[];
+  private rows: readonly Binding[];
   readonly diagnostics: string[] = [];
   revision = 0;
   private overrides = new Map<string, readonly Chord[]>();
@@ -285,7 +307,7 @@ export class BindingRegistry {
   private readonly keyboardLayout: KeyboardLayoutSource | undefined;
   private debugRun = false;
   constructor(bindings: readonly Binding[], storage?: PreferenceStorage, keyboardLayout?: KeyboardLayoutSource) {
-    this.bindings = bindings;
+    this.rows = bindings;
     this.storage = storage;
     this.keyboardLayout = keyboardLayout;
     let stored: unknown;
@@ -313,6 +335,23 @@ export class BindingRegistry {
         }
       }
     }
+  }
+  get bindings(): readonly Binding[] {
+    return this.rows;
+  }
+  /** Describes each keyed debug spawn row by its actor's content name, once content has loaded. */
+  setSpawnActorNames(actors: Iterable<{ readonly id: string; readonly name: string }>): void {
+    const named = new Map(
+      Array.from(actors, ({ id, name }) => {
+        const row = debugSpawnActorRow(id, name);
+        return [row.id, row.description] as const;
+      }),
+    );
+    this.rows = this.rows.map((binding) => {
+      const description = named.get(binding.id);
+      return description === undefined ? binding : { ...binding, description };
+    });
+    this.changed(false);
   }
   setDebugRun(): void {
     if (this.debugRun) {

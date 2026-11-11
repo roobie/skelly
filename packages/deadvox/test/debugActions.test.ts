@@ -1,4 +1,4 @@
-import { BindingRegistry } from '@skelly/engine/input';
+import { BindingRegistry, debugSpawnActorRow } from '@skelly/engine/input';
 import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
 import type { Weather } from '@skelly/engine/sky';
 import type { DebugHooks } from '@skelly/presentation/debug';
@@ -11,6 +11,7 @@ import { type Action, createDebugActions, dispatchDebugAction } from '../src/deb
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_KEYS } from '../src/debug/lookUrl.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
@@ -131,8 +132,8 @@ describe('debug action dispatch', () => {
       dispatchDebugAction(actions, action, true);
       expect(skips).toHaveLength(count);
     }
-    dispatchDebugAction(actions, 'debug.spawn-shamblers');
-    dispatchDebugAction(actions, 'debug.spawn-shamblers', true);
+    dispatchDebugAction(actions, 'debug.spawn-actors');
+    dispatchDebugAction(actions, 'debug.spawn-actors', true);
     expect(spawnCounts).toEqual([25]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
   });
@@ -145,6 +146,16 @@ describe('debug action dispatch', () => {
       expect(dispatchDebugAction(actions, id, true)).toBe(true);
     }
     expect(spawnRequests).toEqual(fixtureActorTypes.map((type) => ({ typeId: type.id, count: 1 })));
+  });
+  it('offers one spawn row per actor type in shipped content', () => {
+    const shipped = [...baseRegistry().actors.values()];
+    const { actions } = makeActions(1, undefined, shipped);
+    const rows = shipped.map((type) => debugSpawnActorRow(type.id, type.name));
+    for (const { id, description } of rows) {
+      expect(actions.filter((action) => action.id === id).map(({ label }) => label)).toEqual([description]);
+    }
+    const spawnPrefix = debugSpawnActorRow('', '').id;
+    expect(actions.filter((action) => action.id.startsWith(spawnPrefix))).toHaveLength(shipped.length);
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
@@ -161,6 +172,7 @@ describe('debug action dispatch', () => {
 const makeActions = (
   shamblerCount = 1,
   mannequin?: DebugHooks['mannequin'],
+  actorTypes: Iterable<{ id: string; name: string }> = fixtureActorTypes,
 ): {
   actions: Action[];
   spawnCounts: number[];
@@ -283,7 +295,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
-    actorTypes: fixtureActorTypes,
+    actorTypes,
     look,
     build,
     spawnMenu,

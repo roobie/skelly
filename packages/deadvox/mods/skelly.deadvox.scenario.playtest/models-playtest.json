@@ -4,7 +4,7 @@
       "file": "assets/models/baseball_cap.glb",
       "grip": {
         "at": [0, 0.040000000000000001, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "baseball_cap",
@@ -28,7 +28,7 @@
       "file": "assets/models/dad_cabin_key.glb",
       "grip": {
         "at": [0.029999999999999999, 0.0050000000000000001, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "dad_cabin_key",

@@ -222,7 +222,7 @@ local pitchHigh = [air, air, air, air, air, air, air, air, sheet, sheet, sheet, 
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 }, ground: 21, terrain: [],
     buildings: [{ template: 'crisis_hq_main', position: [51, 21, 51], rotation: 0 }, vault.building] + yard.buildings,
     player: { position: [60.5, 21.5, 82], bearing: 0 },
-    shamblers: [], woodlands: [],
+    actors: [], woodlands: [],
     tracks: [
       { points: [[60.5, 80], [60.5, 74], [73, 74], [73, 59]], width: 4, surface: 'asphalt' },
       { points: [[60.5, 82], [60.5, 64]], width: 2, surface: 'concrete' },

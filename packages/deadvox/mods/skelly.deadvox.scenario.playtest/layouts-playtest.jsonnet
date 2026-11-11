@@ -1079,7 +1079,7 @@
       ],
       "attemptPolicy": (import 'tools/jsonnet/lib/attempt-policy.libsonnet').persistent,
       "startTimeGameTimeOfDay": "15:00",
-      "shamblers": [
+      "actors": [
         {
           "type": "shambler",
           "position": [196, 21.5, 77],

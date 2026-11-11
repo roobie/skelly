@@ -79,7 +79,7 @@ interface ShapeTree {
   readonly dims: readonly [number, number, number];
   /** Voxel edge in blocks. */
   readonly voxel: number;
-  /** Local centre of voxel (0, 0, 0) in blocks, from the ground origin, facing -z. */
+  /** Local centre of voxel (0, 0, 0) in blocks, from the ground origin, facing +z. */
   readonly base: Vec3;
   /** Per node: first index into `children` and how many; leaves have none. */
   readonly childStart: Int32Array;
@@ -300,7 +300,7 @@ export class FusedMassShape implements BodyShape {
   private c = 1;
   private s = 0;
   private facingX = 0;
-  private facingZ = -1;
+  private facingZ = 1;
   private carved: readonly number[] | undefined;
   private severedCount = -1;
 
@@ -321,7 +321,7 @@ export class FusedMassShape implements BodyShape {
     }
     this.facingX = facing[0];
     this.facingZ = facing[2];
-    const yaw = Math.atan2(-facing[0], -facing[2]);
+    const yaw = Math.atan2(facing[0], facing[2]);
     this.c = Math.cos(yaw);
     this.s = Math.sin(yaw);
   }

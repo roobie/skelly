@@ -28,7 +28,7 @@
         "position": [56, 21.5, 56],
         "bearing": 180
       },
-      "shamblers": [],
+      "actors": [],
       "woodlands": [],
       "tracks": []
     }

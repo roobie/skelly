@@ -70,6 +70,17 @@ describe('vehicle export contract', () => {
     expect([...parts[0]!].some((part) => parts[1]!.has(part))).toBe(true);
   });
 
+  it('loads a mod-authored finish with a sheen with no code edit', () => {
+    const finish = {
+      id: 'fixture-coated',
+      colour: [0.2, 0.3, 0.4],
+      finish: { metallic: 0.1, roughness: 0.7, sheen: { colour: [0.9, 0.8, 0.7], roughness: 0.3 } },
+    };
+    const { issues, registry } = withMod({ vehicleFinishes: [finish] });
+    expect(issues).toEqual([]);
+    expect(registry.vehicleFinishes.get(finish.id)).toEqual(finish);
+  });
+
   it('loads a mod-authored part and blueprint with no code edit', () => {
     const { issues, registry } = withMod({
       ...modPart('fixture_cell', ['electricity']),
@@ -136,6 +147,11 @@ describe('vehicle export contract', () => {
       blueprint(fitting('a', 'car_battery', ['b']), fitting('b', 'hatchback_battery_tray', ['a'])),
       'vehicleBlueprints[0].fittings',
     ],
+    [
+      'a fitting naming a finish no pack provides',
+      blueprint({ ...fitting('cell', 'car_battery'), finish: 'fixture-no-such-paint' }),
+      'vehicleBlueprints[0].fittings[0].finish',
+    ],
     ['a lifting part without a rated load', modPart('fixture_cell', ['lift']), 'items[0].vehicle'],
     [
       'a rated load on a part that does not lift',
@@ -178,17 +194,17 @@ describe('vehicle export contract', () => {
   it('reflects a mirrored fitting’s datums, collision and centre of mass with its geometry', () => {
     const near = fittingOf(base.registry, 'hatchback', 'headlamp_near');
     const far = fittingOf(base.registry, 'hatchback', 'headlamp_far');
-    const reflect = ([x, y, z]: readonly number[]) => [x, y, -z!];
+    const reflect = ([x, y, z]: readonly number[]) => [-x!, y, z];
     const datums = Object.keys(near.datums);
-    expect(datums.some((id) => near.datums[id]![2] !== -near.datums[id]![2])).toBe(true);
+    expect(datums.some((id) => near.datums[id]![0] !== -near.datums[id]![0])).toBe(true);
     for (const id of datums) {
       expect(far.datums[id]).toEqual(reflect(near.datums[id]!));
     }
     expect(far.centreOfMass).toEqual(reflect(near.centreOfMass));
     expect(far.collision).toEqual(
       near.collision.map(({ min, max }) => ({
-        min: reflect([min[0], min[1], max[2]]),
-        max: reflect([max[0], max[1], min[2]]),
+        min: reflect([max[0], min[1], min[2]]),
+        max: reflect([min[0], max[1], max[2]]),
       })),
     );
     for (const placed of [near, far]) {

@@ -121,6 +121,8 @@ export interface ItemFields<Node> {
   cartridges?: string[];
   /** A cargo space's size in inventory cells along x, y and z, kept from fitting to disassembly (core/cargoSpace.ts). */
   cargo?: [x: number, y: number, z: number];
+  /** A vehicle part's paint, a `vehicleFinishes` id: set at spawn, then this copy's own wherever it goes. */
+  finish?: string;
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
@@ -158,6 +160,8 @@ const trapField = (trap: TrapState | undefined): { trap?: TrapState } =>
 
 const cargoField = (cargo: ItemFields<unknown>['cargo']): Pick<ItemFields<unknown>, 'cargo'> =>
   cargo === undefined ? {} : { cargo: [...cargo] };
+
+const finishField = (finish: string | undefined): { finish?: string } => (finish === undefined ? {} : { finish });
 
 const foodExposureField = (
   exposure: FoodExposure | undefined,
@@ -199,6 +203,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...cargoField(item.cargo),
+    ...finishField(item.finish),
     ...paperMapField(item.paperMap),
     ...liquidContentsField(item.liquidContents),
     ...liquidBurnField(item.liquidBurnRemainder),
@@ -299,6 +304,13 @@ const assertSavedCargo = (def: ItemDef, state: ItemState): void => {
     )
   ) {
     throw new Error('Invalid saved cargo space');
+  }
+};
+
+/** Only a vehicle part is painted; a name its packs no longer provide draws the part's own material. */
+const assertSavedFinish = (def: ItemDef, state: ItemState): void => {
+  if (state.finish !== undefined && !(def.vehicle && state.finish !== '')) {
+    throw new Error('Invalid saved finish');
   }
 };
 
@@ -412,6 +424,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   assertSavedTrap(def, state);
   assertSavedLootCount(state);
   assertSavedCargo(def, state);
+  assertSavedFinish(def, state);
   assertBatteryEnergy(registry, state);
   assertPaperMapItem(def, state.count, state.paperMap);
   const firearm = restoreFirearmState(registry, def, state);
@@ -440,6 +453,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
     ...cargoField(state.cargo),
+    ...finishField(state.finish),
     ...paperMapField(state.paperMap),
     ...liquidContentsField(state.liquidContents),
     ...liquidBurnField(state.liquidBurnRemainder),
