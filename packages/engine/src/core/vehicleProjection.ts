@@ -2,7 +2,7 @@ import type { ModelBox } from '@skelly/thing-core/schema';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Item } from './items.ts';
-import type { SkyBounds } from './skylight.ts';
+import type { SkyBlocker } from './skylight.ts';
 import { type PlacedFitting, placeFitting } from './vehicleBlueprint.ts';
 import type { VehicleInstance, VehicleInstances } from './vehicleInstances.ts';
 
@@ -169,9 +169,10 @@ export type VehicleObstructionChannel = 'sight' | 'light' | 'sound' | 'combat';
 
 /** A warmed cell query over one channel; its key is the collection revision, never a stale part snapshot. */
 export class VehicleOccupancy {
-  private readonly cells = new Map<string, Set<number>>();
+  /** Each occupied cell's owners, and the largest share of the channel its parts stop there. */
+  private readonly cells = new Map<string, { owners: Set<number>; strength: number }>();
   private seenVersion = -1;
-  private runs: { version: number; boxes: readonly SkyBounds[] } = { version: -1, boxes: [] };
+  private runs: { version: number; boxes: readonly SkyBlocker[] } = { version: -1, boxes: [] };
 
   private readonly registry: Registry;
   private readonly vehicles: VehicleInstances;
@@ -195,29 +196,37 @@ export class VehicleOccupancy {
     return this.cells.has(`${x},${y},${z}`);
   }
 
-  /** The occupied cells as vertical runs, one box per unbroken run in a column, in blocks. */
-  boxes(): readonly SkyBounds[] {
+  /**
+   * The occupied cells as vertical runs of one strength, one box per unbroken run in a column, in blocks; a run's
+   * shade is the share of the channel its cells stop.
+   */
+  boxes(): readonly SkyBlocker[] {
     this.rebuild();
     if (this.runs.version !== this.seenVersion) {
-      const columns = new Map<string, number[]>();
-      for (const key of this.cells.keys()) {
+      const columns = new Map<string, { y: number; strength: number }[]>();
+      for (const [key, { strength }] of this.cells) {
         const [x, y, z] = key.split(',').map(Number) as Vec3;
         const column = `${x},${z}`;
         const heights = columns.get(column);
         if (heights) {
-          heights.push(y);
+          heights.push({ y, strength });
         } else {
-          columns.set(column, [y]);
+          columns.set(column, [{ y, strength }]);
         }
       }
-      const boxes: SkyBounds[] = [];
+      const boxes: SkyBlocker[] = [];
       for (const [column, heights] of columns) {
         const [x, z] = column.split(',').map(Number) as [number, number];
-        heights.sort((a, b) => a - b);
+        heights.sort((a, b) => a.y - b.y);
         let start = 0;
         for (let at = 1; at <= heights.length; at++) {
-          if (at === heights.length || heights[at]! !== heights[at - 1]! + 1) {
-            boxes.push({ min: [x, heights[start]!, z], max: [x + 1, heights[at - 1]! + 1, z + 1] });
+          const [previous, next] = [heights[at - 1]!, heights[at]];
+          if (next?.y !== previous.y + 1 || next.strength !== previous.strength) {
+            boxes.push({
+              min: [x, heights[start]!.y, z],
+              max: [x + 1, previous.y + 1, z + 1],
+              shade: previous.strength,
+            });
             start = at;
           }
         }
@@ -230,14 +239,14 @@ export class VehicleOccupancy {
   /** Solid because of some vehicle other than this one, so a car's own body can be ignored without ignoring its neighbours. */
   isSolidExcept(vehicleId: number, x: number, y: number, z: number): boolean {
     this.rebuild();
-    const owners = this.cells.get(`${x},${y},${z}`);
+    const owners = this.cells.get(`${x},${y},${z}`)?.owners;
     return owners !== undefined && [...owners].some((owner) => owner !== vehicleId);
   }
 
   /** Solid because of this vehicle, whatever else shares the cell. */
   isSolidFor(vehicleId: number, x: number, y: number, z: number): boolean {
     this.rebuild();
-    return this.cells.get(`${x},${y},${z}`)?.has(vehicleId) ?? false;
+    return this.cells.get(`${x},${y},${z}`)?.owners.has(vehicleId) ?? false;
   }
 
   private rebuild(): void {
@@ -247,24 +256,30 @@ export class VehicleOccupancy {
     this.cells.clear();
     for (const [vehicleId, vehicle] of this.vehicles.records) {
       for (const part of projectVehicleParts(this.registry, vehicleId, vehicle, this.blockSize)) {
-        if (this.channel && !this.registry.items.get(part.item.type)?.vehicle?.obstruction[this.channel]) {
-          continue;
+        const strength = this.shareOf(part);
+        if (strength > 0) {
+          this.claimCells(vehicleId, part.boxes, strength);
         }
-        this.claimCells(vehicleId, part.boxes);
       }
     }
     this.seenVersion = this.vehicles.version;
   }
 
-  private claimCells(vehicleId: number, boxes: readonly ModelBox[]): void {
+  /** How much of the channel a part stops: all of it with no channel, its content share or flag otherwise. */
+  shareOf(part: VehiclePartProjection): number {
+    return this.channel ? Number(this.registry.items.get(part.item.type)?.vehicle?.obstruction[this.channel] ?? 0) : 1;
+  }
+
+  private claimCells(vehicleId: number, boxes: readonly ModelBox[], strength: number): void {
     for (const box of boxes) {
       for (const [x, y, z] of cellsOfBox(box, this.blockSize)) {
         const key = `${x},${y},${z}`;
-        const owners = this.cells.get(key);
-        if (owners) {
-          owners.add(vehicleId);
+        const cell = this.cells.get(key);
+        if (cell) {
+          cell.owners.add(vehicleId);
+          cell.strength = Math.max(cell.strength, strength);
         } else {
-          this.cells.set(key, new Set([vehicleId]));
+          this.cells.set(key, { owners: new Set([vehicleId]), strength });
         }
       }
     }

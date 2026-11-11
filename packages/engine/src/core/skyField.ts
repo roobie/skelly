@@ -1,7 +1,7 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
-import type { SkyBounds } from './skylight.ts';
+import type { SkyBlocker, SkyBounds } from './skylight.ts';
 import {
   type CapturedSky,
   captureSky,
@@ -38,7 +38,7 @@ export interface SkyFieldOwner {
 /** Light blockers that are neither blocks nor standing pieces, such as parked vehicles; `version` changes whenever `boxes` may. */
 export interface SkyOccluders {
   readonly version: number;
-  readonly boxes: () => readonly SkyBounds[];
+  readonly boxes: () => readonly SkyBlocker[];
 }
 
 /** Hands a snapshot to an off-thread build; false when it cannot take one now. */
@@ -72,7 +72,7 @@ interface Entry extends SkyField {
 const COLUMN_STRIDE = 1 << 22;
 const columnOf = (cx: number, cz: number): number => cx * COLUMN_STRIDE + cz;
 const NO_ENTRIES: readonly never[] = [];
-const boxKey = ({ min, max }: SkyBounds): string => `${min.join()},${max.join()}`;
+const boxKey = ({ min, max, shade }: SkyBlocker): string => `${min.join()},${max.join()},${shade}`;
 
 /**
  * The simulation's sky-visibility cache: one field per sky box, each a pure function of world state.
@@ -98,8 +98,8 @@ export class SkyFields {
   /** The blocking boxes by key, with how many blockers have each, at one standing and occluder version. */
   private standing = {
     version: '',
-    boxes: [] as SkyBounds[],
-    counts: new Map<string, { box: SkyBounds; count: number }>(),
+    boxes: [] as SkyBlocker[],
+    counts: new Map<string, { box: SkyBlocker; count: number }>(),
   };
 
   constructor(owner: SkyFieldOwner, range: { bottom: number; top: number }, boxes: readonly SkyBounds[] = []) {
@@ -263,11 +263,11 @@ export class SkyFields {
    * every field's capture and currency check; transport treats them all as furniture. It marks stale each field
    * that a box added or removed since the last scan overlaps; a field reads boxes as a set, so order does not matter.
    */
-  private furniture(): readonly SkyBounds[] {
+  private furniture(): readonly SkyBlocker[] {
     const version = `${this.owner.entities.standing}:${this.occluderSource}:${this.occluders?.version}`;
     if (this.standing.version !== version) {
       const boxes = [...furnitureBounds(this.owner.entities), ...(this.occluders?.boxes() ?? [])];
-      const counts = new Map<string, { box: SkyBounds; count: number }>();
+      const counts = new Map<string, { box: SkyBlocker; count: number }>();
       for (const box of boxes) {
         const key = boxKey(box);
         const seen = counts.get(key);

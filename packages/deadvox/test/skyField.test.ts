@@ -137,10 +137,11 @@ describe('parked vehicles', () => {
     return [middle(0) + 0.5, 1.5, middle(2) + 0.5];
   };
 
-  it('shades the ground under a parked vehicle that lets no light through its body', () => {
+  it('shades the ground under a parked vehicle, though its body lets some sky through', () => {
     const { sky, light } = parked();
-    expect(sky.visibilityAt(underneath(light))).toBeLessThan(LIT);
-    expect(sky.visibilityAt([-10.5, 1.5, -10.5])).toBeGreaterThan(LIT);
+    const under = sky.visibilityAt(underneath(light));
+    expect(under).toBeGreaterThan(0);
+    expect(under).toBeLessThan(sky.visibilityAt([-10.5, 1.5, -10.5]));
   });
 
   it('gives every layout-parked vehicle a field around all of its light-blocking cells', () => {
@@ -181,7 +182,7 @@ describe('parked vehicles', () => {
   it('relights the old spot once the vehicle moves, rebuilding only the fields it reaches', () => {
     const { sky, inventory, light, id } = parked();
     const spot = underneath(light);
-    sky.visibilityAt(spot);
+    const shaded = sky.visibilityAt(spot);
     sky.visibilityAt([112.5, 1.5, 0.5]);
     const farBuilt = sky.current(1);
     expect(farBuilt?.complete).toBe(true);
@@ -189,7 +190,7 @@ describe('parked vehicles', () => {
     inventory.vehicles.replace(registry, id, { ...vehicle, origin: [vehicle.origin[0], 1, vehicle.origin[2] + 16] });
     expect(sky.current(0)).toBeUndefined();
     expect(sky.current(1)).toBe(farBuilt);
-    expect(sky.visibilityAt(spot)).toBeGreaterThan(LIT);
+    expect(sky.visibilityAt(spot)).toBeGreaterThan(shaded);
   });
 });
 

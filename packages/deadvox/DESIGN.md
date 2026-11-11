@@ -2735,13 +2735,19 @@ proportion to view radius while the world fills. See
 `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
 
-A parked vehicle blocks sky light through the same cells that block sight and sun, so the
+A parked vehicle shades sky light through the same cells that block sight and sun, so the
 ground under a car and its cabin read as shaded to both the renderer and the rules. Its
 light-blocking cells join the fields' input as blocking furniture does, so a vehicle edit
 rechecks only the fields its cells reach, and glows that ignore furniture ignore vehicles too.
+A half-metre cell of a car body is mostly air between thin panels, so an opaque cell would
+leave the ground under the car and its cabin black with a hard edge. Each cell instead stops
+the share of diffuse light its part's content gives, while still roofing the air below it,
+so how much sky a body lets past is moddable. Readers of the light channel other than the
+sky field still treat any share as blocking: they ask whether a ray passes a cell, not how
+much diffuse light a cell lets on.
 Its parts sit inside those coarse cells, so each surface samples the sky from the first open
 cell along its normal, as a shaped piece samples from its envelope face; otherwise the car
-would shade its own skin black. Only the car's own cells count there, because they alone
+would shade its own skin. Only the car's own cells count there, because they alone
 key its render; a neighbour shades it through the field. Each layout-parked vehicle gets
 its own field because open sky outside every field would otherwise leave a car on open
 ground unshaded; layout vehicles keep their origin in play, so their fields can be fixed
