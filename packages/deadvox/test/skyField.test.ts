@@ -194,7 +194,9 @@ describe.runIf(benchmarking)('sky field build benchmark', () => {
       const sky = new SkyFields(owner, benchRange, [box]);
       const start = performance.now();
       sky.visibilityAt(centre);
-      return performance.now() - start;
+      const elapsed = performance.now() - start;
+      sky.dispose();
+      return elapsed;
     }).sort((a, b) => a - b);
     const captureStart = performance.now();
     const captured = capturedNow(owner, box);
