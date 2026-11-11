@@ -925,7 +925,10 @@ try {
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
     }));
-    await holdAction('movement.forward', async () => {
+    // The key is released inside the page by the poll that ends the wait, so the walk's length is simulated time
+    // and not the wall-clock round trip of a release from Node; the midnight check below depends on where it ends.
+    const release = await holdInputAction(page, 'movement.forward');
+    try {
       await page.waitForFunction(() => document.querySelector('#reading').hidden);
       await waitForSimulation(
         page,
@@ -934,9 +937,11 @@ try {
           return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
         },
         beforeMove.time + 0.2,
-        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record },
+        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record, stop: release },
       );
-    });
+    } finally {
+      await release();
+    }
     const afterMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
@@ -948,24 +953,33 @@ try {
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
-    const seekHour = (hour) =>
-      page.evaluate(async (seconds) => {
+    // One evaluate seeks and measures, so no game frame runs between the new hour and the light read from it.
+    // The measure carries what a failure needs to show where and when the light was read.
+    const probeLight = async (seekSeconds) => {
+      const { session, reading, readCalls, body, saveController } = globalThis.readingWitness;
+      if (seekSeconds !== undefined) {
         const clockModule = '/@stage/@skelly/engine/internal/core/clock.ts';
         const { nextTimeOfDay } = await import(clockModule);
-        const { session, saveController } = globalThis.readingWitness;
-        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
+        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seekSeconds));
         saveController?.rearmAutosaveAfterTimeSeek?.();
-      }, hour * 3600);
-    const lightState = () =>
-      page.evaluate(() => {
-        const { session, reading, readCalls } = globalThis.readingWitness;
-        return {
-          refusal: session.readingLight(),
-          open: reading.isOpen,
-          readCalls,
-          prompt: document.querySelector('#prompt')?.textContent ?? '',
-        };
-      });
+      }
+      return {
+        refusal: session.readingLight(),
+        open: reading.isOpen,
+        readCalls,
+        prompt: document.querySelector('#prompt')?.textContent ?? '',
+        diagnostics: {
+          time: session.sim.time,
+          hour: (session.sim.calendar / 3600) % 24,
+          feet: [...body.pos],
+          illumination: session.illuminationAt(body.pos),
+          skyVisibility: session.skyFields.visibilityAt(body.pos),
+          fixtureLights: session.power?.lights().length ?? 0,
+        },
+      };
+    };
+    const seekHour = (hour) => page.evaluate(probeLight, hour * 3600);
+    const lightState = () => page.evaluate(probeLight);
     const refusedRead = async (slot) => {
       const unread = await lightState();
       await pressAction(page, `quickbar.use.${slot}`);
@@ -979,8 +993,7 @@ try {
       return refused;
     };
     await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
-    await seekHour(0);
-    const midnight = await lightState();
+    const midnight = await seekHour(0);
     assert.ok(midnight.refusal, `the reading spot must be too dark at midnight: ${JSON.stringify(midnight)}`);
     await page.locator('#reading').waitFor({ state: 'hidden' });
     await page.waitForFunction(
