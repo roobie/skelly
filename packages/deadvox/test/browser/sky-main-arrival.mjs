@@ -66,6 +66,9 @@ export const mainSourceOverlays = [
   'presentation:presentation/painCue.ts',
   'presentation:presentation/worldLoading.ts',
   'presentation:render/playView.ts',
+  // The engine adds the chunk meshes' scene object and play reads its drawn chunks, so the chunk owner stays with
+  // them. The shadows keep the branch: they use only the caster selection both revisions share.
+  'presentation:render/chunks.ts',
   // Keep the view and figure together: their constructor and per-frame pose contracts change together. The
   // view builds the held items, whose arms hang from the figure's shoulders and whose displays sit on its
   // palm, so hands and held display stay on the figure's revision too.
