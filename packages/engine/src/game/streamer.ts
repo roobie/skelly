@@ -6,7 +6,7 @@
 
 import { installColumn } from '../core/canonicalTerrain.ts';
 import type { Chunk } from '../core/chunk.ts';
-import { revealedColumns } from '../core/columnReveal.ts';
+import { RevealWindow } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
@@ -19,6 +19,7 @@ import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
 import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
+import { DirtyChunks } from './dirtyChunks.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 
 /** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
@@ -116,7 +117,7 @@ export class Streamer {
   private readonly generated = new Set<string>(); // column keys "cx,cz"
   // An edit replaces an existing mesh; it must not close a column that already has its occluders drawn.
   private readonly completeColumns = new Set<string>();
-  private readonly dirty = new Set<string>(); // chunks needing a (re)mesh
+  private readonly dirty = new DirtyChunks();
   private readonly versions = new Map<string, number>();
   private readonly inFlight = new Set<string>();
   private readonly workers: MesherPort[] = [];
@@ -135,6 +136,11 @@ export class Streamer {
   private settled = false;
   /** The generated ring, nearest first. */
   private readonly offsets: [number, number][];
+  /**
+   * Every column of `offsets` before this index is generated around the scan centre, so the scan resumes here;
+   * a move or an unload resets it.
+   */
+  private generatedPrefix = 0;
   private readonly offsetKeys: Set<string>;
   /** The meshed disc, nearest first. */
   private readonly meshOffsets: [number, number][];
@@ -149,11 +155,10 @@ export class Streamer {
   /** Admission seam for lighting; neighbour residency policy is separate. */
   onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
   private revealed = new Set<string>();
-  private readonly revealKeys: Set<string>;
+  private readonly reveal: RevealWindow;
   /** Columns whose meshed state may have just turned true, awaiting `refreshReveal`. */
   private readonly recheck = new Set<string>();
   private centerChanged = true;
-  private revealStale = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
   onSkyService: ((realMs: number) => void) | undefined;
@@ -228,7 +233,7 @@ export class Streamer {
 
     this.meshOffsets = discOffsets(opts.radius);
     this.revealOffsets = grownOffsets(this.meshOffsets);
-    this.revealKeys = new Set(this.revealOffsets.map(([dx, dz]) => `${dx},${dz}`));
+    this.reveal = new RevealWindow(this.revealOffsets);
     this.offsets = grownOffsets(discOffsets(opts.radius + opts.preloadRings));
     this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
@@ -276,11 +281,11 @@ export class Streamer {
   unloadForReplay(cx: number, cz: number): void {
     this.settled = false;
     const col = `${cx},${cz}`;
-    if (!(this.replayControlled && this.generated.delete(col))) {
+    if (!(this.replayControlled && this.ungenerate(col))) {
       return;
     }
     const { world, scale, meshes } = this.opts;
-    this.forgetComplete(col);
+    this.forgetComplete(cx, cz);
     this.dirtyReplayNeighbours(cx, cz);
     const pinned = world.isTouched(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
@@ -288,7 +293,7 @@ export class Streamer {
       meshes.remove(key);
       if (!pinned) {
         world.removeChunk(cx, cy, cz);
-        this.dirty.delete(key);
+        this.dirty.delete(cx, cy, cz);
         this.versions.delete(key);
       }
     }
@@ -343,7 +348,7 @@ export class Streamer {
           const chunk = this.opts.world.getChunk(x, y, z);
           if (chunk && !chunk.isEmpty()) {
             const key = chunkKey(x, y, z);
-            this.dirty.add(key);
+            this.dirty.add(x, y, z);
             this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
           }
         }
@@ -357,7 +362,7 @@ export class Streamer {
     for (const [cx, cy, cz] of chunks) {
       const key = chunkKey(cx, cy, cz);
       this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
-      this.dirty.add(key);
+      this.dirty.add(cx, cy, cz);
     }
   }
 
@@ -381,19 +386,10 @@ export class Streamer {
       return;
     }
 
-    let worked = moved;
-    let budget = this.opts.columnsPerFrame;
-    for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
-      if (this.generationFailed || budget === 0) {
-        worked = true; // columns may remain
-        break;
-      }
-      if (this.generate(pcx + dx, pcz + dz)) {
-        budget -= 1;
-        worked = true;
-      }
+    if (moved) {
+      this.generatedPrefix = 0;
     }
-
+    let worked = this.generateNearest(pcx, pcz) || moved;
     if (this.generationFailed) {
       return;
     }
@@ -406,7 +402,7 @@ export class Streamer {
       }
       const cx = pcx + dx;
       const cz = pcz + dz;
-      if (!(this.replayControlled || this.neighboursGenerated(cx, cz))) {
+      if (!(this.dirty.inColumn(cx, cz) && (this.replayControlled || this.neighboursGenerated(cx, cz)))) {
         continue;
       }
       for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy && this.occupied < this.maxInFlight; cy++) {
@@ -422,11 +418,11 @@ export class Streamer {
       this.center = [pcx, pcz];
       this.centerChanged = true;
       for (const key of [...this.opts.meshes.keys()]) {
-        const [cx, , cz] = key.split(',').map(Number) as Vec3;
+        const [cx, cy, cz] = key.split(',').map(Number) as Vec3;
         if (!this.inRange(cx, cz)) {
           this.opts.meshes.remove(key);
-          this.forgetComplete(`${cx},${cz}`);
-          this.dirty.add(key); // remesh when we come back
+          this.forgetComplete(cx, cz);
+          this.dirty.add(cx, cy, cz); // remesh when we come back
         }
       }
       if (!this.replayControlled) {
@@ -437,15 +433,48 @@ export class Streamer {
     this.settled = !worked;
   }
 
-  private forgetComplete(col: string): void {
-    this.revealStale = this.completeColumns.delete(col) || this.revealStale;
+  /** Generates the nearest missing columns within the frame budget; true when it generated any or some may remain. */
+  private generateNearest(pcx: number, pcz: number): boolean {
+    if (this.replayControlled) {
+      return false;
+    }
+    let budget = this.opts.columnsPerFrame;
+    let worked = false;
+    for (; this.generatedPrefix < this.offsets.length; this.generatedPrefix++) {
+      if (budget === 0) {
+        return true; // columns may remain
+      }
+      const [dx, dz] = this.offsets[this.generatedPrefix]!;
+      if (this.generate(pcx + dx, pcz + dz)) {
+        budget -= 1;
+        worked = true;
+      }
+      if (this.generationFailed) {
+        return true;
+      }
+    }
+    return worked;
+  }
+
+  private ungenerate(col: string): boolean {
+    const removed = this.generated.delete(col);
+    if (removed) {
+      this.generatedPrefix = 0;
+    }
+    return removed;
+  }
+
+  private forgetComplete(cx: number, cz: number): void {
+    if (this.completeColumns.delete(`${cx},${cz}`)) {
+      this.reveal.touch(cx, cz);
+    }
   }
 
   private markComplete(cx: number, cz: number): void {
     const key = `${cx},${cz}`;
     if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
       this.completeColumns.add(key);
-      this.revealStale = true;
+      this.reveal.touch(cx, cz);
     }
   }
 
@@ -456,35 +485,31 @@ export class Streamer {
   private refreshReveal(): void {
     if (this.centerChanged) {
       this.centerChanged = false;
-      this.revealStale = true;
       this.recheck.clear();
+      this.reveal.recenter(this.center);
       for (const [dx, dz] of this.revealOffsets) {
         this.markComplete(this.center[0] + dx, this.center[1] + dz);
       }
     } else {
       for (const key of this.recheck) {
         const [cx, cz] = key.split(',').map(Number) as [number, number];
-        if (this.revealKeys.has(`${cx - this.center[0]},${cz - this.center[1]}`)) {
+        if (this.reveal.contains(cx, cz)) {
           this.markComplete(cx, cz);
         }
       }
       this.recheck.clear();
     }
-    if (!this.revealStale) {
+    const change = this.reveal.settle((cx, cz) => this.completeColumns.has(`${cx},${cz}`));
+    if (!change) {
       return;
     }
-    this.revealStale = false;
-    const columns = revealedColumns(this.center, this.revealOffsets, (cx, cz) =>
-      this.completeColumns.has(`${cx},${cz}`),
-    );
-    for (const key of columns) {
-      if (!this.revealed.has(key)) {
-        const [cx, cz] = key.split(',').map(Number);
-        this.onBeforeReveal?.(cx!, cz!);
+    for (const [cx, cz] of change.added) {
+      if (!this.revealed.has(`${cx},${cz}`)) {
+        this.onBeforeReveal?.(cx, cz);
       }
     }
-    this.revealed = columns;
-    this.opts.meshes.setRevealedColumns(columns);
+    this.revealed = change.columns;
+    this.opts.meshes.setRevealedColumns(change.columns);
   }
 
   /**
@@ -501,12 +526,12 @@ export class Streamer {
         const key = chunkKey(cx, cy, cz);
         if (!pinned) {
           world.removeChunk(cx, cy, cz);
-          this.dirty.delete(key);
+          this.dirty.delete(cx, cy, cz);
           this.versions.delete(key);
         }
       }
-      this.generated.delete(col);
-      this.forgetComplete(col);
+      this.ungenerate(col);
+      this.forgetComplete(cx, cz);
       this.onColumnUnload(cx, cz);
     }
   }
@@ -542,7 +567,7 @@ export class Streamer {
       this.opts.stats?.genMs.push(performance.now() - start);
       for (const chunk of arrived) {
         if (!chunk.isEmpty()) {
-          this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
+          this.dirty.add(chunk.cx, chunk.cy, chunk.cz);
         }
       }
       this.generated.add(col);
@@ -592,7 +617,7 @@ export class Streamer {
   }
 
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
-    this.dirty.delete(key);
+    this.dirty.delete(cx, cy, cz);
     const { world, scale, meshes } = this.opts;
     if (isEnclosed(world, [cx, cy, cz], scale.minCy, this.occluders)) {
       meshes.remove(key); // nothing visible; skip the worker entirely
@@ -622,7 +647,8 @@ export class Streamer {
     }
     if (msg.type === 'meshFailed') {
       this.inFlight.delete(msg.key);
-      this.dirty.add(msg.key);
+      const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;
+      this.dirty.add(cx, cy, cz);
       this.failure ??= `World mesh worker failed on chunk ${msg.key}: ${msg.message}`;
       return;
     }
@@ -646,7 +672,7 @@ export class Streamer {
     const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;
     if (!this.inRange(cx, cz)) {
       if (this.opts.world.getChunk(cx, cy, cz)) {
-        this.dirty.add(msg.key);
+        this.dirty.add(cx, cy, cz);
       }
       return;
     }

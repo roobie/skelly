@@ -22,10 +22,19 @@ class HoldingWorker implements MesherPort {
     }
   }
   drain(): void {
-    for (const { key, version } of this.waiting.splice(0)) {
-      const mesh = { indices: new Uint32Array(3) };
-      this.handlers?.message({ type: 'mesh', key, version, ms: 0, mesh } as never);
+    while (this.deliverOne()) {
+      // Each delivery is its own reveal refresh.
     }
+  }
+  /** Answers the oldest held request; false when none is held. */
+  deliverOne(): boolean {
+    const request = this.waiting.shift();
+    if (!request) {
+      return false;
+    }
+    const mesh = { indices: new Uint32Array(3) };
+    this.handlers?.message({ type: 'mesh', key: request.key, version: request.version, ms: 0, mesh } as never);
+    return true;
   }
 }
 
@@ -138,9 +147,12 @@ it('hides an unloaded replay column until it is regenerated and meshed again', (
   expect(reveal.columns.has('0,0')).toBe(true);
 });
 
-it('reveals the same columns as a full scan through load, mesh, unload and reload of one column', () => {
+it('reveals the same columns, announced in the same order, as a full scan through load, mesh, unload and reload', () => {
   const { streamer, worker, reveal } = harness();
   const model = fullScanModel();
+  const announced: string[] = [];
+  streamer.onBeforeReveal = (cx, cz) => announced.push(`${cx},${cz}`);
+  let modelRevealed = new Set<string>();
   const route: [number, number][] = [
     [0, 0],
     [0, 0],
@@ -152,12 +164,18 @@ it('reveals the same columns as a full scan through load, mesh, unload and reloa
   const revealedAtEnd: Set<string>[] = [];
   for (const [cx, cz] of route) {
     // Meshes arrive every third frame, so columns spend frames generated but unmeshed.
+    const check = () => {
+      const expected = model.frame(streamer, cx, cz);
+      expect(reveal.columns).toEqual(expected);
+      expect(announced.splice(0)).toEqual([...expected].filter((key) => !modelRevealed.has(key)));
+      modelRevealed = expected;
+    };
     for (let frame = 0; frame < 120; frame++) {
       streamer.update((cx + 0.5) * CHUNK, (cz + 0.5) * CHUNK);
-      if (frame % 3 === 2) {
-        worker.drain();
+      check();
+      while (frame % 3 === 2 && worker.deliverOne()) {
+        check();
       }
-      expect(reveal.columns).toEqual(model.frame(streamer, cx, cz));
     }
     revealedAtEnd.push(reveal.columns);
   }
