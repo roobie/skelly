@@ -1,14 +1,14 @@
 import { smoothstep } from './authoredTerrain.mjs';
 import { createAuthoredGround, createAuthoredTerrain } from './authoredTerrainEvaluator.ts';
 import type { Chunk } from './chunk.ts';
-import { type CityPlan, cityRowStart } from './cityPlan.ts';
+import { cityRowStart } from './cityPlan.ts';
 import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { createForestTerrain } from './forestTerrainEvaluator.ts';
 import { cityRowDepth } from './settlementPools.ts';
 import { rectDistance } from './site.ts';
 import { type BlockBox, stampChunk } from './structure.ts';
 import { footprint, stampPlacement } from './templates.ts';
-import type { TerrainPlacement, TerrainPlan } from './terrainPlan.ts';
+import type { CitySurfaceData, TerrainPlacement, TerrainPlan } from './terrainPlan.ts';
 import { createWeatheringTerrain } from './weatheringTerrainEvaluator.ts';
 import { generateChunk, generateColumn, type Surface, terrainHeight, worldGroundAt } from './worldgen.ts';
 
@@ -25,7 +25,7 @@ export function stampCityTerrain(
     }
   }
 }
-export function createCitySurface(plan: Pick<CityPlan, 'grid' | 'bounds' | 'core' | 'floor'>, paving: number): Surface {
+export function createCitySurface(plan: CitySurfaceData, paving: number): Surface {
   const { grid, bounds, core, floor } = plan;
   const alleys = Array.from(
     { length: grid.rows / 2 - 1 },

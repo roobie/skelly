@@ -43,7 +43,21 @@ export class CitySite implements Site {
     this.paving = sitePalette(registry).paving;
     this.terrain = {
       kind: 'city',
-      data: { grid: plan.grid, bounds: plan.bounds, core: plan.core, floor: plan.floor },
+      data: {
+        grid: {
+          street: plan.grid.street,
+          blockX: plan.grid.blockX,
+          blockZ: plan.grid.blockZ,
+          pad: plan.grid.pad,
+          rows: plan.grid.rows,
+          blend: plan.grid.blend,
+          ...(plan.grid.paving !== undefined && { paving: plan.grid.paving }),
+          ...(plan.grid.flatSurroundings !== undefined && { flatSurroundings: plan.grid.flatSurroundings }),
+        },
+        bounds: plan.bounds,
+        core: plan.core,
+        floor: plan.floor,
+      },
       paving: this.paving,
       structures: plan.structures,
       placements: terrainPlacements(plan.placements),

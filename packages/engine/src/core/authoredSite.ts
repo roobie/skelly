@@ -152,7 +152,7 @@ export class AuthoredSite implements Site {
       protectedBuildings,
       layout: { bounds: layout.bounds, ground: layout.ground, terrain: layout.terrain, water: layout.water },
       spawnPoints,
-      lots,
+      lots: lots.map(({ rect, floor, key }) => ({ rect, floor, key })),
       catalogue: catalogue?.terrain,
       tracks: layout.tracks.map((track) => ({
         points: track.points,

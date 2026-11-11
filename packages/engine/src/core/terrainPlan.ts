@@ -15,6 +15,16 @@ export interface TerrainPlacement {
   readonly turn: Turn;
 }
 
+export interface CitySurfaceData {
+  readonly grid: Pick<
+    CityPlan['grid'],
+    'street' | 'blockX' | 'blockZ' | 'pad' | 'rows' | 'blend' | 'paving' | 'flatSurroundings'
+  >;
+  readonly bounds: CityPlan['bounds'];
+  readonly core: CityPlan['core'];
+  readonly floor: number;
+}
+
 export type TerrainStamp =
   | { readonly kind: 'boxes'; readonly boxes: readonly BlockBox[] }
   | { readonly kind: 'placements'; readonly placements: readonly TerrainPlacement[] };
@@ -25,7 +35,7 @@ type SiteTerrainMechanism =
   | { readonly kind: 'natural' }
   | {
       readonly kind: 'city';
-      readonly data: Pick<CityPlan, 'grid' | 'bounds' | 'core' | 'floor'>;
+      readonly data: CitySurfaceData;
       readonly paving: number;
       readonly structures: readonly BlockBox[];
       readonly placements: readonly TerrainPlacement[];
