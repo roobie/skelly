@@ -2731,7 +2731,8 @@ out within a fixed halo, so a field depends only on the chunks and blocking furn
 its dependency box, and a change rechecks only the fields whose box it reaches. Every arriving
 column changes the world, so rechecking every field on every change costs frame rate in
 proportion to view radius while the world fills. See
-`packages/engine/src/core/skyField.ts`, `SkyFields`, `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
+`packages/engine/src/core/skyField.ts`, `SkyFields`,
+`packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
 
 A parked vehicle blocks sky light through the same cells that block sight and sun, so the
@@ -2740,13 +2741,17 @@ light-blocking cells join the fields' input as blocking furniture does, so a veh
 rechecks only the fields its cells reach, and glows that ignore furniture ignore vehicles too.
 Its parts sit inside those coarse cells, so each surface samples the sky from the first open
 cell along its normal, as a shaped piece samples from its envelope face; otherwise the car
-would shade its own skin black. Each layout-parked vehicle gets its own field because open sky outside every field would
-otherwise leave a car on open ground unshaded; layout vehicles keep their origin in play,
-so their fields can be fixed when the world is set up. A field rebuild is worker transport
-work, too costly to pay every frame for a moving vehicle; when a vehicle can be driven, it
-should leave the occluders while it moves and rejoin them, and gain a field where it stops,
-once it parks. See `packages/engine/src/core/skyField.ts`, `SkyFields.setOccluders`,
+would shade its own skin black. Only the car's own cells count there, because they alone
+key its render; a neighbour shades it through the field. Each layout-parked vehicle gets
+its own field because open sky outside every field would otherwise leave a car on open
+ground unshaded; layout vehicles keep their origin in play, so their fields can be fixed
+when the world is set up. Only a few field volumes are resident at once, so a street of
+parked cars would crowd house fields out; #1631 settles that before a layout parks one. A
+field rebuild is worker transport work, too costly to pay every frame for a moving vehicle;
+when a vehicle can be driven (#322), it should leave the occluders while it moves and
+rejoin them, and gain a field where it stops, once it parks. See `packages/engine/src/core/skyField.ts`, `SkyFields.setOccluders`,
 `packages/presentation/src/render/skyAnchor.ts`, `addSkyCellAnchors`,
+`packages/presentation/src/render/skylight.ts`, `RESIDENT_FIELDS`,
 `packages/engine/src/core/vehicleProjection.ts`, `VehicleOccupancy.boxes`, and
 `packages/engine/src/game/layoutVehicles.ts`, `layoutVehicleSkyBoxes`.
 
