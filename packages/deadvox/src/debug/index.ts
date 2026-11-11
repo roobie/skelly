@@ -584,6 +584,7 @@ const emptyReadout: DebugReadout = {
   chunks: 0,
   pending: 0,
   holes: 0,
+  meshingDone: false,
   actors: 0,
   sounds: [],
 };
@@ -1726,6 +1727,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         ? shadowReadoutText(look.shadowState, shadows.sunStrength, shadows.casters)
         : '3D rendering unavailable (render-free mode)';
       render(readoutTemplate(readout, shadowText), root);
+    }
+    const uiRoot = host.querySelector<HTMLElement>('#debug-ui-root');
+    if (uiRoot) {
+      uiRoot.dataset.meshing = readout.meshingDone ? 'done' : 'pending';
     }
     drawAxisGizmo();
     const soundRoot = host.querySelector<HTMLElement>('#debug-sound-log-root');

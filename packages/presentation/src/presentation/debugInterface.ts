@@ -111,6 +111,8 @@ export interface DebugReadout {
   readonly chunks: number;
   readonly pending: number;
   readonly holes: number;
+  /** The whole view radius is meshed: `pending` never reaches zero because the preload rings stay queued, so scripts wait on this. */
+  readonly meshingDone: boolean;
   readonly actors: number;
   readonly sounds: readonly HeardSound[];
   readonly simulationMs: number;

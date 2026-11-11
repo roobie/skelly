@@ -76,6 +76,19 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
     revealedPositions.map((position) => position.map((coordinate) => (coordinate * blockSize).toFixed(1)).join(',')),
   );
   expect(view.movement).toBe('walking');
+  expect(view.meshingDone).toBe(true);
+  expect(
+    playReadout({
+      measurements: { ...measurements, holes: 3 },
+      walking: true,
+      positionBlocks,
+      blockSize,
+      calendar: 0,
+      chunks,
+      drawn,
+      revealedPositions,
+    }).meshingDone,
+  ).toBe(false);
   expect(view.fps).toBe(measurements.fps);
   expect(positionBlocks).toEqual([1, 2, 3]);
   geometry.dispose();
