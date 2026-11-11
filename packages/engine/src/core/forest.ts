@@ -6,6 +6,7 @@ import { createForestTerrain } from './forestTerrainEvaluator.ts';
 import type { Scale } from './scale.ts';
 import type { Rect, Site } from './site.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from './sitePalette.ts';
+import type { SiteTerrainPlan } from './terrainPlan.ts';
 import { forestDensityAt, type TreePlacement, vegetationPlacements } from './vegetation.ts';
 import { type Surface, terrainHeight } from './worldgen.ts';
 
@@ -14,6 +15,7 @@ export class Forest implements Site {
   readonly trees: readonly TreePlacement[];
   readonly spawn: { pos: Vec3; yaw: number };
   readonly surface: Surface;
+  readonly terrain: SiteTerrainPlan;
   private readonly stampTerrain: (chunk: Chunk) => void;
 
   constructor(seed: number, registry: Registry, scale: Scale, density: number | null = null) {
@@ -32,12 +34,14 @@ export class Forest implements Site {
       ground: () => floor,
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });
-    const evaluated = createForestTerrain({
+    const data = {
       bounds: this.bounds,
       floor,
       trees: this.trees,
       litter: sitePalette(registry).leafLitter,
-    });
+    };
+    this.terrain = { kind: 'forest-flat', data };
+    const evaluated = createForestTerrain(data);
     this.surface = evaluated.surface;
     this.stampTerrain = evaluated.stamp;
   }

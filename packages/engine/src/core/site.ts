@@ -24,6 +24,7 @@ import { Rng } from './random.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import type { StageMark } from './stageMarks.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
+import type { SiteTerrainPlan } from './terrainPlan.ts';
 import type { Surface } from './worldgen.ts';
 
 /** A rectangle of block columns. */
@@ -90,6 +91,7 @@ export interface Site {
   /** An authored site's playtest beats and key fixed loot. */
   readonly playtestMarks?: PlaytestMarks;
   /** The ground under the site, blended into the natural ground around it. */
+  readonly terrain: SiteTerrainPlan;
   readonly surface: Surface;
   /** Deliberately published roads and tracks, separate from generated blocks and private structures. */
   readonly publicCartography?: readonly PublicCartographicFeature[];

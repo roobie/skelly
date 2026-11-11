@@ -3,6 +3,7 @@ import type { Site } from '../core/site.ts';
 import { terrainShapeOf } from '../core/sitePalette.ts';
 import type { MetreBox } from '../core/structure.ts';
 import { rasterize } from '../core/structure.ts';
+import type { SiteTerrainPlan } from '../core/terrainPlan.ts';
 import { createWeatheringTerrain } from '../core/weatheringTerrainEvaluator.ts';
 import type { Surface } from '../core/worldgen.ts';
 import { terrainHeightMetres } from '../core/worldgen.ts';
@@ -12,6 +13,7 @@ import type { GameConfig } from './config.ts';
 export class DebugWeatheringTestSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
+  readonly terrain: SiteTerrainPlan;
   private readonly stampTerrain: Site['stamp'];
   readonly weatheringMaterialBoxes: readonly {
     id: 'concrete' | 'brick' | 'planks';
@@ -53,14 +55,16 @@ export class DebugWeatheringTestSite implements Site {
       ),
       { min: [-8.5, floor + 4, -0.5], max: [8.5, floor + 4.5, 0.85], block: concrete },
     ];
-    const evaluated = createWeatheringTerrain({
+    const data = {
       blockSize,
       padTop: floor / blockSize - 1,
       heightPad: { x0: -12, x1: 12, z0: -16, z1: 16 },
       materialPad: { x0: -10, x1: 10, z0: -2, z1: 1 },
       concrete,
       structures: rasterize(boxes, blockSize),
-    });
+    };
+    this.terrain = { kind: 'weathering-pad', data };
+    const evaluated = createWeatheringTerrain(data);
     this.surface = evaluated.surface;
     this.stampTerrain = evaluated.stamp;
     this.spawn = { pos: [0, floor, 12], yaw: 0 };

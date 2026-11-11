@@ -18,9 +18,11 @@ import {
 import { sitePalette } from './sitePalette.ts';
 import { footprint, type Placement, placedPieces } from './templates.ts';
 import { createCitySurface, stampCityTerrain } from './terrainEvaluator.ts';
+import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
 import type { Surface } from './worldgen.ts';
 
 export class CitySite implements Site {
+  readonly terrain: SiteTerrainPlan;
   readonly seed: number;
   readonly registry: Registry;
   readonly plan: CityPlan;
@@ -39,6 +41,13 @@ export class CitySite implements Site {
     this.registry = registry;
     this.plan = plan;
     this.paving = sitePalette(registry).paving;
+    this.terrain = {
+      kind: 'city',
+      data: { grid: plan.grid, bounds: plan.bounds, core: plan.core, floor: plan.floor },
+      paving: this.paving,
+      structures: plan.structures,
+      placements: terrainPlacements(plan.placements),
+    };
     this.lootColumns = lootPointsByColumn(
       plan.placements.flatMap((placement) =>
         lootSourcesOf(

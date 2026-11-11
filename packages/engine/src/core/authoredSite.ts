@@ -2,7 +2,7 @@
 import { inPolygon } from './authoredLayout.ts';
 import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, LOT_APRON_M, lotOf, polylineDistance, rectDistance } from './authoredTerrain.mjs';
-import { createAuthoredGround, createAuthoredTerrain } from './authoredTerrainEvaluator.ts';
+import { type AuthoredGroundData, createAuthoredGround, createAuthoredTerrain } from './authoredTerrainEvaluator.ts';
 import { claimed, claimedId } from './capabilities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
@@ -38,6 +38,7 @@ import {
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { type Placement, placedPieces, placedSpawns } from './templates.ts';
+import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
 import { forestDensityAt, type TreePlacement, vegetationPlacements } from './vegetation.ts';
 import type { Surface } from './worldgen.ts';
 
@@ -53,6 +54,7 @@ const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
 export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
+  readonly terrain: SiteTerrainPlan;
   readonly placements: readonly Placement[];
   readonly publicCartography: readonly PublicCartographicFeature[];
   get authoredPlacements(): readonly Placement[] {
@@ -143,7 +145,7 @@ export class AuthoredSite implements Site {
     const protectedBuildings = layout.buildings.map((building) =>
       buildingBounds(building, registry.templates.get(building.template)!.size),
     );
-    const ground = createAuthoredGround({
+    const groundData: AuthoredGroundData = {
       blockSize: s,
       seed,
       topography: tuning.topography,
@@ -152,8 +154,13 @@ export class AuthoredSite implements Site {
       spawnPoints,
       lots,
       catalogue: catalogue?.terrain,
-      tracks: layout.tracks.map((track) => ({ ...track, surface: registry.blockIds.get(track.surface) })),
-    });
+      tracks: layout.tracks.map((track) => ({
+        points: track.points,
+        width: track.width,
+        surface: registry.blockIds.get(track.surface),
+      })),
+    };
+    const ground = createAuthoredGround(groundData);
     const { height, sandy } = ground;
     const player = blocks(layout.player.position);
     const reserved = [
@@ -234,6 +241,12 @@ export class AuthoredSite implements Site {
       sand: terrain.sand,
       placements: this.placements,
     });
+    this.terrain = {
+      kind: 'authored',
+      ground: groundData,
+      data: { catalogue: catalogue?.terrain, trees, litter, sand: terrain.sand },
+      placements: terrainPlacements(this.placements),
+    };
     this.surface = evaluated.surface;
     this.stampTerrain = evaluated.stamp;
     const markers = this.placements.flatMap(placedSpawns).map((marker) => ({
