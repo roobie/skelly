@@ -17,14 +17,23 @@ export interface Dome {
   /** Colour of the band just above the horizon, between the fog colour and the zenith. */
   horizonGlow: Rgb;
   /** The physical sky: weight 0 is the keyed gradient only, 1 the physical sky; the rest are the model's own terms. */
-  physical: { weight: number; turbidity: number; rayleigh: number; mie: number; mieDirectional: number };
+  physical: {
+    weight: number;
+    exposure: number;
+    turbidity: number;
+    rayleigh: number;
+    mie: number;
+    mieDirectional: number;
+  };
   /** Cloud threshold shift and the scale of every layer's opacity. */
   clouds: { cover: number; opacity: number };
   stars: number;
+  moon: { colour: Rgb; brightness: number };
 }
 
-/** The cloud field's shape, which the cycle holds once for every look (`DayCycleDef.clouds`). */
+/** The cloud field's shape and the dome's other fixed shape, which the cycle holds once for every look. */
 export type Clouds = DayCycleDef['clouds'];
+export type DomeShape = DayCycleDef['domeShape'];
 
 export interface Sky {
   dayPhase: DayPhase;
@@ -88,6 +97,7 @@ const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
   horizonGlow: mixRgb(a.horizonGlow, b.horizonGlow, t),
   physical: {
     weight: mix(a.physical.weight, b.physical.weight, t),
+    exposure: mix(a.physical.exposure, b.physical.exposure, t),
     turbidity: mix(a.physical.turbidity, b.physical.turbidity, t),
     rayleigh: mix(a.physical.rayleigh, b.physical.rayleigh, t),
     mie: mix(a.physical.mie, b.physical.mie, t),
@@ -95,6 +105,7 @@ const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
   },
   clouds: { cover: mix(a.clouds.cover, b.clouds.cover, t), opacity: mix(a.clouds.opacity, b.clouds.opacity, t) },
   stars: mix(a.stars, b.stars, t),
+  moon: { colour: mixRgb(a.moon.colour, b.moon.colour, t), brightness: mix(a.moon.brightness, b.moon.brightness, t) },
 });
 
 const interpolate = (a: Look, b: Look, t: number): Look => ({

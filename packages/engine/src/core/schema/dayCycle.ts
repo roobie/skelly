@@ -42,6 +42,8 @@ const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
 
 /** The dome's physical (Preetham) sky model in its own terms, so hazier air at a low sun is content, not code. */
 const PhysicalSkySchema = strictObject({
+  /** Scales the model's radiance before it is mapped into display range; the model's own units are arbitrary. */
+  exposure: pipe(NonNegative, finite()),
   /** 0 draws the keyed gradient only, 1 the physical sky. */
   weight: UnitFraction,
   turbidity: NonNegative,
@@ -65,6 +67,30 @@ const DomeLookSchema = strictObject({
   }),
   /** Star brightness. */
   stars: UnitFraction,
+  /** The moon, which the dome draws opposite the sun. */
+  moon: strictObject({ colour: SkyColour, brightness: pipe(NonNegative, finite()) }),
+});
+
+/** A height range over the horizon, as the sine of the elevation, over which one gradient colour eases into the next. */
+const ElevationBand = pipe(
+  tuple([UnitFraction, UnitFraction]),
+  check(([from, to]) => from < to, 'must rise from a lower to a higher elevation'),
+);
+
+/** The dome's shape that does not change over the day: how its gradient and cloud light are built from the looks. */
+const DomeShapeSchema = strictObject({
+  /** Where the look's fog colour eases into the horizon glow. */
+  horizonBand: ElevationBand,
+  /** Where the horizon glow eases into the zenith. */
+  glowBand: ElevationBand,
+  /** The fraction of the starfield's cells that hold a star. */
+  starDensity: UnitFraction,
+  cloudLight: strictObject({
+    /** How much of the main light's colour a cloud takes. */
+    light: NonNegative,
+    /** How much of the ambient sky colour a cloud takes. */
+    ambient: NonNegative,
+  }),
 });
 
 /** One sky look: the keyframe values the time of day blends between (core/sky.ts owns the blend). */
@@ -162,6 +188,7 @@ export const DayCycleSchema = strictObject({
   keys: SkyKeysSchema,
   weather: WeatherTuningSchema,
   clouds: CloudsSchema,
+  domeShape: DomeShapeSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,
   /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */

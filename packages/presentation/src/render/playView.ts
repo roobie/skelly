@@ -270,7 +270,7 @@ export const createPlayView = (
   let simSeconds = 0;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
-    skyDome = createSkyDome(dayCycle.clouds);
+    skyDome = createSkyDome(dayCycle.clouds, dayCycle.domeShape);
     scene.add(skyDome.mesh);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,

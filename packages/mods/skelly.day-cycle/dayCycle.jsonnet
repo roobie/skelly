@@ -1,21 +1,23 @@
 // The physical sky model's terms are shared by every look; only its weight differs.
 local physical(weight) = {
   weight: weight,
+  exposure: 0.1,
   turbidity: 3,
   rayleigh: 1.3,
   mie: 0.005,
   mieDirectional: 0.8,
 };
 
-local dome(zenith, horizonGlow, weight, cloudOpacity, stars) = {
+local dome(zenith, horizonGlow, weight, cloudOpacity, stars, moon) = {
   zenith: zenith,
   horizonGlow: horizonGlow,
   physical: physical(weight),
   clouds: { cover: 0.45, opacity: cloudOpacity },
   stars: stars,
+  moon: { colour: '#b3bfd9', brightness: moon },
 };
 
-local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0);
+local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0);
 
 {
   dayCycle: {
@@ -53,7 +55,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0);
         heightFogColor: '#1c2430',
         bloom: 0.5,
         tone: 1,
-        dome: dome('#070a10', '#141b26', 0, 0.6, 1),
+        dome: dome('#070a10', '#141b26', 0, 0.6, 1, 1),
       },
       deepNight: {
         sky: '#040508',
@@ -68,7 +70,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0);
         heightFogColor: '#121821',
         bloom: 0.55,
         tone: 1,
-        dome: dome('#030407', '#0a0f16', 0, 0.6, 1),
+        dome: dome('#030407', '#0a0f16', 0, 0.6, 1, 1),
       },
       dawn: {
         sky: '#8a807e',
@@ -98,7 +100,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0);
         heightFogColor: '#b4c6d4',
         bloom: 0.08,
         tone: 0,
-        dome: dome('#6f8aa3', '#c9c4b8', 1, 1, 0),
+        dome: dome('#6f8aa3', '#c9c4b8', 1, 1, 0, 0),
       },
       dusk: {
         sky: '#6e5e5c',
@@ -120,6 +122,12 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0);
       defaultFogginess: 0.2,
       nearTighten: 0.85,
       farTighten: 0.6,
+    },
+    domeShape: {
+      horizonBand: [0.015, 0.14],
+      glowBand: [0.12, 0.55],
+      starDensity: 0.014,
+      cloudLight: { light: 0.8, ambient: 0.25 },
     },
     clouds: {
       warp: 0.6,

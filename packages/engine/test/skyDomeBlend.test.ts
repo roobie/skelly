@@ -8,16 +8,18 @@ import { skyAt } from '../src/core/sky.ts';
 const NIGHT_DOME = {
   zenith: '#102030',
   horizonGlow: '#304050',
-  physical: { weight: 0.1, turbidity: 2, rayleigh: 1, mie: 0.004, mieDirectional: 0.2 },
+  physical: { weight: 0.1, exposure: 0.2, turbidity: 2, rayleigh: 1, mie: 0.004, mieDirectional: 0.2 },
   clouds: { cover: 0.2, opacity: 0.4 },
   stars: 0.9,
+  moon: { colour: '#405060', brightness: 0.8 },
 };
 const DAY_DOME = {
   zenith: '#a0b0c0',
   horizonGlow: '#d0e0f0',
-  physical: { weight: 0.7, turbidity: 6, rayleigh: 3, mie: 0.012, mieDirectional: 0.6 },
+  physical: { weight: 0.7, exposure: 0.6, turbidity: 6, rayleigh: 3, mie: 0.012, mieDirectional: 0.6 },
   clouds: { cover: 0.8, opacity: 1 },
   stars: 0.1,
+  moon: { colour: '#c0d0e0', brightness: 0.2 },
 };
 
 const look = (dome: typeof NIGHT_DOME) => ({
@@ -56,6 +58,12 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     dusk: look(NIGHT_DOME),
   },
   weather: { defaultFogginess: 0.2, nearTighten: 0.5, farTighten: 0.5 },
+  domeShape: {
+    horizonBand: [0.02, 0.1],
+    glowBand: [0.1, 0.5],
+    starDensity: 0.02,
+    cloudLight: { light: 0.7, ambient: 0.3 },
+  },
   clouds: { warp: 0.5, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 0.5 }] },
 });
 

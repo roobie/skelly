@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { keyedFloor, preethamTerms } from '../src/render/skyDome.ts';
 
-const physical = { weight: 1, turbidity: 3, rayleigh: 1.3, mie: 0.005, mieDirectional: 0.8 };
+const physical = { weight: 1, exposure: 0.35, turbidity: 3, rayleigh: 1.3, mie: 0.005, mieDirectional: 0.8 };
 const HEIGHTS = [-0.5, -0.1, 0, 0.05, 0.15, 0.3, 0.6, 1];
 
 describe('the dome around a low sun', () => {

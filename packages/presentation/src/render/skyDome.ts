@@ -1,16 +1,21 @@
 // The sky dome: one camera-following sphere that stands in for the flat background. A look's `dome` block
-// (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover and stars; the
-// day cycle's `clouds` supply the layers' shape. The rules that stay in code are the physical sky floored at the
+// (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars and moon; the
+// day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density and the
+// cloud light. The rules that stay in code are the physical sky floored at the
 // gradient around a low sun, the fade into the fog colour at the horizon, and cloud light from the main light.
 //
 // It is drawn the way the background it replaces is: never tone-mapped on the screen path, and in the post chain
 // scaled with the clear colour and the fog by `Mood` (render/mood.ts, `Mood.draw`) through `skyDomeUniforms`.
 // A dome that skipped either would not meet the fogged geometry at the horizon.
 //
-// The sun disc belongs to the physical sky, and the moon and stars to the stars' brightness, so a flat look
-// (gradient stops all the fog colour, no physical weight, cover or stars) draws exactly the flat background.
+// The physical sky and the celestial bodies are radiance in arbitrary units, so each is brought into display range
+// by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under 1, as `targetColorScale` in
+// engine/core/mood.ts assumes of any sky colour, so it never counts as bright to the bloom pass and the largest
+// colour scale cannot push the sun's disc out of half-float range. The sun disc belongs to the physical sky, and
+// the moon and stars to their own brightness, so a flat look (gradient stops all the fog colour, no physical
+// weight, cover, stars or moon) draws exactly the flat background.
 
-import type { Clouds, Rgb, Sky } from '@skelly/engine/sky';
+import type { Clouds, DomeShape, Rgb, Sky } from '@skelly/engine/sky';
 import {
   BackSide,
   Color,
@@ -21,6 +26,7 @@ import {
   ShaderMaterial,
   SphereGeometry,
   SRGBColorSpace,
+  Vector2,
   Vector3,
   Vector4,
 } from 'three';
@@ -49,18 +55,9 @@ export interface SkyDome {
   dispose: () => void;
 }
 
-/** Scales the Preetham model's radiance to the keyed sky's brightness, where the two meet at midday. */
-const PHYSICAL_EXPOSURE = 0.35;
-
 /** The sun's height over which the keyed floor fades out: full below the first, none above the second. */
 const FLOOR_FROM_SUN_HEIGHT = 0.05;
 const FLOOR_TO_SUN_HEIGHT = 0.3;
-
-/** How much of the main light's colour and the ambient sky colour a cloud takes. */
-const CLOUD_LIGHT_GAIN = 0.8;
-const CLOUD_AMBIENT_GAIN = 0.25;
-
-const MOON_COLOUR: Rgb = [0.7, 0.75, 0.85];
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 const setSrgb = (into: Color, [r, g, b]: Rgb): Color => into.setRGB(r, g, b, SRGBColorSpace);
@@ -116,6 +113,11 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uSkyVisibility;
   uniform float uSkyColorScale;
   uniform vec3 uZenith;
+  uniform vec2 uHorizonBand;
+  uniform vec2 uGlowBand;
+  uniform float uStarThreshold;
+  uniform float uPhysicalExposure;
+  uniform float uMoonBrightness;
   uniform vec3 uHorizonGlow;
   uniform vec3 uHorizon;
   uniform float uPhysicalWeight;
@@ -143,10 +145,23 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
   const float SUN_ANGULAR_DIAMETER_COS = 0.999956676946448;
+  // Radiance up to the knee passes unchanged; above it the brightest channel eases towards 1, scaling the others
+  // with it so a bright sky keeps its hue instead of clipping to white per channel.
+  const float SHOULDER_KNEE = 0.6;
+
+  vec3 toDisplay ( vec3 radiance ) {
+    float peak = max( radiance.r, max( radiance.g, radiance.b ) );
+    if ( peak <= SHOULDER_KNEE ) {
+      return radiance;
+    }
+    float room = 1.0 - SHOULDER_KNEE;
+    float mapped = SHOULDER_KNEE + room * ( 1.0 - exp( -( peak - SHOULDER_KNEE ) / room ) );
+    return radiance * ( mapped / peak );
+  }
 
   vec3 keyedSky ( vec3 dir ) {
-    vec3 col = mix( uHorizonGlow, uZenith, smoothstep( 0.12, 0.55, dir.y ) );
-    return mix( uHorizon, col, smoothstep( 0.015, 0.14, dir.y ) );
+    vec3 col = mix( uHorizonGlow, uZenith, smoothstep( uGlowBand.x, uGlowBand.y, dir.y ) );
+    return mix( uHorizon, col, smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
   }
 
   // Preetham's analytic daylight with its sun disc (three's Sky addon, less its clouds).
@@ -167,7 +182,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     float disc = clamp( ( cosTheta - SUN_ANGULAR_DIAMETER_COS ) * 50000.0, 0.0, 1.0 );
     vec3 discColour = 760.0 * disc * min( uSunIntensity * extinction, 80.0 );
     return ( ( inScatter + vec3( 0.1 ) * extinction ) * 0.04 + discColour + vec3( 0.0, 0.0003, 0.00075 ) )
-      * ${PHYSICAL_EXPOSURE.toFixed(2)};
+      * uPhysicalExposure;
   }
 
   float hash ( vec2 cell ) {
@@ -178,7 +193,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec2 sph = vec2( atan( dir.z, dir.x ) * 38.2, asin( clamp( dir.y, -1.0, 1.0 ) ) * 76.4 );
     vec2 cell = floor( sph );
     vec2 inCell = fract( sph ) - vec2( hash( cell ), hash( cell + 19.7 ) );
-    float star = smoothstep( 0.12, 0.0, length( inCell ) ) * step( 0.986, hash( cell + 7.3 ) );
+    float star = smoothstep( 0.12, 0.0, length( inCell ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
     float twinkle = 0.6 + 0.4 * hash( cell + 3.1 );
     return star * twinkle * smoothstep( 0.0, 0.25, dir.y );
   }
@@ -206,10 +221,10 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   void main () {
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
-    vec3 physical = physicalSky( dir );
+    vec3 physical = toDisplay( physicalSky( dir ) );
     physical = mix( physical, max( physical, keyed ), uKeyedFloor );
     vec3 col = mix( keyed, physical, uPhysicalWeight );
-    col += ( stars( dir ) + moon( dir ) ) * uStars;
+    col += toDisplay( vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness );
 
     // Clouds come last, so they cover the stars, the moon and the sun behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( 0.02, 0.14, dir.y );
@@ -234,13 +249,18 @@ const placeDome = (mesh: Mesh, camera: PerspectiveCamera): void => {
 const TEXTURE_SEEDS = [1, 2] as const;
 
 /** The mesh is for the caller to add to the scene; `dispose` frees what the dome owns. */
-export const createSkyDome = (clouds: Clouds): SkyDome => {
+export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
   const textures: DataTexture[] = TEXTURE_SEEDS.map((seed) => cloudTexture(seed));
   const uniforms = {
     ...skyDomeUniforms,
     uFogColor: { value: new Color() },
     uSkyVisibility: { value: 1 },
     uZenith: { value: new Color() },
+    uHorizonBand: { value: new Vector2(...shape.horizonBand) },
+    uGlowBand: { value: new Vector2(...shape.glowBand) },
+    uStarThreshold: { value: 1 - shape.starDensity },
+    uPhysicalExposure: { value: 0 },
+    uMoonBrightness: { value: 0 },
     uHorizonGlow: { value: new Color() },
     uHorizon: { value: new Color() },
     uPhysicalWeight: { value: 0 },
@@ -251,7 +271,7 @@ export const createSkyDome = (clouds: Clouds): SkyDome => {
     uBetaM: { value: new Vector3() },
     uMieDirectional: { value: 0 },
     uMoonDir: { value: new Vector3(0, -1, 0) },
-    uMoonColour: { value: setSrgb(new Color(), MOON_COLOUR) },
+    uMoonColour: { value: new Color() },
     uStars: { value: 0 },
     uCover: { value: 0 },
     uCloudOpacity: { value: 0 },
@@ -297,15 +317,18 @@ export const createSkyDome = (clouds: Clouds): SkyDome => {
       uniforms.uMieDirectional.value = dome.physical.mieDirectional;
       uniforms.uMoonDir.value.set(-sunDirection[0], -sunDirection[1], -sunDirection[2]);
       uniforms.uStars.value = dome.stars;
+      uniforms.uPhysicalExposure.value = dome.physical.exposure;
+      uniforms.uMoonBrightness.value = dome.moon.brightness;
+      setSrgb(uniforms.uMoonColour.value, dome.moon.colour);
       uniforms.uCover.value = dome.clouds.cover;
       uniforms.uCloudOpacity.value = dome.clouds.opacity;
       uniforms.uSimSeconds.value = simSeconds;
       uniforms.uLightDir.value.set(...sky.light);
       setSrgb(uniforms.uCloudLight.value, sky.lightColor).multiplyScalar(
-        clamp01(sky.lightIntensity) * CLOUD_LIGHT_GAIN,
+        clamp01(sky.lightIntensity) * shape.cloudLight.light,
       );
       setSrgb(uniforms.uCloudAmbient.value, sky.ambientSky).multiplyScalar(
-        clamp01(sky.ambientIntensity) * CLOUD_AMBIENT_GAIN,
+        clamp01(sky.ambientIntensity) * shape.cloudLight.ambient,
       );
       placeDome(mesh, camera);
     },
