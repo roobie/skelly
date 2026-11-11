@@ -961,7 +961,7 @@ export const createDebugActions = ({
         id: 'debug.shadow-distance-cycle',
         label: 'Sun shadow distance',
         group: 'lighting',
-        param: 'shadowdist:16..96',
+        param: 'shadowdist:12..96',
         detail: () => `${look.shadowState.distance} m`,
         run: () => look.stepShadowDistance(),
       },
