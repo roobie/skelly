@@ -1,5 +1,5 @@
 import { CHUNK, chunkKey, type Vec3 } from './coords.ts';
-import { SKY_LOSS, type SkyBounds, type SkyChannel, type SkyVolume, skyIndex } from './skylight.ts';
+import { SKY_LOSS, type SkyBlocker, type SkyBounds, type SkyChannel, type SkyVolume, skyIndex } from './skylight.ts';
 import {
   containsSky,
   growSky,
@@ -15,22 +15,27 @@ export interface SkyResult {
   heights: Float32Array;
   volume: SkyVolume | undefined;
 }
-/** `flags` packs solid + roofed * 2 with furniture in bits 0-1 and without it in bits 2-3. */
+/**
+ * `flags` packs opaque + roofed * 2 with furniture in bits 0-1 and without it in bits 2-3, then from `PASS_SHIFT` how
+ * much of the light entering the cell its furniture lets on, out of `FULL`.
+ */
 type Visit = (column: readonly [number, number], y: number, flags: number, highest: number) => void;
 const FURNISHED = 3;
 const UNFURNISHED_SHIFT = 2;
+const PASS_SHIFT = 4;
+const FULL = 255;
 interface Column {
   point: [number, number];
   index: number;
-  furniture: SkyBounds[];
+  furniture: SkyBlocker[];
   roof: boolean;
   blockRoof: boolean;
   /** Still inside the column's topmost run of furniture-only cells. */
   furnitureTop: boolean;
   highest: number;
 }
-const BLOCK = 1;
-const FURNITURE = 2;
+/** A cell reads as 0 for air, its blockers' largest shade, or `BLOCK` for an opaque voxel; from 1 up it is opaque. */
+const BLOCK = 2;
 function cellAt(snapshot: SkySnapshot, column: Column, chunk: SkyChunk | undefined, y: number): number {
   if (y > snapshot.top) {
     return 0;
@@ -39,7 +44,13 @@ function cellAt(snapshot: SkySnapshot, column: Column, chunk: SkyChunk | undefin
   if (y < snapshot.bottom || id === undefined || snapshot.opacity[id]) {
     return BLOCK;
   }
-  return column.furniture.some((box) => y >= box.min[1] && y < box.max[1]) ? FURNITURE : 0;
+  let shade = 0;
+  for (const box of column.furniture) {
+    if (y >= box.min[1] && y < box.max[1]) {
+      shade = Math.max(shade, box.shade);
+    }
+  }
+  return shade;
 }
 // The fallback roof sits below the column's topmost furniture: a receiver whose lookup lands in a coarse
 // furniture cell beside a wall would otherwise read that cell as its own roof and go black in daylight.
@@ -50,11 +61,12 @@ function visitCell(
   { bounds, visit }: { bounds: SkyBounds; visit: Visit },
 ): void {
   const solid = cell !== 0;
+  const furniture = solid && cell !== BLOCK;
   if (solid && !column.roof) {
     column.highest = y;
-    column.furnitureTop = cell === FURNITURE;
+    column.furnitureTop = furniture;
   }
-  column.furnitureTop &&= cell === FURNITURE;
+  column.furnitureTop &&= furniture;
   if (column.furnitureTop) {
     column.highest = y - 1;
   }
@@ -62,7 +74,14 @@ function visitCell(
   column.blockRoof ||= cell === BLOCK;
   if (y < bounds.max[1]) {
     const bare = Number(cell === BLOCK) + Number(column.blockRoof) * 2;
-    visit(column.point, y, Number(solid) + Number(column.roof) * 2 + (bare << UNFURNISHED_SHIFT), column.highest);
+    const opaque = cell >= 1;
+    const pass = opaque ? FULL : Math.round(FULL * (1 - cell));
+    visit(
+      column.point,
+      y,
+      Number(opaque) + Number(column.roof) * 2 + (bare << UNFURNISHED_SHIFT) + (pass << PASS_SHIFT),
+      column.highest,
+    );
   }
 }
 function scanColumn(
@@ -113,45 +132,57 @@ interface Flood {
   size: Vec3;
   light: Uint8Array;
   blocked: Uint8Array;
-  queue: Uint32Array;
-  tail: number;
+  /** How much of the light entering each cell its blockers let on, out of `FULL`. */
+  pass: Uint8Array;
+  /** Cells waiting to spread, by the light they hold. */
+  waiting: number[][];
 }
-function offer(flood: Flood, index: number, value: number): void {
-  if (!flood.blocked[index] && flood.light[index] === 0) {
+function offer(flood: Flood, index: number, from: number): void {
+  if (flood.blocked[index]) {
+    return;
+  }
+  const value = Math.floor((from * flood.pass[index]!) / FULL) - SKY_LOSS;
+  if (value > flood.light[index]!) {
     flood.light[index] = value;
-    flood.queue[flood.tail] = index;
-    flood.tail += 1;
+    flood.waiting[value]!.push(index);
   }
 }
-function floodAir(flood: Flood): void {
-  const { light } = flood;
+function spread(flood: Flood, index: number, value: number): void {
   const [sx, sy, sz] = flood.size;
-  for (let head = 0; head < flood.tail; head++) {
-    const index = flood.queue[head]!;
-    const value = light[index]! - SKY_LOSS;
-    if (value <= 0) {
-      continue;
-    }
-    const x = index % sx;
-    const z = Math.floor(index / sx) % sz;
-    const y = Math.floor(index / (sx * sz));
-    if (x > 0) {
-      offer(flood, index - 1, value);
-    }
-    if (x + 1 < sx) {
-      offer(flood, index + 1, value);
-    }
-    if (z > 0) {
-      offer(flood, index - sx, value);
-    }
-    if (z + 1 < sz) {
-      offer(flood, index + sx, value);
-    }
-    if (y > 0) {
-      offer(flood, index - sx * sz, value);
-    }
-    if (y + 1 < sy) {
-      offer(flood, index + sx * sz, value);
+  const x = index % sx;
+  const z = Math.floor(index / sx) % sz;
+  const y = Math.floor(index / (sx * sz));
+  if (x > 0) {
+    offer(flood, index - 1, value);
+  }
+  if (x + 1 < sx) {
+    offer(flood, index + 1, value);
+  }
+  if (z > 0) {
+    offer(flood, index - sx, value);
+  }
+  if (z + 1 < sz) {
+    offer(flood, index + sx, value);
+  }
+  if (y > 0) {
+    offer(flood, index - sx * sz, value);
+  }
+  if (y + 1 < sy) {
+    offer(flood, index + sx * sz, value);
+  }
+}
+/**
+ * Spreads light brightest first, so a cell's light is final when it spreads even where a blocker's cell takes more than
+ * the loss of air.
+ */
+function floodAir(flood: Flood): void {
+  const { light, waiting } = flood;
+  for (let value = FULL; value > SKY_LOSS; value--) {
+    for (const index of waiting[value]!) {
+      // A cell lit brighter after it was queued has already spread from its brighter entry.
+      if (light[index] === value) {
+        spread(flood, index, value);
+      }
     }
   }
 }
@@ -161,16 +192,16 @@ const newFlood = (size: Vec3): Flood => {
     size,
     light: new Uint8Array(length),
     blocked: new Uint8Array(length),
-    queue: new Uint32Array(length),
-    tail: 0,
+    pass: new Uint8Array(length).fill(FULL),
+    waiting: Array.from({ length: FULL + 1 }, () => []),
   };
 };
-function seed(flood: Flood, index: number, flags: number): void {
+function seed(flood: Flood, index: number, flags: number, pass: number): void {
   flood.blocked[index] = flags & 1;
+  flood.pass[index] = pass;
   if (flags === 0) {
-    flood.light[index] = 255;
-    flood.queue[flood.tail] = index;
-    flood.tail += 1;
+    flood.light[index] = FULL;
+    flood.waiting[FULL]!.push(index);
   }
 }
 function transport(snapshot: SkySnapshot, bounds: SkyBounds): SkyVolume {
@@ -179,8 +210,8 @@ function transport(snapshot: SkySnapshot, bounds: SkyBounds): SkyVolume {
   const unfurnished = newFlood(size);
   scan(snapshot, bounds, ([x, z], y, flags) => {
     const index = skyIndex(size, x - bounds.min[0], y - bounds.min[1], z - bounds.min[2]);
-    seed(furnished, index, flags & FURNISHED);
-    seed(unfurnished, index, flags >> UNFURNISHED_SHIFT);
+    seed(furnished, index, flags & FURNISHED, flags >> PASS_SHIFT);
+    seed(unfurnished, index, (flags >> UNFURNISHED_SHIFT) & FURNISHED, FULL);
   });
   floodAir(furnished);
   floodAir(unfurnished);
