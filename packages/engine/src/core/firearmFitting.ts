@@ -1,6 +1,7 @@
 // Dynamic attachment admission uses only the gun authoring tool's certificates and exported rail-notch footprints.
 // The sling mount and the light mount on a rail-less long gun are the exceptions: deadvox owns them, because the gun
 // authoring tool exports no sling (`packages/deadvox/DESIGN.md`, "Shoulder and sling") and no strap-on light site.
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import type { Item } from './items.ts';
 
@@ -27,7 +28,7 @@ export const slingFitted = (item: { readonly slots?: Readonly<Record<string, unk
   item.slots?.[SLING_SLOT] !== undefined;
 
 const compareChoice = (a: AttachmentChoice, b: AttachmentChoice): number =>
-  a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]);
+  compareCodeUnits(a[0], b[0]) || compareCodeUnits(a[1], b[1]);
 
 const canonicalPair = (a: AttachmentChoice, b: AttachmentChoice): readonly [AttachmentChoice, AttachmentChoice] =>
   compareChoice(a, b) <= 0 ? [a, b] : [b, a];
