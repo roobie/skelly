@@ -1,6 +1,10 @@
+import type { BlockEntities } from '../core/blockEntities.ts';
+import { worldOpaque, worldSolid } from '../core/collision.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import type { Inventory } from '../core/inventory.ts';
+import { Inventory } from '../core/inventory.ts';
+import type { SolidAt } from '../core/raycast.ts';
+import type { World } from '../core/world.ts';
 
 export const layoutVehiclePlacements = (registry: Registry, site: string, blockSize: number) =>
   (registry.layouts.get(site)?.vehicles ?? []).map(({ position, ...vehicle }) => ({
@@ -17,4 +21,30 @@ export const registerLayoutVehicles = (
   for (const placement of layoutVehiclePlacements(registry, site, blockSize)) {
     inventory.registerVehicle(placement);
   }
+};
+
+/**
+ * Solid and sight queries that count the site's parked vehicles, for callers that run without a session
+ * (benchmarks): a session derives the same rule from its own inventory, so both agree on where a vehicle stands.
+ */
+export const layoutVehicleQueries = ({
+  world,
+  registry,
+  entities,
+  site,
+  blockSize,
+}: {
+  world: World;
+  registry: Registry;
+  entities: BlockEntities;
+  site: string;
+  blockSize: number;
+}): { isSolid: SolidAt; isOpaque: SolidAt } => {
+  const inventory = new Inventory(registry, undefined, entities);
+  registerLayoutVehicles(inventory, registry, site, blockSize);
+  const { vehicles } = inventory;
+  return {
+    isSolid: worldSolid(world, registry, entities, { vehicles, blockSize }),
+    isOpaque: worldOpaque(world, registry, entities, { vehicles, blockSize }),
+  };
 };
