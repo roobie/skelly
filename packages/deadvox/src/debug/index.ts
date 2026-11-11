@@ -994,7 +994,7 @@ export const createDebugActions = ({
         label: 'Fogginess −',
         group: 'atmosphere',
         param: 'fog:0..1',
-        detail: () => look.fogginess.toFixed(1),
+        detail: () => look.weatherState.fogginess.toFixed(1),
         run: () => look.stepFogginess(-1),
       },
       {
@@ -1002,7 +1002,7 @@ export const createDebugActions = ({
         label: 'Fogginess +',
         group: 'atmosphere',
         param: 'fog:0..1',
-        detail: () => look.fogginess.toFixed(1),
+        detail: () => look.weatherState.fogginess.toFixed(1),
         run: () => look.stepFogginess(1),
       },
       {
@@ -1212,10 +1212,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }
       : {}),
   });
-  const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;
+  const defaultWeather = requireDayCycle(hooks.engine.registry).weather.defaults;
   const initialLook = parseLookParams(pageUrl().hash, {
     look: lookDefaults,
-    defaultFogginess,
+    defaultWeather,
   });
   look.restore(initialLook);
   // The hash's `cam` puts the player at a saved view instead of the spawn or a save's position (the body moves;
@@ -1241,7 +1241,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     patterns: look.patterns,
     vao: look.occlusion,
     freeze: gameFrozen,
-    fogginess: look.fogginess,
+    weather: look.weatherState,
     torch: look.torch,
     shadows: look.shadowState,
     crackCheck: look.crackCheck,
@@ -1255,7 +1255,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       query,
       hash: writeLookParams(hash, lookState(), {
         look: lookDefaults,
-        defaultFogginess,
+        defaultWeather,
         weathering: look.weatheringState,
         profiles: hooks.engine.registry.weathering,
       }),
@@ -1759,7 +1759,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       wideOcclusion: look.occlusion,
       mood: look.moodState,
       bloomClip: look.bloomClip,
-      fogginess: look.fogginess,
+      weather: look.weatherState,
       torch: look.torch,
       shadows: look.shadowState,
       performance: {

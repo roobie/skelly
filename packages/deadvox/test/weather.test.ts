@@ -1,18 +1,42 @@
 import type { WeatherTuning } from '@skelly/engine/internal/core/weather.ts';
-import { clampFogginess, skyAt as skyAtCycle, skyInWeather as skyInWeatherTuned } from '@skelly/engine/sky';
+import {
+  clampWeatherLevel,
+  type Rgb,
+  type Sky,
+  skyAt as skyAtCycle,
+  skyInWeather as skyInWeatherTuned,
+  type Weather,
+} from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
-const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
-const skyInWeather = (
-  sky: ReturnType<typeof skyAt>,
-  weather: { fogginess: number },
-  tuning: WeatherTuning = BASE_DAY_CYCLE.weather,
-) => skyInWeatherTuned(sky, weather, tuning);
+const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaults.fogginess;
+const skyInWeather = (sky: Sky, weather: Partial<Weather>, tuning: WeatherTuning = BASE_DAY_CYCLE.weather) =>
+  skyInWeatherTuned(sky, { fogginess: DEFAULT_FOGGINESS, cloudiness: 0, rain: 0, ...weather }, tuning);
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i / 2);
 const STEPS = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1];
+const NOON = phaseMidpoint('day') / 3600;
+
+/** The sky with its fog values zeroed, so what else a weather state moved shows by comparison. */
+const withoutFog = (sky: Sky): Sky => ({ ...sky, fogNear: 0, fogFar: 0, heightFog: 0 });
+
+/** How far a colour is from grey. */
+const chroma = (colour: Rgb): number => Math.max(...colour) - Math.min(...colour);
+
+/** The values cloudiness and rain move, each oriented so overcast never makes it smaller. */
+const overcastSigns = (sky: Sky): number[] => [
+  sky.dome.clouds.cover,
+  sky.dome.clouds.opacity,
+  -sky.dome.physical.weight,
+  -sky.dome.sun.brightness,
+  -sky.dome.sun.glow,
+  -sky.lightIntensity,
+  -chroma(sky.dome.zenith),
+  -chroma(sky.dome.horizonGlow),
+  -chroma(sky.sky),
+];
 
 describe('fogginess in the sky', () => {
   it('is a light mist by default, at which the height fog is the keyframes own', () => {
@@ -59,33 +83,110 @@ describe('fogginess in the sky', () => {
   it('keeps dawn and night mistier than noon at the same fogginess', () => {
     const dawn = phaseMidpoint('dawn') / 3600;
     const night = phaseMidpoint('night') / 3600;
-    const noon = phaseMidpoint('day') / 3600;
     for (const fogginess of STEPS.filter((f) => f > 0)) {
       const mist = (hour: number) => skyInWeather(skyAt(hour), { fogginess }).heightFog;
-      expect(mist(dawn)).toBeGreaterThan(mist(noon));
-      expect(mist(night)).toBeGreaterThan(mist(noon));
+      expect(mist(dawn)).toBeGreaterThan(mist(NOON));
+      expect(mist(night)).toBeGreaterThan(mist(NOON));
       expect(skyInWeather(skyAt(night), { fogginess }).fogFar).toBeLessThan(
-        skyInWeather(skyAt(noon), { fogginess }).fogFar,
+        skyInWeather(skyAt(NOON), { fogginess }).fogFar,
       );
     }
   });
 
-  it('changes only the fog, not the light, the colours or the bloom', () => {
+  it('changes only the fog when dry and without cloudiness', () => {
     const sky = skyAt(18);
-    const foggy = skyInWeather(sky, { fogginess: 0.9 });
-    expect({ ...foggy, fogNear: 0, fogFar: 0, heightFog: 0 }).toEqual({ ...sky, fogNear: 0, fogFar: 0, heightFog: 0 });
+    expect(withoutFog(skyInWeather(sky, { fogginess: 0.9 }))).toEqual(withoutFog(sky));
   });
 });
 
-describe('fogginess steps', () => {
-  it('rounds to a tenth and clamps to 0..1', () => {
-    expect(clampFogginess(0.300_000_000_000_000_04)).toBe(0.3);
-    expect(clampFogginess(1.04)).toBe(1);
-    expect(clampFogginess(-0.3)).toBe(0);
-    let fogginess = 0.2;
-    for (let i = 0; i < 7; i++) {
-      fogginess = clampFogginess(fogginess + 0.1);
+describe('cloudiness and rain in the sky', () => {
+  it('never moves the fog, the tone or the bloom', () => {
+    for (const hour of HOURS) {
+      const sky = skyAt(hour);
+      const dry = skyInWeather(sky, {});
+      const wet = skyInWeather(sky, { cloudiness: 1, rain: 1 });
+      const unmoved = ({ fogNear, fogFar, heightFog, tone, bloom }: Sky) => ({ fogNear, fogFar, heightFog, tone, bloom });
+      expect(unmoved(wet)).toEqual(unmoved(dry));
     }
-    expect(fogginess).toBe(0.9);
+  });
+
+  it('moves the sky one way only as either rises: more cloud, less physical sky, sun and light, greyer colours', () => {
+    for (const hour of HOURS) {
+      for (const state of ['cloudiness', 'rain'] as const) {
+        const signs = STEPS.map((level) => overcastSigns(skyInWeather(skyAt(hour), { [state]: level })));
+        for (let i = 1; i < signs.length; i++) {
+          signs[i]!.forEach((value, index) => {
+            expect(value).toBeGreaterThanOrEqual(signs[i - 1]![index]! - 1e-12);
+          });
+        }
+      }
+    }
+  });
+
+  it('turns a clear noon overcast: more cloud, less physical sky and sun, a dimmer light and a greyer zenith', () => {
+    const clear = skyInWeather(skyAt(NOON), {});
+    const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
+    expect(overcast.dome.clouds.cover).toBeGreaterThan(clear.dome.clouds.cover);
+    expect(overcast.dome.physical.weight).toBeLessThan(clear.dome.physical.weight);
+    expect(overcast.dome.sun.brightness).toBeLessThan(clear.dome.sun.brightness);
+    expect(overcast.lightIntensity).toBeLessThan(clear.lightIntensity);
+    expect(chroma(overcast.dome.zenith)).toBeLessThan(chroma(clear.dome.zenith));
+  });
+
+  it('brings at least as much overcast with rain as the same cloudiness, cloud included', () => {
+    for (const hour of HOURS) {
+      for (const level of STEPS) {
+        const rain = skyInWeather(skyAt(hour), { rain: level });
+        expect(skyInWeather(skyAt(hour), { cloudiness: level, rain: level })).toEqual(rain);
+        const cloudy = overcastSigns(skyInWeather(skyAt(hour), { cloudiness: level }));
+        overcastSigns(rain).forEach((value, index) => {
+          expect(value).toBeGreaterThanOrEqual(cloudy[index]! - 1e-12);
+        });
+      }
+    }
+  });
+
+  it('keeps every value in its range under any levels and the strongest tuning', () => {
+    const strongest: WeatherTuning['rain'] = {
+      clouds: { cover: 1, opacity: 1 },
+      physicalWeight: 0,
+      sun: 0,
+      light: 0,
+      skyColour: { saturation: 0, brightness: 0 },
+    };
+    const tunings = [BASE_DAY_CYCLE.weather, { ...BASE_DAY_CYCLE.weather, cloudiness: strongest, rain: strongest }];
+    const unit = (value: number) => {
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(1);
+    };
+    for (const tuning of tunings) {
+      for (const hour of HOURS) {
+        for (const level of [...STEPS, -3, 7]) {
+          const sky = skyInWeather(skyAt(hour), { cloudiness: level, rain: level }, tuning);
+          unit(sky.dome.clouds.cover);
+          unit(sky.dome.clouds.opacity);
+          unit(sky.dome.physical.weight);
+          for (const colour of [sky.sky, sky.heightFogColor, sky.dome.zenith, sky.dome.horizonGlow]) {
+            colour.forEach(unit);
+          }
+          for (const value of [sky.dome.sun.brightness, sky.dome.sun.glow, sky.lightIntensity]) {
+            expect(value).toBeGreaterThanOrEqual(0);
+          }
+        }
+      }
+    }
+  });
+});
+
+describe('weather level steps', () => {
+  it('rounds to a tenth and clamps to 0..1', () => {
+    expect(clampWeatherLevel(0.300_000_000_000_000_04)).toBe(0.3);
+    expect(clampWeatherLevel(1.04)).toBe(1);
+    expect(clampWeatherLevel(-0.3)).toBe(0);
+    let level = 0.2;
+    for (let i = 0; i < 7; i++) {
+      level = clampWeatherLevel(level + 0.1);
+    }
+    expect(level).toBe(0.9);
   });
 });

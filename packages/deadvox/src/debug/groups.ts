@@ -64,7 +64,14 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
   },
   { id: 'post', title: 'Post-processing' },
   { id: 'lighting', title: 'Lighting' },
-  { id: 'atmosphere', title: 'Atmosphere' },
+  {
+    id: 'atmosphere',
+    title: 'Atmosphere',
+    notes: [
+      { label: 'Cloudiness', param: 'clouds:0..1' },
+      { label: 'Rain', param: 'rain:0..1' },
+    ],
+  },
   {
     id: 'diagnostics',
     title: 'Diagnostics',

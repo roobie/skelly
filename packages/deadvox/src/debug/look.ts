@@ -1,5 +1,5 @@
 // Live look controls for the deadvox/look-experiments workstream: they exist so
-// different looks (tone mapping, exposure, block colour space, mood pass, fog) can be compared by
+// different looks (tone mapping, exposure, block colour space, mood pass, weather) can be compared by
 // eye against the game's default look (the `look` content section), which play has already applied.
 
 import type { WeatheringDef } from '@skelly/engine/content';
@@ -21,7 +21,7 @@ import {
   TORCH_STEP,
 } from '@skelly/engine/look';
 import {
-  clampFogginess,
+  clampWeatherLevel,
   isWeatheringColor,
   WEATHERING_RANGES,
   type Weather,
@@ -41,7 +41,7 @@ import type { WebGLRenderer } from 'three';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;
-const FOGGINESS_STEP = 0.1;
+const WEATHER_STEP = 0.1;
 // Coarser than the others: the clip's range is 1 to 8 and the derived values are 1 to 5.
 const BLOOM_CLIP_STEP = 0.5;
 
@@ -233,13 +233,14 @@ export class LookControls {
     this.flashlight.strength = clampTorch(this.torch * TORCH_STEP ** steps);
   }
 
-  get fogginess(): number {
-    return this.weather.fogginess;
+  /** The weather play renders with, as it is now. */
+  get weatherState(): Weather {
+    return { ...this.weather };
   }
 
   /** Steps the fogginess by `steps` tenths, clamped to [0, 1]. A weather system would set this itself. */
   stepFogginess(steps: number): void {
-    this.weather.fogginess = clampFogginess(this.weather.fogginess + steps * FOGGINESS_STEP);
+    this.weather.fogginess = clampWeatherLevel(this.weather.fogginess + steps * WEATHER_STEP);
   }
 
   /** Profile values as currently edited; the URL writer omits values equal to the selected profile. */
@@ -328,7 +329,7 @@ export class LookControls {
   restore(
     state: LookState &
       MoodState & {
-        fogginess: number;
+        weather: Weather;
         torch: number;
         shadows: ShadowState;
         crackCheck: boolean;
@@ -347,7 +348,9 @@ export class LookControls {
     if (mode >= 0) {
       this.mode = mode;
     }
-    this.weather.fogginess = clampFogginess(state.fogginess);
+    this.weather.fogginess = clampWeatherLevel(state.weather.fogginess);
+    this.weather.cloudiness = clampWeatherLevel(state.weather.cloudiness);
+    this.weather.rain = clampWeatherLevel(state.weather.rain);
     this.moodValue = {
       post: state.post,
       bloom: state.bloom,
