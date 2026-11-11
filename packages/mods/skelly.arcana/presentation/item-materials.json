@@ -18,8 +18,8 @@
   "assets/models/grown_wildwood_weaver.glb": {
     "materials": ["wood-oak", "gem-onyx", "leaf-green", "bark-birch", "bark", "bone"]
   },
-  "assets/models/holy_symbol_wood.glb": { "materials": ["cord-cotton", "wood-pine", "bark"] },
   "assets/models/holy_symbol.glb": { "materials": ["metal-gold", "brass-polished"] },
+  "assets/models/holy_symbol_wood.glb": { "materials": ["cord-cotton", "wood-pine", "bark"] },
   "assets/models/leaf_wrapped_resin_rune.glb": {
     "materials": ["leaf-green", "plant-dried", "resin-honey", "wood-walnut"]
   },

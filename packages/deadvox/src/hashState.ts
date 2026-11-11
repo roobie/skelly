@@ -27,6 +27,8 @@ const HASH_KEYS = {
   film: 'boolean',
   grade: 'number',
   fog: 'number',
+  clouds: 'number',
+  rain: 'number',
   torch: 'number',
   sunshadow: 'boolean',
   torchshadow: 'boolean',

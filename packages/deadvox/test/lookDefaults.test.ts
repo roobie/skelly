@@ -10,7 +10,7 @@ import { LOOK_FIXTURE } from './lookFixture.ts';
 
 const registry = baseRegistry();
 const defaults = lookDefaultsOf(registry);
-const urlDefaults = { look: defaults, defaultFogginess: requireDayCycle(registry).weather.defaultFogginess };
+const urlDefaults = { look: defaults, defaultWeather: requireDayCycle(registry).weather.defaults };
 
 describe('the content default look', () => {
   it('requires complete mob presentation tuning and admits a mod-authored look', () => {

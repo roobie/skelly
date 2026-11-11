@@ -12,6 +12,7 @@ import {
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
 import { FOOD_EXPOSURE_DENOMINATOR, foodMillisecondsAt } from './food.ts';
@@ -1186,17 +1187,7 @@ function identityTuple(version: SaveVersionComponents): unknown[] {
   return [
     version.simulationHash,
     version.schemaVersion,
-    Object.fromEntries(
-      Object.entries(version.generators).sort(([a], [b]) => {
-        if (a < b) {
-          return -1;
-        }
-        if (a > b) {
-          return 1;
-        }
-        return 0;
-      }),
-    ),
+    Object.fromEntries(Object.entries(version.generators).sort(([a], [b]) => compareCodeUnits(a, b))),
     version.contentPacks.map(({ id, version: packVersion, canonicalHash }) => [id, packVersion, canonicalHash]),
   ];
 }

@@ -1,9 +1,10 @@
-import { smoothstep } from './authoredTerrain.mjs';
+import type { CatalogueFloor } from './authoredTerrainEvaluator.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { type FurnitureSpawn, type Rect, rectDistance, SupplyFootprints } from './site.ts';
+import { type FurnitureSpawn, type Rect, SupplyFootprints } from './site.ts';
 import type { CompiledTemplate, Placement } from './templates.ts';
 
 export type ShowroomDef = NonNullable<SiteLayoutDef['showroom']>;
@@ -123,7 +124,7 @@ const catalogueProps = (registry: Registry, catalogue: CatalogueDef): ShowroomPr
   for (const { furniture } of registry.catalogueRows.values()) {
     const pieces = furniture
       .map((id) => ({ furniture: id, size: sizeOf(registry, id) }))
-      .sort((a, b) => b.size[2] - a.size[2] || a.furniture.localeCompare(b.furniture));
+      .sort((a, b) => b.size[2] - a.size[2] || compareCodeUnits(a.furniture, b.furniture));
     let used = Number.POSITIVE_INFINITY;
     for (const piece of pieces) {
       if (used + piece.size[0] > width) {
@@ -159,38 +160,23 @@ export class ShowroomCatalogue {
   readonly rect: Rect;
   /** The floor's top block. */
   readonly floor: number;
-  private readonly blend: number;
-  private readonly floorBlock: number;
+  readonly terrain: CatalogueFloor;
 
   constructor(registry: Registry, catalogue: CatalogueDef) {
     const block = registry.blockIds.get(catalogue.floor);
     if (block === undefined) {
       throw new Error(`content does not define block "${catalogue.floor}"`);
     }
-    this.floorBlock = block;
     this.props = catalogueProps(registry, catalogue);
     const [x0, y, z0] = catalogue.position.map(toBlocks) as Vec3;
     this.floor = y - 1;
-    this.blend = toBlocks(catalogue.blend);
     this.rect = {
       x0,
       z0,
       x1: Math.max(...this.props.map(({ pos, size }) => pos[0] + size[0])),
       z1: Math.max(...this.props.map(({ pos, size }) => pos[2] + size[2])) + toBlocks(catalogue.spacing),
     };
-  }
-
-  /** Level inside the floor, blending into the natural ground around it. */
-  height(x: number, z: number, natural: number): number {
-    const distance = rectDistance(this.rect, x, z);
-    if (distance >= this.blend) {
-      return natural;
-    }
-    return Math.round(natural + smoothstep(1 - distance / this.blend) * (this.floor - natural));
-  }
-
-  top(x: number, z: number): number | undefined {
-    return rectDistance(this.rect, x, z) === 0 ? this.floorBlock : undefined;
+    this.terrain = { rect: this.rect, floor: this.floor, blend: toBlocks(catalogue.blend), floorBlock: block };
   }
 
   supplySourcesIn(area: Rect) {

@@ -5,7 +5,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { type ActorFigureFiles, type Registry, readActorFigureFiles } from '@skelly/engine/content';
 import {
   admitPacks,
-  comparePackKeys,
+  compareCodeUnits,
   logicalKey,
   type PackFileEntry,
   type PackInput,
@@ -49,7 +49,7 @@ export const readAvailablePacks = (packageRoot: string, external: string = EXTER
     })
     // The save identity lists packs in this order, so it follows the game's: `packages/engine/src/game/bundledContent.ts`,
     // `createBundledContent`.
-    .sort((left, right) => comparePackKeys(`${left}/pack/manifest.json`, `${right}/pack/manifest.json`));
+    .sort((left, right) => compareCodeUnits(`${left}/pack/manifest.json`, `${right}/pack/manifest.json`));
   const inputs = roots.map((root) => {
     const manifest = parse(
       PackManifestSchema,
@@ -211,7 +211,7 @@ export const readStackContentFiles = (packageRoot: string, stack: string) =>
 export const readStackContentSources = (packageRoot: string, stack: string) =>
   readStackContentFiles(packageRoot, stack)
     .map(({ file, data }) => ({ source: file, data }))
-    .sort((left, right) => left.source.localeCompare(right.source));
+    .sort((left, right) => compareCodeUnits(left.source, right.source));
 
 /**
  * The figure files of a registry built from a stack's content. Content files may be named as admission names them,

@@ -175,12 +175,61 @@ const CloudsSchema = strictObject({
   layers: pipe(array(CloudLayerSchema), minLength(1), maxLength(4)),
 });
 
-/** The weather's fog on top of the looks; fractions only shrink the distance fog, so both stay below 1. */
+/**
+ * What one weather state does to the blended sky at full strength; at part strength it does that part. Every field
+ * only closes towards overcast or scales down, so no tuning can push a value out of its range or brighten the sky.
+ */
+const WeatherSkySchema = strictObject({
+  clouds: strictObject({
+    /** The share of the look's clear sky the clouds close. */
+    cover: UnitFraction,
+    /** The share of the look's cloud transparency the clouds close. */
+    opacity: UnitFraction,
+  }),
+  /** What is left of the physical sky's weight, so the keyed gradient shows instead of a blue sunlit sky. */
+  physicalWeight: UnitFraction,
+  /** What is left of the painted sun's brightness and glow, which would otherwise shine through the cloud deck. */
+  sun: UnitFraction,
+  /** What is left of the main light, so the world under it reads flat. */
+  light: UnitFraction,
+  /**
+   * What is left of the ambient light, which lights the cloud deck as well as the world, so the deck dims with the
+   * greyed fog below it instead of standing brighter at the horizon.
+   */
+  ambient: UnitFraction,
+  /** The sky's colours: the fog and mist colours and the dome's gradient. */
+  skyColour: strictObject({
+    /** What is left of their saturation, so they read grey. */
+    saturation: UnitFraction,
+    /** What is left of their brightness. */
+    brightness: UnitFraction,
+  }),
+});
+
+/** The weather on top of the looks: fog, cloudiness and rain. */
 const WeatherTuningSchema = strictObject({
-  /** The fogginess a session starts at; the looks' height fog is exactly their own density here. */
-  defaultFogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
-  nearTighten: pipe(UnitFraction, maxValue(0.99)),
-  farTighten: pipe(UnitFraction, maxValue(0.99)),
+  /**
+   * The weather a session starts at; the looks' height fog is exactly their own density at this fogginess, and
+   * their own clouds show at the fair cloudiness.
+   */
+  defaults: strictObject({
+    fogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
+    cloudiness: UnitFraction,
+    rain: UnitFraction,
+  }),
+  /** How far thick fog pulls the distance fog in; fractions only shrink it, so both ends stay below 1. */
+  fog: strictObject({
+    nearTighten: pipe(UnitFraction, maxValue(0.99)),
+    farTighten: pipe(UnitFraction, maxValue(0.99)),
+  }),
+  /** Overcast's sky, over the cloudiness above fair weather. */
+  cloudiness: strictObject({
+    ...WeatherSkySchema.entries,
+    /** The cloudiness at which the looks show their own clouds; inside (0, 1), so clearer and cloudier both have room. */
+    fair: pipe(UnitFraction, minValue(0.01), maxValue(0.99)),
+  }),
+  /** Rain's sky on top of the overcast it brings with it. */
+  rain: WeatherSkySchema,
 });
 
 /** The sky's reflection on models: a prefiltered map of the dome alone, redrawn only once the look has moved enough to show. */

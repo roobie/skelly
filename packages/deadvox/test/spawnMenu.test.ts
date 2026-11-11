@@ -143,7 +143,7 @@ describe('spawnMenuViewModel', () => {
         new FakeMood(),
         {
           defaults: LOOK_FIXTURE,
-          weather: { fogginess: 0.2 },
+          weather: { fogginess: 0.2, cloudiness: 0, rain: 0 },
           shadows: new FakeShadows(),
           flashlight: { strength: 1 },
         },

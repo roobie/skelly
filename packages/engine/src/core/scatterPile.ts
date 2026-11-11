@@ -1,5 +1,6 @@
 // Deterministic, presentation-only scatter for items whose pile display is "scatter".
 
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Pile } from './inventory.ts';
@@ -77,7 +78,7 @@ export const pileScatterPlacements = (options: {
 
   const placements: PileScatterPlacement[] = [];
   let shown = 0;
-  for (const [itemType, unsortedItems] of [...byType].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [itemType, unsortedItems] of [...byType].sort(([a], [b]) => compareCodeUnits(a, b))) {
     const items = [...unsortedItems].sort((a, b) => a.uid - b.uid);
     const count = items.reduce((sum, item) => sum + item.count, 0);
     const visibleCount = Math.min(count, SPENT_CASE_SCATTER_CAP - shown);

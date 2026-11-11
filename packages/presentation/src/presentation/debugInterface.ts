@@ -41,7 +41,7 @@ export interface DebugHooks {
   readonly engine: Engine;
   /** The page's keyboard; the panel shows its keys and traces its presses. */
   readonly keyboard: KeyboardInput;
-  /** The weather play renders with; the debug look controls set its fogginess. */
+  /** The weather play renders with; the debug look controls set all three levels from the hash. */
   readonly weather: Weather;
   /** The held light's beam; the debug look controls set its strength multiplier. */
   readonly flashlight: { strength: number };
@@ -111,6 +111,8 @@ export interface DebugReadout {
   readonly chunks: number;
   readonly pending: number;
   readonly holes: number;
+  /** The whole view radius is meshed: `pending` never reaches zero because the preload rings stay queued, so scripts wait on this. */
+  readonly meshingDone: boolean;
   readonly actors: number;
   readonly sounds: readonly HeardSound[];
   readonly simulationMs: number;
