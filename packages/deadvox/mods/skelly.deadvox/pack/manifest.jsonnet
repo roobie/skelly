@@ -8,7 +8,7 @@ manifest(
     'skelly.saves', 'skelly.day-cycle', 'skelly.controls', 'skelly.graphics', 'skelly.ui',
     'skelly.weathering', 'skelly.deadvox.weathering', 'skelly.melee-classes', 'skelly.inventory', 'skelly.body',
     'skelly.sound-families', 'skelly.senses', 'skelly.natural-world', 'skelly.materials', 'skelly.medicine',
-    'skelly.hand-tools', 'skelly.readables', 'skelly.arcana','skelly.structures', 'skelly.basic-foods', 'skelly.packaged-foods',
+    'skelly.hand-tools', 'skelly.household', 'skelly.keys', 'skelly.readables', 'skelly.arcana','skelly.structures', 'skelly.basic-foods', 'skelly.packaged-foods',
     'skelly.wearables', 'skelly.progression', 'skelly.crafting', 'skelly.manufactured-blocks',
     'skelly.fuel', 'skelly.containers', 'skelly.flame-tools', 'skelly.light-sources',
     'skelly.basic-recipes', 'skelly.melee', 'skelly.traps', 'skelly.explosives',

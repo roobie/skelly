@@ -1,4 +1,4 @@
-local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.actors', [import '../models-actors.jsonnet', import '../figures-actors.jsonnet']);
+local release = (import 'tools/jsonnet/lib/built-pack.libsonnet').consumed('skelly.deadvox.actors', [import '../figures-actors.jsonnet']);
 {
   releasedFiles:: release.files,
   sources: release.sources + [

@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.inventory", "skelly.materials", "skelly.melee-classes"],
+  "dependencies": ["skelly.household", "skelly.inventory", "skelly.materials", "skelly.melee-classes"],
   "files": [
     {
       "kind": "content",
@@ -23,7 +23,11 @@
     },
     {
       "kind": "json",
-      "path": "things/can_opener.model.json"
+      "path": "things/blowtorch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bottle_jack.model.json"
     },
     {
       "kind": "json",
@@ -35,15 +39,23 @@
     },
     {
       "kind": "json",
+      "path": "things/engine_hoist.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/hammer.model.json"
     },
     {
       "kind": "json",
-      "path": "things/kitchen_knife.model.json"
+      "path": "things/hand_saw.model.json"
     },
     {
       "kind": "json",
       "path": "things/repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scissor_jack.model.json"
     },
     {
       "kind": "json",
@@ -75,7 +87,11 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/can_opener.glb"
+      "path": "assets/models/blowtorch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bottle_jack.glb"
     },
     {
       "kind": "asset",
@@ -87,15 +103,23 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/engine_hoist.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/hammer.glb"
     },
     {
       "kind": "asset",
-      "path": "assets/models/kitchen_knife.glb"
+      "path": "assets/models/hand_saw.glb"
     },
     {
       "kind": "asset",
       "path": "assets/models/repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scissor_jack.glb"
     },
     {
       "kind": "asset",

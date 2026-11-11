@@ -39,9 +39,12 @@ export interface RuntimeClosureViolation {
 
 // The runtime package (#1532): it reaches no product package and no presentation, by any route, and imports
 // neither three nor Lit even through a library.
+// The asset release's shared model data (the finish table) is JSON the thing-core library reads; it holds no
+// code to walk, so the runtime may reach it.
+const ASSET_MODEL_DATA = 'packages/skelly-assets/models';
 export const ENGINE_POLICY: RuntimeClosurePolicy = {
   start: ['packages/engine/src'],
-  leaves: [],
+  leaves: [ASSET_MODEL_DATA],
   manifest: 'packages/engine/package.json',
   forbidden: ['packages/deadvox', 'packages/presentation'],
   forbiddenPackages: ['three', 'lit', 'lit-html'],
@@ -54,7 +57,7 @@ export const ENGINE_POLICY: RuntimeClosurePolicy = {
 // through its curated entries; see `packages/presentation/PROJECT.md`, "Imports".
 export const PRESENTATION_POLICY: RuntimeClosurePolicy = {
   start: ['packages/presentation/src'],
-  leaves: [],
+  leaves: [ASSET_MODEL_DATA],
   manifest: 'packages/presentation/package.json',
   forbidden: ['packages/deadvox'],
   forbiddenPackages: [],

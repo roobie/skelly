@@ -45,6 +45,60 @@
       }
     },
     {
+      "file": "assets/models/small_spring.glb",
+      "id": "small_spring",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "small_spring": {
+          "centreOfMass": [9.9667774086378753e-6, 0.019933554817275746, 0],
+          "massKg": 0.02,
+          "node": "small_spring:coil"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hinge_set.glb",
+      "id": "hinge_set",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hinge_set": {
+          "centreOfMass": [-1.1456795187715064e-18, 0.0019473684210526314, 0],
+          "massKg": 0.35999999999999999,
+          "node": "hinge_set:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fastener_pack.glb",
+      "id": "fastener_pack",
+      "itemPresentation": {
+        "materials": ["paper", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fastener_pack": {
+          "centreOfMass": [-3.8775813400683397e-5, 0.019504234140543759, 0],
+          "massKg": 0.17999999999999999,
+          "node": "fastener_pack:compound"
+        }
+      }
+    },
+    {
       "file": "assets/models/rag.glb",
       "grip": {
         "at": [-0.050000000000000003, 0.02, 0.039999999999999994],
@@ -189,40 +243,52 @@
       "roll": 0
     },
     {
-      "file": "assets/models/small_spring.glb",
-      "id": "small_spring",
+      "file": "assets/models/wooden_plank.glb",
+      "grip": {
+        "at": [0, 0.01, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "wooden_plank",
       "itemPresentation": {
-        "materials": ["metal"],
+        "materials": ["wood"],
         "supply": {
           "kind": "none"
         },
         "wear": "core"
       },
       "parts": {
-        "small_spring": {
-          "centreOfMass": [9.9667774086378753e-6, 0.019933554817275746, 0],
-          "massKg": 0.02,
-          "node": "small_spring:coil"
+        "material": {
+          "centreOfMass": [-0.0025862068965517237, 0.01, 0.0046551724137931022],
+          "massKg": 0.5,
+          "node": "material:cutStock"
         }
-      }
+      },
+      "roll": 0
     },
     {
-      "file": "assets/models/fastener_pack.glb",
-      "id": "fastener_pack",
+      "file": "assets/models/field_patch.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, -0.009999999999999995],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "field_patch",
       "itemPresentation": {
-        "materials": ["paper", "metal", "metal"],
+        "materials": ["metal", "metal"],
         "supply": {
           "kind": "none"
         },
         "wear": "core"
       },
       "parts": {
-        "fastener_pack": {
-          "centreOfMass": [-3.8775813400683397e-5, 0.019504234140543759, 0],
-          "massKg": 0.17999999999999999,
-          "node": "fastener_pack:compound"
+        "material": {
+          "centreOfMass": [-0.00040540540540539953, 0.005000000000000001, -0.00036036036036036161],
+          "massKg": 0.12,
+          "node": "material:foldedSheet"
         }
-      }
+      },
+      "roll": 0
     },
     {
       "file": "assets/models/tape_roll.glb",
@@ -235,10 +301,10 @@
         "wear": "core"
       },
       "parts": {
-        "electrical_tape": {
+        "tape_roll": {
           "centreOfMass": [0, 0.0099999999999999985, 0],
           "massKg": 0.029999999999999999,
-          "node": "electrical_tape:ring"
+          "node": "tape_roll:ring"
         }
       }
     },
@@ -253,10 +319,10 @@
         "wear": "core"
       },
       "parts": {
-        "sewing_thread": {
+        "thread_spool": {
           "centreOfMass": [0, 0.025000000000000001, 0],
           "massKg": 0.014999999999999999,
-          "node": "sewing_thread:spool"
+          "node": "thread_spool:spool"
         }
       }
     },
@@ -271,10 +337,10 @@
         "wear": "core"
       },
       "parts": {
-        "nylon_cord": {
+        "cord_coil": {
           "centreOfMass": [-0.00033333333333333332, 0.013333333333333334, 0.00016666666666666666],
           "massKg": 0.059999999999999998,
-          "node": "nylon_cord:coil"
+          "node": "cord_coil:coil"
         }
       }
     }

@@ -37,6 +37,7 @@
   "assets/models/block_and_tackle.glb": {
     "materials": ["paint-drum-blue", "steel-grey", "steel-bright", "cord-cotton"]
   },
+  "assets/models/blowtorch.glb": { "materials": ["plastic-blue", "paint-charcoal", "steel-grey", "plastic-red"] },
   "assets/models/bolt_cutters.glb": {
     "materials": ["steel-grey", "plastic-red", "steel-blued", "steel-hardened", "coal-black", "steel-bright"]
   },
@@ -45,6 +46,7 @@
   "assets/models/bone_needle.glb": { "materials": ["bone"] },
   "assets/models/bone_punch.glb": { "materials": ["bone", "body-bone"] },
   "assets/models/bore_brush.glb": { "materials": ["steel-galvanised", "cloth-bright-white"] },
+  "assets/models/bottle_jack.glb": { "materials": ["steel-parkerized", "plastic-red", "steel-grey"] },
   "assets/models/bow_saw.glb": { "materials": ["paint-red", "plastic-black", "steel-bright", "steel-grey"] },
   "assets/models/boxcutter.glb": {
     "materials": ["plastic-yellow", "steel-grey", "rubber-black", "plastic-black", "steel-stainless"]
@@ -57,7 +59,6 @@
   "assets/models/butchering_kit.glb": {
     "materials": ["cloth-canvas", "leather-brown", "leather-tan", "steel-stainless", "steel-grey", "plastic-black"]
   },
-  "assets/models/can_opener.glb": { "materials": ["steel-grey", "plastic-red", "steel-parkerized", "paint-charcoal"] },
   "assets/models/carding_paddles.glb": { "materials": ["wood-birch", "leather-tan", "steel-bright"] },
   "assets/models/cargo_parachute.glb": {
     "materials": ["cloth-olive-drab", "nylon-ranger-green", "webbing-olive-dark", "steel-grey", "paper-white"]
@@ -118,6 +119,7 @@
     "materials": ["steel-grey", "rubber-black", "plastic-red", "steel-parkerized", "steel-hardened", "plastic-charcoal"]
   },
   "assets/models/emergency_lockpick.glb": { "materials": ["steel-galvanised"] },
+  "assets/models/engine_hoist.glb": { "materials": ["paint-charcoal", "plastic-blue", "steel-grey"] },
   "assets/models/extinguisher.glb": {
     "materials": ["paint-red", "plastic-black", "paper-white", "brass", "plastic-white", "steel-grey", "rubber-black"]
   },
@@ -178,6 +180,7 @@
     "materials": ["wood-walnut", "steel-grey", "paint-red", "steel-bright", "steel-blued"]
   },
   "assets/models/hand_pump.glb": { "materials": ["alu-bare", "plastic-black", "steel-bright", "steel-stainless"] },
+  "assets/models/hand_saw.glb": { "materials": ["wood-walnut", "steel-grey"] },
   "assets/models/hatchet.glb": { "materials": ["wood-walnut", "steel-blued", "steel-grey", "steel-bright"] },
   "assets/models/heavy_anvil.glb": { "materials": ["iron-dull", "steel-bright", "coal-black"] },
   "assets/models/heavy_crowbar.glb": { "materials": ["steel-parkerized", "steel-bright"] },
@@ -230,7 +233,6 @@
   "assets/models/ketene_lamp.glb": {
     "materials": ["glass-clear", "plastic-frosted", "copper", "plastic-white", "plastic-black", "brass"]
   },
-  "assets/models/kitchen_knife.glb": { "materials": ["plastic-black", "steel-stainless"] },
   "assets/models/knitting_needles.glb": { "materials": ["wood-birch", "wood-walnut"] },
   "assets/models/large_adjustable_wrench.glb": { "materials": ["steel-bright", "steel-grey", "void-black"] },
   "assets/models/large_shelter_kit.glb": { "materials": ["bark", "wood-pine", "leather-brown", "skin-rawhide"] },
@@ -360,6 +362,7 @@
   "assets/models/scavenged_anvil.glb": {
     "materials": ["steel-parkerized", "steel-bright", "iron-dull", "paint-olive", "rust-red", "steel-heat-tint"]
   },
+  "assets/models/scissor_jack.glb": { "materials": ["steel-parkerized", "steel-grey", "paint-terracotta"] },
   "assets/models/scissors.glb": { "materials": ["steel-stainless", "plastic-black", "steel-grey"] },
   "assets/models/screwdriver_set.glb": {
     "materials": ["plastic-charcoal", "plastic-matte-black", "plastic-red", "steel-stainless", "plastic-yellow"]

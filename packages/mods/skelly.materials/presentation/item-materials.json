@@ -70,6 +70,7 @@
   "assets/models/faux_fur_sheet.glb": { "materials": ["cloth-cream", "fur-pale"] },
   "assets/models/felt_patch.glb": { "materials": ["felt-grey"] },
   "assets/models/felt_sheet.glb": { "materials": ["felt-grey"] },
+  "assets/models/field_patch.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/filter_port_40mm.glb": {
     "materials": ["plastic-clear", "plastic-frosted", "steel-grey", "paint-charcoal"]
   },
@@ -94,6 +95,7 @@
   "assets/models/heavy_duty_pipe.glb": {
     "materials": ["steel-grey", "steel-parkerized", "plastic-red", "paint-crane-yellow"]
   },
+  "assets/models/hinge_set.glb": { "materials": ["brass", "steel-grey"] },
   "assets/models/hinge.glb": { "materials": ["steel-bright", "steel-grey", "plastic-charcoal"] },
   "assets/models/horn_moss_capsules.glb": { "materials": ["enamel-white", "leaf-green", "jute"] },
   "assets/models/hose.glb": { "materials": ["rubber-offblack", "void-black"] },
@@ -208,6 +210,7 @@
   "assets/models/wood_offcut.glb": { "materials": [null, null] },
   "assets/models/wood_panel.glb": { "materials": ["wood-pine", "wood-birch", "wood-oak"] },
   "assets/models/wood_sheet.glb": { "materials": ["wood-birch", "wood-pine"] },
+  "assets/models/wooden_plank.glb": { "materials": ["wood-birch"] },
   "assets/models/wooden_post.glb": { "materials": ["wood-pine", "wood-birch"] },
   "assets/models/wool_staple.glb": { "materials": ["cloth-cream", "fleece-pale"] }
 }

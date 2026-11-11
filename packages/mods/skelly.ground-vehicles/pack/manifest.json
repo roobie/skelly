@@ -10,10 +10,6 @@
       "path": "ground-vehicles-items.json"
     },
     {
-      "kind": "content",
-      "path": "models-ground-vehicles.json"
-    },
-    {
       "kind": "json",
       "path": "assets/manifest.json"
     },
@@ -24,10 +20,6 @@
     {
       "kind": "json",
       "path": "things/battery_tray.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/bottle_jack.model.json"
     },
     {
       "kind": "json",
@@ -60,10 +52,6 @@
     {
       "kind": "json",
       "path": "things/door_mirror.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/engine_hoist.model.json"
     },
     {
       "kind": "json",
@@ -319,10 +307,6 @@
     },
     {
       "kind": "json",
-      "path": "things/scissor_jack.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/steering_wheel.model.json"
     },
     {
@@ -332,10 +316,6 @@
     {
       "kind": "asset",
       "path": "assets/models/battery_tray.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/bottle_jack.glb"
     },
     {
       "kind": "asset",
@@ -368,10 +348,6 @@
     {
       "kind": "asset",
       "path": "assets/models/door_mirror.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/engine_hoist.glb"
     },
     {
       "kind": "asset",
@@ -624,10 +600,6 @@
     {
       "kind": "asset",
       "path": "assets/models/pickup_bed_side.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/scissor_jack.glb"
     },
     {
       "kind": "asset",

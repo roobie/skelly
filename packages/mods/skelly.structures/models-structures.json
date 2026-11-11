@@ -1,22 +1,3 @@
 {
-  "models": [
-    {
-      "file": "assets/models/hinge_set.glb",
-      "id": "hinge_set",
-      "itemPresentation": {
-        "materials": ["metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "hinge_set": {
-          "centreOfMass": [-1.1456795187715064e-18, 0.0019473684210526314, 0],
-          "massKg": 0.35999999999999999,
-          "node": "hinge_set:compound"
-        }
-      }
-    }
-  ]
+  "models": []
 }

@@ -25,6 +25,7 @@
   "assets/models/crystal_lantern.glb": {
     "materials": ["plastic-charcoal", "rubber-black", "alu-bare", "crystal-glow-blue", "steel-grey"]
   },
+  "assets/models/dead_desk_lamp.glb": { "materials": ["steel-grey", "paint-charcoal", "paint-terracotta"] },
   "assets/models/electric_lantern.glb": { "materials": ["plastic-green", "plastic-frosted", "plastic-black"] },
   "assets/models/electric_lighter.glb": {
     "materials": ["steel-grey", "plastic-black", "ceramic-white", "steel-stainless", "crystal-glow-blue"]
@@ -40,6 +41,7 @@
     "materials": ["wood-oak", "iron-dull", "wood-walnut", "brass-dull", "cloth-charred", "glow-flame"]
   },
   "assets/models/fire_piston.glb": { "materials": ["wood-walnut", "cord-cotton", "wood-birch", "bone"] },
+  "assets/models/flashlight.glb": { "materials": ["polymer-black", "plastic-white"] },
   "assets/models/flint_and_steel.glb": { "materials": ["steel-heat-tint", "obsidian", "chalk-white"] },
   "assets/models/flip_top_lighter.glb": {
     "materials": ["alu-bare", "steel-stainless", "plastic-black", "cloth-cream", "steel-grey"]
@@ -48,6 +50,9 @@
   "assets/models/glow_light_covered.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
   "assets/models/glow_light.glb": { "materials": ["brass-polished", "glass-clear", "gem-aquamarine"] },
   "assets/models/glowstick.glb": { "materials": ["chemical-light tube", "end caps"] },
+  "assets/models/headlamp.glb": {
+    "materials": ["cord-olive", "plastic-red", "steel-grey", "glass-grey", "paint-charcoal"]
+  },
   "assets/models/heavy_flashlight.glb": {
     "materials": ["plastic-orange", "rubber-black", "plastic-black", "crystal-glow-white", "steel-grey"]
   },

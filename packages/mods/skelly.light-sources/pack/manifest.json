@@ -30,6 +30,18 @@
     },
     {
       "kind": "json",
+      "path": "things/dead_desk_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flashlight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/headlamp.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/lighter.model.json"
     },
     {
@@ -54,7 +66,19 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/dead_desk_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flashlight.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/glowstick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/headlamp.glb"
     },
     {
       "kind": "asset",

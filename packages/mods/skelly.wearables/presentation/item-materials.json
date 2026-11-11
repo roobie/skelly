@@ -72,6 +72,7 @@
   "assets/models/barrette.glb": {
     "materials": ["metal-silver", "plastic-black", "plastic-pink", "gem-clear", "gem-opaque"]
   },
+  "assets/models/baseball_cap.glb": { "materials": ["cloth-blue", "cloth-charcoal"] },
   "assets/models/basketball_shorts.glb": {
     "materials": ["cloth-navy", "plastic-charcoal", "cloth-white", "steel-bright"]
   },
@@ -159,7 +160,7 @@
   },
   "assets/models/bow_tie_collar.glb": { "materials": ["cloth-bright-white", "satin-black", "metal-gold"] },
   "assets/models/bow_tie.glb": { "materials": ["satin-black", "cloth-charcoal", "cloth-black", "metal-silver"] },
-  "assets/models/bowler_hat.glb": { "materials": ["cloth-charcoal", "satin-black"] },
+  "assets/models/bowler_hat.glb": { "materials": ["felt-charcoal", "satin-black"] },
   "assets/models/bowling_shoes.glb": {
     "materials": ["leather-brown", "paint-cream", "paint-oxblood", "paint-charcoal", "cloth-white"]
   },
@@ -208,7 +209,7 @@
   "assets/models/cardboard_great_helm.glb": {
     "materials": ["paperboard-tan", "alu-bare", "screen-black", "paperboard-brown", "tape-grey"]
   },
-  "assets/models/cargo_pants.glb": { "materials": ["cord-olive", "paint-charcoal"] },
+  "assets/models/cargo_pants.glb": { "materials": ["cord-olive", "cloth-charcoal"] },
   "assets/models/cargo_shorts.glb": {
     "materials": ["cloth-olive-drab", "plastic-charcoal", "webbing-olive-dark", "plastic-matte-black"]
   },
@@ -278,11 +279,11 @@
   "assets/models/collar_bar.glb": { "materials": ["metal-silver"] },
   "assets/models/combat_blouse.glb": { "materials": ["cloth-ucp", "hook-loop-grey"] },
   "assets/models/combat_boots_worn_foot.glb": {
-    "materials": ["rubber-black", "nylon-coyote", "polymer-fde", "webbing-black"]
+    "materials": ["rubber-black", "nylon-coyote", "leather-coyote", "webbing-black"]
   },
-  "assets/models/combat_boots_worn_shaft.glb": { "materials": ["nylon-coyote", "polymer-fde", "webbing-black"] },
+  "assets/models/combat_boots_worn_shaft.glb": { "materials": ["nylon-coyote", "leather-coyote", "webbing-black"] },
   "assets/models/combat_boots.glb": {
-    "materials": ["rubber-black", "nylon-coyote", "polymer-fde", "paint-charcoal", "webbing-black"]
+    "materials": ["rubber-black", "nylon-coyote", "leather-coyote", "paint-charcoal", "webbing-black"]
   },
   "assets/models/combat_helmet.glb": { "materials": ["polymer-fde", "cloth-black", "polymer-black", "nylon-coyote"] },
   "assets/models/combat_shirt.glb": {
@@ -457,7 +458,6 @@
   },
   "assets/models/fanny_pack_worn_jacket.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
   "assets/models/fanny_pack_worn.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
-  "assets/models/fanny_pack.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
   "assets/models/faraday_mail_suit.glb": {
     "materials": ["steel-heat-tint", "leather-brown", "bronze-polished", "cloth-black", "steel-bright"]
   },
@@ -885,7 +885,6 @@
   "assets/models/hijab.glb": { "materials": ["cloth-navy", "metal-silver"] },
   "assets/models/hiking_backpack_worn_jacket.glb": { "materials": ["cord-olive", "paint-charcoal", "polymer-black"] },
   "assets/models/hiking_backpack_worn.glb": { "materials": ["cord-olive", "paint-charcoal", "polymer-black"] },
-  "assets/models/hiking_backpack.glb": { "materials": ["cord-olive", "paint-charcoal"] },
   "assets/models/hiking_boots.glb": {
     "materials": ["rubber-black", "leather-brown", "plastic-charcoal", "cloth-khaki", "paint-charcoal", "nylon-red"]
   },
@@ -894,7 +893,10 @@
   "assets/models/holster.glb": { "materials": ["leather-brown", "leather-chestnut", "leather-black", "brass-dull"] },
   "assets/models/hooded_black_robe.glb": { "materials": ["cloth-black", "plastic-charcoal", "cord-cotton"] },
   "assets/models/hooded_robe.glb": { "materials": ["cloth-brown", "cloth-cream", "cord-cotton"] },
-  "assets/models/hoodie.glb": { "materials": ["plastic-red", "paint-charcoal"] },
+  "assets/models/hoodie_worn_body.glb": { "materials": ["cloth-red", "cloth-charcoal"] },
+  "assets/models/hoodie_worn_fore.glb": { "materials": ["cloth-red", "cloth-charcoal"] },
+  "assets/models/hoodie_worn_upper.glb": { "materials": ["cloth-red"] },
+  "assets/models/hoodie.glb": { "materials": ["cloth-red", "cloth-charcoal"] },
   "assets/models/hoof_furs.glb": { "materials": ["fur-pale", "skin-rawhide"] },
   "assets/models/hot_pants.glb": { "materials": ["cloth-denim", "plastic-charcoal", "cloth-orange", "brass-dull"] },
   "assets/models/house_coat.glb": { "materials": ["cloth-cream", "cloth-blue"] },
@@ -904,9 +906,15 @@
   "assets/models/insulated_work_coveralls.glb": {
     "materials": ["cloth-brown", "fur-pale", "suede-brown", "brass-dull"]
   },
-  "assets/models/jacket.glb": { "materials": ["paperboard-brown", "paint-charcoal"] },
+  "assets/models/jacket_worn_body.glb": { "materials": ["cloth-shirt-player", "cloth-charcoal", "steel-grey"] },
+  "assets/models/jacket_worn_fore.glb": { "materials": ["cloth-shirt-player", "cloth-charcoal"] },
+  "assets/models/jacket_worn_upper.glb": { "materials": ["cloth-shirt-player"] },
+  "assets/models/jacket.glb": { "materials": ["cloth-brown", "cloth-charcoal"] },
   "assets/models/jade_brooch.glb": { "materials": ["metal-gold", "gem-green", "steel-bright"] },
-  "assets/models/jeans.glb": { "materials": ["plastic-blue"] },
+  "assets/models/jeans_worn_pelvis.glb": { "materials": ["cloth-pants-player", "cloth-charcoal"] },
+  "assets/models/jeans_worn_shin.glb": { "materials": ["cloth-pants-player", "cloth-charcoal"] },
+  "assets/models/jeans_worn_thigh.glb": { "materials": ["cloth-pants-player"] },
+  "assets/models/jeans.glb": { "materials": ["cloth-denim"] },
   "assets/models/jersey.glb": { "materials": ["lycra-blue", "cloth-navy", "cloth-bright-white"] },
   "assets/models/jewelled_gold_crown.glb": {
     "materials": ["metal-gold", "brass-polished", "gem-red", "gem-blue", "gem-green"]
@@ -1473,7 +1481,9 @@
   },
   "assets/models/riveted_steel_half_mask.glb": { "materials": ["steel-grey", "plastic-matte-black", "steel-bright"] },
   "assets/models/robe.glb": { "materials": ["cloth-brown", "suede-brown"] },
-  "assets/models/rubber_boots.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/rubber_boots_worn_foot.glb": { "materials": ["rubber-offblack", "rubber-black"] },
+  "assets/models/rubber_boots_worn_shaft.glb": { "materials": ["rubber-black", "rubber-offblack"] },
+  "assets/models/rubber_boots.glb": { "materials": ["steel-grey", "rubber-black"] },
   "assets/models/rubber_gloves.glb": { "materials": ["plastic-yellow"] },
   "assets/models/rune_forged_tool_belt.glb": {
     "materials": [
@@ -1507,7 +1517,6 @@
   "assets/models/scarf.glb": { "materials": ["cloth-red", "cloth-crimson", "cloth-cream"] },
   "assets/models/school_backpack_worn_jacket.glb": { "materials": ["plastic-red", "paint-charcoal", "polymer-black"] },
   "assets/models/school_backpack_worn.glb": { "materials": ["plastic-red", "paint-charcoal", "polymer-black"] },
-  "assets/models/school_backpack.glb": { "materials": ["plastic-red", "paint-charcoal"] },
   "assets/models/scrap_arm_guards.glb": {
     "materials": ["cloth-rag", "scrap-rusted", "steel-galvanised", "cord-olive"]
   },
@@ -1681,6 +1690,8 @@
   "assets/models/small_bikini_top.glb": { "materials": ["cloth-red", "cloth-crimson"] },
   "assets/models/small_cotton_socks.glb": { "materials": ["cloth-white", "felt-grey"] },
   "assets/models/small_wool_socks.glb": { "materials": ["wool-grey", "felt-grey", "cloth-brown"] },
+  "assets/models/sneakers_worn_foot.glb": { "materials": ["rubber-black", "cloth-pants-player"] },
+  "assets/models/sneakers_worn_shaft.glb": { "materials": ["cloth-pants-player", "rubber-black"] },
   "assets/models/sneakers.glb": { "materials": ["rubber-black", "cloth-pants-player"] },
   "assets/models/snow_goggles.glb": { "materials": ["wax-ivory", "screen-black", "skin-rawhide"] },
   "assets/models/socks.glb": { "materials": ["cloth-white", "felt-grey"] },
@@ -1773,6 +1784,7 @@
       "rubber-black"
     ]
   },
+  "assets/models/tank_top_worn_body.glb": { "materials": ["cloth-heather-grey"] },
   "assets/models/tank_top.glb": { "materials": ["cloth-heather-grey", "cloth-charcoal"] },
   "assets/models/technical_wetsuit_shorts.glb": {
     "materials": ["neoprene-black", "canvas-grey", "cloth-white", "nylon-black", "steel-bright"]
@@ -1866,9 +1878,9 @@
   "assets/models/union_suit.glb": { "materials": ["cloth-red", "cloth-crimson", "pearl"] },
   "assets/models/unitard.glb": { "materials": ["cloth-purple", "lycra-black", "void-black"] },
   "assets/models/utility_kilt.glb": { "materials": ["cloth-khaki", "webbing-black", "steel-bright", "cloth-brown"] },
-  "assets/models/utility_vest_worn_jacket.glb": { "materials": ["polymer-od-green", "cord-olive"] },
-  "assets/models/utility_vest_worn.glb": { "materials": ["polymer-od-green", "cord-olive"] },
-  "assets/models/utility_vest.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },
+  "assets/models/utility_vest_worn_jacket.glb": { "materials": ["cloth-olive-drab", "cord-olive"] },
+  "assets/models/utility_vest_worn.glb": { "materials": ["cloth-olive-drab", "cord-olive"] },
+  "assets/models/utility_vest.glb": { "materials": ["cloth-olive-drab", "cloth-charcoal"] },
   "assets/models/uttarasanga.glb": { "materials": ["cloth-saffron", "cloth-orange"] },
   "assets/models/vampire_fangs.glb": { "materials": ["plastic-pink", "bone"] },
   "assets/models/varsity_jacket.glb": { "materials": ["cloth-red", "leather-white", "cloth-cream", "metal-silver"] },
@@ -1924,6 +1936,12 @@
   "assets/models/winter_gloves.glb": { "materials": ["cloth-navy", "cloth-charcoal"] },
   "assets/models/witch_dress.glb": { "materials": ["cloth-black", "void-black", "cloth-purple"] },
   "assets/models/wizard_hat.glb": { "materials": ["cloth-blue", "metal-gold"] },
+  "assets/models/wizard_robe_worn_body.glb": { "materials": ["cloth-navy", "metal-gold", "cloth-shimmer"] },
+  "assets/models/wizard_robe_worn_fore.glb": { "materials": ["cloth-navy", "metal-gold", "cloth-shimmer"] },
+  "assets/models/wizard_robe_worn_pelvis.glb": { "materials": ["cloth-navy", "metal-gold"] },
+  "assets/models/wizard_robe_worn_shin.glb": { "materials": ["cloth-navy", "metal-gold"] },
+  "assets/models/wizard_robe_worn_thigh.glb": { "materials": ["cloth-navy"] },
+  "assets/models/wizard_robe_worn_upper.glb": { "materials": ["cloth-navy"] },
   "assets/models/wizard_robe.glb": { "materials": ["cloth-navy", "cloth-shimmer", "metal-gold"] },
   "assets/models/wolf_skull_helmet.glb": {
     "materials": ["bone", "plastic-matte-black", "chalk-white", "leather-brown", "brass-dull"]
@@ -1950,18 +1968,6 @@
   "assets/models/work_trousers.glb": {
     "materials": ["wool-grey", "plastic-charcoal", "steel-bright", "cloth-charcoal"]
   },
-  "assets/models/worn_boot_foot.glb": { "materials": ["rubber-black", "paint-charcoal"] },
-  "assets/models/worn_boot_shaft.glb": { "materials": ["rubber-black", "paint-charcoal"] },
-  "assets/models/worn_hoodie_body.glb": { "materials": ["plastic-red", "paint-charcoal"] },
-  "assets/models/worn_hoodie_fore.glb": { "materials": ["plastic-red", "paint-charcoal"] },
-  "assets/models/worn_hoodie_upper.glb": { "materials": ["plastic-red"] },
-  "assets/models/worn_jacket_body.glb": { "materials": ["cloth-shirt-player", "paint-charcoal", "steel-grey"] },
-  "assets/models/worn_jacket_fore.glb": { "materials": ["cloth-shirt-player", "paint-charcoal"] },
-  "assets/models/worn_jacket_upper.glb": { "materials": ["cloth-shirt-player"] },
-  "assets/models/worn_sneaker_foot.glb": { "materials": ["cloth-pants-player", "rubber-black"] },
-  "assets/models/worn_trousers_pelvis.glb": { "materials": ["cloth-pants-player", "paint-charcoal"] },
-  "assets/models/worn_trousers_shin.glb": { "materials": ["cloth-pants-player", "paint-charcoal"] },
-  "assets/models/worn_trousers_thigh.glb": { "materials": ["cloth-pants-player"] },
   "assets/models/woven_anklet.glb": { "materials": ["cloth-red", "cloth-yellow", "cloth-green", "cloth-blue"] },
   "assets/models/wristwatch.glb": {
     "materials": [

@@ -102,6 +102,10 @@
     },
     {
       "kind": "json",
+      "path": "gungen/barrel_pipe.model.json"
+    },
+    {
+      "kind": "json",
       "path": "gungen/barrel_pistol.model.json"
     },
     {
@@ -130,11 +134,23 @@
     },
     {
       "kind": "json",
+      "path": "gungen/bolt_carrier_pipe.model.json"
+    },
+    {
+      "kind": "json",
       "path": "gungen/bolt_carrier_pump.model.json"
     },
     {
       "kind": "json",
+      "path": "gungen/bolt_handle_pipe.model.json"
+    },
+    {
+      "kind": "json",
       "path": "gungen/bolt_handle_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_knob_pipe.model.json"
     },
     {
       "kind": "json",
@@ -234,6 +250,10 @@
     },
     {
       "kind": "json",
+      "path": "gungen/handguard_pipe.model.json"
+    },
+    {
+      "kind": "json",
       "path": "gungen/handguard_sporter.model.json"
     },
     {
@@ -255,6 +275,10 @@
     {
       "kind": "json",
       "path": "gungen/lower_ar_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/lower_pipe.model.json"
     },
     {
       "kind": "json",
@@ -330,6 +354,10 @@
     },
     {
       "kind": "json",
+      "path": "gungen/rail_rear_sight.model.json"
+    },
+    {
+      "kind": "json",
       "path": "gungen/real_suppressor.model.json"
     },
     {
@@ -351,6 +379,10 @@
     {
       "kind": "json",
       "path": "gungen/receiver_ar_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/receiver_pipe.model.json"
     },
     {
       "kind": "json",
@@ -447,6 +479,10 @@
     {
       "kind": "json",
       "path": "gungen/stock_m4_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/stock_pipe.model.json"
     },
     {
       "kind": "json",
@@ -682,6 +718,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/barrel_pipe.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/barrel_pistol.glb"
     },
     {
@@ -710,11 +750,23 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/bolt_carrier_pipe.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/bolt_carrier_pump.glb"
     },
     {
       "kind": "asset",
+      "path": "assets/models/bolt_handle_pipe.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/bolt_handle_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_knob_pipe.glb"
     },
     {
       "kind": "asset",
@@ -830,6 +882,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/handguard_pipe.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/handguard_sporter.glb"
     },
     {
@@ -851,6 +907,10 @@
     {
       "kind": "asset",
       "path": "assets/models/lower_ar_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lower_pipe.glb"
     },
     {
       "kind": "asset",
@@ -926,6 +986,10 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/rail_rear_sight.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/real_suppressor.glb"
     },
     {
@@ -947,6 +1011,10 @@
     {
       "kind": "asset",
       "path": "assets/models/receiver_ar_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/receiver_pipe.glb"
     },
     {
       "kind": "asset",
@@ -1051,6 +1119,10 @@
     {
       "kind": "asset",
       "path": "assets/models/stock_m4_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stock_pipe.glb"
     },
     {
       "kind": "asset",

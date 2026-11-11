@@ -14,34 +14,6 @@
     {
       "kind": "content",
       "path": "basic-recipes-items.json"
-    },
-    {
-      "kind": "content",
-      "path": "models-basic-recipes.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hand_saw.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/wooden_plank.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hand_saw.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/wooden_plank.glb"
     }
   ],
   "id": "skelly.basic-recipes",

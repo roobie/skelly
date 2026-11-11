@@ -11,6 +11,7 @@
     import 'packages/skelly-assets/built/skelly.firearms/gungen/optic_mini_reflex.model.json',
     import 'packages/skelly-assets/built/skelly.firearms/gungen/optic_tube_dot.model.json',
     import 'packages/skelly-assets/built/skelly.firearms/gungen/rail_front_sight.model.json',
+    import 'packages/skelly-assets/built/skelly.firearms/gungen/rail_rear_sight.model.json',
     import 'packages/skelly-assets/built/skelly.firearms/gungen/real_suppressor.model.json',
     import 'packages/skelly-assets/built/skelly.firearms/gungen/tactical_flashlight_mount.model.json',
   ],

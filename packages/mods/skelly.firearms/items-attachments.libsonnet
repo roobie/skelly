@@ -88,6 +88,14 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "model": "rail_front_sight"
     },
     {
+      "id": "rail_rear_sight",
+      "name": "Rail-mounted rear sight",
+      "category": "misc",
+      "weight": 90,
+      "size": [1, 1],
+      "model": "rail_rear_sight"
+    },
+    {
       "id": "real_suppressor",
       "name": "Suppressor",
       "category": "misc",
