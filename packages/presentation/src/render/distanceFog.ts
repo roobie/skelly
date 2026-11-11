@@ -14,6 +14,9 @@
 // which makes every surface the far plane clips fully fogged already. Only a surface far above or
 // below the camera, nearly under or over it, reaches that bound before its horizontal one.
 //
+// Over the band from fog start to end the fog follows a power curve (`DistanceFogShape`, `curveExponent`) in place of
+// three's smoothstep, so content decides how long far shapes keep their silhouette before the band closes.
+//
 // This relies on three.js internals: the exact text of its four fog chunks (0.186). The patch
 // checks each line it replaces and throws if three changed it, like lightFalloff.ts.
 
@@ -22,6 +25,15 @@ import { ShaderChunk } from 'three';
 const VARYING = 'varying float vFogDepth;';
 const DEPTH = 'vFogDepth = - mvPosition.z;';
 const FOG_VIEW = 'centroid varying vec3 vFogView;';
+const SMOOTHSTEP = 'smoothstep( fogNear, fogFar, vFogDepth )';
+
+/** How the distance fog is shaped: both are compiled into the shared fog chunks once. */
+export interface DistanceFogShape {
+  /** The camera's far plane as a multiple of where the fog ends. */
+  farPlaneScale: number;
+  /** The fog over its band is t ** curveExponent, t running 0 to 1 from fog start to end. */
+  curveExponent: number;
+}
 
 const replaced = (chunk: string, name: string, from: string, to: string): string => {
   if (!chunk.includes(from)) {
@@ -41,11 +53,15 @@ const distanceFunction = (farPlaneScale: number): string => `${FOG_VIEW}
 /** three's four fog chunks with the depth replaced by `fogDistance()`. Throws if three changed a line. */
 export const withDistanceFog = (
   chunks: Pick<typeof ShaderChunk, 'fog_pars_vertex' | 'fog_vertex' | 'fog_pars_fragment' | 'fog_fragment'>,
-  farPlaneScale: number,
+  { farPlaneScale, curveExponent }: DistanceFogShape,
 ): Pick<typeof ShaderChunk, 'fog_pars_vertex' | 'fog_vertex' | 'fog_pars_fragment' | 'fog_fragment'> => {
   if (!(Number.isFinite(farPlaneScale) && farPlaneScale >= 1)) {
     throw new Error(`distanceFog: far-plane scale must be at least 1, got ${farPlaneScale}`);
   }
+  if (!(Number.isFinite(curveExponent) && curveExponent > 0)) {
+    throw new Error(`distanceFog: curve exponent must be positive, got ${curveExponent}`);
+  }
+  const curve = `pow( clamp( ( fogDistance() - fogNear ) / ( fogFar - fogNear ), 0.0, 1.0 ), ${curveExponent.toFixed(4)} )`;
   return {
     fog_pars_vertex: replaced(chunks.fog_pars_vertex, 'fog_pars_vertex', VARYING, FOG_VIEW),
     fog_vertex: replaced(chunks.fog_vertex, 'fog_vertex', DEPTH, 'vFogView = mvPosition.xyz;'),
@@ -55,20 +71,25 @@ export const withDistanceFog = (
       VARYING,
       distanceFunction(farPlaneScale),
     ),
-    fog_fragment: replaced(chunks.fog_fragment, 'fog_fragment', 'vFogDepth', 'fogDistance()'),
+    fog_fragment: replaced(
+      replaced(chunks.fog_fragment, 'fog_fragment', SMOOTHSTEP, curve),
+      'fog_fragment',
+      'vFogDepth',
+      'fogDistance()',
+    ),
   };
 };
 
-let installedScale: number | undefined;
+let installed: DistanceFogShape | undefined;
 
-/** Patches three's shared fog chunks once, before any material compiles. Refuses a second, different scale. */
-export const installDistanceFog = (farPlaneScale: number): void => {
-  if (installedScale !== undefined) {
-    if (installedScale !== farPlaneScale) {
-      throw new Error(`distanceFog: already installed with scale ${installedScale}, not ${farPlaneScale}`);
+/** Patches three's shared fog chunks once, before any material compiles. Refuses a second, different shape. */
+export const installDistanceFog = (shape: DistanceFogShape): void => {
+  if (installed !== undefined) {
+    if (installed.farPlaneScale !== shape.farPlaneScale || installed.curveExponent !== shape.curveExponent) {
+      throw new Error(`distanceFog: already installed as ${JSON.stringify(installed)}, not ${JSON.stringify(shape)}`);
     }
     return;
   }
-  Object.assign(ShaderChunk, withDistanceFog(ShaderChunk, farPlaneScale));
-  installedScale = farPlaneScale;
+  Object.assign(ShaderChunk, withDistanceFog(ShaderChunk, shape));
+  installed = { ...shape };
 };

@@ -91,6 +91,7 @@ export function createEngine(
     camera,
     radiusM,
     farPlaneScale: config.fogFarPlaneScale,
+    fogCurveExponent: config.fogCurveExponent,
   };
   // The sun sits in a rig so shadows can move its box with the player without touching the light's
   // direction (its position within the rig, which the hands' light copies, stays a unit vector).

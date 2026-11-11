@@ -12,6 +12,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     readyRadiusM: 64,
     streamHysteresisM: 16,
     fogFarPlaneScale: 1.5,
+    fogCurveExponent: 1,
     itemPictureCacheCapacity: 128,
     itemPicture: { framing: 1.1 },
     modelLoadConcurrency: 8,

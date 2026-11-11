@@ -266,6 +266,7 @@ describe('held light presentation', () => {
       camera,
       radiusM: 1,
       farPlaneScale: 1,
+      fogCurveExponent: 1,
     };
     const worldAmbientIntensity = sky.ambient.intensity;
     const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
@@ -333,6 +334,7 @@ describe('held light presentation', () => {
       camera: main,
       radiusM: 1,
       farPlaneScale: 1,
+      fogCurveExponent: 1,
     };
     held.render(renderer, main, sky);
     main.near = 0.2;
@@ -379,6 +381,7 @@ describe('held light presentation', () => {
       camera,
       radiusM: 1,
       farPlaneScale: 1,
+      fogCurveExponent: 1,
     });
     expect(renders).toBe(1);
     expect(renderer.autoClear).toBe(true);

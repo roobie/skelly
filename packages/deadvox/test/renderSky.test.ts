@@ -24,6 +24,7 @@ it('fog, background and mist follow local sky visibility from darkness to open s
     camera: new PerspectiveCamera(),
     radiusM: 100,
     farPlaneScale: graphicsFile.graphics[0]!.fogFarPlaneScale,
+    fogCurveExponent: graphicsFile.graphics[0]!.fogCurveExponent,
   };
   const mood = new Mood(
     { domElement: new EventTarget() } as unknown as WebGLRenderer,

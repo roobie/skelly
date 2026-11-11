@@ -30,6 +30,7 @@
         "label": "Fast camouflage pattern",
         "options": [false, true]
       },
+      "fogCurveExponent": 1,
       "fogFarPlaneScale": 1.5,
       "furnitureSectorChunks": 4,
       "gore": {

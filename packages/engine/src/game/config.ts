@@ -26,6 +26,8 @@ export interface GameConfig {
   streamHysteresisChunks: number;
   /** Content-owned camera far plane as a multiple of the fog's end. */
   fogFarPlaneScale: number;
+  /** Content-owned shape of the distance fog over its band. */
+  fogCurveExponent: number;
   /** Calendar seconds at the start (time of day on day 1). */
   start: number;
   /** Debug keys are on (hash `debug`). */
@@ -123,6 +125,7 @@ export const makeConfig = (
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
     streamHysteresisChunks: graphics.streamHysteresisM / (CHUNK * scale.blockSize),
     fogFarPlaneScale: graphics.fogFarPlaneScale,
+    fogCurveExponent: graphics.fogCurveExponent,
     start: selectedStart.startTimeGameTimeOfDay ?? defaultStart(content),
     debug: false,
     site: selectedStart.site,

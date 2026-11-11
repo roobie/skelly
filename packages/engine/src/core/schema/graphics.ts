@@ -49,6 +49,12 @@ export const GraphicsTuningSchema = strictObject({
    * (`packages/presentation/src/render/distanceFog.ts`).
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
+  /**
+   * The distance fog's curve between a look's fog start and end: fog = t ** exponent, t running 0 to 1 over the band.
+   * Above 1 the fog stays thin over most of the band and closes late, so far silhouettes keep their shape while the
+   * view's edge still ends in pure fog colour.
+   */
+  fogCurveExponent: pipe(number(), finite(), minValue(0.25), maxValue(8)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   /** The inventory picture camera's margin around a model's fitted bounds. */
   itemPicture: strictObject({ framing: Positive }),

@@ -51,6 +51,7 @@ const source = (options: GraphicsOptions) => ({
         readyRadiusM: 16,
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,
+        fogCurveExponent: 1,
         itemPictureCacheCapacity: 2,
         itemPicture: { framing: 1.1 },
         modelLoadConcurrency: 2,
