@@ -1,5 +1,5 @@
 import type { Clouds, DomeShape, Rgb, Sky } from '@skelly/engine/sky';
-import { Color, PerspectiveCamera, type ShaderMaterial, SRGBColorSpace } from 'three';
+import { Color, LessEqualDepth, PerspectiveCamera, type ShaderMaterial, SRGBColorSpace } from 'three';
 import { describe, expect, it } from 'vitest';
 import { createSkyDome, physicalShare, preethamTerms } from '../src/render/skyDome.ts';
 
@@ -29,6 +29,30 @@ describe('the physical sky terms', () => {
     expect(hazy.mie[2]).toBeCloseTo(clear.mie[2] * 2, 12);
     const none = preethamTerms(0.5, { ...physical, rayleigh: 0, mie: 0 });
     expect([...none.rayleigh, ...none.mie]).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+});
+
+describe('the dome against the opaque geometry', () => {
+  it('draws after the opaque geometry, writing no depth and passing only the cleared far plane', () => {
+    const dome = createSkyDome(
+      { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1 }] } as Clouds,
+      {
+        horizonBand: [0, 0.2],
+        glowBand: [0.2, 0.8],
+        physicalBand: [0.05, 0.3],
+        starField: { density: 0.1, size: 0.3, twinkle: 0.5 },
+        moon: { disc: [0.9, 0.99], discGain: 1, tightHalo: { power: 8, gain: 1 }, wideHalo: { power: 2, gain: 1 } },
+        sun: { disc: [0.9, 0.99], discGain: 1, tightHalo: { power: 8, gain: 1 }, wideHalo: { power: 2, gain: 1 } },
+        cloudLight: { light: 1, ambient: 1, facing: 0.5 },
+        cloudShape: { coverGain: 1, edgeSoftness: 0.1, horizonFade: [0, 0.2] },
+      } as DomeShape,
+    );
+    const material = dome.mesh.material as ShaderMaterial;
+    expect(dome.mesh.renderOrder).toBeGreaterThan(0);
+    expect(material.depthWrite).toBe(false);
+    expect(material.depthTest).toBe(true);
+    expect(material.depthFunc).toBe(LessEqualDepth);
+    dome.dispose();
   });
 });
 
