@@ -121,8 +121,11 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
 // Puts a compass in the dominant hand by daylight and counts how many pixels of the square around
 // its card differ visibly between the first frame that shows the card and the next frame, drawn
 // with only the card hidden. A page screenshot costs seconds per frame on the software renderer in
-// CI, so this reads the drawing buffer after the optical adapter, the frame's last draw, in one
-// page call. The shown window also comes back as a PNG for the artifact.
+// CI, so this reads the drawing buffer in one page call, each image once its frame's draws have
+// finished; on the held layer's stack the frame is not complete below render scale 1
+// (render/screenScale.ts, ScreenScale.render), and the unrendered strips' artifacts would count as
+// card changes, letting a missing card pass. The shown window also comes back as a PNG for the
+// artifact.
 const heldCompassCardChange = (page) =>
   page.evaluate((noon) => {
     const r = globalThis.primaryActionTest;
@@ -185,11 +188,17 @@ const heldCompassCardChange = (page) =>
           held.render = render;
           failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
         } else if (dial?.visible === true && !shown) {
-          shown = read(dial);
-          dial.visible = false;
+          // A microtask, not this stack: it runs once the frame callback (the upscale included)
+          // has returned, and still before the next frame can change the buffer.
+          queueMicrotask(() => {
+            shown = read(dial);
+            dial.visible = false;
+          });
         } else if (dial?.visible === false && shown) {
           held.render = render;
-          drawn(compare(shown, read(dial)));
+          queueMicrotask(() => {
+            drawn(compare(shown, read(dial)));
+          });
         }
       };
     });
