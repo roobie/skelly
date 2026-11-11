@@ -1178,13 +1178,14 @@ const skySunGlowCheck = async (lake, level, lakeErrors) => {
       const plain = await lookWith(brightSun);
       engine.mood.setBloom(true);
       const bloom = await lookWith(brightSun);
-      return { disc, unglowed, glowing, plain, bloom };
+      return { disc, unglowed, glowing, plain, bloom, bloomRan: engine.mood.bloomPass.enabled };
     },
     { surface: level, sunBrightness: BRIGHT_SUN },
   );
   process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
   const brightness = ({ r, g, b }) => r + g + b;
   const visiblyBrighter = (lit, dim) => brightness(lit) > brightness(dim) + 3 * horizonTolerance;
+  assert.ok(views.bloomRan, 'the bloom pass runs for the view that compares the sky with bloom on');
   assert.ok(
     visiblyBrighter(views.disc.colour, views.disc.beside),
     'the sun disc is in frame, brighter than the sky beside it',
