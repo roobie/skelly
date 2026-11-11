@@ -519,19 +519,19 @@ const fakePointerLock = () => {
 };
 
 // Every wait in this stage follows a page load or a software-rendered frame, whose duration scales with machine
-// load, so a Playwright timer only turns a busy runner into a failure. A hung wait is capped by the script's
-// outer `timeout`, and a failed world load ends its own wait through `worldReadiness`.
+// load, so a Playwright timer only turns a busy runner into a failure. A hung wait ends at the CI step's
+// `timeout-minutes` (`.github/workflows/deadvox-browser.yml`) or, run through `test:ui-browser`, at its `timeout`
+// (`packages/deadvox/package.json`, "test:ui-browser"). `timePhase` logs each phase's start and `enterWorld` each
+// readiness change, so the last lines before a kill name the stuck phase and the part that stayed false.
 const newStagePage = async (chromium, viewport) => {
   const page = await chromium.newPage({ viewport });
   page.setDefaultTimeout(0);
   return page;
 };
 
-// Returns the parts of world readiness once all hold or loading has failed, so the assertion names the part
-// that stayed false.
-const worldReadiness = () => {
+const readinessParts = () => {
   const mask = document.querySelector('#world-loading');
-  const parts = {
+  return {
     testHook: Boolean(globalThis.primaryActionTest),
     overlayHidden: document.querySelector('#overlay')?.hidden === true,
     pointerLocked: Boolean(document.pointerLockElement),
@@ -539,19 +539,31 @@ const worldReadiness = () => {
     loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
     maskHidden: mask?.hidden === true,
   };
-  const ready =
-    parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
-  return ready || parts.worldLoading === 'failed' ? parts : false;
 };
 
+const isEntered = (parts) =>
+  parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
+
+const READINESS_POLL_MS = 250;
+
+// Polls until the world is entered or its load has failed, logging each change of the parts.
 const enterWorld = async (page) => {
   await page.locator('#go').click();
-  const parts = await (await page.waitForFunction(worldReadiness)).jsonValue();
+  let parts;
+  let logged;
+  do {
+    parts = await page.evaluate(readinessParts);
+    const line = JSON.stringify(parts);
+    if (line !== logged) {
+      process.stdout.write(`WORLD_READINESS ${line}\n`);
+      logged = line;
+    }
+    if (!isEntered(parts) && parts.worldLoading !== 'failed') {
+      await new Promise((done) => setTimeout(done, READINESS_POLL_MS));
+    }
+  } while (!isEntered(parts) && parts.worldLoading !== 'failed');
   assert.equal(parts.worldLoading, 'ready', `the world becomes ready: ${JSON.stringify(parts)}`);
-  assert.ok(
-    parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.maskHidden,
-    `the ready world is entered: ${JSON.stringify(parts)}`,
-  );
+  assert.ok(isEntered(parts), `the ready world is entered: ${JSON.stringify(parts)}`);
 };
 
 const enterTestHouse = async (chromium, port) => {

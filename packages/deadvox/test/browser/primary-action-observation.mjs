@@ -17,6 +17,7 @@ export const logPhase = (phase, start) => {
 };
 
 export const timePhase = async (phase, action) => {
+  process.stdout.write(`PRIMARY_ACTION_PHASE_START ${phase}\n`);
   const start = performance.now();
   try {
     return await action();
