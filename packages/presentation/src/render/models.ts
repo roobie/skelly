@@ -11,6 +11,7 @@ import {
   Box3,
   type BufferGeometry,
   Group,
+  type LoadingManager,
   type Material,
   MathUtils,
   Matrix4,
@@ -254,8 +255,8 @@ export const instantiateSkin = (scene: Object3D) => {
 };
 
 /** A loader whose parse failures are tagged, so a retry of the fetch can tell them from transport failures. */
-const parseTaggingLoader = (): GLTFLoader => {
-  const loader = new GLTFLoader();
+const parseTaggingLoader = (manager?: LoadingManager): GLTFLoader => {
+  const loader = new GLTFLoader(manager);
   const parse = loader.parse.bind(loader);
   loader.parse = (data, path, onLoad, onError) => {
     try {
