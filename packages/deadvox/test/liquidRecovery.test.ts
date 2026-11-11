@@ -338,7 +338,7 @@ describe('recorded liquid recovery', () => {
     const { item, work } = payload(r);
     expect(work.outputs.length).toBeGreaterThan(0);
     r.inventory.landing = () => undefined;
-    expect(() => r.inventory.releaseWork(item, true, origin)).toThrow();
+    expect(() => r.inventory.releaseWork(item, true, { feet: origin })).toThrow();
     expect(volume(receiver)).toBe(0);
     expect(item.work).toBe(work);
   });

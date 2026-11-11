@@ -1251,7 +1251,14 @@ export const createSession = (options: SessionOptions) => {
     reach: () => reach(),
     clockRatio: sim.clock.ratio,
   });
-  sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
+  sim.actions.craft = craftActionHooks(inventory, character, reach, {
+    feet,
+    calendar: () => sim.calendar,
+    pieces: {
+      removalRefusal: (entity) => removalRefusal(furnitureMover(), entity),
+      remove: (entity) => removePiece(entity),
+    },
+  });
   sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
@@ -1807,7 +1814,7 @@ export const createSession = (options: SessionOptions) => {
       const [x, y, z] = location.pile.pos;
       return [x + 0.5, y + 0.25, z + 0.5];
     }
-    if (location?.kind === 'furniture' && !location.entity.carried) {
+    if ((location?.kind === 'furniture' || location?.kind === 'pieceWork') && !location.entity.carried) {
       const [x, y, z] = location.entity.pos;
       return [x + 0.5, y + 0.5, z + 0.5];
     }
@@ -2479,7 +2486,7 @@ export const createSession = (options: SessionOptions) => {
   const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
   /** Cancels the work that names a piece leaving the world, so a save never names a missing piece. */
   const forgetPiece = (entity: BlockEntity): void => {
-    sim.actions.cancelNaming(entity.uid);
+    sim.actions.cancelNaming(entity);
     queue.cancelNaming(entity.uid);
     searching.delete(entity);
     ladderHold.releasePiece(entity);
@@ -2493,7 +2500,7 @@ export const createSession = (options: SessionOptions) => {
       return text.common.gone;
     }
     const mover = furnitureMover();
-    const refusal = removalRefusal(mover, entity);
+    const refusal = entities.useRefusal(entity) ?? removalRefusal(mover, entity);
     if (refusal) {
       return refusal;
     }

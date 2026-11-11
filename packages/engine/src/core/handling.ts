@@ -261,7 +261,7 @@ export class HandlingQueue {
       return plan.reason;
     }
     const from = this.inventory.locate(item)!;
-    if (from.kind === 'work') {
+    if (from.kind === 'work' || from.kind === 'pieceWork') {
       return coreMessage(registry, 'inWork');
     }
     if (from.kind === 'slot' || from.kind === 'vehicle') {

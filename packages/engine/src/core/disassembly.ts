@@ -1,4 +1,6 @@
 // Content-owned yields for taking apart a finished item; work progress stays with Inventory.
+
+import type { BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
@@ -8,6 +10,7 @@ import { isEmpty } from './items.ts';
 import { supplyShare } from './lights.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
+import type { RecoveryWork } from './schema.ts';
 
 export type RecoveryOperation = 'salvage' | 'disassembly';
 export type RecoveryTarget =
@@ -133,33 +136,33 @@ export const sameDisassemblyOutputs = (
 const recoveryFraction = (definition: ItemDef, operation: RecoveryOperation) =>
   operation === 'disassembly' ? definition.disassembly?.liquidRecovery : definition.salvageLiquidRecovery;
 
+type RecoveryRow = Pick<RecoveryWork['yields'][number], 'fractions' | 'toolModifier'>;
+
+const rowQualities = (rows: readonly RecoveryRow[]): Set<string> =>
+  new Set(rows.flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])));
+
 const recoveryQualities = (definition: ItemDef, operation: RecoveryOperation): Set<string> => {
   const rows = operation === 'disassembly' ? [...(definition.disassembly?.yields ?? [])] : [];
   const liquid = recoveryFraction(definition, operation);
-  return new Set(
-    [...rows, ...(liquid ? [liquid] : [])].flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])),
-  );
+  return rowQualities([...rows, ...(liquid ? [liquid] : [])]);
 };
+
+const validToolLevels = (qualities: ReadonlySet<string>, levels: Record<string, number>): boolean =>
+  Object.keys(levels).length === qualities.size &&
+  [...qualities].every(
+    (quality) => Number.isSafeInteger(levels[quality]) && levels[quality]! >= 0 && levels[quality]! <= 5,
+  );
 
 export const validDisassemblyToolLevels = (
   definition: ItemDef,
   levels: Record<string, number>,
   operation = defaultOperation(definition),
-): boolean => {
-  const qualities = recoveryQualities(definition, operation);
-  return (
-    Object.keys(levels).length === qualities.size &&
-    [...qualities].every(
-      (quality) => Number.isSafeInteger(levels[quality]) && levels[quality]! >= 0 && levels[quality]! <= 5,
-    )
-  );
-};
+): boolean => validToolLevels(recoveryQualities(definition, operation), levels);
 
-const recoveryMultiplier = (
-  row: NonNullable<NonNullable<ItemDef['disassembly']>['liquidRecovery']>,
-  skillLevel: number,
-  toolLevel: (quality: string) => number,
-): number => {
+export const validPieceToolLevels = (work: RecoveryWork, levels: Record<string, number>): boolean =>
+  validToolLevels(rowQualities(work.yields), levels);
+
+const recoveryMultiplier = (row: RecoveryRow, skillLevel: number, toolLevel: (quality: string) => number): number => {
   const effectLevel = skillEffectLevel(skillLevel);
   const fraction = row.fractions[Math.min(effectLevel, row.fractions.length - 1)]!;
   const level = row.toolModifier ? toolLevel(row.toolModifier.quality) : 0;
@@ -209,13 +212,34 @@ export const disassemblyOutputs = (
   if (operation === 'salvage') {
     return (definition.salvage ?? []).map(({ item, count }) => ({ item, count }));
   }
-  if (!disassembly) {
-    return [];
-  }
-  return disassembly.yields.flatMap((yieldItem) => {
+  return disassembly ? yieldOutputs(disassembly.yields, skillLevel, toolLevel) : [];
+};
+
+const yieldOutputs = (
+  yields: RecoveryWork['yields'],
+  skillLevel: number,
+  toolLevel: (quality: string) => number,
+): DisassemblyOutput[] =>
+  yields.flatMap((yieldItem) => {
     const count = rounded(yieldItem.count * recoveryMultiplier(yieldItem, skillLevel, toolLevel), yieldItem.rounding);
     return count > 0 ? [{ item: yieldItem.item, count }] : [];
   });
+
+/** The level of the skill a recovery names, or the floor when no skill claims that role. */
+const recoverySkillLevel = (registry: Registry, character: CraftCharacter, role: RecoveryWork['skill'] | undefined) => {
+  const provider = role ? claimed(registry.skills, role) : undefined;
+  return provider ? (character.skills[provider.id] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
+};
+
+/** The best level within reach of each quality a recovery's rows name. */
+const reachToolLevels = (reach: ReachSnapshot, qualities: ReadonlySet<string>): Record<string, number> => {
+  const reachIndex = indexCraftReach(reach);
+  return Object.fromEntries(
+    [...qualities].map((quality) => [
+      quality,
+      Math.max(0, ...(reachIndex.qualities.get(quality) ?? []).map(({ level }) => level)),
+    ]),
+  );
 };
 
 export const planDisassembly = (
@@ -240,13 +264,8 @@ export const planDisassembly = (
     return undefined;
   }
   const role = operation === 'disassembly' ? definition.disassembly?.skill : definition.salvageLiquidRecovery?.skill;
-  const provider = role ? claimed(reach.player.inventory.registry.skills, role) : undefined;
-  const skillLevel = provider ? (character.skills[provider.id] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
-  const reachIndex = indexCraftReach(reach);
-  const qualityLevel = (quality: string) =>
-    Math.max(0, ...(reachIndex.qualities.get(quality) ?? []).map(({ level }) => level));
-  const qualities = recoveryQualities(definition, operation);
-  const toolLevels = Object.fromEntries([...qualities].map((quality) => [quality, qualityLevel(quality)]));
+  const skillLevel = recoverySkillLevel(reach.player.inventory.registry, character, role);
+  const toolLevels = reachToolLevels(reach, recoveryQualities(definition, operation));
   const work = disassemblyWorkTime(definition, operation);
   const gather = gatherGameSeconds(entry.handlingTime, reach.player.clock.ratio);
   return {
@@ -266,3 +285,53 @@ export const planDisassembly = (
     duration: gather + work,
   };
 };
+
+export interface PieceDisassemblyPlan {
+  kind: 'pieceDisassembly';
+  entity: BlockEntity;
+  outputs: DisassemblyOutput[];
+  skillLevel: number;
+  toolLevels: Record<string, number>;
+  duration: number;
+}
+
+/** A piece's authored take-apart yield; a piece taken apart into a parts blueprint has none. */
+export const pieceRecoveryWork = (registry: Registry, furniture: string): RecoveryWork | undefined =>
+  registry.furniture.get(furniture)?.takeApart?.yield;
+
+export const pieceDisassemblyOutputs = (
+  work: RecoveryWork,
+  skillLevel: number,
+  toolLevels: Record<string, number>,
+): DisassemblyOutput[] => yieldOutputs(work.yields, skillLevel, (quality) => toolLevels[quality] ?? 0);
+
+/** The yield a piece gives the actor now; whether the piece may be taken at all is the caller's to refuse. */
+export const planPieceDisassembly = (
+  entity: BlockEntity,
+  reach: ReachSnapshot,
+  character: CraftCharacter,
+): PieceDisassemblyPlan | undefined => {
+  const { registry } = reach.player.inventory;
+  const work = pieceRecoveryWork(registry, entity.type);
+  if (!work) {
+    return undefined;
+  }
+  const skillLevel = recoverySkillLevel(registry, character, work.skill);
+  const toolLevels = reachToolLevels(reach, rowQualities(work.yields));
+  return {
+    kind: 'pieceDisassembly',
+    entity,
+    outputs: pieceDisassemblyOutputs(work, skillLevel, toolLevels),
+    skillLevel,
+    toolLevels,
+    duration: work.timeGameMinutes,
+  };
+};
+
+export const samePieceDisassembly = (left: PieceDisassemblyPlan, right: PieceDisassemblyPlan): boolean =>
+  left.entity === right.entity &&
+  left.skillLevel === right.skillLevel &&
+  left.duration === right.duration &&
+  Object.keys(left.toolLevels).length === Object.keys(right.toolLevels).length &&
+  Object.entries(left.toolLevels).every(([quality, level]) => right.toolLevels[quality] === level) &&
+  sameDisassemblyOutputs(left.outputs, right.outputs);

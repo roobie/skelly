@@ -4,7 +4,7 @@ import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './charac
 import type { RecipeDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import { allocateLiquids, type CraftLiquid, type LiquidDemand } from './craftLiquids.ts';
-import type { DisassemblyPlan } from './disassembly.ts';
+import type { DisassemblyPlan, PieceDisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
 import { craftComponentEligible, type Item, isEmpty } from './items.ts';
 import { countText } from './numberText.ts';
@@ -27,7 +27,7 @@ interface CraftPlan {
   gather: number;
   work: number;
 }
-export type WorkPlan = CraftPlan | DisassemblyPlan;
+export type WorkPlan = CraftPlan | DisassemblyPlan | PieceDisassemblyPlan;
 interface CraftMissing {
   reason: string;
   knowledge: boolean;
