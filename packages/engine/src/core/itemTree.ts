@@ -15,6 +15,8 @@ interface PileShape<Node> {
 }
 interface EntityShape<Node> {
   readonly pockets?: PlacedItem<Node>[][];
+  /** The world job on this piece, running or paused (`packages/deadvox/DESIGN.md`, "World repair selection"). */
+  readonly work?: Node | undefined;
 }
 interface VehicleShape<Node> {
   readonly origin: Vec3;
@@ -42,7 +44,8 @@ export type TreeLocation<Node, Pile, Entity> =
   | { kind: 'slot'; owner: Node; slot: string }
   | { kind: 'pocket'; owner: Node; pocket: number; placed: PlacedItem<Node> }
   | { kind: 'pile'; pile: Pile; placed: PlacedItem<Node> }
-  | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> };
+  | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> }
+  | { kind: 'pieceWork'; entity: Entity };
 
 export interface TreeEntry<Node, Pile, Entity> {
   readonly item: Node;
@@ -88,8 +91,22 @@ export function* itemRoots<Node, Pile extends PileShape<Node>, Entity extends En
     pileIndex += 1;
   }
   yield* vehicleRoots<Node, Pile, Entity>(forest.vehicles ?? []);
+  yield* entityRoots<Node, Pile, Entity>(forest.entities, prefix);
+}
+
+function* entityRoots<Node, Pile, Entity extends EntityShape<Node>>(
+  entities: Iterable<Entity>,
+  prefix: string,
+): Generator<TreeEntry<Node, Pile, Entity>> {
   let entityIndex = 0;
-  for (const entity of forest.entities) {
+  for (const entity of entities) {
+    if (entity.work) {
+      yield {
+        item: entity.work,
+        location: { kind: 'pieceWork', entity },
+        path: `${prefix}.entities[${entityIndex}].work`,
+      };
+    }
     for (const [pocket, grid] of (entity.pockets ?? []).entries()) {
       for (const [index, placed] of grid.entries()) {
         yield {

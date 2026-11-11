@@ -561,6 +561,13 @@ export interface RuinPlan {
   readonly dropped: ReadonlySet<Placed>;
 }
 
+/**
+ * The inputs a ruined piece's job escrowed fall with what it held, so ruin conserves them; the job itself goes with
+ * the piece, which keeps its record for the caller to cancel the action naming it.
+ */
+const jobInputs = (piece: BlockEntity): Placed[] =>
+  (piece.work?.work?.components ?? []).map((item) => ({ item, x: 0, y: 0, rotated: false }));
+
 /** All roots, their dependants and affected piles reserve against one final shadow and one pile ledger. */
 export const planRuin = (
   mover: FurnitureMover,
@@ -576,7 +583,7 @@ export const planRuin = (
   const standIns = new Set<Placed>();
   const loose = [
     ...destroyed.map((piece) => ({
-      contents: piece.pockets?.flat() ?? [],
+      contents: [...(piece.pockets?.flat() ?? []), ...jobInputs(piece)],
       yields: inventory.entities.defOf(piece).ruin?.debris ?? [],
       cells: footprint(piece.pos, piece.size),
     })),

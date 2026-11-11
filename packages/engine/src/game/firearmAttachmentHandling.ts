@@ -15,7 +15,7 @@ import { firearmsCombatTuning } from '../core/skillTraining.ts';
 const ATTACHMENT_ACTION = 'firearm.attachment';
 
 const availableAt = (inventory: Inventory, location: Location | undefined): boolean => {
-  if (!location || location.kind === 'slot' || location.kind === 'work') {
+  if (!location || location.kind === 'slot' || location.kind === 'work' || location.kind === 'pieceWork') {
     return false;
   }
   if (location.kind === 'pile') {

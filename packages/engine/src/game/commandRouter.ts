@@ -1282,6 +1282,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
       craftRepairEntity: (recipeId, entityUid, preference, sources) =>
         session.crafting.repairEntity(recipeId, entityUid, preference, sources),
+      craftTakeApartEntity: (entityUid) => session.crafting.takeApartEntity(entityUid),
       craftContinue: () => {
         continueAction();
       },
@@ -1305,6 +1306,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (
       payload.kind === 'craft.start' ||
       payload.kind === 'craft.repair-entity' ||
+      payload.kind === 'craft.take-apart-entity' ||
       payload.kind === 'action.wait' ||
       payload.kind === 'vehicle.work'
     ) {

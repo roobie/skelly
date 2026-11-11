@@ -130,7 +130,6 @@ interface WirePayload {
     };
     vehiclesNextId: number;
     blockEntitiesNextUid: number;
-    blockEntitiesReserved?: number[];
     spawned: string[];
     rolledColumns: string[];
     blockDamage: SaveSnapshot['world']['blockDamage'];
@@ -359,6 +358,8 @@ const simulationFields = {
 };
 const simulation = obj({ seed: safeInt, clock, ...simulationFields });
 const simulationWithoutWorldIdentity = obj(simulationFields);
+/** Progress every work kind shares (`items.ts`, `WorkProgress`). */
+const workProgress = { elapsed: nonNegative, duration: positive };
 let itemSchema: Schema;
 let placedSchema: Schema;
 itemSchema = obj({
@@ -473,8 +474,7 @@ itemSchema = obj({
             }),
           ),
         ),
-        elapsed: nonNegative,
-        duration: positive,
+        ...workProgress,
         repairTarget: opt(obj({ kind: enumeration(['item', 'entity']), uid: positiveInt })),
         repairAmount: opt(positive),
         components: arr(lazy(() => itemSchema)),
@@ -490,12 +490,20 @@ itemSchema = obj({
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
         gather: nonNegative,
-        elapsed: nonNegative,
-        duration: positive,
+        ...workProgress,
         components: arr(
           lazy(() => itemSchema),
           1,
         ),
+      }),
+      obj({
+        kind: enumeration(['pieceDisassembly']),
+        furniture: str({ id: true }),
+        skillLevel,
+        toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
+        outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
+        ...workProgress,
+        components: arr(lazy(() => itemSchema)),
       }),
     ),
   ),
@@ -547,6 +555,7 @@ const blockEntitySchema = obj({
   lock: opt(obj({ id: str({ id: true }), locked: bool })),
   bar: opt(obj({ side: enumeration(['front', 'back']), item: str({ id: true }) })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  work: opt(lazy(() => itemSchema)),
   charging: opt(obj({ batteryUid: positiveInt, atGameMilliseconds: nonNegativeInt })),
 });
 const vehiclePlacementFields = {
@@ -575,7 +584,7 @@ const vehiclesStateSchema = obj({
   instances: arr(obj({ id: positiveInt, vehicle: vehicleSchema })),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });
-const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema), reserved: opt(arr(positiveInt)) });
+const entitiesState = obj({ nextUid: positiveInt, entities: arr(blockEntitySchema) });
 const inventory = obj({
   ...inventoryCore.fields,
   piles: arr(pileSchema),
@@ -903,7 +912,6 @@ const wirePayloadSchema = obj({
     }),
     vehiclesNextId: positiveInt,
     blockEntitiesNextUid: positiveInt,
-    blockEntitiesReserved: opt(arr(positiveInt)),
     spawned: arr(str({ nonEmpty: true })),
     rolledColumns: arr(str({ nonEmpty: true })),
     blockDamage: blockDamageSchema,
@@ -1319,7 +1327,6 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       },
       vehiclesNextId: snapshot.world.vehicles.nextId,
       blockEntitiesNextUid: savedInventory.entities.nextUid,
-      ...(savedInventory.entities.reserved ? { blockEntitiesReserved: [...savedInventory.entities.reserved] } : {}),
       spawned: [...snapshot.world.spawned],
       rolledColumns: [...snapshot.world.rolledColumns],
       blockDamage: structuredClone(snapshot.world.blockDamage),
@@ -1409,7 +1416,6 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
           entities: ordered(Object.values(wire.world.regions).flatMap((region) => region.entities)).map(
             ({ entity }) => entity,
           ),
-          ...(wire.world.blockEntitiesReserved ? { reserved: [...wire.world.blockEntitiesReserved] } : {}),
         },
       },
     },
@@ -1740,10 +1746,6 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   ) {
     throw new Error('Missing forcing target');
   }
-  const { entities } = snapshot.character.inventory;
-  if (entities.reserved?.some((uid) => !entities.entities.some((entity) => entity.uid === uid))) {
-    throw new Error('Missing reserved block entity');
-  }
   if (snapshot.character.player.ladder?.on === false && !grabbedLadder(snapshot)) {
     throw new Error('Missing grabbed ladder');
   }
@@ -1790,6 +1792,11 @@ function validateItemContentReferences(
       check('recipe', item.work.recipe, `${path}.work.recipe`);
     } else if (item.work?.kind === 'disassembly') {
       check('item', item.work.source, `${path}.work.source`);
+      item.work.outputs.forEach((output, index) => {
+        check('item', output.item, `${path}.work.outputs[${index}].item`);
+      });
+    } else if (item.work?.kind === 'pieceDisassembly') {
+      check('furniture', item.work.furniture, `${path}.work.furniture`);
       item.work.outputs.forEach((output, index) => {
         check('item', output.item, `${path}.work.outputs[${index}].item`);
       });
