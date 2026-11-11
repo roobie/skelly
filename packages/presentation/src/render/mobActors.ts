@@ -298,6 +298,8 @@ interface ActorRenderState extends SlotHolder {
   drawnFall?: Map<number, Transform> | undefined;
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
+  /** Every input the last full pose pack read; equal inputs and a resting gaze draw the same row again. */
+  poseStamp: readonly (number | string)[] | undefined;
   /** The simulation actor last drawn in this slot. */
   actor: Actor | undefined;
   lastSeenFrame: number;
@@ -474,6 +476,12 @@ export interface DrawnAnchors {
   readonly glow: Vec3 | undefined;
   readonly mouth: Vec3 | undefined;
 }
+
+const gazeAtRest = (state: LookAtState): boolean =>
+  state.every((value, index) => Math.abs(value - LOOK_AT_REST[index]!) < 1e-6);
+
+const sameStamp = (a: readonly (number | string)[], b: readonly (number | string)[]): boolean =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
 
 /** The sac's emission multiplier: idle at rest, rising to charged across the spit wind-up. */
 const acidCharge = (actor: Actor): number => {
@@ -1071,6 +1079,7 @@ export class MobActorMeshes implements ActorRenderer {
       crawling: actorCrawls(actor, variant.body),
       lastPose: undefined,
       lastPlacement: undefined,
+      poseStamp: undefined,
       actor: undefined,
       lastSeenFrame: this.frameCounter,
     };
@@ -2308,10 +2317,65 @@ export class MobActorMeshes implements ActorRenderer {
   ): void {
     const bounds = this.actorPoseBounds(actor, frame.placement);
     if (!state.crawlFall && this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
+      state.poseStamp = undefined;
       this.packCachedPose(state, variant, actor, frame.placement);
       return;
     }
+    const stamp = this.poseStampOf(state, variant, actor, frame.placement);
+    if (stamp && state.poseStamp && sameStamp(stamp, state.poseStamp)) {
+      state.actor = actor;
+      return;
+    }
     this.packPose(state, variant, actor, frame);
+    state.poseStamp = stamp;
+  }
+
+  /**
+   * The numbers a full pose pack reads, or undefined when the pose also depends on something else (a fall in
+   * progress, a gaze that is turning or following the player, a cached pose from a skipped frame).
+   */
+  private poseStampOf(
+    state: ActorRenderState,
+    variant: Variant,
+    actor: Actor,
+    placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number },
+  ): (number | string)[] | undefined {
+    if (state.crawlFall || state.drawnFall || actor.spitWindup > 0) {
+      return undefined;
+    }
+    if (
+      variant.gaze &&
+      actor.regions.head! > 0 &&
+      !actor.severed.includes(variant.gaze.headPart) &&
+      (!gazeAtRest(state.lookAtState) || actor.agent?.mode === 'chase' || this.hasRecentNearStimulus(state, actor))
+    ) {
+      return undefined;
+    }
+    const { worldPos, position } = placement;
+    return [
+      worldPos[0],
+      worldPos[1],
+      worldPos[2],
+      position[0],
+      position[1],
+      position[2],
+      placement.yaw,
+      placement.headYaw,
+      actor.gaitPhase,
+      actor.horizontalSpeed,
+      actor.chaseStance ? 1 : 0,
+      actor.attackWindup,
+      actor.attackWait ?? -1,
+      actor.wanderClock,
+      actor.stanceWeight ?? -1,
+      actor.hitFlinchTime ?? -1,
+      this.bloodiness(actor),
+      acidCharge(actor),
+      actor.regions.head!,
+      actor.regions.leftLeg!,
+      actor.regions.rightLeg!,
+      actor.severed.join(','),
+    ];
   }
 
   private syncActor(

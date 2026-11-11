@@ -420,6 +420,30 @@ describe('furniture', () => {
     expect(furniture.group.children[0]).toBe(drawn);
   });
 
+  it('touches only the mesh of the piece that changed, and frees a removed piece', () => {
+    const entities = new BlockEntities(registry);
+    const crate = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities);
+    const [drawnCrate] = furniture.group.children;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    furniture.sync(entities);
+    const before = [...furniture.group.children];
+
+    const { durability } = entities.defOf(door).breach;
+    expect(entities.bash(door, durability * 0.8)).toBe('damaged');
+    furniture.sync(entities);
+    const after = [...furniture.group.children];
+    expect(after).toContain(drawnCrate);
+    expect(before.filter((child) => !after.includes(child))).toHaveLength(1);
+    expect(after.filter((child) => !before.includes(child))).toHaveLength(1);
+
+    entities.remove(crate);
+    furniture.sync(entities);
+    expect(furniture.group.children).not.toContain(drawnCrate);
+    expect(furniture.group.children).toHaveLength(after.length - 1);
+  });
+
   it("repaints a piece that isn't a door only when its damage crosses into another of its material's steps", () => {
     const entities = new BlockEntities(registry);
     const { uid } = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
