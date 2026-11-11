@@ -329,6 +329,9 @@ export const createPlayView = (
     leverProps.group,
     acidEffects.group,
   );
+  // The terrain stays: pagehide is not the end of the view's life. A save checkpoint fires it and play goes on, and
+  // the browser can restore the page from bfcache, so freeing the terrain here would leave the view using it freed. A
+  // real unload frees the GL context anyway; `ChunkMeshes.dispose` is for a real end of the view.
   const dispose = () => {
     models.dispose();
     if (skyDome) {
@@ -352,7 +355,6 @@ export const createPlayView = (
     held.dispose();
     playerMeshes.dispose();
     avatarMannequin?.dispose();
-    meshes.dispose();
   };
   page.addEventListener('pagehide', dispose);
   const vehicleMesher = vehicleShapesInWorker();

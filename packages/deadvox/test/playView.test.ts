@@ -588,20 +588,18 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('releases owned pictures, pile and case instances and the terrain on pagehide', () => {
+  it('releases owned pictures, pile and case instances on pagehide and keeps the terrain the page plays on with', () => {
     const { page, view, engine } = fixture();
     const pictures = vi.spyOn(view.pictures!, 'dispose');
     const piles = vi.spyOn(view.piles, 'dispose');
     const cases = vi.spyOn(view.caseEffects, 'dispose');
-    const terrain = vi.mocked(engine.meshes.dispose);
     expect(piles).not.toHaveBeenCalled();
     expect(cases).not.toHaveBeenCalled();
-    expect(terrain).not.toHaveBeenCalled();
     page.dispatchEvent(new Event('pagehide'));
     expect(pictures).toHaveBeenCalledTimes(1);
     expect(piles).toHaveBeenCalledTimes(1);
     expect(cases).toHaveBeenCalledTimes(1);
-    expect(terrain).toHaveBeenCalledTimes(1);
+    expect(engine.meshes.dispose).not.toHaveBeenCalled();
   });
 
   it('passes stride, stance and ADS posture to the body without rolling the camera', () => {
