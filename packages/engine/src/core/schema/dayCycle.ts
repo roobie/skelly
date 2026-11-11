@@ -203,7 +203,10 @@ const WeatherSkySchema = strictObject({
 
 /** The weather on top of the looks: fog, cloudiness and rain. */
 const WeatherTuningSchema = strictObject({
-  /** The weather a session starts at; the looks' height fog is exactly their own density at this fogginess. */
+  /**
+   * The weather a session starts at; the looks' height fog is exactly their own density at this fogginess, and
+   * their own clouds show at the fair cloudiness.
+   */
   defaults: strictObject({
     fogginess: pipe(UnitFraction, minValue(Number.MIN_VALUE)),
     cloudiness: UnitFraction,
@@ -214,7 +217,12 @@ const WeatherTuningSchema = strictObject({
     nearTighten: pipe(UnitFraction, maxValue(0.99)),
     farTighten: pipe(UnitFraction, maxValue(0.99)),
   }),
-  cloudiness: WeatherSkySchema,
+  /** Overcast's sky, over the cloudiness above fair weather. */
+  cloudiness: strictObject({
+    ...WeatherSkySchema.entries,
+    /** The cloudiness at which the looks show their own clouds; inside (0, 1), so clearer and cloudier both have room. */
+    fair: pipe(UnitFraction, minValue(0.01), maxValue(0.99)),
+  }),
   /** Rain's sky on top of the overcast it brings with it. */
   rain: WeatherSkySchema,
 });

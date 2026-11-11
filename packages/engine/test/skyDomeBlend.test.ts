@@ -68,9 +68,9 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     dusk: look(NIGHT_DOME),
   },
   weather: {
-    defaults: { fogginess: 0.2, cloudiness: 0, rain: 0 },
+    defaults: { fogginess: 0.2, cloudiness: 0.2, rain: 0 },
     fog: { nearTighten: 0.5, farTighten: 0.5 },
-    cloudiness: OVERCAST,
+    cloudiness: { ...OVERCAST, fair: 0.2 },
     rain: OVERCAST,
   },
   domeShape: {

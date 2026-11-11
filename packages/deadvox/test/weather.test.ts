@@ -12,8 +12,10 @@ import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
 const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaults.fogginess;
+const FAIR = BASE_DAY_CYCLE.weather.cloudiness.fair;
+/** The sky under `weather`, in fair weather where it names no level. */
 const skyInWeather = (sky: Sky, weather: Partial<Weather>, tuning: WeatherTuning = BASE_DAY_CYCLE.weather) =>
-  skyInWeatherTuned(sky, { fogginess: DEFAULT_FOGGINESS, cloudiness: 0, rain: 0, ...weather }, tuning);
+  skyInWeatherTuned(sky, { fogginess: DEFAULT_FOGGINESS, cloudiness: FAIR, rain: 0, ...weather }, tuning);
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i / 2);
 const STEPS = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1];
@@ -108,18 +110,28 @@ describe('fogginess in the sky', () => {
     }
   });
 
-  it('changes only the fog when dry and without cloudiness', () => {
+  it('changes only the fog when dry and in fair weather', () => {
     const sky = skyAt(18);
     expect(withoutFog(skyInWeather(sky, { fogginess: 0.9 }))).toEqual(withoutFog(sky));
   });
 });
 
 describe('cloudiness and rain in the sky', () => {
-  it('leaves a saturated sky exactly as it is when both are 0', () => {
+  it('leaves a saturated sky exactly as it is in fair weather without rain', () => {
     const saturated: Rgb = [0.8, 0.35, 0.15];
     const base = skyAt(NOON);
     const sky: Sky = { ...base, sky: saturated, dome: { ...base.dome, zenith: saturated, horizonGlow: saturated } };
     expect(withoutFog(skyInWeather(sky, {}))).toEqual(withoutFog(sky));
+  });
+
+  it('clears every cloud at cloudiness 0 and moves nothing else', () => {
+    for (const hour of HOURS) {
+      const sky = skyAt(hour);
+      const clear = withoutFog(skyInWeather(sky, { cloudiness: 0 }));
+      expect(clear.dome.clouds.cover).toBe(0);
+      const cloudless = { ...sky.dome, clouds: { ...sky.dome.clouds, cover: 0 } };
+      expect(clear).toEqual(withoutFog({ ...sky, dome: cloudless }));
+    }
   });
 
   it('never moves the fog, the tone or the bloom', () => {
@@ -151,7 +163,7 @@ describe('cloudiness and rain in the sky', () => {
     }
   });
 
-  it('turns a clear noon overcast: more cloud, less physical sky and sun, a dimmer light and a greyer zenith', () => {
+  it('turns a fair noon overcast: more cloud, less physical sky and sun, a dimmer light and a greyer zenith', () => {
     const clear = skyInWeather(skyAt(NOON), {});
     const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
     expect(overcast.dome.clouds.cover).toBeGreaterThan(clear.dome.clouds.cover);
@@ -169,11 +181,14 @@ describe('cloudiness and rain in the sky', () => {
     expect(sum(rain.dome.zenith)).toBeLessThan(sum(overcast.dome.zenith));
   });
 
-  it('brings at least as much overcast with rain as the same cloudiness, cloud included', () => {
+  it('brings its own level of overcast above fair weather with rain, at least as much as the same cloudiness', () => {
     for (const hour of HOURS) {
       for (const level of STEPS) {
         const rain = skyInWeather(skyAt(hour), { rain: level });
-        expect(skyInWeather(skyAt(hour), { cloudiness: level, rain: level })).toEqual(rain);
+        const brought = FAIR + level * (1 - FAIR);
+        for (const cloudiness of level > 0 ? [0, FAIR, brought] : [FAIR]) {
+          expect(skyInWeather(skyAt(hour), { cloudiness, rain: level })).toEqual(rain);
+        }
         const cloudy = overcastSigns(skyInWeather(skyAt(hour), { cloudiness: level }));
         overcastSigns(rain).forEach((value, index) => {
           expect(value).toBeGreaterThanOrEqual(cloudy[index]! - 1e-12);
@@ -190,7 +205,10 @@ describe('cloudiness and rain in the sky', () => {
       light: 0,
       skyColour: { saturation: 0, brightness: 0 },
     };
-    const tunings = [BASE_DAY_CYCLE.weather, { ...BASE_DAY_CYCLE.weather, cloudiness: strongest, rain: strongest }];
+    const tunings = [
+      BASE_DAY_CYCLE.weather,
+      { ...BASE_DAY_CYCLE.weather, cloudiness: { ...strongest, fair: FAIR }, rain: strongest },
+    ];
     const cases = tunings.flatMap((tuning) =>
       HOURS.flatMap((hour) => [...STEPS, -3, 7].map((level) => ({ tuning, hour, level }))),
     );

@@ -14,7 +14,7 @@ import type { Rgb, Sky } from './sky.ts';
 export interface Weather {
   /** 0 has no mist, 1 is thick fog. */
   fogginess: number;
-  /** 0 leaves the looks' own clouds, 1 is overcast. */
+  /** 0 is a cloudless sky, the tuning's fair level the looks' own clouds, 1 is overcast. */
   cloudiness: number;
   /** 0 is dry, 1 is heavy rain, which is overcast at least. */
   rain: number;
@@ -61,8 +61,14 @@ const inFog = (sky: Sky, fogginess: number, { fog, defaults }: WeatherTuning): S
   heightFog: sky.heightFog * fogginess * (1 / defaults.fogginess),
 });
 
+/** The sky with the looks' clouds thinned to `share` of their cover; at 0 a cloudless sky. */
+const thinned = (sky: Sky, share: number): Sky => ({
+  ...sky,
+  dome: { ...sky.dome, clouds: { ...sky.dome.clouds, cover: sky.dome.clouds.cover * share } },
+});
+
 /** One weather state's sky at `level` of its strength; at 0 the very sky, since greying round-trips colours inexactly. */
-const underSky = (sky: Sky, state: WeatherTuning['cloudiness'], level: number): Sky => {
+const underSky = (sky: Sky, state: WeatherTuning['rain'], level: number): Sky => {
   if (level === 0) {
     return sky;
   }
@@ -106,13 +112,20 @@ const underSky = (sky: Sky, state: WeatherTuning['cloudiness'], level: number): 
  * the keyframes' distances alone. The keyframes' own height-fog density sits at the default fogginess, so the
  * density gain is its reciprocal.
  *
- * Cloudiness and rain: each closes the clouds and greys and flattens the sky by its level, rain on top of the
- * overcast it brings, since rain does not fall from a clear sky. Both at 0 leave the looks' own sky, so the looks
- * keep their fair-weather clouds.
+ * Cloudiness: the looks' clouds are fair weather. Below the fair cloudiness they thin to none at 0; above it the
+ * overcast tuning closes the clouds and greys and flattens the sky over the rest of the range. Rain applies its own
+ * tuning by its level on top of at least as much overcast, since rain does not fall from a clear sky. At the fair
+ * cloudiness and no rain the sky is the looks' own.
  */
 export const skyInWeather = (sky: Sky, weather: Weather, tuning: WeatherTuning): Sky => {
   const rain = unit(weather.rain);
-  const overcast = Math.max(unit(weather.cloudiness), rain);
+  const { fair } = tuning.cloudiness;
+  const asked = unit(weather.cloudiness);
+  const cloudiness = rain > 0 ? Math.max(asked, fair + rain * (1 - fair)) : asked;
   const foggy = inFog(sky, unit(weather.fogginess), tuning);
-  return underSky(underSky(foggy, tuning.cloudiness, overcast), tuning.rain, rain);
+  const clouded =
+    cloudiness < fair
+      ? thinned(foggy, cloudiness / fair)
+      : underSky(foggy, tuning.cloudiness, (cloudiness - fair) / (1 - fair));
+  return underSky(clouded, tuning.rain, rain);
 };
