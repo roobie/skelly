@@ -324,6 +324,7 @@ export const createPlayView = (
     acidEffects.group,
   );
   const dispose = () => {
+    models.dispose();
     pictures?.dispose();
     piles.dispose();
     vehicles.dispose();
