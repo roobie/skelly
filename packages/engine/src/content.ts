@@ -1,3 +1,4 @@
+export type { ActionMenuTuning } from './core/actionMenuContent.ts';
 export {
   type ActorFigureFile,
   type ActorFigureFiles,

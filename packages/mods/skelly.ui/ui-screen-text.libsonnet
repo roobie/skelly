@@ -113,6 +113,7 @@
     drag: 'Drag',
     lift: 'Lift',
   },
+  actionMenu: { treat: 'Treat', back: 'Back' },
   crafting: {
     heading: 'Crafting',
     all: 'All',

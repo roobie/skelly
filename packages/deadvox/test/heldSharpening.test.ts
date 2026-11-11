@@ -58,11 +58,18 @@ describe('held sharpening', () => {
     (side) => {
       const f = fixture(side);
       const { body } = new Simulation({ seed: 1 });
-      const selection = new ItemActionSelection('fixture open can');
+      const selection = new ItemActionSelection();
       const actions = itemActionsFor(f.blade, f.inventory, body);
+      const sharpen = actions.find((action) => action.sharpening);
+      expect(sharpen).toBeDefined();
       expect(selectPrimaryAction(f.inventory, side).kind).toBe('melee');
-      expect(selection.step(f.blade, actions, 1)).toBe(true);
-      expect(selectPrimaryAction(f.inventory, side, selection.forItem(f.blade, actions)?.id).kind).toBe('sharpen');
+      expect(
+        selection.choose(
+          f.blade,
+          sharpen!,
+          () => selectPrimaryAction(f.inventory, side, selection.forItem(f.blade, actions)?.id).kind,
+        ),
+      ).toBe('sharpen');
       expect(selectPrimaryAction(f.inventory, f.other).kind).toBe('sharpen');
       for (const hand of [side, f.other]) {
         expect(sharpeningTargetForHand(f.inventory, hand)).toBe(f.blade);
@@ -74,13 +81,9 @@ describe('held sharpening', () => {
         expect(f.inventory.hands[side]).toBe(f.blade);
       }
       expect(f.inventory.move(f.stone, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-      const missingActions = itemActionsFor(f.blade, f.inventory, body);
-      expect(selectPrimaryAction(f.inventory, side, selection.forItem(f.blade, missingActions)?.id).kind).toBe(
-        'sharpen',
-      );
+      expect(itemActionsFor(f.blade, f.inventory, body).some((action) => action.sharpening)).toBe(false);
       expect(f.sharpening.activate(side)).toBeDefined();
-      expect(selection.step(f.blade, missingActions, 1)).toBe(true);
-      expect(selectPrimaryAction(f.inventory, side, selection.forItem(f.blade, missingActions)?.id).kind).toBe('melee');
+      expect(f.queue.busy).toBe(false);
     },
   );
 

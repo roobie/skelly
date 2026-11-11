@@ -1,4 +1,5 @@
 import { check, type InferOutput, pipe, strictObject } from 'valibot';
+import { ActionMenuTuningSchema } from '../actionMenuContent.ts';
 import { ActionTextSchema } from '../actionText.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../coreText.ts';
 import { SLOT_PATTERN } from '../textTemplate.ts';
@@ -153,6 +154,8 @@ const UiScreenTextSchema = strictObject({
     drag: [],
     lift: [],
   }),
+  /** The radial menu entry that gathers a held item's treatments, and the centre label of its child ring, which returns to the parent ring. */
+  actionMenu: slottedTable({ treat: [], back: [] }),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -451,6 +454,8 @@ export const UiTuningSchema = strictObject({
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  /** The radial action menu's geometry and each action's fixed direction. */
+  actionMenu: ActionMenuTuningSchema,
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: Id,
   /** The audio options' volumes before the player saves any. */

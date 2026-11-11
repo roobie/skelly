@@ -623,18 +623,25 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. A tap-and-hold opens
-  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
-  deliberate hold. Readability does not fasten a board; its ordinary use stays
-  on the tap. The list belongs to movable kinds: building parts keep direct use
-  because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the list and explains why
-  it cannot move, so fitting does not silently change that kind's controls.
-  An open list is a single confirmation, not a persistent interaction mode:
-  returning from a pause or another target must not unexpectedly act instead of
-  offering choices. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/furnitureActions.ts`,
-  `FurnitureActionSelection`.
+  search, rest, read), so the common action stays one tap. Holding opens the
+  radial action menu of rarer actions, which move or break the piece and so sit
+  behind a deliberate hold; releasing on an entry confirms it. Repair, taking
+  apart and continuing held work enter through the same menu, so every hold
+  choice reads alike, and their directions are authored before they are offered
+  so their arrival moves no existing entry. Readability does not fasten a board;
+  its ordinary use stays on the tap. The menu belongs to movable kinds, even
+  with lift alone: building parts keep direct use because offering impossible
+  moves would obstruct their ordinary interaction. A fitted placement of a
+  movable kind still offers the menu and explains why it cannot move, so
+  fitting does not silently change that kind's controls. An open menu is a
+  single confirmation, not a persistent interaction mode: returning from a
+  pause or another target must not unexpectedly act instead of offering
+  choices. Each action keeps one authored direction, so muscle memory survives
+  a piece gaining or losing actions. Nothing is chosen until the pull leaves the
+  dead zone within an entry's selection angle, so a release at the centre or a
+  pull away from the only entry does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
+  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
+  `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `packages/engine/src/core/furnitureMove.ts`, `turnCarried`,
@@ -1561,8 +1568,8 @@ See `packages/skelly-assets/models/cans.libsonnet`,
 Sharpening is held-item work rather than a craft-list repair: the prepared
 blade-and-stone pair makes carried equipment matter, and the wheel rewards a
 trip to furniture. Like can opening, a blade's competing action remains a player
-choice so sharpening does not cause a surprise swing. Aimed wheel activation
-uses the held blade. Repair recipes retain the shared content-owned restoration,
+choice so sharpening does not cause a surprise swing. Choosing it in the held
+action menu uses the held blade. Repair recipes retain the shared content-owned restoration,
 skill and work-rate contract; their activation selector keeps held work out of
 the craft list. See `packages/engine/src/game/sharpening.ts`, `Sharpening`,
 `packages/engine/src/game/itemActions.ts`, `ItemActionSelection`, `packages/engine/src/core/schema/recipes.ts`,
@@ -2801,8 +2808,8 @@ rechecks the route that admitted it when it completes. See `packages/engine/src/
 `batterySlotOption` and `batteryOption`, and `packages/presentation/src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen on the wheel
-and then activated, because a swap needs a spare: without one a player could not move
+A held light's battery can be taken out on its own, as an action chosen in the held
+action menu, because a swap needs a spare: without one a player could not move
 a cell to a charger, another light or a pocket. It follows magazine removal: the light
 must be in hand, the battery keeps its charge and goes to the first pocket with room,
 else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
@@ -3795,7 +3802,7 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
-Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
+Holding world interaction opens the action menu on every movable piece, intact or damaged; lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 

@@ -20,13 +20,18 @@ describe('selected item actions', () => {
     expect(defaultItemAction(sameTier)?.id).toBe('more-damaged-bleeding');
   });
 
-  it('cycles and wraps without changing the default policy', () => {
-    const selection = new ItemActionSelection('fixture open can');
-    expect(selection.forItem(item, actions)?.id).toBe('worse-bleeding');
-    expect(selection.step(item, actions, 1)).toBe(true);
-    const afterStep = selection.forItem(item, actions);
-    expect(afterStep).toBe(actions[0]);
-    expect(selection.step(item, actions, -1)).toBe(true);
-    expect(selection.forItem(item, actions)?.id).toBe('worse-bleeding');
+  it('applies a choice only to its item during its own use, even when that use throws', () => {
+    const selection = new ItemActionSelection();
+    const chosen = actions[0]!;
+    expect(
+      selection.choose(item, chosen, () => [selection.forItem(item, actions), selection.forItem({ uid: 8 }, actions)]),
+    ).toEqual([chosen, defaultItemAction(actions)]);
+    expect(selection.forItem(item, actions)).toBe(defaultItemAction(actions));
+    expect(() =>
+      selection.choose(item, chosen, () => {
+        throw new Error('fixture use failed');
+      }),
+    ).toThrow();
+    expect(selection.forItem(item, actions)).toBe(defaultItemAction(actions));
   });
 });

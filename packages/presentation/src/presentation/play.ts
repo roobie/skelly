@@ -9,6 +9,7 @@ import {
   CrouchProneInput,
   createReplayPlayStateBinding,
   encodeInputReplay,
+  ForwardReleaseWatch,
   fillText,
   type InputContext,
   InputReplayDriver,
@@ -43,6 +44,7 @@ import {
   type Inventory,
   type Item,
   type ItemAction,
+  offHandUse,
   type Pile,
   pileScatterPlacements,
   wornNightVision,
@@ -70,6 +72,7 @@ import {
   requireStart,
 } from '@skelly/engine/session';
 import {
+  ActionMenu,
   type Actor,
   applyStartState,
   type BodyRegion,
@@ -77,12 +80,15 @@ import {
   discoveryForPlan,
   dominantSide,
   type EntityId,
-  FurnitureActionSelection,
   firearmBoreRay,
   firearmBoreTarget,
   firearmsCombatTuning,
   formatClock,
   furnitureActionsFor,
+  HeldActionPress,
+  type HeldActionTrigger,
+  heldRadialEntries,
+  heldUsePressTaken,
   type InteractionTarget,
   interactionAffordance,
   type LongJob,
@@ -93,8 +99,10 @@ import {
   PlayerTickActions,
   playerTuning,
   pryPlan,
+  type RadialAction,
   type RealSeconds,
   type RealTimestamp,
+  radialEntries,
   reachTuning,
   realSeconds as realDuration,
   realTimestamp,
@@ -127,6 +135,7 @@ import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView, type ViewProbes } from '../render/playView.ts';
 import type { RagdollConfig } from '../render/ragdoll.ts';
+import { mountActionRadial } from '../ui/actionRadial.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
@@ -762,6 +771,25 @@ export const startPlay = async (
   return startPlayWith(engine, debugModule, options, actorFigureFiles);
 };
 
+/**
+ * Calls `release` when the forward button lets go. Cancelling the side button's pointerdown suppresses its mouseup,
+ * so pointer events are read too, and a release under another held button arrives only as a pointermove.
+ */
+const listenForwardRelease = (release: (at: number) => void): void => {
+  const watch = new ForwardReleaseWatch();
+  for (const type of ['pointerdown', 'mousedown', 'pointermove', 'pointerup', 'mouseup']) {
+    document.addEventListener(
+      type,
+      (e) => {
+        if (watch.released(e as MouseEvent)) {
+          release(e.timeStamp);
+        }
+      },
+      true,
+    );
+  }
+};
+
 const startPlayWith = (
   engine: Engine,
   debugModule: DebugModule | undefined,
@@ -818,8 +846,31 @@ const startPlayWith = (
   let interactionPressTarget: InteractionTarget | undefined;
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
-  const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
+  const actionMenu = new ActionMenu();
   const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
+  const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
+  const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
+    radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
+  const heldMenuEntries = (item: Item): RadialAction[] =>
+    heldRadialEntries(survival.availableItemActions(item), screenText.actionMenu.treat, actionMenuTuning.directions);
+  const openTarget = (source: 'furniture' | 'held'): number | undefined => {
+    const { opened } = actionMenu;
+    return opened?.source === source ? opened.uid : undefined;
+  };
+  const openHeldItem = (): Item | undefined => {
+    const uid = openTarget('held');
+    return uid === undefined ? undefined : inventory.itemByUid(uid);
+  };
+  /** The open menu's entries, or nothing once its target has gone. */
+  const openMenuEntries = (): RadialAction[] | undefined => {
+    const item = openHeldItem();
+    if (item) {
+      return heldMenuEntries(item);
+    }
+    const uid = openTarget('furniture');
+    const entity = uid === undefined ? undefined : entities.byUid(uid);
+    return entity && furnitureMenuEntries(entity);
+  };
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -853,7 +904,7 @@ const startPlayWith = (
       closeInventoryScreen: () => closeInventoryScreen(),
       syncMenuState: () => syncMenuState(),
       openInventory: (tab) => openInventory(tab),
-      openFurnitureChoices: (entity, actions) => furnitureActionSelection.open(entity, actions),
+      openFurnitureChoices: (entity, actions) => actionMenu.open('furniture', entity, actions),
       beginSearch: (entity) => playtestObserver?.beginSearch(entity, nameOf(entity)),
       weaponInspected: (item) => guide?.weapons.inspected(item, registry),
       throwVisual: (launch, owner) => itemThrows.spawn(launch, owner),
@@ -930,13 +981,24 @@ const startPlayWith = (
       },
       interact: {
         keyDown: (action, at) => {
+          actionMenu.sync('furniture', undefined);
           interactionPressTarget = interactionTargetAt();
           interactInput.keyDown(action, at);
         },
         keyUp: (action, at) => {
+          // The press that held the furniture menu open confirms what it points at on release.
+          const confirming = openTarget('furniture') !== undefined;
           interactInput.keyUp(action, at);
+          if (confirming) {
+            interactionPressTarget = interactionTargetAt();
+            completeWorldInteraction('pocket');
+          }
           interactionPressTarget = undefined;
         },
+      },
+      offHandUse: {
+        keyDown: (at) => pressHeldUse('off', at),
+        keyUp: (at) => heldActionPress.release('off', at),
       },
       quickbar: {
         keyDown: (slot, at) => quickbarInput.keyDown(slot, at),
@@ -1227,9 +1289,23 @@ const startPlayWith = (
       physicalSolid: session.physicalSolid,
     },
   );
-  input.setMouseLookOverride((movementX, movementY) =>
-    thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
-  );
+  input.setMouseLookOverride((movementX, movementY) => {
+    // Look holds while a menu is open, so choosing cannot lose its target.
+    const entries = openMenuEntries();
+    if (entries) {
+      actionMenu.point(entries, { x: movementX, y: movementY }, actionMenuTuning);
+      return true;
+    }
+    return thirdPersonOrbit.rotate(
+      movementX,
+      movementY,
+      isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled),
+    );
+  });
+  input.setHeldUseOverride({
+    press: (at) => pressHeldUse('dominant', at),
+    release: (at) => heldActionPress.release('dominant', at),
+  });
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, actorMeshes } = view;
   const damageEvents = sim.events.reader();
 
@@ -1263,7 +1339,27 @@ const startPlayWith = (
     });
   drawHudOptions();
   const prompt = $('prompt');
-  const itemActionList = $('item-action-list');
+  const actionRadialRoot = $('action-radial');
+  const drawActionRadial = mountActionRadial(actionRadialRoot, actionMenuTuning);
+  /**
+   * Draws the open menu's ring, which follows the interaction hints' visibility, or its child ring, which owns input
+   * like any other menu and so always shows.
+   */
+  const drawActionMenu = (ringVisible: boolean): void => {
+    const entries = openMenuEntries() ?? [];
+    const ring = ringVisible || actionMenu.childOpen ? (actionMenu.ring(entries) ?? []) : [];
+    const centre = actionMenu.childOpen ? screenText.actionMenu.back : undefined;
+    drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, centre);
+  };
+  /** Closes the held menu once its item leaves the hands or its child ring has nothing left to offer. */
+  const syncHeldActionMenu = (paused: boolean): void => {
+    const item = openHeldItem();
+    const inHand = item && survival.handOf(item) !== undefined ? item : undefined;
+    actionMenu.sync('held', inHand?.uid, paused);
+    if (actionMenu.childOpen && !(inHand && actionMenu.ring(heldMenuEntries(inHand)))) {
+      actionMenu.close();
+    }
+  };
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
@@ -1666,6 +1762,16 @@ const startPlayWith = (
   let resumeRequested = false;
   const titleMenuOptions = () =>
     started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel };
+  const closeMenusFor = ({ paused, closeOtherMenus }: { paused: boolean; closeOtherMenus: boolean }): void => {
+    if (paused || closeOtherMenus) {
+      actionMenu.close();
+    }
+    if (closeOtherMenus) {
+      reading.close();
+      closeInventoryScreen();
+      debugTools?.closeMenus();
+    }
+  };
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
@@ -1683,17 +1789,10 @@ const startPlayWith = (
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
-    if (state.paused) {
-      furnitureActionSelection.sync(undefined, true);
-    }
     if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
     }
-    if (state.closeOtherMenus) {
-      reading.close();
-      closeInventoryScreen();
-      debugTools?.closeMenus();
-    }
+    closeMenusFor(state);
     input.menuPointer = state.menuPointer || !worldLoading.ready;
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
@@ -1816,6 +1915,47 @@ const startPlayWith = (
     tap: () => completeWorldInteraction('pocket'),
     hold: () => completeWorldInteraction('wield'),
   });
+  const dispatchHeldAction = (item: Item, actionId: string): void => {
+    const reason = router.dispatchScreenCommand({ kind: 'hand.action', itemUid: item.uid, actionId });
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
+  };
+  const heldActionPress = new HeldActionPress({
+    menu: actionMenu,
+    item: (hand) => inventory.hands[hand],
+    actions: (item) => survival.availableItemActions(item),
+    menuActions: (item) => heldMenuEntries(item),
+    holdRealMs: RELOAD_GESTURE_MS.hold,
+    tap: (_hand, trigger) => {
+      if (trigger === 'dominant') {
+        input.controls.pressDominantUse();
+        input.controls.releaseDominantUse();
+      } else if (trigger === 'off') {
+        input.controls.useOff();
+      } else {
+        router.useForwardButton();
+      }
+    },
+    act: dispatchHeldAction,
+  });
+  /** Hands a use press to the held item's action press, unless something else owns the hands or the input. */
+  const pressHeldUse = (trigger: HeldActionTrigger, at: number): boolean => {
+    const taken = heldUsePressTaken(trigger, {
+      replaying: Boolean(replayPlayer),
+      throwingStance: router.throwingStance(),
+      inputLocked: compression.locksInput,
+      actionRefused: Boolean(sim.body.actionRefusal),
+      building: Boolean(debugTools?.buildOn),
+      enGarde: router.readiness.shouldPlayerBlock(),
+      offHandUse: Boolean(offHandUse(registry, inventory)),
+    });
+    if (!taken) {
+      return false;
+    }
+    const hand = trigger === 'dominant' ? dominantSide(inventory.character) : offSide(inventory.character);
+    return heldActionPress.press(hand, trigger, at);
+  };
   const wornLightInput = new PressHoldInput<string>({
     holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
     tap: () => undefined,
@@ -1838,6 +1978,7 @@ const startPlayWith = (
     crouchProneInput.cancel();
     throwStanceInput.cancel();
     interactInput.cancel();
+    heldActionPress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -1891,9 +2032,13 @@ const startPlayWith = (
     throwStanceInput.cancel();
     crouchProneInput.cancel();
     quickbarInput.cancel();
+    heldActionPress.cancel();
   };
   keyboardInput.escape = () => {
-    if (sim.dead) {
+    if (actionMenu.opened) {
+      heldActionPress.cancel();
+      actionMenu.close();
+    } else if (sim.dead) {
       if (reviewMapOpen) {
         toggleReviewMap(false);
       }
@@ -1929,6 +2074,7 @@ const startPlayWith = (
     router.cancelItemThrow();
     quickbarInput.cancel();
     interactInput.cancel();
+    heldActionPress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -1937,18 +2083,11 @@ const startPlayWith = (
   ({ dispatchReplayAction } = router);
   keyboardInput.install();
   keyboardInput.sync();
-  const cycleFurnitureAction = (deltaY: number): boolean => {
-    const target = interactionTargetAt();
-    return (
-      target?.kind === 'furniture' &&
-      furnitureActionSelection.isOpen(target.entity) &&
-      furnitureActionSelection.step(target.entity, furnitureActions(target.entity), Math.sign(deltaY))
-    );
+  const stepActionMenu = (direction: number): boolean => {
+    const entries = openMenuEntries();
+    return entries !== undefined && actionMenu.step(entries, Math.sign(direction));
   };
-  const cycleWieldedAction = (deltaY: number): boolean => {
-    const item = inventory.hands[dominantSide(inventory.character)];
-    return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
-  };
+  keyboardInput.choiceStep = stepActionMenu;
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -1956,12 +2095,10 @@ const startPlayWith = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer && !spectator.enabled) {
-        if (cycleFurnitureAction(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimedDownSights(), e.deltaY)) {
+        if (stepActionMenu(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimedDownSights(), e.deltaY)) {
           e.preventDefault();
-        } else if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
-          debugTools?.wheel(e.deltaY);
         } else {
-          e.preventDefault();
+          debugTools?.wheel(e.deltaY);
         }
       }
     },
@@ -2106,7 +2243,7 @@ const startPlayWith = (
   };
 
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
-    const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
+    const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     if (!selected) {
       return undefined;
     }
@@ -2128,7 +2265,7 @@ const startPlayWith = (
       : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
-    if (furnitureActionSelection.isOpen(entity)) {
+    if (actionMenu.isOpen('furniture', entity.uid)) {
       return confirmFurnitureAction(entity);
     }
     if (mode === 'wield' && furnitureActions(entity).length > 0) {
@@ -2238,10 +2375,13 @@ const startPlayWith = (
     if (router.refusePrimaryUseWhileHandling()) {
       return;
     }
-    router.useForwardButton();
+    if (!pressHeldUse('forward', e.timeStamp)) {
+      router.useForwardButton();
+    }
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
+  listenForwardRelease((at) => heldActionPress.release('forward', at));
   inputTarget.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || spectator.enabled || !debugTools?.buildOn || !compression.admitKey()) {
       return;
@@ -2336,11 +2476,16 @@ const startPlayWith = (
       view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
     }
   };
+  const openFurnitureMenuHint = (entity: BlockEntity, key: HintText): HintText => {
+    const selected = actionMenu.choice(furnitureMenuEntries(entity));
+    return selected
+      ? html`${key}: ${selected.label} ${selected.id === 'repair' ? '' : nameOf(entity)}`
+      : useText(entity);
+  };
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap(inputBindings, 'world.interact');
-    if (furnitureActionSelection.isOpen(entity)) {
-      const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity));
-      return html`${key}: ${selected?.label} ${selected?.id === 'repair' ? '' : nameOf(entity)}`;
+    if (actionMenu.isOpen('furniture', entity.uid)) {
+      return openFurnitureMenuHint(entity, key);
     }
     if (furnitureActions(entity).length > 0) {
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: screenText.interaction.actions })}`;
@@ -2399,24 +2544,13 @@ const startPlayWith = (
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
   ) => {
-    furnitureActionSelection.sync(target?.kind === 'furniture' && !carry ? target.entity.uid : undefined, sim.paused);
+    // The furniture menu lasts only as long as the press that opened it.
+    const choosingFurniture =
+      target?.kind === 'furniture' && !carry && (replayPlayer !== undefined || keyboardInput.held('world.interact'));
+    actionMenu.sync('furniture', choosingFurniture ? target.entity.uid : undefined, sim.paused);
+    syncHeldActionMenu(sim.paused);
     const interactionHint = interactionHintFor(target, carry);
-    const furnitureList =
-      target?.kind === 'furniture' && furnitureActionSelection.isOpen(target.entity)
-        ? [
-            `${nameOf(target.entity)}:`,
-            ...furnitureActions(target.entity).map(
-              (action) =>
-                `${action.id === furnitureActionSelection.forItem(target.entity, furnitureActions(target.entity))?.id ? '›' : ' '} ${action.label}`,
-            ),
-          ].join('\n')
-        : undefined;
-    const actions =
-      visible.interaction && input.locked && !debugTools?.buildOn
-        ? (furnitureList ?? survival.wieldedItemActionHint())
-        : undefined;
-    itemActionList.textContent = actions ?? '';
-    itemActionList.hidden = !actions;
+    drawActionMenu(visible.interaction && input.locked && !debugTools?.buildOn);
     return playPromptText(
       {
         now,
@@ -2758,6 +2892,7 @@ const startPlayWith = (
       input.controls.reload.cancel();
       quickbarInput.cancel();
       interactInput.cancel();
+      heldActionPress.cancel();
       interactionPressTarget = undefined;
     } else {
       input.controls.reload.advance(now, router.reloadBinding());
@@ -2768,9 +2903,11 @@ const startPlayWith = (
       interactInput.cancel();
       wornLightInput.cancel();
       interactionPressTarget = undefined;
+      heldActionPress.cancel();
     } else {
       quickbarInput.update(now);
       interactInput.update(now);
+      heldActionPress.update(now);
       wornLightInput.update(now);
     }
     crouchProneInput.update(now, actionRefusal);
@@ -3101,7 +3238,8 @@ const startPlayWith = (
       inventoryPanel.hidden = true;
       syncMenuState();
       prompt.hidden = true;
-      itemActionList.hidden = true;
+      actionMenu.close();
+      drawActionMenu(false);
       if (!options.restore || options.restore.character.scenarioRun?.completedAtGameTimestamp === null) {
         options.saveController?.finishWin();
       }
@@ -3131,7 +3269,8 @@ const startPlayWith = (
     inventoryPanel.hidden = true;
     syncMenuState();
     prompt.hidden = true;
-    itemActionList.hidden = true;
+    actionMenu.close();
+    drawActionMenu(false);
     const summary = {
       cause,
       worldSeed: sim.seed,
