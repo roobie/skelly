@@ -1,5 +1,4 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
-
 import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';

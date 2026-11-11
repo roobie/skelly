@@ -56,7 +56,7 @@ export const pryPlan = (
   const toolNames = [...inventory.registry.items.values()]
     .filter((definition) => methods.some(([, method]) => meets(definition.id, method)))
     .map((definition) => definition.name)
-    .sort((a, b) => compareCodeUnits(a, b));
+    .sort((a, b) => a.localeCompare(b));
   const { registry } = inventory;
   const refuse = (reason: string): PryPlan => ({ ok: false, reason, toolNames });
   if (!(furniture.door && entity.lock?.locked)) {

@@ -33,7 +33,7 @@ const COLLATIONS = ['en_US.UTF-8', 'th_TH.UTF-8'];
 const orderUnderCollation = (collation: string, packageRoot: string) => {
   const script = `
     const { readAvailablePacks } = await import(${JSON.stringify(new URL('../tools/readBundledPacks.ts', import.meta.url).href)});
-    const { bundledPacksFrom } = await import(${JSON.stringify(new URL('../../engine/src/packs.ts', import.meta.url).href)});
+    const { bundledPacksFrom } = await import(${JSON.stringify(import.meta.resolve('@skelly/engine/packs'))});
     const built = readAvailablePacks(${JSON.stringify(packageRoot)});
     const manifests = Object.fromEntries(
       built.toReversed().map(({ source, manifest }) => [source + '/pack/manifest.json', manifest]),
