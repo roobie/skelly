@@ -109,3 +109,10 @@ export const turnPose = (pose: Pose, axis: WorldAxis): Pose => poseOf(compose(PR
 /** The world box a piece of `size` cells fills under `rotation`. */
 export const rotatedSize = (size: Readonly<Vec3>, rotation: Rotation): Vec3 =>
   [0, 1, 2].map((world) => rotation.reduce((sum, axis, own) => sum + Math.abs(axis[world]!) * size[own]!, 0)) as Vec3;
+
+/** Where a point in a piece of `size` cells lands under `rotation`; both are measured from their box's lowest corner. */
+export const rotatedPoint = (point: Readonly<Vec3>, size: Readonly<Vec3>, rotation: Rotation): Vec3 => {
+  const box = rotatedSize(size, rotation);
+  const fromCentre = point.map((value, axis) => value - size[axis]! / 2) as Vec3;
+  return apply(rotation, fromCentre).map((value, axis) => value + box[axis]! / 2) as Vec3;
+};

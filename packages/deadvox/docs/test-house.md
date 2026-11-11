@@ -148,6 +148,12 @@ piece and silent absence until listed. Focus follows admitted props in either pr
 because it only chooses a fresh session's start; scenario identity must not choose its
 reach. See `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
+The light look needs its own opt-in mod rather than a showroom slot, because judging interior
+brightness takes a windowless room with powered fixtures, and the showroom stays unlit. Its room
+stands beside the lot's open ground at noon, so one visit compares fixture light with daylight;
+its one start row lets a link name the mod as its start. See
+`mods/skelly.deadvox.scenario.test-house.light-look/layouts.jsonnet`, `test_house_light_look`.
+
 The destruction slot stays in normal mode because its tool, stock and breakable deck
 exercise ordinary combat and furniture floor loss without privileged setup. See
 `mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet`, `showroom`.

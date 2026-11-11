@@ -121,8 +121,11 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
 // Puts a compass in the dominant hand by daylight and counts how many pixels of the square around
 // its card differ visibly between the first frame that shows the card and the next frame, drawn
 // with only the card hidden. A page screenshot costs seconds per frame on the software renderer in
-// CI, so this reads the drawing buffer after the optical adapter, the frame's last draw, in one
-// page call. The shown window also comes back as a PNG for the artifact.
+// CI, so this reads the drawing buffer in one page call, each image once its frame's draws have
+// finished; on the held layer's stack the frame is not complete below render scale 1
+// (render/screenScale.ts, ScreenScale.render), and the unrendered strips' artifacts would count as
+// card changes, letting a missing card pass. The shown window also comes back as a PNG for the
+// artifact.
 const heldCompassCardChange = (page) =>
   page.evaluate((noon) => {
     const r = globalThis.primaryActionTest;
@@ -185,11 +188,17 @@ const heldCompassCardChange = (page) =>
           held.render = render;
           failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
         } else if (dial?.visible === true && !shown) {
-          shown = read(dial);
-          dial.visible = false;
+          // A microtask, not this stack: it runs once the frame callback (the upscale included)
+          // has returned, and still before the next frame can change the buffer.
+          queueMicrotask(() => {
+            shown = read(dial);
+            dial.visible = false;
+          });
         } else if (dial?.visible === false && shown) {
           held.render = render;
-          drawn(compare(shown, read(dial)));
+          queueMicrotask(() => {
+            drawn(compare(shown, read(dial)));
+          });
         }
       };
     });
@@ -421,40 +430,76 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
   });
 };
 
-const visorRatio = (page, shot) =>
-  page.evaluate(async (base64) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${base64}`;
-    await image.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext('2d');
-    context.drawImage(image, 0, 0);
-    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    let edge = 0;
-    let edgeCount = 0;
-    let centre = 0;
-    let centreCount = 0;
-    const inCentre = (value) => value > 0.4 && value < 0.6;
-    for (let offset = 0; offset < data.length; offset += 4) {
-      const pixel = offset / 4;
-      const nx = (pixel % canvas.width) / canvas.width;
-      const ny = Math.floor(pixel / canvas.width) / canvas.height;
-      const light = data[offset] + data[offset + 1] + data[offset + 2];
+// Puts a helmet on and takes it off, reading the edge/centre ratio of the frames either side. The reads sit a few
+// frames apart because reads seconds apart can see a different daylit scene, and they use the drawing buffer because
+// a page screenshot costs seconds on CI's software renderer. Each read runs once the frame's draws have finished:
+// below render scale 1 the scene is drawn into a sub-viewport that only a later upscale covers
+// (render/screenScale.ts, ScreenScale.render), so a read on the held layer's stack would measure the unrendered
+// strips, and the adaptive scale's step changes between reads would pass for a scene change.
+const visorRatios = (page) =>
+  page.evaluate(async () => {
+    const r = globalThis.primaryActionTest;
+    const { held } = r.view;
+    const visorParent = held.warmUpTarget.camera;
+    const gl = r.engine.renderer.getContext();
+    const bandOf = (nx, ny) => {
       if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
-        edge += light;
-        edgeCount += 1;
-      } else if (inCentre(nx) && inCentre(ny)) {
-        centre += light;
-        centreCount += 1;
+        return 'edge';
       }
+      return nx > 0.4 && nx < 0.6 && ny > 0.4 && ny < 0.6 ? 'centre' : undefined;
+    };
+    const ratio = () => {
+      const width = gl.drawingBufferWidth;
+      const height = gl.drawingBufferHeight;
+      const data = new Uint8Array(width * height * 4);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      const sums = { edge: { light: 0, count: 0 }, centre: { light: 0, count: 0 } };
+      for (let offset = 0; offset < data.length; offset += 4) {
+        const pixel = offset / 4;
+        // The buffer's rows run bottom to top.
+        const band = bandOf((pixel % width) / width, 1 - Math.floor(pixel / width) / height);
+        if (band) {
+          sums[band].light += data[offset] + data[offset + 1] + data[offset + 2];
+          sums[band].count += 1;
+        }
+      }
+      return sums.edge.light / sums.edge.count / (sums.centre.light / sums.centre.count);
+    };
+    const nextFrame = () =>
+      new Promise((drawn) => {
+        const { render } = held;
+        held.render = (...args) => {
+          render.apply(held, args);
+          held.render = render;
+          // A microtask, not this stack: it runs once the frame callback (the upscale included)
+          // has returned, and still before any other task can touch the buffer.
+          queueMicrotask(() => {
+            drawn(ratio());
+          });
+        };
+      });
+    // The frame after the visor's state is seen, so the read cannot land before it is drawn.
+    const onceVisor = async (count) => {
+      for (let frames = 0; frames < 30; frames += 1) {
+        if (visorParent.children.length === count) {
+          return nextFrame();
+        }
+        await nextFrame();
+      }
+      throw new Error(`The held camera did not reach ${count} visor children within 30 frames`);
+    };
+    const baseline = await nextFrame();
+    const helmet = r.inventory.create('riot_helmet');
+    if (!r.inventory.add(helmet, { kind: 'worn' })) {
+      throw new Error('Could not wear helmet fixture');
     }
-    if (!(centre > 0 && edge > 0)) {
-      throw new Error('Visor comparison needs a visible scene');
+    const worn = await onceVisor(1);
+    const removed = r.inventory.move(helmet, { kind: 'pile', pos: r.feet() });
+    if (!removed.ok) {
+      throw new Error(removed.reason);
     }
-    return edge / edgeCount / (centre / centreCount);
-  }, shot.toString('base64'));
+    return { baseline, worn, restored: await onceVisor(0) };
+  });
 
 const fakePointerLock = () => {
   let locked = false;
@@ -549,7 +594,7 @@ const enterTestHouse = async (chromium, port) => {
 
 const heldItemChecks = async (chromium, port) => {
   const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
-  const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
+  await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.input.controls.pitch = -0.55;
@@ -577,7 +622,7 @@ const heldItemChecks = async (chromium, port) => {
       return r.frames;
     }, fixture.uid);
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
-    const { measurement: on, screenshot } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
+    const { measurement: on } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
     assert.equal(on.on, true);
     process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
     assert.ok(
@@ -585,10 +630,21 @@ const heldItemChecks = async (chromium, port) => {
       'a dropped lit glowstick visibly brightens nearby floor pixels at night',
     );
     assert.deepEqual(pageErrors, []);
-    return screenshot;
   });
   await timePhase('worn-helmet-assertions', async () => {
-    const baseline = await visorRatio(page, baselineShot);
+    // A visor paints its own tint, which outshines a night scene: only a band with daylight on it can be darkened.
+    const noonFrame = await page.evaluate((noon) => {
+      const r = globalThis.primaryActionTest;
+      const { sim } = r.session;
+      sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
+      return r.frames;
+    }, 12 * 3600);
+    await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, noonFrame);
+    const { baseline, worn, restored } = await visorRatios(page);
+    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
+    assert.ok(baseline > 0 && Number.isFinite(baseline), 'the visor comparison needs a visible scene');
+    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
+    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     const uid = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.create('riot_helmet');
@@ -601,8 +657,6 @@ const heldItemChecks = async (chromium, port) => {
       const r = globalThis.primaryActionTest;
       return r.view.held.warmUpTarget.camera.children.length > 0;
     });
-    const worn = await visorRatio(page, await capture());
-    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
     await page.evaluate(() => globalThis.primaryActionTest.thirdPerson.toggle());
     await page.waitForFunction(() => {
       const attachment = globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-head');
@@ -622,9 +676,6 @@ const heldItemChecks = async (chromium, port) => {
         !r.view.playerMeshes.group.getObjectByName('worn-head') && r.view.held.warmUpTarget.camera.children.length === 0
       );
     });
-    const restored = await visorRatio(page, await capture());
-    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
-    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
   await timePhase('own-head-mask-assertions', async () => {
@@ -1021,8 +1072,11 @@ const lakeSurfaceCheck = (chromium, port) =>
         const [x, z] = layout.terrain[0].centre;
         const eye = engine.camera.position.y - body.pos[1] * s;
         const gl = engine.renderer.getContext();
-        // Reads the drawing buffer right after the held layer, the frame's last draw; the HUD is DOM, not in it.
-        // The second frame after the move is read, so the camera has followed the body.
+        // Reads the drawing buffer once the frame's draws have finished; the HUD is DOM, not in it. On the
+        // held layer's stack the frame is not complete: below render scale 1 the scene is drawn into a
+        // sub-viewport that only a later upscale covers (render/screenScale.ts, ScreenScale.render), and
+        // the centre pixel can sit outside that viewport. The second frame after the move is read, so
+        // the camera has followed the body.
         const look = (eyeAt, pitch) =>
           new Promise((done) => {
             body.pos = [x / s, (eyeAt - eye) / s, z / s];
@@ -1038,18 +1092,20 @@ const lakeSurfaceCheck = (chromium, port) =>
                 return;
               }
               held.render = render;
-              const pixel = new Uint8Array(4);
-              gl.readPixels(
-                gl.drawingBufferWidth >> 1,
-                gl.drawingBufferHeight >> 1,
-                1,
-                1,
-                gl.RGBA,
-                gl.UNSIGNED_BYTE,
-                pixel,
-              );
-              const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
-              done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
+              queueMicrotask(() => {
+                const pixel = new Uint8Array(4);
+                gl.readPixels(
+                  gl.drawingBufferWidth >> 1,
+                  gl.drawingBufferHeight >> 1,
+                  1,
+                  1,
+                  gl.RGBA,
+                  gl.UNSIGNED_BYTE,
+                  pixel,
+                );
+                const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
+                done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
+              });
             };
           });
         const surface = layout.water[0].level;

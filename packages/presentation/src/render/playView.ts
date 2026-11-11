@@ -262,7 +262,7 @@ export const createPlayView = (
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
   const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
-  const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics.modelLoadConcurrency);
+  const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics);
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
@@ -324,6 +324,7 @@ export const createPlayView = (
     acidEffects.group,
   );
   const dispose = () => {
+    models.dispose();
     pictures?.dispose();
     piles.dispose();
     vehicles.dispose();

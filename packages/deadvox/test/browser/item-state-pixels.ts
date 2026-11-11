@@ -122,7 +122,7 @@ export const statePixelFixture = async () => {
       failure = message;
     },
     { 'assets/models/pixel.glb': url },
-    1,
+    { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
   );
   const pictures = new ItemPictures(registry, models, 4);
   const host = document.createElement('div');
