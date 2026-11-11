@@ -785,15 +785,25 @@ const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { inventory, session } = r;
   r.input.controls.pitch = 0;
-  // The first station that takes the optic wins: the authoring tool certifies particular stations.
+  // rifle_assault ships iron-sighted, so the sights come off before the optic goes on. The authoring tool certifies
+  // particular stations, so the first one that takes the optic wins.
   const scopedAcquisitionRifle = () => {
     const gunType = 'rifle_assault';
+    const attachmentKind = (child) =>
+      inventory.registry.models.get(inventory.registry.items.get(child?.type)?.model)?.gun?.attachment?.kind;
     const stations = inventory.registry.models
       .get(inventory.registry.items.get(gunType).model)
       .gun.attachmentSlots.map(({ id }) => id);
-    for (const slot of stations) {
+    for (const station of stations) {
       try {
-        return r.scopedGun(gunType, slot, 'optic_fixed_prism_4x');
+        const gun = inventory.create(gunType);
+        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
+          if (['iron-sight', 'optic'].includes(attachmentKind(child))) {
+            inventory.fitSlot(gun, slot, undefined);
+          }
+        }
+        inventory.fitSlot(gun, station, inventory.create('optic_fixed_prism_4x'));
+        return gun;
       } catch {
         // Another station may fit.
       }
