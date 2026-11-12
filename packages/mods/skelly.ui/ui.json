@@ -732,6 +732,7 @@
           "hudHeading": "HUD",
           "leaveFullscreen": "Leave fullscreen",
           "modDefault": "Mod default",
+          "noMatches": "No matches",
           "off": "Off",
           "on": "On",
           "reloadDetail": "Takes effect after the page is reloaded.",

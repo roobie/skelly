@@ -1,33 +1,34 @@
 import type { ScreenText } from '@skelly/engine/content';
 import { GRAPHICS_KEYS, type GraphicsKey, type GraphicsOptions } from '@skelly/engine/look';
 import { hundredthsText } from '@skelly/engine/text';
-import { html, render, type TemplateResult } from 'lit-html';
+import { html, nothing, render, type TemplateResult } from 'lit-html';
 import type { GraphicsControls } from '../presentation/graphicsControls.ts';
+import { comboBox } from './comboBox.ts';
+import { factDetail } from './factDetail.ts';
 
 type OptionsText = ScreenText['options'];
 
-const valueText = (key: GraphicsKey, value: number | boolean, tuning: GraphicsOptions, text: OptionsText): string => {
-  const option = tuning[key];
-  if ('choices' in option) {
-    return option.choices.find((choice) => choice.value === value)?.label ?? '';
-  }
+const valueText = (value: number | boolean, text: OptionsText): string => {
   if (typeof value === 'number') {
     return hundredthsText(value);
   }
   return value ? text.on : text.off;
 };
 
+/** The game's combo box, not a native select: the locked-pointer menu can only operate drawn controls. */
 const choiceControl = (
   key: GraphicsKey,
   option: Extract<GraphicsOptions[GraphicsKey], { choices: unknown }>,
-  state: { value: number; change: (value: number) => void; detail: string },
-): TemplateResult => html`<select
-  id="graphics-${key}"
-  title=${state.detail}
-  @change=${(event: Event) => state.change(Number((event.currentTarget as HTMLSelectElement).value))}
->${option.choices.map(
-  (choice) => html`<option value=${choice.value} ?selected=${choice.value === state.value}>${choice.label}</option>`,
-)}</select>`;
+  state: { value: number; change: (value: number) => void; text: OptionsText },
+): TemplateResult =>
+  html`${comboBox({
+    id: `graphics-${key}`,
+    label: option.label,
+    options: option.choices.map((choice) => ({ value: String(choice.value), label: choice.label })),
+    value: String(state.value),
+    emptyLabel: state.text.noMatches,
+    choose: (value) => state.change(Number(value)),
+  })}`;
 
 const scaleControl = (
   key: GraphicsKey,
@@ -63,7 +64,7 @@ const control = (
   state: { value: number | boolean; change: (value: number | boolean) => void; text: OptionsText },
 ): TemplateResult => {
   if ('choices' in option) {
-    return choiceControl(key, option, { ...state, value: Number(state.value), detail: state.text.reloadDetail });
+    return choiceControl(key, option, { ...state, value: Number(state.value) });
   }
   if ('options' in option) {
     return html`<input
@@ -88,9 +89,9 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
       };
       return html`
         <div class="graphics-options__row" data-graphics-key=${key}>
-          <label for="graphics-${key}">${option.label}</label>
+          <label for="graphics-${key}">${'choices' in option ? factDetail(option.label, text.reloadDetail) : option.label}</label>
           ${control(key, option, { value: values[key], change, text })}
-          <output>${valueText(key, values[key], graphics.tuning, text)}</output>
+          ${'choices' in option ? nothing : html`<output>${valueText(values[key], text)}</output>`}
           <button
             type="button"
             ?disabled=${player[key] === undefined}
