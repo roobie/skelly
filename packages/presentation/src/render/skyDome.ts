@@ -44,6 +44,7 @@ import {
   Vector3,
   Vector4,
 } from 'three';
+import { CLOUD_COVER_GLSL } from './skyCloudCover.ts';
 import { cloudTexture } from './skyCloudNoise.ts';
 
 /** Shared by the dome's material; `Mood` sets the scale for the post chain's frame only. */
@@ -280,6 +281,8 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return ( uSunColour * lobe( cosAngle, uSunTightHalo ) + uSunGlowColour * lobe( cosAngle, uSunWideHalo ) ) * uSunGlow;
   }
 
+  ${CLOUD_COVER_GLSL}
+
   // One layer's cover at a sky-plane point. A tiling texture repeats, so the lookup is rotated per layer and
   // warped by the texture's own low octave, which hides the tile period. layer: scale, angle, drift x and y.
   float cloudCover ( sampler2D tex, vec2 plane, vec4 layer ) {
@@ -288,9 +291,8 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec2 uv = mat2( c, s, -s, c ) * plane * layer.x + layer.zw * uSimSeconds;
     uv += ( texture2D( tex, uv * 0.31 + vec2( 0.37, 0.71 ) ).rg - 0.5 ) * uWarp;
     vec2 noise = texture2D( tex, uv ).rg;
-    float threshold = 1.0 - uCoverGain * uCover;
     // Cover 0 is clear sky however high the noise rises.
-    return smoothstep( threshold, threshold + uEdgeSoftness, noise.r + ( noise.g - 0.5 ) * 0.35 ) * step( 0.0001, uCover );
+    return layeredCover( noise.r + ( noise.g - 0.5 ) * 0.35, uCoverGain * uCover, uEdgeSoftness ) * step( 0.0001, uCover );
   }
 
   // The scatter kind's noise, after three's Sky addon: gradient noise from a hash without sin, so every GPU draws the
@@ -346,8 +348,8 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   vec3 scatterClouds ( vec3 col, vec3 dir, vec2 plane, float facing, float opacity ) {
     vec2 p = plane * uScatterShape.x + uScatterDrift * uSimSeconds;
     float noise = clamp( scatterFbm( p, uScatterShape.y * uSimSeconds ) * 0.7 + 0.5, 0.0, 1.0 );
-    float region = scatterNoise( p * ( uScatterShape.z / uScatterShape.x ) ) * uScatterShape.w;
-    float threshold = 1.0 - clamp( uCoverGain * uCover + region, 0.0, 1.0 );
+    float region = scatterNoise( p * ( uScatterShape.z / uScatterShape.x ) );
+    float threshold = 1.0 - scatterCoverage( uCoverGain * uCover, region, uScatterShape.w );
     float depth = max( 0.0, noise - threshold );
     float beer = exp( -4.0 * depth );
     float core = mix( uScatterLight.y, 1.0, clamp( beer * ( 1.0 - beer * beer ) * 2.6, 0.0, 1.0 ) );
