@@ -59,6 +59,7 @@
 import {
   type ActorBody,
   type ActorClips,
+  type ActorFigureFile,
   type ActorFigureFiles,
   actorFigure,
   actorFigureKey,
@@ -642,46 +643,54 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
 };
 
 /**
- * The largest root translation any baked pose of this figure authors, in model units: every pose clip
- * and death-clip frame's root, the stance idles' base roots, and the overlays' authored drops. Sampling
- * and blending interpolate between stored frames, so the stored maxima bound every drawn pose. A
- * conservative load-time bound, computed once per variant: an exact per-frame bound would re-walk every
- * bone transform per pass for a figure that can only reach this far (see Variant.casterRadius).
+ * The largest root translation one baked clip entry authors, in model units (see authoredRootMotion):
+ * a pose clip's or death pair's frames' roots, a stance idle's base roots, or an overlay's authored
+ * drops. Sampling and blending interpolate between stored frames, so the stored maxima bound every
+ * drawn pose.
+ */
+const entryRootMotion = (entry: NonNullable<ActorClips['standing']>[string]): number => {
+  if ('kind' in entry) {
+    if (entry.kind === 'pose') {
+      return Math.max(0, ...entry.frames.map((frame) => Math.hypot(...frame.root)));
+    }
+    return entry.kind === 'overlay' ? Math.max(0, ...entry.frames.map((frame) => Math.abs(frame.dropMetres))) : 0;
+  }
+  if ('slack' in entry) {
+    return Math.max(Math.hypot(...entry.slack.base.root), Math.hypot(...entry.aggravated.base.root));
+  }
+  return Math.max(
+    0,
+    ...[entry.forward, entry.backward].flatMap((fall) => fall.frames.map((frame) => Math.hypot(...frame.root))),
+  );
+};
+
+/**
+ * The largest root translation any baked pose of this figure authors, in model units — a conservative
+ * load-time bound, computed once per variant: an exact per-frame bound would re-walk every bone
+ * transform per pass for a figure that can only reach this far (see Variant.casterRadius).
  */
 const authoredRootMotion = (clips: ActorClips, fusedMassOriginOffset?: Vec3): number => {
-  let max = 0;
-  const take = (x: number, y: number, z: number): void => {
-    max = Math.max(max, Math.hypot(x, y, z));
-  };
+  let max = fusedMassOriginOffset ? Math.hypot(...fusedMassOriginOffset) : 0;
   for (const set of [clips.standing, clips.crawling]) {
     for (const entry of Object.values(set ?? {})) {
-      if ('kind' in entry) {
-        if (entry.kind === 'pose') {
-          for (const frame of entry.frames) {
-            take(frame.root[0], frame.root[1], frame.root[2]);
-          }
-        } else if (entry.kind === 'overlay') {
-          for (const frame of entry.frames) {
-            take(0, frame.dropMetres, 0);
-          }
-        }
-      } else if ('slack' in entry) {
-        take(...entry.slack.base.root);
-        take(...entry.aggravated.base.root);
-      } else {
-        for (const fall of [entry.forward, entry.backward]) {
-          for (const frame of fall.frames) {
-            take(frame.root[0], frame.root[1], frame.root[2]);
-          }
-        }
-      }
+      max = Math.max(max, entryRootMotion(entry));
     }
-  }
-  if (fusedMassOriginOffset) {
-    take(...fusedMassOriginOffset);
   }
   return max;
 };
+
+/** The caster box radius for a placed figure: the rotations reach (2·bind sphere radius) plus the
+ * largest root translation its clips author, which nothing ties to the geometry radius. Metres. */
+const casterRadiusOf = (
+  geometry: BufferGeometry,
+  body: ActorBody,
+  clips: ActorClips,
+  fusedMass: ActorFigureFile['fusedMass'],
+): number =>
+  2 * (geometry.boundingSphere?.radius ?? 1) * body.scale +
+  authoredRootMotion(clips, fusedMass ? (fusedMass.originOffset.map((c) => c / fusedMass.scale) as Vec3) : undefined) *
+    body.scale +
+  0.3;
 
 /**
  * Builds a variant's selection-only shadow twin (see the module header): the crowd geometry's vertex
@@ -903,17 +912,7 @@ export class MobActorMeshes implements ActorRenderer {
       geometry.computeBoundingSphere();
       // three.js would otherwise draw every instance of the un-cullable crowd into every shadow map.
       // Slot 0 exists from construction; reserveShadowSlots grows the rest before the first render.
-      const shadowPasses: ShadowPassTwin[] = [
-        shadowCrowdTwin(
-          geometry,
-          cells?.material ?? this.material,
-          cells?.depthMaterial ?? this.depthMaterial,
-          capacity,
-        ),
-      ];
-      for (const twin of shadowPasses) {
-        this.group.add(twin.mesh);
-      }
+      const shadowPasses: ShadowPassTwin[] = [this.addShadowPass(geometry, cells)];
 
       const freeLocalSlots: number[] = [];
       for (let k = capacity - 1; k >= 0; k--) {
@@ -942,14 +941,7 @@ export class MobActorMeshes implements ActorRenderer {
         crowdSlotAttr,
         shadowPasses,
         casterReach: 2 * (geometry.boundingSphere?.radius ?? 1) * body.scale + 0.3,
-        casterRadius:
-          2 * (geometry.boundingSphere?.radius ?? 1) * body.scale +
-          authoredRootMotion(
-            clips,
-            fusedMass ? (fusedMass.originOffset.map((c) => c / fusedMass.scale) as Vec3) : undefined,
-          ) *
-            body.scale +
-          0.3,
+        casterRadius: casterRadiusOf(geometry, body, clips, fusedMass),
         scratch: allocateBoneTransforms(bones.length),
         freeLocalSlots,
         liveIds: [],
@@ -2781,18 +2773,22 @@ export class MobActorMeshes implements ActorRenderer {
       throw new RangeError(`shadow slots must be a positive integer, got ${slots}`);
     }
     for (const variant of this.variants) {
-      const passes = variant.shadowPasses;
-      for (let slot = passes.length; slot < slots; slot++) {
-        const twin = shadowCrowdTwin(
-          variant.geometry,
-          variant.cells?.material ?? this.material,
-          variant.cells?.depthMaterial ?? this.depthMaterial,
-          this.capacity,
-        );
-        passes.push(twin);
-        this.group.add(twin.mesh);
+      for (let slot = variant.shadowPasses.length; slot < slots; slot++) {
+        variant.shadowPasses.push(this.addShadowPass(variant.geometry, variant.cells));
       }
     }
+  }
+
+  /** Builds one twin and adds it to the group. */
+  private addShadowPass(geometry: BufferGeometry, cells: VariantCells | undefined): ShadowPassTwin {
+    const twin = shadowCrowdTwin(
+      geometry,
+      cells?.material ?? this.material,
+      cells?.depthMaterial ?? this.depthMaterial,
+      this.capacity,
+    );
+    this.group.add(twin.mesh);
+    return twin;
   }
 
   /**
@@ -2810,25 +2806,33 @@ export class MobActorMeshes implements ActorRenderer {
       if (!twin) {
         throw new RangeError(`shadow slot ${slot} was not reserved (reserveShadowSlots)`);
       }
-      const rows = twin.slots.array as Float32Array;
-      let count = 0;
-      for (const key of variant.liveIds) {
-        const holder = typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
-        if (holder) {
-          const box = this.holderCasterBox(key, variant);
-          if (!box || casts(box)) {
-            rows[count] = variant.crowdSlotAttr.getX(holder.instanceIndex);
-            count += 1;
-          }
-        }
-      }
+      twin.mesh.count = this.packShadowRows(variant, twin.slots, casts);
       for (const other of variant.shadowPasses) {
         other.mesh.visible = false;
       }
-      twin.mesh.count = count;
-      twin.mesh.visible = count > 0;
+      twin.mesh.visible = twin.mesh.count > 0;
       twin.slots.needsUpdate = true;
     }
+  }
+
+  /** Writes the rows of every holder that can cast into the selected volume, densely from 0; returns
+   * how many. A holder whose position is not yet known (first sync pending) stays selected rather than
+   * lose a shadow. */
+  private packShadowRows(variant: Variant, slots: InstancedBufferAttribute, casts: (box: Box3) => boolean): number {
+    const rows = slots.array as Float32Array;
+    let count = 0;
+    for (const key of variant.liveIds) {
+      const holder = typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+      if (!holder) {
+        continue;
+      }
+      const box = this.holderCasterBox(key, variant);
+      if (!box || casts(box)) {
+        rows[count] = variant.crowdSlotAttr.getX(holder.instanceIndex);
+        count += 1;
+      }
+    }
+    return count;
   }
 
   private readonly casterBox = new Box3();
@@ -2841,20 +2845,10 @@ export class MobActorMeshes implements ActorRenderer {
    * boxed around their actual bone positions, which any root motion has already moved, so their box
    * needs only the rotations reach. Reused per call. */
   private holderCasterBox(key: SlotKey, variant: Variant): Box3 | undefined {
-    const box = this.casterBox;
     if (typeof key === 'number') {
       const state = this.states.get(key);
       if (state) {
-        if (state.drawnFall) {
-          return this.boxAroundBones(state.drawnFall.values(), variant.casterReach);
-        }
-        const placement = state.lastPlacement;
-        if (placement) {
-          box.min.set(placement.x - variant.casterRadius, placement.y - variant.casterRadius, placement.z - variant.casterRadius);
-          box.max.set(placement.x + variant.casterRadius, placement.y + variant.casterRadius, placement.z + variant.casterRadius);
-          return box;
-        }
-        return undefined;
+        return this.liveCasterBox(state, variant);
       }
       const corpse = this.corpses.get(key);
       if (!corpse) {
@@ -2865,16 +2859,26 @@ export class MobActorMeshes implements ActorRenderer {
       }
       // A death-clip corpse falls at its frozen death point; its clip's authored root motion is inside
       // casterRadius like any placed figure.
-      box.min.set(corpse.worldPos[0] - variant.casterRadius, corpse.worldPos[1] - variant.casterRadius, corpse.worldPos[2] - variant.casterRadius);
-      box.max.set(corpse.worldPos[0] + variant.casterRadius, corpse.worldPos[1] + variant.casterRadius, corpse.worldPos[2] + variant.casterRadius);
-      return box;
+      return this.boxAroundPoint(corpse.worldPos[0], corpse.worldPos[1], corpse.worldPos[2], variant.casterRadius);
     }
     const center = this.debris.get(key)?.body.center;
-    if (!center) {
-      return undefined;
+    return center ? this.boxAroundPoint(center[0], center[1], center[2], variant.casterReach) : undefined;
+  }
+
+  /** A live actor's caster box: its crawl-fall bones if a fall is drawing, else its placement. */
+  private liveCasterBox(state: ActorRenderState, variant: Variant): Box3 | undefined {
+    if (state.drawnFall) {
+      return this.boxAroundBones(state.drawnFall.values(), variant.casterReach);
     }
-    box.min.set(center[0] - variant.casterReach, center[1] - variant.casterReach, center[2] - variant.casterReach);
-    box.max.set(center[0] + variant.casterReach, center[1] + variant.casterReach, center[2] + variant.casterReach);
+    const placement = state.lastPlacement;
+    return placement ? this.boxAroundPoint(placement.x, placement.y, placement.z, variant.casterRadius) : undefined;
+  }
+
+  /** The box `radius` metres around a point, in this.casterBox. */
+  private boxAroundPoint(x: number, y: number, z: number, radius: number): Box3 {
+    const box = this.casterBox;
+    box.min.set(x - radius, y - radius, z - radius);
+    box.max.set(x + radius, y + radius, z + radius);
     return box;
   }
 

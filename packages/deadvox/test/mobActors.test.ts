@@ -32,7 +32,11 @@ import {
 import { ACTIVE_ACTOR_RATE, type Actor, reachTuning } from '@skelly/engine/sim';
 import { CHUNK, makeScale, type Vec3 } from '@skelly/engine/world';
 import { AcidEffects } from '@skelly/presentation/internal/render/acidEffects.ts';
-import { type CrowdCellMaskLayout, type CrowdPlacement, isCellInMask } from '@skelly/presentation/internal/render/crowd.ts';
+import {
+  type CrowdCellMaskLayout,
+  type CrowdPlacement,
+  isCellInMask,
+} from '@skelly/presentation/internal/render/crowd.ts';
 import { Gore } from '@skelly/presentation/internal/render/gore.ts';
 import { LOOK_AT_REST } from '@skelly/presentation/internal/render/lookAt.ts';
 import {
@@ -291,12 +295,15 @@ const CRAWLER = registry.actors.get('crawler')!;
 /** The renderer's private shape these tests read: variant twins, rows and placements. */
 const rendererInternals = (renderer: MobActorMeshes) =>
   renderer as unknown as {
-    states: Map<number, {
-      variantIndex: number;
-      globalRow: number;
-      lastPlacement: CrowdPlacement | undefined;
-      bodyTransforms: readonly { readonly t: readonly [number, number, number] }[];
-    }>;
+    states: Map<
+      number,
+      {
+        variantIndex: number;
+        globalRow: number;
+        lastPlacement: CrowdPlacement | undefined;
+        bodyTransforms: readonly { readonly t: readonly [number, number, number] }[];
+      }
+    >;
     variants: readonly {
       mesh: InstancedMesh;
       geometry: BufferGeometry;
@@ -1285,7 +1292,7 @@ describe('MobActorMeshes', () => {
     // A walk clip whose every frame authors a 20 m root translation: the figure draws 20 m from its
     // placement, farther than any multiple of its bind sphere radius — the pose contract a bound must
     // honour (PoseFrameSchema roots are translations, not just rotations).
-    const ROOT_METRES = 20;
+    const rootMetres = 20;
     const rooted = new Map(FIGURES);
     for (const seed of SHAMBLER_FIGURE_SEEDS) {
       const key = actorFigureKey(SHAMBLER.id, seed);
@@ -1298,7 +1305,7 @@ describe('MobActorMeshes', () => {
             Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
               name,
               'kind' in entry && entry.kind === 'pose'
-                ? { ...entry, frames: entry.frames.map((frame) => ({ ...frame, root: [ROOT_METRES, 0, 0] })) }
+                ? { ...entry, frames: entry.frames.map((frame) => ({ ...frame, root: [rootMetres, 0, 0] })) }
                 : entry,
             ]),
           ),
