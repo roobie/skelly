@@ -2264,9 +2264,19 @@ export class MobActorMeshes implements ActorRenderer {
       const transforms = state.drawnFall
         ? new Map(variant.bones.map((bone, index) => [bone.id, state.drawnFall!.get(index)!]))
         : boneTransforms(variant.bones, state.lastPose);
-      const placement = state.drawnFall ? { x: 0, y: 0, z: 0, yawRad: 0 } : state.lastPlacement;
-      const at = (anchor: BodyAnchor | undefined): Vec3 | undefined =>
-        anchor && anchorWorld(transforms, anchor, placement!, variant.scale);
+      // drawnFall transforms are world-space already (packCrawlFall packs them scaled and placed), so
+      // an anchor needs only their point; the pose branch still converts model space — yaw, scale,
+      // placement (anchorWorld).
+      const at = (anchor: BodyAnchor | undefined): Vec3 | undefined => {
+        if (!anchor) {
+          return undefined;
+        }
+        if (state.drawnFall) {
+          const world = applyPoint(transforms.get(anchor.bone)!, anchor.position);
+          return [world[0], world[1], world[2]];
+        }
+        return anchorWorld(transforms, anchor, state.lastPlacement!, variant.scale);
+      };
       yield { actor, glow: at(anchors.glow), mouth: at(anchors.mouth) };
     }
   }

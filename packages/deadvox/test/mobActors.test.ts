@@ -326,7 +326,7 @@ const rendererInternals = (renderer: MobActorMeshes) =>
     variants: readonly {
       mesh: InstancedMesh;
       geometry: BufferGeometry;
-      body: { scale: number; bones: readonly Bone[] };
+      body: { scale: number; bones: readonly Bone[]; anchors: { readonly [id: string]: BodyAnchor } };
       bones: readonly { readonly id: string }[];
       shadowPasses: readonly { mesh: InstancedMesh; slots: InstancedBufferAttribute }[];
       casterReach: number;
@@ -1825,7 +1825,8 @@ describe('MobActorMeshes', () => {
         box = candidate.clone();
         return true; // capture the real box for the farthest drawn vertex
       });
-      let overflow = 0;
+      const distanceFromBox = (at: Vec3): number => box.distanceToPoint(new Vector3(...at));
+      let overflow = Number.NEGATIVE_INFINITY;
       let checked = 0;
       let worst: Vec3 = [0, 0, 0];
       for (let vertex = 0; vertex < positions.count; vertex++) {
@@ -1841,8 +1842,9 @@ describe('MobActorMeshes', () => {
             matrix[axis * 4 + 3]!,
         ) as Vec3;
         checked += 1;
-        const distance = box.distanceToPoint(new Vector3(...at));
-        if (distance > overflow) {
+        // >= keeps `worst` at a genuinely inspected vertex even when every distance ties at zero.
+        const distance = distanceFromBox(at);
+        if (distance >= overflow) {
           overflow = distance;
           worst = at;
         }
@@ -1855,6 +1857,68 @@ describe('MobActorMeshes', () => {
       const twin = variant.shadowPasses[0]!;
       const selected = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
       expect(selected).toContain(state.globalRow); // the volume holds a drawn vertex: keep the shadow
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it("reports a scaled falling body's anchors where its packed row draws them", async () => {
+    // anchors() ran the world-space drawnFall transforms through the model-space conversion (yaw,
+    // scale, placement), scaling the already-scaled anchor point again and collapsing its world
+    // position toward the origin. An anchor must equal its point through the packed bone matrix —
+    // the very matrix that draws the bone it rides.
+    const scale = 0.1;
+    const anchoredFigures = (): ActorFigureFiles => {
+      const anchored = new Map(FIGURES);
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        const body: ActorBody = {
+          ...figure.body,
+          scale,
+          anchors: {
+            ...figure.body.anchors,
+            mouth: { bone: figure.body.bones[0]!.id, position: [0, 1, 0] },
+          },
+        };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        anchored.set(key, { ...figure, body });
+      }
+      return anchored;
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: anchoredFigures(),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const id = store.add(makeActor([80, 0, 0])); // far from the origin, where double-scaling shows
+      renderer.sync(store);
+      store.replace(id, makeActor([80, 0, 0], [0, 0, -1], ['thigh.L'])); // starts a crawl fall
+      renderer.sync(store);
+      await renderer.whenCorpsesReady();
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      expect(state.drawnFall).toBeDefined(); // the fall is drawing
+      const variant = internals.variants[state.variantIndex]!;
+      const anchor = variant.body.anchors.mouth!;
+      // Where the crowd shader draws the anchor: the packed bone matrix applied to its position.
+      const matrix = renderer.boneMatrix(id, anchor.bone)!;
+      const drawn: Vec3 = [0, 1, 2].map(
+        (axis) =>
+          matrix[axis * 4]! * anchor.position[0] +
+          matrix[axis * 4 + 1]! * anchor.position[1] +
+          matrix[axis * 4 + 2]! * anchor.position[2] +
+          matrix[axis * 4 + 3]!,
+      ) as Vec3;
+      expect(Math.abs(drawn[0])).toBeGreaterThan(8); // the fall lies far from the world origin
+      const mouth = [...renderer.anchors()][0]!.mouth!;
+      expect(mouth).toBeDefined();
+      for (const axis of [0, 1, 2]) {
+        // The packed matrix is float32 (the crowd texture); drawnFall is float64, so parity to ~1e-5 m.
+        expect(mouth[axis]).toBeCloseTo(drawn[axis]!, 4);
+      }
     } finally {
       renderer.dispose();
     }
