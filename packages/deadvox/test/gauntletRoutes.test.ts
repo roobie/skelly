@@ -3,13 +3,13 @@ import { ScenarioCitySite } from '@skelly/engine/internal/core/scenarioCity.ts';
 import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
-import { defaultStartOf } from './fixtures/scenario.ts';
+import { authoredCityScenarios, defaultStartOf } from './fixtures/scenario.ts';
 
 // Play doesn't prove the route before Go, so these tests stand in for that proof: the certificate's issues cover
 // every entrance, crossing, resource and the lab terminal. See `packages/deadvox/DESIGN.md`, "Gauntlet".
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
+const gauntlets = authoredCityScenarios(registry);
 if (gauntlets.length === 0) {
   throw new Error('No bundled gauntlet to certify');
 }
