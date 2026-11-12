@@ -97,7 +97,7 @@ export interface StreamerOptions {
 }
 
 export interface StreamerStats {
-  /** Main-thread milliseconds to generate each column. */
+  /** Main-thread milliseconds to admit each column, including any generation main does itself. */
   genMs: number[];
   /** Worker milliseconds to mesh each chunk. */
   meshMs: number[];
@@ -253,11 +253,6 @@ export class Streamer {
     // Replay owns every arrival; no speculative reply may outlive that.
     this.jobs?.dispose();
     this.jobs = undefined;
-  }
-
-  /** Ends the terrain workers; idempotent. */
-  dispose(): void {
-    this.jobs?.dispose();
   }
 
   /** Generated terrain columns at a replay recording boundary. */
