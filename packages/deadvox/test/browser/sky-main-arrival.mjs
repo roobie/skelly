@@ -337,11 +337,43 @@ export function adaptMainWeather(source) {
     .replaceAll('look.fogginess', 'look.weatherState.fogginess');
 }
 
+const adaptMainBenchShadows = (source) =>
+  `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
+    .replace(
+      'AUTO_TONE, DEFAULT_SHADOWS, type LookState, lookDefaultsOf, type MoodState',
+      'AUTO_TONE, defaultShadows, graphicsTuningOf, type LookState, lookDefaultsOf, type MoodState',
+    )
+    .replace(
+      'shadows.restore(DEFAULT_SHADOWS);',
+      'shadows.restore(defaultShadows(mainGraphicsTuningOf(engine.registry).sunShadow));',
+    );
+
+const adaptMainDebugShadows = (source) =>
+  `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
+    .replace('DEFAULT_SHADOWS, graphicsTuningOf', 'defaultShadows, graphicsTuningOf')
+    .replace(
+      'shadows.restore(DEFAULT_SHADOWS);',
+      'shadows.restore(defaultShadows(mainGraphicsTuningOf(hooks.engine.registry).sunShadow));',
+    )
+    .replace(
+      'defaults: lookDefaults,',
+      'defaults: lookDefaults,\n    sunShadow: mainGraphicsTuningOf(hooks.engine.registry).sunShadow,',
+    )
+    .replaceAll(
+      'defaultWeather,',
+      'defaultWeather,\n    sunShadow: mainGraphicsTuningOf(hooks.engine.registry).sunShadow,',
+    );
+
+const adaptMainPlayViewShadows = (source) =>
+  source
+    .replace('DEFAULT_SHADOWS, graphicsTuningOf', 'defaultShadows, graphicsTuningOf')
+    .replace('shadows.restore(DEFAULT_SHADOWS);', 'shadows.restore(defaultShadows(graphics.sunShadow));');
+
 /** Measurement hooks and contract adapters applied to a served base startup source. */
 const OVERLAY_ADAPTERS = {
-  'deadvox:bench/post.ts': adaptMainWeather,
-  'deadvox:debug/index.ts': adaptMainWeather,
-  'presentation:render/playView.ts': adaptMainWeather,
+  'deadvox:bench/post.ts': (source) => adaptMainBenchShadows(adaptMainWeather(source)),
+  'deadvox:debug/index.ts': (source) => adaptMainDebugShadows(adaptMainWeather(source)),
+  'presentation:render/playView.ts': (source) => adaptMainPlayViewShadows(adaptMainWeather(source)),
   'presentation:presentation/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',

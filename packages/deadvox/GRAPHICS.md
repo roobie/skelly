@@ -69,6 +69,11 @@ content defaults, and no link sets them; see `docs/decisions/0006-url-mods-and-h
 "Decision". Explicit false values are choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
 `packages/engine/src/core/graphics.ts`, `resolveGraphics`, and `packages/presentation/src/presentation/graphicsSettings.ts`.
 
+The smaller sun map remains an off-by-default player graphics choice, so the default look keeps
+full-map quality. Sun-shadow reach and its debug cycle are graphics content because they tune the
+look; a new reach needs another look review. See `packages/mods/skelly.graphics/graphics.jsonnet`,
+`sunShadow`, and `packages/engine/src/core/mood.ts`, `defaultShadows`.
+
 Benchmarks isolate machine preferences so saved choices cannot silently change a comparison
 workload. Scene scale stays fixed at the content default because GPU-dependent adaptation would
 change the pixel workload during a run. The full-post workload keeps an independent look so

@@ -12,6 +12,7 @@ import {
   strictObject,
 } from 'valibot';
 import { GraphicsOptionsSchema } from '../graphics.ts';
+import { SHADOW_DISTANCE_RANGE } from '../mood.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
 import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
@@ -58,6 +59,25 @@ export const GraphicsTuningSchema = strictObject({
   columnsPerFrame: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
+  sunShadow: pipe(
+    strictObject({
+      defaultReachMetres: pipe(
+        number(),
+        integer(),
+        minValue(SHADOW_DISTANCE_RANGE.min),
+        maxValue(SHADOW_DISTANCE_RANGE.max),
+      ),
+      debugReachMetres: pipe(
+        array(pipe(number(), integer(), minValue(SHADOW_DISTANCE_RANGE.min), maxValue(SHADOW_DISTANCE_RANGE.max))),
+        minLength(1),
+      ),
+    }),
+    check(
+      ({ defaultReachMetres, debugReachMetres }) =>
+        new Set(debugReachMetres).size === debugReachMetres.length && debugReachMetres.includes(defaultReachMetres),
+      'sun shadow reaches must be unique and include the default',
+    ),
+  ),
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({
