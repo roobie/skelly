@@ -81,6 +81,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -r site/. _site/
+          node tools/addPagesAnalytics.mjs $(find _site -name '*.html')
           mkdir -p _site/deadvox
           cp -r packages/deadvox/dist/. _site/deadvox/
       - uses: actions/configure-pages@v5

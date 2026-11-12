@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { addPagesAnalytics } from '../../../pagesAnalyticsPlugin.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 // Each round plays a committed scenario picked by id, and practice plays the tutorial the same way.
@@ -138,7 +139,7 @@ export const publishPlaytest = ({ round, gameSha, dryRun = false, root = ROOT })
       .replaceAll('{{PLAY_URL}}', playHref(config, config.scenario))
       .replaceAll('{{BEGINNER_URL}}', playHref(config, config.scenario, BEGINNER_MOD))
       .replaceAll('{{PRACTICE_URL}}', playHref(config, PRACTICE_MOD));
-    writeFileSync(path, source);
+    writeFileSync(path, file.endsWith('.html') ? addPagesAnalytics(source) : source);
   }
   buildGame(root, gameSha, join(output, config.playPath));
   writeFileSync(join(output, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
