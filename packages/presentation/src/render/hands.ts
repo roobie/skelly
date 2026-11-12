@@ -36,6 +36,7 @@ import {
 } from 'three';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
+import type { MaterialPatches } from './materialPatches.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { firstPersonShoulder, heldBodyShoulder } from './playerFigure.ts';
@@ -55,7 +56,6 @@ export class HeldItems {
   private readonly physical = new Group();
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
-  private skyVisibility = 1;
   private readonly animator: ActorAnimator;
   private readonly presentation: HeldPresentation;
   private visor: Object3D | undefined;
@@ -67,6 +67,7 @@ export class HeldItems {
   private readonly models: ModelLibrary | undefined;
   private readonly figure: FigureDef;
   private readonly sunSource: DirectionalLight | undefined;
+  private readonly patches: MaterialPatches | undefined;
 
   constructor(
     inventory: Inventory,
@@ -76,13 +77,24 @@ export class HeldItems {
       nearPlaneMetres,
       playerViewFovDegrees,
       sunSource,
-    }: { nearPlaneMetres: number; playerViewFovDegrees: number; sunSource?: DirectionalLight },
+      patches,
+    }: {
+      nearPlaneMetres: number;
+      playerViewFovDegrees: number;
+      sunSource?: DirectionalLight;
+      /**
+       * The play scene's patches. Held pieces share the world's materials, so the hand scene must compile them the
+       * same way and leave sky exposure to them, as the play scene does.
+       */
+      patches?: MaterialPatches;
+    },
   ) {
     this.inventory = inventory;
     this.camera = new PerspectiveCamera(playerViewFovDegrees, 1, nearPlaneMetres, 10);
     this.models = models;
     this.figure = figure;
     this.sunSource = sunSource;
+    this.patches = patches;
     this.view.name = 'held-items-view';
     this.physical.name = 'held-optical-source';
     // The retained animator supplies optics only, never another visible arm/item owner.
@@ -270,18 +282,15 @@ export class HeldItems {
     return true;
   }
 
-  setSkyVisibility(visibility: number): void {
-    this.skyVisibility = visibility;
-  }
-
   render(renderer: WebGLRenderer, main: PerspectiveCamera, sky: SkyTargets): void {
+    this.patches?.apply(this.scene);
     this.light.position.copy(sky.light.position);
     this.light.color.copy(sky.light.color);
     this.light.intensity = sky.light.intensity;
     this.light.castShadow = this.sunSource?.castShadow ?? false;
     this.ambient.color.copy(sky.ambient.color);
     this.ambient.groundColor.copy(sky.ambient.groundColor);
-    this.ambient.intensity = sky.ambient.intensity * this.skyVisibility;
+    this.ambient.intensity = sky.ambient.intensity;
     if (this.camera.fov !== main.fov || this.camera.aspect !== main.aspect) {
       this.camera.fov = main.fov;
       this.camera.aspect = main.aspect;
