@@ -42,18 +42,17 @@ const SkyColour = pipe(
 const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
 
 /** The dome's physical (Preetham) sky model in its own terms, so hazier air at a low sun is content, not code. */
-const FiniteNonNegative = pipe(NonNegative, finite('must be finite'));
 
 const PhysicalSkySchema = strictObject({
   /** Scales the model's radiance before it is mapped into display range; the model's own units are arbitrary. */
-  exposure: FiniteNonNegative,
+  exposure: NonNegative,
   /** 0 draws the keyed gradient only, 1 the physical sky; the dome scales it by the sun's height in `physicalBand`, so a low sun draws the gradient at any weight. */
   weight: UnitFraction,
-  turbidity: FiniteNonNegative,
-  rayleigh: FiniteNonNegative,
-  mie: FiniteNonNegative,
+  turbidity: NonNegative,
+  rayleigh: NonNegative,
+  mie: NonNegative,
   /** The model's Henyey-Greenstein asymmetry, which is undefined at 1. */
-  mieDirectional: pipe(FiniteNonNegative, ltValue(1, 'must be below 1')),
+  mieDirectional: pipe(NonNegative, ltValue(1, 'must be below 1')),
 });
 
 /** The sky dome of one look: the gradient between the fog colour and the zenith, the physical sky, clouds and stars. */
@@ -71,17 +70,17 @@ const DomeLookSchema = strictObject({
   /** Star brightness. */
   stars: UnitFraction,
   /** The moon, which the dome draws opposite the sun. */
-  moon: strictObject({ colour: SkyColour, brightness: FiniteNonNegative }),
+  moon: strictObject({ colour: SkyColour, brightness: NonNegative }),
   /** The sun, painted over the sky whatever the physical sky's weight. */
   sun: strictObject({
     /** The disc and the air right round it. */
     colour: SkyColour,
     /** Scales the disc. */
-    brightness: FiniteNonNegative,
+    brightness: NonNegative,
     /** The air further out. */
     glowColour: SkyColour,
     /** Scales the halos, so a low sun can be wrapped in haze and a high one left clean. */
-    glow: FiniteNonNegative,
+    glow: NonNegative,
   }),
 });
 
@@ -97,16 +96,14 @@ const SunHeightBand = pipe(
   check(([from, to]) => from < to, 'must rise from a lower to a higher edge'),
 );
 
-const FinitePositive = pipe(Positive, finite('must be finite'));
-
 /** A lobe of light round a direction: `cos(angle) ** power * gain`. */
-const Lobe = strictObject({ power: FinitePositive, gain: FiniteNonNegative });
+const Lobe = strictObject({ power: Positive, gain: NonNegative });
 
 /** A body drawn on the dome: a disc with a tight halo and a wide one. */
 const BodyShapeSchema = strictObject({
   /** The cosines of the angle from the body's centre between which the disc eases in; the body's size. */
   disc: Band,
-  discGain: FiniteNonNegative,
+  discGain: NonNegative,
   tightHalo: Lobe,
   wideHalo: Lobe,
 });
@@ -117,7 +114,7 @@ const MoonShapeSchema = strictObject({
   /** How much darker the disc's rim is than its centre: 0 is a flat disc. */
   limbDarkening: UnitFraction,
   /** The darker seas on the disc: how much they darken it, and how many fit across it. */
-  maria: strictObject({ depth: UnitFraction, scale: FinitePositive }),
+  maria: strictObject({ depth: UnitFraction, scale: Positive }),
 });
 
 /** The dome's shape that does not change over the day: how its gradient, stars, bodies and cloud light are built from the looks. */
@@ -145,9 +142,9 @@ const DomeShapeSchema = strictObject({
   sun: BodyShapeSchema,
   cloudLight: strictObject({
     /** How much of the main light's colour a cloud takes. */
-    light: FiniteNonNegative,
+    light: NonNegative,
     /** How much of the ambient sky colour a cloud takes. */
-    ambient: FiniteNonNegative,
+    ambient: NonNegative,
     /** The share of the main light that depends on facing it; the rest lights a cloud evenly. */
     facing: UnitFraction,
     /** The most main-light intensity a deck layer takes; the tops take up to 1. */
@@ -155,9 +152,9 @@ const DomeShapeSchema = strictObject({
   }),
   cloudShape: strictObject({
     /** How fast the cloud threshold falls as cover rises. */
-    coverGain: FiniteNonNegative,
+    coverGain: NonNegative,
     /** How wide the cloud edge is in noise units. */
-    edgeSoftness: FinitePositive,
+    edgeSoftness: Positive,
     /** Where clouds fade in above the horizon, as the sine of the elevation. */
     horizonFade: Band,
   }),
@@ -207,22 +204,22 @@ const LayeredCloudsSchema = strictObject({
 /** The scatter kind: a few big soft clouds, each shaded deeper towards its core and lined where the light is behind it. */
 const ScatterCloudsSchema = strictObject({
   /** The noise's frequency over the cloud plane: higher draws more, smaller clouds. */
-  scale: FinitePositive,
+  scale: Positive,
   /** Noise-space drift per second along x and y. */
   drift: tuple([FiniteNumber, FiniteNumber]),
   /** How fast the noise's octaves slide past one another per second, so the clouds billow rather than slide as one. */
-  billow: FiniteNonNegative,
+  billow: NonNegative,
   /**
    * The large-scale swing in cover that leaves clear gaps beside dense banks: its frequency and its reach in cover;
    * a cover thinner than the reach thins the whole field with it.
    */
-  region: strictObject({ scale: FinitePositive, strength: UnitFraction }),
+  region: strictObject({ scale: Positive, strength: UnitFraction }),
   /** How fast a cloud turns opaque past its edge. */
-  density: FinitePositive,
+  density: Positive,
   /** The share of a cloud's light left at its self-shadowed core. */
   shadow: UnitFraction,
   /** How bright a cloud's rim shines with the light behind it. */
-  lining: FiniteNonNegative,
+  lining: NonNegative,
 });
 
 /** Each kind's shape, which does not change over the day; the looks' `dome.clouds` set how much of it shows. */
@@ -319,11 +316,11 @@ const SkyEnvironmentSchema = strictObject({
     check((size) => Number.isInteger(Math.log2(size)), 'must be a power of two'),
   ),
   /** How far the drawn sky moves, as its largest change in any value, before the reflection is redrawn: smaller follows twilight closer for more bakes. */
-  rebakeChange: FinitePositive,
+  rebakeChange: Positive,
   /** The fewest real seconds between two bakes, so a fast-forwarded clock cannot bake every frame. */
-  rebakeRealSeconds: FiniteNonNegative,
+  rebakeRealSeconds: NonNegative,
   /** How strongly models reflect the open sky; sky exposure dims it where the sky cannot reach. */
-  strength: FiniteNonNegative,
+  strength: NonNegative,
 });
 
 /** Where the main light comes from; how it follows the sun and the moon is code (core/sky.ts, `skyAt`). */
@@ -334,7 +331,7 @@ const MainLightSchema = strictObject({
    */
   lowestHeight: pipe(UnitFraction, gtValue(0, 'must be above 0'), ltValue(1, 'must be below 1')),
   /** The drawn moon's brightness at and above which the main light comes wholly from the moon's side. */
-  fromMoonAt: FinitePositive,
+  fromMoonAt: Positive,
 });
 
 const SKY_PHASES = ['night', 'dawn', 'day', 'dusk'] as const;
