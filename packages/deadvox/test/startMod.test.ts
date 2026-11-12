@@ -1,6 +1,7 @@
 import {
   bundledModIdsFromUrl,
   type ModIntake,
+  type PackInput,
   practiceModId,
   selectBundledMods,
   startModFromUrl,
@@ -50,6 +51,24 @@ const inherits = mod('fixture.inherits', [], { dependencies: [startOwner.id] });
 const inheritsChain = mod('fixture.inherits-chain', [], { dependencies: [chainLink.id] });
 const inheritsTwo = mod('fixture.inherits-two', [], { dependencies: [startOwner.id, secondOwner.id] });
 const inheritsEntry = mod('fixture.inherits-entry', [], { dependencies: [PRODUCT_ENTRY_PACK] });
+// A base-stack pack whose only file is json metadata shaped like a start list; a pack's definitions come from its
+// manifest-declared content files, so this shape must not reach start selection.
+const metadataPack: PackInput = {
+  source: 'fixture.metadata',
+  manifest: {
+    id: 'fixture.metadata',
+    version: '1',
+    tier: 'theme',
+    product: false,
+    dependencies: [],
+    overrides: [],
+    files: [{ path: 'metadata.json', kind: 'json' }],
+  },
+  files: [{ source: 'metadata.json', data: { starts: [{ id: 'fixture_not_content' }] } }],
+};
+const inheritsMetadata = mod('fixture.inherits-metadata', [], {
+  dependencies: [startOwner.id, metadataPack.manifest.id],
+});
 const intake: ModIntake = {
   ...productModIntake,
   bundledMods: [
@@ -65,9 +84,28 @@ const intake: ModIntake = {
     { id: inheritsEntry.id, data: inheritsEntry },
   ],
 };
+const { buildBundledContent } = productModIntake.content;
+// The build closure admits only the real base stack, so the metadata pack rides in as a selected pack and the
+// walk resolves it as base stack: it is admitted everywhere, contributes no definition, and needs no build identity.
+const metadataIntake: ModIntake = {
+  ...productModIntake,
+  content: {
+    ...productModIntake.content,
+    bundledPackInputs: [...productModIntake.content.bundledPackInputs, metadataPack],
+    buildBundledContent: (mods = [], modsSelected = mods.length > 0) =>
+      buildBundledContent([metadataPack, ...mods], modsSelected),
+  },
+  bundledMods: [
+    ...productModIntake.bundledMods,
+    { id: startOwner.id, data: startOwner },
+    { id: inheritsMetadata.id, data: inheritsMetadata },
+  ],
+};
 const inline = (data: unknown) => new URLSearchParams({ 'start-mod': JSON.stringify(data) });
 const select = (query: URLSearchParams, ids: string[] = []) =>
   selectBundledMods(intake, ids, [], startModFromUrl(query));
+const selectMetadata = (query: URLSearchParams, ids: string[] = []) =>
+  selectBundledMods(metadataIntake, ids, [], startModFromUrl(query));
 const startOf = (selection: ReturnType<typeof select>) =>
   configFromUrl(new URLSearchParams(), {}, selection.content, ragdollSweepViewer);
 
@@ -111,6 +149,7 @@ const picked = withReusedBuilds(() => ({
   inheritsChain: select(new URLSearchParams({ 'start-mod': inheritsChain.id }), [chainLink.id, startOwner.id]),
   inheritsTwo: select(new URLSearchParams({ 'start-mod': inheritsTwo.id }), [startOwner.id, secondOwner.id]),
   inheritsEntry: select(new URLSearchParams({ 'start-mod': inheritsEntry.id })),
+  inheritsMetadata: selectMetadata(new URLSearchParams({ 'start-mod': inheritsMetadata.id }), [startOwner.id]),
   withPractice: select(inline(startMod), [practice!]),
   overScenario: select(inline(startMod), [scenario.id]),
   scenarioOnly: select(new URLSearchParams(), [scenario.id]),
@@ -184,6 +223,13 @@ describe('start-mod parameter', () => {
 
   it('starts from a start row inherited through a dependency chain', () => {
     const selection = picked.inheritsChain;
+    expect(selection.issues).toEqual([]);
+    expect(selection.startModRows).toBeUndefined();
+    expect(startOf(selection).startId).toBe('fixture_owned_start');
+  });
+
+  it('does not count starts-shaped json metadata in a dependency as a start row', () => {
+    const selection = picked.inheritsMetadata;
     expect(selection.issues).toEqual([]);
     expect(selection.startModRows).toBeUndefined();
     expect(startOf(selection).startId).toBe('fixture_owned_start');

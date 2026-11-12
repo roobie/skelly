@@ -1,7 +1,7 @@
 import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import { isPlainRecord } from '../core/canonicalJson.ts';
 import type { ContentIssue } from '../core/content.ts';
-import { type PackInput, selectFolderClosure } from '../core/packAdmission.ts';
+import { type PackInput, packSources, selectFolderClosure } from '../core/packAdmission.ts';
 import type { AdmittedBundledMod } from '../core/saveFormat.ts';
 import { type BrowserMod, evaluateMods, isFolderPack, type ModEvaluation, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
@@ -99,6 +99,12 @@ const startRowIds = (content: unknown): string[] => {
 
 const identity = ({ id, version, data }: AdmittedMod) => ({ id, version, data });
 
+/**
+ * The start rows a pack's manifest-declared content files set. Files of other kinds carry metadata, and starts-shaped
+ * JSON there is not admitted as a start, so it must not count as one either.
+ */
+const packStartRows = (pack: PackInput): string[] => packSources(pack).flatMap(({ data }) => startRowIds(data));
+
 /** The start rows the admitted start mod's own files supply, not those of its dependencies. */
 const ownStartRows = (
   result: ModEvaluation,
@@ -110,7 +116,7 @@ const ownStartRows = (
       ? result.admittedInOrder.filter(isFolderPack).find(({ manifest }) => manifest.id === startMod.id)
       : undefined;
   return startFolder
-    ? startFolder.files.flatMap(({ data }) => startRowIds(data))
+    ? packStartRows(startFolder)
     : startFile && startRowIds((startFile.data as { content: unknown }).content);
 };
 
@@ -137,7 +143,7 @@ const inheritedStartRows = (
       return;
     }
     visited.add(id);
-    rows.push(...pack.files.flatMap(({ data }) => startRowIds(data)));
+    rows.push(...packStartRows(pack));
     pack.manifest.dependencies.forEach(visit);
   };
   root?.manifest.dependencies.forEach(visit);
