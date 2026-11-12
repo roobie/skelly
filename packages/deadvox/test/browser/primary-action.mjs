@@ -25,9 +25,9 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
-// The flow group is the long live-page journey; the replays group is the independent replay and search contexts.
-// They are separate CI steps so each keeps headroom under its own timeout.
-const groups = ['flow', 'replays'];
+// The flow group is the long live-page journey; the replays groups are the independent replay and search contexts,
+// split so each CI step keeps headroom under its own timeout.
+const groups = ['flow', 'replays-search-look', 'replays-motion-fire'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
@@ -4436,13 +4436,14 @@ try {
 
     assert.deepEqual(pageErrors, []);
     await page.close();
-  } else {
+  } else if (group === 'replays-search-look') {
     await withTestHouse(browser, address.port, renderOverride, async (testHousePage) => {
       await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
       await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
     });
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
+  } else {
     await timePhase('forward-button-replay-case', () =>
       verifyForwardButtonReplay(browser, address.port, renderOverride),
     );
