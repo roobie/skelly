@@ -1,4 +1,5 @@
 import { buildRegistry } from '@skelly/engine/content';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import bodyFile from '../../mods/skelly.body/body.json' with { type: 'json' };
 import damageKindsFile from '../../mods/skelly.melee-classes/damage-kinds.json' with { type: 'json' };
 import sensesFile from '../../mods/skelly.senses/senses.json' with { type: 'json' };
@@ -30,7 +31,7 @@ const soundFiles = import.meta.glob<unknown>(
 export const buildSoundsPageContent = () =>
   buildRegistry([
     ...Object.entries(soundFiles)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareCodeUnits(a, b))
       // Named as the game names them from `src/product`, so audio finds each sound's files beside its source.
       .map(([path, data]) => ({ source: `../${path}`, data })),
     { source: '../../../mods/skelly.ui/ui.json', data: uiFile },

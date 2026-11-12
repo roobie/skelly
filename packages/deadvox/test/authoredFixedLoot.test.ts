@@ -21,6 +21,7 @@ import {
 } from '@skelly/engine/internal/core/templates.ts';
 import { doorOptions, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import type { buildingBounds } from '@skelly/engine/terrain';
 import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
 import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
@@ -276,18 +277,18 @@ const contents = (inventory: Inventory) => ({
       (entity.pockets ?? []).map((pocket) =>
         pocket
           .map(({ item, x, y }) => [item.type, item.count, item.condition, x, y] as const)
-          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+          .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b))),
       ),
     ])
-    .sort(([a], [b]) => String(a).localeCompare(String(b))),
+    .sort(([a], [b]) => compareCodeUnits(String(a), String(b))),
   piles: [...inventory.piles.values()]
     .map((pile) => [
       pile.pos.join(','),
       pile.items
         .map(({ item }) => [item.type, item.count, item.condition] as const)
-        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+        .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b))),
     ])
-    .sort(([a], [b]) => String(a).localeCompare(String(b))),
+    .sort(([a], [b]) => compareCodeUnits(String(a), String(b))),
 });
 
 const fixedItemCounts = (

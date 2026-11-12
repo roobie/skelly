@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { after, before, describe, it } from 'node:test';
+import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 import {
   checkDocument,
   checkPolicyRules,
@@ -610,14 +611,14 @@ describe('zero-drift policy rules', () => {
       markdown
         .filter(({ check }) => check === 'citation')
         .map(({ text, count }) => ({ text, count }))
-        .sort((a, b) => a.text.localeCompare(b.text)),
+        .sort((a, b) => compareCodeUnits(a.text, b.text)),
       [
         { text: '(2026-10-05 19:52):** “', count: 1 },
         { text: '(BR)', count: 1 },
         { text: 'br-43', count: 1 },
         { text: 'BR, 2026-10-04', count: 2 },
         { text: "BR's 2026-10-07", count: 1 },
-      ].sort((a, b) => a.text.localeCompare(b.text)),
+      ].sort((a, b) => compareCodeUnits(a.text, b.text)),
     );
     assert.equal(source.filter(({ check }) => check === 'citation').length, 1);
   });

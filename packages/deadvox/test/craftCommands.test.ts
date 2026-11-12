@@ -4,6 +4,7 @@ import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { disassemblyOutputs } from '@skelly/engine/internal/core/disassembly.ts';
 import { FirearmAttachmentHandling } from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
 import { CraftCommands, HandlingQueue, type HandSide, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { bindReach, Character, dominantSide, offSide, practiceForNextLevel } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -367,9 +368,9 @@ describe('live craft commands', () => {
     const outputs = items
       .filter((item) => !before.has(item.uid))
       .map(({ type, count }) => ({ item: type, count }))
-      .sort((a, b) => a.item.localeCompare(b.item));
+      .sort((a, b) => compareCodeUnits(a.item, b.item));
     const expected = disassemblyOutputs(r.inventory.registry.items.get(sourceType)!, 0).sort((a, b) =>
-      a.item.localeCompare(b.item),
+      compareCodeUnits(a.item, b.item),
     );
     expect(r.inventory.itemByUid(radio.uid)).toBeUndefined();
     expect(items.some(({ type }) => type === sourceType)).toBe(false);
@@ -405,7 +406,7 @@ describe('live craft commands', () => {
     const outputs = items
       .filter(({ uid }) => !before.has(uid))
       .map(({ type, count }) => ({ item: type, count }))
-      .sort((a, b) => a.item.localeCompare(b.item));
+      .sort((a, b) => compareCodeUnits(a.item, b.item));
     expect(r.inventory.itemByUid(source.uid)).toBeUndefined();
     expect(items.some(({ type }) => type === source.type)).toBe(false);
     expect(outputs).toEqual(expected);
