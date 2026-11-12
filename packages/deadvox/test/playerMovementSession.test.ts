@@ -12,7 +12,7 @@ import {
 } from '@skelly/engine/internal/core/firearmsSkill.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '@skelly/engine/internal/core/leanCollision.ts';
-import { bodyDistance } from '@skelly/engine/internal/core/reach.ts';
+import { bodyDistance, type ReachPlayer } from '@skelly/engine/internal/core/reach.ts';
 import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
 import {
   firearmShotPracticeSkill,
@@ -1280,7 +1280,7 @@ describe('clearing a downed shambler', () => {
       type: shambler,
       body: { pos: [0.5, 0, 1.5], halfWidth: 0.4, height: 0.5 },
     } as Actor;
-    const player = { inventory, position: [0.5, 0, 0.5], blockSize: 0.5, clock: BASE_CLOCK };
+    const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 0.5, clock: BASE_CLOCK };
     const plan = downedBodyPlan(player, actor, 'dismember');
     expect(plan.ok && plan.label).toContain('zed saw');
   });
