@@ -114,10 +114,11 @@ player or mod values into the URL. See `packages/presentation/src/ui/graphicsOpt
 
 ## Performance diagnostics
 
-Crowd pose transfers must supply only changed texel views: browser IPC can copy skipped
-texels too, so selecting a small destination rectangle from a large source view does not
-bound transfer cost. Shadow and colour passes must consume the same uploaded pose without
-repeating the transfer. See `packages/presentation/src/render/poseTextureUpdates.ts`, `PoseTextureUpdates.upload`,
+Crowd pose transfers must supply source views bounded to the changed rows: browser IPC can
+copy skipped texels too, so selecting a small destination rectangle from a large source view
+does not bound transfer cost. Adjacent changed rows go up as one full-width rectangle,
+because each upload call costs far more than the unchanged texels at the ends of those rows.
+Shadow and colour passes must consume the same uploaded pose without repeating the transfer. See `packages/presentation/src/render/poseTextureUpdates.ts`, `PoseTextureUpdates.upload`,
 and `packages/presentation/src/render/playView.ts`, `createPlayView`.
 
 Debug-only whole-frame CPU submission counters distinguish batching growth from drawing-buffer pixel load alongside frame-time percentiles. Repeated geometry submissions count again; these are not unique geometry counts or GPU timings. GPU cost requires asynchronous timing probes on real hardware. See `packages/presentation/src/render/drawCounters.ts`, `DrawCounters`, for frame-scoped collection; `src/debug/index.ts`, `readoutTemplate`, and `src/debug/lookDump.ts`, `lookDump`, for the readout and dump.
