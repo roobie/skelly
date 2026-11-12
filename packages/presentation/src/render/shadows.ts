@@ -136,9 +136,13 @@ export const needsMap = (light: { castShadow: boolean; shadow: { map: unknown } 
 type DrawMaps = (lights: Light[], scene: Scene, camera: Camera) => void;
 
 /** A renderer whose instanced casters must be picked per light, as ChunkMeshes picks its boxes: the
- * crowd figures (render/mobActors.ts), whose bone-placed instances no frustum can cull. */
+ * crowd figures (render/mobActors.ts), whose bone-placed instances no frustum can cull. One slot per
+ * light that casts within a renderer frame (the sun plus every torch), because three uploads a
+ * geometry's attributes only once per renderer frame — passes sharing one selection would all draw
+ * whichever rows reached the GPU first. */
 export interface CrowdCasters {
-  selectShadowCasters: (casts: (box: Box3) => boolean) => void;
+  reserveShadowSlots: (slots: number) => void;
+  selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void;
 }
 
 export class Shadows {
@@ -235,11 +239,20 @@ export class Shadows {
 
   attachTorches(lights: readonly SpotLight[]): void {
     this.torches = lights;
+    this.reserveCrowdSlots();
   }
 
   /** Adds a crowd whose figures the passes pick per light (see CrowdCasters); call before the first render. */
   attachCrowd(crowd: CrowdCasters): void {
     this.crowds = [...this.crowds, crowd];
+    this.reserveCrowdSlots();
+  }
+
+  /** One slot per light that can cast in a frame: the sun plus every torch. */
+  private reserveCrowdSlots(): void {
+    for (const crowd of this.crowds) {
+      crowd.reserveShadowSlots(1 + this.torches.length);
+    }
   }
 
   /** Takes a whole state, as read from the defaults or the URL. Turning a light's shadows on or off rebuilds the programs once. */
@@ -322,11 +335,12 @@ export class Shadows {
     this.stale = true;
   }
 
-  /** Picks one light's casters: the chunk boxes and every attached crowd's figures. Returns the chunk count. */
-  private selectCasters(casts: (box: Box3) => boolean, side: Side): number {
+  /** Picks one light's casters into `slot`'s selection: the chunk boxes and every attached crowd's
+   * figures. Returns the chunk count. */
+  private selectCasters(slot: number, casts: (box: Box3) => boolean, side: Side): number {
     const chunks = this.meshes.selectShadowCasters(casts, side);
     for (const crowd of this.crowds) {
-      crowd.selectShadowCasters(casts);
+      crowd.selectShadowCasters(slot, casts);
     }
     return chunks;
   }
@@ -355,12 +369,12 @@ export class Shadows {
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
       // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
       // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
-      this.sunCasters = this.selectCasters(noBoxes, DoubleSide);
+      this.sunCasters = this.selectCasters(0, noBoxes, DoubleSide);
       sunDraw();
     }
     if (this.sunDue) {
       light.shadow.updateMatrices(light);
-      this.sunCasters = this.selectCasters(inFrustum(light.shadow.getFrustum()), DoubleSide);
+      this.sunCasters = this.selectCasters(0, inFrustum(light.shadow.getFrustum()), DoubleSide);
       sunDraw();
       this.drawnAt.copy(this.snapped);
       this.drawnToSun.copy(this.toSun);
@@ -370,17 +384,18 @@ export class Shadows {
       this.sunDue = false;
     }
     this.torchCasters = 0;
-    for (const torch of torches) {
+    for (const [index, torch] of torches.entries()) {
+      const slot = index + 1; // slot 0 is the sun's
       const due = torch.castShadow && beamMapDue(torch.intensity);
       // A faint beam still lights receivers, which sample its map; a map it no longer refreshes would cast
       // stale shadows, so it shades nothing until it is redrawn. three.js reads this after this pass.
       torch.shadow.intensity = due ? 1 : 0;
       if (due) {
-        this.torchCasters += this.selectCasters(withinRange(torch.position, torch.distance), BackSide);
+        this.torchCasters += this.selectCasters(slot, withinRange(torch.position, torch.distance), BackSide);
         draw([torch], scene, this.torchView);
       } else if (needsMap(torch)) {
         // An off beam still casts, so its programs sample a map; allocate it empty, as for the sun above.
-        this.selectCasters(noBoxes, BackSide);
+        this.selectCasters(slot, noBoxes, BackSide);
         draw([torch], scene, this.torchView);
       }
     }

@@ -2,7 +2,7 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import { type ActorBody, actorFigure, buildRegistry } from '@skelly/engine/content';
+import { type ActorBody, actorFigure, actorFigureKey, buildRegistry } from '@skelly/engine/content';
 import { actorHitFlinchDuration, flinchSideForId } from '@skelly/engine/internal/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { AgentMode } from '@skelly/engine/internal/core/actorState.ts';
@@ -25,13 +25,14 @@ import {
   type Pose,
   posedActor,
   quatToMat3,
+  rotY,
   severedBoneSet,
   transpose,
 } from '@skelly/engine/pose';
 import { ACTIVE_ACTOR_RATE, type Actor, reachTuning } from '@skelly/engine/sim';
 import { CHUNK, makeScale, type Vec3 } from '@skelly/engine/world';
 import { AcidEffects } from '@skelly/presentation/internal/render/acidEffects.ts';
-import { type CrowdCellMaskLayout, isCellInMask } from '@skelly/presentation/internal/render/crowd.ts';
+import { type CrowdCellMaskLayout, type CrowdPlacement, isCellInMask } from '@skelly/presentation/internal/render/crowd.ts';
 import { Gore } from '@skelly/presentation/internal/render/gore.ts';
 import { LOOK_AT_REST } from '@skelly/presentation/internal/render/lookAt.ts';
 import {
@@ -44,12 +45,13 @@ import RAPIER from '@skelly/presentation/internal/render/ragdollRapier.ts';
 import { SHADOW_CROWD_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import { ActorMeshes, ChunkMeshes, MobActorMeshes as RenderMobActorMeshes } from '@skelly/presentation/render';
 import {
-  type Box3,
+  Box3,
   type BufferGeometry,
   type DataTexture,
   type InstancedBufferAttribute,
   type InstancedMesh,
   PerspectiveCamera,
+  Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
@@ -286,6 +288,29 @@ class MobActorMeshes extends FixtureMobActorMeshes {
 const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 
+/** The renderer's private shape these tests read: variant twins, rows and placements. */
+const rendererInternals = (renderer: MobActorMeshes) =>
+  renderer as unknown as {
+    states: Map<number, {
+      variantIndex: number;
+      globalRow: number;
+      lastPlacement: CrowdPlacement | undefined;
+      bodyTransforms: readonly { readonly t: readonly [number, number, number] }[];
+    }>;
+    variants: readonly {
+      mesh: InstancedMesh;
+      geometry: BufferGeometry;
+      body: { scale: number };
+      shadowPasses: readonly { mesh: InstancedMesh; slots: InstancedBufferAttribute }[];
+    }[];
+  };
+
+/** An axis-aligned box `radius` metres around a placement. */
+const boxAround = (at: CrowdPlacement, radius: number): Box3 =>
+  new Box3(
+    new Vector3(at.x - radius, at.y - radius, at.z - radius),
+    new Vector3(at.x + radius, at.y + radius, at.z + radius),
+  );
 /** A minimal, valid Actor — same shape ActorSystem.add() builds (packages/engine/src/core/actorSystem.ts), constructed
  * directly so these tests don't need a full ActorSystem (physics/senses/etc, irrelevant here). */
 const makeActor = (
@@ -1174,21 +1199,15 @@ describe('MobActorMeshes', () => {
       const near = store.add(makeActor([1, 0, 0]));
       store.add(makeActor([400, 0, 0])); // 200 m out: past any 24 m shadow volume
       renderer.sync(store, 0, 1);
-      const internals = renderer as unknown as {
-        states: Map<number, { variantIndex: number; globalRow: number }>;
-        variants: readonly {
-          mesh: InstancedMesh;
-          shadowMesh: InstancedMesh;
-          shadowSlotAttr: InstancedBufferAttribute;
-        }[];
-      };
+      const internals = rendererInternals(renderer);
       const variant = internals.variants[internals.states.get(near)!.variantIndex]!;
+      const twin = variant.shadowPasses[0]!;
       // The crowd mesh never casts: its bone-placed instances are un-cullable, so three.js would draw
       // every figure into every shadow map. The twin is the only caster, on the shadow-only layer.
       expect(variant.mesh.castShadow).toBe(false);
-      expect(variant.shadowMesh.castShadow).toBe(true);
-      expect(variant.shadowMesh.frustumCulled).toBe(false);
-      expect(variant.shadowMesh.layers.mask).toBe(1 << SHADOW_CROWD_LAYER);
+      expect(twin.mesh.castShadow).toBe(true);
+      expect(twin.mesh.frustumCulled).toBe(false);
+      expect(twin.mesh.layers.mask).toBe(1 << SHADOW_CROWD_LAYER);
 
       const nearRow = internals.states.get(near)!.globalRow;
       let tested = 0;
@@ -1196,18 +1215,135 @@ describe('MobActorMeshes', () => {
         tested += 1;
         return Math.hypot((box.min.x + box.max.x) / 2, (box.min.z + box.max.z) / 2) <= 20;
       };
-      renderer.selectShadowCasters(casts);
-      const rows = Array.from(variant.shadowSlotAttr.array as Float32Array).slice(0, variant.shadowMesh.count);
+      renderer.selectShadowCasters(0, casts);
+      const rows = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
       expect(tested).toBeGreaterThanOrEqual(2); // every live holder was tested by its world box
       expect(variant.mesh.count).toBe(2); // the crowd's own instances are untouched
-      expect(variant.shadowMesh.count).toBe(1);
-      expect(variant.shadowMesh.visible).toBe(true);
+      expect(twin.mesh.count).toBe(1);
+      expect(twin.mesh.visible).toBe(true);
       expect(rows).toEqual([nearRow]); // the twin reads the same revealed row the crowd draws
 
-      // A pass that selects nothing (a map drawn only to be allocated) empties the twin.
-      renderer.selectShadowCasters(() => false);
-      expect(variant.shadowMesh.count).toBe(0);
-      expect(variant.shadowMesh.visible).toBe(false);
+      // A pass that selects nothing (a map drawn only to be allocated) empties its twin.
+      renderer.selectShadowCasters(0, () => false);
+      expect(twin.mesh.count).toBe(0);
+      expect(twin.mesh.visible).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('gives each light pass its own uploaded rows within one renderer frame', () => {
+    const renderer = new MobActorMeshes(0.5, 8, { actors: new Map([[SHAMBLER.id, SHAMBLER]]) });
+    try {
+      // One sun (slot 0) and one torch (slot 1), as render/shadows.ts reserves them.
+      renderer.reserveShadowSlots(2);
+      const store = new MapEntityStore<Actor>();
+      const byTorch = store.add(makeActor([80, 0, 0])); // 40 m out: only the torch's range reaches it
+      const bySun = store.add(makeActor([1, 0, 0]));
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const variant = internals.variants[internals.states.get(bySun)!.variantIndex]!;
+      expect(variant.shadowPasses.length).toBe(2);
+      const [sunTwin, torchTwin] = variant.shadowPasses as readonly [
+        { mesh: InstancedMesh; slots: InstancedBufferAttribute },
+        { mesh: InstancedMesh; slots: InstancedBufferAttribute },
+      ];
+      // Three uploads a geometry's attributes once per renderer frame (WebGLObjects.update guards on
+      // info.render.frame), so each pass's rows must live in their own geometry and attribute: passes
+      // sharing one would all draw whichever rows reached the GPU first.
+      expect(sunTwin.mesh.geometry).not.toBe(torchTwin.mesh.geometry);
+      expect(sunTwin.slots).not.toBe(torchTwin.slots);
+      expect(sunTwin.mesh.geometry.getAttribute('crowdSlot')).toBe(sunTwin.slots);
+      expect(torchTwin.mesh.geometry.getAttribute('crowdSlot')).toBe(torchTwin.slots);
+      // The twins share the crowd's vertex buffers, so the extra slots cost no second copy of the figure.
+      for (const name of ['position', 'normal']) {
+        expect(sunTwin.mesh.geometry.getAttribute(name)).toBe(variant.mesh.geometry.getAttribute(name));
+      }
+
+      const sunRow = internals.states.get(bySun)!.globalRow;
+      const torchRow = internals.states.get(byTorch)!.globalRow;
+      const within =
+        (x: number): ((box: Box3) => boolean) =>
+        (box) =>
+          box.distanceToPoint(new Vector3(x, 0, 0)) <= 4;
+      // The two selections happen in one renderer frame: the sun's pass first, then the torch's.
+      renderer.selectShadowCasters(0, within(internals.states.get(bySun)!.lastPlacement!.x));
+      renderer.selectShadowCasters(1, within(internals.states.get(byTorch)!.lastPlacement!.x));
+      const rowsOf = (twin: { mesh: InstancedMesh; slots: InstancedBufferAttribute }): number[] =>
+        Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(rowsOf(sunTwin)).toEqual([sunRow]);
+      expect(rowsOf(torchTwin)).toEqual([torchRow]);
+      // Only the pass about to draw sees its twin, so a pass never draws another pass's rows.
+      expect(sunTwin.mesh.visible).toBe(false);
+      expect(torchTwin.mesh.visible).toBe(true);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a figure whose placement is outside the volume but whose posed geometry reaches in', () => {
+    // A walk clip whose every frame authors a 20 m root translation: the figure draws 20 m from its
+    // placement, farther than any multiple of its bind sphere radius — the pose contract a bound must
+    // honour (PoseFrameSchema roots are translations, not just rotations).
+    const ROOT_METRES = 20;
+    const rooted = new Map(FIGURES);
+    for (const seed of SHAMBLER_FIGURE_SEEDS) {
+      const key = actorFigureKey(SHAMBLER.id, seed);
+      const figure = FIGURES.get(key)!;
+      rooted.set(key, {
+        ...figure,
+        clips: {
+          ...figure.clips,
+          standing: Object.fromEntries(
+            Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
+              name,
+              'kind' in entry && entry.kind === 'pose'
+                ? { ...entry, frames: entry.frames.map((frame) => ({ ...frame, root: [ROOT_METRES, 0, 0] })) }
+                : entry,
+            ]),
+          ),
+        },
+      });
+    }
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: rooted,
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([4, 0, 0]);
+      actor.horizontalSpeed = 4; // a walking figure draws the walk clip's authored root
+      actor.gaitPhase = 1;
+      const id = store.add(actor);
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      const variant = internals.variants[state.variantIndex]!;
+      const placement = state.lastPlacement!;
+      // Where the figure actually draws: every bone's world position, as packCrowdBoneMatrix places it.
+      const yawDeg = (placement.yawRad * 180) / Math.PI;
+      let reached: Vec3 = [placement.x, placement.y, placement.z];
+      let reach = 0;
+      for (const { t } of state.bodyTransforms) {
+        const world = mulMV(rotY(yawDeg), [...t] as Vec3);
+        const at: Vec3 = [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
+        const distance = Math.hypot(at[0] - placement.x, at[1] - placement.y, at[2] - placement.z);
+        if (distance > reach) {
+          reach = distance;
+          reached = at;
+        }
+      }
+      const assumed = 2 * (variant.geometry.boundingSphere?.radius ?? 1) * variant.body.scale + 0.3;
+      // The fixture reaches far past the placement-radius multiple the old bound assumed, and the light
+      // volume (4 m around the reached geometry) stays clear of that assumed box.
+      expect(reach).toBeGreaterThan(assumed);
+      expect(reach - 4).toBeGreaterThan(assumed);
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...reached)) <= 4;
+      expect(casts(boxAround(placement, assumed))).toBe(false); // the placement alone cannot cast in
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      expect(twin.mesh.count).toBe(1);
+      expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
     } finally {
       renderer.dispose();
     }
