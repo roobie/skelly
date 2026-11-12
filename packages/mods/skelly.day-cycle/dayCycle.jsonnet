@@ -172,7 +172,7 @@ local duskDome = dome('#66708a', '#b8a6a8', 0.5, 1, 0, 0, sun(1, 1));
       glowBand: [0.12, 0.55],
       physicalBand: [0.3, 0.55],
       starField: { density: 0.014, size: 0.12, twinkle: 0.4 },
-      // The moon and stars are gone well before sunrise, so neither shows through the dawn glow.
+      // The moon and stars wash out over the first half of dawn, before its glow brightens.
       washOutBand: [-0.2, -0.1],
       // About 1.3 degrees across: stylised, but small enough not to read as a second sun. The gain leaves the
       // disc short of white, so its limb and seas show.

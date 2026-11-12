@@ -410,7 +410,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
     // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the fog with
-    // the sky behind it instead of ending in a line where a narrower fade cut it.
+    // the sky behind it instead of ending in a crisp line.
     col = mix( col, uFogColor, 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
     gl_FragColor = vec4( col * uSkyColorScale, 1.0 );
     #include <colorspace_fragment>
