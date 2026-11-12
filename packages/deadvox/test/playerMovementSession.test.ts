@@ -535,6 +535,40 @@ describe('long-gun skill ownership', () => {
     expect(partialGun.rootOffset).not.toEqual(hipGun.rootOffset);
     expect(partialGun.rootOffset).not.toEqual(sightedGun.rootOffset);
   });
+  it('keeps the completed acquisition sighted through a committed shot', () => {
+    const runtime = makeRuntime({ content });
+    const rifle = equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    acquireAds(runtime);
+    const { session } = runtime;
+    const shot = {
+      item: rifle,
+      feet: [0, 1, 0] as Vec3,
+      eye: [0, 4, 0] as Vec3,
+      yaw: 0,
+      pitch: 0,
+      blockSize: 0.5,
+      simTime: session.sim.time,
+      seed: 7,
+      ready: true,
+      sprinting: false,
+      aimingDownSights: true,
+      aimFrame: NEUTRAL_AIM,
+    };
+    // Firing is none of release, lost readiness or letting go, so the shot must leave the
+    // completed acquisition standing: only recoil moves the gun while it stays wanted.
+    expect(session.firearms.fire(shot)).toBe(true);
+    expect(session.firearms.isAdsAcquired(rifle.uid)).toBe(true);
+    expect(session.firearms.adsAcquisitionProgress(rifle.uid)).toBe(1);
+    runtime.advance(1);
+    expect(session.firearms.isAdsAcquired(rifle.uid)).toBe(true);
+    expect(session.firearms.adsAcquisitionProgress(rifle.uid)).toBe(1);
+    expect(rifle.firearm?.adsAcquiring?.elapsedSimSeconds).toBe(
+      rifle.firearm?.adsAcquiring?.durationSimSeconds,
+    );
+  });
 });
 
 describe('held lateral lean', () => {

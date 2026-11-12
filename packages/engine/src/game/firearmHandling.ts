@@ -908,6 +908,8 @@ export class FirearmMechanics {
     item.firearm = {
       chamber: 'case',
       ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
+      // Firing keeps the ADS acquisition: only release, lost readiness or letting go cancels it.
+      ...(item.firearm?.adsAcquiring === undefined ? {} : { adsAcquiring: item.firearm.adsAcquiring }),
       ...(item.firearm?.landings === undefined ? {} : { landings: item.firearm.landings }),
       lastShotAtSimSeconds: input.simTime,
       pendingCase: { ...emission, seed },
