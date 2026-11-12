@@ -348,9 +348,9 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     // Clouds cover the stars, the moon and the sun's disc behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
     if ( cloudOpacity > 0.0 && uCover > 0.0 ) {
-      // A deck layer takes the main light only up to the deck's lower cap while the tops take it up to 1; with one
-      // light for every layer a closing cover reads as a flat sheet. A light already under the deck's cap, as an
-      // overcast's is, lights deck and tops alike.
+      // A layer's deck share takes the main light only up to the deck's lower cap while the tops take it up to 1; with
+      // one light for every layer a closing cover reads as a flat sheet. A light already under the deck's cap lights
+      // deck and tops alike.
       float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
       vec3 litTops = uCloudAmbient + uCloudLight * facing;
       vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
