@@ -13,7 +13,7 @@ import {
   type WebGLRenderer,
   type WebGLRenderTarget,
 } from 'three';
-import { MaterialPatches, materialPatch } from './materialPatches.ts';
+import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 
 /** The parts of a sky the dome draws from; fog distance, bloom and tone change nothing in it. */
 const DRAWN: readonly (keyof Sky)[] = [
@@ -91,10 +91,8 @@ const takesEnvironment = (material: Material): boolean =>
 export interface SkyEnvironment {
   /** Bakes the open sky as it stands when it has moved past the threshold; true when it did. */
   refresh: (sky: Sky, now: RealTimestamp) => boolean;
-  /** Keeps the environment out of the diffuse light of a scene's materials now, for a scene the shared patches do not walk. */
-  patchNow: (scene: Scene) => void;
-  /** Gives a scene the reflection at `exposure`, the sky exposure the scene does not apply per fragment itself. */
-  light: (scene: Scene, exposure: number) => void;
+  /** Gives a scene the reflection; the shared patches keep it out of diffuse light, and a skylight dims it per fragment. */
+  light: (scene: Scene) => void;
   dispose: () => void;
 }
 
@@ -136,10 +134,7 @@ export const createSkyEnvironment = (
     key: () => 'reflection-only',
   });
   patches.add(patch);
-  const own = new MaterialPatches();
-  own.add(patch);
   return {
-    patchNow: (served) => own.apply(served),
     refresh(sky, now) {
       if (!due(sky, realSeconds(now / 1000))) {
         return false;
@@ -147,10 +142,10 @@ export const createSkyEnvironment = (
       bake(prefiltered);
       return true;
     },
-    light(served, exposure) {
+    light(served) {
       lit.add(served);
       served.environment = prefiltered.texture;
-      served.environmentIntensity = strength * exposure;
+      served.environmentIntensity = strength;
     },
     dispose() {
       for (const served of lit) {

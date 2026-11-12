@@ -19,6 +19,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     furnitureSectorChunks: 4,
     skyPreloadRings: 1,
     columnsPerFrame: 2,
+    terrainWorkers: { count: 1, lookaheadColumns: 8, maxOutstandingColumns: 12 },
     unbuiltSkyCap: 0.5,
     sunShadow: {
       defaultReachMetres: 36,
