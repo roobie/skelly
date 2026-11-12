@@ -1,5 +1,6 @@
 import {
   check,
+  finite,
   integer,
   maxValue,
   minValue,
@@ -38,9 +39,9 @@ export const Name = pipe(string(), nonEmpty('must not be empty'));
 
 export const Color = pipe(string(), regex(/^#[0-9a-fA-F]{6}$/, 'expected "#rrggbb"'));
 
-export const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
+export const NonNegative = pipe(number(), finite('must be finite'), minValue(0, 'must be 0 or more'));
 
-export const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
+export const Positive = pipe(number(), finite('must be finite'), minValue(Number.MIN_VALUE, 'must be more than 0'));
 
 export const Count = pipe(number(), integer('must be a whole number'), minValue(0, 'must be 0 or more'));
 
