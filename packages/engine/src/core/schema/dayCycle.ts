@@ -241,8 +241,11 @@ const WeatherSkySchema = strictObject({
   }),
   /** What is left of the physical sky's weight, so the keyed gradient shows instead of a blue sunlit sky. */
   physicalWeight: UnitFraction,
-  /** What is left of the painted sun's brightness and glow, which would otherwise shine through the cloud deck. */
-  sun: UnitFraction,
+  /**
+   * What is left of the lights painted on the dome, the sun with its glow, the moon and the stars. The layered deck
+   * lets part of what lies behind it through even at full cover, so without this they would shine through it.
+   */
+  skyLights: UnitFraction,
   /** What is left of the main light, so the world under it reads flat. */
   light: UnitFraction,
   /**

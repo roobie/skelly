@@ -78,7 +78,7 @@ const stateOf = ({ kind, ...state }: WeatherTuning['rain']): SkyState => ({ ...s
 const between = (a: SkyState, b: SkyState, t: number): SkyState => ({
   clouds: { cover: mix(a.clouds.cover, b.clouds.cover, t), opacity: mix(a.clouds.opacity, b.clouds.opacity, t) },
   physicalWeight: mix(a.physicalWeight, b.physicalWeight, t),
-  sun: mix(a.sun, b.sun, t),
+  skyLights: mix(a.skyLights, b.skyLights, t),
   light: mix(a.light, b.light, t),
   ambient: mix(a.ambient, b.ambient, t),
   skyColour: {
@@ -117,10 +117,12 @@ const underSky = (sky: Sky, state: SkyState, level: number): Sky => {
         opacity: closed(dome.clouds.opacity, state.clouds.opacity, level),
         scatter: mix(dome.clouds.scatter, state.scatter, level),
       },
+      stars: scaled(dome.stars, state.skyLights, level),
+      moon: { ...dome.moon, brightness: scaled(dome.moon.brightness, state.skyLights, level) },
       sun: {
         ...dome.sun,
-        brightness: scaled(dome.sun.brightness, state.sun, level),
-        glow: scaled(dome.sun.glow, state.sun, level),
+        brightness: scaled(dome.sun.brightness, state.skyLights, level),
+        glow: scaled(dome.sun.glow, state.skyLights, level),
       },
     },
   };
