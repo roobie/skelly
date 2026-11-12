@@ -2,7 +2,13 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import { type ActorBody, actorFigure, actorFigureKey, buildRegistry } from '@skelly/engine/content';
+import {
+  type ActorBody,
+  type ActorFigureFiles,
+  actorFigure,
+  actorFigureKey,
+  buildRegistry,
+} from '@skelly/engine/content';
 import { actorHitFlinchDuration, flinchSideForId } from '@skelly/engine/internal/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { AgentMode } from '@skelly/engine/internal/core/actorState.ts';
@@ -32,6 +38,7 @@ import {
 import { ACTIVE_ACTOR_RATE, type Actor, reachTuning } from '@skelly/engine/sim';
 import { CHUNK, makeScale, type Vec3 } from '@skelly/engine/world';
 import { AcidEffects } from '@skelly/presentation/internal/render/acidEffects.ts';
+import { actorFigureGeometry } from '@skelly/presentation/internal/render/actorFigureGeometry.ts';
 import {
   type CrowdCellMaskLayout,
   type CrowdPlacement,
@@ -301,7 +308,10 @@ const rendererInternals = (renderer: MobActorMeshes) =>
         variantIndex: number;
         globalRow: number;
         lastPlacement: CrowdPlacement | undefined;
-        bodyTransforms: readonly { readonly t: readonly [number, number, number] }[];
+        bodyTransforms: readonly {
+          readonly r: Parameters<typeof mulMV>[0];
+          readonly t: readonly [number, number, number];
+        }[];
       }
     >;
     variants: readonly {
@@ -318,6 +328,40 @@ const boxAround = (at: CrowdPlacement, radius: number): Box3 =>
     new Vector3(at.x - radius, at.y - radius, at.z - radius),
     new Vector3(at.x + radius, at.y + radius, at.z + radius),
   );
+
+/** A copy of a built actor GLB with every POSITION vertex's X moved by `units` model units — the same
+ * layout actorFigureGeometry reads (glTF 2.0 binary, one tightly packed FLOAT VEC3 POSITION accessor),
+ * bone indices untouched: bind geometry loader-accepted yet offset from the figure's origin. */
+const offsetGlbPositions = (mesh: Uint8Array, units: number, id: string): Uint8Array => {
+  const out = new Uint8Array(mesh);
+  const view = new DataView(out.buffer);
+  if (out.byteLength < 20 || view.getUint32(0, true) !== 0x46_54_6c_67 || view.getUint32(4, true) !== 2) {
+    throw new Error(`Actor mesh ${id} is not a glTF 2.0 binary`);
+  }
+  const jsonLength = view.getUint32(12, true);
+  const binAt = 20 + jsonLength;
+  const json = JSON.parse(new TextDecoder().decode(out.subarray(20, binAt))) as {
+    nodes: { mesh?: number }[];
+    meshes: { primitives: { attributes: Record<string, number> }[] }[];
+    accessors: { bufferView: number; byteOffset?: number; componentType: number; count: number; type: string }[];
+    bufferViews: { byteOffset?: number; byteLength: number; byteStride?: number }[];
+  };
+  const node = json.nodes.find((candidate) => candidate.mesh !== undefined);
+  const primitive = json.meshes[node?.mesh ?? -1]?.primitives[0];
+  const accessor = json.accessors[primitive?.attributes.POSITION ?? -1];
+  const bufferView = json.bufferViews[accessor?.bufferView ?? -1];
+  if (
+    !(accessor && bufferView && accessor.type === 'VEC3' && accessor.componentType === 5126) ||
+    (bufferView.byteStride !== undefined && bufferView.byteStride !== 12)
+  ) {
+    throw new Error(`Actor mesh ${id} POSITION must be a tightly packed FLOAT VEC3 accessor`);
+  }
+  const start = binAt + 8 + (bufferView.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+  for (let vertex = 0; vertex < accessor.count; vertex++) {
+    view.setFloat32(start + vertex * 12, view.getFloat32(start + vertex * 12, true) + units, true);
+  }
+  return out;
+};
 /** A minimal, valid Actor — same shape ActorSystem.add() builds (packages/engine/src/core/actorSystem.ts), constructed
  * directly so these tests don't need a full ActorSystem (physics/senses/etc, irrelevant here). */
 const makeActor = (
@@ -1239,7 +1283,7 @@ describe('MobActorMeshes', () => {
     }
   });
 
-  it('gives each light pass its own uploaded rows within one renderer frame', () => {
+  it('reserves a separate twin geometry and crowd-slot attribute per light pass', () => {
     const renderer = new MobActorMeshes(0.5, 8, { actors: new Map([[SHAMBLER.id, SHAMBLER]]) });
     try {
       // One sun (slot 0) and one torch (slot 1), as render/shadows.ts reserves them.
@@ -1347,6 +1391,73 @@ describe('MobActorMeshes', () => {
       expect(reach - 4).toBeGreaterThan(assumed);
       const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...reached)) <= 4;
       expect(casts(boxAround(placement, assumed))).toBe(false); // the placement alone cannot cast in
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      expect(twin.mesh.count).toBe(1);
+      expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a figure whose bind geometry is offset from its origin, so its drawn vertices reach past the diameter', () => {
+    // Bind geometry can sit offset from the figure's origin: translated GLB POSITION vertices keep every
+    // bone index and stay loader-accepted, and the shader draws each vertex through one bone matrix, that
+    // far from the placement. A placement radius of 2·bind-sphere radius (the diameter) drops such a
+    // figure while its transformed vertices — not a bone translation — are inside the light volume.
+    const offsetBindFigures = (): ActorFigureFiles => {
+      const offset = new Map(FIGURES);
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        const probe = actorFigureGeometry(figure.mesh, figure.body);
+        const sphere = probe.boundingSphere!;
+        // Far enough that even the nearest translated vertex stays outside the old diameter bound's
+        // box (plus the 4 m light volume), sized from the fixture instead of a pinned number.
+        const oldAssumed = 2 * sphere.radius * figure.body.scale + 0.3;
+        const units = Math.ceil((oldAssumed + 4) / figure.body.scale + sphere.center.length() + sphere.radius + 1);
+        offset.set(key, { ...figure, mesh: offsetGlbPositions(figure.mesh, units, key) });
+        probe.dispose();
+      }
+      return offset;
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: offsetBindFigures(),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const id = store.add(makeActor([4, 0, 0]));
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      const variant = internals.variants[state.variantIndex]!;
+      const placement = state.lastPlacement!;
+      // Where the figure actually draws its farthest bind vertex: the crowd shader sends each vertex
+      // through its owning bone's packed matrix (render/crowd.ts, CROWD_BEGIN_VERTEX), so this is the
+      // drawn position, not just a bone translation.
+      const yaw = rotY((placement.yawRad * 180) / Math.PI);
+      const positions = variant.geometry.getAttribute('position');
+      let drawn: Vec3 = [placement.x, placement.y, placement.z];
+      let reach = 0;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const bind: Vec3 = [positions.getX(vertex), positions.getY(vertex), positions.getZ(vertex)];
+        const bone = state.bodyTransforms[variant.geometry.getAttribute('boneIndex').getX(vertex)]!;
+        const local = mulMV(bone.r, bind);
+        const world = mulMV(yaw, [local[0] + bone.t[0], local[1] + bone.t[1], local[2] + bone.t[2]]);
+        const at: Vec3 = [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
+        const distance = Math.hypot(at[0] - placement.x, at[1] - placement.y, at[2] - placement.z);
+        if (distance > reach) {
+          reach = distance;
+          drawn = at;
+        }
+      }
+      const sphere = variant.geometry.boundingSphere!;
+      const assumed = 2 * sphere.radius * variant.body.scale + 0.3; // the diameter bound the fix replaces
+      expect(reach).toBeGreaterThan(assumed);
+      expect(reach - 4).toBeGreaterThan(assumed);
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
+      expect(casts(boxAround(placement, assumed))).toBe(false); // the diameter box cannot contain it
       renderer.selectShadowCasters(0, casts);
       const twin = variant.shadowPasses[0]!;
       expect(twin.mesh.count).toBe(1);

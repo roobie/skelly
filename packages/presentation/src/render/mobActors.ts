@@ -298,9 +298,11 @@ interface Variant {
    * (`ShadowPassTwin`), same geometry and materials, its own slots (`slots`) and a per-light count set by
    * selectShadowCasters. Grown by reserveShadowSlots; slot 0 exists from construction. */
   readonly shadowPasses: ShadowPassTwin[];
-  /** How far posed geometry reaches from its placement's bone transforms: a bind-pose point sits at most
-   * 2·boundingSphere.radius from the root, rotations preserve that (crowd.ts's packing rotates bones
-   * about their parents), and the y a ground fit picks stays within the same reach. Metres. */
+  /** How far posed geometry reaches from its placement's bone transforms: a bind-pose point sits at
+   * most the bind sphere centre's distance from the origin plus its radius away (bind geometry can sit
+   * offset from its origin; the diameter alone would ignore that), rotations preserve a point's
+   * distance from the bone they pose about (crowd.ts's packing rotates bones about their parents), and
+   * the y a ground fit picks stays within the same reach. Metres. */
   readonly casterReach: number;
   /** casterReach plus the largest authored root translation this variant's clips pose (see
    * authoredRootMotion): a pose translates its root on top of rotating it, and nothing ties that
@@ -679,15 +681,25 @@ const authoredRootMotion = (clips: ActorClips, fusedMassOriginOffset?: Vec3): nu
   return max;
 };
 
-/** The caster box radius for a placed figure: the rotations reach (2·bind sphere radius) plus the
- * largest root translation its clips author, which nothing ties to the geometry radius. Metres. */
+/** The farthest a bind-pose vertex reaches from the figure's origin, and so from any single bone
+ * transform it is posed about: the bind sphere centre's distance from the origin plus its radius. The
+ * diameter alone is not that bound — bind geometry can sit offset from its origin, and its far side
+ * then reaches past the diameter. Model units. */
+const bindReachOf = (geometry: BufferGeometry): number => {
+  const sphere = geometry.boundingSphere;
+  return sphere ? sphere.center.length() + sphere.radius : 2;
+};
+
+/** The caster box radius for a placed figure: the rotations reach (bind sphere centre distance plus
+ * radius, see bindReachOf) times body scale, plus the largest root translation its clips author, which
+ * nothing ties to the geometry radius. Metres. */
 const casterRadiusOf = (
   geometry: BufferGeometry,
   body: ActorBody,
   clips: ActorClips,
   fusedMass: ActorFigureFile['fusedMass'],
 ): number =>
-  2 * (geometry.boundingSphere?.radius ?? 1) * body.scale +
+  bindReachOf(geometry) * body.scale +
   authoredRootMotion(clips, fusedMass ? (fusedMass.originOffset.map((c) => c / fusedMass.scale) as Vec3) : undefined) *
     body.scale +
   0.3;
@@ -940,7 +952,7 @@ export class MobActorMeshes implements ActorRenderer {
         mesh,
         crowdSlotAttr,
         shadowPasses,
-        casterReach: 2 * (geometry.boundingSphere?.radius ?? 1) * body.scale + 0.3,
+        casterReach: bindReachOf(geometry) * body.scale + 0.3,
         casterRadius: casterRadiusOf(geometry, body, clips, fusedMass),
         scratch: allocateBoneTransforms(bones.length),
         freeLocalSlots,
