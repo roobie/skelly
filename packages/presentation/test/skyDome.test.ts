@@ -6,6 +6,15 @@ import { createSkyDome, physicalShare, preethamTerms } from '../src/render/skyDo
 const physical = { weight: 0.6, exposure: 0.35, turbidity: 3, rayleigh: 1.3, mie: 0.005, mieDirectional: 0.8 };
 const physicalBand = [0.05, 0.3] as const;
 const HEIGHTS = [-0.5, -0.1, 0, 0.05, 0.15, 0.3, 0.6, 1];
+const scatter = {
+  scale: 1,
+  drift: [0, 0],
+  billow: 0,
+  region: { scale: 1, strength: 0 },
+  density: 1,
+  shadow: 0.5,
+  lining: 0,
+};
 
 describe('the dome around a low sun', () => {
   it('brings the physical sky in as the sun climbs', () => {
@@ -35,7 +44,10 @@ describe('the physical sky terms', () => {
 describe('the dome against the opaque geometry', () => {
   it('draws after the opaque geometry, writing no depth and passing only the cleared far plane', () => {
     const dome = createSkyDome(
-      { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1 }] } as Clouds,
+      {
+        layered: { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1, shade: 0 }] },
+        scatter,
+      } as Clouds,
       {
         horizonBand: [0, 0.2],
         glowBand: [0.2, 0.8],
@@ -70,7 +82,10 @@ describe('the dome driven by a sky', () => {
     cloudLight: { light: 1, ambient: 1, facing: 0.5, deckLight: 0.5 },
     cloudShape: { coverGain: 1, edgeSoftness: 0.1, horizonFade: [0, 0.2] },
   } as DomeShape;
-  const clouds = { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1, shade: 0 }] } as Clouds;
+  const clouds = {
+    layered: { warp: 0, layers: [{ scale: 1, angle: 0, drift: [0, 0], opacity: 1, shade: 0 }] },
+    scatter,
+  } as Clouds;
   const skyWithSunAt = (height: number): Sky =>
     ({
       sky: colour,
@@ -85,7 +100,7 @@ describe('the dome driven by a sky', () => {
         zenith: colour,
         horizonGlow: colour,
         physical,
-        clouds: { cover: 0, opacity: 0 },
+        clouds: { cover: 0, opacity: 0, scatter: 0 },
         stars: 0,
         moon: { colour, brightness: 0 },
         sun: { colour, brightness: 1, glowColour: colour, glow: 1 },
@@ -135,6 +150,20 @@ describe('the dome driven by a sky', () => {
   it('lights deck and tops alike under a light below its cap, so an overcast is no brighter or darker', () => {
     const { tops, deck } = cloudLightsUnder(shape.cloudLight.deckLight / 2);
     expect(deck.equals(tops)).toBe(true);
+  });
+
+  it("hands the weather's share of the scatter kind to the shader", () => {
+    const dome = createSkyDome(clouds, shape);
+    const sky = skyWithSunAt(1);
+    dome.update({
+      sky: { ...sky, dome: { ...sky.dome, clouds: { cover: 0.5, opacity: 1, scatter: 0.25 } } },
+      simSeconds: 0,
+      camera: new PerspectiveCamera(),
+      skyVisibility: 1,
+    });
+    const share = (dome.mesh.material as ShaderMaterial).uniforms.uScatter!.value as number;
+    dome.dispose();
+    expect(share).toBe(0.25);
   });
 
   it('shows the ambient ground colour below the horizon in the open sky the reflection bakes, not the fog colour', () => {

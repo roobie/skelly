@@ -35,7 +35,7 @@ const skyWithZenith = (blue: number, { direction = [0, 1, 0], light = [0, 1, 0],
       zenith: [0.2, 0.3, blue],
       horizonGlow: grey,
       physical: { weight: 0, exposure: 0, turbidity: 2, rayleigh: 1, mie: 0, mieDirectional: 0.5 },
-      clouds: { cover: 0, opacity: 0 },
+      clouds: { cover: 0, opacity: 0, scatter: 0 },
       stars: 0,
       moon: { colour: grey, brightness: 0 },
       sun: { colour: grey, brightness: 1, glowColour: grey, glow },
@@ -73,6 +73,16 @@ describe('the sky reflection bake schedule', () => {
     const due = skyBakeSchedule(THRESHOLD, NO_INTERVAL);
     expect(due(skyWithZenith(0.5, { light: [1, 0.2, 0] }), AT)).toBe(true);
     expect(due(skyWithZenith(0.5, { light: [0, 0.2, 1] }), AT)).toBe(true);
+  });
+
+  it('re-bakes as the weather changes the kind of cloud drawn', () => {
+    const due = skyBakeSchedule(THRESHOLD, NO_INTERVAL);
+    const withScatter = (scatter: number): Sky => {
+      const sky = skyWithZenith(0.5);
+      return { ...sky, dome: { ...sky.dome, clouds: { cover: 0.5, opacity: 1, scatter } } };
+    };
+    expect(due(withScatter(0), AT)).toBe(true);
+    expect(due(withScatter(1), AT)).toBe(true);
   });
 
   it('holds a change back until the minimum interval has passed, then bakes it', () => {

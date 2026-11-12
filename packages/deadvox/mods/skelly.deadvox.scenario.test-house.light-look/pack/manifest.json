@@ -1,6 +1,7 @@
 {
   "dependencies": [
     "skelly.deadvox.scenario.test-house",
+    "skelly.deadvox.actors",
     "skelly.basic-recipes",
     "skelly.deadvox.labs.underground",
     "skelly.flame-tools",

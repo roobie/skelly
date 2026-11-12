@@ -91,6 +91,10 @@
         "options": [false, true]
       },
       "streamHysteresisM": 16,
+      "sunShadow": {
+        "debugReachMetres": [12, 16, 24, 36, 40, 64],
+        "defaultReachMetres": 36
+      },
       "unbuiltSkyCap": 0.5
     }
   ]

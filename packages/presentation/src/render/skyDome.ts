@@ -1,8 +1,11 @@
 // The sky dome: one camera-following sphere that stands in for the flat background. A look's `dome` block
 // (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars, moon and
-// sun; the day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density,
-// the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the gradient around a low sun, the
-// fade into the fog colour at the horizon, and cloud light from the main light.
+// sun; the day cycle's `clouds` supply each kind of cloud's shape and its `domeShape` the gradient's bands, the star
+// density, the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the
+// gradient around a low sun, the fade into the fog colour at the horizon, and cloud light from the main light.
+//
+// Both kinds of cloud are compiled in, so the weather can move between them without rebuilding the shader; the
+// weather's share of each sets which shows (engine/core/weather.ts, `skyInWeather`).
 //
 // The sun and its glow are painted rather than taken from the physical sky. Around a low sun the model's radiance
 // falls off steeply with angle and swings from red through green to blue, which reads only when a per-channel curve
@@ -122,7 +125,7 @@ const VERTEX_SHADER = /* glsl */ `
 const layerGlsl = (index: number): string => /* glsl */ `
     if ( uLayerOpacity[${index}] > 0.0 ) {
       col = mix( col, mix( litTops, litDeck, uLayerShade[${index}] ),
-        cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * cloudOpacity );
+        cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * layeredOpacity );
     }`;
 
 const fragmentShader = (layers: number): string => /* glsl */ `
@@ -178,6 +181,10 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform vec4 uLayer[${layers}];
   uniform float uLayerOpacity[${layers}];
   uniform float uLayerShade[${layers}];
+  uniform float uScatter;
+  uniform vec4 uScatterShape;
+  uniform vec2 uScatterDrift;
+  uniform vec3 uScatterLight;
 
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
@@ -267,6 +274,54 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return smoothstep( threshold, threshold + uEdgeSoftness, noise.r + ( noise.g - 0.5 ) * 0.35 ) * step( 0.0001, uCover );
   }
 
+  // The scatter kind's noise, after three's Sky addon: gradient noise from a hash without sin, so every GPU draws the
+  // same clouds, summed over octaves that slide past one another so the clouds billow.
+  vec2 scatterGradient ( vec2 lattice ) {
+    vec3 p = fract( lattice.xyx * vec3( 0.1031, 0.1030, 0.0973 ) );
+    p += dot( p, p.yzx + 33.33 );
+    return fract( ( p.xx + p.yz ) * p.zy ) * 2.0 - 1.0;
+  }
+
+  float scatterNoise ( vec2 p ) {
+    vec2 i = floor( p );
+    vec2 f = fract( p );
+    vec2 u = f * f * f * ( f * ( f * 6.0 - 15.0 ) + 10.0 );
+    float a = dot( scatterGradient( i ), f );
+    float b = dot( scatterGradient( i + vec2( 1.0, 0.0 ) ), f - vec2( 1.0, 0.0 ) );
+    float c = dot( scatterGradient( i + vec2( 0.0, 1.0 ) ), f - vec2( 0.0, 1.0 ) );
+    float d = dot( scatterGradient( i + vec2( 1.0, 1.0 ) ), f - vec2( 1.0, 1.0 ) );
+    return mix( mix( a, b, u.x ), mix( c, d, u.x ), u.y ) * 1.6;
+  }
+
+  float scatterFbm ( vec2 p, float billow ) {
+    float sum = 0.0;
+    float amplitude = 1.0;
+    for ( int octave = 0; octave < 4; octave ++ ) {
+      sum += amplitude * scatterNoise( p );
+      amplitude *= 0.5;
+      p = p * 2.0 + billow;
+    }
+    return sum;
+  }
+
+  // The scatter kind over col. A cloud is opaque by its depth past the edge; its light is dimmed towards the
+  // self-shadowed core by a Beer and powder term, and its rim shines through a forward Henyey-Greenstein lobe when the
+  // light stands behind it. shape: scale, billow, region scale and strength; light: density, shadow, lining.
+  vec3 scatterClouds ( vec3 col, vec3 dir, vec2 plane, float facing, float opacity ) {
+    vec2 p = plane * uScatterShape.x + uScatterDrift * uSimSeconds;
+    float noise = clamp( scatterFbm( p, uScatterShape.y * uSimSeconds ) * 0.7 + 0.5, 0.0, 1.0 );
+    float region = scatterNoise( p * ( uScatterShape.z / uScatterShape.x ) ) * uScatterShape.w;
+    float threshold = 1.0 - clamp( uCoverGain * uCover + region, 0.0, 1.0 );
+    float depth = max( 0.0, noise - threshold );
+    float beer = exp( -4.0 * depth );
+    float core = mix( uScatterLight.y, 1.0, clamp( beer * ( 1.0 - beer * beer ) * 2.6, 0.0, 1.0 ) );
+    float edge = smoothstep( threshold, threshold + uEdgeSoftness, noise );
+    float lightCos = dot( dir, uLightDir );
+    float lining = clamp( 0.51 / pow( 1.49 - 1.4 * lightCos, 1.5 ), 0.0, 3.0 ) * edge * ( 1.0 - edge ) * 4.0;
+    vec3 lit = uCloudAmbient + uCloudLight * ( facing * core + lining * uScatterLight.z );
+    return mix( col, lit, ( 1.0 - exp( -uScatterLight.x * depth ) ) * opacity );
+  }
+
   void main () {
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
@@ -300,7 +355,14 @@ const fragmentShader = (layers: number): string => /* glsl */ `
       vec3 litTops = uCloudAmbient + uCloudLight * facing;
       vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
       vec2 plane = dir.xz / max( dir.y, 0.06 );
-      ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+      // A change of kind fades one kind out as the other fades in; a kind with no share costs nothing.
+      float layeredOpacity = cloudOpacity * ( 1.0 - uScatter );
+      if ( layeredOpacity > 0.0 ) {
+        ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+      }
+      if ( uScatter > 0.0 ) {
+        col = scatterClouds( col, dir, plane, facing, cloudOpacity * uScatter );
+      }
     }
 
     // The glow is lit air between the eye and the clouds, so it goes over them.
@@ -326,7 +388,7 @@ const placeDome = (mesh: Mesh, camera: PerspectiveCamera): void => {
 const TEXTURE_SEEDS = [1, 2] as const;
 
 /** The mesh is for the caller to add to the scene; `dispose` frees what the dome owns. */
-export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
+export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): SkyDome => {
   const textures: DataTexture[] = TEXTURE_SEEDS.map((seed) => cloudTexture(seed));
   const uniforms = {
     ...skyDomeUniforms,
@@ -369,7 +431,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uStars: { value: 0 },
     uCover: { value: 0 },
     uCloudOpacity: { value: 0 },
-    uWarp: { value: clouds.warp },
+    uWarp: { value: layered.warp },
     uSimSeconds: { value: 0 },
     uLightDir: { value: new Vector3(0, 1, 0) },
     uCloudLight: { value: new Color() },
@@ -377,9 +439,15 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uCloudAmbient: { value: new Color() },
     uCloudA: { value: textures[0]! },
     uCloudB: { value: textures[1]! },
-    uLayer: { value: clouds.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
-    uLayerOpacity: { value: clouds.layers.map((layer) => layer.opacity) },
-    uLayerShade: { value: clouds.layers.map((layer) => layer.shade) },
+    uLayer: { value: layered.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
+    uLayerOpacity: { value: layered.layers.map((layer) => layer.opacity) },
+    uLayerShade: { value: layered.layers.map((layer) => layer.shade) },
+    uScatter: { value: 0 },
+    uScatterShape: {
+      value: new Vector4(scatter.scale, scatter.billow, scatter.region.scale, scatter.region.strength),
+    },
+    uScatterDrift: { value: new Vector2(...scatter.drift) },
+    uScatterLight: { value: new Vector3(scatter.density, scatter.shadow, scatter.lining) },
   };
   const domeMaterial = (domeUniforms: typeof uniforms): ShaderMaterial =>
     new ShaderMaterial({
@@ -392,7 +460,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       toneMapped: false,
       uniforms: domeUniforms,
       vertexShader: VERTEX_SHADER,
-      fragmentShader: fragmentShader(clouds.layers.length),
+      fragmentShader: fragmentShader(layered.layers.length),
     });
   const material = domeMaterial(uniforms);
   const geometry = new SphereGeometry(1, 48, 24);
@@ -444,6 +512,7 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       uniforms.uSunGlow.value = dome.sun.glow;
       uniforms.uCover.value = dome.clouds.cover;
       uniforms.uCloudOpacity.value = dome.clouds.opacity;
+      uniforms.uScatter.value = dome.clouds.scatter;
       uniforms.uSimSeconds.value = simSeconds;
       uniforms.uLightDir.value.set(...sky.light);
       setSrgb(uniforms.uCloudLight.value, sky.lightColor).multiplyScalar(

@@ -2,7 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
 import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
-import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
+import { defaultShadows, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import type { FromMesher } from '@skelly/engine/mesh';
 import {
   adsCameraEye,
@@ -289,7 +289,7 @@ export const createPlayView = (
     applyLook(renderer, meshes, lookOf(look));
     setHeightFogTuning(look.heightFog);
     mood.restore(moodOf(look));
-    shadows.restore(DEFAULT_SHADOWS);
+    shadows.restore(defaultShadows(graphics.sunShadow));
   }
   const weather: Weather = { ...dayCycle.weather.defaults };
   const playerFigure = claimed(registry.figures, 'player')!;

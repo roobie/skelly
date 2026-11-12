@@ -1,5 +1,4 @@
 import { BindingRegistry, debugSpawnActorRow } from '@skelly/engine/input';
-import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
 import type { Weather } from '@skelly/engine/sky';
 import type { DebugHooks } from '@skelly/presentation/debug';
 import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
@@ -15,7 +14,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-import { LOOK_FIXTURE } from './lookFixture.ts';
+import { LOOK_FIXTURE, SUN_SHADOW_FIXTURE } from './lookFixture.ts';
 
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
 
@@ -93,10 +92,11 @@ describe('debug action dispatch', () => {
       expect(look.toneKey).toBe(tone);
     }
 
-    const shadowStart = SHADOW_DISTANCES.indexOf(look.shadowState.distance);
+    const shadowDistances = SUN_SHADOW_FIXTURE.debugReachMetres;
+    const shadowStart = shadowDistances.indexOf(look.shadowState.distance);
     expect(shadowStart).toBeGreaterThanOrEqual(0);
-    const distances = SHADOW_DISTANCES.map(
-      (_, index) => SHADOW_DISTANCES[(shadowStart + index + 1) % SHADOW_DISTANCES.length],
+    const distances = shadowDistances.map(
+      (_, index) => shadowDistances[(shadowStart + index + 1) % shadowDistances.length],
     );
     for (const distance of distances) {
       expect(dispatchDebugAction(actions, 'debug.shadow-distance-cycle')).toBe(true);
@@ -213,7 +213,7 @@ const makeActions = (
       },
     },
     mood,
-    { defaults: LOOK_FIXTURE, weather, shadows, flashlight },
+    { defaults: LOOK_FIXTURE, sunShadow: SUN_SHADOW_FIXTURE, weather, shadows, flashlight },
   );
   const sim = {
     godMode: false,

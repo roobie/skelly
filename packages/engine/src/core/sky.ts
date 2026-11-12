@@ -10,7 +10,7 @@ import type { DayCycleDef } from './schema.ts';
 /** sRGB in [0, 1], as in CSS hex colours. */
 export type Rgb = readonly [number, number, number];
 
-/** The sky dome of one look (`packages/engine/src/core/schema/dayCycle.ts`, `DomeLookSchema`); the cloud field's shape is the cycle's `clouds`. */
+/** The sky dome of one look (`packages/engine/src/core/schema/dayCycle.ts`, `DomeLookSchema`); each kind of cloud's shape is the cycle's `clouds`. */
 export interface Dome {
   /** Colour straight up. */
   zenith: Rgb;
@@ -29,14 +29,19 @@ export interface Dome {
     mie: number;
     mieDirectional: number;
   };
-  /** Cloud threshold shift and the scale of every layer's opacity. */
-  clouds: { cover: number; opacity: number };
+  /**
+   * Cloud threshold shift, the scale of every cloud's opacity, and the scatter kind's share of the clouds, the rest
+   * being the layered field's; the share is the weather's, not the look's (core/weather.ts, `skyInWeather`).
+   */
+  clouds: { cover: number; opacity: number; scatter: number };
   stars: number;
   moon: { colour: Rgb; brightness: number };
   sun: { colour: Rgb; brightness: number; glowColour: Rgb; glow: number };
 }
 
-/** The cloud field's shape and the dome's other fixed shape, which the cycle holds once for every look. */
+/** A kind of cloud the dome draws. */
+export type CloudKind = DayCycleDef['weather']['fair']['kind'];
+/** Each kind of cloud's shape and the dome's other fixed shape, which the cycle holds once for every look. */
 export type Clouds = DayCycleDef['clouds'];
 export type DomeShape = DayCycleDef['domeShape'];
 /** How the sky's reflection on models is baked and how strong it is. */
@@ -77,7 +82,9 @@ export interface Sky {
   dome: Dome;
 }
 
-type Look = Omit<Sky, 'light' | 'dayPhase' | 'sunDirection'>;
+/** A keyframe look, which leaves the kind of cloud to the weather. */
+type Look = DayCycleDef['looks']['day'];
+type LookDome = Look['dome'];
 
 const DAY_SECONDS = 24 * 60 * 60;
 const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -99,7 +106,7 @@ const phaseRange = (state: DayPhaseState, phase: DayPhase): readonly [number, nu
   }
 };
 
-const interpolateDome = (a: Dome, b: Dome, t: number): Dome => ({
+const interpolateDome = (a: LookDome, b: LookDome, t: number): LookDome => ({
   zenith: mixRgb(a.zenith, b.zenith, t),
   horizonGlow: mixRgb(a.horizonGlow, b.horizonGlow, t),
   physical: {
@@ -165,7 +172,10 @@ export const sunDirection = (hour: number, cycle: DayCycle): Vec3 => dayPhaseAt(
 /** Lowest elevation of the main light, so it never grazes the ground at sunrise and sunset. */
 const MIN_LIGHT_Y = 0.2;
 
-/** The sky, light and fog at a local solar hour in [0, 24). */
+/** The scatter kind's share of the clouds when `kind` shows alone. */
+export const scatterShare = (kind: CloudKind): number => (kind === 'scatter' ? 1 : 0);
+
+/** The sky, light and fog at a local solar hour in [0, 24), with the clouds of fair weather, whose sky the looks are. */
 export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const time = hour * 3600;
   const state = dayPhaseAt(cycle, time);
@@ -173,8 +183,10 @@ export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const [x, , z] = state.sunDirection;
   const y = Math.max(state.sunDirection[1], MIN_LIGHT_Y);
   const len = Math.hypot(x, y, z);
+  const look = lookAt(state, time, cycle);
   return {
-    ...lookAt(state, time, cycle),
+    ...look,
+    dome: { ...look.dome, clouds: { ...look.dome.clouds, scatter: scatterShare(cycle.weather.fair.kind) } },
     dayPhase: state.phase,
     light: [x / len, y / len, z / len],
     sunDirection: state.sunDirection,
