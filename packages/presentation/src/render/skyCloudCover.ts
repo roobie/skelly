@@ -11,9 +11,10 @@ export const CLOUD_COVER_GLSL = /* glsl */ `
     return smoothstep( threshold, threshold + softness, min( noise, 1.0 ) );
   }
 
-  // The scatter kind's coverage where its region noise is region, about -1 to 1. The region swings coverage by up to
-  // its strength but never by more than the cover itself, so a thin cover keeps its gaps and banks thin with it.
+  // The scatter kind's coverage where its region noise is region, about -1 to 1. Below the region's strength the field
+  // keeps its banks and gaps and scales down with the cover, so clouds first show in the banks and no cover is clear.
   float scatterCoverage ( float coverage, float region, float strength ) {
-    return clamp( coverage + region * min( coverage, strength ), 0.0, 1.0 );
+    float swung = clamp( coverage + region * strength, 0.0, 1.0 );
+    return coverage < strength ? swung * coverage / strength : swung;
   }
 `;
