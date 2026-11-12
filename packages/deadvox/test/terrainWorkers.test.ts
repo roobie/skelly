@@ -297,6 +297,8 @@ describe('speculative terrain workers', () => {
       port.handlers!.message({ type: 'column', epoch: port.epoch, ticket, cx, cz, chunks: [] });
     },
     'null reply': (port) => port.handlers!.message(null as never),
+    'failed reply whose reason is not text': (port) =>
+      port.handlers!.message({ type: 'failed', epoch: port.epoch, reason: { toString: 0 } } as never),
     'reply of an unknown type': (port) => {
       // A real column for a wanted ticket, apart from its type.
       const column = port.held.find((reply): reply is ColumnReply => reply.type === 'column')!;

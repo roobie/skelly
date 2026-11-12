@@ -159,7 +159,7 @@ export class TerrainJobs {
       return;
     }
     if (!isEnvelope(msg)) {
-      this.fail('malformed reply');
+      this.fail(MALFORMED);
       return;
     }
     if (msg.epoch !== this.epoch) {
@@ -170,13 +170,14 @@ export class TerrainJobs {
       return;
     }
     if (msg.type === 'failed') {
-      this.fail(String(msg.reason));
+      this.fail(typeof msg.reason === 'string' ? msg.reason : MALFORMED);
       return;
     }
     const ticket = this.tickets.get(msg.ticket);
     try {
       if (!ticket || ticket.slot !== slot || ticket.cx !== msg.cx || ticket.cz !== msg.cz) {
-        throw new Error(`reply for unknown ticket ${msg.ticket}`);
+        // A fixed reason: the reply's own fields are untrusted and may not even convert to text.
+        throw new Error('reply for an unknown ticket');
       }
       this.tickets.delete(msg.ticket);
       slot.running -= 1;
@@ -191,6 +192,8 @@ export class TerrainJobs {
     }
   }
 }
+
+const MALFORMED = 'malformed reply';
 
 const REPLY_TYPES: readonly unknown[] = ['ready', 'column', 'failed'] satisfies FromTerrain['type'][];
 
