@@ -276,7 +276,7 @@ export const ActorSchema = strictObject({
   footstepSound: optional(Id),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
-  jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
+  jumpMetresPerSimSecond: pipe(Positive, transform(simRate)),
   /**
    * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
    * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
@@ -403,7 +403,6 @@ export const actorRegionsMatchModel = (actor: InferOutput<typeof ActorSchema>): 
 const UNIT_TOLERANCE = 1e-6;
 
 const Finite = pipe(number(), finite('must be finite'));
-const FinitePositive = pipe(Positive, finite('must be finite'));
 const PositiveInteger = pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'));
 const BoneName = pipe(string(), nonEmpty('must not be empty'));
 const Vec3Schema = tuple([Finite, Finite, Finite]);
@@ -466,19 +465,19 @@ const ActorBoneSchema = pipe(
 const BoneVoxelBoxSchema = strictObject({ bone: BoneName, center: Vec3Schema, halfSize: Vec3Schema });
 
 const HumanoidAnimationSchema = strictObject({
-  attackPeakAtSimSeconds: FinitePositive,
-  attackDurationSimSeconds: FinitePositive,
-  hitDurationSimSeconds: FinitePositive,
+  attackPeakAtSimSeconds: Positive,
+  attackDurationSimSeconds: Positive,
+  hitDurationSimSeconds: Positive,
 });
 
 const AcidAnimationSchema = strictObject({
   ...HumanoidAnimationSchema.entries,
-  deathDurationRealSeconds: FinitePositive,
+  deathDurationRealSeconds: Positive,
 });
 
 const FusedMassAnimationSchema = strictObject({
   flinch: pipe(
-    strictObject({ peakAtSimSeconds: FinitePositive, durationSimSeconds: FinitePositive, pitch: Finite, roll: Finite }),
+    strictObject({ peakAtSimSeconds: Positive, durationSimSeconds: Positive, pitch: Finite, roll: Finite }),
     check(
       ({ peakAtSimSeconds, durationSimSeconds }) => peakAtSimSeconds <= durationSimSeconds,
       'flinch peak must be within its duration',
@@ -524,9 +523,9 @@ export const ActorBodySchema = pipe(
         check((cut) => cut > 0 && cut < 1, 'must be between 0 and 1, exclusive'),
       ),
     ),
-    scale: FinitePositive,
-    height: FinitePositive,
-    voxelSize: FinitePositive,
+    scale: Positive,
+    height: Positive,
+    voxelSize: Positive,
     /** In GLB bone-index order, parents first. */
     bones: pipe(array(ActorBoneSchema), nonEmpty('needs at least one bone')),
     anchors: record(string(), strictObject({ bone: BoneName, position: Vec3Schema })),
@@ -542,7 +541,7 @@ export const ActorBodySchema = pipe(
       ),
     ),
     groundContactBones: optional(array(BoneName)),
-    bodyMassKg: FinitePositive,
+    bodyMassKg: Positive,
     massFractions: optional(
       record(
         string(),
@@ -561,7 +560,7 @@ export const ActorBodySchema = pipe(
     restStrikeOrigin: optional(Vec3Schema),
     cells: optional(
       strictObject({
-        size: FinitePositive,
+        size: Positive,
         origin: Vec3Schema,
         dims: tuple([PositiveInteger, PositiveInteger, PositiveInteger]),
         filled: array(tuple([pipe(number(), integer('must be a whole number')), PositiveInteger])),
@@ -676,12 +675,12 @@ export const PoseClipSchema = pipe(
     kind: literal('pose'),
     loop: vBoolean(),
     frames: pipe(array(PoseFrameSchema), nonEmpty('needs at least one frame')),
-    durationSimSeconds: optional(FinitePositive),
-    periodSimSeconds: optional(FinitePositive),
-    strideMetres: optional(FinitePositive),
+    durationSimSeconds: optional(Positive),
+    periodSimSeconds: optional(Positive),
+    strideMetres: optional(Positive),
     cycles: optional(PositiveInteger),
-    idleBlendSpeed: optional(FinitePositive),
-    hitAtSimSeconds: optional(FinitePositive),
+    idleBlendSpeed: optional(Positive),
+    hitAtSimSeconds: optional(Positive),
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
   check(
@@ -695,7 +694,7 @@ const DeathClipSchema = strictObject({
   kind: literal('pose'),
   loop: literal(false),
   frames: pipe(array(PoseFrameSchema), minLength(2, 'needs at least two frames')),
-  durationRealSeconds: FinitePositive,
+  durationRealSeconds: Positive,
 });
 
 /**
@@ -705,9 +704,9 @@ const DeathClipSchema = strictObject({
 export const OverlayClipSchema = pipe(
   strictObject({
     kind: literal('overlay'),
-    durationSimSeconds: FinitePositive,
-    hitAtSimSeconds: optional(FinitePositive),
-    peakAtSimSeconds: optional(FinitePositive),
+    durationSimSeconds: Positive,
+    hitAtSimSeconds: optional(Positive),
+    peakAtSimSeconds: optional(Positive),
     sideScalesZ: vBoolean(),
     walkBlendBones: array(BoneName),
     frames: pipe(
@@ -739,10 +738,10 @@ export const JointDeltaClipSchema = pipe(
     sideScalesZ: vBoolean(),
     footSoleHold: vBoolean(),
     cycles: optional(PositiveInteger),
-    strideMetres: optional(FinitePositive),
-    durationSimSeconds: optional(FinitePositive),
-    hitAtSimSeconds: optional(FinitePositive),
-    peakAtSimSeconds: optional(FinitePositive),
+    strideMetres: optional(Positive),
+    durationSimSeconds: optional(Positive),
+    hitAtSimSeconds: optional(Positive),
+    peakAtSimSeconds: optional(Positive),
     frames: pipe(array(strictObject({ angles: record(BoneName, Vec3Schema) })), nonEmpty('needs at least one frame')),
   }),
   check((clip) => timedWithin(clip, 'hitAtSimSeconds'), 'hitAtSimSeconds must be within the duration'),
@@ -759,7 +758,7 @@ const StanceIdleSchema = strictObject({
   base: PoseFrameSchema,
   motion: array(
     strictObject({
-      periodSimSeconds: FinitePositive,
+      periodSimSeconds: Positive,
       amplitudeDeg: Finite,
       salt: pipe(number(), integer('must be a whole number')),
       bones: array(strictObject({ bone: BoneName, axis: picklist(['x', 'y', 'z']), scale: Finite })),

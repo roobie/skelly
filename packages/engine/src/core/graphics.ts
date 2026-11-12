@@ -13,8 +13,8 @@ import {
   strictObject,
   string,
 } from 'valibot';
+import { NonNegative, Positive } from './schema/primitives.ts';
 
-const Positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const AdaptiveScaleSchema = pipe(
   strictObject({
     enabled: boolean(),
@@ -22,7 +22,7 @@ const AdaptiveScaleSchema = pipe(
     min: pipe(Positive, maxValue(1)),
     max: pipe(Positive, maxValue(1)),
     step: pipe(Positive, maxValue(1)),
-    hysteresisRealMs: pipe(number(), finite(), minValue(0)),
+    hysteresisRealMs: NonNegative,
     sampleWindow: pipe(number(), integer(), minValue(1)),
   }),
   check(
