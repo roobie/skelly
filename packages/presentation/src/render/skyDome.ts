@@ -501,7 +501,7 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
       uniforms.uBetaR.value.set(...terms.rayleigh);
       uniforms.uBetaM.value.set(...terms.mie);
       uniforms.uMieDirectional.value = dome.physical.mieDirectional;
-      uniforms.uMoonDir.value.set(-sunDirection[0], -sunDirection[1], -sunDirection[2]);
+      uniforms.uMoonDir.value.set(...sky.moonDirection);
       uniforms.uStars.value = dome.stars;
       uniforms.uPhysicalExposure.value = dome.physical.exposure;
       uniforms.uMoonBrightness.value = dome.moon.brightness;

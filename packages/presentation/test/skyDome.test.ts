@@ -90,6 +90,7 @@ describe('the dome driven by a sky', () => {
     ({
       sky: colour,
       sunDirection: [0, height, Math.sqrt(1 - height * height)],
+      moonDirection: [0, -height, -Math.sqrt(1 - height * height)],
       light: [0, 1, 0],
       lightColor: colour,
       lightIntensity: 1,

@@ -109,6 +109,7 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
       lining: 0,
     },
   },
+  mainLight: { lowestHeight: 0.2, fromMoonAt: 1 },
   environment: { faceSize: 32, rebakeChange: 0.05, rebakeRealSeconds: 0.5, strength: 1 },
 });
 
