@@ -4,7 +4,12 @@
 
 import {
   type ActorBody,
+  ActorBodySchema,
+  type ActorClips,
+  ActorClipsSchema,
+  type ActorFigureFile,
   type ActorFigureFiles,
+  actorClipIssues,
   actorFigure,
   actorFigureKey,
   buildRegistry,
@@ -64,6 +69,7 @@ import {
   PerspectiveCamera,
   Vector3,
 } from 'three';
+import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -318,6 +324,7 @@ const rendererInternals = (renderer: MobActorMeshes) =>
       mesh: InstancedMesh;
       geometry: BufferGeometry;
       body: { scale: number };
+      bones: readonly { readonly id: string }[];
       shadowPasses: readonly { mesh: InstancedMesh; slots: InstancedBufferAttribute }[];
     }[];
   };
@@ -331,7 +338,8 @@ const boxAround = (at: CrowdPlacement, radius: number): Box3 =>
 
 /** A copy of a built actor GLB with every POSITION vertex's X moved by `units` model units — the same
  * layout actorFigureGeometry reads (glTF 2.0 binary, one tightly packed FLOAT VEC3 POSITION accessor),
- * bone indices untouched: bind geometry loader-accepted yet offset from the figure's origin. */
+ * bone indices untouched and the accessor's declared min/max kept in step: bind geometry loader-accepted
+ * yet offset from the figure's origin. */
 const offsetGlbPositions = (mesh: Uint8Array, units: number, id: string): Uint8Array => {
   const out = new Uint8Array(mesh);
   const view = new DataView(out.buffer);
@@ -343,12 +351,21 @@ const offsetGlbPositions = (mesh: Uint8Array, units: number, id: string): Uint8A
   const json = JSON.parse(new TextDecoder().decode(out.subarray(20, binAt))) as {
     nodes: { mesh?: number }[];
     meshes: { primitives: { attributes: Record<string, number> }[] }[];
-    accessors: { bufferView: number; byteOffset?: number; componentType: number; count: number; type: string }[];
+    accessors: {
+      bufferView: number;
+      byteOffset?: number;
+      componentType: number;
+      count: number;
+      type: string;
+      min?: number[];
+      max?: number[];
+    }[];
     bufferViews: { byteOffset?: number; byteLength: number; byteStride?: number }[];
   };
   const node = json.nodes.find((candidate) => candidate.mesh !== undefined);
   const primitive = json.meshes[node?.mesh ?? -1]?.primitives[0];
-  const accessor = json.accessors[primitive?.attributes.POSITION ?? -1];
+  const accessorIndex = primitive?.attributes.POSITION ?? -1;
+  const accessor = json.accessors[accessorIndex];
   const bufferView = json.bufferViews[accessor?.bufferView ?? -1];
   if (
     !(accessor && bufferView && accessor.type === 'VEC3' && accessor.componentType === 5126) ||
@@ -360,7 +377,65 @@ const offsetGlbPositions = (mesh: Uint8Array, units: number, id: string): Uint8A
   for (let vertex = 0; vertex < accessor.count; vertex++) {
     view.setFloat32(start + vertex * 12, view.getFloat32(start + vertex * 12, true) + units, true);
   }
-  return out;
+  // Keep the accessor's declared bounds in step with the moved vertices, as a real export would: the
+  // JSON chunk is re-serialized (space-padded to 4 bytes, glTF-Binary's convention) and the BIN chunk
+  // follows at the new offset, its own internal offsets unchanged.
+  if (accessor.min) {
+    accessor.min[0]! += units;
+  }
+  if (accessor.max) {
+    accessor.max[0]! += units;
+  }
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(json));
+  const jsonPad = (4 - (jsonBytes.length % 4)) % 4;
+  const bin = out.subarray(binAt + 8);
+  const rebuilt = new Uint8Array(20 + jsonBytes.length + jsonPad + 8 + bin.length);
+  const rebuiltView = new DataView(rebuilt.buffer);
+  rebuiltView.setUint32(0, 0x46_54_6c_67, true);
+  rebuiltView.setUint32(4, 2, true);
+  rebuiltView.setUint32(8, rebuilt.length, true);
+  rebuiltView.setUint32(12, jsonBytes.length + jsonPad, true);
+  rebuiltView.setUint32(16, 0x4e_4f_53_4a, true);
+  rebuilt.set(jsonBytes, 20);
+  for (let k = 0; k < jsonPad; k++) {
+    rebuilt[20 + jsonBytes.length + k] = 0x20;
+  }
+  const binHeader = 20 + jsonBytes.length + jsonPad;
+  rebuiltView.setUint32(binHeader, bin.length, true);
+  rebuiltView.setUint32(binHeader + 4, 0x00_4e_49_42, true);
+  rebuilt.set(bin, binHeader + 8);
+  return rebuilt;
+};
+/** The largest root translation one baked clip entry authors, in model units: a pose clip's or death
+ * pair's frames' roots, a stance idle's base roots, or an overlay's authored drops. */
+const entryRootsOf = (entry: NonNullable<ActorClips['standing']>[string]): number => {
+  if ('kind' in entry) {
+    if (entry.kind === 'pose') {
+      return Math.max(0, ...entry.frames.map((frame) => Math.hypot(...frame.root)));
+    }
+    return entry.kind === 'overlay' ? Math.max(0, ...entry.frames.map((frame) => Math.abs(frame.dropMetres))) : 0;
+  }
+  if ('slack' in entry) {
+    return Math.max(Math.hypot(...entry.slack.base.root), Math.hypot(...entry.aggravated.base.root));
+  }
+  return Math.max(
+    0,
+    ...[entry.forward, entry.backward].flatMap((fall) => fall.frames.map((frame) => Math.hypot(...frame.root))),
+  );
+};
+
+/** The largest root translation a figure's baked entries author, in model units — the load-time input
+ * of the placement bound the packed-row bound replaced: every pose-clip and death-pair frame root, every
+ * stance idle base root, every overlay drop, and the fused-mass origin offset. */
+const authoredRootsOf = (figure: ActorFigureFile): number => {
+  const fused = figure.fusedMass;
+  let max = fused ? Math.hypot(...(fused.originOffset.map((c) => c / fused.scale) as Vec3)) : 0;
+  for (const set of [figure.clips.standing, figure.clips.crawling]) {
+    for (const entry of Object.values(set ?? {})) {
+      max = Math.max(max, entryRootsOf(entry));
+    }
+  }
+  return max;
 };
 /** A minimal, valid Actor — same shape ActorSystem.add() builds (packages/engine/src/core/actorSystem.ts), constructed
  * directly so these tests don't need a full ActorSystem (physics/senses/etc, irrelevant here). */
@@ -1458,6 +1533,119 @@ describe('MobActorMeshes', () => {
       expect(reach - 4).toBeGreaterThan(assumed);
       const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
       expect(casts(boxAround(placement, assumed))).toBe(false); // the diameter box cannot contain it
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      expect(twin.mesh.count).toBe(1);
+      expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a figure whose offset bone pivot swings its posed geometry past the placement bound', () => {
+    // core/pose.ts's boneLocalTransform pivots every bone rotation about the bone head
+    // (t = head − R·head + root), so rotating a root bone whose head sits offset from the figure's
+    // origin swings the whole figure by twice that offset — a translation that lives in the packed bone
+    // matrix, in no authored root and no bind-vertex norm. The placement bound that added only the bind
+    // reach and the authored roots dropped such a figure while its drawn vertices sat far outside it.
+    const pivotSwingFigures = (): { files: ActorFigureFiles; assumedBySeed: Map<number, number> } => {
+      const swung = new Map(FIGURES);
+      const assumedBySeed = new Map<number, number>();
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        // Zero-root frames that rotate only the root bone 180° about Z, pivoting about its head.
+        const root = figure.body.bones.find((bone) => bone.parent === null)!;
+        const clips: ActorClips = {
+          ...figure.clips,
+          standing: Object.fromEntries(
+            Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
+              name,
+              'kind' in entry && entry.kind === 'pose'
+                ? {
+                    ...entry,
+                    frames: entry.frames.map((frame) => ({
+                      ...frame,
+                      root: [0, 0, 0] as Vec3,
+                      rotations: { [root.id]: [0, 0, 1, 0] },
+                    })),
+                  }
+                : entry,
+            ]),
+          ),
+        };
+        const probe = actorFigureGeometry(figure.mesh, figure.body);
+        const sphere = probe.boundingSphere!;
+        const bindReach = sphere.center.length() + sphere.radius;
+        probe.dispose();
+        // The placement bound the packed-row bound replaces (metres), over this mutated figure's own
+        // clips, and a pivot offset whose swing clears it and the 4 m light volume — sized from the
+        // fixture's own sphere and roots rather than a pinned number, with headroom for the stance
+        // blend diluting the walk clip's swing.
+        const assumed = (bindReach + authoredRootsOf({ ...figure, clips })) * figure.body.scale + 0.3;
+        const units = Math.ceil((assumed + 4) / figure.body.scale + bindReach) + 4;
+        const body: ActorBody = {
+          ...figure.body,
+          bones: figure.body.bones.map((bone) =>
+            bone.parent === null
+              ? {
+                  ...bone,
+                  head: [bone.head[0]! + units, bone.head[1]!, bone.head[2]!],
+                  tail: [bone.tail[0]! + units, bone.tail[1]!, bone.tail[2]!],
+                }
+              : bone,
+          ),
+        };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        expect(safeParse(ActorClipsSchema, clips).success).toBe(true);
+        expect(actorClipIssues(body, clips)).toEqual([]);
+        swung.set(key, { ...figure, body, clips });
+        assumedBySeed.set(seed, assumed);
+      }
+      return { files: swung, assumedBySeed };
+    };
+    const { files, assumedBySeed } = pivotSwingFigures();
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: files,
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([4, 0, 0]);
+      actor.horizontalSpeed = 4; // a walking figure draws the standing walk clip
+      actor.gaitPhase = 1;
+      const id = store.add(actor);
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      const variant = internals.variants[state.variantIndex]!;
+      const placement = state.lastPlacement!;
+      // Where the figure actually draws each vertex: through the packed bone matrix the crowd shader
+      // applies — renderer.boneMatrix reads the very row the crowd mesh and the twin draw.
+      const positions = variant.geometry.getAttribute('position');
+      const owners = variant.geometry.getAttribute('boneIndex');
+      let drawn: Vec3 = [placement.x, placement.y, placement.z];
+      let reach = 0;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const matrix = renderer.boneMatrix(id, variant.bones[owners.getX(vertex)]!.id)!;
+        const at: Vec3 = [0, 1, 2].map(
+          (axis) =>
+            matrix[axis * 4]! * positions.getX(vertex) +
+            matrix[axis * 4 + 1]! * positions.getY(vertex) +
+            matrix[axis * 4 + 2]! * positions.getZ(vertex) +
+            matrix[axis * 4 + 3]!,
+        ) as Vec3;
+        const distance = Math.hypot(at[0] - placement.x, at[1] - placement.y, at[2] - placement.z);
+        if (distance > reach) {
+          reach = distance;
+          drawn = at;
+        }
+      }
+      const assumed = assumedBySeed.get(actor.figureSeed)!; // the bind-reach-plus-roots bound, replaced
+      expect(reach).toBeGreaterThan(assumed);
+      expect(reach - 4).toBeGreaterThan(assumed);
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
+      expect(casts(boxAround(placement, assumed))).toBe(false); // the placement bound cannot contain it
       renderer.selectShadowCasters(0, casts);
       const twin = variant.shadowPasses[0]!;
       expect(twin.mesh.count).toBe(1);

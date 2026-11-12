@@ -59,7 +59,6 @@
 import {
   type ActorBody,
   type ActorClips,
-  type ActorFigureFile,
   type ActorFigureFiles,
   actorFigure,
   actorFigureKey,
@@ -298,16 +297,13 @@ interface Variant {
    * (`ShadowPassTwin`), same geometry and materials, its own slots (`slots`) and a per-light count set by
    * selectShadowCasters. Grown by reserveShadowSlots; slot 0 exists from construction. */
   readonly shadowPasses: ShadowPassTwin[];
-  /** How far posed geometry reaches from its placement's bone transforms: a bind-pose point sits at
-   * most the bind sphere centre's distance from the origin plus its radius away (bind geometry can sit
-   * offset from its origin; the diameter alone would ignore that), rotations preserve a point's
-   * distance from the bone they pose about (crowd.ts's packing rotates bones about their parents), and
-   * the y a ground fit picks stays within the same reach. Metres. */
+  /** How far a drawn vertex can sit from the translation of the packed bone matrix that poses it: the
+   * bind sphere centre's distance from the origin plus its radius (bind geometry can sit offset from
+   * its origin; the diameter alone would ignore that), since the crowd shader applies each vertex
+   * exactly one packed matrix whose rotation is the bind vertex's rotation scaled (render/crowd.ts,
+   * CROWD_BEGIN_VERTEX), and the y a ground fit picks stays within the same reach. Expands the boxes
+   * around packed bone translations (boxAroundRow, boxAroundBones). Metres. */
   readonly casterReach: number;
-  /** casterReach plus the largest authored root translation this variant's clips pose (see
-   * authoredRootMotion): a pose translates its root on top of rotating it, and nothing ties that
-   * translation to the geometry radius. Bounds a placed figure's distance from its placement. Metres. */
-  readonly casterRadius: number;
   /** Reused every frame for every actor of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps. */
   readonly scratch: MutableTransform[];
@@ -644,65 +640,16 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
   }
 };
 
-/**
- * The largest root translation one baked clip entry authors, in model units (see authoredRootMotion):
- * a pose clip's or death pair's frames' roots, a stance idle's base roots, or an overlay's authored
- * drops. Sampling and blending interpolate between stored frames, so the stored maxima bound every
- * drawn pose.
- */
-const entryRootMotion = (entry: NonNullable<ActorClips['standing']>[string]): number => {
-  if ('kind' in entry) {
-    if (entry.kind === 'pose') {
-      return Math.max(0, ...entry.frames.map((frame) => Math.hypot(...frame.root)));
-    }
-    return entry.kind === 'overlay' ? Math.max(0, ...entry.frames.map((frame) => Math.abs(frame.dropMetres))) : 0;
-  }
-  if ('slack' in entry) {
-    return Math.max(Math.hypot(...entry.slack.base.root), Math.hypot(...entry.aggravated.base.root));
-  }
-  return Math.max(
-    0,
-    ...[entry.forward, entry.backward].flatMap((fall) => fall.frames.map((frame) => Math.hypot(...frame.root))),
-  );
-};
-
-/**
- * The largest root translation any baked pose of this figure authors, in model units — a conservative
- * load-time bound, computed once per variant: an exact per-frame bound would re-walk every bone
- * transform per pass for a figure that can only reach this far (see Variant.casterRadius).
- */
-const authoredRootMotion = (clips: ActorClips, fusedMassOriginOffset?: Vec3): number => {
-  let max = fusedMassOriginOffset ? Math.hypot(...fusedMassOriginOffset) : 0;
-  for (const set of [clips.standing, clips.crawling]) {
-    for (const entry of Object.values(set ?? {})) {
-      max = Math.max(max, entryRootMotion(entry));
-    }
-  }
-  return max;
-};
-
-/** The farthest a bind-pose vertex reaches from the figure's origin, and so from any single bone
- * transform it is posed about: the bind sphere centre's distance from the origin plus its radius. The
- * diameter alone is not that bound — bind geometry can sit offset from its origin, and its far side
- * then reaches past the diameter. Model units. */
+/** The farthest a drawn vertex can sit from the translation of the packed bone matrix that poses it:
+ * the crowd shader applies each vertex exactly one packed matrix (render/crowd.ts,
+ * CROWD_BEGIN_VERTEX), whose rotation is the bind vertex's rotation scaled, so the vertex's distance
+ * from that translation is at most its bind-space norm — the bind sphere centre's distance from the
+ * origin plus its radius. The diameter alone is not that norm — bind geometry can sit offset from its
+ * origin, and its far side then reaches past the diameter. Model units. */
 const bindReachOf = (geometry: BufferGeometry): number => {
   const sphere = geometry.boundingSphere;
   return sphere ? sphere.center.length() + sphere.radius : 2;
 };
-
-/** The caster box radius for a placed figure: the rotations reach (bind sphere centre distance plus
- * radius, see bindReachOf) times body scale, plus the largest root translation its clips author, which
- * nothing ties to the geometry radius. Metres. */
-const casterRadiusOf = (
-  geometry: BufferGeometry,
-  body: ActorBody,
-  clips: ActorClips,
-  fusedMass: ActorFigureFile['fusedMass'],
-): number =>
-  bindReachOf(geometry) * body.scale +
-  authoredRootMotion(clips, fusedMass ? (fusedMass.originOffset.map((c) => c / fusedMass.scale) as Vec3) : undefined) *
-    body.scale +
-  0.3;
 
 /**
  * Builds a variant's selection-only shadow twin (see the module header): the crowd geometry's vertex
@@ -953,7 +900,6 @@ export class MobActorMeshes implements ActorRenderer {
         crowdSlotAttr,
         shadowPasses,
         casterReach: bindReachOf(geometry) * body.scale + 0.3,
-        casterRadius: casterRadiusOf(geometry, body, clips, fusedMass),
         scratch: allocateBoneTransforms(bones.length),
         freeLocalSlots,
         liveIds: [],
@@ -2806,9 +2752,9 @@ export class MobActorMeshes implements ActorRenderer {
   /**
    * Makes the shadow pass owning `slot` draw only the figures that can cast into the volume `casts`
    * accepts — shadows.ts calls this per light, before that light's map is drawn, and each pass reads its
-   * own twin. A figure stays within `casterRadius` of its placement (see Variant.casterRadius), so a box
-   * `casts` rejects cannot shadow the volume; holders whose position is not yet known (first sync
-   * pending) stay selected rather than lose a shadow. The twin reads the same revealed row the crowd
+   * own twin. A figure's caster box bounds what its packed row actually draws (see holderCasterBox),
+   * so a box `casts` rejects cannot shadow the volume; holders whose position is not yet known (first
+   * sync pending) stay selected rather than lose a shadow. The twin reads the same revealed row the crowd
    * mesh draws (`crowdSlotAttr` at the holder's live instance), so hidden figures stay hidden here too.
    * Only this slot's twin stays visible, so the pass about to draw sees its own rows and no other pass's.
    */
@@ -2850,12 +2796,14 @@ export class MobActorMeshes implements ActorRenderer {
   private readonly casterBox = new Box3();
   private readonly casterPoint = new Vector3();
 
-  /** The world box a holder's drawn figure occupies. A placed figure — a live actor at its placement,
-   * or a corpse no ragdoll carries — stays within `casterRadius` of that point: the rotations reach plus
-   * the largest root translation its clips author. Holders drawn from live physics — a corpse ragdoll, a
-   * live crawl-fall body (packCrawlFall packs world-space transforms into state.drawnFall), debris — are
-   * boxed around their actual bone positions, which any root motion has already moved, so their box
-   * needs only the rotations reach. Reused per call. */
+  /** The world box a holder's drawn figure occupies, read from what it actually draws. A figure packed
+   * into its crowd row — a live actor at its placement, or a corpse no ragdoll carries — is boxed
+   * around that row's packed bone translations (boxAroundRow): the row's matrices are exactly what the
+   * mesh and the twin draw, so every pivot, ancestor and root translation a pose authored is already
+   * inside them. Holders drawn from live physics — a corpse ragdoll, a live crawl-fall body (packCrawlFall
+   * packs world-space transforms into state.drawnFall), debris — are boxed around their actual bone
+   * positions or body centre, which any root motion has already moved, so their box needs only the
+   * rotations reach. Reused per call. */
   private holderCasterBox(key: SlotKey, variant: Variant): Box3 | undefined {
     if (typeof key === 'number') {
       const state = this.states.get(key);
@@ -2869,21 +2817,19 @@ export class MobActorMeshes implements ActorRenderer {
       if (corpse.ragdoll) {
         return this.boxAroundBones(corpse.ragdoll.transforms.values(), variant.casterReach);
       }
-      // A death-clip corpse falls at its frozen death point; its clip's authored root motion is inside
-      // casterRadius like any placed figure.
-      return this.boxAroundPoint(corpse.worldPos[0], corpse.worldPos[1], corpse.worldPos[2], variant.casterRadius);
+      // A death-clip corpse falls at its frozen death point, packed into its row like any placed figure.
+      return this.boxAroundRow(corpse.globalRow, variant);
     }
     const center = this.debris.get(key)?.body.center;
     return center ? this.boxAroundPoint(center[0], center[1], center[2], variant.casterReach) : undefined;
   }
 
-  /** A live actor's caster box: its crawl-fall bones if a fall is drawing, else its placement. */
+  /** A live actor's caster box: its crawl-fall bones if a fall is drawing, else its packed row. */
   private liveCasterBox(state: ActorRenderState, variant: Variant): Box3 | undefined {
     if (state.drawnFall) {
       return this.boxAroundBones(state.drawnFall.values(), variant.casterReach);
     }
-    const placement = state.lastPlacement;
-    return placement ? this.boxAroundPoint(placement.x, placement.y, placement.z, variant.casterRadius) : undefined;
+    return state.lastPlacement ? this.boxAroundRow(state.globalRow, variant) : undefined;
   }
 
   /** The box `radius` metres around a point, in this.casterBox. */
@@ -2903,6 +2849,33 @@ export class MobActorMeshes implements ActorRenderer {
       box.expandByPoint(this.casterPoint.set(t[0], t[1], t[2]));
     }
     return box.isEmpty() ? undefined : box.expandByScalar(radius);
+  }
+
+  /** The box around the packed bone translations a figure's crowd row holds, expanded by the rotations
+   * reach: a drawn vertex sits at most that far from the translation of the packed matrix that poses it
+   * (see Variant.casterReach), and the row's matrices are exactly what the mesh and the twin draw — so
+   * every pivot, ancestor and root translation a pose authored is already inside the box. Read straight
+   * back from the crowd texture's own data, so no pose is recomputed here. A bone packed zero
+   * (packZeroBone — severed) draws nothing, so its zero translation is skipped; a row whose every bone
+   * is zero (never packed, or fully severed) has no box, and its holder stays selected rather than lose
+   * a shadow. Reuses this.casterBox. */
+  private boxAroundRow(globalRow: number, variant: Variant): Box3 | undefined {
+    const box = this.casterBox.makeEmpty();
+    const data = this.textureData;
+    for (let bone = 0; bone < variant.bones.length; bone++) {
+      const i = crowdTexelIndex(this.layout, globalRow, bone);
+      let packed = false;
+      for (let k = 0; k < 12; k++) {
+        if (data[i + k] !== 0) {
+          packed = true;
+          break;
+        }
+      }
+      if (packed) {
+        box.expandByPoint(this.casterPoint.set(data[i + 3]!, data[i + 7]!, data[i + 11]!));
+      }
+    }
+    return box.isEmpty() ? undefined : box.expandByScalar(variant.casterReach);
   }
 
   /** Adds `headYawRad` as an extra yaw on the head bone, innermost (applied before whatever sway/tilt
