@@ -400,6 +400,11 @@ export class Streamer {
       return;
     }
     this.prefetch(pcx, pcz);
+    if (this.jobs?.failure) {
+      // A request that could not be sent fails this update, so no later admission covers it.
+      this.failGeneration(new Error(this.jobs.failure));
+      return;
+    }
     this.onTerrainReady?.(x, z);
     this.dispatchSky();
     for (const [dx, dz] of this.meshOffsets) {

@@ -26,7 +26,14 @@ class HeldTerrainPort implements TerrainPort {
   private readonly serve = createTerrainService((reply, transfer) =>
     this.held.push(structuredClone(reply, { transfer })),
   );
+  private readonly throwOn: ToTerrain['type'] | undefined;
+  constructor(throwOn?: ToTerrain['type']) {
+    this.throwOn = throwOn;
+  }
   post(msg: ToTerrain): void {
+    if (msg.type === this.throwOn) {
+      throw new Error(`fixture ${msg.type} post`);
+    }
     this.posted.push(msg);
     this.serve(structuredClone(msg));
   }
@@ -71,7 +78,13 @@ const CENTRES: [number, number][] = [
   ...Array.from({ length: 6 }, (): [number, number] => [0, 0]),
 ];
 
-const harness = (workers?: { count: number; lookaheadColumns: number; maxOutstandingColumns: number }) => {
+const harness = (workers?: {
+  count: number;
+  lookaheadColumns: number;
+  maxOutstandingColumns: number;
+  /** Posting this message type throws, as a port whose worker cannot take it does. */
+  throwOn?: ToTerrain['type'];
+}) => {
   const world = new World();
   const evaluator = createTerrainEvaluator(workerPlan());
   const counts = { main: 0, arrivals: 0 };
@@ -104,7 +117,7 @@ const harness = (workers?: { count: number; lookaheadColumns: number; maxOutstan
       terrainWorkers: {
         ...workers,
         source: () => {
-          const port = new HeldTerrainPort();
+          const port = new HeldTerrainPort(workers.throwOn);
           ports.push(port);
           return port;
         },
@@ -250,8 +263,12 @@ describe('speculative terrain workers', () => {
         source.addChunk(chunk);
       }
       source.touchColumn(0, 0);
-      live.world.restoreColumns(structuredClone(source.snapshotColumns(String)), Number);
-      live.world.removeChunk(0, scale.minCy, 0);
+      // A malformed save: its touched column lacks one chunk.
+      const saved = structuredClone(source.snapshotColumns(String)).map((column) => ({
+        ...column,
+        chunks: column.chunks.filter(({ cy }) => cy !== scale.minCy),
+      }));
+      live.world.restoreColumns(saved, Number);
       const errors: unknown[] = [];
       live.streamer.onGenerationError = (error) => errors.push(error);
       for (let settle = 0; settle < 4; settle++) {
@@ -279,6 +296,12 @@ describe('speculative terrain workers', () => {
       const { ticket, cx, cz } = port.generates[0]!;
       port.handlers!.message({ type: 'column', epoch: port.epoch, ticket, cx, cz, chunks: [] });
     },
+    'null reply': (port) => port.handlers!.message(null as never),
+    'reply of an unknown type': (port) => {
+      // A real column for a wanted ticket, apart from its type.
+      const column = port.held.find((reply): reply is ColumnReply => reply.type === 'column')!;
+      port.handlers!.message({ ...column, type: 'not-a-column' } as never);
+    },
   };
 
   it.each(Object.keys(faults))(
@@ -297,6 +320,23 @@ describe('speculative terrain workers', () => {
       expect(live.streamer.failure).toContain('Terrain worker failed');
       expect(live.trace).toHaveLength(arrived);
       expect(live.ports[0]!.terminated).toBe(true);
+    },
+  );
+
+  it.each(['init', 'generate'] as const)(
+    'fails generation in the same update when posting %s throws, and ends the workers',
+    (throwOn) => {
+      const live = harness({ count: 1, lookaheadColumns: 4, maxOutstandingColumns: 4, throwOn });
+      const errors: unknown[] = [];
+      live.streamer.onGenerationError = (error) => errors.push(error);
+      live.ports[0]!.deliver(POLICIES.absent);
+      live.update([0, 0]);
+      expect(errors).toHaveLength(1);
+      expect(live.streamer.failure).toContain(`fixture ${throwOn} post`);
+      expect(live.ports[0]!.terminated).toBe(true);
+      const arrived = live.trace.length;
+      live.update([0, 0]);
+      expect(live.trace).toHaveLength(arrived);
     },
   );
 

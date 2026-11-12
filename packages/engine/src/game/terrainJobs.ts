@@ -55,14 +55,19 @@ export class TerrainJobs {
     this.lookahead = options.lookaheadColumns;
     this.maxOutstanding = options.maxOutstandingColumns;
     this.scale = scale;
-    for (let i = 0; i < options.count; i++) {
-      const slot: Slot = { port: options.source(), ready: false, running: 0 };
-      this.slots.push(slot);
-      slot.port.listen({
-        message: (reply) => this.receive(slot, reply),
-        failure: (reason) => this.fail(reason),
-      });
-      slot.port.post({ type: 'init', epoch: this.epoch, plan });
+    try {
+      for (let i = 0; i < options.count && !this.disposed; i++) {
+        const slot: Slot = { port: options.source(), ready: false, running: 0 };
+        this.slots.push(slot);
+        slot.port.listen({
+          message: (reply) => this.receive(slot, reply),
+          failure: (reason) => this.fail(reason),
+        });
+        slot.port.post({ type: 'init', epoch: this.epoch, plan });
+      }
+    } catch (error) {
+      // Latched like any other fault; the streamer reports it at its next update.
+      this.fail(reasonOf(error));
     }
   }
 
@@ -99,10 +104,15 @@ export class TerrainJobs {
       }
       const ticket = this.nextTicket;
       this.nextTicket += 1;
+      try {
+        slot.port.post({ type: 'generate', epoch: this.epoch, ticket, cx, cz });
+      } catch (error) {
+        this.fail(reasonOf(error));
+        return;
+      }
       this.tickets.set(ticket, { cx, cz, slot, wanted: true });
       this.wantedTickets.set(key, ticket);
       slot.running += 1;
-      slot.port.post({ type: 'generate', epoch: this.epoch, ticket, cx, cz });
     }
   }
 
@@ -143,8 +153,16 @@ export class TerrainJobs {
     this.dispose();
   }
 
-  private receive(slot: Slot, msg: FromTerrain): void {
-    if (this.disposed || msg.epoch !== this.epoch) {
+  /** Checks the envelope first: a port's reply is whatever arrived, whatever its declared type says. */
+  private receive(slot: Slot, msg: unknown): void {
+    if (this.disposed) {
+      return;
+    }
+    if (!isEnvelope(msg)) {
+      this.fail('malformed reply');
+      return;
+    }
+    if (msg.epoch !== this.epoch) {
       return;
     }
     if (msg.type === 'ready') {
@@ -152,7 +170,7 @@ export class TerrainJobs {
       return;
     }
     if (msg.type === 'failed') {
-      this.fail(msg.reason);
+      this.fail(String(msg.reason));
       return;
     }
     const ticket = this.tickets.get(msg.ticket);
@@ -169,7 +187,17 @@ export class TerrainJobs {
         this.staged.set(key, chunks);
       }
     } catch (error) {
-      this.fail(error instanceof Error ? error.message : String(error));
+      this.fail(reasonOf(error));
     }
   }
 }
+
+const REPLY_TYPES: readonly unknown[] = ['ready', 'column', 'failed'] satisfies FromTerrain['type'][];
+
+const isEnvelope = (msg: unknown): msg is FromTerrain =>
+  typeof msg === 'object' &&
+  msg !== null &&
+  REPLY_TYPES.includes((msg as { type?: unknown }).type) &&
+  Number.isInteger((msg as { epoch?: unknown }).epoch);
+
+const reasonOf = (error: unknown): string => (error instanceof Error ? error.message : String(error));

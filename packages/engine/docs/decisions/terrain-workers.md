@@ -31,6 +31,8 @@ lookahead and outstanding-work bound are graphics tuning in content, not a hardw
 they trade device resources against streaming responsiveness. Retired requests keep their capacity
 until they reply, so moving back and forth cannot grow the queue.
 
-**Failures are not hidden.** An init, request, reply or worker fault latches and reaches the
-streamer's generation failure path at its next update, before main could cover the column with its
-own evaluation. A worker never answers a fault with empty terrain, and a failed worker is never retried.
+**Failures are not hidden.** A fault creating, initializing or messaging a worker, a reply that is
+not a well-formed message, and a fault the worker reports all latch and reach the streamer's
+generation failure path at an update boundary, before main could cover the column with its own
+evaluation. A well-formed reply from an earlier epoch is only stale and is dropped. A worker never
+answers a fault with empty terrain, and a failed worker is never retried.
