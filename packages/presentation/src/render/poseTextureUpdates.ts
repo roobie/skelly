@@ -77,29 +77,39 @@ export class PoseTextureUpdates {
     this.touched.clear();
   }
 
+  /** Each call costs far more than a row's texels, so changed rows that touch go up as one rectangle. */
   upload(renderer: Pick<WebGLRenderer, 'initTexture' | 'copyTextureToTexture'>): void {
     if (this.contextLost) {
       return;
     }
     renderer.initTexture(this.texture);
     const { data, width } = this.texture.image;
+    const rowComponents = width * 4;
     const ranges = this.texture.updateRanges;
     ranges.sort((a, b) => a.start - b.start);
     for (let i = 0; i < ranges.length; i += 1) {
-      const { start, count } = ranges[i]!;
-      let end = start + count;
-      const row = Math.floor(start / (width * 4));
+      let { start } = ranges[i]!;
+      let end = start + ranges[i]!.count;
+      const firstRow = Math.floor(start / rowComponents);
+      let lastRow = firstRow;
       while (i + 1 < ranges.length) {
         const next = ranges[i + 1]!;
-        if (next.start > end || Math.floor(next.start / (width * 4)) !== row) {
+        const row = Math.floor(next.start / rowComponents);
+        if (row > lastRow + 1) {
           break;
         }
+        lastRow = row;
         end = Math.max(end, next.start + next.count);
         i += 1;
       }
+      if (lastRow > firstRow) {
+        start = firstRow * rowComponents;
+        end = (lastRow + 1) * rowComponents;
+      }
+      const height = lastRow - firstRow + 1;
       // Firefox can serialize skipped texels too; bound the view instead of using UNPACK_*.
-      this.source.image = { data: data!.subarray(start, end), width: (end - start) / 4, height: 1 };
-      this.destination.set((start / 4) % width, Math.floor(start / (width * 4)));
+      this.source.image = { data: data!.subarray(start, end), width: (end - start) / 4 / height, height };
+      this.destination.set((start / 4) % width, firstRow);
       renderer.copyTextureToTexture(this.source, this.texture, null, this.destination);
     }
     this.texture.clearUpdateRanges();
