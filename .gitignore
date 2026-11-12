@@ -2,6 +2,7 @@ node_modules/
 test-results/
 /tools/jsonnet/bin/
 /tools/skelly-assets/installed.json
+/tools/skelly-assets/archives/
 # Agent mail (maildirs and scratch) lives in the main checkout, untracked.
 .agent-mail/
 

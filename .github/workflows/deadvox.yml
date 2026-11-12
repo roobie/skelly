@@ -74,6 +74,11 @@ jobs:
         with:
           path: packages/skelly-assets/tools/jsonnet/bin
           key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
+      - name: Cache pinned skelly-assets release
+        uses: actions/cache@v4
+        with:
+          path: tools/skelly-assets/archives
+          key: skelly-assets-${{ runner.os }}-${{ hashFiles('tools/skelly-assets/release.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -136,6 +141,11 @@ jobs:
         with:
           path: packages/skelly-assets/tools/jsonnet/bin
           key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
+      - name: Cache pinned skelly-assets release
+        uses: actions/cache@v4
+        with:
+          path: tools/skelly-assets/archives
+          key: skelly-assets-${{ runner.os }}-${{ hashFiles('tools/skelly-assets/release.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -12,6 +12,9 @@ const ROOT_CI_COMMAND = /\bnpm\s+run\s+ci(?:\s|$)/;
 const CONTENT_CHECK_COMMAND = /\bnpm run content:check\b/;
 const SHARED_CHECKS_COMMAND = /\bnpm run ci:checks\b/;
 const PRE_PUSH_SHARED_CHECKS = /run_check 'npm run ci:checks' run ci:checks/;
+const ASSETS_SETUP_COMMAND = /\bassets:setup\b/;
+const RELEASE_PIN_HASH = /hashFiles\('tools\/skelly-assets\/release\.json'\)/;
+const RELEASE_CACHE_PATHS = ['tools/skelly-assets/archives'];
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
@@ -101,4 +104,32 @@ test('every workflow running root CI installs lint workflow prefixes and caches 
       assert.deepEqual(missing, [], `${path} cache-dependency-path must include every lint prefix lockfile`);
     }
   }
+});
+
+test('every pinned skelly-assets install follows a release cache that lets setup skip the download', () => {
+  // A release outage must not fail CI; the cache holds the archives whose digests setup verifies against the pin (#1665).
+  let installs = 0;
+  for (const path of workflowPaths) {
+    for (const [jobId, job] of Object.entries(parse(readFileSync(path, 'utf8')).jobs ?? {})) {
+      const steps = job.steps ?? [];
+      steps.forEach((step, index) => {
+        if (typeof step.run !== 'string' || !ASSETS_SETUP_COMMAND.test(step.run)) {
+          return;
+        }
+        installs += 1;
+        const cache = steps.slice(0, index).find((earlier) => {
+          if (typeof earlier.uses !== 'string' || !earlier.uses.startsWith('actions/cache@')) {
+            return false;
+          }
+          const cached = new Set(String(earlier.with?.path ?? '').split(CACHE_PATH_SEPARATOR));
+          return (
+            RELEASE_CACHE_PATHS.every((releasePath) => cached.has(releasePath)) &&
+            RELEASE_PIN_HASH.test(String(earlier.with?.key ?? ''))
+          );
+        });
+        assert.ok(cache, `${path} ${jobId}: assets:setup needs a preceding cache of the pinned release archives`);
+      });
+    }
+  }
+  assert.ok(installs > 0, 'at least one workflow installs the pinned skelly-assets release');
 });

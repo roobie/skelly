@@ -26,7 +26,9 @@ merge and can drift from their source, while a release pins bytes immutably and 
 producer. The gitlink is the commit the pinned release tag points to, so the tool sources
 skelly reads from the submodule and the built output it installs cannot drift apart. Setup
 installs only the packs one of skelly's mods bundles, because the mods are the one list of
-what skelly ships. See `tools/skelly-assets/release.json` and
+what skelly ships. Setup verifies each release archive's SHA-256 against the pin before
+extracting it, downloading again when its archive cache holds missing or corrupted bytes,
+so a restored cache can never install unverified content. See `tools/skelly-assets/release.json` and
 `tools/skelly-assets/setup.mjs`, `assertGitlinkMatchesRelease`. Pipeline sources are
 copies from skelly, with each package's source commit recorded in
 `packages/skelly-assets/tools/README.md`; git history stays in skelly rather than being
