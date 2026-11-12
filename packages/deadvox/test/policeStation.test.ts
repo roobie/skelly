@@ -20,7 +20,7 @@ import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
-import { defaultStartOf } from './fixtures/scenario.ts';
+import { authoredCityScenarios, defaultStartOf } from './fixtures/scenario.ts';
 
 const content = startupContent();
 const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
@@ -170,7 +170,7 @@ it('places exactly one police armoury in each gauntlet plan', () => {
   expect(station).toBeDefined();
   const locks = new Set(station.pieces.flatMap(({ lock }) => (lock ? [lock.id] : [])));
   expect(locks.size).toBeGreaterThan(0);
-  const scenarios = [...registry.scenarios.values()];
+  const scenarios = authoredCityScenarios(registry);
   expect(scenarios.length).toBeGreaterThan(0);
   for (const scenario of scenarios) {
     const plan = buildCityPlan({

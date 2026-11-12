@@ -313,6 +313,26 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.json"
     },

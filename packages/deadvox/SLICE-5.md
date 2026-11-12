@@ -16,7 +16,7 @@ open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
-`mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`, `rule`. The bear trap is
+`packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`, `rule`. The bear trap is
 built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
 defending?**
@@ -320,13 +320,12 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario waves and region integration.** #313's rules and their
-   one-shot state are built; see `DESIGN.md`, "Scenario events". The first wave lives
-   in the playtest scenario mod because the playtest adopts it, with its own arrival
-   point, but no shipped scenario imports it yet; see
-   `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`, `rule`. Adopt it in a
-   base-building scenario pack, then add the recurring, escalating waves under
-   "Settled event and playtest rules", then the new site and its supplies under
-   "Settled base-building playtest rules". Cross the catch-up horizon with a working and
+   one-shot state are built; see `DESIGN.md`, "Scenario events". The Holdout pack
+   adopts the first wave with its own arrival point; see
+   `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`, `rule`.
+   Add the recurring, escalating waves under "Settled event and playtest rules", then
+   grow the site's content and supplies under "Settled base-building playtest rules".
+   Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the waves and recovery
    with charged attacks and stagger available; ordinary ambient attention remains
@@ -364,20 +363,22 @@ lane the order is a dependency; across lanes only the joins named here hold.
 - **Built systems.** Appliance controls and processes after placement; brute
   knockback and displacement independently, since nothing above needs it; fire last,
   under "Settled fire and exposure rules".
-- **Playtest pack.** A scenario pack adopting the first wave on an existing authored
-  site first, so the other lanes have a shipped scenario to test in; recurrence and
-  escalation next; the new small site and its supplies after, joined to the
-  construction lane's take-apart command because bulk stock and rubble clearing go
-  through it; then the region proofs
-  of package 7. The site stays a content value so the later site round changes
-  content, not the pack's rules.
+- **Playtest pack.** The Holdout pack has adopted the first wave on an empty site, so
+  the other lanes have a shipped scenario to test in; recurrence and escalation next;
+  the site's supplies and later procedural content after, joined to the construction
+  lane's take-apart command because bulk stock and rubble clearing go through it; then
+  the region proofs of package 7. The site starts empty because an existing site's
+  buildings are not useful for the base-building loop, and it grows step by step so
+  each addition is deliberate. The site stays a content value so the later site rounds
+  change content, not the pack's rules.
 
 The next rounds, in dispatch order:
 
-1. **Adopt the first wave in a base-building scenario pack.** A committed scenario
-   pack on an existing authored site with buildings, so the other lanes have a
-   shipped scenario to test in before the new site exists; see `docs/url-mods.md`,
-   "Committed scenarios", and `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`,
+1. **Adopt the first wave in a base-building scenario pack: done.** The committed
+   Holdout pack starts on the empty site the Playtest pack lane names, so the other
+   lanes have a shipped scenario to test in; see `docs/url-mods.md`,
+   "Committed scenarios", and
+   `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`,
    `rule`. No engine code, recurrence, shelter identity or supply authoring: those
    are the later playtest-pack rounds.
 
