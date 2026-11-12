@@ -212,7 +212,10 @@ const ScatterCloudsSchema = strictObject({
   drift: tuple([FiniteNumber, FiniteNumber]),
   /** How fast the noise's octaves slide past one another per second, so the clouds billow rather than slide as one. */
   billow: FiniteNonNegative,
-  /** The large-scale swing in cover that leaves clear gaps beside dense banks: its frequency and its reach in cover. */
+  /**
+   * The large-scale swing in cover that leaves clear gaps beside dense banks: its frequency and its reach in cover;
+   * a cover thinner than the reach thins the whole field with it.
+   */
   region: strictObject({ scale: FinitePositive, strength: UnitFraction }),
   /** How fast a cloud turns opaque past its edge. */
   density: FinitePositive,
