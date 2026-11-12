@@ -233,11 +233,26 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return fract( sin( dot( cell, vec2( 127.1, 311.7 ) ) ) * 43758.5453 );
   }
 
+  const float TAU = 6.283185307179586;
+  // The star field's cells to the radian, each way: the spacing and star size the content's star field was tuned
+  // against near the horizon, where a player looks most.
+  const float STAR_CELLS_PER_RADIAN = 54.0;
+
+  // Cells lie in rings of equal elevation, each ring holding as many whole cells as fit round it, so a cell is as
+  // wide as it is tall at every elevation and a ring's seam falls on a cell edge. A star is measured on the sphere,
+  // not in cell space, so it is round wherever it stands, and its centre stays a radius inside its cell, so the
+  // cell's edge never cuts it.
   float stars ( vec3 dir ) {
-    vec2 sph = vec2( atan( dir.z, dir.x ) * 38.2, asin( clamp( dir.y, -1.0, 1.0 ) ) * 76.4 );
-    vec2 cell = floor( sph );
-    vec2 inCell = fract( sph ) - vec2( hash( cell ), hash( cell + 19.7 ) );
-    float star = ( 1.0 - smoothstep( 0.0, uStarSize, length( inCell ) ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
+    float row = floor( asin( clamp( dir.y, -1.0, 1.0 ) ) * STAR_CELLS_PER_RADIAN );
+    float ringCells = max( 1.0, floor( TAU * cos( ( row + 0.5 ) / STAR_CELLS_PER_RADIAN ) * STAR_CELLS_PER_RADIAN ) );
+    vec2 cell = vec2( floor( ( atan( dir.z, dir.x ) / TAU + 0.5 ) * ringCells ), row );
+    float margin = min( uStarSize, 0.5 );
+    vec2 centre = cell + margin + vec2( hash( cell ), hash( cell + 19.7 ) ) * ( 1.0 - 2.0 * margin );
+    float azimuth = ( centre.x / ringCells - 0.5 ) * TAU;
+    float elevation = centre.y / STAR_CELLS_PER_RADIAN;
+    vec3 starDir = vec3( cos( elevation ) * cos( azimuth ), sin( elevation ), cos( elevation ) * sin( azimuth ) );
+    float apart = length( dir - starDir ) * STAR_CELLS_PER_RADIAN;
+    float star = ( 1.0 - smoothstep( 0.0, uStarSize, apart ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
     float twinkle = 1.0 - uStarTwinkle * ( 1.0 - hash( cell + 3.1 ) );
     return star * twinkle * smoothstep( 0.0, 0.25, dir.y );
   }
