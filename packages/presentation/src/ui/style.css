@@ -1994,8 +1994,8 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .combo-box-field.game-cursor-hover {
   border-color: var(--accent);
 }
-/* Fixed to the viewport so a scrolling panel can't clip it. Positioned without a z-index, it paints over
-   the host panel's content and stays in the host's layer. */
+/* Fixed to the viewport so a scrolling panel can't clip it. It has its own layer so later sibling detail
+   content in the host panel does not paint over it. */
 .combo-box-list {
   position: fixed;
   z-index: var(--ui-layer-combo-list);
