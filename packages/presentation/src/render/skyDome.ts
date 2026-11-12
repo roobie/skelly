@@ -233,11 +233,32 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return fract( sin( dot( cell, vec2( 127.1, 311.7 ) ) ) * 43758.5453 );
   }
 
+  const float TAU = 6.283185307179586;
+  // The star field's cells to the radian, each way: the spacing and star size the content's star field was tuned
+  // against near the horizon, where a player looks most.
+  const float STAR_CELLS_PER_RADIAN = 54.0;
+
+  // Cells lie in rings of equal elevation, each ring holding as many whole cells as fit round it, so a cell is about
+  // as wide as it is tall, except within a few rings of the zenith, and a ring's seam falls on a cell edge. A star is
+  // measured on the sphere, not in cell space, so it is round wherever it stands. Its centre stays a radius inside
+  // its cell and below the zenith, so the cell's edge does not cut a star whose radius is up to half a cell, outside
+  // those top rings.
   float stars ( vec3 dir ) {
-    vec2 sph = vec2( atan( dir.z, dir.x ) * 38.2, asin( clamp( dir.y, -1.0, 1.0 ) ) * 76.4 );
-    vec2 cell = floor( sph );
-    vec2 inCell = fract( sph ) - vec2( hash( cell ), hash( cell + 19.7 ) );
-    float star = ( 1.0 - smoothstep( 0.0, uStarSize, length( inCell ) ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
+    float row = floor( asin( clamp( dir.y, -1.0, 1.0 ) ) * STAR_CELLS_PER_RADIAN );
+    float ringCells = max( 1.0, floor( TAU * cos( ( row + 0.5 ) / STAR_CELLS_PER_RADIAN ) * STAR_CELLS_PER_RADIAN ) );
+    vec2 cell = vec2( floor( ( atan( dir.z, dir.x ) / TAU + 0.5 ) * ringCells ), row );
+    if ( hash( cell + 7.3 ) < uStarThreshold ) {
+      return 0.0;
+    }
+    float margin = min( uStarSize, 0.5 );
+    vec2 centre = cell + margin + vec2( hash( cell ), hash( cell + 19.7 ) ) * ( 1.0 - 2.0 * margin );
+    // The top ring stops short of a whole cell at the zenith; past it a star's direction would fold over the pole.
+    centre.y = min( centre.y, 0.25 * TAU * STAR_CELLS_PER_RADIAN - margin );
+    float azimuth = ( centre.x / ringCells - 0.5 ) * TAU;
+    float elevation = centre.y / STAR_CELLS_PER_RADIAN;
+    vec3 starDir = vec3( cos( elevation ) * cos( azimuth ), sin( elevation ), cos( elevation ) * sin( azimuth ) );
+    float apart = length( dir - starDir ) * STAR_CELLS_PER_RADIAN;
+    float star = 1.0 - smoothstep( 0.0, uStarSize, apart );
     float twinkle = 1.0 - uStarTwinkle * ( 1.0 - hash( cell + 3.1 ) );
     return star * twinkle * smoothstep( 0.0, 0.25, dir.y );
   }
