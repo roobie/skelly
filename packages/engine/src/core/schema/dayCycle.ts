@@ -42,7 +42,6 @@ const SkyColour = pipe(
 const UnitFraction = pipe(number(), finite(), minValue(0), maxValue(1));
 
 /** The dome's physical (Preetham) sky model in its own terms, so hazier air at a low sun is content, not code. */
-
 const PhysicalSkySchema = strictObject({
   /** Scales the model's radiance before it is mapped into display range; the model's own units are arbitrary. */
   exposure: NonNegative,
