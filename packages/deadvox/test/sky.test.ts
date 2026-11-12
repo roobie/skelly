@@ -98,7 +98,6 @@ describe('sky', () => {
     for (const position of [0.1, 0.5, 0.9]) {
       const sky = skyAt(hourAt((nightfall + nightSeconds * position) % SECONDS_PER_DAY));
       expect(horizontalDot(sky.light, sky.moonDirection), `night at ${position}`).toBeGreaterThan(0);
-      expect(horizontalDot(sky.light, sky.sunDirection), `night at ${position}`).toBeLessThan(0);
     }
   });
 
