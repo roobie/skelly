@@ -9,7 +9,7 @@ const OVERCAST = {
   kind: 'layered',
   clouds: { cover: 1, opacity: 1 },
   physicalWeight: 0,
-  sun: 0,
+  skyLights: 0,
   light: 0.5,
   ambient: 0.6,
   skyColour: { saturation: 0.5, brightness: 0.8 },

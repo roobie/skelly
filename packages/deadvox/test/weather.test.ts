@@ -34,6 +34,8 @@ const overcastSigns = (sky: Sky): number[] => [
   -sky.dome.physical.weight,
   -sky.dome.sun.brightness,
   -sky.dome.sun.glow,
+  -sky.dome.moon.brightness,
+  -sky.dome.stars,
   -sky.lightIntensity,
   -sky.ambientIntensity,
   -chroma(sky.dome.zenith),
@@ -52,7 +54,14 @@ const outOfRange = (sky: Sky): number[] => {
     ...sky.dome.zenith,
     ...sky.dome.horizonGlow,
   ];
-  const brightnesses = [sky.dome.sun.brightness, sky.dome.sun.glow, sky.lightIntensity, sky.ambientIntensity];
+  const brightnesses = [
+    sky.dome.sun.brightness,
+    sky.dome.sun.glow,
+    sky.dome.moon.brightness,
+    sky.dome.stars,
+    sky.lightIntensity,
+    sky.ambientIntensity,
+  ];
   return [...fractions.filter((value) => value < 0 || value > 1), ...brightnesses.filter((value) => value < 0)];
 };
 
@@ -151,7 +160,7 @@ describe('cloudiness and rain in the sky', () => {
     }
   });
 
-  it('moves the sky one way only as either rises: more cloud, less physical sky, sun and light, greyer colours', () => {
+  it('moves the sky one way only as either rises: more cloud, less physical sky, sky lights and light, greyer colours', () => {
     for (const hour of HOURS) {
       for (const state of ['cloudiness', 'rain'] as const) {
         const signs = STEPS.map((level) => overcastSigns(skyInWeather(skyAt(hour), { [state]: level })));
@@ -184,6 +193,24 @@ describe('cloudiness and rain in the sky', () => {
     expect(sum(rain.dome.zenith)).toBeLessThan(sum(overcast.dome.zenith));
   });
 
+  it('dims the moon and the stars by the same share as the sun, and leaves them all in fair weather', () => {
+    const base = skyAt(phaseMidpoint('night') / 3600);
+    const lit: Sky = {
+      ...base,
+      dome: {
+        ...base.dome,
+        stars: 1,
+        moon: { ...base.dome.moon, brightness: 1 },
+        sun: { ...base.dome.sun, brightness: 1, glow: 1 },
+      },
+    };
+    const lights = ({ dome }: Sky) => [dome.sun.brightness, dome.sun.glow, dome.moon.brightness, dome.stars];
+    expect(lights(skyInWeather(lit, {}))).toEqual([1, 1, 1, 1]);
+    const rain = lights(skyInWeather(lit, { rain: 1 }));
+    expect(rain[0]).toBeLessThan(1);
+    expect(rain).toEqual([rain[0], rain[0], rain[0], rain[0]]);
+  });
+
   it('brings its own level of overcast above fair weather with rain, at least as much as the same cloudiness', () => {
     for (const hour of HOURS) {
       for (const level of STEPS) {
@@ -205,7 +232,7 @@ describe('cloudiness and rain in the sky', () => {
       kind: 'layered',
       clouds: { cover: 1, opacity: 1 },
       physicalWeight: 0,
-      sun: 0,
+      skyLights: 0,
       light: 0,
       ambient: 0,
       skyColour: { saturation: 0, brightness: 0 },
