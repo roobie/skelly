@@ -291,8 +291,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec2 uv = mat2( c, s, -s, c ) * plane * layer.x + layer.zw * uSimSeconds;
     uv += ( texture2D( tex, uv * 0.31 + vec2( 0.37, 0.71 ) ).rg - 0.5 ) * uWarp;
     vec2 noise = texture2D( tex, uv ).rg;
-    // Cover 0 is clear sky however high the noise rises.
-    return layeredCover( noise.r + ( noise.g - 0.5 ) * 0.35, uCoverGain * uCover, uEdgeSoftness ) * step( 0.0001, uCover );
+    return layeredCover( noise.r + ( noise.g - 0.5 ) * 0.35, uCoverGain * uCover, uEdgeSoftness );
   }
 
   // The scatter kind's noise, after three's Sky addon: gradient noise from a hash without sin, so every GPU draws the
