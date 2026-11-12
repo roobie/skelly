@@ -118,7 +118,12 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     setNightVisionFlare: vi.fn(),
     setSky: vi.fn(),
   };
-  const shadows = { restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) };
+  const shadows = {
+    restore: vi.fn(),
+    attachTorches: vi.fn(),
+    attachCrowd: vi.fn(),
+    warmUp: vi.fn(() => Promise.resolve()),
+  };
   const engine = {
     config: { ...makeConfig(73, 64, 0.5), actors: 'boxes' },
     registry: inventory.registry,
@@ -280,7 +285,13 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       setNightVisionFlare: vi.fn(),
       setSky: vi.fn(),
     },
-    shadows: { torchOn: true, restore: vi.fn(), attachTorches: vi.fn(), warmUp: vi.fn(() => Promise.resolve()) },
+    shadows: {
+      torchOn: true,
+      restore: vi.fn(),
+      attachTorches: vi.fn(),
+      attachCrowd: vi.fn(),
+      warmUp: vi.fn(() => Promise.resolve()),
+    },
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,
