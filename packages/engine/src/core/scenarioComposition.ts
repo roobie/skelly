@@ -4,7 +4,7 @@ import type { Vec3 } from './coords.ts';
 import { type PlacementLootSource, pieceItemIssues, placementLootIssues } from './placementLoot.ts';
 import { composeStart, type ScenarioStart, type StartPlacementDef, startTemplate } from './scenarioStart.ts';
 import type { StartDef } from './schema/starts.ts';
-import type { FixedLootOverrideDef, ScenarioDef } from './schema.ts';
+import type { CityScenarioDef, FixedLootOverrideDef, ScenarioDef } from './schema.ts';
 import { admittedChoices, cityRowDepth } from './settlementPools.ts';
 import {
   type CompiledTemplate,
@@ -65,12 +65,12 @@ export interface ScenarioResource {
   };
 }
 
-type CompositionDef = NonNullable<ScenarioDef['composition']>;
-type Lot = NonNullable<ScenarioDef['city']['lots']>[number];
+type CompositionDef = NonNullable<CityScenarioDef['composition']>;
+type Lot = NonNullable<CityScenarioDef['city']['lots']>[number];
 type Issue = [string, string];
 type ExtraKind = 'leads' | 'landmarks' | 'incidentalTemplates';
 
-const leadPlacementIssues = (scenario: ScenarioDef, index: number, size: Vec3): Issue[] => {
+const leadPlacementIssues = (scenario: CityScenarioDef, index: number, size: Vec3): Issue[] => {
   const lead = scenario.composition!.leads[index]!;
   const { city } = scenario;
   const path = `.composition.leads[${index}]`;
@@ -87,7 +87,7 @@ const leadPlacementIssues = (scenario: ScenarioDef, index: number, size: Vec3): 
 
 const extraTemplateIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   service: CompiledTemplate,
   { id, index, kind }: { id: string; index: number; kind: ExtraKind },
 ): Issue[] => {
@@ -234,7 +234,7 @@ const eventCells = (registry: Registry, template: CompiledTemplate): readonly Ve
   return [...cells.values()];
 };
 
-const eventIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
+const eventIssues = (registry: Registry, scenario: CityScenarioDef): Issue[] => {
   const issues: Issue[] = [];
   const events = scenario.composition!.events ?? [];
   const occupied = new Map<string, readonly Vec3[]>();
@@ -304,7 +304,7 @@ const eventIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
   return issues;
 };
 
-const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
+const promisedStockIssues = (registry: Registry, scenario: CityScenarioDef): Issue[] => {
   const composition = scenario.composition!;
   const issues: Issue[] = [];
   const promised = (template: CompiledTemplate, fixedLoot: readonly FixedLootOverrideDef[], path: string) => {
@@ -328,7 +328,7 @@ const promisedStockIssues = (registry: Registry, scenario: ScenarioDef): Issue[]
   return issues;
 };
 
-const lotResourceIssues = (registry: Registry, scenario: ScenarioDef): Issue[] => {
+const lotResourceIssues = (registry: Registry, scenario: CityScenarioDef): Issue[] => {
   const composition = scenario.composition!;
   const issues: Issue[] = [];
   composition.resources.forEach((resource, index) => {
@@ -379,7 +379,7 @@ const lotResourceIssues = (registry: Registry, scenario: ScenarioDef): Issue[] =
 
 export const scenarioCompositionIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   service: CompiledTemplate,
 ): Issue[] => {
   const { composition } = scenario;
@@ -405,7 +405,7 @@ export const scenarioCompositionIssues = (
   return issues;
 };
 
-const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): string[] => {
+const scenarioBuildingSources = (registry: Registry, scenario: CityScenarioDef): string[] => {
   const { city } = scenario;
   if (!registry.mapPools.has(city.pool) || (city.ring && !registry.mapPools.has(city.ring.pool))) {
     return [];
@@ -432,7 +432,11 @@ const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): str
 };
 
 /** The start's promised stock, checked at its template-local anchors; paths are on the start row. */
-export const startFixedLootIssues = (registry: Registry, scenario: ScenarioDef, start: StartPlacementDef): Issue[] => {
+export const startFixedLootIssues = (
+  registry: Registry,
+  scenario: CityScenarioDef,
+  start: StartPlacementDef,
+): Issue[] => {
   const { fixedLoot } = start;
   if (!fixedLoot) {
     return [];
@@ -473,11 +477,13 @@ export const scenarioSources = (
   scenarios: Iterable<ScenarioDef> = registry.scenarios.values(),
   starts: Iterable<StartDef> = registry.starts.values(),
 ) => {
-  const selected = [...scenarios];
+  const all = [...scenarios];
+  const selected = all.filter((scenario) => scenario.kind === 'assembledCity');
   const ids = new Set(selected.map(({ id }) => id));
   const placements = [...starts].flatMap(({ site, placement }) => (placement && ids.has(site) ? [placement] : []));
   return {
     templates: [
+      ...all.flatMap((scenario) => (scenario.kind === 'composedSite' ? scenario.asks.map((ask) => ask.template) : [])),
       ...placements.map(({ template }) => template),
       ...selected.flatMap((scenario) => [
         scenario.serviceTemplate,
@@ -506,7 +512,7 @@ export const scenarioSources = (
 
 export const composeScenario = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   service: Placement,
   {
     floor,

@@ -3,6 +3,7 @@ import { BlockEntities } from '../core/blockEntities.ts';
 import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
+import { composeLayout } from '../core/composeLayout.ts';
 import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
@@ -48,8 +49,22 @@ export interface WorldSetup extends ColumnSource {
   spawn: { pos: Vec3; yaw: number };
 }
 
-const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof ScenarioCitySite>[0]) => Site> = {
-  assembledCity: (options) => new ScenarioCitySite(options),
+type ScenarioSiteOptions = Omit<ConstructorParameters<typeof ScenarioCitySite>[0], 'scenario'> & {
+  scenario: ScenarioDef;
+};
+const SCENARIO_SITES: Record<ScenarioKind, (options: ScenarioSiteOptions) => Site> = {
+  assembledCity: (options) => {
+    if (options.scenario.kind !== 'assembledCity') {
+      throw new Error('Expected assembledCity scenario');
+    }
+    return new ScenarioCitySite({ ...options, scenario: options.scenario });
+  },
+  composedSite: ({ seed, registry, scale, scenario }) => {
+    if (scenario.kind !== 'composedSite') {
+      throw new Error('Expected composedSite scenario');
+    }
+    return new AuthoredSite(seed, registry, scale, composeLayout(seed, registry, scenario).layout);
+  },
 };
 
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {

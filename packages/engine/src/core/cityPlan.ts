@@ -7,7 +7,7 @@ import { BLOCK_SIZE } from './scale.ts';
 import { composeScenario, type ScenarioComposition, scenarioCompositionIssues } from './scenarioComposition.ts';
 import { portalLadderPoint, scenarioPortalIssues, undergroundPortIssues } from './scenarioPortal.ts';
 import { type StartPlacementDef, startTemplate } from './scenarioStart.ts';
-import type { CityBenchmarkDef, MapPoolDef, ScenarioDef } from './schema.ts';
+import type { CityBenchmarkDef, CityScenarioDef, MapPoolDef } from './schema.ts';
 import { admittedChoices, cityRowDepth, eligibilityExclusion } from './settlementPools.ts';
 import { type Rect, rectsOverlap } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -30,7 +30,7 @@ interface PoolRef {
 }
 type PoolChoice = Readonly<PoolRef & { weight: number; atLeast?: number; atMost?: number }>;
 const rowKey = ({ id, style }: PoolRef): string => `${id}@${style ?? ''}`;
-export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring' | 'settlementKind'> & {
+export type CityGrid = Omit<CityScenarioDef['city'], 'pool' | 'streetProps' | 'ring' | 'settlementKind'> & {
   readonly pool?: string | undefined;
   readonly settlementKind?: string | undefined;
   readonly templates: readonly PoolChoice[];
@@ -38,10 +38,10 @@ export type CityGrid = Omit<ScenarioDef['city'], 'pool' | 'streetProps' | 'ring'
   readonly ring?: Readonly<{ pool: string; setback: number; templates: readonly PoolChoice[] }> | undefined;
 };
 type CityShape = Pick<
-  ScenarioDef['city'],
+  CityScenarioDef['city'],
   'blocksX' | 'blocksZ' | 'street' | 'blockX' | 'blockZ' | 'pad' | 'rows' | 'perimeter' | 'bounds'
 > & { readonly ring?: Readonly<{ setback: number }> | undefined };
-type Perimeter = NonNullable<ScenarioDef['city']['perimeter']>;
+type Perimeter = NonNullable<CityScenarioDef['city']['perimeter']>;
 type Cell = readonly [number, number];
 interface Portal {
   readonly upper: Readonly<Vec3>;
@@ -206,7 +206,7 @@ const streetPropChoices = (registry: Registry, id: string): { id: string; weight
   });
 };
 
-const cityDecorationIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
+const cityDecorationIssues = (registry: Registry, scenario: CityScenarioDef): [string, string][] => {
   const { city } = scenario;
   const issues: [string, string][] = [];
   const { perimeter, ring } = city;
@@ -238,7 +238,11 @@ const cityDecorationIssues = (registry: Registry, scenario: ScenarioDef): [strin
   return issues;
 };
 
-const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter: Perimeter): [string, string][] => {
+const dressingIssues = (
+  registry: Registry,
+  city: CityScenarioDef['city'],
+  perimeter: Perimeter,
+): [string, string][] => {
   const issues: [string, string][] = [];
   const depth = cityRowDepth(city);
   const { ring } = city;
@@ -267,7 +271,7 @@ const dressingIssues = (registry: Registry, city: ScenarioDef['city'], perimeter
   return issues;
 };
 
-const perimeterIssues = (registry: Registry, scenario: ScenarioDef, perimeter: Perimeter): [string, string][] => {
+const perimeterIssues = (registry: Registry, scenario: CityScenarioDef, perimeter: Perimeter): [string, string][] => {
   const { city } = scenario;
   const blocks = [perimeter.block, ...(perimeter.wire ? [perimeter.wire.block] : [])];
   const issues: [string, string][] = blocks
@@ -300,7 +304,7 @@ const choicesOf = (
   }));
 
 /** The scenario's city with its named pools resolved to weighted building ids. */
-export const cityGridOf = (registry: Registry, city: ScenarioDef['city']): CityGrid => {
+export const cityGridOf = (registry: Registry, city: CityScenarioDef['city']): CityGrid => {
   const { pool, ring, ...grid } = city;
   const resolve = (id: string, along: number) =>
     choicesOf(admittedChoices(registry, id, city.settlementKind, { along, depth: cityRowDepth(city) }));
@@ -338,7 +342,7 @@ const guaranteedSlots = (
 };
 
 /** Building slots the edge ring always has: one per cell along each side. */
-const ringSlots = (city: ScenarioDef['city']): number => 4 * (city.blocksX + city.blocksZ);
+const ringSlots = (city: CityScenarioDef['city']): number => 4 * (city.blocksX + city.blocksZ);
 
 const poolRowIssues = (registry: Registry, pool: MapPoolDef, at: string): [string, string][] =>
   pool.choices.flatMap(({ ref }, index): [string, string][] => {
@@ -360,7 +364,7 @@ const poolRowIssues = (registry: Registry, pool: MapPoolDef, at: string): [strin
     return building.eligibility ? [] : [[choiceAt, `${ref.kind} "${ref.id}" has no building eligibility`]];
   });
 
-const cityPoolIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
+const cityPoolIssues = (registry: Registry, scenario: CityScenarioDef): [string, string][] => {
   const { city } = scenario;
   const depth = cityRowDepth(city);
   const pools = [
@@ -432,7 +436,7 @@ const benchmarkPoolIssues = (registry: Registry, benchmark: CityBenchmarkDef): [
   return issues;
 };
 
-const scenarioConsumers = ({ id, city }: ScenarioDef): SettlementConsumer[] => {
+const scenarioConsumers = ({ id, city }: CityScenarioDef): SettlementConsumer[] => {
   const consumers: SettlementConsumer[] = [];
   const depth = cityRowDepth(city);
   if (city.fillRows !== false) {
@@ -474,7 +478,9 @@ const scenarioConsumers = ({ id, city }: ScenarioDef): SettlementConsumer[] => {
 
 export const settlementCollectionIssues = (registry: Registry) => {
   const issues: { section: 'mapPools' | 'cityBenchmarks'; id: string; path: string; message: string }[] = [];
-  const consumers = [...registry.scenarios.values()].flatMap(scenarioConsumers);
+  const consumers = [...registry.scenarios.values()].flatMap((scenario) =>
+    scenario.kind === 'assembledCity' ? scenarioConsumers(scenario) : [],
+  );
   for (const benchmark of registry.cityBenchmarks.values()) {
     const { id, pool, settlementKind } = benchmark;
     const fit = { along: benchmark.blockX - 2 * benchmark.pad, depth: cityRowDepth(benchmark) };
@@ -508,7 +514,7 @@ export const settlementCollectionIssues = (registry: Registry) => {
 
 const overlapsLot = (
   registry: Registry,
-  city: ScenarioDef['city'],
+  city: CityScenarioDef['city'],
   building: { id: string; cell: readonly [number, number]; turn: number },
 ): boolean => {
   const definition = registry.mapAssemblies.get(building.id) ?? registry.templates.get(building.id);
@@ -523,7 +529,7 @@ const overlapsLot = (
   return (city.lots ?? []).some((lot) => rectsOverlap(rect, lotRect(lot)));
 };
 
-const fixedServiceIssues = (registry: Registry, { city, serviceTemplate }: ScenarioDef): [string, string][] => {
+const fixedServiceIssues = (registry: Registry, { city, serviceTemplate }: CityScenarioDef): [string, string][] => {
   if (!city.service) {
     return [];
   }
@@ -540,7 +546,7 @@ const fixedServiceIssues = (registry: Registry, { city, serviceTemplate }: Scena
 
 export const startReservationIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   start: StartPlacementDef,
 ): [string, string][] => {
   const { city } = scenario;
@@ -554,7 +560,7 @@ export const startReservationIssues = (
   return issues;
 };
 
-export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [string, string][] => {
+export const scenarioPlanIssues = (registry: Registry, scenario: CityScenarioDef): [string, string][] => {
   const issues: [string, string][] = [];
   const { city, serviceTemplate, population } = scenario;
   if (population.roadsideOffset * 2 >= city.street) {
@@ -601,7 +607,7 @@ export const scenarioPlanIssues = (registry: Registry, scenario: ScenarioDef): [
   return issues;
 };
 
-const portalOf = (service: Placement, scenario: ScenarioDef): Portal => {
+const portalOf = (service: Placement, scenario: CityScenarioDef): Portal => {
   const upper = placedPoint(service, scenario.portal.upper);
   const lower = placedPoint(service, scenario.portal.lower);
   const shaft = placedPoint(service, portalLadderPoint(scenario, service.template));
@@ -842,7 +848,7 @@ export const servicePlacement = ({
 
 const startPlacement = (
   context: FillContext,
-  scenario: ScenarioDef | undefined,
+  scenario: CityScenarioDef | undefined,
   definition: StartPlacementDef | undefined,
 ): Placement | undefined => {
   if (!(scenario && definition)) {
@@ -1028,7 +1034,7 @@ const streetPropPlacements = (context: FillContext, cells: Cell[], pitchX: numbe
   );
 };
 
-const ringPlacements = (context: FillContext, bounds: Rect, scenario?: ScenarioDef): Placement[] => {
+const ringPlacements = (context: FillContext, bounds: Rect, scenario?: CityScenarioDef): Placement[] => {
   const { ring } = context.grid;
   if (!ring) {
     return [];
@@ -1081,7 +1087,7 @@ const checkReservedLots = (lots: readonly PlannedLot[], reserved: (Placement | u
 
 const planService = (
   context: FillContext,
-  scenario: ScenarioDef | undefined,
+  scenario: CityScenarioDef | undefined,
   candidates: Cell[],
 ): { service: Placement | undefined; serviceBlock: Cell | undefined } => {
   if (!scenario) {
@@ -1115,7 +1121,7 @@ export const buildCityPlan = ({
   floor: number;
   grid: CityGrid;
   maxStoreys?: number;
-  scenario?: ScenarioDef;
+  scenario?: CityScenarioDef;
   /** The selected start's placement; without one the scenario builds city-only and reserves no start cell. */
   start?: StartPlacementDef | undefined;
 }): CityPlan => {

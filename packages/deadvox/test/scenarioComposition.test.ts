@@ -268,7 +268,9 @@ describe('authored scenario composition', () => {
 });
 
 const bundledScenario = () => {
-  const profile = [...BUNDLED_CONTENT.registry.scenarios.values()].find((scenario) => scenario.composition)!;
+  const profile = [...BUNDLED_CONTENT.registry.scenarios.values()]
+    .filter((scenario) => scenario.kind === 'assembledCity')
+    .find((scenario) => scenario.composition)!;
   return structuredClone(profile);
 };
 
@@ -374,7 +376,9 @@ describe('promised stop stock', () => {
 
 it('stamps every occupied authored lot and leaves intentional open lots unstamped', () => {
   const { registry } = BUNDLED_CONTENT;
-  const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
+  const profile = [...registry.scenarios.values()]
+    .filter((scenario) => scenario.kind === 'assembledCity')
+    .find((scenario) => scenario.composition)!;
   expect(profile).toBeDefined();
   const scale = makeScale(0.5);
   const plan = buildCityPlan({

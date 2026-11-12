@@ -1,5 +1,6 @@
 import {
   array,
+  check,
   type InferOutput,
   literal,
   maxLength,
@@ -7,12 +8,15 @@ import {
   minLength,
   minValue,
   nonEmpty,
+  number,
   optional,
   picklist,
   pipe,
+  record,
   strictObject,
   tuple,
   union,
+  variant,
   boolean as vBoolean,
 } from 'valibot';
 import { DAY_PHASES } from '../dayPhase.ts';
@@ -25,6 +29,7 @@ import {
   FixedLootOverride,
   LayoutRect,
   PerimeterCrossingSchema,
+  SiteLayoutSchema,
 } from './layouts.ts';
 import { Count, Id, PositiveGameHours } from './primitives.ts';
 import { CellCoordinate, CellPosition } from './templates.ts';
@@ -55,10 +60,10 @@ const EventRuleSchema = strictObject({
 
 export type EventRuleDef = InferOutput<typeof EventRuleSchema>;
 
-export const ScenarioSchema = strictObject({
+const CityScenarioSchema = strictObject({
   attemptPolicy: optional(AttemptPolicySchema),
   id: Id,
-  kind: picklist(SCENARIO_KINDS),
+  kind: literal(SCENARIO_KINDS.assembledCity),
   outbreakAgeGameHours: PositiveGameHours,
   decalLimit: pipe(Count, maxValue(4096)),
   body: Id,
@@ -210,3 +215,54 @@ export const ScenarioSchema = strictObject({
     pool: Id,
   }),
 });
+
+const NonnegativeFinite = pipe(
+  number(),
+  minValue(0),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
+
+const PlaceAskSchema = strictObject({
+  kind: literal('place'),
+  id: Id,
+  template: Id,
+  supplies: optional(array(Id), []),
+  settlementKind: optional(Id),
+  distance: optional(
+    strictObject({
+      from: Id,
+      curve: pipe(
+        array(tuple([NonnegativeFinite, NonnegativeFinite])),
+        minLength(2),
+        check((rows) => rows.every((row, i) => i === 0 || row[0] > rows[i - 1]![0]), 'distances must increase'),
+        check((rows) => rows.some((row) => row[1] > 0), 'needs a positive weight'),
+      ),
+    }),
+  ),
+});
+
+export const ComposedSiteSchema = strictObject({
+  id: Id,
+  kind: literal(SCENARIO_KINDS.composedSite),
+  attemptPolicy: optional(AttemptPolicySchema),
+  outbreakAgeGameHours: PositiveGameHours,
+  decalLimit: CityScenarioSchema.entries.decalLimit,
+  body: Id,
+  compression: Id,
+  bounds: LayoutRect,
+  ground: SiteLayoutSchema.entries.ground,
+  lootContext: SiteLayoutSchema.entries.lootContext,
+  settlementKind: Id,
+  start: strictObject({ ask: Id }),
+  placement: strictObject({
+    apronMetres: NonnegativeFinite,
+    attempts: pipe(Count, minValue(1)),
+  }),
+  asks: array(variant('kind', [PlaceAskSchema])),
+  guarantee: record(Id, Count),
+  population: CityScenarioSchema.entries.population,
+  eventRules: optional(array(EventRuleSchema), []),
+});
+
+export const ScenarioSchema = variant('kind', [CityScenarioSchema, ComposedSiteSchema]);
+export type ComposedSiteDef = InferOutput<typeof ComposedSiteSchema>;

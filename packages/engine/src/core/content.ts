@@ -11,6 +11,7 @@ import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
+import { composedSiteIssues } from './composeLayout.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
 import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
@@ -2130,7 +2131,9 @@ const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, repo
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
     checkScenarioPopulation(registry, scenario, report);
-    for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
+    for (const [path, message] of scenario.kind === 'assembledCity'
+      ? scenarioPlanIssues(registry, scenario)
+      : composedSiteIssues(registry, scenario)) {
       report('scenarios', scenario.id, path, message);
     }
     if (!registry.body.has(scenario.body)) {

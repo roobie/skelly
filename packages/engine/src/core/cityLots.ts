@@ -2,15 +2,15 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { pickWeighted, Rng } from './random.ts';
 import type { ScenarioRouteSpace } from './scenarioRoute.ts';
-import type { MapPoolDef, PerimeterCrossingDef, ScenarioDef } from './schema.ts';
+import type { CityScenarioDef, MapPoolDef, PerimeterCrossingDef } from './schema.ts';
 import { eligibilityExclusion } from './settlementPools.ts';
 import { rectsOverlap } from './site.ts';
 import { footprint, type Placement, placedPoint } from './templates.ts';
 
-type Lot = NonNullable<ScenarioDef['city']['lots']>[number];
+type Lot = NonNullable<CityScenarioDef['city']['lots']>[number];
 type Choice = MapPoolDef['choices'][number];
 interface LotContext {
-  lots?: ScenarioDef['city']['lots'];
+  lots?: CityScenarioDef['city']['lots'];
   settlementKind?: string | undefined;
   pool?: string | undefined;
   fillRows?: boolean | undefined;

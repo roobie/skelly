@@ -211,6 +211,7 @@ export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
 
 export type ScenarioDef = InferOutput<typeof ScenarioSchema>;
+export type CityScenarioDef = Extract<ScenarioDef, { kind: 'assembledCity' }>;
 
 export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 
