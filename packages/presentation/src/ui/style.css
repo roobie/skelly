@@ -8,6 +8,7 @@
   --ui-layer-inventory-feedback: 21;
   --ui-layer-crafting: 21;
   --ui-layer-activity-progress: 22;
+  --ui-layer-combo-list: 22;
   --ui-layer-drag-ghost: 23;
   /* Inside the inventory panel's own stacking context, above its drop marks. */
   --ui-layer-item-viewer: 24;
@@ -1993,10 +1994,11 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .combo-box-field.game-cursor-hover {
   border-color: var(--accent);
 }
-/* Fixed to the viewport so a scrolling panel can't clip it. Positioned without a z-index, it paints over
-   the host panel's content and stays in the host's layer. */
+/* Fixed to the viewport so a scrolling panel can't clip it. It has its own layer so later sibling detail
+   content in the host panel does not paint over it. */
 .combo-box-list {
   position: fixed;
+  z-index: var(--ui-layer-combo-list);
   box-sizing: border-box;
   margin: 0;
   padding: calc(var(--ui-spacing) * 0.25rem);

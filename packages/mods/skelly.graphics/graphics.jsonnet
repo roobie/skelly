@@ -59,5 +59,10 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
     cachedSurfaceNoise: toggle('Cached surface noise', true),
+    msaaSamples: {
+      label: 'Edge smoothing',
+      default: 4,
+      choices: [{ value: 0, label: 'Off' }, { value: 4, label: '4x' }],
+    },
   }],
 }

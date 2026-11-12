@@ -86,6 +86,20 @@
         "retries": 3
       },
       "modelLoadConcurrency": 8,
+      "msaaSamples": {
+        "choices": [
+          {
+            "label": "Off",
+            "value": 0
+          },
+          {
+            "label": "4x",
+            "value": 4
+          }
+        ],
+        "default": 4,
+        "label": "Edge smoothing"
+      },
       "nearPlaneMetres": 0.01,
       "opticLens": {
         "reticleAntiAliasWidth": 0.5,

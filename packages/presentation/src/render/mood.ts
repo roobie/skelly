@@ -68,9 +68,6 @@ import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from './opticL
 import { ScreenScale } from './screenScale.ts';
 import { skyDomeUniforms } from './skyDome.ts';
 
-/** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
-const MSAA_SAMPLES = 4;
-
 /**
  * The tone mapping for drawing straight to the screen: plain materials have no weight uniform for `auto`
  * (render/autoTone.ts), so it draws with whichever of its two curves the weight is nearer.
@@ -97,6 +94,8 @@ export class Mood {
   private contextLost = false;
   private bloomScaleValue: number;
   private readonly graphicsTuning: GraphicsOptions & Pick<GraphicsTuningDef, 'opticLens'>;
+  /** The scene target's samples: the default framebuffer's `antialias` doesn't reach a composer. */
+  private msaaSamples: number;
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
@@ -122,6 +121,7 @@ export class Mood {
     graphicsTuning: GraphicsOptions & Pick<GraphicsTuningDef, 'opticLens'>,
   ) {
     this.graphicsTuning = graphicsTuning;
+    this.msaaSamples = graphicsTuning.msaaSamples.default;
     this.adaptiveScale = new AdaptiveScale(graphicsTuning.renderScale);
     this.renderScaleValue = this.adaptiveScale.scale;
     this.bloomScaleValue = graphicsTuning.bloomScale.default;
@@ -555,6 +555,14 @@ export class Mood {
     this.opticPass = undefined;
   }
 
+  /** Chooses the scene target's samples; only before the chain is built, since a target's samples are fixed at creation. */
+  setMsaaSamples(samples: number): void {
+    if (this.composer) {
+      throw new Error('The scene target is already built');
+    }
+    this.msaaSamples = samples;
+  }
+
   /** Built on first use, so a run that never needs the chain (the benchmark) allocates no targets. */
   private ensureComposer(): EffectComposer {
     if (this.composer) {
@@ -563,7 +571,7 @@ export class Mood {
     const ratio = this.renderer.getPixelRatio();
     const target = new WebGLRenderTarget(this.width * ratio, this.height * ratio, {
       type: HalfFloatType,
-      samples: MSAA_SAMPLES,
+      samples: this.msaaSamples,
       // No pass samples resolved depth; resolving it adds a depth blit per pass.
       resolveDepthBuffer: false,
     });

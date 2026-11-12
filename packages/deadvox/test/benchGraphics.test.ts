@@ -39,6 +39,7 @@ const tuning = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  msaaSamples: { label: 'Fixture smoothing', default: 0, choices: [{ value: 0, label: 'Fixture off' }] },
 };
 
 it('benchmark engines use mod defaults despite saved graphics preferences', () => {
