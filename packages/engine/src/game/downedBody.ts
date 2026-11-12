@@ -19,13 +19,13 @@ type DownedActors = Pick<ActorSystem, 'store' | 'finishDowned'>;
 export const isDownedBodyWay = (value: unknown): value is DownedBodyWay =>
   DOWNED_BODY_WAYS.includes(value as DownedBodyWay);
 
-/** The first carried tool, by name, with the quality at the level. */
+/** The first carried tool, by definition id, with the quality at the level. */
 const carriedTool = (inventory: Inventory, quality: string, level: number): Item | undefined =>
   [...inventory.items()]
     .filter(({ path }) => path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))
     .map(({ item }) => item)
     .filter((item) => (defOf(inventory.registry, item.type).tool?.qualities[quality] ?? 0) >= level)
-    .sort((a, b) => compareCodeUnits(inventory.name(a), inventory.name(b)))[0];
+    .sort((a, b) => compareCodeUnits(a.type, b.type))[0];
 
 /** Whether the player can clear this downed body that way now, how long it takes, and its label. */
 export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, way: DownedBodyWay): DownedBodyPlan => {

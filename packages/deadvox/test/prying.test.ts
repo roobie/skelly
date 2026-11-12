@@ -300,6 +300,41 @@ it('refuses a carried tool below the content quality threshold', () => {
   }
 });
 
+it('picks the carried tool of the lowest id and lists tools by id, whatever the names say', () => {
+  const { quality, level } = doorDef.door!.methods.pry!;
+  const tool = (id: string, name: string) => ({
+    id,
+    name,
+    category: 'tool',
+    weight: 1,
+    size: [1, 1],
+    tool: { qualities: { [quality]: level } },
+  });
+  const content = baseRegistryWith(
+    fixtureSources([
+      {
+        source: 'pry-order-tools.json',
+        data: { items: [tool('pry_order_a', 'Zed bar'), tool('pry_order_b', 'Alpha bar')] },
+      },
+    ]),
+  );
+  const inventory = new Inventory(content);
+  const door = inventory.furnish({
+    type: doorDef.id,
+    pos: [0, 1, 1],
+    size: doorDef.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  expect(inventory.add(inventory.create('pry_order_b'), { kind: 'hand', side: 'left' })).toBe(true);
+  expect(inventory.add(inventory.create('pry_order_a'), { kind: 'hand', side: 'right' })).toBe(true);
+  const plan = pryPlan(inventory, door);
+  expect(plan.ok && plan.tool.type).toBe('pry_order_a');
+  const refused = pryPlan(inventory, door, { toolUid: -1 });
+  const listed = refused.ok ? [] : refused.toolNames.filter((name) => name.endsWith(' bar'));
+  expect(listed).toEqual(['Zed bar', 'Alpha bar']);
+});
+
 it('a prying strike travels through the sound-hearing path and draws a shambler', () => {
   const runtime = makePryRuntime();
   const door = makeDoor(runtime);
