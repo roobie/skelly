@@ -1,6 +1,5 @@
 import type { Registry, ScreenText } from '@skelly/engine/content';
 import { claimed, defOf } from '@skelly/engine/inventory';
-import { compareCodeUnits } from '@skelly/engine/packs';
 import { countText, fillText } from '@skelly/engine/text';
 import { html, render, type TemplateResult } from 'lit-html';
 
@@ -33,7 +32,8 @@ const formatSpan = (seconds: number, text: DeathText): string => {
 /** Looted item names, most taken first, with a count where more than one was taken. */
 export const lootedText = (registry: Registry, looted: ReadonlyMap<string, number>): string =>
   [...looted]
-    .sort((a, b) => b[1] - a[1] || compareCodeUnits(a[0], b[0]))
+    // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([type, count]) => {
       const item = defOf(registry, type).name.toLowerCase();
       return count > 1 ? fillText(deathText(registry).lootCount, { count: countText(count), item }) : item;

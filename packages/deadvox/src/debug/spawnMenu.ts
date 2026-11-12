@@ -4,7 +4,6 @@
 
 import type { Registry } from '@skelly/engine/content';
 import type { BindingRegistry } from '@skelly/engine/input';
-import { compareCodeUnits } from '@skelly/engine/packs';
 import { html, render, type TemplateResult } from 'lit-html';
 
 const WHITESPACE = /\s+/;
@@ -35,7 +34,8 @@ export const spawnMenuViewModel = (
   const items = [...registry.items.values()]
     .filter((def) => !def.workInProgress)
     .filter((def) => words.every((w) => `${def.name} ${def.id} ${def.category}`.toLowerCase().includes(w)))
-    .sort((a, b) => compareCodeUnits(a.category, b.category) || compareCodeUnits(a.name, b.name))
+    // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
+    .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
     .map((def) => ({ id: def.id, name: def.name, meta: `${def.category}${def.model ? ', model' : ''}` }));
   return { filter, status, selectedIndex: Math.min(selectedIndex, Math.max(0, items.length - 1)), items };
 };
