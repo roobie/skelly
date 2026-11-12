@@ -2,6 +2,7 @@ language js
 
 or {
   `$value.localeCompare($...)`,
+  `$value?.localeCompare($...)`,
   `new Intl.Collator($...)`,
   `Intl.Collator($...)`
 } as $call where {

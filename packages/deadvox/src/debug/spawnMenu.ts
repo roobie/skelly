@@ -34,7 +34,7 @@ export const spawnMenuViewModel = (
   const items = [...registry.items.values()]
     .filter((def) => !def.workInProgress)
     .filter((def) => words.every((w) => `${def.name} ${def.id} ${def.category}`.toLowerCase().includes(w)))
-    // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
+    // biome-ignore lint/plugin: display-only list for the reader; it never feeds identity or simulation.
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
     .map((def) => ({ id: def.id, name: def.name, meta: `${def.category}${def.model ? ', model' : ''}` }));
   return { filter, status, selectedIndex: Math.min(selectedIndex, Math.max(0, items.length - 1)), items };

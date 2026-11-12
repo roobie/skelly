@@ -11,12 +11,13 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BIOME = join(ROOT, 'node_modules/@biomejs/biome/bin/biome');
 const PLUGIN = 'tools/lint/no-locale-order.grit';
 
-// Lines 1 to 3 each order strings by the runtime's collation; line 4 is the locale-free order; line 5 only
+// Lines 1 to 4 each order strings by the runtime's collation; line 5 is the locale-free order; line 6 only
 // mentions the name in a string, which is not a call.
 const SEEDED = [
   'export const a = ["b", "a"].sort((x, y) => x.localeCompare(y));',
   'export const b = new Intl.Collator("en").compare;',
   'export const c = Intl.Collator().compare;',
+  'export const f = (x?: string) => x?.localeCompare("a") ?? 0;',
   'export const d = ["b", "a"].sort((x, y) => (x < y ? -1 : 1));',
   'export const e = "localeCompare";',
 ].join('\n');
@@ -37,7 +38,7 @@ test('lint fails each call that orders strings by locale, and nothing else', () 
     const lines = diagnostics
       .filter(({ category }) => category === 'plugin')
       .map(({ location }) => location.start.line);
-    assert.deepEqual(lines, [1, 2, 3]);
+    assert.deepEqual(lines, [1, 2, 3, 4]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
