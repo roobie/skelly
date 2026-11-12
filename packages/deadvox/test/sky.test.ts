@@ -41,7 +41,9 @@ const lookFields = (sky: ReturnType<typeof skyAt>) => {
     moonDirection: _moonDirection,
     ...look
   } = sky;
-  return look;
+  // The moon and stars also wash out by the sun's height, which differs between cycles at one phase position.
+  const { stars: _stars, moon, ...dome } = look.dome;
+  return { ...look, dome: { ...dome, moonColour: moon.colour } };
 };
 
 const horizontalDot = (a: readonly number[], b: readonly number[]): number => a[0]! * b[0]! + a[2]! * b[2]!;

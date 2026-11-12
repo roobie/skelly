@@ -141,6 +141,10 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uStarTwinkle;
   uniform vec2 uMoonDisc;
   uniform float uMoonDiscGain;
+  uniform vec3 uMoonAcross;
+  uniform vec3 uMoonUp;
+  uniform float uMoonLimb;
+  uniform vec2 uMoonMaria;
   uniform vec2 uMoonTightHalo;
   uniform vec2 uMoonWideHalo;
   uniform float uCoverGain;
@@ -268,12 +272,6 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return pow( cosAngle, shape.x ) * shape.y;
   }
 
-  vec3 moon ( vec3 dir ) {
-    float d = clamp( dot( dir, uMoonDir ), 0.0, 1.0 );
-    float disc = smoothstep( uMoonDisc.x, uMoonDisc.y, d );
-    return uMoonColour * ( disc * uMoonDiscGain + lobe( d, uMoonTightHalo ) + lobe( d, uMoonWideHalo ) );
-  }
-
   vec3 sunDisc ( float cosAngle ) {
     return uSunColour * ( smoothstep( uSunDisc.x, uSunDisc.y, cosAngle ) * uSunDiscGain * uSunBrightness );
   }
@@ -312,6 +310,23 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     float c = dot( scatterGradient( i + vec2( 0.0, 1.0 ) ), f - vec2( 0.0, 1.0 ) );
     float d = dot( scatterGradient( i + vec2( 1.0, 1.0 ) ), f - vec2( 1.0, 1.0 ) );
     return mix( mix( a, b, u.x ), mix( c, d, u.x ), u.y ) * 1.6;
+  }
+
+  // The moon's face at a point on its disc: darker towards the rim, where a lit sphere is seen edge on, and in its seas.
+  // The face is placed from the disc's own axes (uMoonAcross and uMoonUp, each a disc radius long), so it keeps its
+  // look wherever the moon stands. The seas take the scatter kind's noise, which every GPU draws alike.
+  float moonFace ( vec3 dir ) {
+    vec2 onDisc = vec2( dot( dir, uMoonAcross ), dot( dir, uMoonUp ) );
+    float limb = 1.0 - uMoonLimb * ( 1.0 - sqrt( max( 0.0, 1.0 - dot( onDisc, onDisc ) ) ) );
+    float sea = smoothstep( -0.05, 0.35, scatterNoise( onDisc * uMoonMaria.y + vec2( 3.7, 1.3 ) ) );
+    return limb * ( 1.0 - uMoonMaria.x * sea );
+  }
+
+  vec3 moon ( vec3 dir ) {
+    float d = clamp( dot( dir, uMoonDir ), 0.0, 1.0 );
+    float disc = smoothstep( uMoonDisc.x, uMoonDisc.y, d );
+    float face = disc > 0.0 ? disc * uMoonDiscGain * moonFace( dir ) : 0.0;
+    return uMoonColour * ( face + lobe( d, uMoonTightHalo ) + lobe( d, uMoonWideHalo ) );
   }
 
   float scatterFbm ( vec2 p, float billow ) {
@@ -405,12 +420,32 @@ const placeDome = (mesh: Mesh, camera: PerspectiveCamera): void => {
   mesh.scale.setScalar(Math.max(1, camera.far * 0.5));
 };
 
+const WORLD_UP = new Vector3(0, 1, 0);
+const WORLD_EAST = new Vector3(1, 0, 0);
+
+/**
+ * The moon disc's axes, each scaled to one over the disc's radius so a direction's dot with them is its place on the
+ * disc: across stays level, so the face keeps upright; a moon straight up or down takes east as across.
+ */
+const placeMoonFace = (moon: Vector3, radius: number, across: Vector3, up: Vector3): void => {
+  across.crossVectors(WORLD_UP, moon);
+  if (across.lengthSq() < 1e-12) {
+    across.copy(WORLD_EAST);
+  }
+  across.normalize();
+  up.crossVectors(moon, across).normalize();
+  across.divideScalar(radius);
+  up.divideScalar(radius);
+};
+
 /** Two textures serve every layer in turn, so neighbouring layers never share a pattern. */
 const TEXTURE_SEEDS = [1, 2] as const;
 
 /** The mesh is for the caller to add to the scene; `dispose` frees what the dome owns. */
 export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): SkyDome => {
   const textures: DataTexture[] = TEXTURE_SEEDS.map((seed) => cloudTexture(seed));
+  // The disc's outer edge, as the sine of its angular radius.
+  const moonRadius = Math.sqrt(1 - shape.moon.disc[0] ** 2);
   const uniforms = {
     ...skyDomeUniforms,
     uFogColor: { value: new Color() },
@@ -423,6 +458,10 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
     uStarTwinkle: { value: shape.starField.twinkle },
     uMoonDisc: { value: new Vector2(...shape.moon.disc) },
     uMoonDiscGain: { value: shape.moon.discGain },
+    uMoonAcross: { value: new Vector3() },
+    uMoonUp: { value: new Vector3() },
+    uMoonLimb: { value: shape.moon.limbDarkening },
+    uMoonMaria: { value: new Vector2(shape.moon.maria.depth, shape.moon.maria.scale) },
     uMoonTightHalo: { value: new Vector2(shape.moon.tightHalo.power, shape.moon.tightHalo.gain) },
     uMoonWideHalo: { value: new Vector2(shape.moon.wideHalo.power, shape.moon.wideHalo.gain) },
     uCoverGain: { value: shape.cloudShape.coverGain },
@@ -523,6 +562,7 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
       uniforms.uBetaM.value.set(...terms.mie);
       uniforms.uMieDirectional.value = dome.physical.mieDirectional;
       uniforms.uMoonDir.value.set(...sky.moonDirection);
+      placeMoonFace(uniforms.uMoonDir.value, moonRadius, uniforms.uMoonAcross.value, uniforms.uMoonUp.value);
       uniforms.uStars.value = dome.stars;
       uniforms.uPhysicalExposure.value = dome.physical.exposure;
       uniforms.uMoonBrightness.value = dome.moon.brightness;

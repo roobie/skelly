@@ -91,6 +91,12 @@ const Band = pipe(
   check(([from, to]) => from < to, 'must rise from a lower to a higher edge'),
 );
 
+/** Two sun heights, as the sine of its elevation, between which a smoothstep eases; the sun can be below the horizon. */
+const SunHeightBand = pipe(
+  tuple([pipe(number(), minValue(-1), maxValue(1)), pipe(number(), minValue(-1), maxValue(1))]),
+  check(([from, to]) => from < to, 'must rise from a lower to a higher edge'),
+);
+
 const FinitePositive = pipe(Positive, finite('must be finite'));
 
 /** A lobe of light round a direction: `cos(angle) ** power * gain`. */
@@ -103,6 +109,15 @@ const BodyShapeSchema = strictObject({
   discGain: FiniteNonNegative,
   tightHalo: Lobe,
   wideHalo: Lobe,
+});
+
+/** The moon's body and its face. */
+const MoonShapeSchema = strictObject({
+  ...BodyShapeSchema.entries,
+  /** How much darker the disc's rim is than its centre: 0 is a flat disc. */
+  limbDarkening: UnitFraction,
+  /** The darker seas on the disc: how much they darken it, and how many fit across it. */
+  maria: strictObject({ depth: UnitFraction, scale: FinitePositive }),
 });
 
 /** The dome's shape that does not change over the day: how its gradient, stars, bodies and cloud light are built from the looks. */
@@ -121,7 +136,12 @@ const DomeShapeSchema = strictObject({
     /** How far a star's brightness dips below full: 0 is steady. */
     twinkle: UnitFraction,
   }),
-  moon: BodyShapeSchema,
+  /**
+   * The sun heights between which the moon and the stars wash out of a brightening sky: whole below the first, gone
+   * above the second, whatever the looks give them.
+   */
+  washOutBand: SunHeightBand,
+  moon: MoonShapeSchema,
   sun: BodyShapeSchema,
   cloudLight: strictObject({
     /** How much of the main light's colour a cloud takes. */
@@ -307,7 +327,7 @@ const MainLightSchema = strictObject({
    * horizon. Above 0, so the sun's side and the moon's side never cancel as the light blends between them.
    */
   lowestHeight: pipe(UnitFraction, gtValue(0, 'must be above 0'), ltValue(1, 'must be below 1')),
-  /** The look's moon brightness at and above which the main light comes wholly from the moon's side. */
+  /** The drawn moon's brightness at and above which the main light comes wholly from the moon's side. */
   fromMoonAt: FinitePositive,
 });
 

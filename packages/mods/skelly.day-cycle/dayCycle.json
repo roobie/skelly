@@ -61,8 +61,13 @@
       "glowBand": [0.12, 0.55000000000000004],
       "horizonBand": [0.014999999999999999, 0.14000000000000001],
       "moon": {
-        "disc": [0.99955000000000005, 0.99985000000000002],
-        "discGain": 5,
+        "disc": [0.99992000000000003, 0.99995000000000001],
+        "discGain": 1.1000000000000001,
+        "limbDarkening": 0.5,
+        "maria": {
+          "depth": 0.29999999999999999,
+          "scale": 2.2000000000000002
+        },
         "tightHalo": {
           "gain": 0.315,
           "power": 350
@@ -89,7 +94,8 @@
           "gain": 0.90000000000000002,
           "power": 16
         }
-      }
+      },
+      "washOutBand": [-0.16, -0.059999999999999998]
     },
     "environment": {
       "faceSize": 64,
@@ -239,16 +245,16 @@
         "tone": 0
       },
       "deepNight": {
-        "ambientGround": "#050505",
-        "ambientIntensity": 0.10000000000000001,
-        "ambientSky": "#1c2330",
+        "ambientGround": "#08080a",
+        "ambientIntensity": 0.20000000000000001,
+        "ambientSky": "#2a3446",
         "bloom": 0.55000000000000004,
         "dome": {
           "clouds": {
             "cover": 0.45000000000000001,
             "opacity": 0.59999999999999998
           },
-          "horizonGlow": "#0a0f16",
+          "horizonGlow": "#111824",
           "moon": {
             "brightness": 1,
             "colour": "#b3bfd9"
@@ -268,15 +274,15 @@
             "glow": 0,
             "glowColour": "#ffa040"
           },
-          "zenith": "#030407"
+          "zenith": "#05070c"
         },
-        "fogFar": 0.34999999999999998,
-        "fogNear": 0.050000000000000003,
-        "heightFog": 0.012,
-        "heightFogColor": "#121821",
+        "fogFar": 0.59999999999999998,
+        "fogNear": 0.14999999999999999,
+        "heightFog": 0.0060000000000000001,
+        "heightFogColor": "#18202c",
         "lightColor": "#6a7690",
-        "lightIntensity": 0.050000000000000003,
-        "sky": "#040508",
+        "lightIntensity": 0.10000000000000001,
+        "sky": "#0b0f16",
         "tone": 1
       },
       "dusk": {
@@ -352,9 +358,9 @@
           },
           "zenith": "#070a10"
         },
-        "fogFar": 0.5,
-        "fogNear": 0.10000000000000001,
-        "heightFog": 0.01,
+        "fogFar": 0.59999999999999998,
+        "fogNear": 0.14999999999999999,
+        "heightFog": 0.0070000000000000001,
         "heightFogColor": "#1c2430",
         "lightColor": "#7d8ca8",
         "lightIntensity": 0.12,

@@ -82,9 +82,13 @@ const cycle: DayCycleDef = parse(DayCycleSchema, {
     glowBand: [0.1, 0.5],
     physicalBand: [0.1, 0.4],
     starField: { density: 0.02, size: 0.2, twinkle: 0.3 },
+    // Above the highest this cycle's sun climbs, so the blend shows whole.
+    washOutBand: [0.98, 0.99],
     moon: {
       disc: [0.999, 0.9995],
       discGain: 4,
+      limbDarkening: 0.3,
+      maria: { depth: 0.2, scale: 2 },
       tightHalo: { power: 300, gain: 0.3 },
       wideHalo: { power: 10, gain: 0.05 },
     },
@@ -141,6 +145,50 @@ describe('sky dome blend', () => {
     expect(actual.size).toBe(fields.length);
     for (const [path, day] of fields) {
       expect(actual.get(path)).toBeCloseTo((night.get(path)! + day) / 2, 8);
+    }
+  });
+});
+
+describe('the moon and stars in a brightening sky', () => {
+  const [from, to] = [-0.1, -0.05];
+  const washing: DayCycleDef = { ...cycle, domeShape: { ...cycle.domeShape, washOutBand: [from, to] } };
+  /** Every minute's sun height with the moon and stars as the fixture's looks give them and as the sky draws them. */
+  const minutes = Array.from({ length: 24 * 60 }, (_, minute) => {
+    const hour = minute / 60;
+    const whole = skyAt(hour, cycle).dome;
+    const drawn = skyAt(hour, washing).dome;
+    return { minute, height: skyAt(hour, cycle).sunDirection[1], whole, drawn };
+  });
+
+  it('draws them whole with the sun below the band and not at all above it, whatever the looks give them', () => {
+    const dark = minutes.filter(({ height }) => height <= from);
+    const bright = minutes.filter(({ height }) => height >= to);
+    expect(dark.length).toBeGreaterThan(0);
+    expect(bright.length).toBeGreaterThan(0);
+    for (const { minute, whole, drawn } of dark) {
+      expect(drawn.stars, `stars at ${minute}`).toBe(whole.stars);
+      expect(drawn.moon.brightness, `moon at ${minute}`).toBe(whole.moon.brightness);
+    }
+    for (const { minute, whole, drawn } of bright) {
+      expect(whole.stars * whole.moon.brightness, `fixture at ${minute}`).toBeGreaterThan(0);
+      expect(drawn.stars, `stars at ${minute}`).toBe(0);
+      expect(drawn.moon.brightness, `moon at ${minute}`).toBe(0);
+    }
+  });
+
+  it('fades them out without a jump as the sun rises through the band', () => {
+    const rising = minutes.filter(
+      ({ minute, height }) => minute * 60 >= state.dawn && minute * 60 <= state.sunrise && height > from && height < to,
+    );
+    expect(rising.length).toBeGreaterThan(2);
+    const shares = rising.map(({ whole, drawn }) => [drawn.stars / whole.stars, drawn.moon.brightness / whole.moon.brightness]);
+    for (const [index, [stars, moon]] of shares.entries()) {
+      expect(stars).toBeCloseTo(moon!, 12);
+      if (index > 0) {
+        const previous = shares[index - 1]![0]!;
+        expect(stars).toBeLessThan(previous);
+        expect(previous - stars!).toBeLessThan(0.25);
+      }
     }
   });
 });

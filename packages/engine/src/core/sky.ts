@@ -53,7 +53,7 @@ export interface Sky {
   sky: Rgb;
   /**
    * Unit vector towards the main light: the sun's bearing by day and the drawn moon's by night, each raised to the
-   * cycle's lowest light height, blended by how far the look's moon is out.
+   * cycle's lowest light height, blended by how bright the drawn moon is.
    */
   light: Vec3;
   /** The true solar direction, unclamped, so a sky dome can draw the sun at and below the horizon. */
@@ -192,7 +192,7 @@ const raised = ([x, y, z]: Vec3, lowest: number): Vec3 => {
 };
 
 /**
- * The main light comes from the sun's side by day and the moon's by night, blended by the look's moon brightness so
+ * The main light comes from the sun's side by day and the moon's by night, blended by the drawn moon's brightness so
  * twilight swings it across without a jump. Both sides sit at or above the lowest height, which content keeps above
  * the horizon, so the blend never cancels to nothing.
  */
@@ -205,6 +205,15 @@ const mainLight = (sun: Vec3, moon: Vec3, moonBrightness: number, tuning: DayCyc
   return [blended[0] / length, blended[1] / length, blended[2] / length];
 };
 
+/**
+ * How much of the looks' moon and stars a sun at this height leaves: all of them in the dark, none once the sky has
+ * brightened. Linear blends between looks fade them too slowly for a bright disc against a greying dawn sky.
+ */
+export const nightSkyShare = (sunHeight: number, [from, to]: readonly [number, number]): number => {
+  const t = Math.min(1, Math.max(0, (sunHeight - from) / (to - from)));
+  return 1 - t * t * (3 - 2 * t);
+};
+
 /** The scatter kind's share of the clouds when `kind` shows alone. */
 export const scatterShare = (kind: CloudKind): number => (kind === 'scatter' ? 1 : 0);
 
@@ -214,11 +223,18 @@ export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const state = dayPhaseAt(cycle, time);
   const moon = moonDirection(state.sunDirection);
   const look = lookAt(state, time, cycle);
+  const nightSky = nightSkyShare(state.sunDirection[1], cycle.domeShape.washOutBand);
+  const dome: Dome = {
+    ...look.dome,
+    clouds: { ...look.dome.clouds, scatter: scatterShare(cycle.weather.fair.kind) },
+    stars: look.dome.stars * nightSky,
+    moon: { ...look.dome.moon, brightness: look.dome.moon.brightness * nightSky },
+  };
   return {
     ...look,
-    dome: { ...look.dome, clouds: { ...look.dome.clouds, scatter: scatterShare(cycle.weather.fair.kind) } },
+    dome,
     dayPhase: state.phase,
-    light: mainLight(state.sunDirection, moon, look.dome.moon.brightness, cycle.mainLight),
+    light: mainLight(state.sunDirection, moon, dome.moon.brightness, cycle.mainLight),
     sunDirection: state.sunDirection,
     moonDirection: moon,
   };
