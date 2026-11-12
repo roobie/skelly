@@ -1,5 +1,6 @@
 // Installs skelly-assets' built packs from the pinned release into the submodule's built directory, where every reader looks.
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
@@ -9,8 +10,10 @@ import { download, extractTarGz, verifySha256 } from '../pinned-download.mjs';
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, '../..');
 const PIN_PATH = 'tools/skelly-assets/release.json';
-/** Records what the last install wrote, so a repeated setup skips the download and a bump removes dropped packs. */
+/** Records what the last install wrote, so a pin bump removes packs the new release drops. */
 const STAMP_PATH = 'tools/skelly-assets/installed.json';
+/** Holds the pinned release's archives between setups; each is verified against the pin before use, never trusted. */
+const ARCHIVES_PATH = 'tools/skelly-assets/archives';
 const SUBMODULE = 'packages/skelly-assets';
 const MANIFEST = 'manifest.json';
 const ARCHIVE_SUFFIX = '.tar.gz';
@@ -60,29 +63,29 @@ function assertGitlinkMatchesRelease(root, pin) {
   }
 }
 
-const sameInstall = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+const sha256Hex = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 /**
- * Downloads and verifies every asset before touching `builtDirectory`, so a bad download leaves the last install whole;
+ * Serves every asset from `archiveDirectory` when its bytes match the pin's digest and downloads it otherwise, so a
+ * corrupted or partial cache restore can never reach `builtDirectory`. Downloads are verified before any install, and
  * each pack directory is then replaced outright, because a file left from an older release would be read as declared.
  */
-export async function installRelease({ pin, packIds, builtDirectory, stampPath, fetchImpl }) {
+export async function installRelease({ pin, packIds, builtDirectory, stampPath, archiveDirectory, fetchImpl }) {
   const names = [MANIFEST, ...packIds.map((id) => `${id}${ARCHIVE_SUFFIX}`)];
   const wanted = { tag: pin.tag, sha256: Object.fromEntries(names.map((name) => [name, pin.sha256[name]])) };
   const previous = existsSync(stampPath) ? readJson(stampPath) : undefined;
-  if (
-    previous &&
-    sameInstall(previous, wanted) &&
-    names.every((name) => existsSync(join(builtDirectory, installedPath(name))))
-  ) {
-    return false;
-  }
-
   const bytes = await Promise.all(
     names.map(async (name) => {
       const label = `skelly-assets ${pin.tag} ${name}`;
+      const cachedPath = join(archiveDirectory, name);
+      const cached = existsSync(cachedPath) ? readFileSync(cachedPath) : undefined;
+      if (cached && sha256Hex(cached) === pin.sha256[name]) {
+        return cached;
+      }
       const asset = await download(assetUrl(pin, name), label, { fetchImpl });
       verifySha256(asset, pin.sha256[name], label);
+      mkdirSync(archiveDirectory, { recursive: true });
+      writeFileSync(cachedPath, asset);
       return asset;
     }),
   );
@@ -98,7 +101,6 @@ export async function installRelease({ pin, packIds, builtDirectory, stampPath, 
     installPack(id, bytes[index + 1], builtDirectory);
   }
   writeFileSync(stampPath, `${JSON.stringify(wanted, null, 2)}\n`);
-  return true;
 }
 
 function installPack(id, archive, builtDirectory) {
@@ -119,16 +121,15 @@ function installPack(id, archive, builtDirectory) {
 async function ensureSkellyAssets(root = REPOSITORY_ROOT) {
   const pin = readJson(join(root, PIN_PATH));
   assertGitlinkMatchesRelease(root, pin);
-  const installed = await installRelease({
+  await installRelease({
     pin,
     packIds: bundledPackIds(root, pin),
     builtDirectory: join(root, SUBMODULE, 'built'),
     stampPath: join(root, STAMP_PATH),
+    archiveDirectory: join(root, ARCHIVES_PATH),
     fetchImpl: fetch,
   });
-  if (installed) {
-    process.stdout.write(`Installed skelly-assets ${pin.tag} into ${SUBMODULE}/built.\n`);
-  }
+  process.stdout.write(`Installed skelly-assets ${pin.tag} into ${SUBMODULE}/built.\n`);
 }
 
 /** Rewrites the pin from a published release: the tag's commit and every asset's digest as GitHub reports it. */
