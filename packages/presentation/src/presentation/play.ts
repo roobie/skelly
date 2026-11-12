@@ -141,6 +141,7 @@ import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
 import { runningCraftPresentation } from '../ui/craftReadout.ts';
 import { showDeath } from '../ui/death.ts';
+import { appendError } from '../ui/errorLog.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
@@ -1145,10 +1146,7 @@ const startPlayWith = (
     isSolid: session.isSoundBlocking,
     tuning: playerSenseTuning,
     files: options.assets.audio,
-    report: (message) => {
-      const errors = $('errors');
-      errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
-    },
+    report: appendError,
   });
   document.addEventListener('pointerdown', () => audio.unlock(), { once: true });
 
@@ -1273,22 +1271,14 @@ const startPlayWith = (
       inputRecording.recorder.queueColumnChange(cx, cz, false);
     }
   };
-  const view = createPlayView(
-    engine,
-    inventory,
-    (message) => {
-      const box = $('errors');
-      box.textContent = [box.textContent, message].filter(Boolean).join('\n');
-    },
-    {
-      models: options.assets.models,
-      actorFigureFiles,
-      ragdoll: options.ragdoll,
-      probes: options.page.probes,
-      poweredLights: () => session.power?.lights() ?? [],
-      physicalSolid: session.physicalSolid,
-    },
-  );
+  const view = createPlayView(engine, inventory, appendError, {
+    models: options.assets.models,
+    actorFigureFiles,
+    ragdoll: options.ragdoll,
+    probes: options.page.probes,
+    poweredLights: () => session.power?.lights() ?? [],
+    physicalSolid: session.physicalSolid,
+  });
   input.setMouseLookOverride((movementX, movementY) => {
     // Look holds while a menu is open, so choosing cannot lose its target.
     const entries = openMenuEntries();
@@ -1363,7 +1353,7 @@ const startPlayWith = (
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
-  $('errors').textContent = [$('errors').textContent, engine.contentErrors].filter(Boolean).join('\n');
+  appendError(engine.contentErrors);
   renderAudioOptions(
     $('audio-options'),
     {

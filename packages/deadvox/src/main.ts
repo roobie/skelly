@@ -31,9 +31,11 @@ import {
 } from '@skelly/presentation/play';
 import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/presentation/tutorialUrl';
 import {
+  appendError,
   applyUiTokens,
   chooseMods,
   contentLookup,
+  installErrorLogCopy,
   installErrorReportHandler,
   mountControlsCard,
   mountCredits,
@@ -41,6 +43,7 @@ import {
   mountInputOptions,
   mountWorldLoading,
   SaveController,
+  setError,
 } from '@skelly/presentation/ui';
 import { loadRecord } from './bench/plan.ts';
 import { showReport } from './bench/report.ts';
@@ -65,6 +68,7 @@ addEventListener('hashchange', () => location.reload());
 const view = document.getElementById('view')!;
 const startupScreen = document.getElementById('startup-screen')!;
 installErrorReportHandler();
+installErrorLogCopy();
 const overlay = document.getElementById('overlay')!;
 overlay.inert = true;
 const modsScreen = document.getElementById('mods-screen')!;
@@ -94,7 +98,7 @@ const hideStartupScreen = () => {
 };
 const showStartupFailure = (message: string) => {
   modsScreen.hidden = true;
-  document.getElementById('errors')!.textContent = message;
+  setError(message);
   hideStartupScreen();
 };
 if (bundled.issues.length > 0) {
@@ -118,11 +122,7 @@ const browserSelection = showMods
   : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
-const reportError = (message: string) => {
-  const errors = document.getElementById('errors')!;
-  errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
-};
-applyUiTokens(content.registry, document.documentElement, { report: reportError, files: assets.cursors });
+applyUiTokens(content.registry, document.documentElement, { report: appendError, files: assets.cursors });
 const { screenText } = claimed(content.registry.ui, 'interface')!;
 inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 inputBindings.setSpawnActorNames(content.registry.actors.values());
@@ -156,7 +156,7 @@ const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 if (bench === null) {
   const credits = bundledCredits();
   for (const issue of credits.issues) {
-    reportError(`${issue.source} ${issue.path}: ${issue.message}`);
+    appendError(`${issue.source} ${issue.path}: ${issue.message}`);
   }
   mountCredits(
     {
@@ -198,7 +198,7 @@ if (bench === 'report') {
     pendingReplay = pendingInputReplay(replayStash);
   } catch (error) {
     clearPendingInputReplay(replayStash);
-    reportError(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
+    appendError(`Replay rejected: ${error instanceof Error ? error.message : String(error)}`);
   }
   if (pendingReplay) {
     config.debug = true;
