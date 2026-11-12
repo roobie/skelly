@@ -23,6 +23,7 @@ interface CategoryNode {
 }
 
 const byLabel = (a: { id: string; label: string }, b: { id: string; label: string }): number =>
+  // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
   a.label.localeCompare(b.label) || a.id.localeCompare(b.id);
 
 const categoryPath = (registry: Registry, id: string): string[] => {
@@ -78,6 +79,7 @@ export const recipeBrowser = (
     }
     return [{ id: recipe.id, name, category: recipe.category, tags: [...recipe.tags] }];
   });
+  // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
   rows.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   return {
     rows,

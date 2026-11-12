@@ -4,6 +4,7 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { parse } from 'yaml';
+import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 
 const requireValue = (condition, message = 'Invalid browser CI definition') => {
   if (!condition) {
@@ -45,7 +46,7 @@ export function parseCommand(text) {
 export const describeStage = ({ env, command }) =>
   [
     ...Object.entries(env)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareCodeUnits(a, b))
       .map(([key, value]) => `${key}=${value}`),
     command,
   ].join(' ');

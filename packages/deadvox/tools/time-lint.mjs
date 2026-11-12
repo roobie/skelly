@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { TEMPORAL_FIELDS } from '@skelly/engine/packs';
+import { compareCodeUnits, TEMPORAL_FIELDS } from '@skelly/engine/packs';
 import ts from '../../../tools/lit-check/node_modules/typescript/lib/typescript.js';
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
@@ -282,7 +282,7 @@ export const runtimeTemporalCounts = (files, read = readFileSync) => {
       const [file, name] = key.split('\\0');
       return { file, name, count };
     })
-    .sort((a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name));
+    .sort((a, b) => compareCodeUnits(a.file, b.file) || compareCodeUnits(a.name, b.name));
 };
 
 export const compareRuntimeTemporalCounts = (observed, baseline) => {
@@ -305,7 +305,7 @@ export const compareRuntimeTemporalCounts = (observed, baseline) => {
     }
   }
   return differences.sort(
-    (a, b) => a.kind.localeCompare(b.kind) || a.file.localeCompare(b.file) || a.name.localeCompare(b.name),
+    (a, b) => compareCodeUnits(a.kind, b.kind) || compareCodeUnits(a.file, b.file) || compareCodeUnits(a.name, b.name),
   );
 };
 

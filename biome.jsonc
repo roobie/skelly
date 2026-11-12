@@ -31,6 +31,8 @@
     "formatter": { "quoteStyle": "single", "trailingCommas": "all", "arrowParentheses": "always" }
   },
   "assist": { "includes": ["**", "!packages/skelly-assets/**"], "actions": { "source": { "organizeImports": "on" } } },
+  // GritQL plugins run with the linter. Each one holds a rule Biome has no built-in for; the why is in its message.
+  "plugins": ["./tools/lint/no-locale-order.grit"],
   "linter": {
     "includes": ["**", "!packages/skelly-assets/**"],
     "rules": {

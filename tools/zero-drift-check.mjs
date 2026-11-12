@@ -11,6 +11,7 @@ import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { frontmatter } from 'micromark-extension-frontmatter';
 import { gfm } from 'micromark-extension-gfm';
 import { parse } from 'yaml';
+import { compareCodeUnits } from '../packages/engine/src/core/codeUnitOrder.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BASELINE_PATH = 'tools/zero-drift-baseline.json';
@@ -1305,7 +1306,8 @@ function observedFailures(paths) {
     }
   }
   return [...failures.values()].sort(
-    (a, b) => a.path.localeCompare(b.path) || a.check.localeCompare(b.check) || a.text.localeCompare(b.text),
+    (a, b) =>
+      compareCodeUnits(a.path, b.path) || compareCodeUnits(a.check, b.check) || compareCodeUnits(a.text, b.text),
   );
 }
 
@@ -1357,10 +1359,10 @@ function failureDifferences(observed, baseline) {
   }
   return differences.sort(
     (a, b) =>
-      a.kind.localeCompare(b.kind) ||
-      a.path.localeCompare(b.path) ||
-      a.check.localeCompare(b.check) ||
-      a.text.localeCompare(b.text),
+      compareCodeUnits(a.kind, b.kind) ||
+      compareCodeUnits(a.path, b.path) ||
+      compareCodeUnits(a.check, b.check) ||
+      compareCodeUnits(a.text, b.text),
   );
 }
 

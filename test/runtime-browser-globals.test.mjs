@@ -21,6 +21,8 @@ const restrictedGlobalLines = (files) => {
   const dir = mkdtempSync(join(tmpdir(), 'runtime-browser-globals-'));
   try {
     copyFileSync(join(ROOT, 'biome.jsonc'), join(dir, 'biome.jsonc'));
+    mkdirSync(join(dir, 'tools/lint'), { recursive: true });
+    copyFileSync(join(ROOT, 'tools/lint/no-locale-order.grit'), join(dir, 'tools/lint/no-locale-order.grit'));
     for (const [path, source] of Object.entries(files)) {
       mkdirSync(dirname(join(dir, path)), { recursive: true });
       writeFileSync(join(dir, path), source);
