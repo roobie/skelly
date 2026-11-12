@@ -48,6 +48,10 @@ describe('the scatter kind', () => {
     expect(covered).toBeLessThan(0.01);
   });
 
+  it('keeps its region gaps clear as a thin cover thins', () => {
+    expect(scatterCoverage(0.05, -0.5, 0.2)).toBe(0);
+  });
+
   it('takes the whole swing of its region once the cover reaches the region strength', () => {
     expect(scatterCoverage(0.6, 0.5, 0.2)).toBeCloseTo(0.7, 12);
     expect(scatterCoverage(0.6, -0.5, 0.2)).toBeCloseTo(0.5, 12);
