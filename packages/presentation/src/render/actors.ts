@@ -2,7 +2,7 @@ import type { ColumnReveal } from '@skelly/engine/mesh';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '@skelly/engine/pose';
 import { type Actor, BACKGROUND_ACTOR_RATE, type EntityId, type EntityStore } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
-import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
+import { type Box3, BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -134,6 +134,11 @@ export class ActorMeshes {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.boundingSphere = null;
   }
+
+  /** The boxes carry their own world positions, so three.js culls them like any mesh; the per-light
+   * picking the crowd figures need (render/shadows.ts, CrowdCasters) has nothing to pick here. */
+  selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void = () => undefined;
+  reserveShadowSlots: (slots: number) => void = () => undefined;
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with existing direct callers.
   sync(

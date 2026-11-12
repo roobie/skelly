@@ -428,6 +428,8 @@ export const createPlayView = (
       : new ActorMeshes(s, undefined, meshes);
   actorMeshes.setWorld?.(physicalSolid, s);
   scene.add(actorMeshes.group);
+  // The shadow passes pick the renderer's figures per light (a no-op for the box fallback).
+  engine.shadows?.attachCrowd(actorMeshes);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
