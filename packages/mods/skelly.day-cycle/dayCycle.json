@@ -194,8 +194,8 @@
           },
           "zenith": "#80786f"
         },
-        "fogFar": 0.80000000000000004,
-        "fogNear": 0.29999999999999999,
+        "fogFar": 0.92000000000000004,
+        "fogNear": 0.050000000000000003,
         "heightFog": 0.014,
         "heightFogColor": "#b09a90",
         "lightColor": "#f0b088",
@@ -235,8 +235,8 @@
           },
           "zenith": "#6f8aa3"
         },
-        "fogFar": 0.94999999999999996,
-        "fogNear": 0.59999999999999998,
+        "fogFar": 1,
+        "fogNear": 0.10000000000000001,
         "heightFog": 0.002,
         "heightFogColor": "#b4c6d4",
         "lightColor": "#fff2dd",
@@ -317,8 +317,8 @@
           },
           "zenith": "#66708a"
         },
-        "fogFar": 0.80000000000000004,
-        "fogNear": 0.29999999999999999,
+        "fogFar": 0.92000000000000004,
+        "fogNear": 0.050000000000000003,
         "heightFog": 0.0080000000000000002,
         "heightFogColor": "#7e7078",
         "lightColor": "#e89868",

@@ -40,6 +40,7 @@ import { skyWorldFixture } from './fixtures/skyWorld.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
 
 const FAR_PLANE_SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
+const FOG_CURVE_EXPONENT = graphicsFile.graphics[0]!.fogCurveExponent;
 
 const registry = baseRegistry();
 const actorFigureFiles = stackActorFigureFiles(registry);
@@ -141,6 +142,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
       camera: new PerspectiveCamera(),
       radiusM: 64,
       farPlaneScale: FAR_PLANE_SCALE,
+      fogCurveExponent: FOG_CURVE_EXPONENT,
     },
     isSolid,
   } as unknown as Engine;
@@ -269,6 +271,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       camera,
       radiusM: 64,
       farPlaneScale: FAR_PLANE_SCALE,
+      fogCurveExponent: FOG_CURVE_EXPONENT,
     },
     skylight: sky,
     materialPatches,
