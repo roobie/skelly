@@ -1,4 +1,5 @@
 import type { RecipeCategoryDef, Registry } from '@skelly/engine/content';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { fillText } from '@skelly/engine/text';
 import { craftingText } from './craftReadout.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
@@ -23,7 +24,7 @@ interface CategoryNode {
 }
 
 const byLabel = (a: { id: string; label: string }, b: { id: string; label: string }): number =>
-  a.label.localeCompare(b.label) || a.id.localeCompare(b.id);
+  compareCodeUnits(a.label, b.label) || compareCodeUnits(a.id, b.id);
 
 const categoryPath = (registry: Registry, id: string): string[] => {
   const path: string[] = [];
@@ -78,7 +79,7 @@ export const recipeBrowser = (
     }
     return [{ id: recipe.id, name, category: recipe.category, tags: [...recipe.tags] }];
   });
-  rows.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+  rows.sort((a, b) => compareCodeUnits(a.name, b.name) || compareCodeUnits(a.id, b.id));
   return {
     rows,
     categories: tree(undefined),

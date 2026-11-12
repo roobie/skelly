@@ -5,6 +5,7 @@ import { foodMillisecondsAt, projectFoodExposure } from '@skelly/engine/internal
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import type { snapshotSession } from '@skelly/engine/internal/core/saveState.ts';
 import type { PlayerInputSample } from '@skelly/engine/internal/game/session.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { SkyFields } from '@skelly/engine/sky';
@@ -353,7 +354,7 @@ export const inspect = (runtime: Runtime): unknown => {
   const { touched } = runtime.world as unknown as { touched: Set<string> };
   return {
     chunks: [...runtime.world.chunks.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareCodeUnits(a, b))
       .map(([key, chunk]) => [key, chunk.toArray()]),
     touched: [...touched].sort(),
     simulation: {

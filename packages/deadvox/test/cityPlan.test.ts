@@ -15,6 +15,7 @@ import {
   kitSlotChoices,
   placedSpawns,
 } from '@skelly/engine/internal/core/templates.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   CHUNK,
   type Chunk,
@@ -91,7 +92,7 @@ const generated = (reverse: boolean) => {
   const columns = new Map(cells.map(([cx, , cz]) => [`${cx},${cz}`, [cx, cz] as const]));
   const furniture = [...columns.values()]
     .flatMap(([cx, cz]) => site.furnitureIn(cx, cz))
-    .sort((a, b) => a.spec.pos.join(',').localeCompare(b.spec.pos.join(',')));
+    .sort((a, b) => compareCodeUnits(a.spec.pos.join(','), b.spec.pos.join(',')));
   return { chunks, furniture };
 };
 

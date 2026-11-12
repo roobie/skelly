@@ -24,6 +24,7 @@ import {
   type WorkOperation,
   type WorkOption,
 } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { Body, bindReach, Character, PlayerTickActions, practiceForNextLevel, Survival } from '@skelly/engine/sim';
 import { coreLabel, countText, decimalText, fillText } from '@skelly/engine/text';
 import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
@@ -978,7 +979,7 @@ describe('inventory screen Lit rendering', () => {
     const shown = panelOrder(content);
     expect(shown).not.toEqual(loaded);
     expect(shown.map((id) => content.skills.get(id)!.name)).toEqual(
-      [...content.skills.values()].map(({ name }) => name).sort((left, right) => left.localeCompare(right)),
+      [...content.skills.values()].map(({ name }) => name).sort((left, right) => compareCodeUnits(left, right)),
     );
     const reversed = { ...content, skills: new Map([...content.skills].reverse()) };
     expect(panelOrder(reversed)).toEqual(shown);

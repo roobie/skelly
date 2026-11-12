@@ -1,0 +1,9 @@
+language js
+
+or {
+  `$value.localeCompare($...)`,
+  `new Intl.Collator($...)`,
+  `Intl.Collator($...)`
+} as $call where {
+  register_diagnostic(span=$call, message="Locale-dependent ordering differs between machines. Order strings with compareCodeUnits from packages/engine/src/core/codeUnitOrder.ts; if the order is display-only, suppress with a biome-ignore saying so.", severity="error")
+}

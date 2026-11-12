@@ -41,6 +41,7 @@ import {
   weightOf,
   wornSlotOf,
 } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   BODY_REGIONS,
   type Body,
@@ -1800,7 +1801,7 @@ export class InventoryScreen {
     });
     const vehicle = this.vehicleViewModel();
     const skills = [...this.inv.registry.skills.values()]
-      .sort((left, right) => left.name.localeCompare(right.name))
+      .sort((left, right) => compareCodeUnits(left.name, right.name))
       .map((definition): SkillViewModel => {
         const level = character.skills[definition.id] ?? 0;
         const practice = character.practice[definition.id] ?? 0;

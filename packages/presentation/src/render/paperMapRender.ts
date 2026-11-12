@@ -1,3 +1,4 @@
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   type PaperMapCoverage,
   type PublicCartographicFeature,
@@ -101,7 +102,7 @@ const publicFeaturesFor = (
       });
       return segments.length === 0 ? [] : [{ kind: 'track', width: feature.width, segments }];
     })
-    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b)));
 
 interface ContourInputs {
   readonly samples: Float64Array;
