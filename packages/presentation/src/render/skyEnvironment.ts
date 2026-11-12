@@ -48,8 +48,8 @@ const largestChange = (a: unknown, b: unknown): number => {
 /**
  * Where the sun and the light that follows its arc point. Below the horizon the sun's disc is under the ground fog and
  * the physical sky is off, but the wide glow still lights the twilight sky above it, so these count whenever the sun is
- * up or either sky has glow. What remains at night, the moon and the clouds' lit side, is judged too dim and small for
- * the blurred reflection to show it move.
+ * up or either sky has glow. At night the light follows the moon instead, and neither the moon nor that light counts;
+ * the why is in `packages/deadvox/GRAPHICS.md`, "Look decisions".
  */
 const SUN_BORNE: readonly (keyof Sky)[] = ['sunDirection', 'light'];
 
