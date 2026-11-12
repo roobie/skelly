@@ -324,16 +324,10 @@ export const createPlayView = (
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
     sunSource: engine.sky.light,
+    patches: engine.materialPatches,
   });
-  /**
-   * Sky exposure dims the play scene's reflection per fragment (`src/render/skylight.ts`, `Skylight`); held items
-   * sit at the camera, so theirs takes the camera's, as their ambient light does.
-   */
-  const lightWithSky = (cameraSkyVisibility: number) => {
-    skyEnvironment?.light(scene, 1);
-    skyEnvironment?.light(held.warmUpTarget.scene, cameraSkyVisibility);
-    skyEnvironment?.patchNow(held.warmUpTarget.scene);
-  };
+  skyEnvironment?.light(scene);
+  skyEnvironment?.light(held.warmUpTarget.scene);
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -635,10 +629,8 @@ export const createPlayView = (
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
       skyEnvironment?.refresh(sky, now);
-      lightWithSky(skyVisibility);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
-      held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
       engine.skylight?.setDaylight(sky);
       flashlight.daylightScale = engine.skylight ? 1 : flashlightDaylightScale(sky);
@@ -788,8 +780,8 @@ export const createPlayView = (
       if (!shadows) {
         return Promise.resolve();
       }
-      lightWithSky(1);
       engine.materialPatches.apply(scene);
+      engine.materialPatches.apply(held.warmUpTarget.scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };
