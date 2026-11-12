@@ -84,4 +84,11 @@ export {
 export { columnArrival } from './game/columnArrival.ts';
 export { layoutVehicleQueries, registerLayoutVehicles } from './game/layoutVehicles.ts';
 export type { StreamerStats } from './game/streamer.ts';
+export {
+  createTerrainService,
+  type FromTerrain,
+  type TerrainPort,
+  type TerrainWorkerSource,
+  type ToTerrain,
+} from './game/terrainProtocol.ts';
 export { createWorldSetup, playerStartFromWorld, siteForReviewMap, type WorldSetup } from './game/worldSetup.ts';

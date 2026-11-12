@@ -24,6 +24,7 @@ import type { DebugStart, GameConfig } from './config.ts';
 import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
 import type { MesherSource } from './mesherProtocol.ts';
 import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';
+import type { TerrainWorkerSource } from './terrainProtocol.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup extends ColumnSource {
@@ -89,7 +90,7 @@ export function createWorldSetup(
   config: GameConfig,
   meshes: ChunkMeshSink,
   mesher: MesherSource,
-  stats?: StreamerStats,
+  { stats, terrainWorkers }: { stats?: StreamerStats | undefined; terrainWorkers?: TerrainWorkerSource } = {},
 ): WorldSetup {
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
@@ -110,6 +111,7 @@ export function createWorldSetup(
     structures: [],
   });
   const { groundAt } = terrain;
+  const tuning = graphicsTuningOf(registry);
   const streamer = new Streamer({
     world,
     meshes,
@@ -123,10 +125,11 @@ export function createWorldSetup(
     weatherable: blockWeatherability(registry),
     scale,
     radius: config.radiusChunks,
-    preloadRings: graphicsTuningOf(registry).skyPreloadRings,
-    columnsPerFrame: graphicsTuningOf(registry).columnsPerFrame,
+    preloadRings: tuning.skyPreloadRings,
+    columnsPerFrame: tuning.columnsPerFrame,
     hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
+    ...(terrainWorkers ? { terrainWorkers: { source: terrainWorkers, ...tuning.terrainWorkers } } : {}),
   });
   return {
     config,

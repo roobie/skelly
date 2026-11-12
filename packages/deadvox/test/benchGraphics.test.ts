@@ -68,6 +68,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences', () =
             skyJobsInFlight: 2,
             skyPreloadRings: 1,
             columnsPerFrame: 2,
+            terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },
             furnitureSectorChunks: 1,
             itemViewer: {
               framing: 1,

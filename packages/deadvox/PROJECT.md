@@ -27,4 +27,4 @@ The content contract is maintained by validation; authoring rules are in [docs/c
 
 ## Known boundaries
 
-Transparent blocks need a separate mesh path. Terrain generation runs on the main thread. Furniture and many item models are simplified; the authored item-look contract is in [DESIGN.md](DESIGN.md#piles-and-item-models). Pointer lock is desktop-only; touch controls are not supported.
+Transparent blocks need a separate mesh path. A terrain worker computes columns ahead, but the main thread admits every column and generates any the worker has not finished, so terrain can still cost frame time (`packages/engine/docs/decisions/terrain-workers.md`, "Decision"). Furniture and many item models are simplified; the authored item-look contract is in [DESIGN.md](DESIGN.md#piles-and-item-models). Pointer lock is desktop-only; touch controls are not supported.
