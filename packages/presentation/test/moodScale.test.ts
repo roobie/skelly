@@ -1,15 +1,16 @@
 import type { GraphicsOptions } from '@skelly/engine/look';
 import {
-  type FramebufferTexture,
   NoToneMapping,
   PerspectiveCamera,
   Scene,
+  UnsignedByteType,
   Vector2,
   Vector4,
   type WebGLRenderer,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Mood } from '../src/render.ts';
+import { ScreenScale } from '../src/render/screenScale.ts';
 
 const query = vi.hoisted(() => ({ begin: vi.fn(), end: vi.fn() }));
 vi.mock('../src/render/gpuFrameTime.ts', () => {
@@ -48,14 +49,14 @@ it('non-post rendering scales the scene and hands, presents at display resolutio
   const ratio = 1.5;
   const viewport = new Vector4(0, 0, display.x / ratio, display.y / ratio);
   const original = viewport.clone();
-  const scissor = original.clone();
   const scene = new Scene();
-  const drawing: { kind: string; viewport: Vector4 }[] = [];
+  const drawing: { kind: string; target: null | { width: number; height: number } }[] = [];
+  let bound: null | { width: number; height: number } = null;
   query.begin.mockImplementation(() => query.end);
   const renderer = {
     domElement: new EventTarget(),
     toneMapping: NoToneMapping,
-    getContext: () => ({}),
+    getContext: () => ({ SAMPLES: 4, getParameter: (name: number) => (name === 4 ? 4 : 0) }),
     getDrawingBufferSize: (target: Vector2) => target.copy(display),
     getPixelRatio: () => ratio,
     getViewport: (target: Vector4) => target.copy(viewport),
@@ -66,34 +67,71 @@ it('non-post rendering scales the scene and hands, presents at display resolutio
         viewport.set(x, y!, width!, height!);
       }
     },
-    getScissor: (target: Vector4) => target.copy(scissor),
-    setScissor: vi.fn(),
-    getScissorTest: () => false,
-    setScissorTest: vi.fn(),
+    getRenderTarget: () => null,
+    setRenderTarget: (target: unknown) => {
+      bound = target === null ? null : { width: (target as { width: number }).width, height: (target as { height: number }).height };
+    },
     render: vi.fn((root: unknown) => {
-      drawing.push({ kind: root === scene ? 'scene' : 'present', viewport: viewport.clone() });
+      drawing.push({ kind: root === scene ? 'scene' : 'present', target: bound && { ...bound } });
       expect(query.end).not.toHaveBeenCalled();
     }),
-    copyFramebufferToTexture: vi.fn((_texture: FramebufferTexture) => undefined),
   };
   const mood = new Mood(renderer as unknown as WebGLRenderer, scene, new PerspectiveCamera(), { ...tuning, opticLens });
   expect(mood.post).toBe(false);
-  mood.render(() => drawing.push({ kind: 'hands', viewport: viewport.clone() }));
-  const scaled = new Vector4(
-    0,
-    0,
-    Math.floor(display.x * mood.renderScale) / ratio,
-    Math.floor(display.y * mood.renderScale) / ratio,
-  );
+  mood.render(() => drawing.push({ kind: 'hands', target: bound && { ...bound } }));
+  const scaled = {
+    width: Math.floor(display.x * mood.renderScale),
+    height: Math.floor(display.y * mood.renderScale),
+  };
   expect(drawing).toEqual([
-    { kind: 'scene', viewport: scaled },
-    { kind: 'hands', viewport: scaled },
-    { kind: 'present', viewport: original },
+    { kind: 'scene', target: scaled },
+    { kind: 'hands', target: scaled },
+    { kind: 'present', target: null },
   ]);
-  const texture = renderer.copyFramebufferToTexture.mock.calls[0]?.[0];
-  expect(texture?.image).toMatchObject({ width: scaled.z * ratio, height: scaled.w * ratio });
   expect(query.begin).toHaveBeenCalled();
   expect(query.end).toHaveBeenCalled();
   expect(viewport).toEqual(original);
   expect(display).toEqual(new Vector2(420, 240));
+});
+
+it('draws the scaled scene into a canvas-shaped target the presenting quad samples', () => {
+  const display = new Vector2(420, 240);
+  let bound: unknown;
+  const presents: unknown[] = [];
+  const renderer = {
+    getDrawingBufferSize: (target: Vector2) => target.copy(display),
+    getRenderTarget: () => null,
+    setRenderTarget: (target: unknown) => {
+      bound = target;
+    },
+    getContext: () => ({ SAMPLES: 4, getParameter: () => 4 }),
+    render: (root: unknown) => presents.push({ root, target: bound }),
+  } as unknown as WebGLRenderer;
+  const scale = new ScreenScale();
+  let sceneTarget: unknown;
+  scale.render(renderer, 0.7, () => {
+    sceneTarget = bound;
+  });
+  const quad = (scale as unknown as {
+    quad: { material: { uniforms: { tDiffuse: { value: unknown } } }; _mesh: unknown };
+  }).quad;
+  expect(presents, 'the quad presents to the canvas').toEqual([{ root: quad._mesh, target: null }]);
+  const target = sceneTarget as unknown as {
+    width: number;
+    height: number;
+    samples: number;
+    isXRRenderTarget?: boolean;
+    texture: { colorSpace: string; type: number };
+  };
+  // Canvas-shaped: byte-sized, the canvas's own sample count, and on the canvas's colour-space and
+  // tone-mapping output path, so its bytes are the ones the copied canvas region held.
+  expect(target).toMatchObject({
+    width: Math.floor(420 * 0.7),
+    height: Math.floor(240 * 0.7),
+    samples: 4,
+    isXRRenderTarget: true,
+  });
+  expect(target.texture.colorSpace).toBe('srgb');
+  expect(target.texture.type).toBe(UnsignedByteType);
+  expect(quad.material.uniforms.tDiffuse.value).toBe(target.texture);
 });
