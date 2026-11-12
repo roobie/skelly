@@ -21,7 +21,12 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     furnitureSectorChunks: 4,
     skyPreloadRings: 1,
     columnsPerFrame: 2,
+    terrainWorkers: { count: 1, lookaheadColumns: 8, maxOutstandingColumns: 12 },
     unbuiltSkyCap: 0.5,
+    sunShadow: {
+      defaultReachMetres: 36,
+      debugReachMetres: [12, 16, 24, 36, 40, 64],
+    },
     itemViewer: {
       framing: 1.1,
       startYawDegrees: 45,
@@ -56,5 +61,10 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
     cachedSurfaceNoise: toggle('Cached surface noise', true),
+    msaaSamples: {
+      label: 'Edge smoothing',
+      default: 4,
+      choices: [{ value: 0, label: 'Off' }, { value: 4, label: '4x' }],
+    },
   }],
 }

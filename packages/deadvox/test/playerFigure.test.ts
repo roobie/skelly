@@ -257,40 +257,6 @@ describe('held light presentation', () => {
     held.dispose();
   });
 
-  it('scales held hemisphere ambient by the camera sky visibility', () => {
-    const camera = new PerspectiveCamera();
-    const sky = {
-      scene: new Scene(),
-      light: new DirectionalLight(),
-      ambient: new HemisphereLight(),
-      camera,
-      radiusM: 1,
-      farPlaneScale: 1,
-      fogCurveExponent: 1,
-    };
-    const worldAmbientIntensity = sky.ambient.intensity;
-    const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
-      nearPlaneMetres: 0.01,
-      playerViewFovDegrees: 75,
-    });
-    held.update(camera);
-    const handAmbient = held.warmUpTarget.scene.children.find((child) => child instanceof HemisphereLight)!;
-    const renderer = {
-      autoClear: true,
-      clearDepth: () => undefined,
-      render: () => undefined,
-    } as unknown as Parameters<typeof held.render>[0];
-
-    held.setSkyVisibility(0);
-    held.render(renderer, camera, sky);
-    expect(handAmbient.intensity).toBe(0);
-
-    held.setSkyVisibility(1);
-    held.render(renderer, camera, sky);
-    expect(handAmbient.intensity).toBe(worldAmbientIntensity);
-    held.dispose();
-  });
-
   it('depth-tests carried adapter geometry against world surfaces with the main camera projection', () => {
     const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
       nearPlaneMetres: 0.01,

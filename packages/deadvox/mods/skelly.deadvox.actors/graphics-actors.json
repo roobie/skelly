@@ -87,6 +87,20 @@
         "retries": 3
       },
       "modelLoadConcurrency": 8,
+      "msaaSamples": {
+        "choices": [
+          {
+            "label": "Off",
+            "value": 0
+          },
+          {
+            "label": "4x",
+            "value": 4
+          }
+        ],
+        "default": 4,
+        "label": "Edge smoothing"
+      },
       "nearPlaneMetres": 0.01,
       "opticLens": {
         "reticleAntiAliasWidth": 0.5,
@@ -117,6 +131,15 @@
         "options": [false, true]
       },
       "streamHysteresisM": 16,
+      "sunShadow": {
+        "debugReachMetres": [12, 16, 24, 36, 40, 64],
+        "defaultReachMetres": 36
+      },
+      "terrainWorkers": {
+        "count": 1,
+        "lookaheadColumns": 8,
+        "maxOutstandingColumns": 12
+      },
       "unbuiltSkyCap": 0.5,
       "viewRadiusM": 128
     }

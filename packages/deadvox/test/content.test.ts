@@ -439,6 +439,20 @@ describe('content', () => {
     expect(issuesFor(wrapped)).toContainEqual(expect.stringContaining(`keys[${keys.length}].at`));
   });
 
+  it('rejects weather cloud-kind thresholds that fall instead of rising from fair to cloudy', () => {
+    const { weather } = rawBaseDayCycle.dayCycle;
+    const withThresholds = (fair: number, cloudy: number) => ({
+      ...rawBaseDayCycle.dayCycle,
+      weather: {
+        ...weather,
+        fair: { ...weather.fair, cloudiness: fair },
+        cloudy: { ...weather.cloudy, cloudiness: cloudy },
+      },
+    });
+    expect(safeParse(DayCycleSchema, withThresholds(0.2, 0.6)).success).toBe(true);
+    expect(safeParse(DayCycleSchema, withThresholds(0.6, 0.2)).success).toBe(false);
+  });
+
   it('keeps input instructions out of item descriptions', () => {
     const inputBindings = new BindingRegistry(INPUT_BINDINGS);
     const bindingLabels = [

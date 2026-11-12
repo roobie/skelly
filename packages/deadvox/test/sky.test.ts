@@ -16,8 +16,14 @@ const brightness = (hour: number) => {
 };
 
 const day = dayPhaseAt(BASE_DAY_CYCLE, phaseMidpoint('day'));
-const otherCycle: DayCycleDef = {
+// The moon and stars also wash out by the sun's height, which differs between cycles at one phase position; a band
+// above the highest either sun climbs leaves the whole look keyed to phase position alone.
+const keyedCycle: DayCycleDef = {
   ...BASE_DAY_CYCLE,
+  domeShape: { ...BASE_DAY_CYCLE.domeShape, washOutBand: [0.98, 0.99] },
+};
+const otherCycle: DayCycleDef = {
+  ...keyedCycle,
   latitudeDegrees:
     BASE_DAY_CYCLE.latitudeDegrees > 80 ? BASE_DAY_CYCLE.latitudeDegrees - 7 : BASE_DAY_CYCLE.latitudeDegrees + 7,
 };
@@ -34,8 +40,29 @@ const phaseSamples = (cycle: DayCycle): { phase: DayPhase; time: number }[] => {
   );
 };
 const lookFields = (sky: ReturnType<typeof skyAt>) => {
-  const { dayPhase: _dayPhase, light: _light, sunDirection: _sunDirection, ...look } = sky;
+  const {
+    dayPhase: _dayPhase,
+    light: _light,
+    sunDirection: _sunDirection,
+    moonDirection: _moonDirection,
+    ...look
+  } = sky;
   return look;
+};
+
+const horizontalDot = (a: readonly number[], b: readonly number[]): number => a[0]! * b[0]! + a[2]! * b[2]!;
+const angleBetween = (a: readonly number[], b: readonly number[]): number =>
+  Math.acos(Math.min(1, a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!));
+/** The largest turn of the main light between neighbouring samples `step` seconds apart from `start` to `end`. */
+const largestLightTurn = (start: number, end: number, step: number): number => {
+  let largest = 0;
+  let previous = skyAt(hourAt(start % SECONDS_PER_DAY)).light;
+  for (let time = start + step; time <= end; time += step) {
+    const { light } = skyAt(hourAt(time % SECONDS_PER_DAY));
+    largest = Math.max(largest, angleBetween(previous, light));
+    previous = light;
+  }
+  return largest;
 };
 
 const numbersOf = (value: unknown): number[] =>
@@ -43,11 +70,11 @@ const numbersOf = (value: unknown): number[] =>
 
 describe('sky', () => {
   it('keys the sky look to phase position across different solar cycles', () => {
-    const reference = phaseSamples(BASE_DAY_CYCLE);
+    const reference = phaseSamples(keyedCycle);
     const comparison = phaseSamples(otherCycle);
     reference.forEach(({ phase, time }, index) => {
       expect(comparison[index]!.phase).toBe(phase);
-      const first = lookFields(skyAt(hourAt(time), BASE_DAY_CYCLE));
+      const first = lookFields(skyAt(hourAt(time), keyedCycle));
       const second = lookFields(skyAt(hourAt(comparison[index]!.time), otherCycle));
       const expected = numbersOf(second);
       for (const [numberIndex, value] of numbersOf(first).entries()) {
@@ -69,6 +96,29 @@ describe('sky', () => {
     }
     expect(sunDirection(hourAt(day.sunrise))[0]).toBeGreaterThan(0);
     expect(sunDirection(hourAt(day.sunset))[0]).toBeLessThan(0);
+  });
+
+  it('lights the night from the side the moon is drawn on', () => {
+    const { nightfall, dawn } = dayPhaseAt(BASE_DAY_CYCLE, 0);
+    const nightSeconds = (dawn - nightfall + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+    for (const position of [0.1, 0.5, 0.9]) {
+      const sky = skyAt(hourAt((nightfall + nightSeconds * position) % SECONDS_PER_DAY));
+      expect(horizontalDot(sky.light, sky.moonDirection), `night at ${position}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('turns the main light without a jump through dusk and dawn', () => {
+    const { sunset, nightfall, dawn, sunrise } = dayPhaseAt(BASE_DAY_CYCLE, 0);
+    const spans = [
+      [sunset, nightfall + (nightfall < sunset ? SECONDS_PER_DAY : 0)],
+      [dawn, sunrise + (sunrise < dawn ? SECONDS_PER_DAY : 0)],
+    ] as const;
+    for (const [start, end] of spans) {
+      // A continuous turn shrinks with the sampling step; a jump keeps its size however fine the step.
+      const coarse = largestLightTurn(start, end, 60);
+      const fine = largestLightTurn(start, end, 6);
+      expect(fine, `from ${start} to ${end}`).toBeLessThan(coarse / 4);
+    }
   });
 
   it('makes full night darker and foggier than full day', () => {

@@ -2,7 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
 import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
-import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
+import { defaultShadows, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import type { FromMesher } from '@skelly/engine/mesh';
 import {
   adsCameraEye,
@@ -23,6 +23,7 @@ import {
   type EntityStore,
   hourOfDay,
   playerTuning,
+  type RealTimestamp,
   reachTuning,
 } from '@skelly/engine/sim';
 import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
@@ -288,7 +289,7 @@ export const createPlayView = (
     applyLook(renderer, meshes, lookOf(look));
     setHeightFogTuning(look.heightFog);
     mood.restore(moodOf(look));
-    shadows.restore(DEFAULT_SHADOWS);
+    shadows.restore(defaultShadows(graphics.sunShadow));
   }
   const weather: Weather = { ...dayCycle.weather.defaults };
   const playerFigure = claimed(registry.figures, 'player')!;
@@ -323,16 +324,10 @@ export const createPlayView = (
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
     sunSource: engine.sky.light,
+    patches: engine.materialPatches,
   });
-  /**
-   * Sky exposure dims the play scene's reflection per fragment (`src/render/skylight.ts`, `Skylight`); held items
-   * sit at the camera, so theirs takes the camera's, as their ambient light does.
-   */
-  const lightWithSky = (cameraSkyVisibility: number) => {
-    skyEnvironment?.light(scene, 1);
-    skyEnvironment?.light(held.warmUpTarget.scene, cameraSkyVisibility);
-    skyEnvironment?.patchNow(held.warmUpTarget.scene);
-  };
+  skyEnvironment?.light(scene);
+  skyEnvironment?.light(held.warmUpTarget.scene);
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -395,7 +390,14 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, vehicles.group, furniture.group, corpses.group, playerMeshes.group, modelMaterialWarmUp(true));
+  scene.add(
+    piles.group,
+    vehicles.group,
+    furniture.group,
+    corpses.group,
+    playerMeshes.group,
+    modelMaterialWarmUp({ instanced: true, skyAnchored: true }),
+  );
   const avatarStudy = createAvatarStudy(scene, s, models, config.debug ? probes.avatarStudy : []);
   const avatarMannequin = createAvatarMannequin(
     scene,
@@ -426,6 +428,8 @@ export const createPlayView = (
       : new ActorMeshes(s, undefined, meshes);
   actorMeshes.setWorld?.(physicalSolid, s);
   scene.add(actorMeshes.group);
+  // The shadow passes pick the renderer's figures per light (a no-op for the box fallback).
+  engine.shadows?.attachCrowd(actorMeshes);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
@@ -621,16 +625,14 @@ export const createPlayView = (
       simSeconds = time;
       return { sky };
     },
-    prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
+    prepareLighting: (sky: ReturnType<typeof skyInWeather>, now: RealTimestamp) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
       skyDome?.update({ sky, simSeconds, camera, skyVisibility });
-      skyEnvironment?.refresh(sky);
-      lightWithSky(skyVisibility);
+      skyEnvironment?.refresh(sky, now);
       skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
-      held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
       engine.skylight?.setDaylight(sky);
       flashlight.daylightScale = engine.skylight ? 1 : flashlightDaylightScale(sky);
@@ -780,8 +782,8 @@ export const createPlayView = (
       if (!shadows) {
         return Promise.resolve();
       }
-      lightWithSky(1);
       engine.materialPatches.apply(scene);
+      engine.materialPatches.apply(held.warmUpTarget.scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

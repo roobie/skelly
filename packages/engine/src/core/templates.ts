@@ -27,6 +27,7 @@ import type {
 } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 import { compileOwnership, ownershipCell } from './templateOwnership.ts';
+import type { TerrainPlacement } from './terrainPlan.ts';
 
 /** Horizontal front facings follow WORLD_NORTH in coords.ts. */
 export type Facing = 'n' | 'e' | 's' | 'w';
@@ -332,7 +333,7 @@ export interface Placement {
 }
 
 /** Width along x and depth along z once turned. */
-export const footprint = ({ template, turn }: Placement): [number, number] =>
+export const footprint = ({ template, turn }: TerrainPlacement): [number, number] =>
   turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
@@ -379,7 +380,7 @@ export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | u
 };
 
 /** Writes the part of a placed template that falls inside the chunk. */
-export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
+export const stampPlacement = (chunk: Chunk, placement: TerrainPlacement): void => {
   const { template, origin, turn } = placement;
   const [sx, sy, sz] = template.size;
   const [w, d] = footprint(placement);

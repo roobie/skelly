@@ -4,6 +4,7 @@
 import { existsSync, globSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 // biome-ignore lint/correctness/noNodejsModules: This check reads the source tree in Node.js.
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from 'node:path';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { parseSync } from 'vite';
 
 /** Where the runtime starts, what it may follow, and what it may never reach. Paths are repository-relative. */
@@ -1053,6 +1054,6 @@ export function runtimeClosureViolations(repoRoot: string, policy: RuntimeClosur
   const walk = new ClosureWalk(resolve(repoRoot), policy);
   walk.run();
   return walk.violations.sort((a, b) =>
-    `${a.importer} ${a.specifier}`.localeCompare(`${b.importer} ${b.specifier}`, 'en'),
+    compareCodeUnits(`${a.importer} ${a.specifier}`, `${b.importer} ${b.specifier}`),
   );
 }

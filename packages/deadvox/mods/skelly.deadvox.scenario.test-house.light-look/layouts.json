@@ -1,7 +1,13 @@
 {
   "layouts": [
     {
-      "actors": [],
+      "actors": [
+        {
+          "chance": 1,
+          "position": [10, 21, 12],
+          "type": "shambler"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -95,9 +101,14 @@
           "template": "test_house_reading_booth"
         },
         {
-          "position": [-6, 20.5, 8],
+          "position": [20, 20.5, 8],
           "rotation": 0,
           "template": "test_house_light_look"
+        },
+        {
+          "position": [27, 20.5, 12],
+          "rotation": 0,
+          "template": "test_house_sun_shadow_tower"
         }
       ],
       "demo": true,
@@ -108,7 +119,7 @@
         "usage": ["Residential"]
       },
       "player": {
-        "bearing": 180,
+        "bearing": 0,
         "position": [-2.75, 21, 12.75]
       },
       "showroom": {
@@ -368,6 +379,35 @@
         "k": "concrete"
       },
       "size": [14, 8, 17]
+    },
+    {
+      "id": "test_house_sun_shadow_tower",
+      "layers": [
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"],
+        ["k"]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        "k": "concrete"
+      },
+      "size": [1, 16, 1]
     }
   ]
 }

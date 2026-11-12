@@ -1,4 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
+
 import { readFileSync } from 'node:fs';
 import { buildRegistry } from '@skelly/engine/content';
 import { authoredLayoutIssues } from '@skelly/engine/internal/core/authoredLayout.ts';
@@ -20,6 +21,7 @@ import {
 } from '@skelly/engine/internal/core/templates.ts';
 import { doorOptions, Inventory } from '@skelly/engine/inventory';
 import { Rng } from '@skelly/engine/math';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import type { buildingBounds } from '@skelly/engine/terrain';
 import { BLUEPRINTS, CATALOGUE, GLASS, keyVoxel, PartLibrary, VOXEL, wheel } from '@skelly/engine/vehicles';
 import { type BlockEntity, footprint, makeScale, placedPoint, toChunk } from '@skelly/engine/world';
@@ -28,6 +30,7 @@ import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 
 const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
@@ -207,9 +210,10 @@ const expectGroundedPlacement = (site: AuthoredSite, placement: AuthoredSite['pl
         continue;
       }
       foundationCells += 1;
-      expect(site.surface.height(x, z, layout.ground / scale.blockSize), `${placement.template.id} at ${x},${z}`).toBe(
-        groundY,
-      );
+      expect(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, layout.ground / scale.blockSize),
+        `${placement.template.id} at ${x},${z}`,
+      ).toBe(groundY);
     }
   }
   expect(foundationCells, `${placement.template.id} has ground-layer support`).toBeGreaterThan(0);
@@ -273,18 +277,18 @@ const contents = (inventory: Inventory) => ({
       (entity.pockets ?? []).map((pocket) =>
         pocket
           .map(({ item, x, y }) => [item.type, item.count, item.condition, x, y] as const)
-          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+          .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b))),
       ),
     ])
-    .sort(([a], [b]) => String(a).localeCompare(String(b))),
+    .sort(([a], [b]) => compareCodeUnits(String(a), String(b))),
   piles: [...inventory.piles.values()]
     .map((pile) => [
       pile.pos.join(','),
       pile.items
         .map(({ item }) => [item.type, item.count, item.condition] as const)
-        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+        .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b))),
     ])
-    .sort(([a], [b]) => String(a).localeCompare(String(b))),
+    .sort(([a], [b]) => compareCodeUnits(String(a), String(b))),
 });
 
 const fixedItemCounts = (

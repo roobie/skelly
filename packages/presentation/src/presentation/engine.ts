@@ -5,6 +5,7 @@
 
 import { requireDayCycle } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
+import { resolveGraphics } from '@skelly/engine/look';
 import type { GameConfig } from '@skelly/engine/session';
 import { skyAt } from '@skelly/engine/sky';
 import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@skelly/engine/world';
@@ -17,7 +18,9 @@ import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
+import { browserTerrainWorkerSource } from '../worker/terrainPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
+import { readGraphicsSettings } from './graphicsSettings.ts';
 
 export interface Engine extends WorldSetup {
   /** Patches for the main scene's materials, installed in one walk before each draw. */
@@ -67,7 +70,15 @@ export function createEngine(
   { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
-  const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
+  const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
+  if (!graphicsTuning) {
+    throw new Error('Missing core graphics policy');
+  }
+  const { msaaSamples } = resolveGraphics(
+    graphicsTuning,
+    graphicsSource === 'player' ? readGraphicsSettings(graphicsTuning) : {},
+  );
+  const renderer = render ? new WebGLRenderer({ antialias: msaaSamples > 0 }) : undefined;
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   if (renderer) {
     renderer.localClippingEnabled = true;
@@ -75,10 +86,6 @@ export function createEngine(
   }
 
   const scene = new Scene();
-  const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
-  if (!graphicsTuning) {
-    throw new Error('Missing core graphics policy');
-  }
   // Short-relief optics belong to this scene too, not only to the optical adapter's closer camera.
   const camera = new PerspectiveCamera(graphicsTuning.playerViewFovDegrees, 1, graphicsTuning.nearPlaneMetres, radiusM);
   camera.rotation.order = 'YXZ';
@@ -102,7 +109,10 @@ export function createEngine(
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
-  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), stats);
+  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), {
+    stats,
+    terrainWorkers: browserTerrainWorkerSource,
+  });
   scene.add(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
@@ -136,6 +146,7 @@ export function createEngine(
   };
 
   const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
+  mood?.setMsaaSamples(msaaSamples);
   const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
   const graphics = new GraphicsControls(
     graphicsTuning,

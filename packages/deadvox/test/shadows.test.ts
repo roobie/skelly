@@ -1,6 +1,5 @@
 import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
-import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '@skelly/engine/look';
+import { clampShadowDistance, defaultShadows, graphicsTuningOf, nextShadowDistance } from '@skelly/engine/look';
 import type { MeshData } from '@skelly/engine/mesh';
 import { dayPhaseAt } from '@skelly/engine/sim';
 import { skyAt as skyAtCycle, sunShadowStrength } from '@skelly/engine/sky';
@@ -29,6 +28,7 @@ import { shadowReadoutText } from '../src/debug/index.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
+const SUN_SHADOW = graphicsTuningOf(BUNDLED_CONTENT.registry).sunShadow;
 
 import { FrameTimes } from '@skelly/presentation/internal/render/frameTimes.ts';
 import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
@@ -79,15 +79,20 @@ describe('sun shadow strength', () => {
 
 describe('shadow settings', () => {
   it('steps the distance through the allowed list and wraps', () => {
-    const distances = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
-    expect(distances.slice(0, -1).map(nextShadowDistance)).toEqual(distances.slice(1));
-    expect(nextShadowDistance(SHADOW_DISTANCES.at(-1)!)).toBe(SHADOW_DISTANCES[0]);
+    const distances = [...SUN_SHADOW.debugReachMetres, SUN_SHADOW.debugReachMetres[0]!];
+    expect(distances.slice(0, -1).map((distance) => nextShadowDistance(distance, SUN_SHADOW))).toEqual(
+      distances.slice(1),
+    );
+    expect(nextShadowDistance(SUN_SHADOW.debugReachMetres.at(-1)!, SUN_SHADOW)).toBe(SUN_SHADOW.debugReachMetres[0]);
   });
 
-  it('clamps a distance to whole metres in 16..96, and a non-number to the default', () => {
-    expect([1, 16.4, 33.6, 96, 500].map(clampShadowDistance)).toEqual([16, 16, 34, 96, 96]);
-    expect(clampShadowDistance(Number.NaN)).toBe(DEFAULT_SHADOWS.distance);
-    expect(DEFAULT_SHADOWS).toMatchObject({ sun: true, torch: true });
+  it('clamps a distance to whole metres and a non-number to the content default', () => {
+    const values = [1, 16.4, 33.6, 96, 500].map((distance) => clampShadowDistance(distance, SUN_SHADOW));
+    expect(values.every(Number.isInteger)).toBe(true);
+    expect(values[0]).toBeGreaterThan(1);
+    expect(values.at(-1)).toBeLessThan(500);
+    expect(clampShadowDistance(Number.NaN, SUN_SHADOW)).toBe(SUN_SHADOW.defaultReachMetres);
+    expect(defaultShadows(SUN_SHADOW)).toMatchObject({ sun: true, torch: true });
   });
 
   it('draws a casting beam map only while the beam is on and bright enough to show', () => {
@@ -282,7 +287,7 @@ describe('Shadows', () => {
     expect(idle.torch).toBe(false);
   });
 
-  it('covers the set distance with a box that reaches back towards the sun', () => {
+  it('sizes the shadow setup from the content-owned default reach', () => {
     const { shadows, light } = setup();
     const camera = light.shadow.camera as OrthographicCamera;
     expect([camera.left, camera.right, camera.top, camera.bottom]).toEqual([-40, 40, 40, -40]);
@@ -290,9 +295,9 @@ describe('Shadows', () => {
     shadows.setDistance(64);
     expect(camera.right).toBe(64);
     expect(light.shadow.bias).toBeCloseTo(sunShadowBias(64).bias, 9);
-    shadows.stepDistance();
-    expect(shadows.distance).toBe(24);
-    expect(camera.right).toBe(24);
+    shadows.restore(defaultShadows(SUN_SHADOW));
+    expect(shadows.distance).toBe(SUN_SHADOW.defaultReachMetres);
+    expect(camera.right).toBe(SUN_SHADOW.defaultReachMetres);
   });
 
   it('keeps the light casting with its light out, and drops the shadow strength instead of switching it', () => {

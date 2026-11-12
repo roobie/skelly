@@ -5,27 +5,17 @@ import { foodMillisecondsAt, projectFoodExposure } from '@skelly/engine/internal
 import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
 import type { snapshotSession } from '@skelly/engine/internal/core/saveState.ts';
 import type { PlayerInputSample } from '@skelly/engine/internal/game/session.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { SkyFields } from '@skelly/engine/sky';
-import {
-  BlockEntities,
-  CHUNK,
-  Chunk,
-  generateColumn,
-  makeScale,
-  type Terrain,
-  terrainShapeOf,
-  toChunk,
-  type Vec3,
-  World,
-  worldSolid,
-} from '@skelly/engine/world';
+import { BlockEntities, CHUNK, Chunk, makeScale, toChunk, type Vec3, World, worldSolid } from '@skelly/engine/world';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import type { MoveIntent, StanceToggle } from './playerFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
@@ -52,20 +42,7 @@ for (let cz = toChunk(fixtureSite.bounds.z0); cz <= toChunk(fixtureSite.bounds.z
     }
   }
 }
-const fixtureTerrain: Terrain = {
-  seed,
-  shape: terrainShapeOf(registry),
-  blocks: {
-    grass: blockId('grass'),
-    dirt: blockId('dirt'),
-    rock: blockId('stone'),
-    sand: blockId('sand'),
-    water: blockId('water'),
-  },
-  scale,
-  surface: fixtureSite.surface,
-  stamp: (chunk) => fixtureSite.stamp(chunk),
-};
+const fixtureTerrain = terrainFor(fixtureSite, registry, scale, seed);
 const foundActorColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.actorsIn(cx, cz).length > 0);
 if (!foundActorColumn) {
   throw new Error('Snapshot fixture has no zombie column');
@@ -77,7 +54,7 @@ const fixtureChunksFor = (columns: readonly [number, number][]): Chunk[] =>
     const key = `${cx},${cz}`;
     let chunks = chunksByColumn.get(key);
     if (!chunks) {
-      chunks = generateColumn(fixtureTerrain, cx, cz);
+      chunks = fixtureTerrain.generateColumn(cx, cz);
       chunksByColumn.set(key, chunks);
     }
     return chunks;
@@ -377,7 +354,7 @@ export const inspect = (runtime: Runtime): unknown => {
   const { touched } = runtime.world as unknown as { touched: Set<string> };
   return {
     chunks: [...runtime.world.chunks.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => compareCodeUnits(a, b))
       .map(([key, chunk]) => [key, chunk.toArray()]),
     touched: [...touched].sort(),
     simulation: {

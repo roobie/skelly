@@ -1,8 +1,11 @@
 // The sky dome: one camera-following sphere that stands in for the flat background. A look's `dome` block
 // (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars, moon and
-// sun; the day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density,
-// the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the gradient around a low sun, the
-// fade into the fog colour at the horizon, and cloud light from the main light.
+// sun; the day cycle's `clouds` supply each kind of cloud's shape and its `domeShape` the gradient's bands, the star
+// density, the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the
+// gradient around a low sun, the fade into the fog colour at the horizon, and cloud light from the main light.
+//
+// Both kinds of cloud are compiled in, so the weather can move between them without rebuilding the shader; the
+// weather's share of each sets which shows (engine/core/weather.ts, `skyInWeather`).
 //
 // The sun and its glow are painted rather than taken from the physical sky. Around a low sun the model's radiance
 // falls off steeply with angle and swings from red through green to blue, which reads only when a per-channel curve
@@ -12,6 +15,11 @@
 // It is drawn the way the background it replaces is: never tone-mapped on the screen path, and in the post chain
 // scaled with the clear colour and the fog by `Mood` (render/mood.ts, `Mood.draw`) through `skyDomeUniforms`.
 // A dome that skipped either would not meet the fogged geometry at the horizon.
+//
+// It draws after the opaque geometry, its depth pinned to the far plane, so only the pixels no geometry covered
+// are shaded: the dome's fragment is the frame's dearest per pixel, and drawn first it would pay that cost under
+// every wall and hill before geometry drew over it. The pin, not the sphere's own depth, keeps it behind every
+// drawn surface, so it never replaces one; the transparent list three.js always draws later still blends over it.
 //
 // The physical sky, the sun, the moon and the lit clouds are radiance in arbitrary units, so the composited colour
 // is brought into display range once by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under
@@ -26,6 +34,7 @@ import {
   Color,
   type DataTexture,
   type IUniform,
+  LessEqualDepth,
   Mesh,
   type PerspectiveCamera,
   ShaderMaterial,
@@ -35,6 +44,7 @@ import {
   Vector3,
   Vector4,
 } from 'three';
+import { CLOUD_COVER_GLSL } from './skyCloudCover.ts';
 import { cloudTexture } from './skyCloudNoise.ts';
 
 /** Shared by the dome's material; `Mood` sets the scale for the post chain's frame only. */
@@ -102,13 +112,22 @@ const VERTEX_SHADER = /* glsl */ `
     // Unit sphere at the camera: the local position is the view direction.
     vDir = position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    // The dome draws after the opaque geometry and shades only what no geometry covered, so its
+    // depth is the far plane's own: never in front of a drawn surface, equal to the cleared depth
+    // where nothing drew, which the material's depth test lets pass.
+    gl_Position.z = gl_Position.w;
   }
 `;
 
-/** Layer `index` of the cloud field over `col`. Literal indices keep sampler use legal in GLSL ES 1.0. */
+/**
+ * Layer `index` of the cloud field over `col`, lit between the tops' light and the deck's by its shade. Literal indices
+ * keep sampler use legal in GLSL ES 1.0.
+ */
 const layerGlsl = (index: number): string => /* glsl */ `
-    col = mix( col, litCloud, cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] )
-      * uLayerOpacity[${index}] * cloudOpacity );`;
+    if ( uLayerOpacity[${index}] > 0.0 ) {
+      col = mix( col, mix( litTops, litDeck, uLayerShade[${index}] ),
+        cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * layeredOpacity );
+    }`;
 
 const fragmentShader = (layers: number): string => /* glsl */ `
   varying vec3 vDir;
@@ -123,6 +142,10 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uStarTwinkle;
   uniform vec2 uMoonDisc;
   uniform float uMoonDiscGain;
+  uniform vec3 uMoonAcross;
+  uniform vec3 uMoonUp;
+  uniform float uMoonLimb;
+  uniform vec2 uMoonMaria;
   uniform vec2 uMoonTightHalo;
   uniform vec2 uMoonWideHalo;
   uniform float uCoverGain;
@@ -132,7 +155,6 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uPhysicalExposure;
   uniform float uMoonBrightness;
   uniform vec3 uHorizonGlow;
-  uniform vec3 uHorizon;
   uniform float uPhysicalWeight;
   uniform vec3 uSunDir;
   uniform float uSunIntensity;
@@ -156,11 +178,17 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uSimSeconds;
   uniform vec3 uLightDir;
   uniform vec3 uCloudLight;
+  uniform vec3 uCloudDeckLight;
   uniform vec3 uCloudAmbient;
   uniform sampler2D uCloudA;
   uniform sampler2D uCloudB;
   uniform vec4 uLayer[${layers}];
   uniform float uLayerOpacity[${layers}];
+  uniform float uLayerShade[${layers}];
+  uniform float uScatter;
+  uniform vec4 uScatterShape;
+  uniform vec2 uScatterDrift;
+  uniform vec3 uScatterLight;
 
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
@@ -183,8 +211,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   }
 
   vec3 keyedSky ( vec3 dir ) {
-    vec3 col = mix( uHorizonGlow, uZenith, smoothstep( uGlowBand.x, uGlowBand.y, dir.y ) );
-    return mix( uHorizon, col, smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
+    return mix( uHorizonGlow, uZenith, smoothstep( uGlowBand.x, uGlowBand.y, dir.y ) );
   }
 
   // Preetham's analytic daylight (three's Sky addon, less its clouds and its sun disc).
@@ -209,11 +236,32 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return fract( sin( dot( cell, vec2( 127.1, 311.7 ) ) ) * 43758.5453 );
   }
 
+  const float TAU = 6.283185307179586;
+  // The star field's cells to the radian, each way: the spacing and star size the content's star field was tuned
+  // against near the horizon, where a player looks most.
+  const float STAR_CELLS_PER_RADIAN = 54.0;
+
+  // Cells lie in rings of equal elevation, each ring holding as many whole cells as fit round it, so a cell is about
+  // as wide as it is tall, except within a few rings of the zenith, and a ring's seam falls on a cell edge. A star is
+  // measured on the sphere, not in cell space, so it is round wherever it stands. Its centre stays a radius inside
+  // its cell and below the zenith, so the cell's edge does not cut a star whose radius is up to half a cell, outside
+  // those top rings.
   float stars ( vec3 dir ) {
-    vec2 sph = vec2( atan( dir.z, dir.x ) * 38.2, asin( clamp( dir.y, -1.0, 1.0 ) ) * 76.4 );
-    vec2 cell = floor( sph );
-    vec2 inCell = fract( sph ) - vec2( hash( cell ), hash( cell + 19.7 ) );
-    float star = ( 1.0 - smoothstep( 0.0, uStarSize, length( inCell ) ) ) * step( uStarThreshold, hash( cell + 7.3 ) );
+    float row = floor( asin( clamp( dir.y, -1.0, 1.0 ) ) * STAR_CELLS_PER_RADIAN );
+    float ringCells = max( 1.0, floor( TAU * cos( ( row + 0.5 ) / STAR_CELLS_PER_RADIAN ) * STAR_CELLS_PER_RADIAN ) );
+    vec2 cell = vec2( floor( ( atan( dir.z, dir.x ) / TAU + 0.5 ) * ringCells ), row );
+    if ( hash( cell + 7.3 ) < uStarThreshold ) {
+      return 0.0;
+    }
+    float margin = min( uStarSize, 0.5 );
+    vec2 centre = cell + margin + vec2( hash( cell ), hash( cell + 19.7 ) ) * ( 1.0 - 2.0 * margin );
+    // The top ring stops short of a whole cell at the zenith; past it a star's direction would fold over the pole.
+    centre.y = min( centre.y, 0.25 * TAU * STAR_CELLS_PER_RADIAN - margin );
+    float azimuth = ( centre.x / ringCells - 0.5 ) * TAU;
+    float elevation = centre.y / STAR_CELLS_PER_RADIAN;
+    vec3 starDir = vec3( cos( elevation ) * cos( azimuth ), sin( elevation ), cos( elevation ) * sin( azimuth ) );
+    float apart = length( dir - starDir ) * STAR_CELLS_PER_RADIAN;
+    float star = 1.0 - smoothstep( 0.0, uStarSize, apart );
     float twinkle = 1.0 - uStarTwinkle * ( 1.0 - hash( cell + 3.1 ) );
     return star * twinkle * smoothstep( 0.0, 0.25, dir.y );
   }
@@ -221,12 +269,6 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   // A lobe of light round a body, as cos(angle) ** power * gain; shape is power, gain.
   float lobe ( float cosAngle, vec2 shape ) {
     return pow( cosAngle, shape.x ) * shape.y;
-  }
-
-  vec3 moon ( vec3 dir ) {
-    float d = clamp( dot( dir, uMoonDir ), 0.0, 1.0 );
-    float disc = smoothstep( uMoonDisc.x, uMoonDisc.y, d );
-    return uMoonColour * ( disc * uMoonDiscGain + lobe( d, uMoonTightHalo ) + lobe( d, uMoonWideHalo ) );
   }
 
   vec3 sunDisc ( float cosAngle ) {
@@ -237,6 +279,8 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return ( uSunColour * lobe( cosAngle, uSunTightHalo ) + uSunGlowColour * lobe( cosAngle, uSunWideHalo ) ) * uSunGlow;
   }
 
+  ${CLOUD_COVER_GLSL}
+
   // One layer's cover at a sky-plane point. A tiling texture repeats, so the lookup is rotated per layer and
   // warped by the texture's own low octave, which hides the tile period. layer: scale, angle, drift x and y.
   float cloudCover ( sampler2D tex, vec2 plane, vec4 layer ) {
@@ -245,31 +289,129 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     vec2 uv = mat2( c, s, -s, c ) * plane * layer.x + layer.zw * uSimSeconds;
     uv += ( texture2D( tex, uv * 0.31 + vec2( 0.37, 0.71 ) ).rg - 0.5 ) * uWarp;
     vec2 noise = texture2D( tex, uv ).rg;
-    float threshold = 1.0 - uCoverGain * uCover;
-    // Cover 0 is clear sky however high the noise rises.
-    return smoothstep( threshold, threshold + uEdgeSoftness, noise.r + ( noise.g - 0.5 ) * 0.35 ) * step( 0.0001, uCover );
+    return layeredCover( noise.r + ( noise.g - 0.5 ) * 0.35, uCoverGain * uCover, uEdgeSoftness );
+  }
+
+  // The scatter kind's noise, after three's Sky addon: gradient noise from a hash without sin, so every GPU draws the
+  // same clouds, summed over octaves that slide past one another so the clouds billow.
+  vec2 scatterGradient ( vec2 lattice ) {
+    vec3 p = fract( lattice.xyx * vec3( 0.1031, 0.1030, 0.0973 ) );
+    p += dot( p, p.yzx + 33.33 );
+    return fract( ( p.xx + p.yz ) * p.zy ) * 2.0 - 1.0;
+  }
+
+  float scatterNoise ( vec2 p ) {
+    vec2 i = floor( p );
+    vec2 f = fract( p );
+    vec2 u = f * f * f * ( f * ( f * 6.0 - 15.0 ) + 10.0 );
+    float a = dot( scatterGradient( i ), f );
+    float b = dot( scatterGradient( i + vec2( 1.0, 0.0 ) ), f - vec2( 1.0, 0.0 ) );
+    float c = dot( scatterGradient( i + vec2( 0.0, 1.0 ) ), f - vec2( 0.0, 1.0 ) );
+    float d = dot( scatterGradient( i + vec2( 1.0, 1.0 ) ), f - vec2( 1.0, 1.0 ) );
+    return mix( mix( a, b, u.x ), mix( c, d, u.x ), u.y ) * 1.6;
+  }
+
+  // The moon's face at a point on its disc: darker towards the rim, where a lit sphere is seen edge on, and in its seas.
+  // The face is placed from the disc's own axes (uMoonAcross and uMoonUp, each a disc radius long), so it keeps its
+  // look wherever the moon stands. The seas take the scatter kind's noise, which every GPU draws alike.
+  float moonFace ( vec3 dir ) {
+    vec2 onDisc = vec2( dot( dir, uMoonAcross ), dot( dir, uMoonUp ) );
+    float limb = 1.0 - uMoonLimb * ( 1.0 - sqrt( max( 0.0, 1.0 - dot( onDisc, onDisc ) ) ) );
+    float sea = smoothstep( -0.05, 0.35, scatterNoise( onDisc * uMoonMaria.y + vec2( 3.7, 1.3 ) ) );
+    return limb * ( 1.0 - uMoonMaria.x * sea );
+  }
+
+  vec3 moon ( vec3 dir ) {
+    float d = clamp( dot( dir, uMoonDir ), 0.0, 1.0 );
+    float disc = smoothstep( uMoonDisc.x, uMoonDisc.y, d );
+    float face = disc > 0.0 ? disc * uMoonDiscGain * moonFace( dir ) : 0.0;
+    return uMoonColour * ( face + lobe( d, uMoonTightHalo ) + lobe( d, uMoonWideHalo ) );
+  }
+
+  float scatterFbm ( vec2 p, float billow ) {
+    float sum = 0.0;
+    float amplitude = 1.0;
+    for ( int octave = 0; octave < 4; octave ++ ) {
+      sum += amplitude * scatterNoise( p );
+      amplitude *= 0.5;
+      p = p * 2.0 + billow;
+    }
+    return sum;
+  }
+
+  // The scatter kind over col. A cloud is opaque by its depth past the edge; its light is dimmed towards the
+  // self-shadowed core by a Beer and powder term, and its rim shines through a forward Henyey-Greenstein lobe when the
+  // light stands behind it. shape: scale, billow, region scale and strength; light: density, shadow, lining.
+  vec3 scatterClouds ( vec3 col, vec3 dir, vec2 plane, float facing, float opacity ) {
+    vec2 p = plane * uScatterShape.x + uScatterDrift * uSimSeconds;
+    float noise = clamp( scatterFbm( p, uScatterShape.y * uSimSeconds ) * 0.7 + 0.5, 0.0, 1.0 );
+    float region = scatterNoise( p * ( uScatterShape.z / uScatterShape.x ) );
+    float threshold = 1.0 - scatterCoverage( uCoverGain * uCover, region, uScatterShape.w );
+    float depth = max( 0.0, noise - threshold );
+    float beer = exp( -4.0 * depth );
+    float core = mix( uScatterLight.y, 1.0, clamp( beer * ( 1.0 - beer * beer ) * 2.6, 0.0, 1.0 ) );
+    float edge = smoothstep( threshold, threshold + uEdgeSoftness, noise );
+    float lightCos = dot( dir, uLightDir );
+    float lining = clamp( 0.51 / pow( 1.49 - 1.4 * lightCos, 1.5 ), 0.0, 3.0 ) * edge * ( 1.0 - edge ) * 4.0;
+    vec3 lit = uCloudAmbient + uCloudLight * ( facing * core + lining * uScatterLight.z );
+    return mix( col, lit, ( 1.0 - exp( -uScatterLight.x * depth ) ) * opacity );
   }
 
   void main () {
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
-    vec3 physical = physicalSky( dir );
-    vec3 col = mix( keyed, physical, uPhysicalWeight );
     float sunCos = clamp( dot( dir, uSunDir ), 0.0, 1.0 );
-    col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness + sunDisc( sunCos );
+    // A term whose weight is zero leaves the colour bit-for-bit as it was, so it is skipped whole.
+    // The physical sky is the dome's dearest per-pixel work, and no look runs it around a low sun:
+    // the guard is what a dusk frame lives on.
+    vec3 col = keyed;
+    if ( uPhysicalWeight > 0.0 ) {
+      col = mix( keyed, physicalSky( dir ), uPhysicalWeight );
+    }
+    vec3 painted = vec3( 0.0 );
+    if ( uStars > 0.0 ) {
+      painted += vec3( stars( dir ) * uStars );
+    }
+    if ( uMoonBrightness > 0.0 ) {
+      painted += moon( dir ) * uMoonBrightness;
+    }
+    if ( uSunBrightness > 0.0 ) {
+      painted += sunDisc( sunCos );
+    }
+    col += painted;
 
     // Clouds cover the stars, the moon and the sun's disc behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
-    vec3 litCloud = uCloudAmbient + uCloudLight * ( 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
-    vec2 plane = dir.xz / max( dir.y, 0.06 );
-    ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+    if ( cloudOpacity > 0.0 && uCover > 0.0 ) {
+      // A layer's deck share takes the main light only up to the deck's lower cap while the tops take it up to 1; with
+      // one light for every layer a closing cover reads as a flat sheet. A light already under the deck's cap lights
+      // deck and tops alike.
+      float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
+      vec3 litTops = uCloudAmbient + uCloudLight * facing;
+      vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
+      // Clouds show only above their fade's lower edge, which is at or above the horizon, so dir.y is positive here.
+      // A floor on it would stretch the plane into vertical streaks wherever clouds still show under the floor.
+      vec2 plane = dir.xz / dir.y;
+      // A change of kind fades one kind out as the other fades in; a kind with no share costs nothing.
+      float layeredOpacity = cloudOpacity * ( 1.0 - uScatter );
+      if ( layeredOpacity > 0.0 ) {
+        ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+      }
+      if ( uScatter > 0.0 ) {
+        col = scatterClouds( col, dir, plane, facing, cloudOpacity * uScatter );
+      }
+    }
 
     // The glow is lit air between the eye and the clouds, so it goes over them.
-    col += sunGlow( sunCos );
+    if ( uSunGlow > 0.0 ) {
+      col += sunGlow( sunCos );
+    }
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
-    col = mix( col, uFogColor, 1.0 - smoothstep( 0.0, 0.06, dir.y ) );
+    // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the fog with
+    // the sky behind it instead of ending in a crisp line.
+    col = mix( col, uFogColor, 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
     gl_FragColor = vec4( col * uSkyColorScale, 1.0 );
     #include <colorspace_fragment>
   }
@@ -281,12 +423,32 @@ const placeDome = (mesh: Mesh, camera: PerspectiveCamera): void => {
   mesh.scale.setScalar(Math.max(1, camera.far * 0.5));
 };
 
+const WORLD_UP = new Vector3(0, 1, 0);
+const WORLD_EAST = new Vector3(1, 0, 0);
+
+/**
+ * The moon disc's axes, each scaled to one over the disc's radius so a direction's dot with them is its place on the
+ * disc: across stays level, so the face keeps upright; a moon straight up or down takes east as across.
+ */
+const placeMoonFace = (moon: Vector3, radius: number, across: Vector3, up: Vector3): void => {
+  across.crossVectors(WORLD_UP, moon);
+  if (across.lengthSq() < 1e-12) {
+    across.copy(WORLD_EAST);
+  }
+  across.normalize();
+  up.crossVectors(moon, across).normalize();
+  across.divideScalar(radius);
+  up.divideScalar(radius);
+};
+
 /** Two textures serve every layer in turn, so neighbouring layers never share a pattern. */
 const TEXTURE_SEEDS = [1, 2] as const;
 
 /** The mesh is for the caller to add to the scene; `dispose` frees what the dome owns. */
-export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
+export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): SkyDome => {
   const textures: DataTexture[] = TEXTURE_SEEDS.map((seed) => cloudTexture(seed));
+  // The disc's outer edge, as the sine of its angular radius.
+  const moonRadius = Math.sqrt(1 - shape.moon.disc[0] ** 2);
   const uniforms = {
     ...skyDomeUniforms,
     uFogColor: { value: new Color() },
@@ -299,6 +461,10 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uStarTwinkle: { value: shape.starField.twinkle },
     uMoonDisc: { value: new Vector2(...shape.moon.disc) },
     uMoonDiscGain: { value: shape.moon.discGain },
+    uMoonAcross: { value: new Vector3() },
+    uMoonUp: { value: new Vector3() },
+    uMoonLimb: { value: shape.moon.limbDarkening },
+    uMoonMaria: { value: new Vector2(shape.moon.maria.depth, shape.moon.maria.scale) },
     uMoonTightHalo: { value: new Vector2(shape.moon.tightHalo.power, shape.moon.tightHalo.gain) },
     uMoonWideHalo: { value: new Vector2(shape.moon.wideHalo.power, shape.moon.wideHalo.gain) },
     uCoverGain: { value: shape.cloudShape.coverGain },
@@ -308,7 +474,6 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uPhysicalExposure: { value: 0 },
     uMoonBrightness: { value: 0 },
     uHorizonGlow: { value: new Color() },
-    uHorizon: { value: new Color() },
     uPhysicalWeight: { value: 0 },
     uSunDir: { value: new Vector3(0, 1, 0) },
     uSunIntensity: { value: 0 },
@@ -328,32 +493,45 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uStars: { value: 0 },
     uCover: { value: 0 },
     uCloudOpacity: { value: 0 },
-    uWarp: { value: clouds.warp },
+    uWarp: { value: layered.warp },
     uSimSeconds: { value: 0 },
     uLightDir: { value: new Vector3(0, 1, 0) },
     uCloudLight: { value: new Color() },
+    uCloudDeckLight: { value: new Color() },
     uCloudAmbient: { value: new Color() },
     uCloudA: { value: textures[0]! },
     uCloudB: { value: textures[1]! },
-    uLayer: { value: clouds.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
-    uLayerOpacity: { value: clouds.layers.map((layer) => layer.opacity) },
+    uLayer: { value: layered.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
+    uLayerOpacity: { value: layered.layers.map((layer) => layer.opacity) },
+    uLayerShade: { value: layered.layers.map((layer) => layer.shade) },
+    uScatter: { value: 0 },
+    uScatterShape: {
+      value: new Vector4(scatter.scale, scatter.billow, scatter.region.scale, scatter.region.strength),
+    },
+    uScatterDrift: { value: new Vector2(...scatter.drift) },
+    uScatterLight: { value: new Vector3(scatter.density, scatter.shadow, scatter.lining) },
   };
   const domeMaterial = (domeUniforms: typeof uniforms): ShaderMaterial =>
     new ShaderMaterial({
       name: 'SkyDome',
       side: BackSide,
       depthWrite: false,
+      // Lets the dome through only where the depth buffer still holds the cleared far plane; see
+      // the vertex shader's depth pin.
+      depthFunc: LessEqualDepth,
       toneMapped: false,
       uniforms: domeUniforms,
       vertexShader: VERTEX_SHADER,
-      fragmentShader: fragmentShader(clouds.layers.length),
+      fragmentShader: fragmentShader(layered.layers.length),
     });
   const material = domeMaterial(uniforms);
   const geometry = new SphereGeometry(1, 48, 24);
   const mesh = new Mesh(geometry, material);
   mesh.name = 'skyDome';
   mesh.frustumCulled = false;
-  mesh.renderOrder = -1000;
+  // After every opaque draw (which three.js places before the transparent list whatever the order
+  // here), so the depth test leaves the dome only the pixels no geometry covered.
+  mesh.renderOrder = 900;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
   // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
   // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky.
@@ -376,7 +554,6 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       setSrgb(uniforms.uFogColor.value, sky.sky).multiplyScalar(skyVisibility);
       setSrgb(openUniforms.uFogColor.value, sky.ambientGround);
       uniforms.uSkyVisibility.value = skyVisibility;
-      setSrgb(uniforms.uHorizon.value, sky.sky);
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
       setSrgb(uniforms.uZenith.value, dome.zenith);
       uniforms.uPhysicalWeight.value = dome.physical.weight * physicalShare(sunDirection[1], shape.physicalBand);
@@ -385,7 +562,8 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       uniforms.uBetaR.value.set(...terms.rayleigh);
       uniforms.uBetaM.value.set(...terms.mie);
       uniforms.uMieDirectional.value = dome.physical.mieDirectional;
-      uniforms.uMoonDir.value.set(-sunDirection[0], -sunDirection[1], -sunDirection[2]);
+      uniforms.uMoonDir.value.set(...sky.moonDirection);
+      placeMoonFace(uniforms.uMoonDir.value, moonRadius, uniforms.uMoonAcross.value, uniforms.uMoonUp.value);
       uniforms.uStars.value = dome.stars;
       uniforms.uPhysicalExposure.value = dome.physical.exposure;
       uniforms.uMoonBrightness.value = dome.moon.brightness;
@@ -396,10 +574,14 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       uniforms.uSunGlow.value = dome.sun.glow;
       uniforms.uCover.value = dome.clouds.cover;
       uniforms.uCloudOpacity.value = dome.clouds.opacity;
+      uniforms.uScatter.value = dome.clouds.scatter;
       uniforms.uSimSeconds.value = simSeconds;
       uniforms.uLightDir.value.set(...sky.light);
       setSrgb(uniforms.uCloudLight.value, sky.lightColor).multiplyScalar(
         clamp01(sky.lightIntensity) * shape.cloudLight.light,
+      );
+      setSrgb(uniforms.uCloudDeckLight.value, sky.lightColor).multiplyScalar(
+        Math.min(clamp01(sky.lightIntensity), shape.cloudLight.deckLight) * shape.cloudLight.light,
       );
       setSrgb(uniforms.uCloudAmbient.value, sky.ambientSky).multiplyScalar(
         clamp01(sky.ambientIntensity) * shape.cloudLight.ambient,

@@ -12,6 +12,8 @@ read_if:
 
 Static analysis catches type, style and unused-code defects before they reach a test or a player; see each subproject's `tsconfig.json`, [`biome.jsonc`](biome.jsonc) and [`knip.jsonc`](knip.jsonc).
 
+Rules Biome lacks are GritQL plugins under `tools/lint`. `tools/lint/no-locale-order.grit` bans `localeCompare` and `Intl.Collator`: collation differs between a build machine and a browser, so a locale order reaching a save, a bundle stamp or a tool pick makes the same input produce different output. Use `packages/engine/src/core/codeUnitOrder.ts`, `compareCodeUnits` instead; a display-only order needs a `biome-ignore` that says why.
+
 ## Maintainability
 
 Prefer a maintainable design over minimizing short-term churn, unless the churn is too costly. Record the reason for trade-offs.

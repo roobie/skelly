@@ -8,7 +8,7 @@
 // never the dome's shader, so changing it rebuilds nothing.
 
 import type { DayCycleDef } from './schema.ts';
-import type { Rgb, Sky } from './sky.ts';
+import { type Rgb, type Sky, scatterShare } from './sky.ts';
 
 /** Each level runs from 0, none of it, to 1, all the tuning gives it. */
 export interface Weather {
@@ -48,6 +48,8 @@ export const clampWeatherLevel = (value: number): number => Math.min(1, Math.max
 
 const unit = (value: number): number => Math.min(1, Math.max(0, value));
 
+const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
+
 /** `value` scaled down towards `left` of itself as `level` rises to 1. */
 const scaled = (value: number, left: number, level: number): number => value * (1 - (1 - left) * level);
 
@@ -67,8 +69,27 @@ const thinned = (sky: Sky, share: number): Sky => ({
   dome: { ...sky.dome, clouds: { ...sky.dome.clouds, cover: sky.dome.clouds.cover * share } },
 });
 
+/** A weather state as the sky takes it: what it does to the sky, with its kind of cloud as the scatter kind's share. */
+type SkyState = Omit<WeatherTuning['rain'], 'kind'> & { scatter: number };
+
+const stateOf = ({ kind, ...state }: WeatherTuning['rain']): SkyState => ({ ...state, scatter: scatterShare(kind) });
+
+/** The state `t` of the way from `a` to `b`; every field applies linearly, so this is the sky between the two. */
+const between = (a: SkyState, b: SkyState, t: number): SkyState => ({
+  clouds: { cover: mix(a.clouds.cover, b.clouds.cover, t), opacity: mix(a.clouds.opacity, b.clouds.opacity, t) },
+  physicalWeight: mix(a.physicalWeight, b.physicalWeight, t),
+  skyLights: mix(a.skyLights, b.skyLights, t),
+  light: mix(a.light, b.light, t),
+  ambient: mix(a.ambient, b.ambient, t),
+  skyColour: {
+    saturation: mix(a.skyColour.saturation, b.skyColour.saturation, t),
+    brightness: mix(a.skyColour.brightness, b.skyColour.brightness, t),
+  },
+  scatter: mix(a.scatter, b.scatter, t),
+});
+
 /** One weather state's sky at `level` of its strength; at 0 the very sky, since greying round-trips colours inexactly. */
-const underSky = (sky: Sky, state: WeatherTuning['rain'], level: number): Sky => {
+const underSky = (sky: Sky, state: SkyState, level: number): Sky => {
   if (level === 0) {
     return sky;
   }
@@ -94,14 +115,31 @@ const underSky = (sky: Sky, state: WeatherTuning['rain'], level: number): Sky =>
       clouds: {
         cover: closed(dome.clouds.cover, state.clouds.cover, level),
         opacity: closed(dome.clouds.opacity, state.clouds.opacity, level),
+        scatter: mix(dome.clouds.scatter, state.scatter, level),
       },
+      stars: scaled(dome.stars, state.skyLights, level),
+      moon: { ...dome.moon, brightness: scaled(dome.moon.brightness, state.skyLights, level) },
       sun: {
         ...dome.sun,
-        brightness: scaled(dome.sun.brightness, state.sun, level),
-        glow: scaled(dome.sun.glow, state.sun, level),
+        brightness: scaled(dome.sun.brightness, state.skyLights, level),
+        glow: scaled(dome.sun.glow, state.skyLights, level),
       },
     },
   };
+};
+
+/** The sky at `cloudiness`: thinned below fair weather, then towards the cloudy state and on to overcast. */
+const inClouds = (sky: Sky, cloudiness: number, tuning: WeatherTuning): Sky => {
+  const fair = tuning.fair.cloudiness;
+  const { cloudiness: cloudyAt, ...cloudy } = tuning.cloudy;
+  if (cloudiness < fair) {
+    return thinned(sky, cloudiness / fair);
+  }
+  if (cloudiness < cloudyAt) {
+    return underSky(sky, stateOf(cloudy), (cloudiness - fair) / (cloudyAt - fair));
+  }
+  const towardsOvercast = (cloudiness - cloudyAt) / (1 - cloudyAt);
+  return underSky(sky, between(stateOf(cloudy), stateOf(tuning.overcast), towardsOvercast), 1);
 };
 
 /**
@@ -113,20 +151,17 @@ const underSky = (sky: Sky, state: WeatherTuning['rain'], level: number): Sky =>
  * the keyframes' distances alone. The keyframes' own height-fog density sits at the default fogginess, so the
  * density gain is its reciprocal.
  *
- * Cloudiness: the looks' clouds are fair weather. Below the fair cloudiness they thin to none at 0; above it the
- * overcast tuning closes the clouds and greys and flattens the sky over the rest of the range. Rain applies its own
- * tuning by its level on top of at least as much overcast, since rain does not fall from a clear sky. At the fair
- * cloudiness and no rain the sky is the looks' own.
+ * Cloudiness: the looks' clouds are fair weather. Below the fair cloudiness they thin to none at 0; above it the sky
+ * moves to the cloudy state's at its cloudiness and on to overcast's at 1, closing the clouds and greying and
+ * flattening the sky. Rain applies its own tuning by its level on top of at least as much overcast, since rain does
+ * not fall from a clear sky. At the fair cloudiness and no rain the sky is the looks' own. Each state's kind of cloud
+ * moves with the rest of its sky, so a change of kind blends as the clouds' share of each.
  */
 export const skyInWeather = (sky: Sky, weather: Weather, tuning: WeatherTuning): Sky => {
   const rain = unit(weather.rain);
-  const { fair } = tuning.cloudiness;
+  const fair = tuning.fair.cloudiness;
   const asked = unit(weather.cloudiness);
   const cloudiness = rain > 0 ? Math.max(asked, fair + rain * (1 - fair)) : asked;
-  const foggy = inFog(sky, unit(weather.fogginess), tuning);
-  const clouded =
-    cloudiness < fair
-      ? thinned(foggy, cloudiness / fair)
-      : underSky(foggy, tuning.cloudiness, (cloudiness - fair) / (1 - fair));
-  return underSky(clouded, tuning.rain, rain);
+  const clouded = inClouds(inFog(sky, unit(weather.fogginess), tuning), cloudiness, tuning);
+  return underSky(clouded, stateOf(tuning.rain), rain);
 };

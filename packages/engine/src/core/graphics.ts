@@ -13,8 +13,8 @@ import {
   strictObject,
   string,
 } from 'valibot';
+import { NonNegative, Positive } from './schema/primitives.ts';
 
-const Positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const AdaptiveScaleSchema = pipe(
   strictObject({
     enabled: boolean(),
@@ -22,7 +22,7 @@ const AdaptiveScaleSchema = pipe(
     min: pipe(Positive, maxValue(1)),
     max: pipe(Positive, maxValue(1)),
     step: pipe(Positive, maxValue(1)),
-    hysteresisRealMs: pipe(number(), finite(), minValue(0)),
+    hysteresisRealMs: NonNegative,
     sampleWindow: pipe(number(), integer(), minValue(1)),
   }),
   check(
@@ -61,6 +61,27 @@ const ToggleOptionSchema = pipe(
   ),
 );
 
+/**
+ * One of a few named numbers. A choice is read when the renderer is built, so a player's change takes
+ * effect on the next load.
+ */
+const ChoiceOptionSchema = pipe(
+  strictObject({
+    label: pipe(string(), nonEmpty()),
+    default: pipe(number(), finite()),
+    choices: pipe(
+      array(strictObject({ value: pipe(number(), finite()), label: pipe(string(), nonEmpty()) })),
+      nonEmpty(),
+    ),
+  }),
+  check(
+    ({ choices, default: value }) =>
+      new Set(choices.map((choice) => choice.value)).size === choices.length &&
+      choices.some((choice) => choice.value === value),
+    'choice values must be unique and include the default',
+  ),
+);
+
 export const GRAPHICS_KNOBS = {
   renderScale: {
     kind: 'scale',
@@ -79,6 +100,8 @@ export const GRAPHICS_KNOBS = {
   fastCamo: { kind: 'toggle', schema: ToggleOptionSchema },
   coarseWeathering: { kind: 'toggle', schema: ToggleOptionSchema },
   cachedSurfaceNoise: { kind: 'toggle', schema: ToggleOptionSchema },
+  /** Samples per pixel of the scene's edge smoothing; 0 is none. */
+  msaaSamples: { kind: 'choice', schema: ChoiceOptionSchema },
 } as const;
 
 export type GraphicsKey = keyof typeof GRAPHICS_KNOBS;
@@ -99,6 +122,9 @@ const graphicsValueAllowed = (
   const option = tuning[key];
   if ('options' in option) {
     return typeof value === 'boolean' && option.options.includes(value);
+  }
+  if ('choices' in option) {
+    return typeof value === 'number' && option.choices.some((choice) => choice.value === value);
   }
   return typeof value === 'number' && Number.isFinite(value) && value >= option.min && value <= option.max;
 };

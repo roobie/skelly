@@ -690,7 +690,7 @@ interface FillContext {
   /** Quota buildings the current pass must place at the earliest slot where each fits. */
   forced: PoolRef[];
 }
-export const cityRowStart = (grid: CityGrid, row: number): number =>
+export const cityRowStart = (grid: Pick<CityGrid, 'street' | 'pad' | 'blockZ' | 'rows'>, row: number): number =>
   grid.street + grid.pad + Math.floor(row / 2) * (2 * cityRowDepth(grid) + grid.street);
 
 const groundedY = (template: Pick<Placement['template'], 'groundLayer'>, floor: number): number =>

@@ -5,7 +5,7 @@ manifest(
   optIn=true,
   content=['layouts', 'starts'],
   dependencies=[
-    'skelly.deadvox.scenario.test-house', 'skelly.basic-recipes', 'skelly.deadvox.labs.underground',
+    'skelly.deadvox.scenario.test-house', 'skelly.deadvox.actors', 'skelly.basic-recipes', 'skelly.deadvox.labs.underground',
     'skelly.flame-tools', 'skelly.household-electrical', 'skelly.manufactured-blocks', 'skelly.medicine', 'skelly.melee',
     'skelly.packaged-foods', 'skelly.structures', 'skelly.wearables',
   ],

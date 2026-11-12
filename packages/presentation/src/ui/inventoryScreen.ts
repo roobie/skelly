@@ -1800,6 +1800,7 @@ export class InventoryScreen {
     });
     const vehicle = this.vehicleViewModel();
     const skills = [...this.inv.registry.skills.values()]
+      // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
       .sort((left, right) => left.name.localeCompare(right.name))
       .map((definition): SkillViewModel => {
         const level = character.skills[definition.id] ?? 0;

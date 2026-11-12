@@ -4,6 +4,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, write
 import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { compareCodeUnits } from '../../packages/engine/src/core/codeUnitOrder.ts';
 import { download, extractTarGz, verifySha256 } from '../pinned-download.mjs';
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, '../..');
@@ -149,7 +150,7 @@ async function pinRelease(tag, root = REPOSITORY_ROOT) {
   const sha256 = Object.fromEntries(
     release.assets
       .map(({ name, digest }) => [name, digest.replace(DIGEST_PREFIX, '')])
-      .sort(([left], [right]) => left.localeCompare(right)),
+      .sort(([left], [right]) => compareCodeUnits(left, right)),
   );
   const pin = { repository, tag, commit: target.sha, sha256 };
   writeFileSync(join(root, PIN_PATH), `${JSON.stringify(pin, null, 2)}\n`);
