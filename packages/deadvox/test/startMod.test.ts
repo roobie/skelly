@@ -12,6 +12,7 @@ import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/pre
 import { describe, expect, it, vi } from 'vitest';
 import { readPageUrl } from '../src/pageUrl.ts';
 import { productModIntake } from '../src/product/mods.ts';
+import { PRODUCT_ENTRY_PACK } from '../src/product/packSelection.ts';
 import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
 import { startupContent } from './baseRegistry.ts';
 import { gameUrl, inlineStartMod } from './browser/gameUrl.mjs';
@@ -42,12 +43,26 @@ const scenario = mod('fixture.scenario', [row('fixture_scenario_start')], {
   dependencies: ['skelly.deadvox'],
   overrides: [{ pack: 'skelly.deadvox', entry: 'defaultStart' }],
 });
+const startOwner = mod('fixture.start-owner', [row('fixture_owned_start')]);
+const secondOwner = mod('fixture.start-owner.two', [row('fixture_second_owner_start')]);
+const chainLink = mod('fixture.chain-link', [], { dependencies: [startOwner.id] });
+const inherits = mod('fixture.inherits', [], { dependencies: [startOwner.id] });
+const inheritsChain = mod('fixture.inherits-chain', [], { dependencies: [chainLink.id] });
+const inheritsTwo = mod('fixture.inherits-two', [], { dependencies: [startOwner.id, secondOwner.id] });
+const inheritsEntry = mod('fixture.inherits-entry', [], { dependencies: [PRODUCT_ENTRY_PACK] });
 const intake: ModIntake = {
   ...productModIntake,
   bundledMods: [
     ...productModIntake.bundledMods,
     { id: scenario.id, data: scenario },
     { id: startMod.id, data: startMod },
+    { id: startOwner.id, data: startOwner },
+    { id: secondOwner.id, data: secondOwner },
+    { id: chainLink.id, data: chainLink },
+    { id: inherits.id, data: inherits },
+    { id: inheritsChain.id, data: inheritsChain },
+    { id: inheritsTwo.id, data: inheritsTwo },
+    { id: inheritsEntry.id, data: inheritsEntry },
   ],
 };
 const inline = (data: unknown) => new URLSearchParams({ 'start-mod': JSON.stringify(data) });
@@ -92,6 +107,10 @@ const picked = withReusedBuilds(() => ({
   unknownId: select(new URLSearchParams({ 'start-mod': 'fixture.nonesuch' })),
   noRows: select(inline(mod(startMod.id, []))),
   twoRows: select(inline(mod(startMod.id, [row('fixture_first_start'), row('fixture_second_start')]))),
+  inherits: select(new URLSearchParams({ 'start-mod': inherits.id }), [startOwner.id]),
+  inheritsChain: select(new URLSearchParams({ 'start-mod': inheritsChain.id }), [chainLink.id, startOwner.id]),
+  inheritsTwo: select(new URLSearchParams({ 'start-mod': inheritsTwo.id }), [startOwner.id, secondOwner.id]),
+  inheritsEntry: select(new URLSearchParams({ 'start-mod': inheritsEntry.id })),
   withPractice: select(inline(startMod), [practice!]),
   overScenario: select(inline(startMod), [scenario.id]),
   scenarioOnly: select(new URLSearchParams(), [scenario.id]),
@@ -147,10 +166,27 @@ describe('start-mod parameter', () => {
   it.each([
     [0, picked.noRows],
     [2, picked.twoRows],
+    [0, picked.inheritsEntry],
+    [2, picked.inheritsTwo],
   ])('refuses a start mod with %i start rows and keeps the default start', (count, selection) => {
     expect(selection.issues).toEqual([]);
     expect(selection.startModRows).toBe(count);
     expect(selection.content.startModStart).toBeUndefined();
+  });
+
+  it('starts from the one start row a start mod inherits from its dependency', () => {
+    const selection = picked.inherits;
+    expect(selection.issues).toEqual([]);
+    expect(selection.admitted.map(({ id }) => id)).toEqual([startOwner.id, inherits.id]);
+    expect(selection.startModRows).toBeUndefined();
+    expect(startOf(selection).startId).toBe('fixture_owned_start');
+  });
+
+  it('starts from a start row inherited through a dependency chain', () => {
+    const selection = picked.inheritsChain;
+    expect(selection.issues).toEqual([]);
+    expect(selection.startModRows).toBeUndefined();
+    expect(startOf(selection).startId).toBe('fixture_owned_start');
   });
 
   it('starts from the start mod even when the practice pack is listed', () => {

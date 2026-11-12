@@ -115,9 +115,40 @@ const ownStartRows = (
 };
 
 /**
+ * The start rows a start mod whose files set none inherits from its dependencies: each pack its dependency closure
+ * reaches supplies the rows its own files set. The walk stops at the entry pack, whose closure is the base stack
+ * every page loads, so it supplies the default start rather than the start mod's row. Why a start mod may supply
+ * its row through a dependency: `packages/deadvox/docs/url-mods.md`, "Start mod".
+ */
+const inheritedStartRows = (
+  result: ModEvaluation,
+  startMod: StartModRequest | undefined,
+  startFile: AdmittedMod | undefined,
+  entryPack: string,
+): string[] => {
+  const startId = startMod?.form === 'id' ? startMod.id : startFile?.id;
+  const root = startId === undefined ? undefined : result.admittedPacks.find(({ manifest }) => manifest.id === startId);
+  const rows: string[] = [];
+  const visited = new Set<string>();
+  const visit = (id: string): void => {
+    const pack =
+      id === entryPack || visited.has(id) ? undefined : result.admittedPacks.find(({ manifest }) => manifest.id === id);
+    if (!pack) {
+      return;
+    }
+    visited.add(id);
+    rows.push(...pack.files.flatMap(({ data }) => startRowIds(data)));
+    pack.manifest.dependencies.forEach(visit);
+  };
+  root?.manifest.dependencies.forEach(visit);
+  return rows;
+};
+
+/**
  * Admits the named bundled mods in the order given: an opt-in folder pack with its closure through pack admission, a
  * single-file mod through the same intake as player mods. Unknown ids are issues. The start mod is admitted last,
- * inline data through the same intake and byte limit, and must supply exactly one start row, which begins the run.
+ * inline data through the same intake and byte limit, and must supply exactly one start row, its own or one
+ * reached through its dependencies, which begins the run.
  */
 export const selectBundledMods = (
   intake: ModIntake,
@@ -165,7 +196,9 @@ export const selectBundledMods = (
     issues.push(...list);
   }
   const startFile = result.admitted.find(({ source }) => source === startSource);
-  const startRows = ownStartRows(result, startMod, startFile);
+  const ownRows = ownStartRows(result, startMod, startFile);
+  const startRows =
+    ownRows?.length === 0 ? inheritedStartRows(result, startMod, startFile, intake.content.entryPack) : ownRows;
   const inline = startMod?.form === 'inline' ? startFile : undefined;
   return {
     content: startRows?.length === 1 ? { ...result.content, startModStart: startRows[0] } : result.content,
