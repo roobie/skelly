@@ -14,7 +14,7 @@ const SHARED_CHECKS_COMMAND = /\bnpm run ci:checks\b/;
 const PRE_PUSH_SHARED_CHECKS = /run_check 'npm run ci:checks' run ci:checks/;
 const ASSETS_SETUP_COMMAND = /\bassets:setup\b/;
 const RELEASE_PIN_HASH = /hashFiles\('tools\/skelly-assets\/release\.json'\)/;
-const RELEASE_CACHE_PATHS = ['packages/skelly-assets/built', 'tools/skelly-assets/installed.json'];
+const RELEASE_CACHE_PATHS = ['tools/skelly-assets/archives'];
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
@@ -107,7 +107,7 @@ test('every workflow running root CI installs lint workflow prefixes and caches 
 });
 
 test('every pinned skelly-assets install follows a release cache that lets setup skip the download', () => {
-  // A release outage must not fail CI, and a cache without the install stamp re-downloads anyway (#1665).
+  // A release outage must not fail CI; the cache holds the archives whose digests setup verifies against the pin (#1665).
   let installs = 0;
   for (const path of workflowPaths) {
     for (const [jobId, job] of Object.entries(parse(readFileSync(path, 'utf8')).jobs ?? {})) {
@@ -127,10 +127,7 @@ test('every pinned skelly-assets install follows a release cache that lets setup
             RELEASE_PIN_HASH.test(String(earlier.with?.key ?? ''))
           );
         });
-        assert.ok(
-          cache,
-          `${path} ${jobId}: assets:setup needs a preceding cache of the built packs and the install stamp`,
-        );
+        assert.ok(cache, `${path} ${jobId}: assets:setup needs a preceding cache of the pinned release archives`);
       });
     }
   }

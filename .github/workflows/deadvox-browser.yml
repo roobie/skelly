@@ -37,9 +37,7 @@ jobs:
       - name: Cache pinned skelly-assets release
         uses: actions/cache@v4
         with:
-          path: |
-            packages/skelly-assets/built
-            tools/skelly-assets/installed.json
+          path: tools/skelly-assets/archives
           key: skelly-assets-${{ runner.os }}-${{ hashFiles('tools/skelly-assets/release.json') }}
       - uses: actions/setup-node@v4
         with:
