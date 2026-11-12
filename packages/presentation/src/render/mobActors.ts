@@ -301,8 +301,7 @@ interface Variant {
    * bind sphere centre's distance from the origin plus its radius (bind geometry can sit offset from
    * its origin; the diameter alone would ignore that), since the crowd shader applies each vertex
    * exactly one packed matrix whose rotation is the bind vertex's rotation scaled (render/crowd.ts,
-   * CROWD_BEGIN_VERTEX), and the y a ground fit picks stays within the same reach. Expands the boxes
-   * around packed bone translations (boxAroundRow, boxAroundBones). Metres. */
+   * CROWD_BEGIN_VERTEX). Expands the box around packed bone translations (boxAroundRow). Metres. */
   readonly casterReach: number;
   /** Reused every frame for every actor of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps. */
@@ -2796,59 +2795,17 @@ export class MobActorMeshes implements ActorRenderer {
   private readonly casterBox = new Box3();
   private readonly casterPoint = new Vector3();
 
-  /** The world box a holder's drawn figure occupies, read from what it actually draws. A figure packed
-   * into its crowd row — a live actor at its placement, or a corpse no ragdoll carries — is boxed
-   * around that row's packed bone translations (boxAroundRow): the row's matrices are exactly what the
-   * mesh and the twin draw, so every pivot, ancestor and root translation a pose authored is already
-   * inside them. Holders drawn from live physics — a corpse ragdoll, a live crawl-fall body (packCrawlFall
-   * packs world-space transforms into state.drawnFall), debris — are boxed around their actual bone
-   * positions or body centre, which any root motion has already moved, so their box needs only the
-   * rotations reach. Reused per call. */
+  /** The world box a holder's drawn figure occupies, read from what it actually draws: the box around
+   * its crowd row's packed bone translations (boxAroundRow). Every holder kind packs the row it draws
+   * before any shadow pass selects — a live actor at its placement (packPlaced), a crawl-fall body
+   * (packCrawlFall packs the very transforms it stores in drawnFall), a corpse (packCorpse packs its
+   * ragdoll or death-clip pose with the sink offset already applied), debris (packDebris packs each
+   * carried bone's own physics-placed matrix) — so the row holds exactly the translations the mesh and
+   * the twin draw, whatever pivot, root motion, sink or debris flight moved them. Reused per call. */
   private holderCasterBox(key: SlotKey, variant: Variant): Box3 | undefined {
-    if (typeof key === 'number') {
-      const state = this.states.get(key);
-      if (state) {
-        return this.liveCasterBox(state, variant);
-      }
-      const corpse = this.corpses.get(key);
-      if (!corpse) {
-        return undefined;
-      }
-      if (corpse.ragdoll) {
-        return this.boxAroundBones(corpse.ragdoll.transforms.values(), variant.casterReach);
-      }
-      // A death-clip corpse falls at its frozen death point, packed into its row like any placed figure.
-      return this.boxAroundRow(corpse.globalRow, variant);
-    }
-    const center = this.debris.get(key)?.body.center;
-    return center ? this.boxAroundPoint(center[0], center[1], center[2], variant.casterReach) : undefined;
-  }
-
-  /** A live actor's caster box: its crawl-fall bones if a fall is drawing, else its packed row. */
-  private liveCasterBox(state: ActorRenderState, variant: Variant): Box3 | undefined {
-    if (state.drawnFall) {
-      return this.boxAroundBones(state.drawnFall.values(), variant.casterReach);
-    }
-    return state.lastPlacement ? this.boxAroundRow(state.globalRow, variant) : undefined;
-  }
-
-  /** The box `radius` metres around a point, in this.casterBox. */
-  private boxAroundPoint(x: number, y: number, z: number, radius: number): Box3 {
-    const box = this.casterBox;
-    box.min.set(x - radius, y - radius, z - radius);
-    box.max.set(x + radius, y + radius, z + radius);
-    return box;
-  }
-
-  /** The box around every given bone position, expanded by `radius`: the posed geometry each of those
-   * bones carries stays within that reach of its bone (see Variant.casterReach). Empty means "no bones
-   * placed yet". Reuses this.casterBox. */
-  private boxAroundBones(bones: Iterable<Transform>, radius: number): Box3 | undefined {
-    const box = this.casterBox.makeEmpty();
-    for (const { t } of bones) {
-      box.expandByPoint(this.casterPoint.set(t[0], t[1], t[2]));
-    }
-    return box.isEmpty() ? undefined : box.expandByScalar(radius);
+    const holder: SlotHolder | undefined =
+      typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+    return holder ? this.boxAroundRow(holder.globalRow, variant) : undefined;
   }
 
   /** The box around the packed bone translations a figure's crowd row holds, expanded by the rotations

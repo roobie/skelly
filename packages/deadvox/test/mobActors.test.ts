@@ -93,6 +93,8 @@ interface TestDebris {
   groundedAt: number | undefined;
   originOffsetY: number;
   initialCenter: Vec3;
+  globalRow: number;
+  variantIndex: number;
   body: {
     asleep: boolean;
     center: Vec3;
@@ -323,9 +325,10 @@ const rendererInternals = (renderer: MobActorMeshes) =>
     variants: readonly {
       mesh: InstancedMesh;
       geometry: BufferGeometry;
-      body: { scale: number };
+      body: { scale: number; bones: readonly Bone[] };
       bones: readonly { readonly id: string }[];
       shadowPasses: readonly { mesh: InstancedMesh; slots: InstancedBufferAttribute }[];
+      casterReach: number;
     }[];
   };
 
@@ -1650,6 +1653,128 @@ describe('MobActorMeshes', () => {
       const twin = variant.shadowPasses[0]!;
       expect(twin.mesh.count).toBe(1);
       expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects debris whose offset carried pivot draws far past the body-centre bound', () => {
+    // packDebris draws each carried bone through its own physics-placed matrix,
+    // center + delta * (source.t - initialCenter), so an articulated subtree's geometry can draw far
+    // from the debris body centre the old bound boxed. The offset-pivot hand below is that case: the
+    // packed debris row holds the carried bones' real translations, so boxing the row keeps such
+    // debris selected where the centre bound dropped its shadow.
+    const swungHandFigures = (): { files: ActorFigureFiles; reachBySeed: Map<number, number> } => {
+      const swung = new Map(FIGURES);
+      const reachBySeed = new Map<number, number>();
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        // Zero-root frames that rotate only hand.L 180° about Z, pivoting about its offset head.
+        const clips: ActorClips = {
+          ...figure.clips,
+          standing: Object.fromEntries(
+            Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
+              name,
+              'kind' in entry && entry.kind === 'pose'
+                ? {
+                    ...entry,
+                    frames: entry.frames.map((frame) => ({
+                      ...frame,
+                      root: [0, 0, 0] as Vec3,
+                      rotations: { 'hand.L': [0, 0, 1, 0] },
+                    })),
+                  }
+                : entry,
+            ]),
+          ),
+        };
+        const probe = actorFigureGeometry(figure.mesh, figure.body);
+        const sphere = probe.boundingSphere!;
+        const bindReach = sphere.center.length() + sphere.radius;
+        probe.dispose();
+        const casterReach = (bindReach * figure.body.scale + 0.3) as number; // Variant.casterReach's formula
+        // The hand pivot offset, sized from the fixture's own sphere so the swung hand's drawn
+        // vertices clear the centre bound and a 4 m light volume even after the stance blend dilutes
+        // the authored swing.
+        const units = Math.ceil((casterReach + 4) / figure.body.scale + bindReach) + 4;
+        const body: ActorBody = {
+          ...figure.body,
+          bones: figure.body.bones.map((bone) =>
+            bone.id === 'hand.L'
+              ? {
+                  ...bone,
+                  head: [bone.head[0]! + units, bone.head[1]!, bone.head[2]!],
+                  tail: [bone.tail[0]! + units, bone.tail[1]!, bone.tail[2]!],
+                }
+              : bone,
+          ),
+        };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        expect(safeParse(ActorClipsSchema, clips).success).toBe(true);
+        expect(actorClipIssues(body, clips)).toEqual([]);
+        swung.set(key, { ...figure, body, clips });
+        reachBySeed.set(seed, casterReach);
+      }
+      return { files: swung, reachBySeed };
+    };
+    const { files, reachBySeed } = swungHandFigures();
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: files,
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([4, 0, 0]);
+      actor.horizontalSpeed = 4; // a walking figure draws the standing walk clip
+      actor.gaitPhase = 1;
+      const id = store.add(actor);
+      renderer.sync(store, 0, 1);
+      expect(renderer.actorSevered(id, 'forearm.L')).toBeDefined(); // debris now carries forearm.L + hand.L
+      renderer.sync(store, 1 / 60, 1); // advanceDebris packs the debris row
+      const internals = rendererInternals(renderer);
+      const [, debris] = [...debrisEntries(renderer).entries()].find(([key]) => key.includes(':forearm.L:'))!;
+      const variant = internals.variants[debris.variantIndex]!;
+      const carried = new Set(severedBoneSet(variant.body.bones, ['forearm.L']));
+      const { center } = debris.body;
+      // Where the debris actually draws each carried vertex: through the packed matrices the crowd
+      // shader applies — renderer.debrisBoneMatrix reads the very row the debris mesh and twin draw.
+      const positions = variant.geometry.getAttribute('position');
+      const owners = variant.geometry.getAttribute('boneIndex');
+      let drawn: Vec3 = [0, 0, 0];
+      let reach = Number.NEGATIVE_INFINITY;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const bone = variant.bones[owners.getX(vertex)]!;
+        if (!carried.has(bone.id)) {
+          continue;
+        }
+        const matrix = renderer.debrisBoneMatrix(id, 'forearm.L', bone.id)!;
+        const at: Vec3 = [0, 1, 2].map(
+          (axis) =>
+            matrix[axis * 4]! * positions.getX(vertex) +
+            matrix[axis * 4 + 1]! * positions.getY(vertex) +
+            matrix[axis * 4 + 2]! * positions.getZ(vertex) +
+            matrix[axis * 4 + 3]!,
+        ) as Vec3;
+        const distance = Math.hypot(at[0] - center[0], at[1] - center[1], at[2] - center[2]);
+        if (distance > reach) {
+          reach = distance;
+          drawn = at;
+        }
+      }
+      expect(reach).toBeGreaterThan(0); // the fixture carried and drew real vertices
+      const assumed = reachBySeed.get(actor.figureSeed)!; // the body-centre bound the fix replaces
+      expect(reach).toBeGreaterThan(assumed + 4); // a 4 m volume at the drawn vertex rejects it
+      const centreBound = new Box3(
+        new Vector3(center[0] - assumed, center[1] - assumed, center[2] - assumed),
+        new Vector3(center[0] + assumed, center[1] + assumed, center[2] + assumed),
+      );
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
+      expect(casts(centreBound)).toBe(false); // the centre bound cannot contain it
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      const selected = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(selected).toContain(debris.globalRow);
     } finally {
       renderer.dispose();
     }
