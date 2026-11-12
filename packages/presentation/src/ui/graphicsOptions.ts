@@ -6,12 +6,28 @@ import type { GraphicsControls } from '../presentation/graphicsControls.ts';
 
 type OptionsText = ScreenText['options'];
 
-const valueText = (value: number | boolean, text: OptionsText): string => {
+const valueText = (key: GraphicsKey, value: number | boolean, tuning: GraphicsOptions, text: OptionsText): string => {
+  const option = tuning[key];
+  if ('choices' in option) {
+    return option.choices.find((choice) => choice.value === value)?.label ?? '';
+  }
   if (typeof value === 'number') {
     return hundredthsText(value);
   }
   return value ? text.on : text.off;
 };
+
+const choiceControl = (
+  key: GraphicsKey,
+  option: Extract<GraphicsOptions[GraphicsKey], { choices: unknown }>,
+  state: { value: number; change: (value: number) => void; detail: string },
+): TemplateResult => html`<select
+  id="graphics-${key}"
+  title=${state.detail}
+  @change=${(event: Event) => state.change(Number((event.currentTarget as HTMLSelectElement).value))}
+>${option.choices.map(
+  (choice) => html`<option value=${choice.value} ?selected=${choice.value === state.value}>${choice.label}</option>`,
+)}</select>`;
 
 const scaleControl = (
   key: GraphicsKey,
@@ -41,6 +57,26 @@ const scaleControl = (
   />`;
 };
 
+const control = (
+  key: GraphicsKey,
+  option: GraphicsOptions[GraphicsKey],
+  state: { value: number | boolean; change: (value: number | boolean) => void; text: OptionsText },
+): TemplateResult => {
+  if ('choices' in option) {
+    return choiceControl(key, option, { ...state, value: Number(state.value), detail: state.text.reloadDetail });
+  }
+  if ('options' in option) {
+    return html`<input
+      id="graphics-${key}"
+      type="checkbox"
+      .checked=${Boolean(state.value)}
+      ?disabled=${option.options.length === 1}
+      @change=${(event: Event) => state.change((event.currentTarget as HTMLInputElement).checked)}
+    />`;
+  }
+  return scaleControl(key, option, { ...state, value: Number(state.value) });
+};
+
 export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsControls, text: OptionsText): void => {
   const draw = (): void => {
     const { values, player } = graphics;
@@ -53,18 +89,8 @@ export const renderGraphicsOptions = (root: HTMLElement, graphics: GraphicsContr
       return html`
         <div class="graphics-options__row" data-graphics-key=${key}>
           <label for="graphics-${key}">${option.label}</label>
-          ${
-            'options' in option
-              ? html`<input
-                id="graphics-${key}"
-                type="checkbox"
-                .checked=${Boolean(values[key])}
-                ?disabled=${option.options.length === 1}
-                @change=${(event: Event) => change((event.currentTarget as HTMLInputElement).checked)}
-              />`
-              : scaleControl(key, option, { value: Number(values[key]), change })
-          }
-          <output>${valueText(values[key], text)}</output>
+          ${control(key, option, { value: values[key], change, text })}
+          <output>${valueText(key, values[key], graphics.tuning, text)}</output>
           <button
             type="button"
             ?disabled=${player[key] === undefined}

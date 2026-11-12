@@ -53,6 +53,7 @@
     on: 'On',
     off: 'Off',
     modDefault: 'Mod default',
+    reloadDetail: 'Takes effect after the page is reloaded.',
     fullscreen: 'Fullscreen',
     leaveFullscreen: 'Leave fullscreen',
     browserShortcutsLabel: 'Browser shortcuts',

@@ -734,6 +734,7 @@
           "modDefault": "Mod default",
           "off": "Off",
           "on": "On",
+          "reloadDetail": "Takes effect after the page is reloaded.",
           "showHud": "Show the HUD (hold {key} in play)",
           "volume": "{category} volume"
         },

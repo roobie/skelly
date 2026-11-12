@@ -696,6 +696,14 @@ try {
     }).settings;
   })`);
   assert.equal(restoredVolumes.world, savedWorldVolume, 'a fresh audio instance reads the persisted volume');
+  const smoothing = await evaluate(`(() => {
+    const select = document.querySelector('#graphics-msaaSamples');
+    const other = [...select.options].find((option) => !option.selected);
+    select.value = other.value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return { chosen: Number(other.value), saved: JSON.parse(localStorage.getItem('skelly.graphics-settings')).msaaSamples };
+  })()`);
+  assert.equal(smoothing.saved, smoothing.chosen, 'the edge smoothing choice is persisted for the next load');
   await evaluate("document.querySelector('#graphics-fastCamo').scrollIntoView({ block: 'center' })");
   const initialCamo = await evaluate("document.querySelector('#graphics-fastCamo').checked");
   await clickAt('#graphics-fastCamo');
