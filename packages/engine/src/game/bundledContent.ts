@@ -46,6 +46,8 @@ export type StartupContent = ReturnType<typeof buildRegistry> & {
 };
 
 export interface BundledContent {
+  /** The entry pack's manifest id, whose closure is the base stack every page loads. */
+  readonly entryPack: string;
   /** The entry pack's dependency closure, admitted without mod selection. */
   readonly bundledPackInputs: readonly PackInput[];
   /** Every shipped pack, opt-in ones included, for selecting an opt-in pack's closure. */
@@ -91,6 +93,7 @@ export const createBundledContent = async ({
   );
   const bundle = BundleAdmission.combine(admissions);
   return {
+    entryPack,
     bundledPackInputs: packs,
     availablePackInputs: available,
     baseSources: admission.sources,
