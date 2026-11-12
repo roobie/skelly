@@ -34,6 +34,7 @@ import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { addSkyAnchors } from './skyAnchor.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
@@ -233,6 +234,9 @@ export class FurnitureMeshes {
     piece.column.pieces.add(entity);
     if (piece.batch === undefined) {
       piece.mesh.visible = piece.column.revealed;
+      // A staged piece stands where it was built until a change restages it as a fresh mesh, so its
+      // subtree never moves in place.
+      freezeMatrices(piece.mesh);
       this.group.add(piece.mesh);
       return;
     }
@@ -623,8 +627,7 @@ const batchMesh = (members: readonly Piece[]): InstancedMesh => {
   }
   batch.computeBoundingBox();
   batch.computeBoundingSphere();
-  batch.matrixAutoUpdate = false;
-  batch.updateMatrix();
+  freezeMatrices(batch);
   return batch;
 };
 

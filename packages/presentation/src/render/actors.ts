@@ -5,6 +5,7 @@ import type { Vec3 } from '@skelly/engine/world';
 import { type Box3, BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 import { StepOffset } from './stepOffset.ts';
 
 type Part = FigurePart;
@@ -46,6 +47,8 @@ export class ActorMeshes {
       mesh.count = 0;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
       this.meshes.set(part, mesh);
+      // Actors pose through instance matrices; the boxes themselves never move.
+      freezeMatrices(mesh);
       this.group.add(castsAndReceives(mesh));
     }
   }

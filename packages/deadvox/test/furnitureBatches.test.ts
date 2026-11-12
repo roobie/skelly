@@ -10,6 +10,7 @@ import {
   type Mesh,
   Mesh as MeshClass,
   type MeshLambertMaterial,
+  type Object3D,
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
@@ -217,6 +218,35 @@ describe('furniture batches', () => {
     synced();
     entities.restoreState(saved);
     synced();
+  });
+
+  it('stands a frozen loose piece where its unfrozen standalone mesh stands, before and after a move restages it', () => {
+    const { registry, entities } = fixture();
+    const def = registry.furniture.get(door.id)!;
+    const leaf = entities.add({ type: def.id, size: def.size, pos: [2, 1, 3], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    // Doors and other pieces that move between syncs draw as their own meshes, frozen where they
+    // stand (render/staticMatrices.ts): a restage must land the fresh mesh at its new place, not at a
+    // stale or never-composed matrix. The standalone `pieceMesh` stays unfrozen, so it is the reference.
+    const worldsOf = (root: Object3D): string[] => {
+      root.updateMatrixWorld(true);
+      const worlds: string[] = [];
+      root.traverseVisible((part) => {
+        if (part instanceof MeshClass) {
+          worlds.push(part.matrixWorld.toArray().join(','));
+        }
+      });
+      return worlds.sort();
+    };
+    const drawnLoose = (): string[] => {
+      furniture.sync(entities);
+      return furniture.group.children.flatMap((child) =>
+        child instanceof InstancedMesh ? [] : worldsOf(child),
+      );
+    };
+    expect(drawnLoose(), 'drawn where it stands').toEqual(worldsOf(furniture.pieceMesh(leaf, def)));
+    entities.slide(leaf, [6, 1, 3]);
+    expect(drawnLoose(), 'restaged where it was moved').toEqual(worldsOf(furniture.pieceMesh(leaf, def)));
   });
 
   it('frees a replaced batch alone, and on teardown frees each batch and shared resource once', () => {

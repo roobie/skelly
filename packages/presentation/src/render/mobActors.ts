@@ -170,6 +170,7 @@ import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { type Ragdoll, type RagdollConfig, RagdollWorld } from './ragdoll.ts';
 import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ActorMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`actorDied` are optional: ActorMeshes has none of them (see
@@ -868,6 +869,9 @@ export class MobActorMeshes implements ActorRenderer {
       mesh.instanceMatrix.needsUpdate = true;
       const crowdSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
       mesh.geometry.setAttribute('crowdSlot', crowdSlotAttr);
+      // Figures pose through the bone texture and instance matrices; the crowd meshes themselves never
+      // move (the tentacles in `this.group` do, and stay unfrozen).
+      freezeMatrices(mesh);
       this.group.add(mesh);
       mesh.castShadow = false; // the passes draw the twin's selected instances instead
       geometry.computeBoundingSphere();
@@ -1405,6 +1409,7 @@ export class MobActorMeshes implements ActorRenderer {
     castsAndReceives(mesh);
     // Its vertices are placed by the bone texture, like the crowd mesh's, so its own bounds mean nothing.
     mesh.frustumCulled = false;
+    freezeMatrices(mesh);
     this.group.add(mesh);
     cells.walls[localSlot] = mesh;
   }
@@ -2761,6 +2766,7 @@ export class MobActorMeshes implements ActorRenderer {
       cells?.depthMaterial ?? this.depthMaterial,
       this.capacity,
     );
+    freezeMatrices(twin.mesh);
     this.group.add(twin.mesh);
     return twin;
   }
