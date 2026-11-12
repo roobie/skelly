@@ -120,6 +120,11 @@
         "debugReachMetres": [12, 16, 24, 36, 40, 64],
         "defaultReachMetres": 36
       },
+      "terrainWorkers": {
+        "count": 1,
+        "lookaheadColumns": 8,
+        "maxOutstandingColumns": 12
+      },
       "unbuiltSkyCap": 0.5
     }
   ]
