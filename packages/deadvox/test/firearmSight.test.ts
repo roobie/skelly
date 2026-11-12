@@ -171,7 +171,7 @@ it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
 });
 
 const cameraCases = () => {
-  // Straight down, a standing or crouching scoped long gun sits just past the camera budget; only prone adds that pitch.
+  // Straight down, a standing or crouching scoped long gun sits just past the camera budget until #1674 is fixed.
   const cases = adsCases().filter(
     ({ model, stance, pitch }) =>
       !(model.gun?.sight?.kind === 'optic' && stance !== 'prone' && pitch === -LOOK_PITCH_LIMIT),

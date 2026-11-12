@@ -3275,9 +3275,9 @@ and the anchors they join at, and holds every value that shapes the drawn
 figure. Shared authored joints and grips keep idle and active arms connected to
 the body rather than making first person another art obligation. Missing model,
 anchor or rig data must fail validation instead of silently drawing a partial
-body. An arm segment names every part that turns with it, so the hand's finger and thumb bones curl as one
-rigid piece about the knuckles and the thumb root; the arm model's per-bone joints are left unposed until a change
-owns finger posing. Hit regions keep a box layout because the body simulation, not the drawn
+body. An arm segment names every part that turns with it: the finger bones curl as one rigid piece about
+the knuckles and the thumb bones about the thumb root, and the arm model's per-bone joints stay unposed
+until #1675. Hit regions keep a box layout because the body simulation, not the drawn
 shape, decides where a hit lands. Gore placement must not change with the observer. See `packages/engine/src/core/schema/figures.ts`, `FigureSchema`,
 `packages/presentation/src/render/armRig.ts`, `buildArmRig`, and `packages/presentation/src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
@@ -3681,7 +3681,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `packages/engine/src/core/schema/graphics.ts`,
   `GraphicsTuningSchema`; `packages/presentation/src/presentation/engine.ts`, `createEngine`; and `packages/presentation/src/render/hands.ts`, `HeldItems`.
 - **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `packages/presentation/src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
-- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/tools/packages/../../models/guns/tables/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
+- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/models/guns/tables/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
