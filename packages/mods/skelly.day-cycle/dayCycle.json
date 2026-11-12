@@ -95,7 +95,7 @@
           "power": 16
         }
       },
-      "washOutBand": [-0.16, -0.059999999999999998]
+      "washOutBand": [-0.20000000000000001, -0.10000000000000001]
     },
     "environment": {
       "faceSize": 64,
@@ -288,14 +288,14 @@
       "dusk": {
         "ambientGround": "#3a302a",
         "ambientIntensity": 0.69999999999999996,
-        "ambientSky": "#9a8c90",
+        "ambientSky": "#8c90a8",
         "bloom": 0.25,
         "dome": {
           "clouds": {
             "cover": 0.45000000000000001,
             "opacity": 1
           },
-          "horizonGlow": "#b7b1a4",
+          "horizonGlow": "#b8a6a8",
           "moon": {
             "brightness": 0,
             "colour": "#b3bfd9"
@@ -315,15 +315,15 @@
             "glow": 1,
             "glowColour": "#ffa040"
           },
-          "zenith": "#80786f"
+          "zenith": "#66708a"
         },
         "fogFar": 0.80000000000000004,
         "fogNear": 0.29999999999999999,
         "heightFog": 0.0080000000000000002,
-        "heightFogColor": "#8a6e66",
+        "heightFogColor": "#7e7078",
         "lightColor": "#e89868",
         "lightIntensity": 0.59999999999999998,
-        "sky": "#6e5e5c",
+        "sky": "#6a6470",
         "tone": 0.84999999999999998
       },
       "night": {

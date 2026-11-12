@@ -28,7 +28,11 @@ local dome(zenith, horizonGlow, weight, cloudOpacity, stars, moon, sunLook) = {
 // The looks' own clouds show at this cloudiness, and sessions start there.
 local fairCloudiness = 0.2;
 
-local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
+local dawnDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
+
+// Cool away from the setting sun, so the sunlit clouds read as warm against the earth's shadow rather than as
+// blotches on a warm grey.
+local duskDome = dome('#66708a', '#b8a6a8', 0.5, 1, 0, 0, sun(1, 1));
 
 {
   dayCycle: {
@@ -97,7 +101,7 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
         heightFogColor: '#b09a90',
         bloom: 0.2,
         tone: 0.85,
-        dome: twilightDome,
+        dome: dawnDome,
       },
       day: {
         sky: '#a9bfd0',
@@ -115,19 +119,19 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
         dome: dome('#6f8aa3', '#c9c4b8', 1, 1, 0, 0, sun(1, 0)),
       },
       dusk: {
-        sky: '#6e5e5c',
+        sky: '#6a6470',
         lightColor: '#e89868',
         lightIntensity: 0.6,
-        ambientSky: '#9a8c90',
+        ambientSky: '#8c90a8',
         ambientGround: '#3a302a',
         ambientIntensity: 0.7,
         fogNear: 0.3,
         fogFar: 0.8,
         heightFog: 0.008,
-        heightFogColor: '#8a6e66',
+        heightFogColor: '#7e7078',
         bloom: 0.25,
         tone: 0.85,
-        dome: twilightDome,
+        dome: duskDome,
       },
     },
     weather: {
@@ -168,8 +172,8 @@ local twilightDome = dome('#80786f', '#b7b1a4', 0.5, 1, 0, 0, sun(1, 1));
       glowBand: [0.12, 0.55],
       physicalBand: [0.3, 0.55],
       starField: { density: 0.014, size: 0.12, twinkle: 0.4 },
-      // The moon and stars are gone well before sunrise, so a dawn sky is never lit by a white disc.
-      washOutBand: [-0.16, -0.06],
+      // The moon and stars are gone well before sunrise, so neither shows through the dawn glow.
+      washOutBand: [-0.2, -0.1],
       // About 1.3 degrees across: stylised, but small enough not to read as a second sun. The gain leaves the
       // disc short of white, so its limb and seas show.
       moon: {
