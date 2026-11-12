@@ -11,13 +11,13 @@ import { CopyShader } from 'three/addons/shaders/CopyShader.js';
 
 /**
  * Draws the scene below render scale 1 and presents it at display resolution, without the
- * full-screen copy the canvas path paid: instead of drawing into a sub-viewport of the multisampled
- * default framebuffer and copying that region out (`copyFramebufferToTexture`, whose implicit resolve
- * plus transfer d989-6 measured at about 2.9 GPU ms), the scene draws straight into the render target
- * the presenting quad samples. Pixel-equal to the copy it replaces: the target is byte-sized like the
- * canvas, carries the canvas's own sample count so the scene resolves as it did, and `isXRRenderTarget`
- * routes it through three's canvas output paths (colour space and tone mapping in `WebGLRenderer`,
- * `setProgram` and `getUnlitUniformColorSpace`), so its bytes are the bytes the canvas held.
+ * full-screen copy the previous path paid: instead of drawing into a sub-viewport of the multisampled
+ * default framebuffer and copying that region out (`copyFramebufferToTexture`), the scene draws
+ * straight into the render target the presenting quad samples. The target is built so the scene goes
+ * through the same encoding path the canvas draw used — byte-sized colour, the canvas's own sample
+ * count, and three's canvas colour-space and tone-mapping output routing — which is the intended
+ * equivalence, not a byte-equality guarantee: this target's multisample resolve runs through a
+ * different code path than the default framebuffer's.
  */
 export class ScreenScale {
   private target: WebGLRenderTarget | undefined;
@@ -67,11 +67,15 @@ export class ScreenScale {
     const target = new WebGLRenderTarget(width, height, {
       type: UnsignedByteType,
       colorSpace: SRGBColorSpace,
-      // The `isXRRenderTarget` flag below routes the scene shaders through the target's own colour
-      // space, so they write display-encoded bytes as they did for the canvas. Those bytes must land
-      // in plain RGBA8, not SRGB8_ALPHA8 storage: sampling raw bytes back is what the presenting quad
-      // copies unchanged, and RGBA8 is also the format of the multisample renderbuffer, which the
-      // spec only lets resolve into same-format storage (an sRGB texture never resolves).
+      // The `isXRRenderTarget` flag routes the scene shaders through the target's own colour space
+      // and tone mapping — the canvas's output path. It is a three implementation detail, not a
+      // supported flag for ordinary render targets, so a three upgrade must recheck the branches
+      // that read it (output colour space in `WebGLRenderer`, tone mapping in `WebGLPrograms`,
+      // `getUnlitUniformColorSpace`, multisample storage in `WebGLTextures`). The display-encoded
+      // colour must land in plain RGBA8, not SRGB8_ALPHA8 storage: sampling raw bytes back is what
+      // the presenting quad copies unchanged, and RGBA8 is also the format of the multisample
+      // renderbuffer, which the spec only lets resolve into same-format storage (an sRGB texture
+      // never resolves).
       internalFormat: 'RGBA8',
       samples,
       // Only the colour the quad reads is resolved; a depth blit would be pure cost.

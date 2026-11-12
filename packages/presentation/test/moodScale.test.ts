@@ -119,7 +119,7 @@ it('draws the scaled scene into a canvas-shaped target the presenting quad sampl
     texture: { colorSpace: string; type: number };
   };
   // Canvas-shaped: byte-sized, the canvas's own sample count, and on the canvas's colour-space and
-  // tone-mapping output path, so its bytes are the ones the copied canvas region held.
+  // tone-mapping output path, so the scene encodes the way the canvas draw encoded it.
   expect(drawn).toMatchObject({
     width: Math.floor(420 * 0.7),
     height: Math.floor(240 * 0.7),
