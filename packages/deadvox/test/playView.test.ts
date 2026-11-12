@@ -23,9 +23,11 @@ import {
   Mesh,
   MeshLambertMaterial,
   PerspectiveCamera,
+  PointLight,
   Scene,
   ShaderLib,
   Vector3,
+  type WebGLRenderer,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
@@ -69,7 +71,6 @@ vi.mock('@skelly/presentation/internal/render/skyEnvironment.ts', async (importO
   createSkyEnvironment: () =>
     ({
       refresh: () => false,
-      patchNow: () => undefined,
       light: () => undefined,
       dispose: () => undefined,
     }) satisfies SkyEnvironment,
@@ -340,9 +341,31 @@ it('renders a hand beam and a worn beam together while both contribute to zombie
   view.dispose();
 });
 
+/** Records nothing: the hand scene's own draw sets its lights and patches before it reaches the renderer. */
+const STUB_RENDERER = { autoClear: true, render: () => undefined } as unknown as WebGLRenderer;
+
 const RECEIVER_SCALE = /getSpotLightInfo\([^;]+\);\s*directLight.color \*= ([^;]+);/;
 const FIXTURE_RECEIVER_SCALE =
   /getPointLightInfo\([^;]+\);\s*#if UNROLLED_LOOP_INDEX >= \d+\s*directLight.color \*= ([^;]+);/;
+
+/** A spot just off the surface the camera looks at, which sees less sky than the camera does. */
+function shadedSpot(f: ReturnType<typeof litWorld>): Vec3 {
+  const sunlit = f.engine.camera.position.toArray() as Vec3;
+  const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
+  const hit = raycast(
+    sunlit.map((axis) => axis / 0.5) as Vec3,
+    direction,
+    f.view.flashlight.light.distance / 0.5,
+    f.owner.knownOpaque,
+  );
+  if (!hit) {
+    throw new Error('test camera does not face a surface');
+  }
+  return new Vector3(...sunlit)
+    .addScaledVector(new Vector3(...direction), hit.distance * 0.5)
+    .addScaledVector(new Vector3(...hit.normal), 0.25)
+    .toArray() as Vec3;
+}
 
 function receiverLighting(f: ReturnType<typeof litWorld>, target: Vec3, patched = RECEIVER_SCALE) {
   const material = new MeshLambertMaterial();
@@ -427,15 +450,55 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('warms the main scene up with every patch a frame installs, so the first frame recompiles nothing', async () => {
+  it('warms the main and hand scenes up with every patch a frame installs, so the first frame recompiles nothing', async () => {
     const f = litWorld('doorway');
     try {
-      const material = new MeshLambertMaterial();
-      f.engine.scene.add(new Mesh(new BoxGeometry(), material));
+      const world = new MeshLambertMaterial();
+      const held = new MeshLambertMaterial();
+      f.engine.scene.add(new Mesh(new BoxGeometry(), world));
+      f.view.held.attach(new Mesh(new BoxGeometry(), held));
       await f.view.warmUp();
-      const warmed = { key: material.customProgramCacheKey(), version: material.version };
+      const programs = () => [world, held].map((material) => [material.customProgramCacheKey(), material.version]);
+      const warmed = programs();
       f.engine.materialPatches.apply(f.engine.scene);
-      expect({ key: material.customProgramCacheKey(), version: material.version }).toEqual(warmed);
+      f.view.held.render(STUB_RENDERER, f.engine.camera, f.engine.sky);
+      expect(programs()).toEqual(warmed);
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  it("lights a held piece by the world's per-surface sky exposure alone, as the same piece in the world", () => {
+    let fixtureBlock: Vec3 = [0, 0, 0];
+    const f = litWorld('doorway', () => [{ pos: fixtureBlock, color: '#ffffff', intensity: 10, radius: 8 }]);
+    try {
+      const sunlit = f.engine.camera.position.toArray() as Vec3;
+      const shaded = shadedSpot(f);
+      fixtureBlock = shaded.map((axis, i) => axis / 0.5 + (i === 1 ? 1 : 0)) as Vec3;
+      // The camera's sky exposure scales the ambient light where it is below 1, and its daylight scale the fixture
+      // light where that is below 1; without both the test would pass vacuously.
+      expect(f.sky.at(shaded)).toBeLessThan(1);
+      expect(flashlightDaylightScale(f.daylight, f.sky.at(sunlit))).toBeLessThan(1);
+      const world = new MeshLambertMaterial();
+      const held = new MeshLambertMaterial();
+      f.engine.scene.add(new Mesh(new BoxGeometry(), world));
+      f.view.held.attach(new Mesh(new BoxGeometry(), held));
+      const { scene: hand } = f.view.held.warmUpTarget;
+      const handAmbient = hand.children.find((child) => child instanceof HemisphereLight)!;
+      const fixtures = (lights: readonly PointLight[]) =>
+        lights.slice(ITEM_POINT_LIGHTS).map((light) => light.intensity);
+      for (const at of [sunlit, shaded]) {
+        f.engine.camera.position.set(...at);
+        f.updateFrame();
+        f.engine.materialPatches.apply(f.engine.scene);
+        f.view.held.render(STUB_RENDERER, f.engine.camera, f.engine.sky);
+
+        expect(held.customProgramCacheKey()).toBe(world.customProgramCacheKey());
+        expect(handAmbient.intensity).toBe(f.engine.sky.ambient.intensity);
+        const worldFixtures = fixtures(f.view.lightPool.lights);
+        expect(worldFixtures.some((intensity) => intensity > 0)).toBe(true);
+        expect(fixtures(hand.children.filter((child) => child instanceof PointLight))).toEqual(worldFixtures);
+      }
     } finally {
       f.cleanup();
     }
@@ -523,18 +586,7 @@ describe('play presentation ownership', () => {
     const f = litWorld('doorway', () => [{ pos: fixtureBlock, color: '#ffffff', intensity: 10, radius: 8 }]);
     try {
       const sunlit = f.engine.camera.position.toArray() as Vec3;
-      const direction = f.engine.camera.getWorldDirection(new Vector3()).toArray() as Vec3;
-      const hit = raycast(
-        sunlit.map((axis) => axis / 0.5) as Vec3,
-        direction,
-        f.view.flashlight.light.distance / 0.5,
-        f.owner.knownOpaque,
-      );
-      expect(hit).toBeDefined();
-      const shaded = new Vector3(...sunlit)
-        .addScaledVector(new Vector3(...direction), hit!.distance * 0.5)
-        .addScaledVector(new Vector3(...hit!.normal), 0.25)
-        .toArray() as Vec3;
+      const shaded = shadedSpot(f);
       // The fixture hangs just above the receiving spot, which is also where the camera moves to.
       fixtureBlock = shaded.map((axis, i) => axis / 0.5 + (i === 1 ? 1 : 0)) as Vec3;
       const target = shaded;
