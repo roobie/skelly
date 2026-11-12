@@ -155,9 +155,9 @@ describe('the moon and stars in a brightening sky', () => {
   /** Every minute's sun height with the moon and stars as the fixture's looks give them and as the sky draws them. */
   const minutes = Array.from({ length: 24 * 60 }, (_, minute) => {
     const hour = minute / 60;
-    const whole = skyAt(hour, cycle).dome;
+    const { dome: whole, sunDirection } = skyAt(hour, cycle);
     const drawn = skyAt(hour, washing).dome;
-    return { minute, height: skyAt(hour, cycle).sunDirection[1], whole, drawn };
+    return { minute, height: sunDirection[1], whole, drawn };
   });
 
   it('draws them whole with the sun below the band and not at all above it, whatever the looks give them', () => {
