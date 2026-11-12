@@ -2,6 +2,7 @@ import {
   array,
   check,
   finite,
+  gtValue,
   literal,
   ltValue,
   maxLength,
@@ -299,6 +300,17 @@ const SkyEnvironmentSchema = strictObject({
   strength: FiniteNonNegative,
 });
 
+/** Where the main light comes from; how it follows the sun and the moon is code (core/sky.ts, `skyAt`). */
+const MainLightSchema = strictObject({
+  /**
+   * The lowest the main light comes from, as the sine of its elevation, so it never grazes the ground near the
+   * horizon. Above 0, so the sun's side and the moon's side never cancel as the light blends between them.
+   */
+  lowestHeight: pipe(UnitFraction, gtValue(0, 'must be above 0'), ltValue(1, 'must be below 1')),
+  /** The look's moon brightness at and above which the main light comes wholly from the moon's side. */
+  fromMoonAt: FinitePositive,
+});
+
 const SKY_PHASES = ['night', 'dawn', 'day', 'dusk'] as const;
 
 /** Where a look sits in a solar phase: 0 is the phase's start, 1 its end. */
@@ -353,6 +365,7 @@ export const DayCycleSchema = strictObject({
   clouds: CloudsSchema,
   domeShape: DomeShapeSchema,
   environment: SkyEnvironmentSchema,
+  mainLight: MainLightSchema,
   /** Where a new game starts when the scenario names no time; light is good with dusk still far off. */
   defaultStartGameTimeOfDay: GameTimeOfDay,
   /** The named spawn-window times the sun doesn't derive: dawn and dusk follow the cycle's sun. */

@@ -51,10 +51,15 @@ export interface Sky {
   dayPhase: DayPhase;
   /** The fog colour, which is also the sky dome's colour at the horizon. */
   sky: Rgb;
-  /** Unit vector towards the main light: the sun by day, the moon by night. */
+  /**
+   * Unit vector towards the main light: the sun's bearing by day and the drawn moon's by night, each raised to the
+   * cycle's lowest light height, blended by how far the look's moon is out.
+   */
   light: Vec3;
   /** The true solar direction, unclamped, so a sky dome can draw the sun at and below the horizon. */
   sunDirection: Vec3;
+  /** Where the dome draws the moon, unclamped (`moonDirection`). */
+  moonDirection: Vec3;
   lightColor: Rgb;
   lightIntensity: number;
   /** Hemisphere light: sky and ground colours and intensity. */
@@ -169,8 +174,36 @@ const lookAt = (state: DayPhaseState, time: number, cycle: DayCycleDef): Look =>
 /** Sun direction from the single latitude/date model, with east/up/north axes. */
 export const sunDirection = (hour: number, cycle: DayCycle): Vec3 => dayPhaseAt(cycle, hour * 3600).sunDirection;
 
-/** Lowest elevation of the main light, so it never grazes the ground at sunrise and sunset. */
-const MIN_LIGHT_Y = 0.2;
+/** Where the moon is drawn: opposite the sun. The dome and the main light both take it from here. */
+const moonDirection = (sun: Vec3): Vec3 => [-sun[0], -sun[1], -sun[2]];
+
+/** A unit direction raised to at least `lowest`, the sine of its elevation, keeping its bearing. */
+const raised = ([x, y, z]: Vec3, lowest: number): Vec3 => {
+  if (y >= lowest) {
+    return [x, y, z];
+  }
+  const across = Math.hypot(x, z);
+  if (across === 0) {
+    // Straight down has no bearing to keep.
+    return [0, 1, 0];
+  }
+  const scale = Math.sqrt(1 - lowest * lowest) / across;
+  return [x * scale, lowest, z * scale];
+};
+
+/**
+ * The main light comes from the sun's side by day and the moon's by night, blended by the look's moon brightness so
+ * twilight swings it across without a jump. Both sides sit at or above the lowest height, which content keeps above
+ * the horizon, so the blend never cancels to nothing.
+ */
+const mainLight = (sun: Vec3, moon: Vec3, moonBrightness: number, tuning: DayCycleDef['mainLight']): Vec3 => {
+  const share = Math.min(moonBrightness / tuning.fromMoonAt, 1);
+  const from = raised(sun, tuning.lowestHeight);
+  const to = raised(moon, tuning.lowestHeight);
+  const blended: Vec3 = [mix(from[0], to[0], share), mix(from[1], to[1], share), mix(from[2], to[2], share)];
+  const length = Math.hypot(...blended);
+  return [blended[0] / length, blended[1] / length, blended[2] / length];
+};
 
 /** The scatter kind's share of the clouds when `kind` shows alone. */
 export const scatterShare = (kind: CloudKind): number => (kind === 'scatter' ? 1 : 0);
@@ -179,22 +212,20 @@ export const scatterShare = (kind: CloudKind): number => (kind === 'scatter' ? 1
 export const skyAt = (hour: number, cycle: DayCycleDef): Sky => {
   const time = hour * 3600;
   const state = dayPhaseAt(cycle, time);
-  // The light follows the sun's continuous arc; the night palette supplies the moon-like light.
-  const [x, , z] = state.sunDirection;
-  const y = Math.max(state.sunDirection[1], MIN_LIGHT_Y);
-  const len = Math.hypot(x, y, z);
+  const moon = moonDirection(state.sunDirection);
   const look = lookAt(state, time, cycle);
   return {
     ...look,
     dome: { ...look.dome, clouds: { ...look.dome.clouds, scatter: scatterShare(cycle.weather.fair.kind) } },
     dayPhase: state.phase,
-    light: [x / len, y / len, z / len],
+    light: mainLight(state.sunDirection, moon, look.dome.moon.brightness, cycle.mainLight),
     sunDirection: state.sunDirection,
+    moonDirection: moon,
   };
 };
 
 /**
- * How strongly the main light's shadows show: full whenever it shines, low sun and the night stand-in
+ * How strongly the main light's shadows show: full whenever it shines, low sun and the moon at night
  * included, and none (no map to draw) when it is out. A weaker shadow passes the rest of the light
  * through whatever the map blocks and would light a sealed room's sun-facing walls; a sealed room
  * stays dark at every hour.

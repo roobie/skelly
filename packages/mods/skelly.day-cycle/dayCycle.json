@@ -362,6 +362,10 @@
         "tone": 1
       }
     },
+    "mainLight": {
+      "fromMoonAt": 1,
+      "lowestHeight": 0.20000000000000001
+    },
     "midnightGameTimeOfDay": "00:00",
     "noonGameTimeOfDay": "12:00",
     "twilight": "nautical",

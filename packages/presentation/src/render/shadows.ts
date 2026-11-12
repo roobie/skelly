@@ -9,8 +9,8 @@
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
 // `selectShadowCasters`) and draws one map per light through it; the chunk batch draws each pass's
 // own set (chunkBatch.ts), so the main pass keeps the camera's chunks. A light's `castShadow` stays true while its setting is on, so the hour
-// doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
-// stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
+// doesn't change shader programs. The sun's shadow is full whenever its light shines, the moon's
+// light at night included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
 // one allocated by three's pass, `needsMap`). The flashlight's beams likewise keep `castShadow` with
 // the setting whether on or off (flashlight.ts, `shadowsAllowed`), and a beam's map is drawn only
