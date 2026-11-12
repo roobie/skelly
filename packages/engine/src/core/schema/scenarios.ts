@@ -34,6 +34,13 @@ import {
 import { Count, Id, PositiveGameHours } from './primitives.ts';
 import { CellCoordinate, CellPosition } from './templates.ts';
 
+const HordeEffectSchema = strictObject({
+  kind: literal('releaseHorde'),
+  actor: Id,
+  count: pipe(Count, minValue(1), maxValue(64)),
+  at: CellPosition,
+});
+
 /** A scenario event: once its trigger has passed and every condition holds, its effects apply once. See `packages/deadvox/SLICE-5.md`, "Settled event and playtest rules". */
 const EventRuleSchema = strictObject({
   id: Id,
@@ -42,20 +49,7 @@ const EventRuleSchema = strictObject({
     array(union([strictObject({ kind: literal('dayPhase'), phases: pipe(array(picklist(DAY_PHASES)), nonEmpty()) })])),
     [],
   ),
-  effects: pipe(
-    array(
-      union([
-        /** A horde of one actor type appears at `at`, in world cells, and heads for where the player stood. */
-        strictObject({
-          kind: literal('releaseHorde'),
-          actor: Id,
-          count: pipe(Count, minValue(1), maxValue(64)),
-          at: CellPosition,
-        }),
-      ]),
-    ),
-    nonEmpty('needs an effect'),
-  ),
+  effects: pipe(array(union([HordeEffectSchema])), nonEmpty('needs an effect')),
 });
 
 export type EventRuleDef = InferOutput<typeof EventRuleSchema>;
@@ -241,6 +235,32 @@ const PlaceAskSchema = strictObject({
   ),
 });
 
+const AnchorFields = {
+  id: Id,
+  minDistance: NonnegativeFinite,
+  clearOf: array(picklist(['woodland', 'building'])),
+  spawnMarginMetres: NonnegativeFinite,
+  woodlandDensityFloor: pipe(NonnegativeFinite, maxValue(1)),
+};
+
+const AnchorSchema = variant('kind', [
+  strictObject({ ...AnchorFields, kind: literal('edge') }),
+  strictObject({ ...AnchorFields, kind: literal('cell'), at: CellPosition }),
+]);
+
+const AnchoredEventRuleSchema = strictObject({
+  ...EventRuleSchema.entries,
+  effects: pipe(
+    array(
+      strictObject({
+        ...HordeEffectSchema.entries,
+        at: union([Id, pipe(array(Id), nonEmpty())]),
+      }),
+    ),
+    nonEmpty(),
+  ),
+});
+
 export const ComposedSiteSchema = strictObject({
   id: Id,
   kind: literal(SCENARIO_KINDS.composedSite),
@@ -260,8 +280,9 @@ export const ComposedSiteSchema = strictObject({
   }),
   asks: array(variant('kind', [PlaceAskSchema])),
   guarantee: record(Id, Count),
-  population: CityScenarioSchema.entries.population,
-  eventRules: optional(array(EventRuleSchema), []),
+  anchors: optional(array(AnchorSchema), []),
+  population: strictObject({ authoredMarkers: vBoolean() }),
+  eventRules: optional(array(AnchoredEventRuleSchema), []),
 });
 
 export const ScenarioSchema = variant('kind', [CityScenarioSchema, ComposedSiteSchema]);

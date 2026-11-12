@@ -32,7 +32,11 @@ export interface WorldSetup extends ColumnSource {
   config: GameConfig;
   registry: Registry;
   contentErrors: string;
-  scenario: ScenarioDef | undefined;
+  scenario:
+    | (Pick<ScenarioDef, 'id' | 'body' | 'compression' | 'outbreakAgeGameHours' | 'decalLimit'> & {
+        eventRules: readonly import('../core/schema/scenarios.ts').EventRuleDef[];
+      })
+    | undefined;
   readonly attemptPolicy?: AttemptPolicyDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
@@ -63,7 +67,11 @@ const SCENARIO_SITES: Record<ScenarioKind, (options: ScenarioSiteOptions) => Sit
     if (scenario.kind !== 'composedSite') {
       throw new Error('Expected composedSite scenario');
     }
-    return new AuthoredSite(seed, registry, scale, composeLayout(seed, registry, scenario).layout);
+    const composed = composeLayout(seed, registry, scenario);
+    return new AuthoredSite(seed, registry, scale, composed.layout, {
+      authoredMarkers: scenario.population.authoredMarkers,
+      eventRules: composed.eventRules,
+    });
   },
 };
 
@@ -146,11 +154,26 @@ export function createWorldSetup(
     ...(stats ? { stats } : {}),
     ...(terrainWorkers ? { terrainWorkers: { source: terrainWorkers, ...tuning.terrainWorkers } } : {}),
   });
+  const scenario = registry.scenarios.get(config.site);
+  const eventRules = scenario?.kind === 'composedSite' ? built?.eventRules : scenario?.eventRules;
+  if (scenario && eventRules === undefined) {
+    throw new Error(`Scenario "${scenario.id}" did not resolve its event rules`);
+  }
   return {
     config,
     registry,
     contentErrors,
-    scenario: registry.scenarios.get(config.site),
+    scenario:
+      scenario && eventRules
+        ? {
+            id: scenario.id,
+            body: scenario.body,
+            compression: scenario.compression,
+            outbreakAgeGameHours: scenario.outbreakAgeGameHours,
+            decalLimit: scenario.decalLimit,
+            eventRules,
+          }
+        : undefined,
     attemptPolicy: row?.attemptPolicy,
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,

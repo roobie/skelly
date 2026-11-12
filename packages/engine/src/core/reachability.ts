@@ -195,7 +195,9 @@ const worldActorTypes = (
   scenarios: Iterable<ScenarioDef>,
 ): Set<string> => {
   const types = new Set(layouts.flatMap((layout) => layout.actors.map((spawn) => spawn.type)));
-  const populations = [...scenarios].map((scenario) => scenario.population);
+  const populations = [...scenarios].flatMap((scenario) =>
+    scenario.kind === 'assembledCity' ? [scenario.population] : [],
+  );
   if (layouts.some((layout) => layout.hordes?.length) || populations.some((population) => population.hordes > 0)) {
     const provider = claimed(registry.actors, 'settlementHorde');
     if (provider) {

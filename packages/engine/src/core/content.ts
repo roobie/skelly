@@ -2118,6 +2118,9 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
 };
 
 const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  if (scenario.kind !== 'assembledCity') {
+    return;
+  }
   for (const [capability, required, field] of [
     ['settlementHorde', scenario.population.hordes > 0, 'hordes'],
     ['settlementWanderer', scenario.population.settlementPressure, 'settlementPressure'],
