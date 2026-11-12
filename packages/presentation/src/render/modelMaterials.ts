@@ -17,6 +17,7 @@ import {
 import { parse } from 'valibot';
 import { glowingCopy } from './itemEmissive.ts';
 import { skyAnchoredCopy } from './skyAnchor.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 /** Only the physical material draws a sheen, so a sheened definition swaps the loader's standard one for it. */
 const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
@@ -143,5 +144,6 @@ export const modelMaterialWarmUp = ({
     mesh.visible = false;
     group.add(mesh);
   }
+  freezeMatrices(group);
   return group;
 };

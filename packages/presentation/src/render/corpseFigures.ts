@@ -9,6 +9,7 @@ import { Group, Matrix4, Vector3 } from 'three';
 import { bakeMeshes, disposeBaked } from './bakedMeshes.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 import { FIGURE_PIVOT, PlayerMeshes } from './playerFigure.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 /** The world's default layer: a corpse blocks the flashlight's shadow like any other piece. */
 const WORLD_LAYER = 0;
@@ -123,6 +124,12 @@ export class CorpseFigures {
       bake(corpse);
       place(corpse, entity, def, this.blockSize);
       corpse.group.visible = corpse.settled && (this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true);
+      // Each sync re-places before freezing, so a moved body recomposes once and then stands still until
+      // the next sync. A body still loading stays unfrozen: `settle` moves its parts in place, and the
+      // carried `figure` clones stay unfrozen with their holder.
+      if (corpse.settled) {
+        freezeMatrices(corpse.group);
+      }
       corpses.set(entity, corpse);
     }
     for (const [entity, corpse] of this.corpses) {

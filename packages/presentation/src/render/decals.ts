@@ -5,6 +5,7 @@ import { type BlockEntities, DECAL_KINDS, type Placement, panelFor, placedDecals
 import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshLambertMaterial, Quaternion, Vector3 } from 'three';
 import { STAIN_NOISE_GLSL } from './bloodStain.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 const faceNormals = {
   n: [0, 0, -1],
@@ -151,6 +152,8 @@ export class AuthoredDecals {
     this.mesh = new Mesh(geometry, material);
     this.mesh.receiveShadow = true;
     this.mesh.name = 'authored-decals';
+    // Door marks follow their panels through vertex attributes, never the mesh's transform.
+    freezeMatrices(this.mesh);
   }
 
   /** Door marks follow the ordinary panel owner; unloaded or removed doors show no floating mark. */
