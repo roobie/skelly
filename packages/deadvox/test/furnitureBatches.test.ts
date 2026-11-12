@@ -240,9 +240,7 @@ describe('furniture batches', () => {
     };
     const drawnLoose = (): string[] => {
       furniture.sync(entities);
-      return furniture.group.children.flatMap((child) =>
-        child instanceof InstancedMesh ? [] : worldsOf(child),
-      );
+      return furniture.group.children.flatMap((child) => (child instanceof InstancedMesh ? [] : worldsOf(child)));
     };
     expect(drawnLoose(), 'drawn where it stands').toEqual(worldsOf(furniture.pieceMesh(leaf, def)));
     entities.slide(leaf, [6, 1, 3]);

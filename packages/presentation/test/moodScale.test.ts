@@ -1,16 +1,8 @@
 import type { GraphicsOptions } from '@skelly/engine/look';
-import {
-  NoToneMapping,
-  PerspectiveCamera,
-  Scene,
-  UnsignedByteType,
-  Vector2,
-  Vector4,
-  type WebGLRenderer,
-} from 'three';
+import { NoToneMapping, PerspectiveCamera, Scene, UnsignedByteType, Vector2, Vector4, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { Mood } from '../src/render.ts';
 import { ScreenScale } from '../src/render/screenScale.ts';
+import { Mood } from '../src/render.ts';
 
 const query = vi.hoisted(() => ({ begin: vi.fn(), end: vi.fn() }));
 vi.mock('../src/render/gpuFrameTime.ts', () => {
@@ -69,7 +61,10 @@ it('non-post rendering scales the scene and hands, presents at display resolutio
     },
     getRenderTarget: () => null,
     setRenderTarget: (target: unknown) => {
-      bound = target === null ? null : { width: (target as { width: number }).width, height: (target as { height: number }).height };
+      bound =
+        target === null
+          ? null
+          : { width: (target as { width: number }).width, height: (target as { height: number }).height };
     },
     render: vi.fn((root: unknown) => {
       drawing.push({ kind: root === scene ? 'scene' : 'present', target: bound && { ...bound } });
@@ -101,8 +96,8 @@ it('draws the scaled scene into a canvas-shaped target the presenting quad sampl
   const renderer = {
     getDrawingBufferSize: (target: Vector2) => target.copy(display),
     getRenderTarget: () => null,
-    setRenderTarget: (target: unknown) => {
-      bound = target;
+    setRenderTarget: (next: unknown) => {
+      bound = next;
     },
     getContext: () => ({ SAMPLES: 4, getParameter: () => 4 }),
     render: (root: unknown) => presents.push({ root, target: bound }),
@@ -112,11 +107,11 @@ it('draws the scaled scene into a canvas-shaped target the presenting quad sampl
   scale.render(renderer, 0.7, () => {
     sceneTarget = bound;
   });
-  const quad = (scale as unknown as {
+  const { quad } = scale as unknown as {
     quad: { material: { uniforms: { tDiffuse: { value: unknown } } }; _mesh: unknown };
-  }).quad;
+  };
   expect(presents, 'the quad presents to the canvas').toEqual([{ root: quad._mesh, target: null }]);
-  const target = sceneTarget as unknown as {
+  const drawn = sceneTarget as unknown as {
     width: number;
     height: number;
     samples: number;
@@ -125,13 +120,13 @@ it('draws the scaled scene into a canvas-shaped target the presenting quad sampl
   };
   // Canvas-shaped: byte-sized, the canvas's own sample count, and on the canvas's colour-space and
   // tone-mapping output path, so its bytes are the ones the copied canvas region held.
-  expect(target).toMatchObject({
+  expect(drawn).toMatchObject({
     width: Math.floor(420 * 0.7),
     height: Math.floor(240 * 0.7),
     samples: 4,
     isXRRenderTarget: true,
   });
-  expect(target.texture.colorSpace).toBe('srgb');
-  expect(target.texture.type).toBe(UnsignedByteType);
-  expect(quad.material.uniforms.tDiffuse.value).toBe(target.texture);
+  expect(drawn.texture.colorSpace).toBe('srgb');
+  expect(drawn.texture.type).toBe(UnsignedByteType);
+  expect(quad.material.uniforms.tDiffuse.value).toBe(drawn.texture);
 });
