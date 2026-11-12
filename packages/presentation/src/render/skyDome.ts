@@ -155,7 +155,6 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uPhysicalExposure;
   uniform float uMoonBrightness;
   uniform vec3 uHorizonGlow;
-  uniform vec3 uHorizon;
   uniform float uPhysicalWeight;
   uniform vec3 uSunDir;
   uniform float uSunIntensity;
@@ -212,8 +211,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   }
 
   vec3 keyedSky ( vec3 dir ) {
-    vec3 col = mix( uHorizonGlow, uZenith, smoothstep( uGlowBand.x, uGlowBand.y, dir.y ) );
-    return mix( uHorizon, col, smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
+    return mix( uHorizonGlow, uZenith, smoothstep( uGlowBand.x, uGlowBand.y, dir.y ) );
   }
 
   // Preetham's analytic daylight (three's Sky addon, less its clouds and its sun disc).
@@ -391,7 +389,9 @@ const fragmentShader = (layers: number): string => /* glsl */ `
       float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
       vec3 litTops = uCloudAmbient + uCloudLight * facing;
       vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
-      vec2 plane = dir.xz / max( dir.y, 0.06 );
+      // Clouds show only above their fade's lower edge, which is at or above the horizon, so dir.y is positive here.
+      // A floor on it would stretch the plane into vertical streaks wherever clouds still show under the floor.
+      vec2 plane = dir.xz / dir.y;
       // A change of kind fades one kind out as the other fades in; a kind with no share costs nothing.
       float layeredOpacity = cloudOpacity * ( 1.0 - uScatter );
       if ( layeredOpacity > 0.0 ) {
@@ -409,7 +409,9 @@ const fragmentShader = (layers: number): string => /* glsl */ `
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
-    col = mix( col, uFogColor, 1.0 - smoothstep( 0.0, 0.06, dir.y ) );
+    // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the fog with
+    // the sky behind it instead of ending in a line where a narrower fade cut it.
+    col = mix( col, uFogColor, 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
     gl_FragColor = vec4( col * uSkyColorScale, 1.0 );
     #include <colorspace_fragment>
   }
@@ -472,7 +474,6 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
     uPhysicalExposure: { value: 0 },
     uMoonBrightness: { value: 0 },
     uHorizonGlow: { value: new Color() },
-    uHorizon: { value: new Color() },
     uPhysicalWeight: { value: 0 },
     uSunDir: { value: new Vector3(0, 1, 0) },
     uSunIntensity: { value: 0 },
@@ -553,7 +554,6 @@ export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): S
       setSrgb(uniforms.uFogColor.value, sky.sky).multiplyScalar(skyVisibility);
       setSrgb(openUniforms.uFogColor.value, sky.ambientGround);
       uniforms.uSkyVisibility.value = skyVisibility;
-      setSrgb(uniforms.uHorizon.value, sky.sky);
       setSrgb(uniforms.uHorizonGlow.value, dome.horizonGlow);
       setSrgb(uniforms.uZenith.value, dome.zenith);
       uniforms.uPhysicalWeight.value = dome.physical.weight * physicalShare(sunDirection[1], shape.physicalBand);

@@ -122,7 +122,10 @@ const MoonShapeSchema = strictObject({
 
 /** The dome's shape that does not change over the day: how its gradient, stars, bodies and cloud light are built from the looks. */
 const DomeShapeSchema = strictObject({
-  /** Where the look's fog colour eases into the horizon glow, as the sine of the elevation. */
+  /**
+   * Where the dome eases out of the look's fog colour, as the sine of the elevation: the gradient into its horizon
+   * glow, and the physical sky, clouds, sun, moon and stars drawn over it.
+   */
   horizonBand: Band,
   /** Where the horizon glow eases into the zenith, as the sine of the elevation. */
   glowBand: Band,
