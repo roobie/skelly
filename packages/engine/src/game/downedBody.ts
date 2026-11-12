@@ -12,7 +12,7 @@ const DOWNED_BODY_ACTION = 'actor.downed';
 const DOWNED_BODY_WAYS = ['finish-off', 'dismember'] as const;
 export type DownedBodyWay = (typeof DOWNED_BODY_WAYS)[number];
 
-type DownedBodyPlan = { ok: true; simSeconds: number; label: string } | { ok: false; reason: string };
+type DownedBodyPlan = { ok: true; simSeconds: number; label: string; tool?: Item } | { ok: false; reason: string };
 
 type DownedActors = Pick<ActorSystem, 'store' | 'finishDowned'>;
 
@@ -53,6 +53,7 @@ export const downedBodyPlan = (player: ReachPlayer, actor: Actor | undefined, wa
   return {
     ok: true,
     simSeconds,
+    tool,
     label: fillText(text.downedBody.dismember, { actor: name, tool: player.inventory.name(tool).toLowerCase() }),
   };
 };

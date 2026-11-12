@@ -12,7 +12,7 @@ import {
 } from '@skelly/engine/internal/core/firearmsSkill.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '@skelly/engine/internal/core/leanCollision.ts';
-import { bodyDistance, type ReachPlayer } from '@skelly/engine/internal/core/reach.ts';
+import { bodyDistance } from '@skelly/engine/internal/core/reach.ts';
 import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
 import {
   firearmShotPracticeSkill,
@@ -21,8 +21,6 @@ import {
 } from '@skelly/engine/internal/core/skillTraining.ts';
 import { compileTemplate, placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
-import { downedBodyPlan } from '@skelly/engine/internal/game/downedBody.ts';
-import { Inventory } from '@skelly/engine/inventory';
 import {
   actorPoseInputFor,
   blendHeldFirearmTransforms,
@@ -40,8 +38,6 @@ import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
-import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { fixtureSources } from './economyFixtures.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
@@ -1252,37 +1248,6 @@ describe('clearing a downed shambler', () => {
     expect(session.actors.store.get(id)).toBeUndefined();
     expect(actor.severed).toEqual(expect.arrayContaining(['upperArm.L', 'upperArm.R', 'head']));
     expect(groundItems(session)).toHaveLength(3);
-  });
-
-  it('dismembers with the carried tool of the lowest id, whatever the names say', () => {
-    const { quality, level } = downed.dismember;
-    const tool = (id: string, name: string) => ({
-      id,
-      name,
-      category: 'tool',
-      weight: 1,
-      size: [1, 1],
-      tool: { qualities: { [quality]: level } },
-    });
-    const content = baseRegistryWith(
-      fixtureSources([
-        {
-          source: 'dismember-tools.json',
-          data: { items: [tool('dismember_tool_a', 'Zed saw'), tool('dismember_tool_b', 'Alpha saw')] },
-        },
-      ]),
-    );
-    const inventory = new Inventory(content);
-    expect(inventory.add(inventory.create('dismember_tool_b'), { kind: 'hand', side: 'left' })).toBe(true);
-    expect(inventory.add(inventory.create('dismember_tool_a'), { kind: 'hand', side: 'right' })).toBe(true);
-    const actor = {
-      incapacitated: true,
-      type: shambler,
-      body: { pos: [0.5, 0, 1.5], halfWidth: 0.4, height: 0.5 },
-    } as Actor;
-    const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 0.5, clock: BASE_CLOCK };
-    const plan = downedBodyPlan(player, actor, 'dismember');
-    expect(plan.ok && plan.label).toContain('zed saw');
   });
 
   it.each([

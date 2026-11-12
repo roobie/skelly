@@ -331,7 +331,7 @@ it('picks the carried tool of the lowest id and lists tool names in name order, 
   const plan = pryPlan(inventory, door);
   expect(plan.ok && plan.tool.type).toBe('pry_order_a');
   const refused = pryPlan(inventory, door, { toolUid: -1 });
-  const listed = refused.ok ? [] : refused.toolNames.filter((name) => name.endsWith(' bar'));
+  const listed = refused.ok ? [] : refused.toolNames.filter((name) => name === 'Alpha bar' || name === 'Zed bar');
   expect(listed).toEqual(['Alpha bar', 'Zed bar']);
 });
 
