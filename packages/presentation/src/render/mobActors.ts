@@ -300,8 +300,10 @@ interface Variant {
   /** How far a drawn vertex can sit from the translation of the packed bone matrix that poses it: the
    * bind sphere centre's distance from the origin plus its radius (bind geometry can sit offset from
    * its origin; the diameter alone would ignore that), since the crowd shader applies each vertex
-   * exactly one packed matrix whose rotation is the bind vertex's rotation scaled (render/crowd.ts,
-   * CROWD_BEGIN_VERTEX). Expands the box around packed bone translations (boxAroundRow). Metres. */
+   * exactly one packed matrix (render/crowd.ts, CROWD_BEGIN_VERTEX) whose rotation is the bind
+   * vertex's rotation scaled by this variant's scale — every packing path (packPlaced, packCrawlFall,
+   * packCorpse, packDebris) packs it that way. Expands the box around packed bone translations
+   * (boxAroundRow). Metres. */
   readonly casterReach: number;
   /** Reused every frame for every actor of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps. */
@@ -641,10 +643,11 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
 
 /** The farthest a drawn vertex can sit from the translation of the packed bone matrix that poses it:
  * the crowd shader applies each vertex exactly one packed matrix (render/crowd.ts,
- * CROWD_BEGIN_VERTEX), whose rotation is the bind vertex's rotation scaled, so the vertex's distance
- * from that translation is at most its bind-space norm — the bind sphere centre's distance from the
- * origin plus its radius. The diameter alone is not that norm — bind geometry can sit offset from its
- * origin, and its far side then reaches past the diameter. Model units. */
+ * CROWD_BEGIN_VERTEX), whose rotation is the bind vertex's rotation scaled by the body's scale —
+ * every packing path maintains that — so the vertex's distance from that translation is at most its
+ * bind-space norm times that scale: the bind sphere centre's distance from the origin plus its
+ * radius. The diameter alone is not that norm — bind geometry can sit offset from its origin, and
+ * its far side then reaches past the diameter. Model units. */
 const bindReachOf = (geometry: BufferGeometry): number => {
   const sphere = geometry.boundingSphere;
   return sphere ? sphere.center.length() + sphere.radius : 2;
@@ -1794,13 +1797,11 @@ export class MobActorMeshes implements ActorRenderer {
     indices: readonly number[],
   ): Map<number, MutableTransform> {
     if (state.drawnFall) {
+      // drawnFall already carries the body's scale (packCrawlFall packs it scaled), so copy as is.
       return new Map(
         indices.map((index) => {
           const source = state.drawnFall!.get(index)!;
-          return [
-            index,
-            { r: source.r.map((v) => v * variant.scale) as MutableTransform['r'], t: [...source.t] as Vec3 },
-          ];
+          return [index, { r: [...source.r] as MutableTransform['r'], t: [...source.t] as Vec3 }];
         }),
       );
     }
@@ -2221,10 +2222,16 @@ export class MobActorMeshes implements ActorRenderer {
     variant.bones.forEach((bone, index) => {
       const source = fall.physics.transforms.get(index)!;
       const target = posed.transforms.get(bone.id)!;
-      const offset = mulMV(yaw, target.t);
+      // The pose side of the blend is model-space (posedFrame) while the ragdoll side is world-space,
+      // and the packed rotation must land at the body's scale like every packing path does
+      // (Variant.casterReach bounds a drawn vertex by it): scaling it here also draws a scaled
+      // figure's fall at its authored size instead of its bind size.
+      const offset = mulMV(yaw, target.t.map((value) => value * variant.scale) as Vec3);
       const translation = [posed.placement.x, posed.placement.y, posed.placement.z];
       const transform: MutableTransform = {
-        r: [...quatToMat3(slerpQuat(mat3ToQuat(source.r), mat3ToQuat(mulMM(yaw, target.r)), blend))],
+        r: [...quatToMat3(slerpQuat(mat3ToQuat(source.r), mat3ToQuat(mulMM(yaw, target.r)), blend))].map(
+          (value) => value * variant.scale,
+        ) as MutableTransform['r'],
         t: source.t.map((value, axis) => value + (offset[axis]! + translation[axis]! - value) * blend) as Vec3,
       };
       drawn.set(index, transform);

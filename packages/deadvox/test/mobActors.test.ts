@@ -316,6 +316,7 @@ const rendererInternals = (renderer: MobActorMeshes) =>
         variantIndex: number;
         globalRow: number;
         lastPlacement: CrowdPlacement | undefined;
+        drawnFall?: unknown;
         bodyTransforms: readonly {
           readonly r: Parameters<typeof mulMV>[0];
           readonly t: readonly [number, number, number];
@@ -1775,6 +1776,85 @@ describe('MobActorMeshes', () => {
       const twin = variant.shadowPasses[0]!;
       const selected = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
       expect(selected).toContain(debris.globalRow);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a scaled figure whose crawl fall draws inside a volume holding its drawn vertex', async () => {
+    // packCrawlFall packed unit rotations, unlike every other packing path (which scale the rotation
+    // by the body's scale, as Variant.casterReach assumes), so a small figure's falling body drew its
+    // bind vertices at bind size, past its row box, and the cull selected nothing for a volume that
+    // contained what it actually drew.
+    const scale = 0.1;
+    const scaledFigures = (): ActorFigureFiles => {
+      const scaled = new Map(FIGURES);
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        const body = { ...figure.body, scale };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        expect(actorClipIssues(body, figure.clips)).toEqual([]);
+        scaled.set(key, { ...figure, body });
+      }
+      return scaled;
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: scaledFigures(),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const id = store.add(makeActor([0, 0, 0]));
+      renderer.sync(store);
+      store.replace(id, makeActor([0, 0, 0], [0, 0, -1], ['thigh.L'])); // a severed leg starts a crawl fall
+      renderer.sync(store);
+      await renderer.whenCorpsesReady();
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      expect(state.drawnFall).toBeDefined(); // the fall is drawing
+      const variant = internals.variants[state.variantIndex]!;
+      // Where the falling body actually draws each vertex: through the packed matrices the crowd
+      // shader applies — renderer.boneMatrix reads the very row the crowd mesh and the twin draw.
+      const positions = variant.geometry.getAttribute('position');
+      const owners = variant.geometry.getAttribute('boneIndex');
+      let box = new Box3();
+      renderer.selectShadowCasters(0, (candidate) => {
+        box = candidate.clone();
+        return true; // capture the real box for the farthest drawn vertex
+      });
+      let overflow = 0;
+      let checked = 0;
+      let worst: Vec3 = [0, 0, 0];
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const matrix = renderer.boneMatrix(id, variant.bones[owners.getX(vertex)]!.id)!;
+        if (matrix.every((value) => value === 0)) {
+          continue; // a severed or hidden bone draws nothing
+        }
+        const at: Vec3 = [0, 1, 2].map(
+          (axis) =>
+            matrix[axis * 4]! * positions.getX(vertex) +
+            matrix[axis * 4 + 1]! * positions.getY(vertex) +
+            matrix[axis * 4 + 2]! * positions.getZ(vertex) +
+            matrix[axis * 4 + 3]!,
+        ) as Vec3;
+        checked += 1;
+        const distance = box.distanceToPoint(new Vector3(...at));
+        if (distance > overflow) {
+          overflow = distance;
+          worst = at;
+        }
+      }
+      expect(checked).toBeGreaterThan(0); // real drawn vertices were inspected
+      expect(overflow).toBe(0); // every drawn vertex sits inside the row's caster box
+      const casts = (candidate: Box3): boolean =>
+        candidate.distanceToPoint(new Vector3(...worst)) <= overflow / 2 + 0.1;
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      const selected = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(selected).toContain(state.globalRow); // the volume holds a drawn vertex: keep the shadow
     } finally {
       renderer.dispose();
     }
