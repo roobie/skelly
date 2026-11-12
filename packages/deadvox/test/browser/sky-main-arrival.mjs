@@ -95,6 +95,8 @@ export const mainSourceOverlays = [
   'presentation:render/sky.ts',
   'presentation:render/skylight.ts',
   'presentation:render/mood.ts',
+  // The view builds the sky environment and calls its members, so a member the branch drops breaks base play.
+  'presentation:render/skyEnvironment.ts',
   'presentation:worker/mesh.worker.ts',
 ];
 
