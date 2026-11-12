@@ -115,6 +115,8 @@
   },
   "assets/models/frame_pack.glb": { "materials": ["wood-oak", "wood-pine", "leather-tan", "brass-dull"] },
   "assets/models/gadget_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green"] },
+  "assets/models/galvanised_trashcan.glb": { "materials": ["steel-galvanised"] },
+  "assets/models/galvanised_trashcan_dented.glb": { "materials": ["steel-galvanised"] },
   "assets/models/garment_bag.glb": { "materials": ["cloth-navy", "plastic-black", "steel", "plastic-clear"] },
   "assets/models/gas_canister.glb": { "materials": ["steel-grey", "plastic-blue"] },
   "assets/models/gas_mask_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },

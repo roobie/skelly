@@ -22,9 +22,7 @@
     hoodie_worn_upper: ['cloth'],
     combat_boots_worn_foot: ['polymer', 'cloth', 'polymer', 'cloth'],
     combat_boots_worn_shaft: ['cloth', 'polymer', 'cloth'],
-    leather_gloves_worn_fingers: ['organic'],
     leather_gloves_worn_palm: ['organic', 'cloth'],
-    leather_gloves_worn_thumb: ['organic'],
     bronze_helmet: ['metal', 'cloth'],
     conical_helm: ['metal', 'organic', 'organic'],
     corinthian_helm: ['metal', 'cloth'],
@@ -33,6 +31,11 @@
     leather_jacket_worn_fore: ['organic'],
     leather_jacket_worn_upper: ['organic'],
     wizard_hat: ['cloth', 'metal'],
+  } + {
+    // One shell per finger bone and per thumb bone: `index`, `index2`, `index3` and so on.
+    ['leather_gloves_worn_' + digit + suffix]: ['organic']
+    for digit in ['index', 'middle', 'ring', 'little', 'thumb']
+    for suffix in ['', '2', '3']
   },
 ).pack({
   models: [

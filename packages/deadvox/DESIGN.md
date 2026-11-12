@@ -3275,7 +3275,9 @@ and the anchors they join at, and holds every value that shapes the drawn
 figure. Shared authored joints and grips keep idle and active arms connected to
 the body rather than making first person another art obligation. Missing model,
 anchor or rig data must fail validation instead of silently drawing a partial
-body. Hit regions keep a box layout because the body simulation, not the drawn
+body. An arm segment names every part that turns with it, so the hand's finger and thumb bones curl as one
+rigid piece about the knuckles and the thumb root; the arm model's per-bone joints are left unposed until a change
+owns finger posing. Hit regions keep a box layout because the body simulation, not the drawn
 shape, decides where a hit lands. Gore placement must not change with the observer. See `packages/engine/src/core/schema/figures.ts`, `FigureSchema`,
 `packages/presentation/src/render/armRig.ts`, `buildArmRig`, and `packages/presentation/src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.

@@ -24,11 +24,16 @@
   "assets/models/cartridge_box_357_h_magnum.glb": { "materials": ["paperboard-tan", "plastic-blue"] },
   "assets/models/cartridge_box_5_d_56x45.glb": { "materials": ["paperboard-tan", "cord-olive"] },
   "assets/models/cartridge_box_7_d_62x39.glb": { "materials": ["paperboard-brown", "cord-olive"] },
+  "assets/models/case_120x570.glb": { "materials": ["brass"] },
   "assets/models/case_12_h_gauge_h_00_h_buck.glb": { "materials": ["brass", "plastic-red"] },
   "assets/models/case_308_h_winchester.glb": { "materials": ["brass"] },
+  "assets/models/case_338_h_lapua_h_magnum.glb": { "materials": ["brass"] },
   "assets/models/case_357_h_magnum.glb": { "materials": ["brass"] },
+  "assets/models/case_40x365r.glb": { "materials": ["brass"] },
+  "assets/models/case_50_h_bmg.glb": { "materials": ["brass"] },
   "assets/models/case_5_d_56x45.glb": { "materials": ["brass"] },
-  "assets/models/case_7_d_62x39.glb": { "materials": ["brass"] },
+  "assets/models/case_7_d_62x39.glb": { "materials": ["steel-polymer-coated", "brass"] },
+  "assets/models/case_7_d_62x54r.glb": { "materials": ["steel-polymer-coated", "brass"] },
   "assets/models/case_9x19.glb": { "materials": ["brass"] },
   "assets/models/charging_handle_ar.glb": { "materials": ["alu-anodized-black"] },
   "assets/models/charging_handle_ar_large.glb": { "materials": ["alu-anodized-black"] },
@@ -62,6 +67,7 @@
   "assets/models/lower_pump.glb": { "materials": ["steel-blued"] },
   "assets/models/lower_sporter.glb": { "materials": ["steel-blued"] },
   "assets/models/magazine_akm_30.glb": { "materials": ["steel-blued"] },
+  "assets/models/magazine_bmg_10.glb": { "materials": ["steel-parkerized", "rubber-black"] },
   "assets/models/magazine_pistol_9.glb": { "materials": ["steel-blued"] },
   "assets/models/magazine_stanag_20.glb": { "materials": ["alu-anodized-black", "steel-blued"] },
   "assets/models/magazine_stanag_30.glb": { "materials": ["alu-anodized-black"] },
@@ -122,6 +128,24 @@
       "wood-walnut"
     ]
   },
+  "assets/models/rifle_anti_materiel.glb": {
+    "materials": [
+      "steel-parkerized",
+      "steel-parkerized",
+      "steel-parkerized",
+      "steel-parkerized",
+      "steel-parkerized",
+      "polymer-fde",
+      "steel-parkerized",
+      "steel-parkerized",
+      "rubber-black",
+      "steel-parkerized",
+      "steel-parkerized",
+      "rubber-black",
+      "polymer-fde",
+      "rubber-black"
+    ]
+  },
   "assets/models/rifle_assault.glb": {
     "materials": [
       "alu-anodized-black",
@@ -166,11 +190,16 @@
       "tape-grey"
     ]
   },
+  "assets/models/round_120x570.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_12_h_gauge_h_00_h_buck.glb": { "materials": ["brass", "plastic-red", "paperboard-brown"] },
   "assets/models/round_308_h_winchester.glb": { "materials": ["brass", "copper"] },
+  "assets/models/round_338_h_lapua_h_magnum.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_357_h_magnum.glb": { "materials": ["brass", "copper"] },
+  "assets/models/round_40x365r.glb": { "materials": ["brass", "copper"] },
+  "assets/models/round_50_h_bmg.glb": { "materials": ["brass", "copper"] },
   "assets/models/round_5_d_56x45.glb": { "materials": ["brass", "copper"] },
-  "assets/models/round_7_d_62x39.glb": { "materials": ["brass", "copper"] },
+  "assets/models/round_7_d_62x39.glb": { "materials": ["steel-polymer-coated", "brass", "copper"] },
+  "assets/models/round_7_d_62x54r.glb": { "materials": ["steel-polymer-coated", "brass", "copper"] },
   "assets/models/round_9x19.glb": { "materials": ["brass", "copper"] },
   "assets/models/scrap_foregrip.glb": { "materials": ["scrap-rusted", "wood-birch", "rubber-black"] },
   "assets/models/shotgun_pump.glb": {

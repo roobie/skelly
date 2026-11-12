@@ -1131,11 +1131,13 @@ describe('player figure', () => {
       expectConnectedArm(arm, rig, side);
       // Every rig segment is a drawn part of the arm model, hung under its pivot.
       for (const segment of ['upper', 'fore', 'hand', 'fingers', 'thumb'] as const) {
-        let found: Object3D | undefined;
-        arm.traverse((object) => {
-          found ??= object.userData.part === armRig[segment].part ? object : undefined;
-        });
-        expect(found, `${side} ${segment}`).toBeDefined();
+        for (const part of armRig[segment].parts) {
+          let found: Object3D | undefined;
+          arm.traverse((object) => {
+            found ??= object.userData.part === part ? object : undefined;
+          });
+          expect(found, `${side} ${segment} ${part}`).toBeDefined();
+        }
       }
     }
     held.dispose();

@@ -2285,10 +2285,9 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
     ...ARM_SEGMENTS.map((segment): [string, string] => [`.armRig.${segment}.pivot`, figure.armRig[segment].pivot]),
     ['.armRig.grip', figure.armRig.grip],
   ];
-  const rigParts: [string, string][] = ARM_SEGMENTS.map((segment) => [
-    `.armRig.${segment}.part`,
-    figure.armRig[segment].part,
-  ]);
+  const rigParts = ARM_SEGMENTS.flatMap((segment): [string, string][] =>
+    figure.armRig[segment].parts.map((part, index) => [`.armRig.${segment}.parts[${index}]`, part]),
+  );
   const legAnchors = LEG_SEGMENTS.map((segment): [string, string] => [
     `.legRig.${segment}.pivot`,
     figure.legRig[segment].pivot,
