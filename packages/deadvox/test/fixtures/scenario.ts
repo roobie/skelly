@@ -64,10 +64,7 @@ export const defaultStartOf = (registry: Pick<Registry, 'starts'>, scenario: Sce
 };
 
 /** The default start's placement when it authors one; omitted, the site builds city-only. */
-export const placementOf = (
-  registry: Pick<Registry, 'starts'>,
-  scenario: ScenarioDef,
-): StartPlacementDef | undefined =>
+export const placementOf = (registry: Pick<Registry, 'starts'>, scenario: ScenarioDef): StartPlacementDef | undefined =>
   [...registry.starts.values()].find((row) => row.defaultForSite && row.site === scenario.id)?.placement;
 
 /** Scenarios whose authored lots build the city's buildings; an empty-by-design site such as Holdout authors none. */
