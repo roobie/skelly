@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { addPagesAnalytics } from '../../../pagesAnalyticsPlugin.ts';
+import { addPagesAnalytics } from '../../../tools/pages-analytics/index.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 // Each round plays a committed scenario picked by id, and practice plays the tutorial the same way.

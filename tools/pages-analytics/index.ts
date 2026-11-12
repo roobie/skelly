@@ -1,13 +1,12 @@
 import { readFileSync } from 'node:fs';
 
 const ANALYTICS_SCRIPT = '<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>';
-const BADGE = readFileSync(new URL('./pagesAnalyticsBadge.html', import.meta.url), 'utf8').trimEnd();
+// The badge art is white and pale teal, so the file wraps it in a dark footer that works on every page theme.
+const BADGE = readFileSync(new URL('./badge.html', import.meta.url), 'utf8').trimEnd();
 
 /** A page opts into the badge with this attribute on its body; game and full-viewport pages leave it off. */
 export const BADGE_ATTRIBUTE = 'data-analytics-badge';
 const BADGE_BODY = new RegExp(`<body\\b[^>]*\\s${BADGE_ATTRIBUTE}[\\s>=/]`);
-// The badge art is white and pale teal, so it sits on a dark footer in every page theme.
-const BADGE_FOOTER = `<footer style="display:flex;justify-content:center;padding:8px;background:#2b2e2a">\n${BADGE}\n</footer>`;
 
 /** Adds the analytics script to a page, and the badge footer when the page's body opts in. */
 export const addPagesAnalytics = (html: string) => {
@@ -21,7 +20,7 @@ export const addPagesAnalytics = (html: string) => {
   if (!html.includes('</body>')) {
     throw new Error('Pages analytics badge requires a closing </body> tag');
   }
-  return withScript.replace('</body>', `${BADGE_FOOTER}\n</body>`);
+  return withScript.replace('</body>', `${BADGE}\n</body>`);
 };
 
 export const pagesAnalyticsPlugin = (enabled: boolean) => ({

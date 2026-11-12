@@ -7,7 +7,6 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
-const ANALYTICS_SCRIPT = /simpleanalyticscdn/;
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const COMMAND_LINE_SEPARATOR = /\r?\n/;
 const WHITESPACE = /\s+/;
@@ -70,10 +69,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
     const dist = join(temp, 'packages/deadvox/dist');
     mkdirSync(dist, { recursive: true });
     writeFileSync(join(dist, 'index.html'), '<main>packages/deadvox</main>');
-    mkdirSync(join(temp, 'tools'));
-    for (const file of ['pagesAnalyticsPlugin.ts', 'pagesAnalyticsBadge.html', 'tools/addPagesAnalytics.mjs']) {
-      cpSync(join(ROOT, file), join(temp, file));
-    }
+    cpSync(join(ROOT, 'tools/pages-analytics'), join(temp, 'tools/pages-analytics'), { recursive: true });
 
     execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
 
@@ -82,8 +78,12 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
       existsSync(join(temp, '_site', 'deadvox', 'playtest', 'round1', 'index.html')),
       'the Round 1 page stays beside the Deadvox game',
     );
-    assert.match(readFileSync(join(temp, '_site', 'index.html'), 'utf8'), ANALYTICS_SCRIPT);
-    assert.equal(readFileSync(join(dist, 'index.html'), 'utf8'), '<main>packages/deadvox</main>');
+    const assembled = (path) => readFileSync(join(temp, '_site', path), 'utf8');
+    // The game build injects its own script, so assembly must leave its page untouched.
+    assert.equal(assembled('deadvox/index.html'), '<main>packages/deadvox</main>');
+    for (const page of ['index.html', 'deadvox/playtest/round1/index.html']) {
+      assert.equal(assembled(page).split('simpleanalyticscdn').length - 1, 1, `${page} loads the script once`);
+    }
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }

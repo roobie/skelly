@@ -9,8 +9,10 @@ const SKIPPED_DIRECTORIES = new Set(['node_modules', 'dist']);
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?)$/;
 const SIBLING = /(^|[\\/])(gun-authoring-tool|thing-authoring-tool|vehicle-authoring-tool|mobgen|site)([\\/]|$)/;
 // Shared root tooling any package may import, as repository paths: the Jsonnet compiler's entry, and
-// the Lit check's whole install, which lives at the root so every package's UI can use it.
-const SHARED_ROOT_TOOLS = ['tools/jsonnet/index.mjs', 'tools/lit-check/'];
+// the Lit check's whole install, which lives at the root so every package's UI can use it, and the
+// Pages analytics injector, which Vite builds and playtest publication must share so the script and
+// badge stay one definition.
+const SHARED_ROOT_TOOLS = ['tools/jsonnet/index.mjs', 'tools/lit-check/', 'tools/pages-analytics/index.ts'];
 const REPOSITORY_ROOT = join('..', '..');
 // Static `from '…'`, side-effect `import '…'`, dynamic `import('…')` and `require('…')`.
 const SPECIFIER = /\b(?:from\s*|import\s*\(?\s*|require\s*\(\s*)(['"`])([^'"`\n]+)\1/g;
