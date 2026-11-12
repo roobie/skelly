@@ -4,7 +4,13 @@
       "author": "Björn Roberg",
       "changes": null,
       "download": null,
-      "files": ["assets/models/jerry_can.glb"],
+      "files": [
+        "assets/models/fanny_pack.glb",
+        "assets/models/gas_canister.glb",
+        "assets/models/hiking_backpack.glb",
+        "assets/models/jerry_can.glb",
+        "assets/models/school_backpack.glb"
+      ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",
       "url": "https://github.com/roobie/skelly-assets"

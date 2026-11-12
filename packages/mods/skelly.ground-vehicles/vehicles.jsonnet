@@ -1,7 +1,7 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
-local surfaces = import 'packages/skelly-assets/tools/packages/thing-core/src/materials.json';
+local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
 // A body's half-metre sky cells are mostly air between thin panels, so a cell stops only part of the sky light:
 // the ground under a car and its cabin read shaded, not enclosed.
 local bodyShade = 0.35;
@@ -85,7 +85,7 @@ local hatchback = [
   + pair('front_seat', 'front_seat', [-0.37, 0.3, 0], on(['shell']))
   + pair('door_mirror', 'door_mirror', [-0.8675, 0.98, 0.66], on(['shell']))
   + headlamps(-0.56, 0.64, 1.95, ['shell'])
-  + batteryBay('hatchback_battery_tray', [-0.42, 0.55, 1.54], ['shell']);
+  + batteryBay('battery_tray', [-0.42, 0.55, 1.54], ['shell']);
 // The crane truck's parts are authored where they sit on it, near-side ones for their `pair`; the
 // crossmembers and wheels repeat, so they are placed by their own frames.
 local rails = ['frame_rail_near', 'frame_rail_far'];
@@ -229,7 +229,7 @@ local boxVan = [
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
     part('car_headlamp', 'Headlamp unit', [2, 2], ['light', 'glazing'], 'A sealed lamp and its lens.'),
-    part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.') + { model: 'battery_tray' },
+    part('battery_tray', 'Battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
     part('pickup_battery_tray', 'Pickup battery tray', [4, 3], ['structure'], 'A heavy steel shelf for a battery.'),
     part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']) + { vehicle+: { mount: 'hatchback_wheel' } },
     part('front_seat', 'Front seat', [5, 10], ['seat']),

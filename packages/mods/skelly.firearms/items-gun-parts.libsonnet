@@ -1,6 +1,6 @@
 // The gun authoring tool's part catalogue owns which gun parts are items; this pack adds only what a player sees of each.
 // A part's model carries its authored mass, so its item takes no weight.
-local catalogue = import 'packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet';
+local catalogue = import 'packages/skelly-assets/models/guns/tables/catalogue.jsonnet';
 local looks = {
   receiver_ar: { name: 'AR upper receiver', size: [1, 3] },
   receiver_ar_large: { name: 'AR-10 upper receiver', size: [1, 4] },
@@ -62,6 +62,14 @@ local looks = {
   stock_sporting_medium: { name: 'Sporting stock', size: [2, 3] },
   front_sight_sporter: { name: 'Sporting front sight', size: [1, 1] },
   rear_sight_sporter: { name: 'Sporting rear sight', size: [1, 1] },
+  receiver_pipe: { name: 'Pipe rifle receiver', size: [1, 3] },
+  bolt_carrier_pipe: { name: 'Pipe rifle bolt carrier', size: [1, 2] },
+  bolt_handle_pipe: { name: 'Pipe rifle bolt handle', size: [1, 1] },
+  bolt_knob_pipe: { name: 'Pipe rifle bolt knob', size: [1, 1] },
+  lower_pipe: { name: 'Pipe rifle trigger housing', size: [1, 2] },
+  barrel_pipe: { name: 'Pipe rifle barrel', size: [1, 4] },
+  handguard_pipe: { name: 'Pipe rifle forend', size: [1, 3] },
+  stock_pipe: { name: 'Pipe rifle stock', size: [2, 3] },
 };
 local ids = std.set([entry.id for entry in catalogue.parts if std.objectHas(entry, 'params')]);
 assert ids == std.set(std.objectFields(looks)) :

@@ -39,6 +39,141 @@
     },
     {
       "anchors": {
+        "housing_back": [0, 0.02, 0.108],
+        "housing_bottom": [0, 0, 0.123],
+        "housing_top": [0, 0.040000000000000001, 0.123],
+        "lens": [0, 0.020000000000000004, 0.14200000000000002],
+        "strap_back_inner": [0, 0.010999999999999999, -0.10400000000000001],
+        "strap_back_outer": [0, 0.010999999999999999, -0.11],
+        "strap_front_inner": [0, 0.010999999999999999, 0.10400000000000001],
+        "strap_front_outer": [0, 0.010999999999999999, 0.108],
+        "strap_left_inner": [-0.094, 0.010999999999999999, -0.012999999999999998],
+        "strap_left_outer": [-0.098000000000000004, 0.010999999999999999, -0.012999999999999998],
+        "strap_right_inner": [0.094, 0.010999999999999999, -0.012999999999999998],
+        "strap_right_outer": [0.098000000000000004, 0.010999999999999999, -0.012999999999999998]
+      },
+      "file": "assets/models/headlamp.glb",
+      "grip": {
+        "at": [0, 0.010999999999999999, -0.11],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "headlamp",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "metal", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [-5.8463251670378621e-5, 0.01527023014105419, 0.044618596881959897],
+          "massKg": 0.17999999999999999,
+          "node": "equipment:headlamp"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "lens": [0, 0, 0.19900000000000001]
+      },
+      "file": "assets/models/flashlight.glb",
+      "grip": {
+        "at": [0, 0, 0.085000000000000006]
+      },
+      "id": "flashlight",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "flashlight": {
+          "centreOfMass": [0, 0, 0.11178281145902733],
+          "massKg": 0.25,
+          "node": "flashlight:flashlight"
+        }
+      }
+    },
+    {
+      "file": "assets/models/lighter.glb",
+      "grip": {
+        "at": [0, 0.028000000000000001, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "lighter",
+      "itemPresentation": {
+        "materials": ["fuel", "polymer", "metal"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel_fill:fuel_fill"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fuel_fill": {
+          "centreOfMass": [0, 0.025000000000000001, -2.8829744672889082e-18],
+          "massKg": 0.001,
+          "node": "fuel_fill:fuel_fill"
+        },
+        "lighter": {
+          "centreOfMass": [0, 0.030402930402930402, -1.0989010989010987e-5],
+          "massKg": 0.019,
+          "node": "lighter:lighter"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/matches.glb",
+      "grip": {
+        "at": [0, 0.01, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "matches",
+      "itemPresentation": {
+        "materials": ["paper", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "matches": {
+          "centreOfMass": [0, 0.01131578947368421, 0.00078947368421052619],
+          "massKg": 0.02,
+          "node": "matches:matchbox"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "anchors": {
         "flame": [0, 0, 0.41999999999999998]
       },
       "emissiveMaterial": "#2b241c",
@@ -148,77 +283,32 @@
       "roll": 0
     },
     {
-      "file": "assets/models/lighter.glb",
-      "grip": {
-        "at": [0, 0.028000000000000001, 0],
-        "turn": [90, -90, 0]
-      },
-      "hold": "upright",
-      "id": "lighter",
+      "file": "assets/models/dead_desk_lamp.glb",
+      "id": "dead_desk_lamp",
       "itemPresentation": {
-        "materials": ["fuel", "polymer", "metal"],
-        "supply": {
-          "axis": "y",
-          "bands": [
-            {
-              "from": 0,
-              "scale": 0
-            },
-            {
-              "from": 0.01,
-              "scale": 0.20000000000000001
-            },
-            {
-              "from": 0.34999999999999998,
-              "scale": 0.5
-            },
-            {
-              "from": 0.69999999999999996,
-              "scale": 1
-            }
-          ],
-          "kind": "fill",
-          "piece": "fuel_fill:fuel_fill"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "fuel_fill": {
-          "centreOfMass": [0, 0.025000000000000001, -2.8829744672889082e-18],
-          "massKg": 0.001,
-          "node": "fuel_fill:fuel_fill"
-        },
-        "lighter": {
-          "centreOfMass": [0, 0.030402930402930402, -1.0989010989010987e-5],
-          "massKg": 0.019,
-          "node": "lighter:lighter"
-        }
-      },
-      "roll": 0
-    },
-    {
-      "file": "assets/models/matches.glb",
-      "grip": {
-        "at": [0, 0.01, 0],
-        "turn": [90, -90, 0]
-      },
-      "hold": "upright",
-      "id": "matches",
-      "itemPresentation": {
-        "materials": ["paper", "metal", "paper"],
+        "materials": ["metal", "metal", "metal"],
         "supply": {
           "kind": "none"
         },
         "wear": "core"
       },
       "parts": {
-        "matches": {
-          "centreOfMass": [0, 0.01131578947368421, 0.00078947368421052619],
-          "massKg": 0.02,
-          "node": "matches:matchbox"
+        "arm": {
+          "centreOfMass": [0.0011904761904761915, 0.074523809523809534, -9.3916817963600226e-18],
+          "massKg": 0.25,
+          "node": "arm:arm"
+        },
+        "base": {
+          "centreOfMass": [0, 0.0050000000000000001, 0],
+          "massKg": 0.5,
+          "node": "base:base"
+        },
+        "shade": {
+          "centreOfMass": [0.068333333333333329, 0.062, -8.1643119943156864e-18],
+          "massKg": 0.14999999999999999,
+          "node": "shade:shade"
         }
-      },
-      "roll": 0
+      }
     }
   ]
 }

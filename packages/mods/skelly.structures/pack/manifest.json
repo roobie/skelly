@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.natural-world", "skelly.materials", "skelly.inventory"],
+  "dependencies": ["skelly.inventory", "skelly.materials", "skelly.natural-world"],
   "files": [
     {
       "kind": "content",
@@ -24,10 +24,6 @@
     {
       "kind": "json",
       "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/hinge_set.model.json"
     },
     {
       "kind": "asset",
@@ -56,10 +52,6 @@
     {
       "kind": "asset",
       "path": "assets/audio/door_blocked_close-01.ogg"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/hinge_set.glb"
     }
   ],
   "id": "skelly.structures",

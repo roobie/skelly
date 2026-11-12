@@ -81,6 +81,26 @@
       }
     },
     {
+      "file": "assets/models/barrel_pipe.glb",
+      "gun": {},
+      "id": "barrel_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "barrel_pipe": {
+          "centreOfMass": [0, 0, 0.21799999999999997],
+          "item": "barrel_pipe",
+          "massKg": 0.84999999999999998,
+          "node": "barrel_pipe:barrel"
+        }
+      }
+    },
+    {
       "file": "assets/models/barrel_pump_medium.glb",
       "gun": {},
       "id": "barrel_pump_medium",
@@ -201,6 +221,26 @@
       }
     },
     {
+      "file": "assets/models/bolt_carrier_pipe.glb",
+      "gun": {},
+      "id": "bolt_carrier_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bolt_carrier_pipe": {
+          "centreOfMass": [0.00014579439252336449, -0.00011588785046728973, 0.038822429906542055],
+          "item": "bolt_carrier_pipe",
+          "massKg": 0.25,
+          "node": "bolt_carrier_pipe:bolt-carrier"
+        }
+      }
+    },
+    {
       "file": "assets/models/bolt_carrier_pump.glb",
       "gun": {},
       "id": "bolt_carrier_pump",
@@ -221,6 +261,26 @@
       }
     },
     {
+      "file": "assets/models/bolt_handle_pipe.glb",
+      "gun": {},
+      "id": "bolt_handle_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bolt_handle_pipe": {
+          "centreOfMass": [0, 0, 0.020000000000000004],
+          "item": "bolt_handle_pipe",
+          "massKg": 0.059999999999999998,
+          "node": "bolt_handle_pipe:bolt-handle"
+        }
+      }
+    },
+    {
       "file": "assets/models/bolt_handle_sporter.glb",
       "gun": {},
       "id": "bolt_handle_sporter",
@@ -237,6 +297,26 @@
           "item": "bolt_handle_sporter",
           "massKg": 0.070000000000000007,
           "node": "bolt_handle_sporter:bolt-handle"
+        }
+      }
+    },
+    {
+      "file": "assets/models/bolt_knob_pipe.glb",
+      "gun": {},
+      "id": "bolt_knob_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bolt_knob_pipe": {
+          "centreOfMass": [0, 0, 0],
+          "item": "bolt_knob_pipe",
+          "massKg": 0.02,
+          "node": "bolt_knob_pipe:bolt-handle"
         }
       }
     },
@@ -581,6 +661,26 @@
       }
     },
     {
+      "file": "assets/models/handguard_pipe.glb",
+      "gun": {},
+      "id": "handguard_pipe",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "handguard_pipe": {
+          "centreOfMass": [0.00015767634854771788, -0.027998340248962646, -0.014179253112033191],
+          "item": "handguard_pipe",
+          "massKg": 0.40000000000000002,
+          "node": "handguard_pipe:handguard"
+        }
+      }
+    },
+    {
       "file": "assets/models/handguard_sporter.glb",
       "gun": {},
       "id": "handguard_sporter",
@@ -677,6 +777,26 @@
           "item": "lower_ar_large",
           "massKg": 0.40000000000000002,
           "node": "lower_ar_large:lower"
+        }
+      }
+    },
+    {
+      "file": "assets/models/lower_pipe.glb",
+      "gun": {},
+      "id": "lower_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lower_pipe": {
+          "centreOfMass": [0, 0.0012599118942731276, -0.10525991189427318],
+          "item": "lower_pipe",
+          "massKg": 0.12,
+          "node": "lower_pipe:lower"
         }
       }
     },
@@ -817,6 +937,26 @@
           "item": "receiver_ar_large",
           "massKg": 1.1499999999999999,
           "node": "receiver_ar_large:receiver"
+        }
+      }
+    },
+    {
+      "file": "assets/models/receiver_pipe.glb",
+      "gun": {},
+      "id": "receiver_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "receiver_pipe": {
+          "centreOfMass": [0.0011515151515151516, -0.0031040131040131046, -0.080132678132678145],
+          "item": "receiver_pipe",
+          "massKg": 0.55000000000000004,
+          "node": "receiver_pipe:receiver"
         }
       }
     },
@@ -1137,6 +1277,26 @@
           "item": "stock_m4_medium",
           "massKg": 0.34999999999999998,
           "node": "stock_m4_medium:stock"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stock_pipe.glb",
+      "gun": {},
+      "id": "stock_pipe",
+      "itemPresentation": {
+        "materials": ["wood", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "stock_pipe": {
+          "centreOfMass": [0, -0.02203612217795483, -0.18040424966799459],
+          "item": "stock_pipe",
+          "massKg": 0.55000000000000004,
+          "node": "stock_pipe:stock"
         }
       }
     },

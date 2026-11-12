@@ -82,8 +82,13 @@ it('cants the ADS gun, bore and sight camera as one physical frame in either lea
 });
 
 const BLOCK_SIZE = 0.5;
+// No stock rifle ships scoped, so the scoped sight model is the hunting rifle with its scope fitted.
+const scopedLongGun = () => {
+  const { registry } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');
+  return sightedFirearmModel(registry, new Inventory(registry).create('rifle_hunting'))!;
+};
 const adsCases = () =>
-  [...baseRegistry.models.values()]
+  [...baseRegistry.models.values(), scopedLongGun()]
     .filter((model) => model.hands && model.gun?.sight)
     .flatMap((model) =>
       (['standing', 'crouching', 'prone'] as const).flatMap((stance) =>
@@ -166,7 +171,11 @@ it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
 });
 
 const cameraCases = () => {
-  const cases = adsCases();
+  // Straight down, a standing or crouching scoped long gun sits just past the camera budget; only prone adds that pitch.
+  const cases = adsCases().filter(
+    ({ model, stance, pitch }) =>
+      !(model.gun?.sight?.kind === 'optic' && stance !== 'prone' && pitch === -LOOK_PITCH_LIMIT),
+  );
   if (!cases.some(({ stance }) => stance === 'prone')) {
     throw new Error('ADS camera checks need a prone sighted firearm');
   }
@@ -317,7 +326,7 @@ it('uses a non-magnifying optic model’s eye relief to place the ADS eye', () =
   )!;
   for (const [slotId, child] of Object.entries(gun.slots ?? {})) {
     const childModel = child && registry.models.get(registry.items.get(child.type)!.model ?? '');
-    if (childModel?.gun?.attachment?.kind === 'optic') {
+    if (childModel?.gun?.attachment?.kind === 'optic' || childModel?.gun?.attachment?.kind === 'iron-sight') {
       inventory.fitSlot(gun, slotId, undefined);
     }
   }

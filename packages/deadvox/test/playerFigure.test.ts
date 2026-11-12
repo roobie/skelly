@@ -45,6 +45,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { fitFixtureOptic } from './fixtures/debugStarts.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -427,6 +428,8 @@ describe('held light presentation', () => {
 });
 
 describe('optic lens presentation', () => {
+  // The rifle ships with iron sights; the scope fits its rail once they come off.
+  const Scope = 'optic_lpvo_1_6x';
   it('projects the optic ocular at the authored hold standoff rather than optical relief', () => {
     const item = registry.items.get('rifle_assault')!;
     const source = registry.models.get(item.model!)!;
@@ -437,6 +440,7 @@ describe('optic lens presentation', () => {
       const content = { ...registry, models: new Map(registry.models).set(model.id, model) };
       const inventory = new Inventory(content);
       const firearm = inventory.create(item.id);
+      fitFixtureOptic(inventory, firearm, Scope);
       expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
       const held = new HeldItems(inventory, undefined, playerFigure, {
         nearPlaneMetres: 0.01,
@@ -463,6 +467,7 @@ describe('optic lens presentation', () => {
   it('carries the mounted optic export into the ADS lens frame', () => {
     const inventory = new Inventory(registry);
     const firearm = inventory.create('rifle_assault');
+    fitFixtureOptic(inventory, firearm, Scope);
     if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
       throw new Error('Fixture firearm could not be held');
     }

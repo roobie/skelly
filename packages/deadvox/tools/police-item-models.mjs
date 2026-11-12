@@ -41,7 +41,7 @@ for (const side of [-1, 1]) {
 }
 
 // The worn helmet is thing-tool content in the asset submodule
-// (`packages/skelly-assets/models/head-gear.libsonnet`). Its inside view stays
+// (`packages/skelly-assets/models/catalogue/sets/head-gear.libsonnet`). Its inside view stays
 // here: it is drawn in the camera's frame, not as a thing, and the renderer tells the pane from the rim by mesh name.
 const view = new Group();
 view.name = 'Riot helmet inside';

@@ -17,5 +17,5 @@
       'circuit_board', 'glass_lens', 'broken_toaster', 'table_fan',
       'cracked_phone', 'broken_clock', 'electrical_repair_kit', 'glass_bulb',
     ]
-  ] + (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.electronics/things/index.json', [import 'electronics-items.jsonnet']),
+  ] + (import 'tools/jsonnet/lib/used-models.libsonnet')(import 'packages/skelly-assets/built/skelly.electronics/things/index.json', [import 'electronics-items.jsonnet', import 'packages/mods/skelly.electric-power/electric-power-items.jsonnet']),
 })

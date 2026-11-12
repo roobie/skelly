@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "skelly.body",
     "skelly.deadvox.loot",
     "skelly.graphics",
     "skelly.inventory",
@@ -39,10 +40,6 @@
     {
       "kind": "content",
       "path": "item-economy.json"
-    },
-    {
-      "kind": "content",
-      "path": "models-actors.json"
     },
     {
       "kind": "json",
@@ -609,50 +606,6 @@
       "path": "assets/manifest.json"
     },
     {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/flesh_chunk_large.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/flesh_chunk_medium.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/flesh_chunk_small.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/flesh_chunk_strip.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_head.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_left_arm.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_left_leg.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_right_arm.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_right_leg.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shambler_torso.model.json"
-    },
-    {
       "kind": "asset",
       "path": "assets/audio/footstep-grass-sand-01.ogg"
     },
@@ -1067,46 +1020,6 @@
     {
       "kind": "asset",
       "path": "assets/models/actors/worker_shambler.8.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/flesh_chunk_large.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/flesh_chunk_medium.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/flesh_chunk_small.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/flesh_chunk_strip.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shambler_head.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shambler_left_arm.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shambler_left_leg.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shambler_right_arm.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shambler_right_leg.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shambler_torso.glb"
     }
   ],
   "id": "skelly.deadvox.actors",

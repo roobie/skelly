@@ -3,6 +3,7 @@
     "skelly.crafting",
     "skelly.electronics",
     "skelly.inventory",
+    "skelly.light-sources",
     "skelly.materials",
     "skelly.natural-world"
   ],
@@ -17,59 +18,7 @@
     },
     {
       "kind": "content",
-      "path": "models-electric-power.json"
-    },
-    {
-      "kind": "content",
       "path": "power.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/aa_battery.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/flashlight.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/headlamp.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/night_vision_goggles.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/portable_radio.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/aa_battery.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/flashlight.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/headlamp.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/night_vision_goggles.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/portable_radio.glb"
     }
   ],
   "id": "skelly.electric-power",

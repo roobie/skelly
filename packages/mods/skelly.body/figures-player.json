@@ -111,7 +111,7 @@
       },
       "attachmentFrames": {
         "clothing_body": {
-          "at": [0, -0.20000000000000001, 0],
+          "at": [0, -0.19870588235294118, 0],
           "insideView": false,
           "part": "body",
           "pivot": "spine",
@@ -191,7 +191,7 @@
           "turn": [0, 0, 0]
         },
         "torso": {
-          "at": [0, -0.20000000000000001, 0],
+          "at": [0, -0.19870588235294118, 0],
           "insideView": false,
           "part": "body",
           "pivot": "spine",
