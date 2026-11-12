@@ -812,6 +812,7 @@ describe('restored session world state', () => {
     };
     const freshSpawnPos: [number, number, number] = [freshSpec.pos[0] + 10, freshSpec.pos[1], freshSpec.pos[2]];
     const unseenSite = {
+      terrain: { kind: 'natural' },
       lootPointsIn: () => [],
       furnitureIn: () => [{ spec: freshSpec, loot: fresh.loot }],
       actorsIn: () => [{ type: 'shambler', pos: freshSpawnPos }],

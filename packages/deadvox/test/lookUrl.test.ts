@@ -1,18 +1,12 @@
-import {
-  BLOOM_CLIP_BY_TONE,
-  MAX_EXPOSURE,
-  MIN_BLOOM_CLIP,
-  MIN_EXPOSURE,
-  SHADOW_DISTANCES,
-} from '@skelly/engine/internal/core/mood.ts';
+import { BLOOM_CLIP_BY_TONE, MAX_EXPOSURE, MIN_BLOOM_CLIP, MIN_EXPOSURE } from '@skelly/engine/internal/core/mood.ts';
 import {
   bloomClipFor,
   clampBloomClip,
   clampExposure,
   clampShadowDistance,
   clampTorch,
-  DEFAULT_SHADOWS,
   DEFAULT_TORCH,
+  defaultShadows,
   type LookDefaults,
   lookOf,
   moodOf,
@@ -34,7 +28,7 @@ import type { HashState } from '../src/hashState.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-import { LOOK_FIXTURE } from './lookFixture.ts';
+import { LOOK_FIXTURE, SUN_SHADOW_FIXTURE } from './lookFixture.ts';
 
 // Every switch off, against the parser's "on unless false" reading, and the exposure inside the clamp range, so a
 // parser that ignores the given default for a switch or an exposure fails instead of passing by coincidence.
@@ -49,7 +43,9 @@ const URL_LOOK: LookDefaults = {
   film: false,
 };
 const DEFAULT_WEATHER = BASE_DAY_CYCLE.weather.defaults;
-const URL_DEFAULTS = { look: URL_LOOK, defaultWeather: DEFAULT_WEATHER };
+const URL_DEFAULTS = { look: URL_LOOK, defaultWeather: DEFAULT_WEATHER, sunShadow: SUN_SHADOW_FIXTURE };
+const DEFAULT_SHADOWS = defaultShadows(SUN_SHADOW_FIXTURE);
+const SHADOW_DISTANCES = SUN_SHADOW_FIXTURE.debugReachMetres;
 const weatherFixture = () => ({ fogginess: 0.2, cloudiness: 0, rain: 0 });
 const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(URL_DEFAULTS);
 const parse = (hash: HashState) => parseLookParams(hash, URL_DEFAULTS);
@@ -146,7 +142,7 @@ describe('look hash keys', () => {
       expect(distance(stop)).toBe(stop);
     }
     for (const raw of [33.6, 1, -50, 500, 5000]) {
-      expect(distance(raw)).toBe(clampShadowDistance(raw));
+      expect(distance(raw)).toBe(clampShadowDistance(raw, SUN_SHADOW_FIXTURE));
       expect(Number.isInteger(distance(raw))).toBe(true);
     }
     expect(distance(1)).toBeGreaterThan(1);
@@ -366,6 +362,7 @@ describe('restoring look controls from URL state', () => {
   it('takes the parsed tone, exposure, colour decode and patterns', () => {
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -385,6 +382,7 @@ describe('restoring look controls from URL state', () => {
     const weather = weatherFixture();
     const look = new LookControls(renderer, meshes, mood, {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather,
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -401,6 +399,7 @@ describe('restoring look controls from URL state', () => {
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, mood, {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight,
@@ -449,6 +448,7 @@ describe('restoring look controls from URL state', () => {
     const mood = new FakeMood();
     const look = new LookControls(renderer, meshes, mood, {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -466,6 +466,7 @@ describe('restoring look controls from URL state', () => {
     const shadows = new FakeShadows();
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather: weatherFixture(),
       shadows,
       flashlight: { strength: 1 },
@@ -479,6 +480,7 @@ describe('restoring look controls from URL state', () => {
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, new FakeMood(), {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -498,6 +500,7 @@ describe('restoring look controls from URL state', () => {
     const game = { toneMapping: CustomToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, mood, {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
@@ -521,6 +524,7 @@ describe('restoring look controls from URL state', () => {
     const weather = weatherFixture();
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather,
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },

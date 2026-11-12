@@ -7,6 +7,7 @@ import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { IDLE } from '@skelly/engine/session';
 import { registerLayoutVehicles, terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
+import { terrainFor } from './fixtures/terrain.ts';
 import {
   advance,
   capture,
@@ -374,7 +375,7 @@ describe('production vehicle ownership', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureSite.surface.height(
+    const ground = terrainFor(fixtureSite, registry, scale, seed).surface!.height(
       x,
       startZ,
       terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),

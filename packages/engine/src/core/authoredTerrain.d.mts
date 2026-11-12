@@ -23,7 +23,7 @@ export function surfaceFoundation(building: SiteLayoutDef['buildings'][number]):
 export function lotOf(building: SiteLayoutDef['buildings'][number], rect: Rect): GroundLot;
 export function defaultFoundation(layout: SiteLayoutDef, rect: Rect): number;
 export function layoutHeight(
-  layout: SiteLayoutDef,
+  layout: Pick<SiteLayoutDef, 'ground' | 'terrain' | 'bounds'>,
   lots: readonly GroundLot[],
   point: readonly [number, number],
   natural: number,

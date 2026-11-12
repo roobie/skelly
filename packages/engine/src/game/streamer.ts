@@ -1,6 +1,6 @@
 // Keeps the world around the player generated and meshed.
-// Terrain is generated one column at a time on the main thread; meshes are built in
-// workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
+// Terrain columns are admitted one at a time on the main thread, from a worker's staged result or
+// evaluated there and then; meshes are built in workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
 // and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
 // and never need a second pass.
 
@@ -13,14 +13,14 @@ import type { MeshData } from '../core/mesher.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
-import type { BlockBox } from '../core/structure.ts';
+import type { TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
-import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
 import { DirtyChunks } from './dirtyChunks.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
 import { SentChunks } from './sentChunks.ts';
+import { TerrainJobs, type TerrainWorkerOptions } from './terrainJobs.ts';
 
 /** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
 const withinRadius = (dx: number, dz: number, radius: number): boolean => dx * dx + dz * dz <= radius * radius;
@@ -71,9 +71,7 @@ export interface StreamerOptions {
   world: World;
   meshes: ChunkMeshSink;
   mesher: MesherSource;
-  seed: number;
-  terrain: TerrainBlocks;
-  shape: TerrainShape;
+  terrain: TerrainEvaluator;
   colors: Uint8Array;
   /** Surface pattern id per block id, for the mesher. */
   patterns: Uint8Array;
@@ -84,12 +82,6 @@ export interface StreamerOptions {
   liquids?: Uint8Array;
   fencePosts?: FencePostDefs;
   scale: Scale;
-  /** Stamped into every column as it generates. */
-  structures: readonly BlockBox[];
-  /** Changes to the ground (flattened lots, roads). */
-  surface?: Surface | undefined;
-  /** Writes buildings into each chunk as it generates. */
-  stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
   /** Terrain columns generated per frame while streaming; from graphics tuning. */
@@ -100,10 +92,12 @@ export interface StreamerOptions {
   hysteresis: number;
   /** When given, per-column and per-chunk timings are appended here. */
   stats?: StreamerStats;
+  /** Workers computing columns ahead of admission; without them every column is evaluated at admission. */
+  terrainWorkers?: TerrainWorkerOptions | undefined;
 }
 
 export interface StreamerStats {
-  /** Main-thread milliseconds to generate each column. */
+  /** Main-thread milliseconds to admit each column, including any generation main does itself. */
   genMs: number[];
   /** Worker milliseconds to mesh each chunk. */
   meshMs: number[];
@@ -123,6 +117,7 @@ export class Streamer {
   private readonly workers: MesherPort[] = [];
   private readonly sentChunks = new Map<MesherPort, SentChunks>();
   private readonly maxInFlight: number;
+  private jobs: TerrainJobs | undefined;
   private generationFailed = false;
   failure: string | undefined;
 
@@ -232,6 +227,9 @@ export class Streamer {
       this.sentChunks.set(worker, new SentChunks());
     }
     this.maxInFlight = count * 2;
+    if (opts.terrainWorkers) {
+      this.jobs = new TerrainJobs(opts.terrainWorkers, opts.terrain.plan, opts.scale);
+    }
 
     this.meshOffsets = discOffsets(opts.radius);
     this.revealOffsets = grownOffsets(this.meshOffsets);
@@ -252,6 +250,9 @@ export class Streamer {
   setReplayControlled(): void {
     this.settled = false;
     this.replayControlled = true;
+    // Replay owns every arrival; no speculative reply may outlive that.
+    this.jobs?.dispose();
+    this.jobs = undefined;
   }
 
   /** Generated terrain columns at a replay recording boundary. */
@@ -374,6 +375,11 @@ export class Streamer {
       // Escapes the frame like an unhandled generation failure: the loading mask during load, the error report after.
       throw new Error(this.failure);
     }
+    if (this.jobs?.failure) {
+      // Decided here, not in the worker's message handler, and before admission could cover it with main-thread work.
+      this.failGeneration(new Error(this.jobs.failure));
+      return;
+    }
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
     const moved = pcx !== this.center[0] || pcz !== this.center[1];
@@ -387,9 +393,16 @@ export class Streamer {
 
     if (moved) {
       this.generatedPrefix = 0;
+      this.jobs?.retireAll();
     }
     let worked = this.generateNearest(pcx, pcz) || moved;
     if (this.generationFailed) {
+      return;
+    }
+    this.prefetch(pcx, pcz);
+    if (this.jobs?.failure) {
+      // A request that could not be sent fails this update, so no later admission covers it.
+      this.failGeneration(new Error(this.jobs.failure));
       return;
     }
     this.onTerrainReady?.(x, z);
@@ -453,6 +466,24 @@ export class Streamer {
       }
     }
     return worked;
+  }
+
+  /** Asks the workers for the next missing columns in admission order; never admits one. */
+  private prefetch(pcx: number, pcz: number): void {
+    const { jobs } = this;
+    if (!jobs || this.replayControlled) {
+      return;
+    }
+    const wanted: [number, number][] = [];
+    for (let at = this.generatedPrefix; at < this.offsets.length && wanted.length < jobs.lookahead; at++) {
+      const [dx, dz] = this.offsets[at]!;
+      const [cx, cz] = [pcx + dx, pcz + dz];
+      // A touched column arrives from its resident chunks, so computing it would be wasted.
+      if (!(this.generated.has(`${cx},${cz}`) || this.opts.world.isTouched(cx, cz))) {
+        wanted.push([cx, cz]);
+      }
+    }
+    jobs.want(wanted);
   }
 
   private ungenerate(col: string): boolean {
@@ -568,7 +599,12 @@ export class Streamer {
     }
     const start = performance.now();
     try {
-      const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz);
+      if (this.jobs?.failure) {
+        throw new Error(this.jobs.failure);
+      }
+      // Taken first so a touched column's staged bytes are discarded, never installed.
+      const staged = this.jobs?.take(cx, cz);
+      const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz, staged);
       this.opts.stats?.genMs.push(performance.now() - start);
       for (const chunk of arrived) {
         if (!chunk.isEmpty()) {
@@ -582,21 +618,28 @@ export class Streamer {
       }
       return true;
     } catch (error) {
-      this.generationFailed = true;
-      this.failure = (error instanceof Error ? error.message : String(error)) || 'World generation failed';
-      if (!this.onGenerationError) {
-        throw error;
-      }
-      this.onGenerationError(error);
+      this.failGeneration(error);
       return true;
     }
   }
 
-  /** Generates a column and adds the chunks the world doesn't hold yet; returns those. */
-  private addGenerated(cx: number, cz: number): Chunk[] {
-    const { world, seed, terrain, shape, scale, structures, surface, stamp } = this.opts;
-    const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
-    return installColumn(world, column);
+  private failGeneration(error: unknown): void {
+    this.generationFailed = true;
+    this.failure = (error instanceof Error ? error.message : String(error)) || 'World generation failed';
+    this.jobs?.dispose();
+    if (!this.onGenerationError) {
+      throw error;
+    }
+    this.onGenerationError(error);
+  }
+
+  /**
+   * Adds the chunks of a column the world doesn't hold yet; returns those. A column no worker staged by its
+   * admission is evaluated here, in the same frame and by the same evaluator, so arrival never waits on a worker.
+   */
+  private addGenerated(cx: number, cz: number, staged: Chunk[] | undefined): Chunk[] {
+    const { world, terrain } = this.opts;
+    return installColumn(world, staged ?? terrain.generateColumn(cx, cz));
   }
 
   /** A touched column's chunks when every one is resident, so it is installed instead of generated. */

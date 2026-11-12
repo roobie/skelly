@@ -19,17 +19,15 @@ import {
   placedBlockAt,
   placedPieces,
 } from '@skelly/engine/internal/core/templates.ts';
-import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
 import {
+  type BlockBox,
   CHUNK,
-  type Chunk,
   CitySite,
   footprint,
   makeScale,
   type Placement,
   placedPoint,
-  sitePalette,
-  terrainShapeOf,
+  type SiteTerrainPlan,
   toChunk,
   type Vec3,
 } from '@skelly/engine/world';
@@ -39,6 +37,7 @@ import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
+import { terrainFor, withTerrainBoxes } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
@@ -92,17 +91,6 @@ const expectQuietWhenHealthy = (phases: readonly CertificatePhase[], rule: (path
   // biome-ignore lint/suspicious/noMisplacedAssertion: shared control, only ever called from inside a test case
   expect(healthyPaths.get(key)!.filter(rule)).toEqual([]);
 };
-const obstruct = (chunk: Chunk, point: Readonly<Vec3>): void => {
-  const cell = point.map(Math.floor) as Vec3;
-  if (toChunk(cell[0]) === chunk.cx && toChunk(cell[1]) === chunk.cy && toChunk(cell[2]) === chunk.cz) {
-    chunk.set(
-      cell[0] - chunk.cx * CHUNK,
-      cell[1] - chunk.cy * CHUNK,
-      cell[2] - chunk.cz * CHUNK,
-      registry.blockIds.get('stone')!,
-    );
-  }
-};
 const ownedCells = (placement: Placement, y: number): Vec3[] => {
   const [width, depth] = footprint(placement);
   const [x0, , z0] = placement.origin;
@@ -118,14 +106,15 @@ const ownedCells = (placement: Placement, y: number): Vec3[] => {
 };
 
 class ObstructedSite extends CitySite {
+  declare readonly terrain: SiteTerrainPlan;
   readonly obstruction: Readonly<Vec3>;
   constructor(obstruction: Readonly<Vec3>, plan = base) {
     super(9, registry, scale, plan);
     this.obstruction = obstruction;
-  }
-  override stamp(chunk: Chunk): void {
-    super.stamp(chunk);
-    obstruct(chunk, this.obstruction);
+    const min = obstruction.map(Math.floor) as Vec3;
+    this.terrain = withTerrainBoxes(this, [
+      { min, max: min.map((value) => value + 1) as Vec3, block: registry.blockIds.get('stone')! },
+    ]).terrain;
   }
 }
 
@@ -192,19 +181,14 @@ describe('final composed body-route certificate', () => {
   });
 
   it('rejects an obstruction stamped after the service portal was locally certified', () => {
-    const original = CitySite.prototype.stamp;
-    const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
-      original.call(this, chunk);
-      obstruct(chunk, this.plan.portal!.lower);
-    });
-    try {
-      const { issues } = scenarioCertificate(
-        new ScenarioCitySite({ seed: 9, registry, scale, scenario: profile, start }),
-      );
-      expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
-    } finally {
-      stamp.mockRestore();
-    }
+    const site = new ScenarioCitySite({ seed: 9, registry, scale, scenario: profile, start });
+    const min = site.plan.portal!.lower.map(Math.floor) as Vec3;
+    const { issues } = scenarioCertificate(
+      withTerrainBoxes(site, [
+        { min, max: min.map((value) => value + 1) as Vec3, block: registry.blockIds.get('stone')! },
+      ]),
+    );
+    expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
   });
 
   it.each(witness.loops)(
@@ -218,24 +202,18 @@ describe('final composed body-route certificate', () => {
       const clear = new ScenarioRouteSpace(site);
       expect(clear.sweep(from, through)).toBe(true);
       expect(clear.path(through, to, { steps: true })).toBeDefined();
-      const original = site.stamp.bind(site);
-      const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-        original(chunk);
-        for (let y = 0; y < loop.cut.size[1]; y++) {
-          for (let z = 0; z < loop.cut.size[2]; z++) {
-            for (let x = 0; x < loop.cut.size[0]; x++) {
-              obstruct(chunk, point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]));
-            }
+      const boxes: BlockBox[] = [];
+      for (let y = 0; y < loop.cut.size[1]; y++) {
+        for (let z = 0; z < loop.cut.size[2]; z++) {
+          for (let x = 0; x < loop.cut.size[0]; x++) {
+            const min = point([loop.cut.min[0] + x, loop.cut.min[1] + y, loop.cut.min[2] + z]).map(Math.floor) as Vec3;
+            boxes.push({ min, max: min.map((value) => value + 1) as Vec3, block: registry.blockIds.get('stone')! });
           }
         }
-      });
-      try {
-        const detour = new ScenarioRouteSpace(site);
-        expect(detour.sweep(from, through)).toBe(false);
-        expect(detour.path(from, to, { steps: true })).toBeDefined();
-      } finally {
-        stamp.mockRestore();
       }
+      const detour = new ScenarioRouteSpace(withTerrainBoxes(site, boxes));
+      expect(detour.sweep(from, through)).toBe(false);
+      expect(detour.path(from, to, { steps: true })).toBeDefined();
     },
   );
 
@@ -453,26 +431,17 @@ describe('final composed body-route certificate', () => {
 
   it('rejects support removed from the stamped objective face', () => {
     const site = siteOf();
-    const original = site.stamp.bind(site);
     const [x, feet, z] = base.composition!.objectiveFace;
-    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-      original(chunk);
-      for (const bx of [x - 1, x]) {
-        for (const bz of [z - 1, z]) {
-          if (toChunk(bx) === chunk.cx && toChunk(feet - 1) === chunk.cy && toChunk(bz) === chunk.cz) {
-            chunk.set(bx - chunk.cx * CHUNK, feet - 1 - chunk.cy * CHUNK, bz - chunk.cz * CHUNK, 0);
-          }
-        }
+    const boxes: BlockBox[] = [];
+    for (const bx of [x - 1, x]) {
+      for (const bz of [z - 1, z]) {
+        boxes.push({ min: [bx, feet - 1, bz], max: [bx + 1, feet, bz + 1], block: 0 });
       }
-    });
-    try {
-      const phases = ROUTED_PHASES.concat('seals', 'objective');
-      expectQuietWhenHealthy(phases, (path) => path === '.composition.objectiveFace');
-      const result = scenarioCertificate(site, phases);
-      expect(result.issues.map(([path]) => path)).toContain('.composition.objectiveFace');
-    } finally {
-      stamp.mockRestore();
     }
+    const phases = ROUTED_PHASES.concat('seals', 'objective');
+    expectQuietWhenHealthy(phases, (path) => path === '.composition.objectiveFace');
+    const result = scenarioCertificate(withTerrainBoxes(site, boxes), phases);
+    expect(result.issues.map(([path]) => path)).toContain('.composition.objectiveFace');
   });
 
   it('loads an obstructing furniture anchor across a chunk boundary before caching body clearance', () => {
@@ -529,27 +498,20 @@ describe('final composed body-route certificate', () => {
     const [width] = footprint(placement);
     const [west, bottom] = placement.origin;
     const site = siteOf();
-    const original = site.stamp.bind(site);
-    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-      original(chunk);
-      for (let x = west; x < west + width; x++) {
-        for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
-          obstruct(chunk, [x, y, z]);
-        }
+    const boxes: BlockBox[] = [];
+    for (let x = west; x < west + width; x++) {
+      for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
+        boxes.push({ min: [x, y, z], max: [x + 1, y + 1, z + 1], block: registry.blockIds.get('stone')! });
       }
-    });
-    try {
-      const phases = ['start' as CertificatePhase].concat(ROUTED_PHASES, 'seals', 'underground');
-      expectQuietWhenHealthy(phases, (path) => path.startsWith('.city.underground'));
-      const result = scenarioCertificate(site, phases);
-      expect(
-        result.issues.some(
-          ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
-        ),
-      ).toBe(true);
-    } finally {
-      stamp.mockRestore();
     }
+    const phases = ['start' as CertificatePhase].concat(ROUTED_PHASES, 'seals', 'underground');
+    expectQuietWhenHealthy(phases, (path) => path.startsWith('.city.underground'));
+    const result = scenarioCertificate(withTerrainBoxes(site, boxes), phases);
+    expect(
+      result.issues.some(
+        ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
+      ),
+    ).toBe(true);
   });
 
   it('admits the sewer port only where its threshold crosses the service shell', () => {
@@ -701,17 +663,10 @@ it('resolves production service ownership, furnished loot and terrain stamps ind
   });
   const before = structuredClone(selected(first));
   const request = (site: CitySite, order: readonly Vec3[]) => {
-    const terrain = {
-      seed: site.seed,
-      shape: terrainShapeOf(registry),
-      scale,
-      surface: site.surface,
-      blocks: sitePalette(registry).terrain,
-    };
+    const terrain = terrainFor(site, registry, scale, site.seed);
     return new Map(
       order.map((cell) => {
-        const chunk = generateChunk(terrain, cell);
-        site.stamp(chunk);
+        const chunk = terrain.generateChunk(cell);
         return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
       }),
     );

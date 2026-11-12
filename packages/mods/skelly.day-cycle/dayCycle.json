@@ -2,27 +2,44 @@
   "dayCycle": {
     "clockRatio": 8,
     "clouds": {
-      "layers": [
-        {
-          "angle": 0,
-          "drift": [0.00059999999999999995, 0.00012999999999999999],
-          "opacity": 0.32000000000000001,
-          "scale": 0.34999999999999998
+      "layered": {
+        "layers": [
+          {
+            "angle": 0,
+            "drift": [0.00059999999999999995, 0.00012999999999999999],
+            "opacity": 0.32000000000000001,
+            "scale": 0.34999999999999998,
+            "shade": 1
+          },
+          {
+            "angle": 2.1000000000000001,
+            "drift": [-0.0011000000000000001, 0.00040000000000000002],
+            "opacity": 0.5,
+            "scale": 0.82999999999999996,
+            "shade": 1
+          },
+          {
+            "angle": 4,
+            "drift": [0.0028, -0.0019],
+            "opacity": 0.41999999999999998,
+            "scale": 2.0699999999999998,
+            "shade": 0
+          }
+        ],
+        "warp": 0.59999999999999998
+      },
+      "scatter": {
+        "billow": 0.00040000000000000002,
+        "density": 4.7999999999999998,
+        "drift": [0.0011999999999999999, 0.00050000000000000001],
+        "lining": 0.59999999999999998,
+        "region": {
+          "scale": 0.11,
+          "strength": 0.22
         },
-        {
-          "angle": 2.1000000000000001,
-          "drift": [-0.0011000000000000001, 0.00040000000000000002],
-          "opacity": 0.5,
-          "scale": 0.82999999999999996
-        },
-        {
-          "angle": 4,
-          "drift": [0.0028, -0.0019],
-          "opacity": 0.41999999999999998,
-          "scale": 2.0699999999999998
-        }
-      ],
-      "warp": 0.59999999999999998
+        "scale": 0.35999999999999999,
+        "shadow": 0.45000000000000001
+      }
     },
     "date": {
       "day": 25,
@@ -32,6 +49,7 @@
     "domeShape": {
       "cloudLight": {
         "ambient": 0.25,
+        "deckLight": 0.5,
         "facing": 0.40000000000000002,
         "light": 0.80000000000000004
       },
@@ -76,6 +94,7 @@
     "environment": {
       "faceSize": 64,
       "rebakeChange": 0.02,
+      "rebakeRealSeconds": 0.5,
       "strength": 1
     },
     "keys": [
@@ -347,13 +366,42 @@
     "noonGameTimeOfDay": "12:00",
     "twilight": "nautical",
     "weather": {
-      "cloudiness": {
+      "cloudy": {
+        "ambient": 0.94999999999999996,
+        "cloudiness": 0.5,
+        "clouds": {
+          "cover": 0.14999999999999999,
+          "opacity": 1
+        },
+        "kind": "scatter",
+        "light": 0.80000000000000004,
+        "physicalWeight": 0.80000000000000004,
+        "skyColour": {
+          "brightness": 0.96999999999999997,
+          "saturation": 0.84999999999999998
+        },
+        "sun": 0.84999999999999998
+      },
+      "defaults": {
+        "cloudiness": 0.20000000000000001,
+        "fogginess": 0.20000000000000001,
+        "rain": 0
+      },
+      "fair": {
+        "cloudiness": 0.20000000000000001,
+        "kind": "layered"
+      },
+      "fog": {
+        "farTighten": 0.59999999999999998,
+        "nearTighten": 0.84999999999999998
+      },
+      "overcast": {
         "ambient": 0.75,
         "clouds": {
           "cover": 0.65000000000000002,
           "opacity": 1
         },
-        "fair": 0.20000000000000001,
+        "kind": "layered",
         "light": 0.25,
         "physicalWeight": 0.14999999999999999,
         "skyColour": {
@@ -362,21 +410,13 @@
         },
         "sun": 0.10000000000000001
       },
-      "defaults": {
-        "cloudiness": 0.20000000000000001,
-        "fogginess": 0.20000000000000001,
-        "rain": 0
-      },
-      "fog": {
-        "farTighten": 0.59999999999999998,
-        "nearTighten": 0.84999999999999998
-      },
       "rain": {
         "ambient": 0.69999999999999996,
         "clouds": {
           "cover": 1,
           "opacity": 1
         },
+        "kind": "layered",
         "light": 0.20000000000000001,
         "physicalWeight": 0,
         "skyColour": {

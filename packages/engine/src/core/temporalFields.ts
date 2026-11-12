@@ -300,6 +300,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'dayCycle.defaultStartGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'dayCycle.midnightGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'dayCycle.noonGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
+  { path: 'dayCycle.environment.rebakeRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'layouts.startTimeGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'starts.startTimeGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'layouts.actors.window.fromGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },

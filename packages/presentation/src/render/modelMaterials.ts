@@ -16,6 +16,7 @@ import {
 } from 'three';
 import { parse } from 'valibot';
 import { glowingCopy } from './itemEmissive.ts';
+import { skyAnchoredCopy } from './skyAnchor.ts';
 
 /** Only the physical material draws a sheen, so a sheened definition swaps the loader's standard one for it. */
 const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
@@ -105,10 +106,16 @@ export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<stri
  * takes, so the scene's warm-up compiles them before any model has loaded. A model material varies the
  * program only by see-through, double-sidedness, a colour texture and a sheen (colour, finish and texels
  * are uniforms), and a lit item's glow adds its own. `instanced` adds the instanced copies ground piles
- * draw with. Content outside these variants compiles on first draw, which
+ * draw with, and `skyAnchored` the sky-anchored copies vehicles draw with. Content outside these variants compiles on first draw, which
  * `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
-export const modelMaterialWarmUp = (instanced: boolean): Group => {
+export const modelMaterialWarmUp = ({
+  instanced,
+  skyAnchored,
+}: {
+  instanced: boolean;
+  skyAnchored: boolean;
+}): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
   const variants = [false, true].flatMap((transparent) =>
     [FrontSide, DoubleSide].flatMap((side) => [
@@ -120,15 +127,21 @@ export const modelMaterialWarmUp = (instanced: boolean): Group => {
   const geometry = new BufferGeometry()
     .setAttribute('position', new Float32BufferAttribute([], 3))
     .setAttribute('normal', new Float32BufferAttribute([], 3));
+  const meshes = variants.flatMap((plain) =>
+    [plain, glowingCopy(plain, 0xff_ff_ff, 1)].flatMap((material) =>
+      instanced
+        ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
+        : [new Mesh(geometry, material)],
+    ),
+  );
+  if (skyAnchored) {
+    meshes.push(...variants.map((plain) => new Mesh(geometry, skyAnchoredCopy(plain))));
+  }
   const group = new Group();
-  for (const material of variants.flatMap((plain) => [plain, glowingCopy(plain, 0xff_ff_ff, 1)])) {
-    for (const mesh of instanced
-      ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
-      : [new Mesh(geometry, material)]) {
-      mesh.receiveShadow = true;
-      mesh.visible = false;
-      group.add(mesh);
-    }
+  for (const mesh of meshes) {
+    mesh.receiveShadow = true;
+    mesh.visible = false;
+    group.add(mesh);
   }
   return group;
 };

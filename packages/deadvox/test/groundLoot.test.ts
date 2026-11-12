@@ -142,9 +142,8 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
   };
   const points = lootPointsByColumn(lootSourcesOf(registry, 'fixture_site', placement));
   const site: Site = {
-    surface: { height: () => 0, top: () => registry.blockIds.get(floor.id) },
+    terrain: { kind: 'natural' },
     spawn: { pos: [2.5, 1, 3.5], yaw: 0 },
-    stamp: () => undefined,
     supplySourcesIn: (area) => new SupplyFootprints(placedPieces(placement), [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) => furnitureOf({ registry, seed }, placement, [cx, cz], site.lootPointsIn(cx, cz)),

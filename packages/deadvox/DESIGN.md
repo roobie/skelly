@@ -29,7 +29,7 @@ read_if:
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change player movement, lateral lean, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
-  - you change standing water, basins, the flooded-lot check or how liquids are meshed
+  - you change standing water, basins, the flooded-lot check, water evaluation ownership or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you change furniture lifting, carrying, placement, floor movement or stack support
   - you change furniture repair admission or the boundary between repair and replacement
@@ -785,13 +785,11 @@ replaces it. Flow, rivers and tides would need a field this design does not prom
 authored sites have water; generated terrain has none. See `packages/engine/src/core/worldgen.ts`, `Surface`,
 and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
-Lakes are map features of any size. The haven's lake is hundreds of metres across and lakes
-elsewhere on a map can be much larger, so no schema field, fill rule, generation step or
-validation check caps a water body, and the debug lake is built at the haven's scale so its look
-is judged at the size that ships. Work that could grow with a lake's area stays bounded instead:
-validation searches a polygon's cells from coarse to fine and stops at the first one that holds
-water, and the shore's per-column cache is cleared when full. See `packages/engine/src/core/authoredLayout.ts`,
-`coarseToFineCentres`, and `packages/engine/src/core/authoredSite.ts`, `siteWater`.
+Lakes are map features of any size, so water-body area must not be capped to bound evaluation
+work. The debug lake must represent the haven's scale so its look is judged at the size that
+ships. See `packages/engine/src/core/authoredLayout.ts`, `coarseToFineCentres`, and
+`packages/engine/src/core/authoredTerrainEvaluator.ts`, `siteWater` for bounded validation and
+shore evaluation.
 
 A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
 layout's `ground` is the lower face of the top ground block. The ground names the block an author
@@ -850,8 +848,8 @@ rule predicting whether a jump can clear the wall. Sounds and crowds beyond the 
 are a separate decision. The ground around the wall is flat at the city floor, because the
 gauntlet is a confined playtest area and relief beyond the wall would only be
 unreachable scenery; a distant ridge can return later as an authored feature. The
-scenario opts in, so other sites keep their natural ground; see `packages/engine/src/core/citySite.ts`,
-`surface` and `packages/engine/src/core/schema/scenarios.ts`, `flatSurroundings`.
+scenario opts in, so other sites keep their natural ground; see `packages/engine/src/core/terrainEvaluator.ts`,
+`createCitySurface` and `packages/engine/src/core/schema/scenarios.ts`, `flatSurroundings`.
 See `packages/engine/src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
@@ -2731,8 +2729,38 @@ out within a fixed halo, so a field depends only on the chunks and blocking furn
 its dependency box, and a change rechecks only the fields whose box it reaches. Every arriving
 column changes the world, so rechecking every field on every change costs frame rate in
 proportion to view radius while the world fills. See
-`packages/engine/src/core/skyField.ts`, `SkyFields`, `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
+`packages/engine/src/core/skyField.ts`, `SkyFields`,
+`packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
+
+A parked vehicle shades sky light through the same cells that block sight and sun, so the
+ground under a car and its cabin read as shaded to both the renderer and the rules. Its
+light-blocking cells join the fields' input as blocking furniture does, so a vehicle edit
+rechecks only the fields its cells reach, and glows that ignore furniture ignore vehicles too.
+A half-metre cell of a car body is mostly air between thin panels, so an opaque cell would
+leave the ground under the car and its cabin black with a hard edge. Each cell instead stops
+the share of diffuse light its part's content gives, while still roofing the air below it,
+so how much sky a body lets past is moddable. Readers of the light channel other than the
+sky field still treat any share as blocking: they ask whether a ray passes a cell, not how
+much diffuse light a cell lets on.
+Its parts sit inside those coarse cells, so each surface samples the sky from the first open
+cell along its normal, as a shaped piece samples from its envelope face; otherwise the car
+would shade its own skin. The search stops at the car's own light-blocking geometry: an open
+cell above the roof is not the sky a seat under the roof sees, so a surface that meets its own
+body first samples the shaded cells inside it, while one facing out through glass still finds
+open sky. Only the car's own cells and geometry count there, because they alone key its
+render; a neighbour shades it through the field. Each layout-parked vehicle gets
+its own field because open sky outside every field would otherwise leave a car on open
+ground unshaded; layout vehicles keep their origin in play, so their fields can be fixed
+when the world is set up. Only a few field volumes are resident at once, so a street of
+parked cars would crowd house fields out; #1631 settles that before a layout parks one. A
+field rebuild is worker transport work, too costly to pay every frame for a moving vehicle;
+when a vehicle can be driven (#322), it should leave the occluders while it moves and
+rejoin them, and gain a field where it stops, once it parks. See `packages/engine/src/core/skyField.ts`, `SkyFields.setOccluders`,
+`packages/presentation/src/render/skyAnchor.ts`, `addSkyCellAnchors`,
+`packages/presentation/src/render/skylight.ts`, `RESIDENT_FIELDS`,
+`packages/engine/src/core/vehicleProjection.ts`, `VehicleOccupancy.boxes`, and
+`packages/engine/src/game/layoutVehicles.ts`, `layoutVehicleSkyBoxes`.
 
 Rules that ask whether a place is lit enough, such as reading a page or a sign, take the
 renderer's falloff and its content tuning, so light levels for the rules are never tuned

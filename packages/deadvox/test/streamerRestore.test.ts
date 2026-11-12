@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { baseTerrainShape } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 class QuietWorker implements MesherPort {
   post(): void {
@@ -67,19 +68,15 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     world,
     meshes: meshes as never,
     mesher: quietMeshers,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
     columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const loaded: string[] = [];
   const unloaded: string[] = [];
@@ -115,14 +112,11 @@ it('reports generated-column transitions that match the generated-column snapsho
     world,
     meshes: meshes as never,
     mesher: quietMeshers,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
     columnsPerFrame: 2,
@@ -154,19 +148,15 @@ it('lets replay drive terrain generation and unloading without live streaming si
     world,
     meshes: meshes as never,
     mesher: quietMeshers,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
     columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const liveLoads = vi.fn();
   const liveUnloads = vi.fn();
@@ -197,14 +187,11 @@ it('throttles terrain generation to columnsPerFrame columns per update', () => {
       world: new World(),
       meshes: meshes as never,
       mesher: quietMeshers,
-      seed: 17,
-      terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-      shape: baseTerrainShape(),
+      terrain: fixtureTerrain({ scale }),
       colors: new Uint8Array(256 * 4),
       patterns: new Uint8Array(256),
       weatherable: new Uint8Array(256),
       scale,
-      structures: [],
       radius: 2,
       preloadRings: 0,
       columnsPerFrame,
@@ -230,19 +217,22 @@ describe('saved columns', () => {
       world,
       meshes: meshes as never,
       mesher: quietMeshers,
-      seed: 17,
-      terrain,
-      shape: baseTerrainShape(),
+      terrain: {
+        ...fixtureTerrain({ scale, blocks: terrain }),
+        generateColumn: (cx, cz) =>
+          generate(cx, cz).map((chunk) => {
+            stamp(chunk);
+            return chunk;
+          }),
+      },
       colors: new Uint8Array(256 * 4),
       patterns: new Uint8Array(256),
       weatherable: new Uint8Array(256),
       scale,
-      structures: [],
       radius: 0,
       preloadRings: 0,
       columnsPerFrame: 2,
       hysteresis: 1,
-      stamp,
     });
   };
   // Column 0,0 with one changed cell, saved and restored into a fresh world.

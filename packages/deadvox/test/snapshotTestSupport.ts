@@ -8,24 +8,13 @@ import type { PlayerInputSample } from '@skelly/engine/internal/game/session.ts'
 import { encodeSave, type SaveContentKind, type SaveSnapshot, type SaveVersionComponents } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import { SkyFields } from '@skelly/engine/sky';
-import {
-  BlockEntities,
-  CHUNK,
-  Chunk,
-  generateColumn,
-  makeScale,
-  type Terrain,
-  terrainShapeOf,
-  toChunk,
-  type Vec3,
-  World,
-  worldSolid,
-} from '@skelly/engine/world';
+import { BlockEntities, CHUNK, Chunk, makeScale, toChunk, type Vec3, World, worldSolid } from '@skelly/engine/world';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import type { MoveIntent, StanceToggle } from './playerFixture.ts';
 import { withPlayerBodyTuning } from './simulationFixture.ts';
 
@@ -52,20 +41,7 @@ for (let cz = toChunk(fixtureSite.bounds.z0); cz <= toChunk(fixtureSite.bounds.z
     }
   }
 }
-const fixtureTerrain: Terrain = {
-  seed,
-  shape: terrainShapeOf(registry),
-  blocks: {
-    grass: blockId('grass'),
-    dirt: blockId('dirt'),
-    rock: blockId('stone'),
-    sand: blockId('sand'),
-    water: blockId('water'),
-  },
-  scale,
-  surface: fixtureSite.surface,
-  stamp: (chunk) => fixtureSite.stamp(chunk),
-};
+const fixtureTerrain = terrainFor(fixtureSite, registry, scale, seed);
 const foundActorColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.actorsIn(cx, cz).length > 0);
 if (!foundActorColumn) {
   throw new Error('Snapshot fixture has no zombie column');
@@ -77,7 +53,7 @@ const fixtureChunksFor = (columns: readonly [number, number][]): Chunk[] =>
     const key = `${cx},${cz}`;
     let chunks = chunksByColumn.get(key);
     if (!chunks) {
-      chunks = generateColumn(fixtureTerrain, cx, cz);
+      chunks = fixtureTerrain.generateColumn(cx, cz);
       chunksByColumn.set(key, chunks);
     }
     return chunks;

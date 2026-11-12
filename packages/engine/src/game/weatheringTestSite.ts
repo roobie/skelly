@@ -2,17 +2,15 @@ import { blockId, type Registry } from '../core/content.ts';
 import type { Site } from '../core/site.ts';
 import { terrainShapeOf } from '../core/sitePalette.ts';
 import type { MetreBox } from '../core/structure.ts';
-import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
-import type { Surface } from '../core/worldgen.ts';
+import { rasterize } from '../core/structure.ts';
+import type { SiteTerrainPlan } from '../core/terrainPlan.ts';
 import { terrainHeightMetres } from '../core/worldgen.ts';
 import type { GameConfig } from './config.ts';
 
 /** Concrete, brick and wood comparison bands share a world-x split and one viewing pad. */
 export class DebugWeatheringTestSite implements Site {
   readonly spawn: Site['spawn'];
-  readonly surface: Surface;
-  private readonly structures: BlockBox[];
-  private readonly padTop: number;
+  readonly terrain: SiteTerrainPlan;
   readonly weatheringMaterialBoxes: readonly {
     id: 'concrete' | 'brick' | 'planks';
     min: readonly [number, number, number];
@@ -53,21 +51,16 @@ export class DebugWeatheringTestSite implements Site {
       ),
       { min: [-8.5, floor + 4, -0.5], max: [8.5, floor + 4.5, 0.85], block: concrete },
     ];
-    this.structures = rasterize(boxes, blockSize);
-    this.padTop = floor / blockSize - 1;
-    this.surface = {
-      height: (x, z, natural) =>
-        x * blockSize >= -12 && x * blockSize < 12 && z * blockSize >= -16 && z * blockSize < 16
-          ? this.padTop
-          : natural,
-      top: (x, z) =>
-        x * blockSize >= -10 && x * blockSize < 10 && z * blockSize >= -2 && z * blockSize < 1 ? concrete : undefined,
+    const data = {
+      blockSize,
+      padTop: floor / blockSize - 1,
+      heightPad: { x0: -12, x1: 12, z0: -16, z1: 16 },
+      materialPad: { x0: -10, x1: 10, z0: -2, z1: 1 },
+      concrete,
+      structures: rasterize(boxes, blockSize),
     };
+    this.terrain = { kind: 'weathering-pad', data };
     this.spawn = { pos: [0, floor, 12], yaw: 0 };
-  }
-
-  stamp(chunk: Parameters<Site['stamp']>[0]): void {
-    stampChunk(chunk, this.structures);
   }
 
   lootPointsIn() {

@@ -17,6 +17,7 @@ import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
+import { browserTerrainWorkerSource } from '../worker/terrainPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
 
 export interface Engine extends WorldSetup {
@@ -101,7 +102,10 @@ export function createEngine(
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
-  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), stats);
+  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), {
+    stats,
+    terrainWorkers: browserTerrainWorkerSource,
+  });
   scene.add(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;

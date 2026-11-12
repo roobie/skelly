@@ -1,4 +1,5 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared rejection assertions called only by tests.
+
 import { readFileSync } from 'node:fs';
 import type { Registry } from '@skelly/engine/content';
 import { authoredLayoutIssues, inPolygon } from '@skelly/engine/internal/core/authoredLayout.ts';
@@ -24,11 +25,9 @@ import {
   CHUNK,
   compassBearing,
   footprint,
-  generateColumn,
   HORDE_MEMBERS,
   makeScale,
   placementOf,
-  terrainShapeOf,
   toChunk,
   type Vec3,
   World,
@@ -37,6 +36,7 @@ import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { fixtureActorFigures } from './fixtures/actorFigures.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const base = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
@@ -160,7 +160,9 @@ const authoredSiteHeight = ({ sourceLayout, lots, natural }: AuthoredTerrainCase
     ) / scale.blockSize,
   );
 const expectAuthoredSiteHeight = (terrain: AuthoredTerrainCase, x: number, z: number): void =>
-  expect(terrain.site.surface.height(x, z, terrain.natural)).toBe(authoredSiteHeight(terrain, x, z));
+  expect(
+    terrainFor(terrain.site, terrain.site.registry, scale, terrain.site.seed).surface!.height(x, z, terrain.natural),
+  ).toBe(authoredSiteHeight(terrain, x, z));
 const expectBuildingApronsUnnoised = (terrain: AuthoredTerrainCase): void => {
   let checked = 0;
   for (const building of terrain.sourceLayout.buildings) {
@@ -249,7 +251,13 @@ const openGroundHasNoise = (terrain: AuthoredTerrainCase): boolean => {
     for (let z = Math.ceil(terrain.sourceLayout.bounds.z0 / 16) * 16; z < terrain.sourceLayout.bounds.z1; z += 16) {
       const cellX = Math.floor(x / scale.blockSize);
       const cellZ = Math.floor(z / scale.blockSize);
-      if (terrain.site.surface.height(cellX, cellZ, terrain.natural) !== authoredSiteHeight(terrain, cellX, cellZ)) {
+      if (
+        terrainFor(terrain.site, terrain.site.registry, scale, terrain.site.seed).surface!.height(
+          cellX,
+          cellZ,
+          terrain.natural,
+        ) !== authoredSiteHeight(terrain, cellX, cellZ)
+      ) {
         return true;
       }
     }
@@ -371,24 +379,7 @@ const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, numbe
 const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number): World => {
   const world = new World();
   for (const [cx, cz] of columns) {
-    for (const chunk of generateColumn(
-      {
-        seed,
-        shape: terrainShapeOf(registry),
-        scale,
-        blocks: {
-          grass: registry.blockIds.get('grass')!,
-          dirt: registry.blockIds.get('dirt')!,
-          rock: registry.blockIds.get('stone')!,
-          sand: registry.blockIds.get('sand')!,
-          water: registry.blockIds.get('water')!,
-        },
-        surface: site.surface,
-        stamp: (written) => site.stamp(written),
-      },
-      cx,
-      cz,
-    )) {
+    for (const chunk of terrainFor(site, site.registry, scale, seed).generateColumn(cx, cz)) {
       world.addChunk(chunk);
     }
   }
@@ -935,7 +926,7 @@ it('keeps authored trees grounded and clear of buildings, roads and spawn', () =
   ).toBe(true);
   for (const tree of site.trees) {
     const [x, y, z] = tree.origin;
-    expect(y).toBe(site.surface.height(x, z, natural) + 1);
+    expect(y).toBe(terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, natural) + 1);
     expect(buildingsInBlocks.some((rect) => rectsOverlap(rect, tree.bounds))).toBe(false);
     const centreX = ((tree.bounds.x0 + tree.bounds.x1) / 2) * s;
     const centreZ = ((tree.bounds.z0 + tree.bounds.z1) / 2) * s;
@@ -1038,7 +1029,9 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   const [playerX, , playerZ] = ridge.player.position;
   const [spawnX, spawnZ] = toCell(playerX, playerZ);
   const natural = ridge.ground / scale.blockSize;
-  expect(site.surface.height(ridgeX, ridgeZ, natural)).toBeGreaterThan(site.surface.height(spawnX, spawnZ, natural));
+  expect(terrainFor(site, site.registry, scale, site.seed).surface!.height(ridgeX, ridgeZ, natural)).toBeGreaterThan(
+    terrainFor(site, site.registry, scale, site.seed).surface!.height(spawnX, spawnZ, natural),
+  );
 
   const blendBuilding = ridge.buildings[0]!;
   const blendBounds = buildingBounds(blendBuilding, registry.templates.get(blendBuilding.template)!.size);
@@ -1054,7 +1047,9 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   const [, floorHeight] = blendBuilding.position;
   const blendLow = Math.min(floorHeight, authoredProfile);
   const blendHigh = Math.max(floorHeight, authoredProfile);
-  const blendedHeight = blendSite.surface.height(blendX, blendZ, natural) * scale.blockSize;
+  const blendedHeight =
+    terrainFor(blendSite, blendSite.registry, scale, blendSite.seed).surface!.height(blendX, blendZ, natural) *
+    scale.blockSize;
   expect(blendedHeight).toBeGreaterThanOrEqual(blendLow - scale.blockSize / 2);
   expect(blendedHeight).toBeLessThanOrEqual(blendHigh + scale.blockSize / 2);
   const naturalGap = ridge.ground < blendLow ? blendLow - ridge.ground : ridge.ground - blendHigh;
@@ -1063,17 +1058,21 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   for (const building of ridge.buildings) {
     const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
     const [x, z] = toCell((bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2);
-    expect(site.surface.height(x, z, natural)).toBe(building.position[1] / scale.blockSize);
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, natural)).toBe(
+      building.position[1] / scale.blockSize,
+    );
   }
   const track = ridge.tracks.find((candidate) => candidate.points.length > 1)!;
   const [start, end] = [track.points[0]!, track.points[1]!];
   const [trackX, trackZ] = toCell((start[0] + end[0]) / 2, (start[1] + end[1]) / 2);
-  expect(site.surface.top(trackX, trackZ)).toBe(registry.blockIds.get(track.surface ?? 'dirt'));
+  expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(trackX, trackZ)).toBe(
+    registry.blockIds.get(track.surface ?? 'dirt'),
+  );
   expect(standingHeight(ridge, [], playerX, playerZ)).toBe(ridge.player.position[1]);
 
   const isGrounded = (tree: (typeof site.trees)[number]) => {
     const [x, y, z] = tree.origin;
-    return y === site.surface.height(x, z, natural) + 1;
+    return y === terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, natural) + 1;
   };
   expect(site.trees.some(isGrounded)).toBe(true);
   for (const tree of site.trees) {
@@ -1125,7 +1124,9 @@ sweepGroup('on a ridge site', () => {
     let witnesses = 0;
     for (const tree of site.trees) {
       const [x, y, z] = tree.origin;
-      expect(y).toBe(site.surface.height(x, z, fixture.ground / scale.blockSize) + 1);
+      expect(y).toBe(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, fixture.ground / scale.blockSize) + 1,
+      );
       const raw =
         Math.round(profileHeight(fixture, (x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize) / scale.blockSize) +
         1;
@@ -1165,10 +1166,22 @@ it('keeps adjacent lot floors, apron blending and footprint ties independent of 
     const lowerCenter = pointSample([(lowerBounds.x0 + lowerBounds.x1) / 2, centerZ]);
     const upperCenter = pointSample([(upperBounds.x0 + upperBounds.x1) / 2, centerZ]);
     return [
-      site.surface.height(...lowerCenter, lowered.ground / scale.blockSize),
-      site.surface.height(...pointSample(apronPoint), lowered.ground / scale.blockSize),
-      site.surface.height(...pointSample(tiePoint), lowered.ground / scale.blockSize),
-      site.surface.height(...upperCenter, lowered.ground / scale.blockSize),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...lowerCenter,
+        lowered.ground / scale.blockSize,
+      ),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...pointSample(apronPoint),
+        lowered.ground / scale.blockSize,
+      ),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...pointSample(tiePoint),
+        lowered.ground / scale.blockSize,
+      ),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...upperCenter,
+        lowered.ground / scale.blockSize,
+      ),
     ];
   };
   const ordered = new AuthoredSite(1, registry, scale, lowered);

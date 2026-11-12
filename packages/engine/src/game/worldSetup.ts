@@ -18,11 +18,13 @@ import type { ColumnSource, Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
+import { createTerrainEvaluator } from '../core/terrainEvaluator.ts';
 import { World } from '../core/world.ts';
-import { worldGroundAt } from '../core/worldgen.ts';
 import type { DebugStart, GameConfig } from './config.ts';
+import { layoutVehicleSkyBoxes } from './layoutVehicles.ts';
 import type { MesherSource } from './mesherProtocol.ts';
 import { type ChunkMeshSink, Streamer, type StreamerStats } from './streamer.ts';
+import type { TerrainWorkerSource } from './terrainProtocol.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup extends ColumnSource {
@@ -88,7 +90,7 @@ export function createWorldSetup(
   config: GameConfig,
   meshes: ChunkMeshSink,
   mesher: MesherSource,
-  stats?: StreamerStats,
+  { stats, terrainWorkers }: { stats?: StreamerStats | undefined; terrainWorkers?: TerrainWorkerSource } = {},
 ): WorldSetup {
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
@@ -97,26 +99,24 @@ export function createWorldSetup(
   const built: Site | undefined = weathering ?? siteForReviewMap(config, registry);
   const row = weathering ? undefined : (registry.scenarios.get(config.site) ?? registry.layouts.get(config.site));
   const shape = terrainShapeOf(registry);
-  const groundAt = (xm: number, zm: number): number =>
-    worldGroundAt({ seed, shape, scale, surface: built?.surface, xm, zm });
   const world = new World();
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
-  const terrain = {
+  const terrain = createTerrainEvaluator({
     seed,
     blocks: sitePalette(registry).terrain,
     shape,
     scale,
-    surface: built?.surface,
-    stamp: built ? (chunk: Parameters<Site['stamp']>[0]) => built.stamp(chunk) : undefined,
-  };
+    site: built?.terrain ?? { kind: 'natural' },
+    structures: [],
+  });
+  const { groundAt } = terrain;
+  const tuning = graphicsTuningOf(registry);
   const streamer = new Streamer({
     world,
     meshes,
     mesher,
-    seed,
-    terrain: terrain.blocks,
-    shape: terrain.shape,
+    terrain,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
     liquids: blockLiquids(registry),
@@ -124,14 +124,12 @@ export function createWorldSetup(
     patterns: blockPatterns(registry),
     weatherable: blockWeatherability(registry),
     scale,
-    structures: [],
-    surface: terrain.surface,
-    stamp: terrain.stamp,
     radius: config.radiusChunks,
-    preloadRings: graphicsTuningOf(registry).skyPreloadRings,
-    columnsPerFrame: graphicsTuningOf(registry).columnsPerFrame,
+    preloadRings: tuning.skyPreloadRings,
+    columnsPerFrame: tuning.columnsPerFrame,
     hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
+    ...(terrainWorkers ? { terrainWorkers: { source: terrainWorkers, ...tuning.terrainWorkers } } : {}),
   });
   return {
     config,
@@ -146,7 +144,10 @@ export function createWorldSetup(
     skyFields: new SkyFields(
       { world, entities, registry },
       { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK - 1 },
-      authoredSkyBoxes(built?.authoredPlacements ?? []),
+      [
+        ...authoredSkyBoxes(built?.authoredPlacements ?? []),
+        ...layoutVehicleSkyBoxes(registry, config.site, scale.blockSize),
+      ],
     ),
     site: built,
     groundAt,

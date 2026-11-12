@@ -1,8 +1,11 @@
 // The sky dome: one camera-following sphere that stands in for the flat background. A look's `dome` block
 // (engine/core/sky.ts, `Dome`) supplies the keyed gradient, the physical sky's terms, cloud cover, stars, moon and
-// sun; the day cycle's `clouds` supply the layers' shape and its `domeShape` the gradient's bands, the star density,
-// the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the gradient around a low sun, the
-// fade into the fog colour at the horizon, and cloud light from the main light.
+// sun; the day cycle's `clouds` supply each kind of cloud's shape and its `domeShape` the gradient's bands, the star
+// density, the bodies' shapes and the cloud light. The rules that stay in code are the physical sky giving way to the
+// gradient around a low sun, the fade into the fog colour at the horizon, and cloud light from the main light.
+//
+// Both kinds of cloud are compiled in, so the weather can move between them without rebuilding the shader; the
+// weather's share of each sets which shows (engine/core/weather.ts, `skyInWeather`).
 //
 // The sun and its glow are painted rather than taken from the physical sky. Around a low sun the model's radiance
 // falls off steeply with angle and swings from red through green to blue, which reads only when a per-channel curve
@@ -12,6 +15,11 @@
 // It is drawn the way the background it replaces is: never tone-mapped on the screen path, and in the post chain
 // scaled with the clear colour and the fog by `Mood` (render/mood.ts, `Mood.draw`) through `skyDomeUniforms`.
 // A dome that skipped either would not meet the fogged geometry at the horizon.
+//
+// It draws after the opaque geometry, its depth pinned to the far plane, so only the pixels no geometry covered
+// are shaded: the dome's fragment is the frame's dearest per pixel, and drawn first it would pay that cost under
+// every wall and hill before geometry drew over it. The pin, not the sphere's own depth, keeps it behind every
+// drawn surface, so it never replaces one; the transparent list three.js always draws later still blends over it.
 //
 // The physical sky, the sun, the moon and the lit clouds are radiance in arbitrary units, so the composited colour
 // is brought into display range once by a shoulder that keeps its hue (`toDisplay`). That keeps the sky at or under
@@ -26,6 +34,7 @@ import {
   Color,
   type DataTexture,
   type IUniform,
+  LessEqualDepth,
   Mesh,
   type PerspectiveCamera,
   ShaderMaterial,
@@ -102,13 +111,22 @@ const VERTEX_SHADER = /* glsl */ `
     // Unit sphere at the camera: the local position is the view direction.
     vDir = position;
     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    // The dome draws after the opaque geometry and shades only what no geometry covered, so its
+    // depth is the far plane's own: never in front of a drawn surface, equal to the cleared depth
+    // where nothing drew, which the material's depth test lets pass.
+    gl_Position.z = gl_Position.w;
   }
 `;
 
-/** Layer `index` of the cloud field over `col`. Literal indices keep sampler use legal in GLSL ES 1.0. */
+/**
+ * Layer `index` of the cloud field over `col`, lit between the tops' light and the deck's by its shade. Literal indices
+ * keep sampler use legal in GLSL ES 1.0.
+ */
 const layerGlsl = (index: number): string => /* glsl */ `
-    col = mix( col, litCloud, cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] )
-      * uLayerOpacity[${index}] * cloudOpacity );`;
+    if ( uLayerOpacity[${index}] > 0.0 ) {
+      col = mix( col, mix( litTops, litDeck, uLayerShade[${index}] ),
+        cloudCover( ${index % 2 === 0 ? 'uCloudA' : 'uCloudB'}, plane, uLayer[${index}] ) * uLayerOpacity[${index}] * layeredOpacity );
+    }`;
 
 const fragmentShader = (layers: number): string => /* glsl */ `
   varying vec3 vDir;
@@ -156,11 +174,17 @@ const fragmentShader = (layers: number): string => /* glsl */ `
   uniform float uSimSeconds;
   uniform vec3 uLightDir;
   uniform vec3 uCloudLight;
+  uniform vec3 uCloudDeckLight;
   uniform vec3 uCloudAmbient;
   uniform sampler2D uCloudA;
   uniform sampler2D uCloudB;
   uniform vec4 uLayer[${layers}];
   uniform float uLayerOpacity[${layers}];
+  uniform float uLayerShade[${layers}];
+  uniform float uScatter;
+  uniform vec4 uScatterShape;
+  uniform vec2 uScatterDrift;
+  uniform vec3 uScatterLight;
 
   const float RAYLEIGH_ZENITH_LENGTH = 8.4E3;
   const float MIE_ZENITH_LENGTH = 1.25E3;
@@ -250,22 +274,101 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     return smoothstep( threshold, threshold + uEdgeSoftness, noise.r + ( noise.g - 0.5 ) * 0.35 ) * step( 0.0001, uCover );
   }
 
+  // The scatter kind's noise, after three's Sky addon: gradient noise from a hash without sin, so every GPU draws the
+  // same clouds, summed over octaves that slide past one another so the clouds billow.
+  vec2 scatterGradient ( vec2 lattice ) {
+    vec3 p = fract( lattice.xyx * vec3( 0.1031, 0.1030, 0.0973 ) );
+    p += dot( p, p.yzx + 33.33 );
+    return fract( ( p.xx + p.yz ) * p.zy ) * 2.0 - 1.0;
+  }
+
+  float scatterNoise ( vec2 p ) {
+    vec2 i = floor( p );
+    vec2 f = fract( p );
+    vec2 u = f * f * f * ( f * ( f * 6.0 - 15.0 ) + 10.0 );
+    float a = dot( scatterGradient( i ), f );
+    float b = dot( scatterGradient( i + vec2( 1.0, 0.0 ) ), f - vec2( 1.0, 0.0 ) );
+    float c = dot( scatterGradient( i + vec2( 0.0, 1.0 ) ), f - vec2( 0.0, 1.0 ) );
+    float d = dot( scatterGradient( i + vec2( 1.0, 1.0 ) ), f - vec2( 1.0, 1.0 ) );
+    return mix( mix( a, b, u.x ), mix( c, d, u.x ), u.y ) * 1.6;
+  }
+
+  float scatterFbm ( vec2 p, float billow ) {
+    float sum = 0.0;
+    float amplitude = 1.0;
+    for ( int octave = 0; octave < 4; octave ++ ) {
+      sum += amplitude * scatterNoise( p );
+      amplitude *= 0.5;
+      p = p * 2.0 + billow;
+    }
+    return sum;
+  }
+
+  // The scatter kind over col. A cloud is opaque by its depth past the edge; its light is dimmed towards the
+  // self-shadowed core by a Beer and powder term, and its rim shines through a forward Henyey-Greenstein lobe when the
+  // light stands behind it. shape: scale, billow, region scale and strength; light: density, shadow, lining.
+  vec3 scatterClouds ( vec3 col, vec3 dir, vec2 plane, float facing, float opacity ) {
+    vec2 p = plane * uScatterShape.x + uScatterDrift * uSimSeconds;
+    float noise = clamp( scatterFbm( p, uScatterShape.y * uSimSeconds ) * 0.7 + 0.5, 0.0, 1.0 );
+    float region = scatterNoise( p * ( uScatterShape.z / uScatterShape.x ) ) * uScatterShape.w;
+    float threshold = 1.0 - clamp( uCoverGain * uCover + region, 0.0, 1.0 );
+    float depth = max( 0.0, noise - threshold );
+    float beer = exp( -4.0 * depth );
+    float core = mix( uScatterLight.y, 1.0, clamp( beer * ( 1.0 - beer * beer ) * 2.6, 0.0, 1.0 ) );
+    float edge = smoothstep( threshold, threshold + uEdgeSoftness, noise );
+    float lightCos = dot( dir, uLightDir );
+    float lining = clamp( 0.51 / pow( 1.49 - 1.4 * lightCos, 1.5 ), 0.0, 3.0 ) * edge * ( 1.0 - edge ) * 4.0;
+    vec3 lit = uCloudAmbient + uCloudLight * ( facing * core + lining * uScatterLight.z );
+    return mix( col, lit, ( 1.0 - exp( -uScatterLight.x * depth ) ) * opacity );
+  }
+
   void main () {
     vec3 dir = normalize( vDir );
     vec3 keyed = keyedSky( dir );
-    vec3 physical = physicalSky( dir );
-    vec3 col = mix( keyed, physical, uPhysicalWeight );
     float sunCos = clamp( dot( dir, uSunDir ), 0.0, 1.0 );
-    col += vec3( stars( dir ) * uStars ) + moon( dir ) * uMoonBrightness + sunDisc( sunCos );
+    // A term whose weight is zero leaves the colour bit-for-bit as it was, so it is skipped whole.
+    // The physical sky is the dome's dearest per-pixel work, and no look runs it around a low sun:
+    // the guard is what a dusk frame lives on.
+    vec3 col = keyed;
+    if ( uPhysicalWeight > 0.0 ) {
+      col = mix( keyed, physicalSky( dir ), uPhysicalWeight );
+    }
+    vec3 painted = vec3( 0.0 );
+    if ( uStars > 0.0 ) {
+      painted += vec3( stars( dir ) * uStars );
+    }
+    if ( uMoonBrightness > 0.0 ) {
+      painted += moon( dir ) * uMoonBrightness;
+    }
+    if ( uSunBrightness > 0.0 ) {
+      painted += sunDisc( sunCos );
+    }
+    col += painted;
 
     // Clouds cover the stars, the moon and the sun's disc behind them.
     float cloudOpacity = uCloudOpacity * smoothstep( uCloudFade.x, uCloudFade.y, dir.y );
-    vec3 litCloud = uCloudAmbient + uCloudLight * ( 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 ) );
-    vec2 plane = dir.xz / max( dir.y, 0.06 );
-    ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+    if ( cloudOpacity > 0.0 && uCover > 0.0 ) {
+      // A layer's deck share takes the main light only up to the deck's lower cap while the tops take it up to 1; with
+      // one light for every layer a closing cover reads as a flat sheet. A light already under the deck's cap lights
+      // deck and tops alike.
+      float facing = 1.0 - uCloudFacing + uCloudFacing * clamp( dot( dir, uLightDir ), 0.0, 1.0 );
+      vec3 litTops = uCloudAmbient + uCloudLight * facing;
+      vec3 litDeck = uCloudAmbient + uCloudDeckLight * facing;
+      vec2 plane = dir.xz / max( dir.y, 0.06 );
+      // A change of kind fades one kind out as the other fades in; a kind with no share costs nothing.
+      float layeredOpacity = cloudOpacity * ( 1.0 - uScatter );
+      if ( layeredOpacity > 0.0 ) {
+        ${Array.from({ length: layers }, (_, index) => layerGlsl(index)).join('')}
+      }
+      if ( uScatter > 0.0 ) {
+        col = scatterClouds( col, dir, plane, facing, cloudOpacity * uScatter );
+      }
+    }
 
     // The glow is lit air between the eye and the clouds, so it goes over them.
-    col += sunGlow( sunCos );
+    if ( uSunGlow > 0.0 ) {
+      col += sunGlow( sunCos );
+    }
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
@@ -285,7 +388,7 @@ const placeDome = (mesh: Mesh, camera: PerspectiveCamera): void => {
 const TEXTURE_SEEDS = [1, 2] as const;
 
 /** The mesh is for the caller to add to the scene; `dispose` frees what the dome owns. */
-export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
+export const createSkyDome = ({ layered, scatter }: Clouds, shape: DomeShape): SkyDome => {
   const textures: DataTexture[] = TEXTURE_SEEDS.map((seed) => cloudTexture(seed));
   const uniforms = {
     ...skyDomeUniforms,
@@ -328,32 +431,45 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
     uStars: { value: 0 },
     uCover: { value: 0 },
     uCloudOpacity: { value: 0 },
-    uWarp: { value: clouds.warp },
+    uWarp: { value: layered.warp },
     uSimSeconds: { value: 0 },
     uLightDir: { value: new Vector3(0, 1, 0) },
     uCloudLight: { value: new Color() },
+    uCloudDeckLight: { value: new Color() },
     uCloudAmbient: { value: new Color() },
     uCloudA: { value: textures[0]! },
     uCloudB: { value: textures[1]! },
-    uLayer: { value: clouds.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
-    uLayerOpacity: { value: clouds.layers.map((layer) => layer.opacity) },
+    uLayer: { value: layered.layers.map((layer) => new Vector4(layer.scale, layer.angle, ...layer.drift)) },
+    uLayerOpacity: { value: layered.layers.map((layer) => layer.opacity) },
+    uLayerShade: { value: layered.layers.map((layer) => layer.shade) },
+    uScatter: { value: 0 },
+    uScatterShape: {
+      value: new Vector4(scatter.scale, scatter.billow, scatter.region.scale, scatter.region.strength),
+    },
+    uScatterDrift: { value: new Vector2(...scatter.drift) },
+    uScatterLight: { value: new Vector3(scatter.density, scatter.shadow, scatter.lining) },
   };
   const domeMaterial = (domeUniforms: typeof uniforms): ShaderMaterial =>
     new ShaderMaterial({
       name: 'SkyDome',
       side: BackSide,
       depthWrite: false,
+      // Lets the dome through only where the depth buffer still holds the cleared far plane; see
+      // the vertex shader's depth pin.
+      depthFunc: LessEqualDepth,
       toneMapped: false,
       uniforms: domeUniforms,
       vertexShader: VERTEX_SHADER,
-      fragmentShader: fragmentShader(clouds.layers.length),
+      fragmentShader: fragmentShader(layered.layers.length),
     });
   const material = domeMaterial(uniforms);
   const geometry = new SphereGeometry(1, 48, 24);
   const mesh = new Mesh(geometry, material);
   mesh.name = 'skyDome';
   mesh.frustumCulled = false;
-  mesh.renderOrder = -1000;
+  // After every opaque draw (which three.js places before the transparent list whatever the order
+  // here), so the depth test leaves the dome only the pixels no geometry covered.
+  mesh.renderOrder = 900;
   // Reflections stand for the sky itself, so the bake leaves out what dims the drawn dome where the camera stands.
   // Below the horizon, and blending in just above it, it shows the ambient light's ground colour instead of fog: the same
   // colour the hemisphere light uses, though not its brightness, rather than a lower half as bright as the sky.
@@ -396,10 +512,14 @@ export const createSkyDome = (clouds: Clouds, shape: DomeShape): SkyDome => {
       uniforms.uSunGlow.value = dome.sun.glow;
       uniforms.uCover.value = dome.clouds.cover;
       uniforms.uCloudOpacity.value = dome.clouds.opacity;
+      uniforms.uScatter.value = dome.clouds.scatter;
       uniforms.uSimSeconds.value = simSeconds;
       uniforms.uLightDir.value.set(...sky.light);
       setSrgb(uniforms.uCloudLight.value, sky.lightColor).multiplyScalar(
         clamp01(sky.lightIntensity) * shape.cloudLight.light,
+      );
+      setSrgb(uniforms.uCloudDeckLight.value, sky.lightColor).multiplyScalar(
+        Math.min(clamp01(sky.lightIntensity), shape.cloudLight.deckLight) * shape.cloudLight.light,
       );
       setSrgb(uniforms.uCloudAmbient.value, sky.ambientSky).multiplyScalar(
         clamp01(sky.ambientIntensity) * shape.cloudLight.ambient,
