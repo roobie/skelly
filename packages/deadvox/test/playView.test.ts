@@ -121,7 +121,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const shadows = {
     restore: vi.fn(),
     attachTorches: vi.fn(),
-    attachCrowd: vi.fn(),
+    attachCasters: vi.fn(),
     warmUp: vi.fn(() => Promise.resolve()),
   };
   const engine = {
@@ -289,7 +289,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       torchOn: true,
       restore: vi.fn(),
       attachTorches: vi.fn(),
-      attachCrowd: vi.fn(),
+      attachCasters: vi.fn(),
       warmUp: vi.fn(() => Promise.resolve()),
     },
   } as unknown as Engine;

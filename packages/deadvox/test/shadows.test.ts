@@ -3,7 +3,7 @@ import { clampShadowDistance, defaultShadows, graphicsTuningOf, nextShadowDistan
 import type { MeshData } from '@skelly/engine/mesh';
 import { dayPhaseAt } from '@skelly/engine/sim';
 import { skyAt as skyAtCycle, sunShadowStrength } from '@skelly/engine/sky';
-import { CHUNK } from '@skelly/engine/world';
+import { BLOCK_SIZE, BlockEntities, CHUNK } from '@skelly/engine/world';
 import {
   BackSide,
   Box3,
@@ -12,6 +12,7 @@ import {
   DoubleSide,
   Frustum,
   Group,
+  InstancedMesh,
   type Light,
   Matrix4,
   Object3D,
@@ -31,6 +32,7 @@ const BUNDLED_CONTENT = startupContent();
 const SUN_SHADOW = graphicsTuningOf(BUNDLED_CONTENT.registry).sunShadow;
 
 import { FrameTimes } from '@skelly/presentation/internal/render/frameTimes.ts';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import {
   beamMapDue,
@@ -46,7 +48,18 @@ import {
 } from '@skelly/presentation/internal/render/shadows.ts';
 import { ChunkMeshes, PLAYER_FIGURE_LAYER, Shadows } from '@skelly/presentation/render';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { CALIBRATED_BEAM_INTENSITY } from './flashlightFixture.ts';
+
+/** A plain box that stands still, so it is drawn in a batch. */
+const shadowCrate = {
+  id: 'fixture_shadow_crate',
+  name: 'Fixture crate',
+  size: [2, 1, 1] as [number, number, number],
+  color: '#7a6248',
+  breach: fixtureBreach(),
+  material: FIXTURE_MATERIAL,
+};
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
 const strengthAt = (hour: number): number => sunShadowStrength(skyAt(hour).lightIntensity);
@@ -218,7 +231,7 @@ describe('choosing shadow casters', () => {
 
 describe('Shadows', () => {
   const setup = () => {
-    const draws: { light: Light; seesFigure: boolean; chunkSide: Side | null }[] = [];
+    const draws: { light: Light; seesFigure: boolean; chunkSide: Side | null; castingBatches: InstancedMesh[] }[] = [];
     const figure = new Object3D();
     figure.layers.set(PLAYER_FIGURE_LAYER);
     const head = new Object3D();
@@ -228,15 +241,22 @@ describe('Shadows', () => {
       shadowMap: {
         enabled: false,
         type: 0,
-        render(lights: Light[], _scene: Scene, view: Camera) {
+        render(lights: Light[], drawn: Scene, view: Camera) {
           for (const light of lights) {
             // three.js allocates a casting light's map inside this call.
             const { shadow } = light as DirectionalLight | SpotLight;
             shadow.map ??= {} as never;
+            const castingBatches: InstancedMesh[] = [];
+            drawn.traverse((object) => {
+              if (object instanceof InstancedMesh && object.castShadow) {
+                castingBatches.push(object);
+              }
+            });
             draws.push({
               light,
               seesFigure: figure.layers.test(view.layers) && head.layers.test(view.layers),
               chunkSide: meshes.material.shadowSide,
+              castingBatches,
             });
           }
         },
@@ -395,6 +415,36 @@ describe('Shadows', () => {
     // The sun's pass, by contrast, sees it.
     frame(1);
     expect(draws.some((draw) => draw.light !== torch && draw.seesFigure)).toBe(true);
+  });
+
+  it("draws a furniture batch in a light's pass only while its box meets that light's volume", () => {
+    const { frame, draws, light, torch, shadows, scene } = setup();
+    const { registry, issues } = buildFixtureRegistry([
+      { source: 'shadow-furniture.json', data: { furniture: [shadowCrate] } },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(registry);
+    const place = (x: number) =>
+      entities.add({ type: shadowCrate.id, size: shadowCrate.size, pos: [x, 1, 1], facing: 'n' });
+    place(1); // by the player
+    place(20 * CHUNK); // hundreds of metres off, out of the sun's box
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, 1);
+    furniture.sync(entities);
+    scene.add(furniture.group);
+    shadows.attachCasters(furniture);
+    const [near, far] = furniture.group.children
+      .filter((child): child is InstancedMesh => child instanceof InstancedMesh)
+      .sort((a, b) => a.boundingBox!.min.x - b.boundingBox!.min.x);
+    torch.position.set(20 * CHUNK * BLOCK_SIZE, 1.6, 0);
+    torch.castShadow = true;
+    scene.updateMatrixWorld(true);
+    draws.length = 0;
+    frame(1);
+    const castIn = (drawnBy: Light) => draws.find((draw) => draw.light === drawnBy)!.castingBatches;
+    expect(castIn(light)).toContain(near);
+    expect(castIn(light)).not.toContain(far);
+    expect(castIn(torch)).toContain(far);
+    expect(castIn(torch)).not.toContain(near);
   });
 
   it('keeps both sun caster orientations while beams retain exit faces', () => {

@@ -15,6 +15,7 @@ import {
   type Vec3,
 } from '@skelly/engine/world';
 import {
+  Box3,
   BoxGeometry,
   type BufferGeometry,
   Color,
@@ -114,6 +115,7 @@ export class FurnitureMeshes {
   /** Every drawn piece of each batch, revealed or not. */
   private readonly batched = new Map<string, Set<BlockEntity>>();
   private readonly batches = new Map<string, Batch>();
+  private readonly casterBox = new Box3();
 
   /**
    * `vehicles` meshes vehicle displays; with a worker behind it a vehicle appears when its mesh arrives.
@@ -261,6 +263,21 @@ export class FurnitureMeshes {
       this.batched.delete(piece.batch);
     }
     redraw.add(piece.batch);
+  }
+
+  /** Batches keep no per-pass data, so every pass can share them. */
+  reserveShadowSlots: (slots: number) => void = () => undefined;
+
+  /**
+   * Makes the next shadow pass draw only the batches whose world box `casts` accepts (shadows.ts calls this per
+   * light, before that light's map is drawn). three's own test of a batch's bounding sphere reaches past its sector's
+   * corners, so on its own it keeps batches whose box lies outside the light's volume. Only the shadow passes read
+   * `castShadow`. Pieces drawn on their own keep three's per-mesh test.
+   */
+  selectShadowCasters(_slot: number, casts: (box: Box3) => boolean): void {
+    for (const { mesh } of this.batches.values()) {
+      mesh.castShadow = casts(this.casterBox.copy(mesh.boundingBox!).applyMatrix4(mesh.matrixWorld));
+    }
   }
 
   /** Shows or hides the pieces of each column whose reveal changed. */

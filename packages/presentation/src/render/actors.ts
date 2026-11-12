@@ -136,7 +136,7 @@ export class ActorMeshes {
   }
 
   /** The boxes carry their own world positions, so three.js culls them like any mesh; the per-light
-   * picking the crowd figures need (render/shadows.ts, CrowdCasters) has nothing to pick here. */
+   * picking the crowd figures need (render/shadows.ts, ShadowCasterSet) has nothing to pick here. */
   selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void = () => undefined;
   reserveShadowSlots: (slots: number) => void = () => undefined;
 

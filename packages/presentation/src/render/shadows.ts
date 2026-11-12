@@ -7,10 +7,10 @@
 //
 // Culling chunks to the camera would drop the ones behind you that shade what is in front. So this
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
-// takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
-// `selectShadowCasters`, and the crowd figures through mobActors.ts `selectShadowCasters`, whose
-// bone-placed instances no frustum can cull) and draws one map per light through it; the chunk batch
-// draws each pass's own set (chunkBatch.ts), so the main pass keeps the camera's chunks. A light's `castShadow` stays true while its setting is on, so the hour
+// `selectShadowCasters`, and every attached `ShadowCasterSet`: the crowd figures, whose bone-placed
+// instances no frustum can cull, and the furniture batches, whose sector-wide bounding spheres reach
+// past the light's box) and draws one map per light through it; the chunk batch draws each pass's own
+// set (chunkBatch.ts), so the main pass keeps the camera's chunks. A light's `castShadow` stays true while its setting is on, so the hour
 // doesn't change shader programs. The sun's shadow is full whenever its light shines, the moon's
 // light at night included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
@@ -136,12 +136,13 @@ export const needsMap = (light: { castShadow: boolean; shadow: { map: unknown } 
 
 type DrawMaps = (lights: Light[], scene: Scene, camera: Camera) => void;
 
-/** A renderer whose instanced casters must be picked per light, as ChunkMeshes picks its boxes: the
- * crowd figures (render/mobActors.ts), whose bone-placed instances no frustum can cull. One slot per
- * light that casts within a renderer frame (the sun plus every torch), because three uploads a
- * geometry's attributes only once per renderer frame — passes sharing one selection would all draw
- * whichever rows reached the GPU first. */
-export interface CrowdCasters {
+/** A renderer whose instanced casters are picked per light by their world boxes, as ChunkMeshes picks
+ * its chunks: the crowd figures (render/mobActors.ts) and the furniture batches (render/furniture.ts).
+ * One slot per light that casts within a renderer frame (the sun plus every torch), because three
+ * uploads a geometry's attributes only once per renderer frame — passes sharing one selection of
+ * instance rows would all draw whichever rows reached the GPU first. A set that selects whole meshes
+ * needs no slots. */
+export interface ShadowCasterSet {
   reserveShadowSlots: (slots: number) => void;
   selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void;
 }
@@ -152,7 +153,7 @@ export class Shadows {
   /** Holds the sun and its target, so moving it moves the shadow box without changing the light's direction. */
   private readonly rig: Object3D;
   private readonly meshes: ChunkMeshes;
-  private crowds: readonly CrowdCasters[] = [];
+  private casterSets: readonly ShadowCasterSet[] = [];
   private state: ShadowState = { sun: false, torch: false, distance: SHADOW_DISTANCE_RANGE.min };
   private torches: readonly SpotLight[] = [];
   /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
@@ -240,19 +241,19 @@ export class Shadows {
 
   attachTorches(lights: readonly SpotLight[]): void {
     this.torches = lights;
-    this.reserveCrowdSlots();
+    this.reserveCasterSlots();
   }
 
-  /** Adds a crowd whose figures the passes pick per light (see CrowdCasters); call before the first render. */
-  attachCrowd(crowd: CrowdCasters): void {
-    this.crowds = [...this.crowds, crowd];
-    this.reserveCrowdSlots();
+  /** Adds casters the passes pick per light (see ShadowCasterSet); call before the first render. */
+  attachCasters(casters: ShadowCasterSet): void {
+    this.casterSets = [...this.casterSets, casters];
+    this.reserveCasterSlots();
   }
 
   /** One slot per light that can cast in a frame: the sun plus every torch. */
-  private reserveCrowdSlots(): void {
-    for (const crowd of this.crowds) {
-      crowd.reserveShadowSlots(1 + this.torches.length);
+  private reserveCasterSlots(): void {
+    for (const casters of this.casterSets) {
+      casters.reserveShadowSlots(1 + this.torches.length);
     }
   }
 
@@ -332,12 +333,12 @@ export class Shadows {
     this.stale = true;
   }
 
-  /** Picks one light's casters into `slot`'s selection: the chunk boxes and every attached crowd's
-   * figures. Returns the chunk count. */
+  /** Picks one light's casters into `slot`'s selection: the chunk boxes and every attached caster
+   * set's. Returns the chunk count. */
   private selectCasters(slot: number, casts: (box: Box3) => boolean, side: Side): number {
     const chunks = this.meshes.selectShadowCasters(casts, side);
-    for (const crowd of this.crowds) {
-      crowd.selectShadowCasters(slot, casts);
+    for (const casters of this.casterSets) {
+      casters.selectShadowCasters(slot, casts);
     }
     return chunks;
   }
