@@ -6,6 +6,7 @@ import { installDistanceFog, withDistanceFog } from '../src/render/distanceFog.t
 // Test-owned far-plane scales, from the schema's minimum up, so no case depends on the bundled tuning.
 const SCALES = [1, 1.1, 1.5, 3];
 const SCALE = 1.5;
+const SHAPE = { farPlaneScale: SCALE, curveExponent: 2 };
 
 interface Vec {
   xyz: [number, number, number];
@@ -13,6 +14,7 @@ interface Vec {
 
 const FOG_DISTANCE_BODY = /float fogDistance\(\) \{([\s\S]*?)\n\s*\}/;
 const COLUMN = /viewMatrix\[ (\d) \]\.xyz/g;
+const FOG_FACTOR = /float fogFactor = (pow\(.*\));/;
 const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vFogView;/;
 
 /**
@@ -20,7 +22,7 @@ const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vFogView;/;
  * text itself. GLSL indexes a matrix by column, so `viewMatrix[ i ]` is three's column i.
  */
 const fogDistanceOf = (scale: number) => {
-  const pars = withDistanceFog(ShaderChunk, scale).fog_pars_fragment;
+  const pars = withDistanceFog(ShaderChunk, { ...SHAPE, farPlaneScale: scale }).fog_pars_fragment;
   const body = FOG_DISTANCE_BODY.exec(pars)?.[1];
   if (!body) {
     throw new Error('fogDistance not found');
@@ -64,7 +66,7 @@ const ringPoints = (eye: Vector3): Vector3[] =>
 // three.js's own fog chunks are the thing under test: the patch must find each line it replaces.
 describe('distance fog', () => {
   it('replaces view depth with fogDistance() in all four fog chunks', () => {
-    const patched = withDistanceFog(ShaderChunk, SCALE);
+    const patched = withDistanceFog(ShaderChunk, SHAPE);
     const all = Object.values(patched).join('\n');
     expect(all).not.toContain('vFogDepth');
     expect(all).not.toContain('mvPosition.z');
@@ -77,14 +79,40 @@ describe('distance fog', () => {
   });
 
   it('throws when three changes a line, rather than fogging wrong silently', () => {
-    expect(() => withDistanceFog({ ...ShaderChunk, fog_vertex: 'vFogDepth = mvPosition.z;' }, SCALE)).toThrow(
+    expect(() => withDistanceFog({ ...ShaderChunk, fog_vertex: 'vFogDepth = mvPosition.z;' }, SHAPE)).toThrow(
       'not found',
     );
   });
 
   it('rejects a far-plane scale below one', () => {
     for (const scale of [0.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => withDistanceFog(ShaderChunk, scale)).toThrow('far-plane scale');
+      expect(() => withDistanceFog(ShaderChunk, { ...SHAPE, farPlaneScale: scale })).toThrow('far-plane scale');
+    }
+  });
+
+  it('closes the fog over its band by the content curve, fully at the fog end', () => {
+    const [near, far] = [20, 80];
+    for (const curveExponent of [0.5, 1, 2.5]) {
+      const line = withDistanceFog(ShaderChunk, { ...SHAPE, curveExponent }).fog_fragment;
+      const expression = FOG_FACTOR.exec(line)?.[1];
+      if (!expression) {
+        throw new Error('fog factor not found');
+      }
+      const factor = new Function('fogDistance', 'fogNear', 'fogFar', 'pow', 'clamp', `return ${expression};`) as (
+        ...args: unknown[]
+      ) => number;
+      const at = (distance: number) =>
+        factor(
+          () => distance,
+          near,
+          far,
+          Math.pow,
+          (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x)),
+        );
+      expect(at(near)).toBe(0);
+      expect(at(far)).toBe(1);
+      expect(at(far * 2)).toBe(1);
+      expect(at(50)).toBeCloseTo(0.5 ** curveExponent, 3);
     }
   });
 
@@ -123,12 +151,13 @@ describe('distance fog', () => {
     }
   });
 
-  it('patches the shared chunks once with the given scale, and refuses another', () => {
-    installDistanceFog(SCALE);
+  it('patches the shared chunks once with the given shape, and refuses another', () => {
+    installDistanceFog(SHAPE);
     const once = ShaderChunk.fog_fragment;
-    installDistanceFog(SCALE);
+    installDistanceFog({ ...SHAPE });
     expect(ShaderChunk.fog_fragment).toBe(once);
-    expect(() => installDistanceFog(SCALE + 1)).toThrow('already installed');
+    expect(() => installDistanceFog({ ...SHAPE, farPlaneScale: SCALE + 1 })).toThrow('already installed');
+    expect(() => installDistanceFog({ ...SHAPE, curveExponent: 3 })).toThrow('already installed');
     expect(ShaderChunk.fog_fragment).toBe(once);
   });
 });

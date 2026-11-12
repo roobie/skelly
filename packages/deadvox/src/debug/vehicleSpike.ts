@@ -1052,6 +1052,7 @@ applySky(
     camera,
     radiusM: 96,
     farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
+    fogCurveExponent: claimed(registry.graphics, 'graphics')?.fogCurveExponent ?? 1,
   },
   skyAt(12, requireDayCycle(registry)),
 );

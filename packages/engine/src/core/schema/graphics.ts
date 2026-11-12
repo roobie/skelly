@@ -17,6 +17,9 @@ import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
 import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
 
+/** The view radii a run accepts, from the content default or a debug hash. */
+export const VIEW_RADIUS_BOUNDS_M = { min: 32, max: 256 } as const;
+
 /** An inclusive { min, max } range of one kind of number. */
 const orderedRange = (item: typeof NonNegative | typeof Positive) =>
   pipe(
@@ -33,6 +36,11 @@ export const GraphicsTuningSchema = strictObject({
     rimSoftness: pipe(Positive, maxValue(0.5)),
     reticleAntiAliasWidth: pipe(Positive, maxValue(2)),
   }),
+  /**
+   * The view radius a run starts with: what is meshed and drawn, and where the distance fog must be complete.
+   * Streaming loads past it, so it sets the world's load as well as its look.
+   */
+  viewRadiusM: pipe(number(), finite(), minValue(VIEW_RADIUS_BOUNDS_M.min), maxValue(VIEW_RADIUS_BOUNDS_M.max)),
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),
@@ -42,6 +50,12 @@ export const GraphicsTuningSchema = strictObject({
    * (`packages/presentation/src/render/distanceFog.ts`).
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
+  /**
+   * The distance fog's curve between a look's fog start and end: fog = t ** exponent, t running 0 to 1 over the band.
+   * Above 1 the fog stays thin over most of the band and closes late, so far silhouettes keep their shape while the
+   * view's edge still ends in pure fog colour.
+   */
+  fogCurveExponent: pipe(number(), finite(), minValue(0.25), maxValue(8)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   /** The inventory picture camera's margin around a model's fitted bounds. */
   itemPicture: strictObject({ framing: Positive }),

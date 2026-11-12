@@ -3,16 +3,13 @@ import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CHUNK } from '../core/coords.ts';
 import { GENERATED_SITES } from '../core/generatedSites.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
+import { VIEW_RADIUS_BOUNDS_M } from '../core/schema/graphics.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { resolveWeatheringUrl, type WeatheringTuning } from '../core/weatheringUrl.ts';
 import type { VoicePitchOverrides } from './actorAudio.ts';
 import type { StartupContent } from './bundledContent.ts';
 import { sweepFromUrl } from './ragdollConfig.ts';
 import { requireStart, runStartId } from './startSelection.ts';
-
-export const DEFAULT_RADIUS_M = 96;
-const MIN_RADIUS_M = 32;
-const MAX_RADIUS_M = 256;
 
 export interface GameConfig {
   content: StartupContent;
@@ -29,6 +26,8 @@ export interface GameConfig {
   streamHysteresisChunks: number;
   /** Content-owned camera far plane as a multiple of the fog's end. */
   fogFarPlaneScale: number;
+  /** Content-owned shape of the distance fog over its band. */
+  fogCurveExponent: number;
   /** Calendar seconds at the start (time of day on day 1). */
   start: number;
   /** Debug keys are on (hash `debug`). */
@@ -91,6 +90,17 @@ export type DeveloperState = WeatheringTuning & {
 
 export type ActorRenderMode = 'boxes' | 'detailed';
 
+const requireGraphics = (content: StartupContent) => {
+  const graphics = claimed(content.registry.graphics, 'graphics');
+  if (!graphics) {
+    throw new Error('Missing core graphics tuning');
+  }
+  return graphics;
+};
+
+/** The content's view radius, which a run takes unless a debug hash names another. */
+export const defaultViewRadiusM = (content: StartupContent): number => requireGraphics(content).viewRadiusM;
+
 const defaultStart = (content: StartupContent): number => requireDayCycle(content.registry).defaultStartGameTimeOfDay;
 
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
@@ -104,10 +114,7 @@ export const makeConfig = (
   const scale = makeScale(blockSize);
   const profile = claimed(content.registry.weathering, 'defaultWeathering');
   const profileId = claimedId(content.registry.weathering, 'defaultWeathering');
-  const graphics = claimed(content.registry.graphics, 'graphics');
-  if (!graphics) {
-    throw new Error('Missing core graphics tuning');
-  }
+  const graphics = requireGraphics(content);
   return {
     content,
     startId: selectedStart.id,
@@ -118,6 +125,7 @@ export const makeConfig = (
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
     streamHysteresisChunks: graphics.streamHysteresisM / (CHUNK * scale.blockSize),
     fogFarPlaneScale: graphics.fogFarPlaneScale,
+    fogCurveExponent: graphics.fogCurveExponent,
     start: selectedStart.startTimeGameTimeOfDay ?? defaultStart(content),
     debug: false,
     site: selectedStart.site,
@@ -235,10 +243,12 @@ export const configFromUrl = (
   content: StartupContent,
   ragdollSweepViewer: DebugStart,
 ): GameConfig => {
-  const radius = hash.radius ?? DEFAULT_RADIUS_M;
+  const { radius } = hash;
   const config = makeConfig(
     (hash.seed ?? 0) | 0,
-    radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
+    radius !== undefined && radius >= VIEW_RADIUS_BOUNDS_M.min && radius <= VIEW_RADIUS_BOUNDS_M.max
+      ? radius
+      : defaultViewRadiusM(content),
     content,
   );
   config.debug = hash.debug === true;

@@ -21,6 +21,8 @@ export interface SkyTargets {
   radiusM: number;
   /** The far plane as a multiple of where the fog ends (render/distanceFog.ts). */
   farPlaneScale: number;
+  /** The fog's curve over its band (render/distanceFog.ts). */
+  fogCurveExponent: number;
 }
 
 const set = (color: Color, [r, g, b]: Rgb): Color => color.setRGB(r, g, b, SRGBColorSpace);
@@ -30,11 +32,11 @@ const set = (color: Color, [r, g, b]: Rgb): Color => color.setRGB(r, g, b, SRGBC
  * camera's far plane with where the fog ends.
  */
 export const applySky = (
-  { scene, light, ambient, camera, radiusM, farPlaneScale }: SkyTargets,
+  { scene, light, ambient, camera, radiusM, farPlaneScale, fogCurveExponent }: SkyTargets,
   sky: Sky,
   skyVisibility = 1,
 ): void => {
-  installDistanceFog(farPlaneScale);
+  installDistanceFog({ farPlaneScale, curveExponent: fogCurveExponent });
   if (!(scene.fog instanceof Fog)) {
     scene.fog = new Fog(0);
   }
