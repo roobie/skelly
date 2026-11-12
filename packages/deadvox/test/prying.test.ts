@@ -300,7 +300,7 @@ it('refuses a carried tool below the content quality threshold', () => {
   }
 });
 
-it('picks the carried tool of the lowest id and lists tools by id, whatever the names say', () => {
+it('picks the carried tool of the lowest id and lists tool names in name order, whatever the names say', () => {
   const { quality, level } = doorDef.door!.methods.pry!;
   const tool = (id: string, name: string) => ({
     id,
@@ -332,7 +332,7 @@ it('picks the carried tool of the lowest id and lists tools by id, whatever the 
   expect(plan.ok && plan.tool.type).toBe('pry_order_a');
   const refused = pryPlan(inventory, door, { toolUid: -1 });
   const listed = refused.ok ? [] : refused.toolNames.filter((name) => name.endsWith(' bar'));
-  expect(listed).toEqual(['Zed bar', 'Alpha bar']);
+  expect(listed).toEqual(['Alpha bar', 'Zed bar']);
 });
 
 it('a prying strike travels through the sound-hearing path and draws a shambler', () => {

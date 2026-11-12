@@ -55,8 +55,8 @@ export const pryPlan = (
     (defOf(inventory.registry, type).tool?.qualities[method.quality] ?? 0) >= method.level;
   const toolNames = [...inventory.registry.items.values()]
     .filter((definition) => methods.some(([, method]) => meets(definition.id, method)))
-    .sort((a, b) => compareCodeUnits(a.id, b.id))
-    .map((definition) => definition.name);
+    .map((definition) => definition.name)
+    .sort(compareCodeUnits);
   const { registry } = inventory;
   const refuse = (reason: string): PryPlan => ({ ok: false, reason, toolNames });
   if (!(furniture.door && entity.lock?.locked)) {
