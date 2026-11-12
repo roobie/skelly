@@ -181,7 +181,10 @@ describe('the moon and stars in a brightening sky', () => {
       ({ minute, height }) => minute * 60 >= state.dawn && minute * 60 <= state.sunrise && height > from && height < to,
     );
     expect(rising.length).toBeGreaterThan(2);
-    const shares = rising.map(({ whole, drawn }) => [drawn.stars / whole.stars, drawn.moon.brightness / whole.moon.brightness]);
+    const shares = rising.map(({ whole, drawn }) => [
+      drawn.stars / whole.stars,
+      drawn.moon.brightness / whole.moon.brightness,
+    ]);
     for (const [index, [stars, moon]] of shares.entries()) {
       expect(stars).toBeCloseTo(moon!, 12);
       if (index > 0) {
