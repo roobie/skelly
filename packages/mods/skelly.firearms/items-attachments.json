@@ -116,6 +116,15 @@
     },
     {
       "category": "misc",
+      "id": "rail_rear_sight",
+      "model": "rail_rear_sight",
+      "name": "Rail-mounted rear sight",
+      "size": [1, 1],
+      "weight": 90,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
       "firearmAttachmentEffects": {
         "fitRefusal": "I can't fit this suppressor yet",
         "fitSkillLevel": 4,

@@ -44,6 +44,116 @@
       },
       "weight": 100,
       "workInProgress": false
+    },
+    {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 0.80000000000000004
+          }
+        ],
+        "takeSound": "pouch_take"
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "fanny_pack_worn",
+          "overTorso": {
+            "jacket": "fanny_pack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "fanny_pack",
+      "model": "fanny_pack",
+      "name": "Fanny pack",
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 3,
+        "slot": "waist"
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [5, 6],
+            "handlingSimSeconds": 1.5,
+            "name": "main"
+          },
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 1.2,
+            "name": "front"
+          }
+        ],
+        "takeSound": "pouch_take"
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "school_backpack_worn",
+          "overTorso": {
+            "jacket": "school_backpack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "school_backpack",
+      "model": "school_backpack",
+      "name": "School backpack",
+      "size": [4, 4],
+      "wearable": {
+        "encumbrance": 10,
+        "slot": "back"
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "bag",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 8],
+            "handlingSimSeconds": 1.5,
+            "name": "main"
+          },
+          {
+            "grid": [3, 2],
+            "handlingSimSeconds": 1,
+            "name": "lid"
+          }
+        ]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "hiking_backpack_worn",
+          "overTorso": {
+            "jacket": "hiking_backpack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "hiking_backpack",
+      "model": "hiking_backpack",
+      "name": "Hiking backpack",
+      "size": [4, 5],
+      "wearable": {
+        "encumbrance": 12,
+        "slot": "back"
+      },
+      "workInProgress": false
     }
   ]
 }

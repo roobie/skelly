@@ -499,7 +499,7 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
-  it.each(['../config/intake.json', '../../../skelly-assets/tools/packages/thing-core/src/materials.json'])(
+  it.each(['../config/intake.json', '../../../skelly-assets/models/finishes.json'])(
     'fingerprints declarative JSON dependency %s without parsing it as a module',
     async (specifier) => {
       const entry = resolve(root, entries[0]!);

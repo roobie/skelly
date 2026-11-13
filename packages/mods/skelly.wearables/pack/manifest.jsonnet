@@ -6,5 +6,5 @@ manifest(
   content=['wearables-items', 'wearables-sounds', 'models-wearables'],
   assets=assets,
   json=['assets/manifest.json', 'presentation/item-materials.json'],
-  dependencies=['skelly.inventory', 'skelly.materials', 'skelly.readables', 'skelly.melee-classes'],
+  dependencies=['skelly.inventory', 'skelly.materials', 'skelly.melee-classes', 'skelly.readables'],
 )

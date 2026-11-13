@@ -192,27 +192,26 @@ describe('worn carry and armour on the figure', () => {
     expect(showsPart()).toBe(false);
   });
 
-  it.each(['standing', 'crouching'] as const)(
-    'keeps every worn item out of the torso and out of each other, %s',
-    (stance) => {
-      for (const outfit of outfits) {
-        const inventory = new Inventory(registry);
-        for (const def of outfit) {
-          wear(inventory, inventory.create(def.id));
-        }
-        const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
-        meshes.sync(pose(inventory, stance));
-        meshes.group.updateMatrixWorld(true);
-        // The arms and legs swing and bend through the body as well, so only the torso is a solid here.
-        const solids = [
-          { name: 'body', shell: shellOf(meshesUnder([meshes.group.getObjectByName('figure-body')!])) },
-          ...outfit.map((def) => ({ name: def.id, shell: shellOf(meshesUnder(wornObjects(meshes, slotOf(def)))) })),
-        ];
-        expect(solids.filter(({ shell }) => shell.points.length === 0)).toEqual([]);
-        expect(overlapsOf(solids)).toEqual([]);
-      }
-    },
+  // Each outfit is its own case: the refined body's shell makes one stance of all of them too slow for one test.
+  const outfitCases = outfits.flatMap((outfit, index) =>
+    (['standing', 'crouching'] as const).map((stance) => ({ outfit, stance, label: `outfit ${index + 1}, ${stance}` })),
   );
+  it.each(outfitCases)('keeps every worn item out of the torso and out of each other, $label', ({ outfit, stance }) => {
+    const inventory = new Inventory(registry);
+    for (const def of outfit) {
+      wear(inventory, inventory.create(def.id));
+    }
+    const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
+    meshes.sync(pose(inventory, stance));
+    meshes.group.updateMatrixWorld(true);
+    // The arms and legs swing and bend through the body as well, so only the torso is a solid here.
+    const solids = [
+      { name: 'body', shell: shellOf(meshesUnder([meshes.group.getObjectByName('figure-body')!])) },
+      ...outfit.map((def) => ({ name: def.id, shell: shellOf(meshesUnder(wornObjects(meshes, slotOf(def)))) })),
+    ];
+    expect(solids.filter(({ shell }) => shell.points.length === 0)).toEqual([]);
+    expect(overlapsOf(solids)).toEqual([]);
+  });
 });
 
 /** Each pair of solids where one reaches inside the other, and by how many probes. */

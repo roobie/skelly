@@ -24,11 +24,13 @@ import { authoredCityScenarios, defaultStartOf } from './fixtures/scenario.ts';
 
 const content = startupContent();
 const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
-  [...registry.scenarios.values()].flatMap(({ city }) =>
-    (city.lots ?? []).flatMap(({ source }) =>
-      source?.kind === 'assembly' ? [registry.mapAssemblies.get(source.id)!] : [],
-    ),
-  );
+  [...registry.scenarios.values()]
+    .filter((scenario) => scenario.kind === 'assembledCity')
+    .flatMap(({ city }) =>
+      (city.lots ?? []).flatMap(({ source }) =>
+        source?.kind === 'assembly' ? [registry.mapAssemblies.get(source.id)!] : [],
+      ),
+    );
 const near = (positions: Vec3[], piece: PlacedPiece) =>
   positions.some(
     ([x, y, z]) =>

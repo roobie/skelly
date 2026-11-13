@@ -81,9 +81,12 @@ const placementIssues = (
   fail: (path: string, message: string) => void,
 ): void => {
   const { placement } = start;
-  if (!scenario?.composition) {
+  if (scenario?.kind !== 'assembledCity' || !scenario.composition) {
     if (placement) {
-      fail('.placement', `site "${start.site}" is not a composed scenario, so a start there takes no placement`);
+      fail(
+        '.placement',
+        `site "${start.site}" does not define a city composition, so a start there takes no placement`,
+      );
     }
     return;
   }

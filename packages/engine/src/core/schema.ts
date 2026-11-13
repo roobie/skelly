@@ -19,6 +19,7 @@ export type {
   BlockMaterialDef,
   BodyTuningDef,
   CityBenchmarkDef,
+  CityScenarioDef,
   CompressionCaps,
   ContentFile,
   ContentSection,

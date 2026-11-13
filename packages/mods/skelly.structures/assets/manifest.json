@@ -1,15 +1,6 @@
 {
   "sources": [
     {
-      "author": "Björn Roberg",
-      "changes": null,
-      "download": null,
-      "files": ["assets/models/hinge_set.glb"],
-      "licence": "CC-BY-NC-SA-4.0",
-      "title": "skelly-assets built models",
-      "url": "https://github.com/roobie/skelly-assets"
-    },
-    {
       "author": "Jordan Irwin (AntumDeluge)",
       "changes": "Converted the selected PCM WAV; trimmed leading silence, faded the tail, converted to 24 kHz mono Opus in Ogg, and applied loudness normalization plus true-peak limiting.",
       "download": "thwack.zip",

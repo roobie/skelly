@@ -47,6 +47,22 @@
     },
     {
       "kind": "json",
+      "path": "things/flesh_chunk_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_small.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_strip.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/player_arm.model.json"
     },
     {
@@ -56,6 +72,30 @@
     {
       "kind": "json",
       "path": "things/player_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_head.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_torso.model.json"
     },
     {
       "kind": "asset",
@@ -119,6 +159,22 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/flesh_chunk_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_small.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_strip.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/player_arm.glb"
     },
     {
@@ -128,6 +184,30 @@
     {
       "kind": "asset",
       "path": "assets/models/player_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_torso.glb"
     }
   ],
   "id": "skelly.body",

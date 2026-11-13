@@ -307,6 +307,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
     { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
+    { root: resolve(projectRoot, '../skelly-assets/models'), prefix: 'asset-models/' },
     { root: resolve(projectRoot, 'vendor/rapier-f64'), prefix: RAPIER_SUPPLY_PREFIX },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
   ];
@@ -405,7 +406,7 @@ function trackableModuleFor(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency resolves outside src/, the engine's and presentation's src/, the submodule's thing-core/src/, the vendored Rapier supply and node_modules: ${file}`,
+      `Runtime dependency resolves outside src/, the engine's and presentation's src/, the submodule's thing-core and models sources, the vendored Rapier supply and node_modules: ${file}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
@@ -423,7 +424,7 @@ function trackableModuleFor(
   }
   if (
     extension === '.json' &&
-    ['src/config/', 'src/feasibility/', 'thing-core/', RAPIER_SUPPLY_PREFIX].some((prefix) =>
+    ['src/config/', 'src/feasibility/', 'thing-core/', 'asset-models/', RAPIER_SUPPLY_PREFIX].some((prefix) =>
       relativePath.startsWith(prefix),
     )
   ) {

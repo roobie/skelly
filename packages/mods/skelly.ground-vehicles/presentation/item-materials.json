@@ -1,5 +1,41 @@
 {
+  "assets/models/air_box_heavy.glb": { "materials": ["polymer-black", "plastic-black"] },
+  "assets/models/air_box_light.glb": { "materials": ["polymer-black", "plastic-black"] },
+  "assets/models/air_box_medium.glb": { "materials": ["polymer-black", "plastic-black"] },
   "assets/models/air_filter.glb": { "materials": ["rubber-black", "plastic-black", "paperboard-tan", "paper-white"] },
+  "assets/models/airport_crash_tender_body.glb": {
+    "materials": ["paint-charcoal", "paint-lime-yellow", "paint-red", "paint-white"]
+  },
+  "assets/models/airport_crash_tender_bumper_turret.glb": {
+    "materials": ["paint-charcoal", "steel-grey", "paint-lime-yellow", "steel-stainless", "plastic-black"]
+  },
+  "assets/models/airport_crash_tender_cab.glb": {
+    "materials": ["paint-lime-yellow", "paint-charcoal", "plastic-black", "cloth-rag"]
+  },
+  "assets/models/airport_crash_tender_cab_stripe.glb": { "materials": ["paint-red"] },
+  "assets/models/airport_crash_tender_chassis.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/airport_crash_tender_crew_door.glb": {
+    "materials": ["paint-lime-yellow", "plastic-black", "glass-clear"]
+  },
+  "assets/models/airport_crash_tender_dashboard.glb": { "materials": ["plastic-black"] },
+  "assets/models/airport_crash_tender_door.glb": { "materials": ["paint-lime-yellow", "plastic-black", "glass-clear"] },
+  "assets/models/airport_crash_tender_foam_tank.glb": { "materials": ["plastic-red"] },
+  "assets/models/airport_crash_tender_front_bumper.glb": { "materials": ["paint-charcoal", "plastic-black"] },
+  "assets/models/airport_crash_tender_front_panel.glb": { "materials": ["paint-lime-yellow", "plastic-black"] },
+  "assets/models/airport_crash_tender_lockers.glb": { "materials": ["plastic-black", "alu-bare", "steel-grey"] },
+  "assets/models/airport_crash_tender_pump.glb": { "materials": ["steel-grey", "paint-charcoal", "steel-stainless"] },
+  "assets/models/airport_crash_tender_rear_ladder.glb": { "materials": ["alu-bare", "steel-grey"] },
+  "assets/models/airport_crash_tender_rear_underrun.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/airport_crash_tender_roof_rail.glb": { "materials": ["alu-bare"] },
+  "assets/models/airport_crash_tender_roof_turret.glb": {
+    "materials": ["steel-grey", "paint-lime-yellow", "steel-stainless", "plastic-black"]
+  },
+  "assets/models/airport_crash_tender_roof_turret_mount.glb": { "materials": ["paint-charcoal", "steel-stainless"] },
+  "assets/models/airport_crash_tender_water_tank.glb": { "materials": ["polymer-black"] },
+  "assets/models/airport_crash_tender_windscreen.glb": { "materials": ["glass-clear"] },
+  "assets/models/alternator_heavy.glb": { "materials": ["alu-bare", "steel-spall-black"] },
+  "assets/models/alternator_light.glb": { "materials": ["alu-bare", "steel-spall-black"] },
+  "assets/models/alternator_medium.glb": { "materials": ["alu-bare", "steel-spall-black"] },
   "assets/models/ambulance_box.glb": { "materials": ["paint-charcoal", "paint-white", "paint-red", "glass-clear"] },
   "assets/models/ambulance_door_markings.glb": { "materials": ["reflective-yellow", "paint-green"] },
   "assets/models/ambulance_front_door.glb": {
@@ -53,8 +89,32 @@
   "assets/models/apc_periscope.glb": { "materials": ["steel-parkerized", "glass-grey"] },
   "assets/models/apc_ramp.glb": { "materials": ["paint-olive", "steel-parkerized"] },
   "assets/models/apc_rifle_rack.glb": { "materials": ["steel-grey"] },
+  "assets/models/apc_scifi_wheeled_axle.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/apc_scifi_wheeled_bench.glb": { "materials": ["cloth-seat", "steel-grey", "plastic-black"] },
+  "assets/models/apc_scifi_wheeled_cannon.glb": { "materials": ["paint-charcoal", "plastic-black"] },
+  "assets/models/apc_scifi_wheeled_controls.glb": {
+    "materials": ["paint-charcoal", "lens-smoke", "steel-grey", "plastic-black"]
+  },
+  "assets/models/apc_scifi_wheeled_driver_seat.glb": { "materials": ["steel-grey", "cloth-seat"] },
+  "assets/models/apc_scifi_wheeled_glacis.glb": { "materials": ["paint-fde"] },
+  "assets/models/apc_scifi_wheeled_grab_rail.glb": { "materials": ["steel-grey"] },
+  "assets/models/apc_scifi_wheeled_hull.glb": { "materials": ["paint-fde", "paint-charcoal"] },
+  "assets/models/apc_scifi_wheeled_launcher.glb": { "materials": ["paint-charcoal", "paint-fde", "plastic-black"] },
+  "assets/models/apc_scifi_wheeled_locker.glb": { "materials": ["steel-grey", "plastic-black"] },
+  "assets/models/apc_scifi_wheeled_pannier.glb": { "materials": ["paint-fde", "plastic-black", "steel-grey"] },
+  "assets/models/apc_scifi_wheeled_periscopes.glb": { "materials": ["paint-fde", "lens-smoke"] },
+  "assets/models/apc_scifi_wheeled_rack.glb": { "materials": ["paint-charcoal", "plastic-black"] },
+  "assets/models/apc_scifi_wheeled_ramp.glb": { "materials": ["paint-fde", "paint-charcoal", "steel-grey"] },
+  "assets/models/apc_scifi_wheeled_roof.glb": { "materials": ["paint-fde"] },
+  "assets/models/apc_scifi_wheeled_side_door.glb": { "materials": ["paint-fde", "paint-charcoal", "steel-grey"] },
+  "assets/models/apc_scifi_wheeled_sights.glb": { "materials": ["paint-fde", "lens-smoke", "paint-charcoal"] },
+  "assets/models/apc_scifi_wheeled_vision_block.glb": { "materials": ["lens-smoke"] },
+  "assets/models/apc_scifi_wheeled_weapon_station.glb": { "materials": ["paint-charcoal", "paint-fde"] },
   "assets/models/apc_stowage_bin.glb": { "materials": ["paint-olive", "steel-parkerized"] },
-  "assets/models/apc_turret.glb": { "materials": ["paint-olive", "steel-parkerized", "glass-grey"] },
+  "assets/models/apc_turret.glb": {
+    "materials": ["paint-olive", "steel-spall-black", "steel-parkerized", "glass-grey"]
+  },
+  "assets/models/apc_turret_core.glb": { "materials": ["paint-olive", "steel-spall-black", "steel-parkerized"] },
   "assets/models/apc_turret_ring.glb": { "materials": ["steel-parkerized"] },
   "assets/models/apc_wall_locker.glb": { "materials": ["paint-olive", "steel-grey"] },
   "assets/models/army_jeep_bonnet.glb": { "materials": ["paint-olive", "steel-spall-black", "paint-charcoal"] },
@@ -110,7 +170,10 @@
   "assets/models/beacon_blue.glb": { "materials": ["plastic-black", "plastic-blue"] },
   "assets/models/beam_axle_light.glb": { "materials": ["steel-grey"] },
   "assets/models/beam_axle_truck.glb": { "materials": ["steel-grey"] },
+  "assets/models/beam_axle_truck_bare.glb": { "materials": ["steel-grey"] },
   "assets/models/beam_axle_van.glb": { "materials": ["steel-grey"] },
+  "assets/models/beam_axle_wide.glb": { "materials": ["steel-grey"] },
+  "assets/models/beam_axle_wide_bare.glb": { "materials": ["steel-grey"] },
   "assets/models/bench_seat_2.glb": { "materials": ["steel-grey", "cloth-seat"] },
   "assets/models/bench_seat_3.glb": { "materials": ["steel-grey", "cloth-seat"] },
   "assets/models/bench_seat_low.glb": { "materials": ["cloth-seat"] },
@@ -120,7 +183,7 @@
   "assets/models/boat_trailer_mudguard.glb": { "materials": ["steel-galvanised"] },
   "assets/models/boat_trailer_outboard.glb": { "materials": ["paint-charcoal", "steel-grey", "alu-bare"] },
   "assets/models/boat_trailer_winch_post.glb": { "materials": ["steel-galvanised", "paint-charcoal", "rubber-black"] },
-  "assets/models/bottle_jack.glb": { "materials": ["steel-parkerized", "plastic-red", "steel-grey"] },
+  "assets/models/bofors_40mm_l70_autocannon.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
   "assets/models/box_truck_box_floor.glb": { "materials": ["wood-oak", "paint-charcoal"] },
   "assets/models/box_truck_box_front.glb": { "materials": ["paint-white"] },
   "assets/models/box_truck_box_roof.glb": { "materials": ["alu-bare"] },
@@ -141,11 +204,30 @@
   "assets/models/box_van_front.glb": { "materials": ["plastic-white"] },
   "assets/models/box_van_roof.glb": { "materials": ["plastic-white"] },
   "assets/models/box_van_side.glb": { "materials": ["plastic-white"] },
+  "assets/models/brake_backing_plate_heavy.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/brake_backing_plate_light.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/brake_backing_plate_medium.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/brake_caliper_heavy.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/brake_caliper_light.glb": { "materials": ["paint-red"] },
+  "assets/models/brake_disc_heavy.glb": { "materials": ["iron-dull", "iron-cast"] },
+  "assets/models/brake_disc_light.glb": { "materials": ["iron-dull", "iron-cast"] },
+  "assets/models/brake_drum_heavy.glb": { "materials": ["iron-cast"] },
+  "assets/models/brake_drum_light.glb": { "materials": ["iron-cast"] },
+  "assets/models/brake_drum_medium.glb": { "materials": ["iron-cast"] },
+  "assets/models/brake_shoe_assembly_heavy.glb": { "materials": ["paint-charcoal", "iron-dull", "iron-cast"] },
+  "assets/models/brake_shoe_assembly_light.glb": { "materials": ["paint-charcoal", "iron-dull", "iron-cast"] },
+  "assets/models/brake_shoe_assembly_medium.glb": { "materials": ["paint-charcoal", "iron-dull", "iron-cast"] },
+  "assets/models/brake_shoes_heavy.glb": { "materials": ["iron-dull"] },
+  "assets/models/brake_shoes_light.glb": { "materials": ["iron-dull"] },
+  "assets/models/brake_shoes_medium.glb": { "materials": ["iron-dull"] },
+  "assets/models/brake_wheel_cylinder_heavy.glb": { "materials": ["iron-cast"] },
+  "assets/models/brake_wheel_cylinder_light.glb": { "materials": ["iron-cast"] },
+  "assets/models/brake_wheel_cylinder_medium.glb": { "materials": ["iron-cast"] },
   "assets/models/bucket_truck_basket.glb": { "materials": ["plastic-yellow", "plastic-black", "paint-charcoal"] },
   "assets/models/bucket_truck_basket_rest.glb": { "materials": ["paint-charcoal", "plastic-black"] },
-  "assets/models/bucket_truck_chassis.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/bucket_truck_cone.glb": { "materials": ["plastic-hivis", "plastic-black"] },
   "assets/models/bucket_truck_cradle.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/bucket_truck_hydraulics.glb": { "materials": ["paint-white", "plastic-black", "steel-grey"] },
   "assets/models/bucket_truck_insulated_boom.glb": {
     "materials": ["plastic-yellow", "paint-charcoal", "plastic-black"]
   },
@@ -159,9 +241,67 @@
     "materials": ["alu-bare", "paint-charcoal", "plastic-red", "paint-white"]
   },
   "assets/models/bucket_truck_turret.glb": { "materials": ["paint-charcoal", "paint-white", "steel-grey"] },
+  "assets/models/bulldozer_blade.glb": { "materials": ["paint-crane-yellow", "steel-grey"] },
+  "assets/models/bulldozer_cab.glb": {
+    "materials": ["rubber-black", "paint-crane-yellow", "glass-clear", "plastic-black"]
+  },
+  "assets/models/bulldozer_cab_door.glb": { "materials": ["paint-crane-yellow", "glass-clear", "plastic-black"] },
+  "assets/models/bulldozer_deck.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
+  "assets/models/bulldozer_engine_panel.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
+  "assets/models/bulldozer_final_drive.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/bulldozer_fuel_tank.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/bulldozer_hood.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
+  "assets/models/bulldozer_lift_cylinder.glb": { "materials": ["paint-charcoal", "steel-stainless"] },
+  "assets/models/bulldozer_mainframe.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/bulldozer_push_arm.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
+  "assets/models/bulldozer_ripper.glb": { "materials": ["paint-charcoal", "paint-crane-yellow"] },
+  "assets/models/bulldozer_ripper_cylinder.glb": { "materials": ["paint-charcoal", "steel-stainless"] },
+  "assets/models/bulldozer_ripper_shank.glb": { "materials": ["paint-charcoal", "steel-grey"] },
+  "assets/models/bulldozer_track.glb": { "materials": ["steel-spall-black", "paint-charcoal", "steel-grey"] },
+  "assets/models/bulldozer_track_band.glb": { "materials": ["steel-spall-black", "paint-charcoal"] },
+  "assets/models/bulldozer_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/bus_seat_coach.glb": { "materials": ["paint-charcoal", "cloth-seat", "cloth-rag"] },
   "assets/models/bus_seat_pair.glb": { "materials": ["steel-stainless", "cloth-seat"] },
   "assets/models/bus_seat_single.glb": { "materials": ["steel-stainless", "cloth-seat"] },
+  "assets/models/cab_over_field_car_axle.glb": { "materials": ["paint-charcoal", "steel-spall-black"] },
+  "assets/models/cab_over_field_car_blackout_lamp.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/cab_over_field_car_cab_door.glb": {
+    "materials": ["paint-olive", "rubber-black", "steel-spall-black", "glass-clear"]
+  },
+  "assets/models/cab_over_field_car_crew_seat.glb": { "materials": ["polymer-black"] },
+  "assets/models/cab_over_field_car_dashboard.glb": { "materials": ["paint-charcoal", "steel-spall-black"] },
+  "assets/models/cab_over_field_car_door_mirror.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/cab_over_field_car_downpipe.glb": { "materials": ["steel-heat-tint"] },
+  "assets/models/cab_over_field_car_engine_cover.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/cab_over_field_car_frame.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/cab_over_field_car_front_bumper.glb": { "materials": ["paint-olive", "steel-spall-black"] },
+  "assets/models/cab_over_field_car_front_prop_shaft.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/cab_over_field_car_grille.glb": { "materials": ["steel-spall-black", "paint-olive"] },
+  "assets/models/cab_over_field_car_headlamp.glb": { "materials": ["paint-olive", "plastic-frosted"] },
+  "assets/models/cab_over_field_car_hull.glb": {
+    "materials": ["paint-olive", "paint-charcoal", "rubber-black", "glass-clear", "steel-spall-black"]
+  },
+  "assets/models/cab_over_field_car_jerry_can.glb": {
+    "materials": ["polymer-od-green", "steel-parkerized", "plastic-orange"]
+  },
+  "assets/models/cab_over_field_car_rear_bumper.glb": { "materials": ["paint-olive", "rubber-black"] },
+  "assets/models/cab_over_field_car_rear_door.glb": {
+    "materials": ["paint-olive", "glass-clear", "rubber-black", "steel-spall-black"]
+  },
+  "assets/models/cab_over_field_car_rear_prop_shaft.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/cab_over_field_car_side_door.glb": {
+    "materials": ["paint-olive", "steel-spall-black", "paint-charcoal", "rubber-black", "glass-clear"]
+  },
+  "assets/models/cab_over_field_car_spare_wheel.glb": {
+    "materials": ["steel-spall-black", "rubber-black", "paint-olive"]
+  },
+  "assets/models/cab_over_field_car_tail_lamp.glb": {
+    "materials": ["steel-spall-black", "plastic-red", "plastic-frosted"]
+  },
+  "assets/models/cab_over_field_car_transfer_case.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/cab_over_field_car_wheel.glb": { "materials": ["rubber-black", "paint-olive", "steel-spall-black"] },
+  "assets/models/cab_over_field_car_windscreen.glb": { "materials": ["rubber-black", "glass-clear"] },
+  "assets/models/cab_over_field_car_wiper.glb": { "materials": ["steel-spall-black"] },
   "assets/models/camper_van_curtains.glb": { "materials": ["cloth-sage"] },
   "assets/models/camper_van_front_door.glb": {
     "materials": ["paint-cream", "plastic-black", "glass-clear", "paint-green"]
@@ -225,6 +365,7 @@
   "assets/models/caravan_window_large.glb": { "materials": ["glass-clear", "plastic-charcoal"] },
   "assets/models/caravan_window_small.glb": { "materials": ["glass-clear", "plastic-charcoal"] },
   "assets/models/cargo_space.glb": { "materials": ["plastic-green"] },
+  "assets/models/catalytic_converter_light.glb": { "materials": ["steel-stainless"] },
   "assets/models/cement_mixer_chute.glb": { "materials": ["scrap-rusted", "steel-grey", "paint-crane-yellow"] },
   "assets/models/cement_mixer_drive.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
   "assets/models/cement_mixer_drum.glb": { "materials": ["paint-white", "plastic-orange", "steel-grey"] },
@@ -349,6 +490,7 @@
   },
   "assets/models/coach_side_window.glb": { "materials": ["glass-clear"] },
   "assets/models/coach_windscreen.glb": { "materials": ["glass-clear", "plastic-black"] },
+  "assets/models/coaxial_machine_gun_762.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
   "assets/models/combine_harvester_body.glb": {
     "materials": ["paint-green", "paint-charcoal", "steel-galvanised", "paint-white"]
   },
@@ -370,6 +512,19 @@
   "assets/models/combine_harvester_unloading_auger.glb": { "materials": ["paint-white", "paint-charcoal"] },
   "assets/models/combine_harvester_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/control_stick.glb": { "materials": ["plastic-black"] },
+  "assets/models/conventional_box_truck_bonnet.glb": { "materials": ["paint-police-blue"] },
+  "assets/models/conventional_box_truck_cab.glb": {
+    "materials": ["paint-police-blue", "paint-charcoal", "plastic-black", "cloth-rag"]
+  },
+  "assets/models/conventional_box_truck_chassis.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/conventional_box_truck_dashboard.glb": { "materials": ["plastic-black"] },
+  "assets/models/conventional_box_truck_door.glb": {
+    "materials": ["paint-police-blue", "plastic-black", "glass-clear"]
+  },
+  "assets/models/conventional_box_truck_front_bumper.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/conventional_box_truck_front_panel.glb": { "materials": ["steel-stainless", "plastic-black"] },
+  "assets/models/conventional_box_truck_windscreen.glb": { "materials": ["glass-clear"] },
+  "assets/models/conventional_box_truck_wing.glb": { "materials": ["paint-police-blue", "paint-charcoal"] },
   "assets/models/convertible_folded_hood.glb": { "materials": ["plastic-black", "cloth-black"] },
   "assets/models/convertible_front_door.glb": { "materials": ["paint-red", "plastic-black", "glass-clear"] },
   "assets/models/convertible_shell.glb": {
@@ -377,6 +532,9 @@
   },
   "assets/models/convertible_tail_lamp.glb": { "materials": ["plastic-red", "plastic-amber", "steel-bright"] },
   "assets/models/convertible_windscreen.glb": { "materials": ["glass-clear"] },
+  "assets/models/cooling_fan_heavy.glb": { "materials": ["plastic-black", "paint-charcoal"] },
+  "assets/models/cooling_fan_light.glb": { "materials": ["plastic-black"] },
+  "assets/models/cooling_fan_medium.glb": { "materials": ["plastic-black"] },
   "assets/models/coupe_bonnet.glb": { "materials": ["paint-graphite-metallic"] },
   "assets/models/coupe_boot_lid.glb": { "materials": ["paint-graphite-metallic"] },
   "assets/models/coupe_dashboard.glb": { "materials": ["plastic-black"] },
@@ -421,6 +579,29 @@
     "materials": ["paint-charcoal", "plastic-black", "paint-white", "plastic-grey", "cloth-rag", "paint-drum-blue"]
   },
   "assets/models/cube_van_side_door.glb": { "materials": ["paint-white", "plastic-black", "paint-drum-blue"] },
+  "assets/models/cv9040_ammo_rack.glb": { "materials": ["steel-grey", "paint-olive"] },
+  "assets/models/cv9040_engine_deck.glb": { "materials": ["paint-olive", "plastic-black"] },
+  "assets/models/cv9040_fuel_tank.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/cv9040_hull_belly.glb": { "materials": ["paint-olive", "steel-grey"] },
+  "assets/models/cv9040_hull_nose.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/cv9040_hull_rear.glb": { "materials": ["paint-olive"] },
+  "assets/models/cv9040_hull_roof.glb": { "materials": ["paint-olive"] },
+  "assets/models/cv9040_hull_side.glb": { "materials": ["paint-olive"] },
+  "assets/models/cv9040_rear_door.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/cv9040_road_arm.glb": { "materials": ["steel-parkerized"] },
+  "assets/models/cv9040_side_skirt.glb": { "materials": ["paint-olive"] },
+  "assets/models/cv9040_track.glb": {
+    "materials": ["steel-spall-black", "rubber-black", "steel-grey", "paint-charcoal"]
+  },
+  "assets/models/cv9040_track_band.glb": { "materials": ["steel-spall-black", "rubber-black"] },
+  "assets/models/cv9040_transmission.glb": { "materials": ["steel-grey", "steel-spall-black"] },
+  "assets/models/cv9040_troop_seat.glb": { "materials": ["cloth-seat", "steel-grey"] },
+  "assets/models/cv9040_turret.glb": {
+    "materials": ["paint-olive", "steel-spall-black", "steel-parkerized", "glass-grey"]
+  },
+  "assets/models/cv9040_turret_core.glb": { "materials": ["paint-olive", "steel-spall-black", "steel-parkerized"] },
+  "assets/models/cv9040_turret_ring.glb": { "materials": ["steel-parkerized"] },
+  "assets/models/de_dion_axle_small.glb": { "materials": ["steel-grey"] },
   "assets/models/dirt_bike_exhaust.glb": { "materials": ["steel-grey", "alu-bare"] },
   "assets/models/dirt_bike_fork.glb": { "materials": ["plastic-black", "steel-bright"] },
   "assets/models/dirt_bike_frame.glb": { "materials": ["steel-grey"] },
@@ -473,6 +654,9 @@
   "assets/models/double_decker_upper_window.glb": { "materials": ["glass-clear"] },
   "assets/models/double_decker_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/drive_belt.glb": { "materials": ["rubber-black", "paint-white"] },
+  "assets/models/drive_belt_heavy.glb": { "materials": ["rubber-black"] },
+  "assets/models/drive_belt_light.glb": { "materials": ["rubber-black"] },
+  "assets/models/drive_belt_medium.glb": { "materials": ["rubber-black"] },
   "assets/models/electric_box_truck_front_panel.glb": { "materials": ["paint-police-blue"] },
   "assets/models/electric_city_car_front_bumper.glb": {
     "materials": ["paint-drum-blue", "plastic-green", "plastic-black"]
@@ -493,16 +677,139 @@
   "assets/models/electric_crossover_tail_lamp.glb": { "materials": ["plastic-red"] },
   "assets/models/electric_crossover_tailgate.glb": { "materials": ["paint-white", "plastic-black", "glass-clear"] },
   "assets/models/electric_crossover_windscreen.glb": { "materials": ["glass-clear"] },
+  "assets/models/electric_microcar_front_bumper.glb": { "materials": ["paint-red", "plastic-green", "plastic-black"] },
+  "assets/models/electric_microcar_shell.glb": {
+    "materials": ["paint-charcoal", "plastic-black", "paint-red", "cloth-rag"]
+  },
   "assets/models/electric_saloon_front_bumper.glb": { "materials": ["paint-silver", "plastic-green", "plastic-black"] },
   "assets/models/electric_van_grille_panel.glb": { "materials": ["plastic-gloss-white"] },
-  "assets/models/engine_hoist.glb": { "materials": ["paint-charcoal", "plastic-blue", "steel-grey"] },
+  "assets/models/engine_i3_petrol.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_i3_petrol_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
   "assets/models/engine_i3_small.glb": { "materials": ["steel-grey", "paint-charcoal"] },
-  "assets/models/engine_i4_diesel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
-  "assets/models/engine_i4_petrol.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/engine_i4_diesel.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_i4_diesel_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
+  "assets/models/engine_i4_petrol.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_i4_petrol_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
   "assets/models/engine_i6_diesel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/engine_i6_heavy_diesel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/engine_i6_petrol.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_i6_petrol_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
+  "assets/models/engine_i6_petrol_large.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_i6_petrol_large_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
+  "assets/models/engine_v12_diesel_tank.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_v12_diesel_tank_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
   "assets/models/engine_v6_petrol.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/engine_v8_diesel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/engine_v8_diesel_heavy.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_v8_diesel_heavy_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
   "assets/models/engine_v8_petrol.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/engine_v8_petrol_medium.glb": {
+    "materials": [
+      "steel-grey",
+      "paint-charcoal",
+      "steel-heat-tint",
+      "steel-spall-black",
+      "alu-bare",
+      "polymer-black",
+      "plastic-black",
+      "rubber-black"
+    ]
+  },
+  "assets/models/engine_v8_petrol_medium_core.glb": {
+    "materials": ["steel-grey", "paint-charcoal", "steel-heat-tint", "steel-spall-black"]
+  },
+  "assets/models/engine_v8_turbo_diesel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/estate_bonnet.glb": { "materials": ["paint-oxblood"] },
   "assets/models/estate_dashboard.glb": { "materials": ["plastic-black"] },
   "assets/models/estate_front_bumper.glb": { "materials": ["paint-oxblood", "plastic-black"] },
@@ -531,14 +838,40 @@
   "assets/models/excavator_exhaust.glb": { "materials": ["steel-spall-black"] },
   "assets/models/excavator_house.glb": { "materials": ["paint-crane-yellow", "paint-charcoal", "paint-crane-yellow"] },
   "assets/models/excavator_track.glb": { "materials": ["steel-spall-black", "paint-charcoal", "steel-grey"] },
+  "assets/models/excavator_track_band.glb": { "materials": ["steel-spall-black", "paint-charcoal"] },
   "assets/models/excavator_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/exhaust_bus_rear.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
   "assets/models/exhaust_car.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_car_front_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_car_mid_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_car_tailpipe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_coupe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_coupe_front_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_coupe_mid_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_coupe_tailpipe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_estate.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_estate_front_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_estate_mid_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_estate_tailpipe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
   "assets/models/exhaust_long.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_microcar.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_microcar_front_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_microcar_mid_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_microcar_tailpipe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
   "assets/models/exhaust_military.glb": { "materials": ["steel-spall-black"] },
   "assets/models/exhaust_rusted.glb": { "materials": ["scrap-rusted"] },
+  "assets/models/exhaust_saloon.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_saloon_front_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_saloon_mid_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_saloon_tailpipe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_semi_tractor.glb": { "materials": ["steel-bright", "paint-charcoal", "steel-stainless"] },
+  "assets/models/exhaust_semi_tractor_front_pipe.glb": { "materials": ["steel-bright", "paint-charcoal"] },
+  "assets/models/exhaust_semi_tractor_tailpipe.glb": { "materials": ["steel-bright", "paint-charcoal"] },
   "assets/models/exhaust_side_high.glb": { "materials": ["steel-spall-black"] },
   "assets/models/exhaust_small.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
+  "assets/models/exhaust_small_front_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_small_mid_pipe.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/exhaust_small_tailpipe.glb": { "materials": ["steel-spall-black", "steel-stainless"] },
   "assets/models/exhaust_stack.glb": { "materials": ["steel-stainless", "paint-charcoal"] },
   "assets/models/exhaust_stack_small.glb": { "materials": ["steel-spall-black"] },
   "assets/models/fire_engine_body.glb": {
@@ -606,9 +939,21 @@
   "assets/models/forklift_tail_pipe.glb": { "materials": ["steel-spall-black"] },
   "assets/models/front_seat.glb": { "materials": ["steel-grey", "cloth-seat"] },
   "assets/models/front_strut.glb": { "materials": ["steel-grey", "paint-charcoal"] },
-  "assets/models/fuel_tank_car.glb": { "materials": ["polymer-black"] },
-  "assets/models/fuel_tank_truck.glb": { "materials": ["alu-bare"] },
-  "assets/models/fuel_tank_van.glb": { "materials": ["polymer-black"] },
+  "assets/models/fuel_filler_neck_heavy.glb": { "materials": ["alu-bare", "plastic-black"] },
+  "assets/models/fuel_filler_neck_light.glb": { "materials": ["steel-spall-black", "plastic-black"] },
+  "assets/models/fuel_pump_heavy.glb": { "materials": ["alu-bare", "steel-grey"] },
+  "assets/models/fuel_pump_light.glb": { "materials": ["alu-bare", "steel-grey"] },
+  "assets/models/fuel_pump_medium.glb": { "materials": ["alu-bare", "steel-grey"] },
+  "assets/models/fuel_tank_car.glb": { "materials": ["polymer-black", "steel-spall-black", "plastic-black"] },
+  "assets/models/fuel_tank_car_body.glb": { "materials": ["polymer-black"] },
+  "assets/models/fuel_tank_car_strap.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/fuel_tank_truck.glb": { "materials": ["alu-bare", "plastic-black", "steel-stainless"] },
+  "assets/models/fuel_tank_truck_body.glb": { "materials": ["alu-bare"] },
+  "assets/models/fuel_tank_truck_strap.glb": { "materials": ["steel-stainless"] },
+  "assets/models/fuel_tank_van.glb": { "materials": ["polymer-black", "steel-spall-black", "plastic-black"] },
+  "assets/models/fuel_tank_van_body.glb": { "materials": ["polymer-black"] },
+  "assets/models/fuel_tank_van_strap.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/galix_launcher_76mm.glb": { "materials": ["steel-parkerized", "paint-olive"] },
   "assets/models/gear_lever.glb": { "materials": ["rubber-black", "steel-grey", "polymer-black"] },
   "assets/models/gearbox_heavy.glb": { "materials": ["steel-grey"] },
   "assets/models/gearbox_inline.glb": { "materials": ["steel-grey"] },
@@ -629,6 +974,31 @@
   "assets/models/golf_cart_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/grab_pole.glb": { "materials": ["paint-crane-yellow"] },
   "assets/models/grab_pole_short.glb": { "materials": ["paint-crane-yellow"] },
+  "assets/models/half_track_bench.glb": { "materials": ["paint-olive", "cloth-olive-drab"] },
+  "assets/models/half_track_bogie.glb": { "materials": ["paint-olive", "steel-grey"] },
+  "assets/models/half_track_bumper.glb": { "materials": ["paint-olive"] },
+  "assets/models/half_track_cab_door.glb": { "materials": ["paint-olive", "steel-spall-black", "steel-parkerized"] },
+  "assets/models/half_track_dashboard.glb": { "materials": ["paint-olive", "steel-spall-black"] },
+  "assets/models/half_track_frame.glb": { "materials": ["steel-parkerized", "steel-grey"] },
+  "assets/models/half_track_front_axle.glb": { "materials": ["steel-grey"] },
+  "assets/models/half_track_front_fender.glb": { "materials": ["paint-olive"] },
+  "assets/models/half_track_fuel_tank.glb": { "materials": ["paint-olive", "steel-spall-black"] },
+  "assets/models/half_track_hood.glb": { "materials": ["paint-olive"] },
+  "assets/models/half_track_hull.glb": { "materials": ["paint-olive"] },
+  "assets/models/half_track_mine_rack.glb": { "materials": ["paint-olive"] },
+  "assets/models/half_track_pedestal.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
+  "assets/models/half_track_radiator_armour.glb": { "materials": ["paint-olive", "steel-spall-black"] },
+  "assets/models/half_track_rear_axle.glb": { "materials": ["steel-grey"] },
+  "assets/models/half_track_rear_door.glb": { "materials": ["paint-olive", "steel-spall-black", "steel-parkerized"] },
+  "assets/models/half_track_rear_shaft.glb": { "materials": ["steel-grey"] },
+  "assets/models/half_track_track.glb": {
+    "materials": ["rubber-black", "steel-spall-black", "paint-olive", "steel-grey"]
+  },
+  "assets/models/half_track_track_band.glb": { "materials": ["rubber-black", "steel-spall-black", "paint-olive"] },
+  "assets/models/half_track_transfer_case.glb": { "materials": ["steel-grey"] },
+  "assets/models/half_track_unditching_roller.glb": { "materials": ["paint-olive"] },
+  "assets/models/half_track_windscreen.glb": { "materials": ["paint-olive", "glass-clear"] },
+  "assets/models/half_track_windscreen_armour.glb": { "materials": ["paint-olive", "steel-parkerized"] },
   "assets/models/hatchback_bonnet.glb": { "materials": ["paint-oxblood"] },
   "assets/models/hatchback_dashboard.glb": { "materials": ["plastic-black"] },
   "assets/models/hatchback_engine.glb": { "materials": ["steel-grey", "paint-charcoal"] },
@@ -758,9 +1128,35 @@
     "materials": ["paint-charcoal", "plastic-black", "paint-white", "plastic-grey", "cloth-rag", "plastic-pink"]
   },
   "assets/models/ice_cream_van_side_door.glb": { "materials": ["paint-white", "plastic-black", "plastic-pink"] },
+  "assets/models/ifv_commander_sight.glb": { "materials": ["steel-parkerized", "paint-olive", "glass-grey"] },
+  "assets/models/ifv_gunner_sight.glb": { "materials": ["steel-parkerized", "paint-olive", "glass-grey"] },
+  "assets/models/ifv_turret_hatch.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/ifv_turret_periscope.glb": { "materials": ["steel-parkerized", "glass-grey"] },
   "assets/models/instrument_binnacle.glb": { "materials": ["plastic-black", "plastic-white"] },
   "assets/models/inverter_car.glb": { "materials": ["alu-bare", "paint-charcoal", "plastic-orange"] },
   "assets/models/inverter_large.glb": { "materials": ["alu-bare", "paint-charcoal", "plastic-orange"] },
+  "assets/models/kpvt_heavy_machine_gun.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
+  "assets/models/ksp_m39_machine_gun.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
+  "assets/models/light_4x4_truck_axle.glb": { "materials": ["steel-grey"] },
+  "assets/models/light_4x4_truck_cab.glb": {
+    "materials": ["paint-green", "paint-charcoal", "plastic-black", "cloth-rag"]
+  },
+  "assets/models/light_4x4_truck_chassis.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/light_4x4_truck_dashboard.glb": { "materials": ["plastic-black"] },
+  "assets/models/light_4x4_truck_door.glb": { "materials": ["paint-green", "plastic-black", "glass-clear"] },
+  "assets/models/light_4x4_truck_dropside.glb": { "materials": ["paint-green", "paint-charcoal"] },
+  "assets/models/light_4x4_truck_front_axle.glb": { "materials": ["steel-grey"] },
+  "assets/models/light_4x4_truck_front_bumper.glb": { "materials": ["paint-charcoal", "plastic-black"] },
+  "assets/models/light_4x4_truck_front_panel.glb": { "materials": ["paint-green", "plastic-black"] },
+  "assets/models/light_4x4_truck_front_shaft.glb": { "materials": ["steel-grey"] },
+  "assets/models/light_4x4_truck_mudguard.glb": { "materials": ["paint-charcoal", "rubber-black"] },
+  "assets/models/light_4x4_truck_platform.glb": { "materials": ["wood-pine", "paint-green", "paint-charcoal"] },
+  "assets/models/light_4x4_truck_rear_underrun.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/light_4x4_truck_spare_wheel.glb": { "materials": ["paint-charcoal", "rubber-black", "paint-green"] },
+  "assets/models/light_4x4_truck_tailgate.glb": { "materials": ["paint-green", "paint-charcoal"] },
+  "assets/models/light_4x4_truck_transfer_case.glb": { "materials": ["steel-grey"] },
+  "assets/models/light_4x4_truck_wheel.glb": { "materials": ["rubber-black", "paint-green", "paint-charcoal"] },
+  "assets/models/light_4x4_truck_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/light_bar_blue.glb": { "materials": ["plastic-black", "plastic-blue"] },
   "assets/models/light_tactical_vehicle_bed_floor.glb": { "materials": ["steel-spall-black"] },
   "assets/models/light_tactical_vehicle_bonnet.glb": { "materials": ["paint-sand", "steel-spall-black"] },
@@ -850,7 +1246,39 @@
     "materials": ["steel-bright", "lead", "tape-grey", "steel-grey", "copper", "plastic-black"]
   },
   "assets/models/marker_lamp.glb": { "materials": ["plastic-yellow"] },
+  "assets/models/mbt_ammo_rack.glb": { "materials": ["steel-grey", "paint-olive"] },
+  "assets/models/mbt_commander_sight.glb": { "materials": ["steel-parkerized", "paint-olive", "glass-grey"] },
+  "assets/models/mbt_engine_deck.glb": { "materials": ["paint-olive", "plastic-black"] },
+  "assets/models/mbt_fuel_tank.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/mbt_gunner_sight.glb": { "materials": ["steel-parkerized", "paint-olive", "glass-grey"] },
+  "assets/models/mbt_hull_belly.glb": { "materials": ["paint-olive", "steel-grey"] },
+  "assets/models/mbt_hull_nose.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/mbt_hull_rear.glb": { "materials": ["paint-olive", "plastic-black", "steel-parkerized"] },
+  "assets/models/mbt_hull_roof.glb": { "materials": ["paint-olive"] },
+  "assets/models/mbt_hull_side.glb": { "materials": ["paint-olive"] },
+  "assets/models/mbt_road_arm.glb": { "materials": ["steel-parkerized"] },
+  "assets/models/mbt_side_skirt.glb": { "materials": ["paint-olive", "rubber-black"] },
+  "assets/models/mbt_track.glb": { "materials": ["steel-spall-black", "rubber-black", "steel-grey", "paint-charcoal"] },
+  "assets/models/mbt_track_band.glb": { "materials": ["steel-spall-black", "rubber-black"] },
+  "assets/models/mbt_transmission.glb": { "materials": ["steel-grey", "steel-spall-black"] },
+  "assets/models/mbt_turret.glb": {
+    "materials": ["paint-olive", "steel-spall-black", "steel-parkerized", "glass-grey"]
+  },
+  "assets/models/mbt_turret_core.glb": { "materials": ["paint-olive", "steel-spall-black", "steel-parkerized"] },
+  "assets/models/mbt_turret_hatch.glb": { "materials": ["paint-olive", "steel-parkerized"] },
+  "assets/models/mbt_turret_periscope.glb": { "materials": ["steel-parkerized", "glass-grey"] },
+  "assets/models/mbt_turret_ring.glb": { "materials": ["steel-parkerized"] },
   "assets/models/metal_fan_blades.glb": { "materials": ["steel-galvanised", "steel-grey", "plastic-charcoal"] },
+  "assets/models/microcar_bonnet.glb": { "materials": ["paint-red"] },
+  "assets/models/microcar_dashboard.glb": { "materials": ["plastic-black"] },
+  "assets/models/microcar_front_bumper.glb": { "materials": ["paint-red", "plastic-black"] },
+  "assets/models/microcar_front_door.glb": { "materials": ["paint-red", "plastic-black", "glass-clear"] },
+  "assets/models/microcar_front_wing.glb": { "materials": ["paint-red"] },
+  "assets/models/microcar_rear_bumper.glb": { "materials": ["paint-red"] },
+  "assets/models/microcar_shell.glb": { "materials": ["paint-charcoal", "plastic-black", "paint-red", "cloth-rag"] },
+  "assets/models/microcar_tail_lamp.glb": { "materials": ["plastic-red"] },
+  "assets/models/microcar_tailgate.glb": { "materials": ["paint-red", "plastic-black", "glass-clear"] },
+  "assets/models/microcar_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/military_ambulance_box.glb": {
     "materials": ["paint-olive", "paint-charcoal", "paint-white", "paint-green", "steel-parkerized", "plastic-frosted"]
   },
@@ -864,6 +1292,7 @@
   "assets/models/military_cargo_truck_tilt.glb": {
     "materials": ["cloth-olive-drab", "cord-olive", "webbing-olive-dark"]
   },
+  "assets/models/military_truck_axle.glb": { "materials": ["steel-grey"] },
   "assets/models/military_truck_bonnet.glb": { "materials": ["paint-olive", "paint-charcoal"] },
   "assets/models/military_truck_cab.glb": { "materials": ["paint-olive", "paint-charcoal", "cloth-olive-drab"] },
   "assets/models/military_truck_chassis.glb": {
@@ -871,13 +1300,18 @@
   },
   "assets/models/military_truck_dashboard.glb": { "materials": ["paint-charcoal"] },
   "assets/models/military_truck_door.glb": { "materials": ["paint-olive", "glass-clear", "paint-charcoal"] },
+  "assets/models/military_truck_front_axle.glb": { "materials": ["steel-grey"] },
   "assets/models/military_truck_front_bumper.glb": { "materials": ["paint-olive", "steel-spall-black"] },
+  "assets/models/military_truck_front_shaft.glb": { "materials": ["steel-grey"] },
   "assets/models/military_truck_fuel_tank.glb": { "materials": ["paint-olive", "steel-spall-black"] },
   "assets/models/military_truck_grille.glb": { "materials": ["steel-spall-black", "paint-olive"] },
   "assets/models/military_truck_rear_bumper.glb": { "materials": ["steel-parkerized"] },
   "assets/models/military_truck_rear_mudguard.glb": {
     "materials": ["paint-olive", "steel-parkerized", "steel-spall-black"]
   },
+  "assets/models/military_truck_transfer_case.glb": { "materials": ["steel-grey"] },
+  "assets/models/military_truck_wheel.glb": { "materials": ["rubber-black", "steel-parkerized", "paint-charcoal"] },
+  "assets/models/military_truck_winch.glb": { "materials": ["steel-grey", "steel-parkerized"] },
   "assets/models/military_truck_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/military_truck_wing.glb": { "materials": ["paint-olive", "paint-charcoal", "steel-parkerized"] },
   "assets/models/minibus_front_door.glb": {
@@ -977,6 +1411,8 @@
     "materials": ["rubber-black", "steel-bright", "plastic-black", "alu-bare", "steel-stainless"]
   },
   "assets/models/mounting_plate.glb": { "materials": ["steel-grey"] },
+  "assets/models/muffler_heavy.glb": { "materials": ["steel-bright", "steel-stainless"] },
+  "assets/models/muffler_light.glb": { "materials": ["steel-spall-black"] },
   "assets/models/muscle_car_bonnet.glb": { "materials": ["paint-drum-blue", "plastic-black", "paint-white"] },
   "assets/models/muscle_car_boot_lid.glb": { "materials": ["paint-drum-blue", "paint-white"] },
   "assets/models/muscle_car_dashboard.glb": { "materials": ["plastic-black"] },
@@ -1008,6 +1444,7 @@
   "assets/models/pickup_bed_floor.glb": { "materials": ["paint-charcoal", "steel-grey"] },
   "assets/models/pickup_bed_front.glb": { "materials": ["paint-terracotta"] },
   "assets/models/pickup_bed_side.glb": { "materials": ["paint-terracotta"] },
+  "assets/models/pkt_machine_gun.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
   "assets/models/police_car_front_bumper.glb": { "materials": ["plastic-black"] },
   "assets/models/police_car_light_bar.glb": { "materials": ["plastic-black"] },
   "assets/models/police_car_push_bar.glb": { "materials": ["steel-grey"] },
@@ -1057,10 +1494,17 @@
   "assets/models/quad_bike_swing_arm.glb": { "materials": ["steel-spall-black", "iron-cast", "paint-red"] },
   "assets/models/quad_bike_tank.glb": { "materials": ["plastic-red", "steel-spall-black", "plastic-black"] },
   "assets/models/quad_bike_wheel.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
-  "assets/models/radiator_car.glb": { "materials": ["paint-charcoal"] },
-  "assets/models/radiator_small.glb": { "materials": ["paint-charcoal"] },
-  "assets/models/radiator_truck.glb": { "materials": ["paint-charcoal"] },
-  "assets/models/radiator_van.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/radiator_car.glb": { "materials": ["paint-charcoal", "plastic-black", "rubber-black"] },
+  "assets/models/radiator_car_core.glb": { "materials": ["paint-charcoal", "plastic-black"] },
+  "assets/models/radiator_hose_heavy.glb": { "materials": ["rubber-black"] },
+  "assets/models/radiator_hose_light.glb": { "materials": ["rubber-black"] },
+  "assets/models/radiator_hose_medium.glb": { "materials": ["rubber-black"] },
+  "assets/models/radiator_small.glb": { "materials": ["paint-charcoal", "plastic-black", "rubber-black"] },
+  "assets/models/radiator_small_core.glb": { "materials": ["paint-charcoal", "plastic-black"] },
+  "assets/models/radiator_truck.glb": { "materials": ["paint-charcoal", "alu-bare", "plastic-black", "rubber-black"] },
+  "assets/models/radiator_truck_core.glb": { "materials": ["paint-charcoal", "alu-bare"] },
+  "assets/models/radiator_van.glb": { "materials": ["paint-charcoal", "plastic-black", "rubber-black"] },
+  "assets/models/radiator_van_core.glb": { "materials": ["paint-charcoal", "plastic-black"] },
   "assets/models/rear_step_tread.glb": { "materials": ["steel-galvanised"] },
   "assets/models/refrigerated_van_cooling_unit.glb": {
     "materials": ["steel-grey", "plastic-gloss-white", "plastic-black"]
@@ -1101,6 +1545,13 @@
   "assets/models/rescue_truck_winch.glb": {
     "materials": ["paint-charcoal", "plastic-black", "steel-grey", "plastic-yellow"]
   },
+  "assets/models/rim_15_alloy.glb": { "materials": ["paint-silver", "paint-charcoal"] },
+  "assets/models/rim_15_alloy_narrow.glb": { "materials": ["paint-silver", "paint-charcoal"] },
+  "assets/models/rim_16_alloy.glb": { "materials": ["paint-silver", "paint-charcoal"] },
+  "assets/models/rim_20_steel.glb": { "materials": ["paint-olive", "paint-charcoal"] },
+  "assets/models/rim_22_5_steel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/rim_25_steel.glb": { "materials": ["steel-grey", "paint-charcoal"] },
+  "assets/models/rim_25_steel_wide.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/riot_van_door_grille.glb": { "materials": ["paint-charcoal"] },
   "assets/models/riot_van_door_markings.glb": { "materials": ["paint-police-blue", "reflective-yellow"] },
   "assets/models/riot_van_front_door.glb": {
@@ -1134,6 +1585,9 @@
   "assets/models/road_roller_step.glb": { "materials": ["paint-charcoal"] },
   "assets/models/road_roller_step_hanger.glb": { "materials": ["paint-charcoal"] },
   "assets/models/road_roller_water_tank.glb": { "materials": ["paint-crane-yellow", "paint-charcoal"] },
+  "assets/models/road_wheel_armoured.glb": { "materials": ["paint-charcoal", "rubber-black", "steel-grey"] },
+  "assets/models/road_wheel_band.glb": { "materials": ["paint-olive", "rubber-black", "steel-grey"] },
+  "assets/models/road_wheel_heavy.glb": { "materials": ["paint-charcoal", "rubber-black", "steel-grey"] },
   "assets/models/roof_vent.glb": { "materials": ["plastic-white", "plastic-frosted"] },
   "assets/models/saloon_bonnet.glb": { "materials": ["paint-silver"] },
   "assets/models/saloon_boot_lid.glb": { "materials": ["paint-silver"] },
@@ -1170,7 +1624,6 @@
   "assets/models/school_bus_side_window.glb": { "materials": ["glass-clear", "steel-grey"] },
   "assets/models/school_bus_stop_arm.glb": { "materials": ["steel-grey", "plastic-red"] },
   "assets/models/school_bus_windscreen.glb": { "materials": ["glass-clear", "plastic-black"] },
-  "assets/models/scissor_jack.glb": { "materials": ["steel-parkerized", "steel-grey", "paint-terracotta"] },
   "assets/models/scooter_cowl.glb": { "materials": ["paint-green", "plastic-black", "steel-bright"] },
   "assets/models/scooter_engine.glb": { "materials": ["alu-bare", "paint-charcoal"] },
   "assets/models/scooter_exhaust.glb": { "materials": ["steel-bright", "plastic-black"] },
@@ -1206,6 +1659,62 @@
   },
   "assets/models/security_van_side_door.glb": { "materials": ["paint-charcoal", "plastic-black", "reflective-yellow"] },
   "assets/models/security_van_side_door_bars.glb": { "materials": ["steel-grey"] },
+  "assets/models/security_walker_ankle_hoses.glb": { "materials": ["rubber-black", "steel-grey"] },
+  "assets/models/security_walker_ankle_ram_barrel.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/security_walker_ankle_ram_rod.glb": { "materials": ["steel-stainless"] },
+  "assets/models/security_walker_belly.glb": { "materials": ["paint-charcoal", "steel-gunmetal"] },
+  "assets/models/security_walker_face_guard.glb": {
+    "materials": ["paint-charcoal", "paint-signal-yellow", "paint-graphite"]
+  },
+  "assets/models/security_walker_flank_armour.glb": {
+    "materials": ["steel-gunmetal", "paint-signal-yellow", "paint-graphite"]
+  },
+  "assets/models/security_walker_foot.glb": { "materials": ["steel-gunmetal", "steel-gunmetal"] },
+  "assets/models/security_walker_hip_drive.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/security_walker_hip_hoses.glb": { "materials": ["rubber-black", "steel-grey"] },
+  "assets/models/security_walker_hip_ram_barrel.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/security_walker_hip_ram_rod.glb": { "materials": ["steel-stainless"] },
+  "assets/models/security_walker_hull.glb": {
+    "materials": ["steel-gunmetal", "paint-charcoal", "paint-signal-yellow", "paint-graphite"]
+  },
+  "assets/models/security_walker_hydraulic_pack.glb": { "materials": ["paint-charcoal", "steel-stainless"] },
+  "assets/models/security_walker_knee_hoses.glb": { "materials": ["rubber-black", "steel-grey"] },
+  "assets/models/security_walker_knee_ram_barrel.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/security_walker_knee_ram_rod.glb": { "materials": ["steel-stainless"] },
+  "assets/models/security_walker_pod_mount.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/security_walker_sensor_array.glb": {
+    "materials": ["plastic-black", "cell-glow-teal", "glass-lens-amber"]
+  },
+  "assets/models/security_walker_sensor_window.glb": { "materials": ["lens-smoke"] },
+  "assets/models/security_walker_shin.glb": { "materials": ["steel-gunmetal", "paint-charcoal"] },
+  "assets/models/security_walker_sleek_ammo_cassette.glb": {
+    "materials": ["steel-gunmetal", "paint-charcoal", "steel-grey", "plastic-black"]
+  },
+  "assets/models/security_walker_sleek_ammo_feed.glb": {
+    "materials": ["plastic-black", "steel-grey", "paint-charcoal"]
+  },
+  "assets/models/security_walker_sleek_carrier.glb": {
+    "materials": ["paint-charcoal", "steel-grey", "steel-gunmetal"]
+  },
+  "assets/models/security_walker_sleek_cooling_pack.glb": {
+    "materials": ["steel-gunmetal", "plastic-black", "steel-grey", "paint-charcoal"]
+  },
+  "assets/models/security_walker_sleek_floodlight.glb": {
+    "materials": ["paint-charcoal", "plastic-black", "plastic-frosted"]
+  },
+  "assets/models/security_walker_sleek_hull.glb": {
+    "materials": ["steel-gunmetal", "paint-charcoal", "plastic-black", "steel-grey"]
+  },
+  "assets/models/security_walker_sleek_roof_hatch.glb": {
+    "materials": ["steel-gunmetal", "steel-grey", "paint-charcoal"]
+  },
+  "assets/models/security_walker_sleek_rotor.glb": { "materials": ["steel-grey", "plastic-black"] },
+  "assets/models/security_walker_sleek_terrain_camera.glb": { "materials": ["paint-charcoal", "lens-smoke"] },
+  "assets/models/security_walker_tarsus.glb": { "materials": ["steel-gunmetal", "paint-charcoal"] },
+  "assets/models/security_walker_thigh.glb": { "materials": ["steel-gunmetal", "paint-charcoal"] },
+  "assets/models/security_walker_weapon_pod.glb": {
+    "materials": ["steel-gunmetal", "paint-charcoal", "plastic-black", "paint-signal-yellow", "paint-graphite"]
+  },
   "assets/models/semi_tractor_bonnet.glb": { "materials": ["paint-oxblood"] },
   "assets/models/semi_tractor_cab.glb": {
     "materials": ["paint-oxblood", "paint-charcoal", "plastic-black", "cloth-rag"]
@@ -1227,7 +1736,6 @@
   "assets/models/semi_tractor_sleeper.glb": {
     "materials": ["paint-charcoal", "paint-oxblood", "cloth-seat", "glass-clear"]
   },
-  "assets/models/semi_tractor_stack.glb": { "materials": ["steel-bright", "paint-charcoal"] },
   "assets/models/semi_tractor_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/semi_tractor_wing.glb": { "materials": ["paint-oxblood", "paint-charcoal"] },
   "assets/models/semi_trailer_chassis.glb": { "materials": ["paint-charcoal", "rubber-black"] },
@@ -1283,6 +1791,9 @@
   "assets/models/small_tractor_footboard.glb": { "materials": ["paint-charcoal"] },
   "assets/models/small_tractor_front_axle.glb": { "materials": ["iron-cast"] },
   "assets/models/small_tractor_roll_bar.glb": { "materials": ["paint-charcoal"] },
+  "assets/models/smoke_discharger_76mm.glb": { "materials": ["steel-parkerized", "paint-olive"] },
+  "assets/models/smoke_launcher_81mm.glb": { "materials": ["steel-parkerized", "paint-olive"] },
+  "assets/models/smoothbore_120mm_tank_gun.glb": { "materials": ["steel-parkerized", "steel-spall-black"] },
   "assets/models/spare_tire_carrier.glb": { "materials": ["paint-charcoal", "steel-grey", "steel-bright"] },
   "assets/models/spare_wheel_carrier.glb": { "materials": ["steel-grey", "rubber-black", "paint-charcoal"] },
   "assets/models/sports_car_bonnet.glb": { "materials": ["paint-signal-yellow", "satin-black"] },
@@ -1305,9 +1816,16 @@
   "assets/models/sports_car_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/sports_car_wishbone.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/spring.glb": { "materials": ["steel-parkerized"] },
+  "assets/models/starter_motor_heavy.glb": { "materials": ["paint-charcoal", "steel-grey"] },
+  "assets/models/starter_motor_light.glb": { "materials": ["paint-charcoal", "steel-grey"] },
+  "assets/models/starter_motor_medium.glb": { "materials": ["paint-charcoal", "steel-grey"] },
   "assets/models/steered_axle_drop.glb": { "materials": ["steel-grey"] },
+  "assets/models/steered_axle_drop_bare.glb": { "materials": ["steel-grey"] },
   "assets/models/steered_axle_heavy.glb": { "materials": ["steel-grey"] },
+  "assets/models/steered_axle_heavy_bare.glb": { "materials": ["steel-grey"] },
   "assets/models/steered_axle_medium.glb": { "materials": ["steel-grey"] },
+  "assets/models/steered_axle_wide.glb": { "materials": ["steel-grey"] },
+  "assets/models/steered_axle_wide_bare.glb": { "materials": ["steel-grey"] },
   "assets/models/steering_column.glb": { "materials": ["plastic-black"] },
   "assets/models/steering_column_short.glb": { "materials": ["plastic-black"] },
   "assets/models/steering_wheel.glb": { "materials": ["polymer-black", "plastic-black"] },
@@ -1510,6 +2028,27 @@
   },
   "assets/models/tow_truck_stabiliser.glb": { "materials": ["paint-crane-yellow", "steel-grey", "paint-charcoal"] },
   "assets/models/tow_truck_winch.glb": { "materials": ["plastic-black", "steel-hardened", "paint-crane-yellow"] },
+  "assets/models/track_idler_armoured.glb": { "materials": ["paint-charcoal", "rubber-black", "steel-grey"] },
+  "assets/models/track_idler_band.glb": { "materials": ["paint-olive", "steel-grey"] },
+  "assets/models/track_idler_compact.glb": { "materials": ["paint-charcoal", "steel-grey"] },
+  "assets/models/track_idler_crawler.glb": { "materials": ["paint-charcoal", "steel-grey"] },
+  "assets/models/track_idler_crawler_heavy.glb": { "materials": ["paint-charcoal", "steel-grey"] },
+  "assets/models/track_idler_heavy.glb": { "materials": ["paint-charcoal", "rubber-black", "steel-grey"] },
+  "assets/models/track_link_armoured.glb": { "materials": ["steel-spall-black", "rubber-black"] },
+  "assets/models/track_link_heavy.glb": { "materials": ["steel-spall-black", "rubber-black"] },
+  "assets/models/track_roller_band.glb": { "materials": ["paint-olive", "rubber-black", "steel-grey"] },
+  "assets/models/track_roller_compact.glb": { "materials": ["steel-grey"] },
+  "assets/models/track_roller_crawler.glb": { "materials": ["steel-grey"] },
+  "assets/models/track_roller_crawler_heavy.glb": { "materials": ["steel-grey"] },
+  "assets/models/track_roller_heavy.glb": { "materials": ["paint-charcoal", "rubber-black", "steel-grey"] },
+  "assets/models/track_shoe_crawler.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/track_shoe_crawler_heavy.glb": { "materials": ["steel-spall-black"] },
+  "assets/models/track_sprocket_armoured.glb": { "materials": ["steel-spall-black", "steel-grey"] },
+  "assets/models/track_sprocket_band.glb": { "materials": ["steel-spall-black", "steel-grey"] },
+  "assets/models/track_sprocket_compact.glb": { "materials": ["steel-spall-black", "steel-grey"] },
+  "assets/models/track_sprocket_crawler.glb": { "materials": ["steel-spall-black", "steel-grey"] },
+  "assets/models/track_sprocket_crawler_heavy.glb": { "materials": ["steel-spall-black", "steel-grey"] },
+  "assets/models/track_sprocket_heavy.glb": { "materials": ["steel-spall-black", "steel-grey"] },
   "assets/models/traction_motor_car.glb": { "materials": ["alu-bare", "plastic-orange"] },
   "assets/models/traction_motor_large.glb": { "materials": ["alu-bare", "plastic-orange"] },
   "assets/models/traction_motor_light.glb": { "materials": ["alu-bare", "plastic-orange"] },
@@ -1517,6 +2056,7 @@
   "assets/models/traction_pack_light.glb": { "materials": ["paint-charcoal", "plastic-orange"] },
   "assets/models/traction_pack_roof.glb": { "materials": ["plastic-black", "paint-white"] },
   "assets/models/traction_pack_roof_small.glb": { "materials": ["plastic-black", "paint-white"] },
+  "assets/models/traction_pack_small.glb": { "materials": ["paint-charcoal", "plastic-orange"] },
   "assets/models/traction_pack_van.glb": { "materials": ["paint-charcoal", "plastic-orange"] },
   "assets/models/tractor_bonnet.glb": { "materials": ["paint-green", "paint-charcoal"] },
   "assets/models/tractor_cab.glb": {
@@ -1531,6 +2071,7 @@
   "assets/models/tractor_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/trailer_axle_light.glb": { "materials": ["steel-grey"] },
   "assets/models/trailer_axle_truck.glb": { "materials": ["steel-grey"] },
+  "assets/models/trailer_axle_truck_bare.glb": { "materials": ["steel-grey"] },
   "assets/models/trailer_axle_van.glb": { "materials": ["steel-grey"] },
   "assets/models/trailer_coupling.glb": { "materials": ["steel-galvanised", "paint-charcoal", "plastic-black"] },
   "assets/models/trailer_jockey_wheel.glb": { "materials": ["rubber-black", "steel-galvanised", "paint-charcoal"] },
@@ -1549,8 +2090,19 @@
   "assets/models/trencher_track.glb": {
     "materials": ["rubber-black", "paint-charcoal", "steel-spall-black", "steel-grey"]
   },
+  "assets/models/trencher_track_band.glb": { "materials": ["rubber-black", "paint-charcoal"] },
   "assets/models/truck_battery_tray.glb": { "materials": ["steel-grey"] },
+  "assets/models/turret_bustle_rack.glb": { "materials": ["steel-parkerized"] },
+  "assets/models/turret_day_sight.glb": { "materials": ["steel-parkerized", "paint-olive", "glass-grey"] },
+  "assets/models/turret_hatch.glb": { "materials": ["paint-olive", "steel-parkerized"] },
   "assets/models/twist_beam.glb": { "materials": ["steel-grey"] },
+  "assets/models/tyre_165_65r15.glb": { "materials": ["rubber-black"] },
+  "assets/models/tyre_185_60r15.glb": { "materials": ["rubber-black"] },
+  "assets/models/tyre_18_00r25.glb": { "materials": ["rubber-black"] },
+  "assets/models/tyre_205_55r16.glb": { "materials": ["rubber-black"] },
+  "assets/models/tyre_295_80r22_5.glb": { "materials": ["rubber-black"] },
+  "assets/models/tyre_385_95r25.glb": { "materials": ["rubber-black"] },
+  "assets/models/tyre_8_25_20.glb": { "materials": ["rubber-black"] },
   "assets/models/utility_4x4_dashboard.glb": { "materials": ["paint-charcoal", "steel-spall-black"] },
   "assets/models/utility_4x4_face.glb": { "materials": ["paint-olive", "steel-spall-black"] },
   "assets/models/utility_4x4_frame.glb": { "materials": ["steel-parkerized", "steel-spall-black", "paint-olive"] },
@@ -1577,16 +2129,21 @@
   "assets/models/van_windscreen.glb": { "materials": ["glass-clear"] },
   "assets/models/wheel_11_2r24.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
   "assets/models/wheel_145r10.glb": { "materials": ["rubber-black", "steel-grey"] },
+  "assets/models/wheel_165_65r15.glb": { "materials": ["rubber-black", "paint-silver", "paint-charcoal"] },
   "assets/models/wheel_165_70r13.glb": { "materials": ["rubber-black", "steel-grey"] },
   "assets/models/wheel_16_9r30.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
+  "assets/models/wheel_185_60r15.glb": { "materials": ["rubber-black", "paint-silver", "paint-charcoal"] },
   "assets/models/wheel_185r14.glb": { "materials": ["rubber-black", "steel-grey"] },
-  "assets/models/wheel_205_55r16.glb": { "materials": ["rubber-black", "steel-grey"] },
+  "assets/models/wheel_18_00r25.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
+  "assets/models/wheel_205_55r16.glb": { "materials": ["rubber-black", "paint-silver", "paint-charcoal"] },
   "assets/models/wheel_225_60r17.glb": { "materials": ["rubber-black", "steel-grey"] },
   "assets/models/wheel_225_75r16c.glb": { "materials": ["rubber-black", "steel-grey"] },
   "assets/models/wheel_235_75r15.glb": { "materials": ["rubber-black", "steel-grey"] },
   "assets/models/wheel_265_75r16.glb": { "materials": ["rubber-black", "steel-grey"] },
-  "assets/models/wheel_295_80r22_5.glb": { "materials": ["rubber-black", "steel-grey"] },
+  "assets/models/wheel_295_80r22_5.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
+  "assets/models/wheel_385_95r25.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
   "assets/models/wheel_6_50r16_ag.glb": { "materials": ["rubber-black", "steel-grey", "paint-charcoal"] },
+  "assets/models/wheel_8_25_20.glb": { "materials": ["rubber-black", "paint-olive", "paint-charcoal"] },
   "assets/models/wheel_8r19_5.glb": { "materials": ["rubber-black", "steel-grey"] },
   "assets/models/wheel_military_16.glb": { "materials": ["rubber-black", "steel-parkerized", "paint-charcoal"] },
   "assets/models/wheel_military_22_5.glb": { "materials": ["rubber-black", "steel-parkerized", "paint-charcoal"] },

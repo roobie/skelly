@@ -37,16 +37,29 @@
           "up": [0.70710678118654757, -0.70710678118654757, 0]
         },
         "fingers": {
-          "part": "fingers",
+          "parts": [
+            "index",
+            "index2",
+            "index3",
+            "middle",
+            "middle2",
+            "middle3",
+            "ring",
+            "ring2",
+            "ring3",
+            "little",
+            "little2",
+            "little3"
+          ],
           "pivot": "knuckles"
         },
         "fore": {
-          "part": "fore",
+          "parts": ["fore"],
           "pivot": "elbow"
         },
         "grip": "grip",
         "hand": {
-          "part": "palm",
+          "parts": ["palm"],
           "pivot": "wrist"
         },
         "handPoses": {
@@ -101,17 +114,17 @@
         },
         "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
         "thumb": {
-          "part": "thumb",
+          "parts": ["thumb", "thumb2", "thumb3"],
           "pivot": "thumb_root"
         },
         "upper": {
-          "part": "upper",
+          "parts": ["upper"],
           "pivot": "shoulder"
         }
       },
       "attachmentFrames": {
         "clothing_body": {
-          "at": [0, -0.20000000000000001, 0],
+          "at": [0, -0.19870588235294118, 0],
           "insideView": false,
           "part": "body",
           "pivot": "spine",
@@ -191,7 +204,7 @@
           "turn": [0, 0, 0]
         },
         "torso": {
-          "at": [0, -0.20000000000000001, 0],
+          "at": [0, -0.19870588235294118, 0],
           "insideView": false,
           "part": "body",
           "pivot": "spine",
@@ -302,9 +315,6 @@
       },
       "outfits": {
         "lab_coat": {
-          "fingers": {
-            "skin": "#b6a597"
-          },
           "foot": {
             "skin": "#2d2622"
           },
@@ -312,6 +322,33 @@
             "skin": "#b6a597"
           },
           "head": {
+            "skin": "#b6a597"
+          },
+          "index": {
+            "skin": "#b6a597"
+          },
+          "index2": {
+            "skin": "#b6a597"
+          },
+          "index3": {
+            "skin": "#b6a597"
+          },
+          "little": {
+            "skin": "#b6a597"
+          },
+          "little2": {
+            "skin": "#b6a597"
+          },
+          "little3": {
+            "skin": "#b6a597"
+          },
+          "middle": {
+            "skin": "#b6a597"
+          },
+          "middle2": {
+            "skin": "#b6a597"
+          },
+          "middle3": {
             "skin": "#b6a597"
           },
           "neck": {
@@ -323,6 +360,15 @@
           "pelvis": {
             "underwear": "#585b62"
           },
+          "ring": {
+            "skin": "#b6a597"
+          },
+          "ring2": {
+            "skin": "#b6a597"
+          },
+          "ring3": {
+            "skin": "#b6a597"
+          },
           "shin": {
             "skin": "#585b62"
           },
@@ -330,6 +376,12 @@
             "skin": "#585b62"
           },
           "thumb": {
+            "skin": "#b6a597"
+          },
+          "thumb2": {
+            "skin": "#b6a597"
+          },
+          "thumb3": {
             "skin": "#b6a597"
           },
           "torso": {
@@ -340,9 +392,6 @@
           }
         },
         "police_uniform": {
-          "fingers": {
-            "skin": "#b39e8f"
-          },
           "foot": {
             "skin": "#121212"
           },
@@ -350,6 +399,33 @@
             "skin": "#b39e8f"
           },
           "head": {
+            "skin": "#b39e8f"
+          },
+          "index": {
+            "skin": "#b39e8f"
+          },
+          "index2": {
+            "skin": "#b39e8f"
+          },
+          "index3": {
+            "skin": "#b39e8f"
+          },
+          "little": {
+            "skin": "#b39e8f"
+          },
+          "little2": {
+            "skin": "#b39e8f"
+          },
+          "little3": {
+            "skin": "#b39e8f"
+          },
+          "middle": {
+            "skin": "#b39e8f"
+          },
+          "middle2": {
+            "skin": "#b39e8f"
+          },
+          "middle3": {
             "skin": "#b39e8f"
           },
           "neck": {
@@ -361,6 +437,15 @@
           "pelvis": {
             "underwear": "#232937"
           },
+          "ring": {
+            "skin": "#b39e8f"
+          },
+          "ring2": {
+            "skin": "#b39e8f"
+          },
+          "ring3": {
+            "skin": "#b39e8f"
+          },
           "shin": {
             "skin": "#232937"
           },
@@ -368,6 +453,12 @@
             "skin": "#232937"
           },
           "thumb": {
+            "skin": "#b39e8f"
+          },
+          "thumb2": {
+            "skin": "#b39e8f"
+          },
+          "thumb3": {
             "skin": "#b39e8f"
           },
           "torso": {
@@ -378,9 +469,6 @@
           }
         },
         "special_ops_uniform": {
-          "fingers": {
-            "skin": "#a99a8b"
-          },
           "foot": {
             "skin": "#17140f"
           },
@@ -388,6 +476,33 @@
             "skin": "#a99a8b"
           },
           "head": {
+            "skin": "#a99a8b"
+          },
+          "index": {
+            "skin": "#a99a8b"
+          },
+          "index2": {
+            "skin": "#a99a8b"
+          },
+          "index3": {
+            "skin": "#a99a8b"
+          },
+          "little": {
+            "skin": "#a99a8b"
+          },
+          "little2": {
+            "skin": "#a99a8b"
+          },
+          "little3": {
+            "skin": "#a99a8b"
+          },
+          "middle": {
+            "skin": "#a99a8b"
+          },
+          "middle2": {
+            "skin": "#a99a8b"
+          },
+          "middle3": {
             "skin": "#a99a8b"
           },
           "neck": {
@@ -399,6 +514,15 @@
           "pelvis": {
             "underwear": "#363b2e"
           },
+          "ring": {
+            "skin": "#a99a8b"
+          },
+          "ring2": {
+            "skin": "#a99a8b"
+          },
+          "ring3": {
+            "skin": "#a99a8b"
+          },
           "shin": {
             "skin": "#363b2e"
           },
@@ -406,6 +530,12 @@
             "skin": "#363b2e"
           },
           "thumb": {
+            "skin": "#a99a8b"
+          },
+          "thumb2": {
+            "skin": "#a99a8b"
+          },
+          "thumb3": {
             "skin": "#a99a8b"
           },
           "torso": {

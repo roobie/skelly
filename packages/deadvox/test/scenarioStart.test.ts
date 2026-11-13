@@ -14,7 +14,9 @@ import { defaultStartOf } from './fixtures/scenario.ts';
 import { withTerrainBoxes } from './fixtures/terrain.ts';
 
 const registry = baseRegistry();
-const profile = [...registry.scenarios.values()].find((row) => row.composition)!;
+const profile = [...registry.scenarios.values()]
+  .filter((row) => row.kind === 'assembledCity')
+  .find((row) => row.composition)!;
 const grid = cityGridOf(registry, profile.city);
 const placement = defaultStartOf(registry, profile);
 const plan = buildCityPlan({
@@ -127,7 +129,10 @@ it('requires a placement on every start of a composed scenario and refuses one e
   expect(startIssues(withStart(bare)).filter(({ path }) => path === '.placement')).toEqual([
     { id: bare.id, path: '.placement', message: expect.stringContaining(profile.id) },
   ]);
-  const elsewhere = [...registry.starts.values()].find((row) => !registry.scenarios.get(row.site)?.composition)!;
+  const elsewhere = [...registry.starts.values()].find((row) => {
+    const scenario = registry.scenarios.get(row.site);
+    return scenario?.kind !== 'assembledCity' || !scenario.composition;
+  })!;
   expect(startIssues(withStart({ ...elsewhere, placement })).filter(({ path }) => path === '.placement')).toHaveLength(
     1,
   );
