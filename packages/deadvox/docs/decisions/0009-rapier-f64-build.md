@@ -24,6 +24,6 @@ Pin the f64 supply. Upgrade only on maintainer demand, under `AGENTS.md`, "Depen
 
 ## Consequences
 
-One binary identity, one initialization path and one API version serve the physics consumers. Project ownership covers the double-precision bindings and reproducible supply rather than a fork of the upstream solver.
+One binary identity, one initialization path and one API version serve the physics consumers. Project ownership covers the double-precision bindings and reproducible supply rather than a fork of the upstream solver. The supply is reached only through the core seam (`src/core/rapier.ts`, `awaitRapier`), and its WASM bytes, bindings and provenance are hashed into the simulation fingerprint, so a build with an unaccounted Rapier supply fails the fingerprint check.
 
 Engine selection does not prove a complete driving implementation. Collision-work bounds, save/replay continuation, unattended motion and integration with position-driven residency still require evidence under [ADR 0008](0008-deterministic-world.md). The sphere probes establish only the narrow findings in `docs/vehicle-feasibility.md`, "Driving probes"; they do not establish wheels, steering, rollover or mass-placement handling.
