@@ -29,9 +29,9 @@ local flimsyPry = woodDoor.door.methods.pry + {
   level: 1, timeSimSeconds: 6, fastestTimeSimSeconds: 3,
 };
 local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pry.timeSimSeconds;
-// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a pry bar saves more nails.
+// A whole piece taken apart recovers a skill-rolled share of its wood and nails; a take-apart yield is
+// skill-rolled only, so no tool changes it (`packages/deadvox/docs/crafting.md`, "Work and progression").
 local recovered = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
-local pryBonus = { quality: 'prying', bonusByLevel: [0.1, 0.2] };
 local takeApart(minutes, offcuts, nails) = {
   takeApart: {
     yield: {
@@ -39,7 +39,7 @@ local takeApart(minutes, offcuts, nails) = {
       skill: 'crafting',
       yields: [
         { item: 'wood_offcut', count: offcuts, fractions: recovered, rounding: 'floor' },
-        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor', toolModifier: pryBonus },
+        { item: 'nails', count: nails, fractions: recovered, rounding: 'floor' },
       ],
     },
   },
