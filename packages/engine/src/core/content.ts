@@ -2464,9 +2464,7 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
     }
     if (
       material.rubble.length === 0 &&
-      registry.blocks.some(
-        (block) => block.solid && block.material === material.id && block.id !== material.fallsTo,
-      )
+      registry.blocks.some((block) => block.solid && block.material === material.id && block.id !== material.fallsTo)
     ) {
       report('blockMaterials', material.id, '.rubble', 'breakable materials need a yield');
     }
