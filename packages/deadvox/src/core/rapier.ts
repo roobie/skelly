@@ -1,4 +1,4 @@
-// The only importer of the vendored Rapier f64 supply (`vendor/rapier-f64`): the one place the physics binary
+// Product code's only importer of the vendored Rapier f64 supply (`vendor/rapier-f64`): the one place the physics binary
 // and its generated bindings enter the game, so every consumer shares one module instance and one binary
 // identity (`docs/decisions/0009-rapier-f64-build.md`, "Decision"). The engine and presentation packages reach
 // no product file (`docs/decisions/0009-content-defined-products.md`, "Package boundaries"), so wiring hands

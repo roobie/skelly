@@ -60,6 +60,7 @@ const hash = (sources: FixtureSources, ...entryPaths: string[]) =>
 const entries = ['src/core/sim.ts'];
 const UNRESOLVED_DEPENDENCY_ERROR = /Cannot resolve runtime dependency/;
 const UNSUPPORTED_ID_ERROR = /Unsupported virtual runtime dependency|resolves outside src\//;
+const RAPIER_SEAM_ERROR = /vendored Rapier supply.*src\/core\/rapier\.ts/;
 const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
 const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
@@ -433,6 +434,17 @@ describe('simulation source fingerprint', () => {
     );
     expect(fingerprintSimulationSourceMap(mutated)).not.toBe(original);
     expect(fingerprintSimulationSourceMap(new Map(graph.sources))).toBe(original);
+  });
+
+  it('rejects a vendor import outside the supply seam', async () => {
+    const bypass: FixtureSources = new Map<string, string | Uint8Array>([
+      [`${root}/src/core/bypass.ts`, "export * from '../../vendor/rapier-f64/rapier.js';\n"],
+      [`${root}/vendor/rapier-f64/rapier.js`, 'export const api = 1;\n'],
+      [`${root}/vendor/rapier-f64/provenance.json`, '{}'],
+    ]);
+    await expect(collectSimulationSourceGraph([`${root}/src/core/bypass.ts`], root, hostFor(bypass))).rejects.toThrow(
+      RAPIER_SEAM_ERROR,
+    );
   });
 
   it('ignores ragdoll tuning', async () => {

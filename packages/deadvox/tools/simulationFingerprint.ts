@@ -73,7 +73,7 @@ export const SIMULATION_ENTRIES = [
   'engine/game/session.ts',
   'engine/game/simulationStepper.ts',
   'engine/game/worldSetup.ts',
-  // The Rapier f64 supply decides physics results; its only importer, the supply seam, carries the vendored
+  // The Rapier f64 supply decides physics results; its only permitted importer, the supply seam, carries the
   // binaries into simulation identity until a consumer's import reaches them on its own.
   'src/core/rapier.ts',
 ] as const;
@@ -201,6 +201,8 @@ const LINE_ENDING_PATTERN = /\r\n?/g;
 /** The vendored Rapier supply's relative-path prefix and its provenance manifest. */
 const RAPIER_SUPPLY_PREFIX = 'vendor/rapier-f64/';
 const RAPIER_PROVENANCE_RELATIVE_PATH = 'vendor/rapier-f64/provenance.json';
+/** The supply seam: the only module outside the vendored supply whose imports may reach it. */
+const RAPIER_SEAM_RELATIVE_PATH = 'src/core/rapier.ts';
 
 function comparePaths(left: string, right: string): number {
   if (left < right) {
@@ -409,6 +411,7 @@ function trackableModuleFor(
       `Runtime dependency resolves outside src/, the engine's and presentation's src/, the submodule's thing-core and models sources, the vendored Rapier supply and node_modules: ${file}`,
     );
   }
+  assertRapierSupplyReachedThroughSeam(relativePath, importer, context);
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;
   }
@@ -434,6 +437,30 @@ function trackableModuleFor(
     throw new Error(`Unsupported runtime dependency: ${relativePath}`);
   }
   return { file, relativePath, binary: false };
+}
+
+/**
+ * The vendored supply enters an identity graph only through its seam: the seam imports the bindings, and the
+ * supply's own generated files reach each other and the WASM. Any other importer — a graph entry included —
+ * bypasses the shared initialization and binary identity, so it fails the check rather than fingerprinting.
+ */
+function assertRapierSupplyReachedThroughSeam(
+  dependency: string,
+  importer: string | undefined,
+  context: Pick<GraphWalkContext, 'projectRoot' | 'sourceRoot'>,
+): void {
+  if (!dependency.startsWith(RAPIER_SUPPLY_PREFIX)) {
+    return;
+  }
+  const importerPath =
+    importer === undefined ? undefined : sourceRelativePath(context.projectRoot, context.sourceRoot, importer);
+  if (importerPath !== RAPIER_SEAM_RELATIVE_PATH && importerPath?.startsWith(RAPIER_SUPPLY_PREFIX) !== true) {
+    throw new Error(
+      `Runtime dependency ${dependency} is the vendored Rapier supply; only ${RAPIER_SEAM_RELATIVE_PATH} and the supply's own modules may import it, not ${
+        importerPath ?? 'a graph entry'
+      }`,
+    );
+  }
 }
 
 /** Resolve the runtime import graph using the caller's Vite resolver. */
