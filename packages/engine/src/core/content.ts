@@ -932,13 +932,13 @@ const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry,
       continue;
     }
     const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
-    for (const [coverIndex, part] of (entry.covers ?? []).entries()) {
-      if (!registry.models.get(model)?.parts?.[part]) {
+    for (const [coverIndex, name] of (entry.covers ?? []).entries()) {
+      if (!(registry.models.get(model)?.parts?.[name] || figure.pieces?.[frame.part]?.includes(name))) {
         report(
           'items',
           item.id,
           `${path}.covers[${coverIndex}]`,
-          `figure "${figure.id}": model "${model}" has no part "${part}"`,
+          `figure "${figure.id}": model "${model}" has no part or region "${name}"`,
         );
       }
     }

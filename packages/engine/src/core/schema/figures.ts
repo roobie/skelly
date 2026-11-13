@@ -186,6 +186,11 @@ export const FigureSchema = strictObject({
       insideView: vBoolean(),
     }),
   ),
+  /**
+   * The named regions each figure part's model is drawn in (a mesh's `piece`), keyed by the part an
+   * attachment frame sits on. A worn model may cover a region instead of the whole part.
+   */
+  pieces: optional(record(Id, array(Id))),
   /** Both leg models' rig; the two legs share it because each is the mirror of the other. */
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
