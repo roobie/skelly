@@ -38,6 +38,7 @@
         "/test/browser/interaction-marker-lighting.ts",
         "/test/browser/water-depth.ts",
         "/test/browser/gauntlet-doors.mjs",
+        "/test/fixtures/vehicleRapierReplay.ts",
         "/src/feasibility/runner.ts",
         "/tools/rapier-f64/candidate.ts",
         // A stage's dev server serves this browser URL as the game's own engine module; see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`.
