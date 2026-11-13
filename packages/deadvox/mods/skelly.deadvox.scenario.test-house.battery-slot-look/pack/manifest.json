@@ -1,0 +1,15 @@
+{
+  "dependencies": ["skelly.deadvox.scenario.test-house.debug", "skelly.electric-power", "skelly.wearables"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.test-house.battery-slot-look",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

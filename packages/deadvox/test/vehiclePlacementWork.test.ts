@@ -67,6 +67,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     search: unexpected,
     work: unexpected,
     loadBattery: unexpected,
+    unloadBattery: unexpected,
     toHands: unexpected,
     pickup: unexpected,
     interact: unexpected,
