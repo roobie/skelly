@@ -869,7 +869,6 @@
           "radius": "radius {radius} m",
           "seed": "seed {seed}",
           "speed": "×{speed}",
-          "sprinting": "(sprinting)",
           "stamina": "stamina {value}%",
           "walking": "walking ({key})",
           "water": "water {value}%"

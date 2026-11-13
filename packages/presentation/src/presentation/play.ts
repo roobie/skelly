@@ -2408,7 +2408,6 @@ const startPlayWith = (
       health: sim.body.health,
       blood: sim.body.blood,
       bleeding: bleedingStatusRows((region) => sim.body.bleedingTier(region)),
-      sprinting: session.sprinting,
       lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
     };
   };
