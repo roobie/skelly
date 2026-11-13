@@ -260,3 +260,24 @@ it('refuses completing a cell repair whose block was destroyed, returning the es
   r.hooks.finish(r.uid);
   expect(returned(r)).toEqual(r.exact);
 });
+
+it('refuses a replaced block of the same type as a repair target, returning the escrow once', () => {
+  const r = start(AMOUNT + 7);
+  const pinned = r.world.blockDamage.get(CELL)!.epoch;
+  r.sim.actions.stop();
+  r.world.setBlock(CELL[0], CELL[1], CELL[2], 0);
+  r.world.setBlock(CELL[0], CELL[1], CELL[2], registry.blockIds.get(BLOCK)!);
+  expect(r.world.blockDamage.get(CELL)).toBeUndefined();
+  r.world.blockDamage.record(terrainOf(r.world), registry, CELL, AMOUNT + 3);
+  const replacement = r.world.blockDamage.get(CELL)!;
+  expect(replacement.epoch).not.toBe(pinned);
+  const reason = r.hooks.validate(r.uid);
+  expect(reason).toBeDefined();
+  expect(r.hooks.finish(r.uid)).toBe(reason);
+  expect(r.world.blockDamage.get(CELL)).toEqual(replacement);
+  expect(returned(r)).toEqual(r.exact);
+  expect(r.inventory.itemByUid(r.uid)).toBeUndefined();
+  expect(r.inventory.hands.right).toBeFalsy();
+  r.hooks.finish(r.uid);
+  expect(returned(r)).toEqual(r.exact);
+});
