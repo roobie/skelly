@@ -40,6 +40,15 @@
     },
     {
       "category": "material",
+      "id": "rubble_stone",
+      "model": "stone_eggshell_shard",
+      "name": "Rubble stone",
+      "size": [1, 1],
+      "stack": 6,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
       "id": "stick",
       "model": "stick",
       "name": "Stick",

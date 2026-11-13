@@ -31,6 +31,12 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
+      "id": "rubble_stone",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "stick",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
