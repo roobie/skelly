@@ -1,5 +1,13 @@
 import type { ActorFigureFile } from '@skelly/engine/content';
-import { bodySkeleton, decodeFrame, figureVariantOf, type Pose, quatToMat3, sampleClip, severedBoneSet } from '@skelly/engine/pose';
+import {
+  bodySkeleton,
+  decodeFrame,
+  figureVariantOf,
+  type Pose,
+  quatToMat3,
+  sampleClip,
+  severedBoneSet,
+} from '@skelly/engine/pose';
 import { reachTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { RagdollWorld, ragdollGroups, ragdollMotion } from '@skelly/presentation/internal/render/ragdoll.ts';

@@ -111,7 +111,7 @@ describe('actor figure file checks', () => {
     ]);
   });
 
-  it("reports a type that falls by its baked death fall while its figure bakes no death pair", () => {
+  it('reports a type that falls by its baked death fall while its figure bakes no death pair', () => {
     const { registry, key, body, clips } = shamblerRow();
     const shambler = registry.actors.get('shambler')!;
     expect(clips.standing?.death).toBeUndefined(); // the fixture figure bakes no fall
