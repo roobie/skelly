@@ -487,7 +487,6 @@ local muscleCar = [
     part('box_van_side', 'Box van side wall', pileSize, ['protection']),
     part('box_van_front', 'Box van front wall', pileSize, ['protection']),
     part('box_van_roof', 'Box van roof', pileSize, ['protection']),
-    part('battery_tray', 'Battery tray', [3, 2], ['structure']),
     part('beacon_blue', 'Blue beacon', [2, 2], ['light']),
     part('beam_axle_light', 'Live axle', [12, 3], ['driven', 'structure']),
     part('bench_seat_2', 'Two-seat rear bench', pileSize, ['seat']),

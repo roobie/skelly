@@ -1843,12 +1843,6 @@
       "usage": []
     },
     {
-      "id": "battery_tray",
-      "notLoot": false,
-      "tiers": [],
-      "usage": []
-    },
-    {
       "id": "beacon_blue",
       "notLoot": false,
       "tiers": [],
