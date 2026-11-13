@@ -98,25 +98,66 @@ No option is selected. Tech debt means future rework caused by a shortcut, not
 build size; see `GLOSSARY.md`, "Tech debt" (repo root). Negative space names what
 an option leaves out. Each question blocks only the build slice that needs it.
 
+### Catalogue scale
+
+> We must take into account that there'll likely be thousands of recipes pretty soon, so the menus, filtering and querying must reflect that
+
+The #1469 catalogue must remain useful with thousands of known recipes. Compact,
+bounded result pages, visible result counts and position, and persistent query
+and filter context belong to either Q1 option. Only the selected recipe expands
+requirements, so catalogue size does not multiply requirement controls or run a
+full craft projection for every displayed name. Page size is content tuning,
+not a fixed value in this plan. Unknown recipes remain outside the catalogue.
+
+Q6 supplies the finding controls independently of Q1's review placement. Search
+uses result names and authored search terms; category and tag selections narrow
+that query, and active constraints remain visible and removable. A category
+branch includes its descendants. Category and tag menus must themselves be
+searchable and bounded, rather than replacing a long recipe list with a long
+filter list. Empty results keep the controls available so a player can loosen
+the query without losing it. No new classification or semantic-search service
+is assumed: see `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`,
+`RecipeCategorySchema` and `RecipeTagSchema`.
+
+Affordability is not a second UI rule. Metadata narrowing precedes any requested
+makeable-only evaluation; that evaluation uses the shared planner, not a full
+catalogue scan on each repaint. Incomplete evaluation must not claim an exact
+makeable count. Reach changes cannot silently start another recipe or lose the
+selected review, and Start still revalidates. See
+`packages/engine/src/core/crafting.ts`, `planCraft`, and
+`packages/presentation/src/ui/craftReadout.ts`, `craftRows`. Implementation must
+measure large-catalogue query and feasibility work before promising live counts.
+
 ### Q1. How does a player choose a crafting recipe?
 
 The world vertical already has a target and operation from the ring; it needs no
-recipe catalogue. Both choices below retain that vertical and the shared rows.
+recipe catalogue. Both choices retain that vertical and the shared rows. Expanded
+reviews are not a catalogue-browsing unit: at thousands of recipes they bury the
+next choice under unrelated requirements. A result is a compact recipe name;
+its inputs appear only when selected.
 
-**A. Catalogue beside one selected review.** Crafting has a recipe selector and
-one review pane; world work uses the review without the catalogue.
-- Tech debt: none inherent; selection is presentation state, not a second work owner.
-- Negative space: no simultaneous comparison of expanded recipes.
-- WTF (player): selecting a recipe is an extra step before reading its inputs.
-- Build cost: moderate; selection, focus retention and a catalogue layout.
+**A. Paged catalogue beside one selected review.** Query and filters remain above
+a compact results pane; page navigation and result position stay with it. A
+selection updates the adjacent review without replacing the catalogue.
+- Tech debt: none inherent; bounded results and one review avoid a throwaway
+  small-catalogue renderer or duplicate work owner.
+- Negative space: less width for browsing and reviewing than a dedicated page;
+  no simultaneous expanded-recipe comparison.
+- WTF (player): a long recipe name wraps in the list while its review takes most
+  of the width.
+- Build cost: moderate; bounded results, stable identity selection and query,
+  filter, page and focus retention alongside a live review.
 
-**B. A scrolling list of expanded recipe reviews.** Each recipe uses the shared
-rows; only the actively entered group's fixed alternatives column is populated.
-- Tech debt: none inherent if both contexts share the renderer; preserving two
-  requirement renderers as a shortcut would create drift and is not admitted.
-- Negative space: no compact overview once many recipes are known.
-- WTF (player): reaching a later recipe means scrolling past unrelated requirements.
-- Build cost: moderate; keeping the active row and fixed column associated while scrolling.
+**B. Paged catalogue followed by a dedicated review.** Query, filters and compact
+results occupy the browsing surface. Choosing a recipe opens its review in that
+same Crafting tab; Back restores query, filters, result page and focused recipe.
+- Tech debt: none inherent if this uses the shared review rather than copying it;
+  retaining the entire expanded catalogue behind the review would be shortcut debt.
+- Negative space: catalogue and requirements are not visible together; no
+  simultaneous expanded-recipe comparison.
+- WTF (player): comparing another recipe requires returning to the results first.
+- Build cost: moderate; browse/review navigation, retained result context and
+  focus restoration when a filter or reachable stock changes.
 
 ### Q2. Where do target, time, blockers and Start sit?
 
@@ -210,24 +251,41 @@ materials; an explicitly opened source detail lists vessels and planned draws.
 - WTF (player): changing a liquid alternative affects a source detail elsewhere.
 - Build cost: moderate; association, scrolling and focus restoration between the controls.
 
-### Q6. How much recipe finding belongs in the joint shipment?
+### Q6. How does a player narrow a large known catalogue?
 
-This does not alter recipe knowledge or input affordability. A missing requirement
-must not become a hidden recipe unless the player explicitly requests that filter.
+Both options combine text query, authored category hierarchy and tags, and an
+explicit makeable-only filter. Name-only search leaves a player who does not
+know the desired name browsing thousands of results, so it is not a complete
+finding option. Missing requirements hide no recipe unless makeable-only is
+selected. Result counts, bounded pages and removable active filters remain
+visible under either Q1 layout. Neither option adds favourites, inferred tags,
+fuzzy matching or a query-language grammar.
 
-**A. Search only.** Match known recipe names, leaving categories, favourites and
-makeable-only filtering for a separate #1469 decision after the joint look.
-- Tech debt: none; a bounded complete search is not a throwaway catalogue.
-- Negative space: no favourite list, category browsing or makeable-only shortcut.
-- WTF (player): remembering a recipe name is easier than discovering an unfamiliar one.
-- Build cost: lower; query, empty result and focus retention.
+**A. Browse-first facets with search.** A category browser sits beside results;
+search within that browser finds a branch without traversing every category.
+A text query and searchable tag chooser narrow the chosen branch. The active
+category path, tags and makeable-only toggle remain visible above results.
+- Tech debt: none inherent; authored metadata and one query state avoid parallel
+  category-specific catalogues and copied affordability logic.
+- Negative space: browsing controls occupy space even for a player who knows the
+  name; no favourites or free-form field syntax.
+- WTF (player): a text search stays inside the selected branch until its visible
+  filter is cleared.
+- Build cost: higher; hierarchical browsing, menu search, combined filters,
+  counts and retained focus across bounded result pages.
 
-**B. Search plus authored categories and an explicit makeable-only filter.**
-- Tech debt: none if categories are content and feasibility comes from the planner;
-  deriving a second affordability rule in the UI would be debt and is excluded.
-- Negative space: no favourites; categories still need author coverage.
-- WTF (player): a recipe disappears from the filtered list when reachable stock changes.
-- Build cost: higher; category content/admission and stable focus under live filtering.
+**B. Query-first search with filter chips.** A prominent text query searches all
+known recipes until narrowed. An Add filter control opens searchable category
+or tag choices; chosen constraints become removable chips beside an explicit
+makeable-only toggle. There is no permanently open category browser.
+- Tech debt: none inherent; chips project the same authored metadata and query
+  state, without a second search language or a temporary name-only path.
+- Negative space: category structure is not visible until its chooser opens;
+  no favourites or free-form field syntax.
+- WTF (player): discovering a useful category or tag takes an extra menu entry
+  rather than being visible beside the recipes.
+- Build cost: moderate to higher; searchable bounded filter menus, chips,
+  combined-query evaluation, counts and stable selection under changing results.
 
 ### Q7. When does placement choose its destination?
 
@@ -263,8 +321,10 @@ and needs no playable fixture.
   shared rows, fixed column and turnable target, before full engineering. The
   testHouse fixture includes a damaged chair beside an intact take-apart crate,
   competing input alternatives, liquid vessels and a deliberately missing tool.
-  Show narrow and enlarged-density layouts, keyboard entry, hover stability and
-  focusable refusal. Any review-only scaffolding is removed in the joint delivery,
+  Include a synthetic catalogue of thousands of known recipes, long names and
+  enough authored categories and tags to exercise menu search and result paging.
+  Show retained query/filter/page context, empty results, keyboard entry, hover
+  stability and focusable refusal at narrow and enlarged-density layouts. Any review-only scaffolding is removed in the joint delivery,
   not shipped as a second player surface.
 - **Joint player delivery (construction view).** After the look and Q3, wire both
   crafting and world work through command ownership in one shipment. The
