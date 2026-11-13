@@ -1,9 +1,10 @@
 ---
 read_if:
-  - 'you decide the crafting and world-work layout for #1469'
+  - 'you decide or implement the crafting and world-work layout for #1469'
   - you implement the shared requirements rows, target review or world-work entry
   - you prepare a crafting or construction UI look fixture
   - you change recipe catalogue scale, search, category or tag filtering
+  - you change crafting keyboard navigation or recipe placement order
 ---
 
 # Crafting and world-work layout
@@ -12,337 +13,310 @@ read_if:
 
 The #1469 crafting tab and world-work view ship together, after their layout is
 settled, because shipping world work first would establish a second shape for
-crafting to replace. This document owns that layout's unresolved choices; it is
-separate from `../DESIGN.md` so the decision surface does not bury the game's
-settled rules. Questions below are alternatives, not approved designs. Resolve
-them before building their dependent surface, then retain the reasons and code
-cues rather than an implementation checklist.
+crafting to replace. This document owns the layout decisions and remaining
+questions, separate from the game's broader rules in `../DESIGN.md`.
+Q1, Q2, Q3, Q5 and Q6 are decided. Only Q4 and Q7 offer alternatives; neither has
+a selected option. Implementation trims intent into reasons and code cues.
 
 This is the construction-view gate for #1332. Placement picking follows the
-shared view and the placement engine, not the other way round; see
-`../SLICE-5.md`, "Lanes and the next rounds". Inventory item movement, recipe
-content expansion (#1465) and inventory key binding choices (#1463) are not
-reopened by this layout.
+shared view and placement engine; see `../SLICE-5.md`, "Lanes and the next rounds".
+Inventory item movement, recipe content expansion (#1465) and inventory key
+binding choices (#1463) are not reopened by this layout.
 
 ## Rulings the layout preserves
 
-- **One surface, two contexts.** Ordinary crafting stays in Crafting; a chosen
-  world piece opens a short-lived vertical in the same character screen. Repair
-  and Take apart share it, rather than adding world recipes to the catalogue.
-  Both world entries and the turnable target view arrive with the crafting
-  layout. See `../DESIGN.md`, "World repair selection", and `../INTERFACE.md`,
-  "Layout".
-- **Target pin and consent.** The chosen identity, not the crosshair or another
-  matching kind, owns the review. Closing or losing the target discards it.
+- **One surface, two contexts.** Crafting stays in its tab; Repair and Take apart
+  share an ephemeral world-work vertical in the same character screen. Both
+  world entries and the turnable target view arrive with the crafting layout.
+  See `../DESIGN.md`, "World repair selection", and `../INTERFACE.md`, "Layout".
+- **Target pin and consent.** The chosen identity owns the review, not the
+  crosshair or another matching kind. Closing or losing the target discards it.
   Review spends nothing; explicit Start revalidates. World Start closes the
-  screen; hand crafting keeps it open. See `../DESIGN.md`, "World repair selection", and `../INTERFACE.md`, "Layout".
-- **Short rows, fixed alternatives.** Each input group has one row showing the
-  chosen alternative's found and needed amounts, its name and the number of
-  other options. Click or keyboard entry opens that group's alternatives in a
-  fixed side column inside the rows pane. Single-option groups are plain rows;
-  hover never switches the column and the column overlays no row. Crafting and
-  world work have one owner for it. See `../INTERFACE.md`, "Layout".
-- **Reachable refusals.** Refused Start remains focusable, so its reason is
-  available without a mouse. The existing screen owns navigation and closing;
-  target inspection does not introduce keyboard aiming. See `../INTERFACE.md`,
-  "Layout", and `../DESIGN.md`, "World repair selection".
-- **World work belongs to the piece.** Running and paused jobs, progress and
-  repair escrow live on the piece's work slot, not a pocket or player queue.
-  Paused repair and take-apart reserve the piece. Continue belongs on its ring.
-  See `../DESIGN.md`, "World repair selection", and `../DESIGN.md`, "Edits persist".
+  screen; hand crafting keeps it open. See `../DESIGN.md`, "World repair selection",
+  and `../INTERFACE.md`, "Layout".
+- **Short rows, fixed alternatives.** One row per input group shows the chosen
+  alternative's found/needed amounts, name and number of other options. Explicit
+  pointer or keyboard entry opens alternatives in a fixed side column within
+  the rows pane. Single-option groups are plain rows; hover never switches the
+  column and it overlays no row. Both contexts share its owner. See
+  `../INTERFACE.md`, "Layout".
+- **Reachable refusals.** Refused commitment remains focusable with its reason.
+  Inspection never introduces keyboard target selection. See
+  `../INTERFACE.md`, "Layout", and `../DESIGN.md`, "World repair selection".
+- **World work belongs to the piece.** Running/paused work, progress and repair
+  escrow live on its work slot, not a pocket or player queue. Paused repair and
+  take-apart reserve the piece; Continue belongs on its ring. See
+  `../DESIGN.md`, "World repair selection", and `../DESIGN.md`, "Edits persist".
 - **Whole or parts, not both.** Whole-piece work is the default; an authored parts
   blueprint selects per-part work and condition. Both use the same review, and
-  content cannot select both models for one kind. See `../DESIGN.md`, "World repair selection".
-  This layout does not pretend the parts mechanism is already built.
-- **Hold and tap retain their meanings.** Every piece with a hold action,
-  including building parts, offers the ring; tap retains ordinary use and action
-  directions remain stable. See `../DESIGN.md`, "Moving furniture".
-- **Progress and interruptions stay shared.** Running work uses the handling
-  HUD; paused work does not gain a status panel. A blow stops outright; critical
-  needs prompt through the shared Continue/Stop ring with bound accelerators.
-  See `../INTERFACE.md`, "HUD", and `../DESIGN.md`, "Long actions".
-- **Yield is not hand delivery.** World take-apart yield lands through the drop
-  spots at the disassembling actor's feet. Review must not suggest it goes to
-  inventory. See `../DESIGN.md`, "World repair selection".
-- **A review cannot change the work contract.** Alternatives compete for stock;
-  explicit input and source-vessel choices never silently fall back. Resume
-  retains progress and snapshotted yield, not a fresh job. See
-  `../INTERACTIONS.md`, "Crafting".
-- **Knowledge, text and tuning.** Keyboard-first UI exposes only character-known
-  facts; the world keeps running. Labels and values are content, control labels
-  follow bindings, and precision uses the shared formatter. Density, duration,
-  quantities and other tunables stay in content. See `../DESIGN.md`, "UI principles", `../INTERFACE.md`, "Text", and
+  content cannot select both models for a kind. This does not claim the parts
+  mechanism is built. See `../DESIGN.md`, "World repair selection".
+- **Hold and tap.** Every piece with a hold action, including building parts,
+  offers the ring; tap retains ordinary use and directions remain stable. See
+  `../DESIGN.md`, "Moving furniture".
+- **Progress and interruptions.** Running work uses the handling HUD; paused work
+  gains no status panel. A blow stops outright; critical needs use the shared
+  Continue/Stop ring with bound accelerators. See `../INTERFACE.md`, "HUD", and
+  `../DESIGN.md`, "Long actions".
+- **Yield and work ownership.** World take-apart yield uses drop spots at the
+  actor's feet, not hand delivery. Alternatives compete for stock; explicit input
+  and source choices never silently fall back. Resume retains progress and
+  snapshotted yield rather than making a fresh job. See
+  `../DESIGN.md`, "World repair selection", and `../INTERACTIONS.md`, "Crafting".
+- **Knowledge, text and tuning.** Keyboard-first UI shows character-known facts;
+  the world keeps running. Text, quantities, durations and density are content;
+  bound-key labels follow bindings and precision uses the shared formatter. See
+  `../DESIGN.md`, "UI principles", `../INTERFACE.md`, "Text", and
   `PILLARS.md`, "Content forward compatibility" (repo root).
 
 ## Ownership cues
 
-The seams for this work are `packages/presentation/src/ui/inventoryScreen.ts`,
-`InventoryScreen.openRepair` and `InventoryScreen.update`, for the target lifetime;
-`packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`, for choices
-and dispatch; and `packages/presentation/src/ui/crafting.ts`, `renderCrafting`,
-with `packages/presentation/src/ui/craftReadout.ts`, `craftRows`, for the shared
-review. The relayout must not turn those projections into another planner.
+Target lifetime belongs with `packages/presentation/src/ui/inventoryScreen.ts`,
+`InventoryScreen.openRepair` and `InventoryScreen.update`. Choices and dispatch
+belong with `packages/presentation/src/ui/craftController.ts`, `mountCraftPanel`;
+review with `packages/presentation/src/ui/crafting.ts`, `renderCrafting`, and
+`packages/presentation/src/ui/craftReadout.ts`, `craftRows`. A projection must not
+become another planner. Commands remain under
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`,
-`CraftCommands.repairEntity` and `CraftCommands.takeApartEntity`, remain command
-boundaries. Menu entry belongs with
+`CraftCommands.repairEntity` and `CraftCommands.takeApartEntity`. Menu entry uses
 `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and
 `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`.
 
-A turnable world-target depiction must preserve the pin rather than querying a
-new crosshair target. It may not reveal hidden contents. Item illustration rules
-are a knowledge constraint, not a claim that an item viewer already renders
-world pieces; see `../INTERFACE.md`, "Item pictures".
+The turnable world-target depiction preserves the pin and reveals no hidden
+contents. Item illustration rules constrain knowledge, not a promise that the
+item viewer already renders world pieces; see `../INTERFACE.md`, "Item pictures".
 
-## Questions for #1469
-
-No option is selected. Tech debt means future rework caused by a shortcut, not
-build size; see `GLOSSARY.md`, "Tech debt" (repo root). Negative space names what
-an option leaves out. Each question blocks only the build slice that needs it.
-
-### Catalogue scale
-
-> We must take into account that there'll likely be thousands of recipes pretty soon, so the menus, filtering and querying must reflect that
+## Catalogue scale
 
 The #1469 catalogue must remain useful with thousands of known recipes. Compact,
-bounded result pages, visible result counts and position, and persistent query
-and filter context belong to either Q1 option. Only the selected recipe expands
-requirements, so catalogue size does not multiply requirement controls or run a
-full craft projection for every displayed name. Page size is content tuning,
-not a fixed value in this plan. Unknown recipes remain outside the catalogue.
+bounded result pages show counts and position and retain query/filter context.
+Only the selected recipe expands requirements, so catalogue size does not
+multiply controls or full craft projections. Page size is content tuning;
+unknown recipes remain outside the catalogue.
 
-Q6 supplies the finding controls independently of Q1's review placement. Search
-uses result names and authored search terms; category and tag selections narrow
-that query, and active constraints remain visible and removable. A category
-branch includes its descendants. Category and tag menus must themselves be
-searchable and bounded, rather than replacing a long recipe list with a long
-filter list. Empty results keep the controls available so a player can loosen
-the query without losing it. No new classification or semantic-search service
-is assumed: see `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`,
+Search uses result names and authored search terms. Category and tag selections
+narrow it; active constraints stay visible and removable. A category branch
+includes descendants. Filter menus themselves are searchable and bounded, so a
+long recipe list is not replaced with a long filter list. Empty results keep the
+controls available. No inferred classification or semantic-search service is
+assumed; see `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`,
 `RecipeCategorySchema` and `RecipeTagSchema`.
 
-Affordability is not a second UI rule. Metadata narrowing precedes any requested
-makeable-only evaluation; that evaluation uses the shared planner, not a full
-catalogue scan on each repaint. Incomplete evaluation must not claim an exact
-makeable count. Reach changes cannot silently start another recipe or lose the
-selected review, and Start still revalidates. See
+Metadata narrowing precedes requested makeable-only evaluation; feasibility
+uses the shared planner, not a full catalogue scan per repaint. Incomplete work
+must not claim an exact makeable count. Reach changes cannot silently start
+another recipe or lose the selected review; Start revalidates. See
 `packages/engine/src/core/crafting.ts`, `planCraft`, and
-`packages/presentation/src/ui/craftReadout.ts`, `craftRows`. Implementation must
-measure large-catalogue query and feasibility work before promising live counts.
+`packages/presentation/src/ui/craftReadout.ts`, `craftRows`. Measure large-catalogue
+query and feasibility work before promising live counts.
 
-### Q1. How does a player choose a crafting recipe?
+## Decided layout
 
-The world vertical already has a target and operation from the ring; it needs no
-recipe catalogue. Both choices retain that vertical and the shared rows. Expanded
-reviews are not a catalogue-browsing unit: at thousands of recipes they bury the
-next choice under unrelated requirements. A result is a compact recipe name;
-its inputs appear only when selected.
+### Q1. Paged catalogue beside one selected review — A
 
-**A. Paged catalogue beside one selected review.** Query and filters remain above
-a compact results pane; page navigation and result position stay with it. A
-selection updates the adjacent review without replacing the catalogue.
-- Tech debt: none inherent; bounded results and one review avoid a throwaway
-  small-catalogue renderer or duplicate work owner.
-- Negative space: less width for browsing and reviewing than a dedicated page;
-  no simultaneous expanded-recipe comparison.
-- WTF (player): a long recipe name wraps in the list while its review takes most
-  of the width.
-- Build cost: moderate; bounded results, stable identity selection and query,
-  filter, page and focus retention alongside a live review.
+Query and filters remain above compact results; page navigation and result
+position stay with that pane. Selection updates the adjacent review without
+replacing the catalogue. World work has no recipe catalogue.
 
-**B. Paged catalogue followed by a dedicated review.** Query, filters and compact
-results occupy the browsing surface. Choosing a recipe opens its review in that
-same Crafting tab; Back restores query, filters, result page and focused recipe.
-- Tech debt: none inherent if this uses the shared review rather than copying it;
-  retaining the entire expanded catalogue behind the review would be shortcut debt.
-- Negative space: catalogue and requirements are not visible together; no
-  simultaneous expanded-recipe comparison.
-- WTF (player): comparing another recipe requires returning to the results first.
-- Build cost: moderate; browse/review navigation, retained result context and
-  focus restoration when a filter or reachable stock changes.
+**Reason from the option grading:** bounded results and one shared review avoid
+a small-catalogue renderer that needs replacing. The accepted cost is less width
+for long names and requirements, not a separate navigation trip to compare the
+next recipe. Simultaneous expanded-recipe comparison is outside this layout.
 
-### Q2. Where do target, time, blockers and Start sit?
+### Q2. Persistent commitment strip — A
 
-Both options put the pinned name and operation at the review's head, a turnable
-world target beside its rows, and alternatives in their own fixed column inside
-those rows. Take apart shows read-only yield instead of editable inputs. The
-inspection control turns only the depiction, never selects another world target.
+Time, blockers and Start remain in a fixed strip below scrolling rows. The pinned
+name and operation head the review, the turnable world target stays beside its
+rows, and material alternatives occupy their fixed side column. Take apart
+shows read-only yield rather than editable inputs. Turning inspection never
+selects another world target.
 
-**A. Persistent commitment strip.** Time, the start refusal and Start remain below
-the review while the rows scroll; the target depiction remains beside the rows.
-- Tech debt: none inherent; one shared shell keeps both contexts aligned.
-- Negative space: less vertical space for long rows at large content density.
-- WTF (player): a permanently visible refused Start may be far from the missing input.
-- Build cost: moderate; independent scrolling and narrow-viewport hit testing.
+**Reason from the option grading:** one shared shell keeps commitment visible
+and both contexts aligned, at the cost of row height and possible distance
+between a missing input and the refused Start. First look must fit target, rows
+and side column together on a narrow screen at enlarged content scale. Failure
+returns the layout for revision, not an overlay or hover-switched column.
 
-**B. Document-flow commitment.** Time follows the heading; blockers and Start
-follow the rows. The depiction and fixed alternatives column stay beside the rows.
-- Tech debt: none inherent; this is a complete layout, not a temporary footer.
-- Negative space: Start is not always visible on a long review.
-- WTF (player): the last missing requirement and Start may require another scroll.
-- Build cost: lower; focus revelation still needs proof across the whole review.
+### Q3. Continue reopens the pinned review — A
 
-Neither choice may solve width pressure with an overlay or hover-switched column.
-The look must fit both the turnable target and the fixed alternatives at the
-supported narrow viewport and enlarged content density; failing that look returns
-this question for revision, not an unruled responsive layout.
+The piece's Continue entry opens owned work: work done, time left, saved inputs
+or yield, and live blockers. Explicit Continue in the strip closes the screen
+and resumes after revalidation. Neither escrow, yield nor target can be edited
+into a new job. This is distinct from the interruption prompt.
 
-### Q3. What does the piece's Continue entry open?
+The reason is that remaining time must be available before recommitting:
 
-This is distinct from the already-ruled interruption prompt. Neither option lets
-resume edit escrow, reroll yields or choose a replacement target.
+> I chose this because I assume the player will want the ability to see how long time is left prior to committing
 
-**A. Reopen the pinned review.** Show the saved job's inputs or yield, remaining
-time and live blockers; explicit Continue resumes and closes the screen.
-- Tech debt: none inherent; one review can project either an unstarted plan or owned work.
-- Negative space: no one-gesture resume from the piece.
-- WTF (player): Continue on the ring leads to another Continue.
-- Build cost: moderate; a read-only saved-job projection and remaining-time presentation.
+A second Continue is the accepted cost; there is no one-gesture resume from the
+piece's ring.
 
-**B. Resume from the ring directly.** Revalidate there; refusal uses the shared
-refusal channel and successful work goes straight to the handling HUD.
-- Tech debt: none inherent if this uses the same command owner, not a parallel resume path.
-- Negative space: no pre-resume review of remaining time and saved yield.
-- WTF (player): Start requires a review but Continue does not.
-- Build cost: lower; entry wiring and refusal evidence rather than a saved-job review.
+### Q5. Source detail below rows — B
 
-### Q4. What is the keyboard path through the review?
+An explicitly opened detail below the rows lists source vessels and planned
+liquid draws; the side column only chooses material alternatives. Automatic
+choice reports the planner's actual selection, never the first seemingly
+available alternative. A refused explicit choice stays visible.
 
-Both options keep existing character-screen tab and close bindings. Entering a
-group explicitly, not hovering, reveals alternatives; activating a choice updates
-the review without starting work. Refused Start remains reachable, with its
-reason on focus. Escape from a nested chooser returns to its row before the
-ordinary screen-close path; no key rotates or retargets the world piece while
-focus belongs to rows. Inspection has an explicit focus stop of its own.
+**Reason from the option grading:** one projection can serve separate material
+and source controls without copied planning. This keeps vessel lists from
+competing with alternatives for column height, accepting that a material change
+can affect a source detail elsewhere in the review.
 
-**A. Sequential controls.** Tab and reverse Tab visit recipe choice (if present),
-inspection, group controls, alternatives, source controls and Start in reading
-order; ordinary activation selects. Arrow keys operate only within a chooser.
-- Tech debt: none inherent; standard focus semantics need no parallel navigation model.
-- Negative space: no fast row-to-row traversal independent of the number of controls.
-- WTF (keyboard player): a source-heavy recipe takes many focus steps to reach Start.
-- Build cost: lower; focus restoration and labels rather than a composite grid.
+### Q6. Browse-first facets with search — A
 
-**B. Region navigation.** Tab visits catalogue, inspection, rows, alternatives and
-commit controls; arrows move within the focused region and activation enters a
-group or selects an option. Reverse navigation returns to the owning row.
+A searchable category browser stays beside results. Text query and searchable
+tag picks narrow that branch; the active path, tags and makeable-only toggle
+remain visible. Missing requirements hide no recipe unless that toggle is
+selected. No favourites, inferred tags, fuzzy matching or field-syntax language
+is implied.
+
+**Reason from the option grading:** one query state over authored metadata
+avoids category-specific catalogues and copied affordability logic. Visible
+browsing supports discovery, accepting the space cost even when the name is
+known and the need to clear a visible branch filter before searching elsewhere.
+
+## Open choices
+
+Neither Q4 nor Q7 is selected. Grades use `GLOSSARY.md`, "Tech debt" (repo root):
+future shortcut rework is not build cost. Negative space names omissions.
+
+### Q4. Keyboard navigation without Tab traversal
+
+Tab keeps opening/closing the inventory menu, never moving within it. Do not
+borrow arrows or plain Enter as though they were free: their inventory actions
+can operate on a selected item behind the crafting view. Ownership is
+`packages/engine/src/core/inputActions.ts`, `INPUT_ACTIONS`, with authored defaults
+in `packages/mods/skelly.controls/controls.jsonnet`, `controls`, resolved by
+`packages/engine/src/game/bindingRegistry.ts`, `bindingsFromControls` and
+`BindingRegistry`. `packages/presentation/src/presentation/play.ts`,
+`activePlayContext`, uses the inventory context for this screen.
+
+The candidate local controls below use PageUp/PageDown and Shift+Enter; B also
+uses Home/End. These have no ungated inventory binding in the base controls.
+Debug-gated commands retain priority. No control-file binding is changed by
+these proposals. They require screen-local focus handling, not pretending that
+browser Tab traversal already provides it. See
+`packages/presentation/src/presentation/inputBindings.ts`, `KeyboardInput.press`
+and `KeyboardInput.unmatchedDown`, and
+`packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.onAction`.
+Stored rebindings must not be shadowed: the shared input owner checks active
+bindings before a local navigation handler. Prove that precedence in the build.
+
+Both schemes keep one focused control, focusable refused commitment, explicit
+row entry, and a keyboard-reachable Close alternatives control that returns to
+its row. Tab closes the menu even with a chooser open; it is not a chooser-only
+exit. Text fields retain caret/editing keys, including Home/End; PageUp/PageDown
+can leave the field for the previous/next control and Shift+Enter finishes query
+entry without starting work. Start/Continue require their own focused activation.
+Inspection turns only through its explicitly focused controls, never through
+row movement. The depicted keys are fixed local-control candidates, not a new
+inventory binding preset; pointer controls remain available under either scheme.
+
+**A. Page keys step every control.** PageUp/PageDown move focus through category
+and query controls, the bounded results page, inspection, rows, alternatives,
+source detail and commitment in reading order. Shift+Enter activates the focused
+control. Result-page buttons are ordinary stops, not keys that spend materials.
 - Tech debt: none inherent with one shared focus owner; a separate world-work
-  keyboard controller would be shortcut debt and is excluded.
-- Negative space: fewer controls in ordinary sequential tab order.
-- WTF (keyboard player): arrows navigate a region instead of scrolling the page.
-- Build cost: higher; composite focus, announcement and pointer/keyboard parity proofs.
+  focus list would be shortcut debt and is excluded.
+- Negative space: no fast jump between regions; PageUp/PageDown no longer scroll
+  the focused review directly, though focus revelation and wheel scrolling remain.
+- WTF (keyboard player): page keys move control focus, and a long result page
+  takes many presses before Start; Shift+Enter is less familiar than Enter.
+- Build cost: moderate; focus ordering, text-field exit, chooser return and
+  active-binding precedence, without region memory.
 
-### Q5. Where do liquid source choices live?
-
-The fixed column must list the selected group's alternatives under either option.
-Automatic choice must report the planner's actual selection, not invent a choice
-from the first affordable alternative. A refused explicit choice stays visible.
-
-**A. Sources beneath alternatives in that column.** A liquid group's source
-control opens the column even when it has one material option; its input row
-stays plain, with no alternatives-entry affordance.
-- Tech debt: none inherent; material and source choices share the group's owner.
-- Negative space: alternatives and vessels compete for column height.
-- WTF (player): a one-option liquid row has source detail while a one-option solid row does not.
-- Build cost: moderate; source focus and column grouping.
-
-**B. Sources as a separate detail below the rows.** The side column only selects
-materials; an explicitly opened source detail lists vessels and planned draws.
-- Tech debt: none inherent; one projection can feed two controls without copied planning.
-- Negative space: input choice and vessel choice are not adjacent.
-- WTF (player): changing a liquid alternative affects a source detail elsewhere.
-- Build cost: moderate; association, scrolling and focus restoration between the controls.
-
-### Q6. How does a player narrow a large known catalogue?
-
-Both options combine text query, authored category hierarchy and tags, and an
-explicit makeable-only filter. Name-only search leaves a player who does not
-know the desired name browsing thousands of results, so it is not a complete
-finding option. Missing requirements hide no recipe unless makeable-only is
-selected. Result counts, bounded pages and removable active filters remain
-visible under either Q1 layout. Neither option adds favourites, inferred tags,
-fuzzy matching or a query-language grammar.
-
-**A. Browse-first facets with search.** A category browser sits beside results;
-search within that browser finds a branch without traversing every category.
-A text query and searchable tag chooser narrow the chosen branch. The active
-category path, tags and makeable-only toggle remain visible above results.
-- Tech debt: none inherent; authored metadata and one query state avoid parallel
-  category-specific catalogues and copied affordability logic.
-- Negative space: browsing controls occupy space even for a player who knows the
-  name; no favourites or free-form field syntax.
-- WTF (player): a text search stays inside the selected branch until its visible
-  filter is cleared.
-- Build cost: higher; hierarchical browsing, menu search, combined filters,
-  counts and retained focus across bounded result pages.
-
-**B. Query-first search with filter chips.** A prominent text query searches all
-known recipes until narrowed. An Add filter control opens searchable category
-or tag choices; chosen constraints become removable chips beside an explicit
-makeable-only toggle. There is no permanently open category browser.
-- Tech debt: none inherent; chips project the same authored metadata and query
-  state, without a second search language or a temporary name-only path.
-- Negative space: category structure is not visible until its chooser opens;
-  no favourites or free-form field syntax.
-- WTF (player): discovering a useful category or tag takes an extra menu entry
-  rather than being visible beside the recipes.
-- Build cost: moderate to higher; searchable bounded filter menus, chips,
-  combined-query evaluation, counts and stable selection under changing results.
+**B. Home/End change region; page keys move within it.** Outside text entry,
+Home selects the previous region and End the next: finding controls, results,
+inspection, rows, alternatives, sources and commitment. PageUp/PageDown move
+among the focused region's controls; Shift+Enter activates. Returning to a
+region restores its focused control by identity, not row position.
+- Tech debt: none inherent with one shared region/focus owner; storing a second
+  selected recipe or work target in navigation would create drift and is excluded.
+- Negative space: more navigation concepts; Home/End cannot also mean the first
+  and last control outside text entry. No direct page-key scrolling.
+- WTF (keyboard player): Home/End switch regions but move the caret in a query;
+  the player must leave text entry before using the region shortcut.
+- Build cost: higher; region focus memory and restoration under filtering in
+  addition to A's precedence, editing and chooser-return proofs.
 
 ### Q7. When does placement choose its destination?
 
-This gates placement picking under #1332, not the joint crafting/world-work
-shipment. Both options require the placement engine, retain explicit Start after
-review, pin a destination without borrowing a piece identity, and revalidate
-occupancy at commitment. Neither chooses the kit's scope or the picking gesture.
-Those construction decisions remain outside #1469.
+This gates placement picking under #1332, not the joint view shipment. Every
+option requires the placement engine, explicit Start after review, a destination
+pin without borrowing piece identity, and occupancy revalidation. Kit scope and
+the picking gesture remain construction decisions outside this choice.
 
-**A. Destination before review.** Selecting a placement recipe enters destination
-picking, then opens the shared review with that destination pinned.
-- Tech debt: none inherent; the review receives a complete target context.
+**A. Destination before review.** Selecting a placement recipe enters picking,
+then opens the pinned review.
+- Tech debt: none inherent; the review receives complete target context.
 - Negative space: no full requirements review before choosing a spot.
 - WTF (player): choosing a spot can end in a review showing missing supplies.
 - Build cost: moderate; return from picking and cancellation without spending.
 
-**B. Requirements before destination.** The recipe review exposes destination
-picking as an explicit control; Start stays refused until a valid pin exists.
-Picking returns to that review for commitment.
-- Tech debt: none inherent; an incomplete presentation selection is not a saved job.
-- Negative space: no immediate world-first placement from selecting a recipe.
+**B. Requirements before destination.** Review exposes a destination control;
+Start stays refused until a valid pin exists. Picking returns for commitment.
+- Tech debt: none inherent; incomplete selection is presentation, not saved work.
+- Negative space: no immediate world-first placement from recipe selection.
 - WTF (player): the recipe is affordable but Start still needs a destination.
-- Build cost: moderate; unpinned and pinned review states with focus restoration.
+- Build cost: moderate; unpinned/pinned states with focus restoration.
+
+**C. Order authored per placement recipe.** A proposed recipe field,
+`placementReviewOrder`, selects `spot-first` or `review-first`; it is not derived
+from an ID, category or item name.
+A Jsonnet authoring default supplies review-first, while validation requires the
+compiled field on every placement recipe. Non-placement recipes do not gain a
+meaningless order field. The proposed field is part of the placement contract,
+not a claim that `RecipeSchema` already has it; see
+`packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, and
+`PILLARS.md`, "Content forward compatibility" (repo root).
+
+Spot-first suits fitting to an existing opening or gap: window boards, a door
+barricade or wall fill, where inspecting the place determines whether the work
+makes sense. Review-first suits free-standing walls, floors or furnishings,
+where the player can weigh inputs and time before hunting for a spot. These are
+proposed authoring examples, not an engine classification or an expansion of
+the first-session kit. An author may choose either order for any placement
+recipe; review-first is the conservative authoring default because requirements
+remain inspectable without first committing to a location.
+- Tech debt: none inherent with one content selector and the same two flow
+  mechanisms; inferring exceptions from recipe identity would be debt and is excluded.
+- Negative space: no universal order to learn; no automatic inference or runtime
+  fallback for missing recipe metadata.
+- WTF (player): one recipe enters the world immediately while another opens
+  requirements; the author must make that distinction sensible in play.
+- Build cost: higher; schema/admission and authoring default, content assignments,
+  both navigation paths, and cancellation/pin/focus proofs for both.
 
 ## Build slices after the decisions
 
 These are delivery boundaries, not permission to ship one player view first.
-Each includes a testHouse fixture start built under `docs/PROCESS.md`, "Reviews by eye and by play" (repo root), so the reviewer arrives beside the check with
-all required gear, known recipes and world state. This plan itself changes no UI
-and needs no playable fixture.
+Each needs a testHouse fixture start under `docs/PROCESS.md`, "Reviews by eye and by play"
+(repo root), with the reviewer beside the target and carrying the required gear.
+This documentation plan itself changes no UI and needs no playable fixture.
 
-- **Joint first look.** After Q1, Q2, Q4, Q5 and Q6, present both contexts with the
-  shared rows, fixed column and turnable target, before full engineering. The
-  testHouse fixture includes a damaged chair beside an intact take-apart crate,
-  competing input alternatives, liquid vessels and a deliberately missing tool.
-  Include a synthetic catalogue of thousands of known recipes, long names and
-  enough authored categories and tags to exercise menu search and result paging.
-  Show retained query/filter/page context, empty results, keyboard entry, hover
-  stability and focusable refusal at narrow and enlarged-density layouts. Any review-only scaffolding is removed in the joint delivery,
-  not shipped as a second player surface.
-- **Joint player delivery (construction view).** After the look and Q3, wire both
-  crafting and world work through command ownership in one shipment. The
-  testHouse fixture offers hand crafting, Repair, Take apart and a resumable world
-  job, plus a controllable interruption; setup must not make BR wait to obtain
-  the paused state. Prove pin loss, refused Start, world close versus crafting
-  stay-open, Continue, yield at the feet and save/resume without duplicate inputs.
-  Extend an owning browser smoke flow rather than creating parallel stages.
-- **Cell-work integration.** When the cell repair and rubble-clearing contracts
-  for #1332 exist, extend that same review, not a terrain-specific screen. Its
-  testHouse fixture starts beside a cracked wall and rubble with the required
-  supplies; BR compares piece and cell work and sees clearing's output. This
-  waits on those engine decisions, not on an invented cell-as-piece identity.
-- **Placement picking.** After the placement engine and joint delivery, join
-  recipe review to the chosen destination using the same rows and commit shape.
-  Q7 settles the handoff; the picking gesture remains a construction decision
-  under #1332, so this layout grants no new targeting mode. The testHouse fixture has a window,
-  doorway and wall gap, the kit and an occupied destination, so BR can place,
-  encounter refusal and inspect the result without scavenging. It corresponds
-  to the placement-picking dependency in `../SLICE-5.md`, "Lanes and the next rounds".
+- **Joint first look.** Q4 is the remaining layout gate. Show both contexts with
+  the decided catalogue beside review, category browser, fixed commitment strip,
+  source detail below rows, fixed alternatives and turnable target. Include a
+  damaged chair, take-apart crate, competing materials, liquids and a missing
+  tool, plus thousands of synthetic known recipes and enough categories/tags to
+  test menu search and result paging. Prove retained context, empty results,
+  keyboard navigation, hover stability and focusable refusal at narrow and
+  enlarged-density layouts. No review scaffolding ships as a second surface.
+- **Joint player delivery.** After the look, wire crafting and world work through
+  command ownership in one shipment. The fixture offers hand crafting, Repair,
+  Take apart and prepared resumable work, plus a controllable interruption, so
+  the reviewer need not wait for a paused job. Show work done/time left before
+  Continue, pin loss, refused commitment, world-close/crafting-stay-open, yield
+  at the feet and save/resume conservation. Extend an owning browser smoke flow.
+- **Cell-work integration.** Once #1332's cell repair and rubble-clearing
+  contracts exist, extend the same review rather than adding a terrain screen.
+  Its fixture starts beside a cracked wall and rubble with supplies; it must
+  not fake cells as piece identities while those engine decisions are open.
+- **Placement picking.** After the placement engine, joint delivery and Q7,
+  join destination picking to the shared rows and commit shape. The fixture has
+  a window, doorway, wall gap, kit and occupied destination. If C is selected,
+  include one recipe of each authored order and one using the authoring default;
+  do not silently implement C while the choice remains open. The picking gesture
+  remains a #1332 construction decision; see
+  `../SLICE-5.md`, "Lanes and the next rounds".
