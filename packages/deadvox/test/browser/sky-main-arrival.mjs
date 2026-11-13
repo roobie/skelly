@@ -73,6 +73,8 @@ export const mainSourceOverlays = [
   'presentation:presentation/damageFeedback.ts',
   'presentation:presentation/painCue.ts',
   'presentation:presentation/worldLoading.ts',
+  // Main imports the public UI barrel, so its branch-added exports must accompany branch main.
+  'presentation:ui.ts',
   'presentation:render/playView.ts',
   // The engine adds the chunk meshes' scene object and play reads its drawn chunks, so the chunk owner stays with
   // them. The shadows keep the branch: they use only the caster selection both revisions share.
