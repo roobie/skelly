@@ -297,6 +297,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.play/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.play/pack/manifest.json"
     },
