@@ -7,9 +7,9 @@ export interface MaterialPatch {
 }
 
 interface Change {
-  compile: (...args: Parameters<CompileHook>) => void;
+  compile: (...args: [...Parameters<CompileHook>, material: Material]) => void;
   /** Tells the patched program from the unpatched one in three's program cache. */
-  key: () => string;
+  key: (material: Material) => string;
   /** Defaults to every material. */
   applies?: (material: Material) => boolean;
 }
@@ -45,11 +45,11 @@ export const materialPatch = (change: Change): MaterialPatch => {
         material.onBeforeCompile = (shader, renderer) => {
           compile.call(material, shader, renderer);
           for (const entry of stacked) {
-            entry.change.compile(shader, renderer);
+            entry.change.compile(shader, renderer, material);
           }
         };
         material.customProgramCacheKey = () =>
-          [key.call(material), ...stacked.map((entry) => entry.change.key())].join(':');
+          [key.call(material), ...stacked.map((entry) => entry.change.key(material))].join(':');
       }
       changes.push({ order, change });
       changes.sort((a, b) => a.order - b.order);

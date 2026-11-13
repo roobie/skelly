@@ -1,3 +1,4 @@
+import { fabricOf } from '@skelly/presentation/internal/render/fabricGrain.ts';
 import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
 import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
@@ -79,7 +80,7 @@ it('draws a sheened material with its sheen, keeping one prepared copy per share
 const MAP_KEY = /map$/i;
 
 // What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper) and a
-// patch's own key.
+// patch's own key, but with the fabric grain's kind, the one patch whose key a material's content picks.
 const programKey = (mesh: Mesh, material: Material): string => {
   const fields = material as unknown as Record<string, unknown>;
   const maps = Object.keys(fields)
@@ -106,6 +107,7 @@ const programKey = (mesh: Mesh, material: Material): string => {
     ['normal', 'tangent', 'color'].map((name) => geometry.getAttribute(name)?.itemSize),
     Object.keys(geometry.morphAttributes).sort(),
     Object.keys(material.defines ?? {}).sort(),
+    fabricOf(material)?.kind,
   ]);
 };
 
