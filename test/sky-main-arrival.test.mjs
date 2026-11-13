@@ -61,7 +61,10 @@ it('main overlays keep play, view and their presentation constructor contracts o
 
 it('main play overlays keep the entire UI boundary on the base even when export names survive signature changes', () => {
   const basePaths = new Map([
-    ['presentation', new Set(['ui.ts', 'ui/options.ts', 'ui/nested/readout.ts', 'ui/style.css', 'presentation/play.ts'])],
+    [
+      'presentation',
+      new Set(['ui.ts', 'ui/options.ts', 'ui/nested/readout.ts', 'ui/style.css', 'presentation/play.ts']),
+    ],
     ['engine', new Set(['core/rules.ts', 'game/unrelated.ts'])],
   ]);
   const sources = mainOverlaySources(basePaths);
