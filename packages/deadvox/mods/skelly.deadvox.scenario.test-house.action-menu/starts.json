@@ -62,18 +62,27 @@
           "item": "bandage"
         },
         {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
           "condition": 0.59999999999999998,
           "destination": {
-            "kind": "hand",
-            "role": "dominant"
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
           },
           "id": "machete",
           "item": "machete"
         },
         {
           "destination": {
-            "kind": "hand",
-            "role": "off"
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
           },
           "id": "whetstone",
           "item": "whetstone"
@@ -90,12 +99,19 @@
         },
         {
           "destination": {
-            "kind": "pocket",
-            "parent": "jeans",
-            "pocket": 1
+            "kind": "hand",
+            "role": "dominant"
           },
           "id": "flashlight",
           "item": "flashlight"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "off"
+          },
+          "id": "battery",
+          "item": "aa_battery"
         }
       ],
       "recipes": [
@@ -114,7 +130,7 @@
         "hone_machete"
       ],
       "seed": 1,
-      "site": "testHouseAmalgam",
+      "site": "testHouse",
       "skills": {},
       "startTimeGameTimeOfDay": "12:00",
       "storeys": 1,

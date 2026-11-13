@@ -15,6 +15,7 @@ read_if:
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
+  - you change single-option action menus or battery-only loading refusals
   - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
@@ -642,27 +643,18 @@ because rearranging a room should not require destroying its contents. See `pack
   `liftFurniture`, `placement` and `slideFurniture`, and
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
-- **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. Holding opens the
-  radial action menu of rarer actions, which move or break the piece and so sit
-  behind a deliberate hold; releasing on an entry confirms it. Repair, taking
-  apart and continuing held work enter through the same menu, so every hold
-  choice reads alike, and their directions are authored before they are offered
-  so their arrival moves no existing entry. Readability does not fasten a board;
-  its ordinary use stays on the tap. The menu opens on any piece that has a
-  hold action, building parts included, because a hold that opens nothing is a
-  dead gesture and a player's own boards must be able to come down; a piece
-  with nothing to choose opens no menu, so the tap's use is never obstructed. A
-  fitted placement of a movable kind offers the menu and explains why it cannot
-  move, so fitting does not silently change that kind's controls. An open menu is a
-  single confirmation, not a persistent interaction mode: returning from a
-  pause or another target must not unexpectedly act instead of offering
-  choices. Each action keeps one authored direction, so muscle memory survives
-  a piece gaining or losing actions. Nothing is chosen until the pull leaves the
-  dead zone within an entry's selection angle, so a release at the centre or a
-  pull away from the only entry does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
-  `ActionMenu`.
+- **Movement choices.** Ordinary use stays on tap so the common case costs no
+  extra step; rarer operations belong behind a deliberate hold. A lone operation
+  runs directly because a one-option menu wastes a step, while alternatives use
+  the shared radial menu so furniture and held items choose alike. Fixed authored
+  directions preserve muscle memory when actions join or leave. Building parts
+  participate because a player's own boards must be able to come down; fitted
+  placements explain a movement refusal rather than silently changing controls.
+  A chooser is a single confirmation, not a persistent mode: a pause, another
+  target or disappearing alternatives must not unexpectedly act. An ambiguous
+  pull cancels rather than guessing. See `packages/engine/src/core/furnitureMove.ts`,
+  `slidableFurniture`; `packages/presentation/src/presentation/play.ts`,
+  `furnitureChoicePayload`; and `packages/engine/src/game/actionMenu.ts`, `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `packages/engine/src/core/furnitureMove.ts`, `turnCarried`,
@@ -2858,17 +2850,16 @@ The reservoir readout owns the measured balance; the lamp's status reports only
 its switch state so the same oil cannot appear to be a second battery supply.
 See `packages/engine/src/game/survival.ts`, `Survival.describe`.
 
-A battery goes into a light only as the player chooses: dropped onto the battery slot
-on the light's card in the inventory, or used from one
-hand while the other holds the light. A battery used from a pocket, by the quickbar
-or otherwise, refuses. Only using the battery loads it: a dead or empty light used
-refuses and says so, whatever the other hand holds, because one way to load from the
-hands keeps the rule simple and the player acts with the battery on the light, not the
-other way round. The player chooses which battery goes in, so a fuller battery hidden in
-a bag never overrides the one in hand. A hand load needs both in
-hands and a slot drop needs both in reach, a fitted light through its gun; the swap
-rechecks the route that admitted it when it completes. See `packages/engine/src/core/options.ts`,
-`batterySlotOption` and `batteryOption`.
+Battery loading is deliberate: the player uses the battery on the light, not the
+other way round, or chooses the battery through the inventory card's slot. A dead
+or empty light asks only for a battery, whatever the other hand holds. The player
+can work out that the held battery is usable; mentioning it adds no helpful
+information. A fuller battery hidden in a bag must never replace the player's
+choice. The card slot serves lights without a free hand, including fitted ones.
+Each load rechecks its original reach route at completion so a preview cannot
+outlive the preparation that admitted it. See `packages/engine/src/core/options.ts`,
+`batterySlotOption`, `batteryOption` and `lightOption`; and
+`packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`.
 
 The light's card is the expected way to load and unload a light, so its battery slot is
 an inventory slot: it reads as a slot that takes a battery, empty or full, and the
