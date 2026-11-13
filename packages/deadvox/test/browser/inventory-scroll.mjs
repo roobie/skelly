@@ -61,9 +61,13 @@ const itemPicturesModule = '/@stage/@skelly/presentation/internal/render/itemPic
 const modelsModule = '/@stage/@skelly/presentation/render';
 const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
-// argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
-const engine = process.argv[2] ?? 'chromium';
+// argv[4], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
+const [, , engine = 'chromium', scenarioFlow] = process.argv;
 assert.ok(['chromium', 'firefox'].includes(engine));
+assert.ok(
+  scenarioFlow === 'ui' || (scenarioFlow === 'handling' && engine === 'chromium'),
+  'choose ui or Chromium handling',
+);
 const RACK_GRID = [5, 6];
 const {
   inventory: [baseInventoryRow],
@@ -289,6 +293,7 @@ const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySel
 let gameplayWheels = 0;
 target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu, bodyRegions: BODY_REGIONS,
+  bundledRegistry: BUNDLED_CONTENT.registry,
   containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
   populatePiles,
   populateFloorWrapPiles,
@@ -478,217 +483,154 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
-  // Its own page, because the fixture switch stays on for every navigation of the page it is added to.
-  const refusal = await browser.newPage();
-  const refusalErrors = [];
-  refusal.on('pageerror', (error) => refusalErrors.push(error.message));
-  await refusal.addInitScript(() => {
-    globalThis.skellyRefuseFixture = true;
-  });
-  const startupError = refusal.waitForEvent('pageerror').then((error) => {
-    throw error;
-  });
-  await refusal.goto(`http://127.0.0.1:${address.port}/?mods=1`);
-  await Promise.race([
-    startupError,
-    refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
-  ]);
-  assert.ok(
-    (await refusal.locator('#errors').textContent()).includes('fixture.inventory-work'),
-    'refused pack is named',
-  );
-  assert.equal(await refusal.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
-  assert.equal(await refusal.locator('#startup-screen').isVisible(), false, 'refusal retires the startup screen');
-  assert.equal(await refusal.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
-  assert.deepEqual(refusalErrors, [], 'refusal displays admission diagnostics without a page exception');
-  await refusal.close();
-  await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
-  try {
-    await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`${message}${errors.length > 0 ? `; page errors: ${errors.join('; ')}` : ''}`, { cause: error });
-  }
-  assert.equal(
-    await page.locator('#inventory [data-body-region]').count(),
-    await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
-  );
-  assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
-  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
-  const inventoryFact = page.locator('#inventory .inv-title h2 .fact-detail');
-  const factCopy = inventoryFact.locator('[role="tooltip"]');
-  assert.equal(await inventoryFact.count(), 1, 'inventory rule has a focusable owner');
-  await page.mouse.move(0, 0);
-  assert.equal(await factCopy.isVisible(), false, 'rule is absent from the resting screen');
-  const restingBounds = await inventoryFact.boundingBox();
-  assert.ok(restingBounds);
-  await inventoryFact.focus();
-  assert.equal(await factCopy.isVisible(), true, 'keyboard focus exposes the rule');
-  assert.deepEqual(await inventoryFact.boundingBox(), restingBounds, 'disclosure does not move its owner');
-  await page.locator('#inventory .inv-tab[data-tab="items"]').focus();
-  assert.equal(await factCopy.isVisible(), false, 'rule retires after focus leaves');
-  await inventoryFact.hover();
-  assert.equal(await factCopy.isVisible(), true, 'hover exposes the same rule');
-  await page.mouse.move(0, 0);
-  await inventoryFact.evaluate((owner) => {
-    const { input, menu } = globalThis.scrollFixture;
-    const bounds = owner.getBoundingClientRect();
-    input.setPointerModeForTest(true);
-    input.cursorX = bounds.left + 2;
-    input.cursorY = bounds.top + 2;
-    menu.update();
-  });
-  assert.equal(await factCopy.isVisible(), true, 'drawn menu cursor exposes the rule while locked');
-  await page.evaluate(() => {
-    const { input, menu } = globalThis.scrollFixture;
-    input.cursorX = 0;
-    input.cursorY = 0;
-    menu.update();
-  });
-  assert.equal(await factCopy.isVisible(), false, 'drawn cursor departure retires the rule');
-  await page.evaluate(() => {
-    globalThis.scrollFixture.input.setPointerModeForTest(false);
-    globalThis.scrollFixture.menu.update();
-  });
-  // A card host's fact must show whole: its copy stays inside the card's scrollport on hover and keyboard focus.
-  const SCROLLPORT_EDGE = 0.5;
-  await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
-  const cardFact = page.locator('#overlay .card .fact-detail');
-  const cardCopy = cardFact.locator('[role="tooltip"]');
-  const assertCopyInScrollport = async (message) => {
-    const copyBox = await cardCopy.boundingBox();
-    const port = await page.evaluate(() => {
-      const card = document.querySelector('#overlay .card');
-      const left = card.getBoundingClientRect().left + card.clientLeft;
-      return { left, right: left + card.clientWidth };
+  if (scenarioFlow === 'ui') {
+    // Its own page, because the fixture switch stays on for every navigation of the page it is added to.
+    const refusal = await browser.newPage();
+    const refusalErrors = [];
+    refusal.on('pageerror', (error) => refusalErrors.push(error.message));
+    await refusal.addInitScript(() => {
+      globalThis.skellyRefuseFixture = true;
     });
-    assert.ok(copyBox, `${message}: the copy has a box`);
+    const startupError = refusal.waitForEvent('pageerror').then((error) => {
+      throw error;
+    });
+    await refusal.goto(`http://127.0.0.1:${address.port}/?mods=1`);
+    await Promise.race([
+      startupError,
+      refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
+    ]);
     assert.ok(
-      copyBox.x >= port.left - SCROLLPORT_EDGE && copyBox.x + copyBox.width <= port.right + SCROLLPORT_EDGE,
-      `${message}: ${JSON.stringify({ copy: copyBox, scrollport: port })}`,
+      (await refusal.locator('#errors').textContent()).includes('fixture.inventory-work'),
+      'refused pack is named',
     );
-  };
-  await cardFact.hover();
-  assert.equal(await cardCopy.isVisible(), true, 'card-host hover exposes the copy');
-  await assertCopyInScrollport('card-host hover keeps the copy in the scrollport');
-  await page.mouse.move(0, 0);
-  // A fresh fact, never entered by pointer, so only the focus listener can place its copy.
-  await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
-  await cardFact.focus();
-  assert.equal(await cardCopy.isVisible(), true, 'card-host keyboard focus exposes the copy');
-  await assertCopyInScrollport('card-host keyboard focus keeps the copy in the scrollport');
-  // Resizing keeps focus on the fact, so the copy it shows is refitted to the new viewport.
-  await resizeViewport({ width: 320, height: 480 });
-  assert.equal(await cardFact.evaluate((owner) => owner === document.activeElement), true, 'resize keeps focus');
-  assert.equal(await cardCopy.isVisible(), true, 'resize keeps the focused copy shown');
-  await assertCopyInScrollport('resize with focus retained keeps the copy in the scrollport');
-  await page.evaluate(() => {
-    document.querySelector('#overlay').hidden = true;
-  });
-  await resizeViewport({ width: 800, height: 400 });
-  await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
-  // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
-  const EDGE = 0.5;
-  const selectedDetailLayout = await page.evaluate((edge) => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const you = body?.querySelector('[data-pane="you"]');
-    const details = body?.querySelector('[data-pane="details"]');
-    const around = body?.querySelector('[data-pane="around"]');
-    const selected = body?.querySelector('.inv-item.selected');
-    if (!(you && details && around && selected)) {
-      throw new Error('Selected item details or one of the inventory columns is missing');
+    assert.equal(await refusal.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
+    assert.equal(await refusal.locator('#startup-screen').isVisible(), false, 'refusal retires the startup screen');
+    assert.equal(await refusal.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
+    assert.deepEqual(refusalErrors, [], 'refusal displays admission diagnostics without a page exception');
+    await refusal.close();
+    await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+    try {
+      await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`${message}${errors.length > 0 ? `; page errors: ${errors.join('; ')}` : ''}`, { cause: error });
     }
-    const youBox = you.getBoundingClientRect();
-    const detailsBox = details.getBoundingClientRect();
-    const aroundBox = around.getBoundingClientRect();
-    return {
-      between: youBox.right <= detailsBox.left + edge && detailsBox.right <= aroundBox.left + edge,
-      sideBySide: Math.abs(youBox.top - detailsBox.top) <= 1 && Math.abs(detailsBox.top - aroundBox.top) <= 1,
-      boxes: {
-        you: { left: youBox.left, right: youBox.right },
-        details: { left: detailsBox.left, right: detailsBox.right },
-        around: { left: aroundBox.left, right: aroundBox.right },
-      },
-      detailsUid: details.getAttribute('data-selected-uid'),
-      selectedUid: selected.getAttribute('data-uid'),
-    };
-  }, EDGE);
-  assert.equal(
-    selectedDetailLayout.sideBySide,
-    true,
-    `the 800px viewport stays above the stacked layout: ${JSON.stringify(selectedDetailLayout)}`,
-  );
-  assert.equal(
-    selectedDetailLayout.between,
-    true,
-    `details sit between the two item locations: ${JSON.stringify(selectedDetailLayout)}`,
-  );
-  assert.equal(selectedDetailLayout.detailsUid, selectedDetailLayout.selectedUid, 'details show the selected item');
-  const splitAtOpen = await page.evaluate((edge) => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const splitter = body?.querySelector('[data-inventory-splitter]');
-    const you = body?.querySelector('[data-pane="you"]');
-    const details = body?.querySelector('[data-pane="details"]');
-    const around = body?.querySelector('[data-pane="around"]');
-    if (!(body && splitter && you && details && around)) {
-      throw new Error('Items pane divider or columns are missing');
-    }
-    const dividerBox = splitter.getBoundingClientRect();
-    const youBox = you.getBoundingClientRect();
-    const detailsBox = details.getBoundingClientRect();
-    const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
-    const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
-    return {
-      ratio: Number(splitter.getAttribute('aria-valuenow')),
-      actualRatio: (100 * youBox.width) / availableWidth,
-      availableWidth,
-      dividerBetweenColumns: youBox.right <= dividerBox.left + edge && dividerBox.right <= detailsBox.left + edge,
-      aroundWidth: around.getBoundingClientRect().width,
-      aroundColumnWidth: tracks[3],
-    };
-  }, EDGE);
-  assert.ok(
-    Math.abs(splitAtOpen.ratio - Math.round(splitAtOpen.actualRatio)) <= 1,
-    `splitter state matches the CSS allocation: ${JSON.stringify(splitAtOpen)}`,
-  );
-  assert.equal(
-    splitAtOpen.dividerBetweenColumns,
-    true,
-    `divider stays between columns: ${JSON.stringify(splitAtOpen)}`,
-  );
-  assert.ok(
-    Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
-    `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
-  );
-  const dragSplitter = async (fraction) => {
-    const geometry = await page.evaluate(() => {
-      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-      const splitter = body?.querySelector('[data-inventory-splitter]');
-      if (!(body && splitter)) {
-        throw new Error('Items pane divider is missing');
-      }
-      const details = body.querySelector('[data-pane="details"]');
-      if (!details) {
-        throw new Error('Items details pane is missing');
-      }
-      const dividerBox = splitter.getBoundingClientRect();
-      const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
-      return {
-        divider: dividerBox.toJSON(),
-        ratio: Number(splitter.getAttribute('aria-valuenow')) / 100,
-        availableWidth,
-      };
+    assert.equal(
+      await page.locator('#inventory [data-body-region]').count(),
+      await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
+    );
+    assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
+    await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+    const inventoryFact = page.locator('#inventory .inv-title h2 .fact-detail');
+    const factCopy = inventoryFact.locator('[role="tooltip"]');
+    assert.equal(await inventoryFact.count(), 1, 'inventory rule has a focusable owner');
+    await page.mouse.move(0, 0);
+    assert.equal(await factCopy.isVisible(), false, 'rule is absent from the resting screen');
+    const restingBounds = await inventoryFact.boundingBox();
+    assert.ok(restingBounds);
+    await inventoryFact.focus();
+    assert.equal(await factCopy.isVisible(), true, 'keyboard focus exposes the rule');
+    assert.deepEqual(await inventoryFact.boundingBox(), restingBounds, 'disclosure does not move its owner');
+    await page.locator('#inventory .inv-tab[data-tab="items"]').focus();
+    assert.equal(await factCopy.isVisible(), false, 'rule retires after focus leaves');
+    await inventoryFact.hover();
+    assert.equal(await factCopy.isVisible(), true, 'hover exposes the same rule');
+    await page.mouse.move(0, 0);
+    await inventoryFact.evaluate((owner) => {
+      const { input, menu } = globalThis.scrollFixture;
+      const bounds = owner.getBoundingClientRect();
+      input.setPointerModeForTest(true);
+      input.cursorX = bounds.left + 2;
+      input.cursorY = bounds.top + 2;
+      menu.update();
     });
-    const y = geometry.divider.y + geometry.divider.height / 2;
-    const startX = geometry.divider.x + geometry.divider.width / 2;
-    await page.mouse.move(startX, y);
-    await page.mouse.down();
-    await page.mouse.move(startX + (fraction - geometry.ratio) * geometry.availableWidth, y);
-    await page.mouse.up();
-  };
-  // The side panes' floors come from the CSS (their min-widths), never from literals here.
-  const splitState = async () =>
-    page.evaluate(() => {
+    assert.equal(await factCopy.isVisible(), true, 'drawn menu cursor exposes the rule while locked');
+    await page.evaluate(() => {
+      const { input, menu } = globalThis.scrollFixture;
+      input.cursorX = 0;
+      input.cursorY = 0;
+      menu.update();
+    });
+    assert.equal(await factCopy.isVisible(), false, 'drawn cursor departure retires the rule');
+    await page.evaluate(() => {
+      globalThis.scrollFixture.input.setPointerModeForTest(false);
+      globalThis.scrollFixture.menu.update();
+    });
+    // A card host's fact must show whole: its copy stays inside the card's scrollport on hover and keyboard focus.
+    const SCROLLPORT_EDGE = 0.5;
+    await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
+    const cardFact = page.locator('#overlay .card .fact-detail');
+    const cardCopy = cardFact.locator('[role="tooltip"]');
+    const assertCopyInScrollport = async (message) => {
+      const copyBox = await cardCopy.boundingBox();
+      const port = await page.evaluate(() => {
+        const card = document.querySelector('#overlay .card');
+        const left = card.getBoundingClientRect().left + card.clientLeft;
+        return { left, right: left + card.clientWidth };
+      });
+      assert.ok(copyBox, `${message}: the copy has a box`);
+      assert.ok(
+        copyBox.x >= port.left - SCROLLPORT_EDGE && copyBox.x + copyBox.width <= port.right + SCROLLPORT_EDGE,
+        `${message}: ${JSON.stringify({ copy: copyBox, scrollport: port })}`,
+      );
+    };
+    await cardFact.hover();
+    assert.equal(await cardCopy.isVisible(), true, 'card-host hover exposes the copy');
+    await assertCopyInScrollport('card-host hover keeps the copy in the scrollport');
+    await page.mouse.move(0, 0);
+    // A fresh fact, never entered by pointer, so only the focus listener can place its copy.
+    await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
+    await cardFact.focus();
+    assert.equal(await cardCopy.isVisible(), true, 'card-host keyboard focus exposes the copy');
+    await assertCopyInScrollport('card-host keyboard focus keeps the copy in the scrollport');
+    // Resizing keeps focus on the fact, so the copy it shows is refitted to the new viewport.
+    await resizeViewport({ width: 320, height: 480 });
+    assert.equal(await cardFact.evaluate((owner) => owner === document.activeElement), true, 'resize keeps focus');
+    assert.equal(await cardCopy.isVisible(), true, 'resize keeps the focused copy shown');
+    await assertCopyInScrollport('resize with focus retained keeps the copy in the scrollport');
+    await page.evaluate(() => {
+      document.querySelector('#overlay').hidden = true;
+    });
+    await resizeViewport({ width: 800, height: 400 });
+    await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
+    // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
+    const EDGE = 0.5;
+    const selectedDetailLayout = await page.evaluate((edge) => {
+      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+      const you = body?.querySelector('[data-pane="you"]');
+      const details = body?.querySelector('[data-pane="details"]');
+      const around = body?.querySelector('[data-pane="around"]');
+      const selected = body?.querySelector('.inv-item.selected');
+      if (!(you && details && around && selected)) {
+        throw new Error('Selected item details or one of the inventory columns is missing');
+      }
+      const youBox = you.getBoundingClientRect();
+      const detailsBox = details.getBoundingClientRect();
+      const aroundBox = around.getBoundingClientRect();
+      return {
+        between: youBox.right <= detailsBox.left + edge && detailsBox.right <= aroundBox.left + edge,
+        sideBySide: Math.abs(youBox.top - detailsBox.top) <= 1 && Math.abs(detailsBox.top - aroundBox.top) <= 1,
+        boxes: {
+          you: { left: youBox.left, right: youBox.right },
+          details: { left: detailsBox.left, right: detailsBox.right },
+          around: { left: aroundBox.left, right: aroundBox.right },
+        },
+        detailsUid: details.getAttribute('data-selected-uid'),
+        selectedUid: selected.getAttribute('data-uid'),
+      };
+    }, EDGE);
+    assert.equal(
+      selectedDetailLayout.sideBySide,
+      true,
+      `the 800px viewport stays above the stacked layout: ${JSON.stringify(selectedDetailLayout)}`,
+    );
+    assert.equal(
+      selectedDetailLayout.between,
+      true,
+      `details sit between the two item locations: ${JSON.stringify(selectedDetailLayout)}`,
+    );
+    assert.equal(selectedDetailLayout.detailsUid, selectedDetailLayout.selectedUid, 'details show the selected item');
+    const splitAtOpen = await page.evaluate((edge) => {
       const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
       const splitter = body?.querySelector('[data-inventory-splitter]');
       const you = body?.querySelector('[data-pane="you"]');
@@ -697,697 +639,775 @@ try {
       if (!(body && splitter && you && details && around)) {
         throw new Error('Items pane divider or columns are missing');
       }
+      const dividerBox = splitter.getBoundingClientRect();
+      const youBox = you.getBoundingClientRect();
+      const detailsBox = details.getBoundingClientRect();
+      const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
+      const tracks = getComputedStyle(body).gridTemplateColumns.trim().split(' ').map(Number.parseFloat);
       return {
         ratio: Number(splitter.getAttribute('aria-valuenow')),
-        availableWidth: body.clientWidth - splitter.offsetWidth - details.offsetWidth,
-        youMin: Number.parseFloat(getComputedStyle(you).minWidth),
-        aroundMin: Number.parseFloat(getComputedStyle(around).minWidth),
+        actualRatio: (100 * youBox.width) / availableWidth,
+        availableWidth,
+        dividerBetweenColumns: youBox.right <= dividerBox.left + edge && dividerBox.right <= detailsBox.left + edge,
         aroundWidth: around.getBoundingClientRect().width,
-        youWidth: you.getBoundingClientRect().width,
-        aroundRight: around.getBoundingClientRect().right,
-        bodyRight: body.getBoundingClientRect().left + body.clientLeft + body.clientWidth,
-        gutter: Number.parseFloat(
-          getComputedStyle(document.querySelector('#inventory')).getPropertyValue('--inv-scrollbar-width'),
-        ),
+        aroundColumnWidth: tracks[3],
       };
-    });
-  // Resize handlers run with the next frame, so observe two frames, not an arbitrary delay.
-  const nextFrames = async () =>
-    page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
-  const emptyAround = await page.evaluate(() => {
-    const around = document.querySelector('#inventory [data-pane="around"]');
-    const you = document.querySelector('#inventory [data-pane="you"]');
-    const grid = around?.querySelector('.inv-grid');
-    if (!around) {
-      throw new Error('empty vicinity pane is missing');
-    }
-    if (!you) {
-      throw new Error('player pane is missing');
-    }
-    if (!grid) {
-      throw new Error('empty-feet drop target is missing');
-    }
-    const aroundBox = around.getBoundingClientRect();
-    const youBox = you.getBoundingClientRect();
-    const targetBox = grid.getBoundingClientRect();
-    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
-    const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
-    return {
-      around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
-      viewport: { width: window.innerWidth, height: window.innerHeight },
-      you: { width: youBox.width, height: youBox.height },
-      target: { width: targetBox.width, height: targetBox.height },
-      cell,
-      cap: globalThis.scrollFixture.containerMaxWidthCells,
-      targetIsHit: hit?.closest('.inv-grid') === grid,
-    };
-  });
-  assert.ok(
-    emptyAround.around.right <= emptyAround.viewport.width && emptyAround.around.bottom <= emptyAround.viewport.height,
-    `vicinity stays inside its viewport: ${JSON.stringify(emptyAround)}`,
-  );
-  assert.ok(
-    emptyAround.target.width < emptyAround.around.width,
-    `empty vicinity content shrink-wraps inside its pane: ${JSON.stringify(emptyAround)}`,
-  );
-  assert.ok(
-    emptyAround.target.height < emptyAround.around.height,
-    `empty-feet target stays compact in the full-height Around pane: ${JSON.stringify(emptyAround)}`,
-  );
-  assert.ok(
-    emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
-    `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
-  );
-  assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
-  await dragSplitter(1);
-  const vicinityAtFloor = await splitState();
-  assert.ok(
-    vicinityAtFloor.aroundMin > 0 && Math.abs(vicinityAtFloor.aroundWidth - vicinityAtFloor.aroundMin) <= 1,
-    `the right clamp leaves the vicinity at its CSS floor: ${JSON.stringify(vicinityAtFloor)}`,
-  );
-  process.stdout.write(`${engine}: stable scroll gutter ${vicinityAtFloor.gutter}px\n`);
-  if (engine === 'chromium') {
-    // With overlay scrollbars both gutters are 0, and the cap-wide check below would pass vacuously.
+    }, EDGE);
     assert.ok(
-      vicinityAtFloor.gutter > 0,
-      `Chromium has classic scrollbars (launched without --hide-scrollbars), so the cap-wide rack meets the pane's scroll gutter: ${JSON.stringify(vicinityAtFloor)}`,
+      Math.abs(splitAtOpen.ratio - Math.round(splitAtOpen.actualRatio)) <= 1,
+      `splitter state matches the CSS allocation: ${JSON.stringify(splitAtOpen)}`,
     );
-  }
-  await page.evaluate(() => globalThis.scrollFixture.addCapRack());
-  const capWideRack = await page.evaluate(() => {
-    const around = document.querySelector('#inventory [data-pane="around"]');
-    const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
-    const grid = rack?.querySelector('.inv-grid');
-    const item = grid?.querySelector('.inv-item');
-    if (!(around && grid && item)) {
-      throw new Error('cap-width rack fixture is missing');
-    }
-    const pane = around.getBoundingClientRect();
-    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
-    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    const itemBox = item.getBoundingClientRect();
-    const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
-    return {
-      pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
-      viewport: { width: window.innerWidth, height: window.innerHeight },
-      sectionWidth: rack.getBoundingClientRect().width,
-      gridWidth: grid.getBoundingClientRect().width,
-      clientWidth: around.clientWidth,
-      scrollWidth: around.scrollWidth,
-      scrollLeft: around.scrollLeft,
-      itemLeft: itemBox.x - grid.getBoundingClientRect().x,
-      itemRect: { x: itemBox.x, y: itemBox.y, width: itemBox.width, height: itemBox.height },
-      cell,
-      cap: globalThis.scrollFixture.containerMaxWidthCells,
-      itemHit: hit?.closest('.inv-item') === item,
-    };
-  });
-  assert.ok(
-    capWideRack.pane.left >= 0 &&
-      capWideRack.pane.right <= capWideRack.viewport.width &&
-      capWideRack.pane.top >= 0 &&
-      capWideRack.pane.bottom <= capWideRack.viewport.height,
-    `cap-wide vicinity stays inside its viewport: ${JSON.stringify(capWideRack)}`,
-  );
-  assert.ok(
-    capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
-    `cap-wide rack grid stays within the content cap: ${JSON.stringify(capWideRack)}`,
-  );
-  assert.ok(
-    capWideRack.scrollWidth <= capWideRack.clientWidth,
-    `cap-wide rack needs no horizontal scrolling: ${JSON.stringify(capWideRack)}`,
-  );
-  assert.equal(
-    Math.floor(capWideRack.itemLeft / capWideRack.cell),
-    capWideRack.cap - 1,
-    'fixture item occupies the rack’s last column',
-  );
-  assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll the pane sideways');
-  assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
-  // Grid names in this browser's UI font at the base tuning, in boxes that copy the rendered rack token, so they keep
-  // its classes. Each line but the last runs until the next glyph would cross the border, nothing shows
-  // past the border, and the cell shows at least the start validate predicts. Scroll sizes are read along the lines
-  // only: across them, Firefox counts a font's content area as overflow where it is taller than the line height, so
-  // the lines' own box is compared with the item's content box instead.
-  const nameFit = await page.evaluate((edge) => {
-    const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
-    const grid = token?.closest('.inv-grid');
-    if (!grid) {
-      throw new Error('cap-rack token or its grid is missing');
-    }
-    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
-    const tokenBox = token.getBoundingClientRect();
-    const place = (name, w, h) => {
-      const node = token.cloneNode(false);
-      node.removeAttribute('data-uid');
-      node.classList.remove('selected');
-      node.classList.toggle('inv-item-tall', h > w);
-      node.style.width = `${w * cell - (cell - tokenBox.width)}px`;
-      node.style.height = `${h * cell - (cell - tokenBox.height)}px`;
-      const span = document.createElement('span');
-      span.className = 'inv-item-name';
-      span.textContent = name;
-      node.append(span);
-      grid.append(node);
-      return { node, span };
-    };
-    const contentBox = (node) => {
-      const style = getComputedStyle(node);
-      const inset = (side) =>
-        Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
-      const box = node.getBoundingClientRect();
-      return {
-        left: box.left + inset('Left'),
-        right: box.right - inset('Right'),
-        top: box.top + inset('Top'),
-        bottom: box.bottom - inset('Bottom'),
-      };
-    };
-    // The centres of a name's glyphs, grouped into the rendered lines by where they sit across the lines.
-    const renderedLines = (span, name, tall) => {
-      const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
-      const lines = [];
-      for (const index of name.split('').keys()) {
-        if (name[index] !== ' ') {
-          const range = document.createRange();
-          range.setStart(span.firstChild, index);
-          range.setEnd(span.firstChild, index + 1);
-          const rect = range.getBoundingClientRect();
-          const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-          const across = tall ? glyph.x : glyph.y;
-          const line = lines.at(-1);
-          if (line && Math.abs(across - line.across) < lineHeight / 2) {
-            line.glyphs.push(glyph);
-          } else {
-            lines.push({ across, glyphs: [glyph] });
-          }
+    assert.equal(
+      splitAtOpen.dividerBetweenColumns,
+      true,
+      `divider stays between columns: ${JSON.stringify(splitAtOpen)}`,
+    );
+    assert.ok(
+      Math.abs(splitAtOpen.aroundWidth - splitAtOpen.aroundColumnWidth) <= 1,
+      `Around you fills its column: ${JSON.stringify(splitAtOpen)}`,
+    );
+    const dragSplitter = async (fraction) => {
+      const geometry = await page.evaluate(() => {
+        const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+        const splitter = body?.querySelector('[data-inventory-splitter]');
+        if (!(body && splitter)) {
+          throw new Error('Items pane divider is missing');
         }
-      }
-      return lines;
+        const details = body.querySelector('[data-pane="details"]');
+        if (!details) {
+          throw new Error('Items details pane is missing');
+        }
+        const dividerBox = splitter.getBoundingClientRect();
+        const availableWidth = body.clientWidth - splitter.offsetWidth - details.offsetWidth;
+        return {
+          divider: dividerBox.toJSON(),
+          ratio: Number(splitter.getAttribute('aria-valuenow')) / 100,
+          availableWidth,
+        };
+      });
+      const y = geometry.divider.y + geometry.divider.height / 2;
+      const startX = geometry.divider.x + geometry.divider.width / 2;
+      await page.mouse.move(startX, y);
+      await page.mouse.down();
+      await page.mouse.move(startX + (fraction - geometry.ratio) * geometry.availableWidth, y);
+      await page.mouse.up();
     };
-    // The inline size of a run set unbroken in the name's font.
-    const runSize = (span, run, tall) => {
-      const probe = document.createElement('span');
-      probe.style.cssText = 'position: absolute; white-space: pre; visibility: hidden';
-      probe.textContent = run;
-      span.append(probe);
-      const rect = probe.getBoundingClientRect();
-      probe.remove();
-      return tall ? rect.height : rect.width;
-    };
-    const check = ({ name, w, h, visible }) => {
-      const tall = h > w;
-      const { node, span } = place(name, w, h);
-      const inner = contentBox(node);
-      const clip = span.getBoundingClientRect();
-      const lines = renderedLines(span, name, tall);
-      const inlineSize = tall ? inner.bottom - inner.top : inner.right - inner.left;
-      const problems = [];
-      // A line breaks only where its text and the next line's first glyph, set unbroken, overrun the border.
-      const runs = lines.slice(1).map(({ glyphs }, at) => name.slice(lines[at].glyphs[0].index, glyphs[0].index + 1));
-      for (const run of runs.filter((text) => runSize(span, text, tall) <= inlineSize - edge)) {
-        problems.push(`breaks before filling "${run}"`);
-      }
-      const shown = lines
-        .flatMap(({ glyphs }) => glyphs)
-        .filter(({ x, y }) => x > clip.left && x < clip.right && y > clip.top && y < clip.bottom).length;
-      if (shown < visible.replaceAll(' ', '').length) {
-        problems.push(`shows ${shown} glyphs, validate predicts "${visible}"`);
-      }
-      if (tall ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth) {
-        problems.push('a line overflows');
-      }
-      if (
-        clip.left < inner.left - edge ||
-        clip.right > inner.right + edge ||
-        clip.top < inner.top - edge ||
-        clip.bottom > inner.bottom + edge
-      ) {
-        problems.push('shows past the border');
-      }
-      node.remove();
-      return {
-        label: `${name} [${w}×${h}]`,
-        problems,
-        runs: runs.length,
-        clipped: shown < name.replaceAll(' ', '').length,
-      };
-    };
-    const results = globalThis.scrollFixture.gridNames.map(check);
-    return {
-      failures: results
-        .filter(({ problems }) => problems.length > 0)
-        .map(({ label, problems }) => `${label}: ${problems.join('; ')}`),
-      filledLines: results.reduce((sum, { runs }) => sum + runs, 0),
-      clippedNames: results.filter(({ clipped }) => clipped).length,
-    };
-  }, EDGE);
-  assert.deepEqual(nameFit.failures, [], 'every grid name fills its lines to the border and stays inside it');
-  assert.ok(nameFit.filledLines > 0 && nameFit.clippedNames > 0, `names wrap and clip: ${JSON.stringify(nameFit)}`);
-  // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
-  await resizeViewport({ width: 1280, height: 400 });
-  await dragSplitter(0);
-  const splitAtLeftClamp = await splitState();
-  assert.ok(
-    Math.abs(splitAtLeftClamp.ratio - Math.round((100 * splitAtLeftClamp.youMin) / splitAtLeftClamp.availableWidth)) <=
-      1,
-    `left drag stops at the player pane's floor: ${JSON.stringify(splitAtLeftClamp)}`,
-  );
-  await dragSplitter(1);
-  const splitAtRightClamp = await splitState();
-  assert.ok(
-    Math.abs(
-      splitAtRightClamp.ratio - Math.round(100 * (1 - splitAtRightClamp.aroundMin / splitAtRightClamp.availableWidth)),
-    ) <= 1,
-    `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
-  );
-  // The chosen split is a preference: a narrower window clamps only what it applies, and widening restores it.
-  await resizeViewport({ width: 800, height: 400 });
-  await nextFrames();
-  const narrowedSplit = await splitState();
-  assert.ok(
-    narrowedSplit.ratio < splitAtRightClamp.ratio - 1 &&
-      Math.abs(narrowedSplit.ratio - Math.round(100 * (1 - narrowedSplit.aroundMin / narrowedSplit.availableWidth))) <=
-        1,
-    `a narrower window applies its own clamp: ${JSON.stringify({ splitAtRightClamp, narrowedSplit })}`,
-  );
-  await resizeViewport({ width: 1280, height: 400 });
-  await nextFrames();
-  const restoredSplit = await splitState();
-  assert.ok(
-    Math.abs(restoredSplit.ratio - splitAtRightClamp.ratio) <= 1,
-    `widening the window restores the chosen split: ${JSON.stringify({ splitAtRightClamp, restoredSplit })}`,
-  );
-  // A clamp can land a sub-pixel past a floor, depending on how the details width rounds. Five consecutive widths
-  // cover every rounding residue of a 20% details column; past either clamp, the split must hold and fill the body.
-  for (let width = 1280; width < 1285; width++) {
-    await resizeViewport({ width, height: 400 });
-    for (const pastClamp of [-0.2, 1.2]) {
-      await dragSplitter(pastClamp);
-      await nextFrames();
-      const held = await splitState();
-      assert.ok(
-        Math.abs((100 * held.youWidth) / held.availableWidth - held.ratio) <= 1 &&
-          held.aroundRight >= held.bodyRight - 1,
-        `a drag past the clamp holds there and the columns fill the body: ${JSON.stringify({ width, pastClamp, held })}`,
-      );
-    }
-  }
-  await resizeViewport({ width: 1280, height: 400 });
-  await dragSplitter(0.5);
-  const middleSplit = await splitState();
-  assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
-  await page.evaluate(() => globalThis.scrollFixture.populatePiles());
-  const capContainerLayout = async () =>
-    page.evaluate(() => {
-      const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
-      const section = rack?.closest('[data-around-section="container"]');
-      const grid = rack?.querySelector('.inv-grid');
+    // The side panes' floors come from the CSS (their min-widths), never from literals here.
+    const splitState = async () =>
+      page.evaluate(() => {
+        const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+        const splitter = body?.querySelector('[data-inventory-splitter]');
+        const you = body?.querySelector('[data-pane="you"]');
+        const details = body?.querySelector('[data-pane="details"]');
+        const around = body?.querySelector('[data-pane="around"]');
+        if (!(body && splitter && you && details && around)) {
+          throw new Error('Items pane divider or columns are missing');
+        }
+        return {
+          ratio: Number(splitter.getAttribute('aria-valuenow')),
+          availableWidth: body.clientWidth - splitter.offsetWidth - details.offsetWidth,
+          youMin: Number.parseFloat(getComputedStyle(you).minWidth),
+          aroundMin: Number.parseFloat(getComputedStyle(around).minWidth),
+          aroundWidth: around.getBoundingClientRect().width,
+          youWidth: you.getBoundingClientRect().width,
+          aroundRight: around.getBoundingClientRect().right,
+          bodyRight: body.getBoundingClientRect().left + body.clientLeft + body.clientWidth,
+          gutter: Number.parseFloat(
+            getComputedStyle(document.querySelector('#inventory')).getPropertyValue('--inv-scrollbar-width'),
+          ),
+        };
+      });
+    // Resize handlers run with the next frame, so observe two frames, not an arbitrary delay.
+    const nextFrames = async () =>
+      page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+    const emptyAround = await page.evaluate(() => {
       const around = document.querySelector('#inventory [data-pane="around"]');
-      if (!(rack && section && grid && around)) {
-        throw new Error('cap-width container layout is missing');
+      const you = document.querySelector('#inventory [data-pane="you"]');
+      const grid = around?.querySelector('.inv-grid');
+      if (!around) {
+        throw new Error('empty vicinity pane is missing');
       }
-      const sectionTop = section.getBoundingClientRect().top;
-      const rowSections = [...around.querySelectorAll('[data-around-section]')].filter(
-        (candidate) => Math.abs(candidate.getBoundingClientRect().top - sectionTop) < 1,
-      ).length;
-      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
-      return {
-        rowSections,
-        aroundWidth: around.getBoundingClientRect().width,
-        sections: [...around.querySelectorAll('[data-around-section]')].map((candidate) => {
-          const box = candidate.getBoundingClientRect();
-          return {
-            label: candidate.querySelector('.inv-pile-label')?.textContent,
-            x: box.x,
-            y: box.y,
-            width: box.width,
-          };
-        }),
-        gridWidth: grid.getBoundingClientRect().width,
-        cap: globalThis.scrollFixture.containerMaxWidthCells,
-        cell,
-        scrollWidth: around.scrollWidth,
-        clientWidth: around.clientWidth,
-      };
-    });
-  const balancedCapContainer = await capContainerLayout();
-  const aroundLayout = async () =>
-    page.evaluate(() => {
-      const around = document.querySelector('#inventory [data-pane="around"]');
-      const sections = [...document.querySelectorAll('#inventory [data-pane="around"] [data-around-section]')];
-      const floor = document.querySelector('#inventory .inv-grid-packed');
-      if (!(around && floor && sections.length > 0)) {
-        throw new Error('responsive vicinity sections are missing');
+      if (!you) {
+        throw new Error('player pane is missing');
+      }
+      if (!grid) {
+        throw new Error('empty-feet drop target is missing');
       }
       const aroundBox = around.getBoundingClientRect();
-      const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
-      const firstTop = Math.min(...sectionBoxes.map((box) => box.top));
+      const youBox = you.getBoundingClientRect();
+      const targetBox = grid.getBoundingClientRect();
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
       return {
-        firstRow: sectionBoxes.filter((box) => Math.abs(box.top - firstTop) < 1).length,
-        overflow: sectionBoxes.some((box) => box.left < aroundBox.left || box.right > aroundBox.right),
-        floorWidth: floor.getBoundingClientRect().width,
-        floorColumns: getComputedStyle(floor).gridTemplateColumns.trim().split(' ').length,
-        pileState: JSON.stringify(globalThis.scrollFixture.inventory.snapshotState().piles),
+        around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        you: { width: youBox.width, height: youBox.height },
+        target: { width: targetBox.width, height: targetBox.height },
+        cell,
+        cap: globalThis.scrollFixture.containerMaxWidthCells,
+        targetIsHit: hit?.closest('.inv-grid') === grid,
       };
     });
-  const balancedLayout = await aroundLayout();
-  await dragSplitter(0);
-  const wideLayout = await aroundLayout();
-  const wideCapContainer = await capContainerLayout();
-  assert.ok(
-    wideCapContainer.rowSections > balancedCapContainer.rowSections,
-    `widening Around you lets the capped container share a row: ${JSON.stringify({ balancedCapContainer, wideCapContainer })}`,
-  );
-  for (const [split, layout] of [
-    ['balanced', balancedCapContainer],
-    ['wide', wideCapContainer],
-  ]) {
     assert.ok(
-      layout.gridWidth <= layout.cap * layout.cell + 1,
-      `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
+      emptyAround.around.right <= emptyAround.viewport.width &&
+        emptyAround.around.bottom <= emptyAround.viewport.height,
+      `vicinity stays inside its viewport: ${JSON.stringify(emptyAround)}`,
     );
     assert.ok(
-      layout.scrollWidth <= layout.clientWidth,
-      `${split} shared container fits without horizontal scrolling: ${JSON.stringify(layout)}`,
+      emptyAround.target.width < emptyAround.around.width,
+      `empty vicinity content shrink-wraps inside its pane: ${JSON.stringify(emptyAround)}`,
     );
-  }
-  assert.ok(
-    wideLayout.firstRow > balancedLayout.firstRow,
-    `wider Around you fits another section: ${JSON.stringify({ balancedLayout, wideLayout })}`,
-  );
-  assert.equal(wideLayout.overflow, false, `Around-you sections stay in their column: ${JSON.stringify(wideLayout)}`);
-  assert.equal(
-    wideLayout.pileState,
-    balancedLayout.pileState,
-    'responsive floor packing leaves saved pile positions unchanged',
-  );
-  await resizeViewport({ width: 800, height: 540 });
-  await nextFrames();
-  await dragSplitter(1);
-  await page.evaluate(() => globalThis.scrollFixture.populateFloorWrapPiles());
-  const floorWrapLayout = await page.evaluate(() => {
-    const around = document.querySelector('#inventory [data-pane="around"]');
-    const grids = globalThis.scrollFixture.floorWrapTargets.map((pos) =>
-      document.querySelector(`#inventory [data-target="pile:${pos.join(',')}"]`),
-    );
-    if (!(around && grids.every(Boolean))) {
-      throw new Error('floor-wrap fixture grids are missing');
-    }
-    const sections = grids.map((grid) => grid.closest('[data-around-section="floor"]'));
-    if (!sections.every(Boolean)) {
-      throw new Error('floor-wrap fixture sections are missing');
-    }
-    const cellWidths = grids.map((grid) =>
-      getComputedStyle(grid).gridTemplateColumns.trim().split(' ').map(Number.parseFloat),
-    );
-    const gridBoxes = grids.map((grid) => grid.getBoundingClientRect());
-    const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
-    const gap = Number.parseFloat(getComputedStyle(around).gap);
-    return {
-      targets: grids.map((grid) => grid.dataset.target),
-      cellWidths,
-      cells: grids.map((grid) => Number.parseFloat(getComputedStyle(grid).backgroundSize)),
-      wraps: sectionBoxes[1].top >= sectionBoxes[0].bottom,
-      exceedsRow: gridBoxes[0].width + gap + gridBoxes[1].width > around.clientWidth,
-    };
-  });
-  assert.ok(floorWrapLayout.exceedsRow, `fixture grids exceed their shared row: ${JSON.stringify(floorWrapLayout)}`);
-  assert.equal(
-    floorWrapLayout.wraps,
-    true,
-    `the second floor grid starts on a new row: ${JSON.stringify(floorWrapLayout)}`,
-  );
-  for (const [tracks, cell] of floorWrapLayout.cellWidths.map((widths, index) => [
-    widths,
-    floorWrapLayout.cells[index],
-  ])) {
     assert.ok(
-      tracks.every((width) => Math.abs(width - cell) <= 1),
-      `floor grid cells keep their width: ${JSON.stringify(floorWrapLayout)}`,
+      emptyAround.target.height < emptyAround.around.height,
+      `empty-feet target stays compact in the full-height Around pane: ${JSON.stringify(emptyAround)}`,
     );
-  }
-  if (process.argv[3]) {
-    await page.locator(`#inventory [data-target="${floorWrapLayout.targets[0]}"]`).scrollIntoViewIfNeeded();
-    await page.locator('#inventory [data-pane="around"]').screenshot({ path: process.argv[3] });
-  }
-  await resizeViewport({ width: 960, height: 540 });
-  const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
-  assert.ok(
-    fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
-    `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
-  );
-  await resizeViewport({ width: 480, height: 400 });
-  const narrowLayout = await page.evaluate(() => {
-    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
-    const you = body?.querySelector('[data-pane="you"]');
-    const details = body?.querySelector('[data-pane="details"]');
-    const around = body?.querySelector('[data-pane="around"]');
-    if (!(body && you && details && around)) {
-      throw new Error('Narrow inventory columns are missing');
-    }
-    const youBox = you.getBoundingClientRect();
-    const detailsBox = details.getBoundingClientRect();
-    const aroundBox = around.getBoundingClientRect();
-    const actions = [...details.querySelectorAll('.inv-option')];
-    const actionsFit = actions.every((action) => {
-      const bounds = action.getBoundingClientRect();
-      return bounds.left >= detailsBox.left && bounds.right <= detailsBox.right;
-    });
-    return {
-      noHorizontalOverflow: body.scrollWidth <= body.clientWidth,
-      stacked: youBox.bottom <= detailsBox.top && detailsBox.bottom <= aroundBox.top,
-      actionCount: actions.length,
-      actionsFit,
-    };
-  });
-  assert.equal(
-    narrowLayout.noHorizontalOverflow,
-    true,
-    `narrow inventory does not hide columns: ${JSON.stringify(narrowLayout)}`,
-  );
-  assert.equal(
-    narrowLayout.stacked,
-    true,
-    `narrow inventory stacks its scrollable columns: ${JSON.stringify(narrowLayout)}`,
-  );
-  assert.ok(narrowLayout.actionCount > 0, `the details panel exposes an action: ${JSON.stringify(narrowLayout)}`);
-  assert.equal(
-    narrowLayout.actionsFit,
-    true,
-    `narrow detail actions stay inside their panel: ${JSON.stringify(narrowLayout)}`,
-  );
-  await resizeViewport({ width: 1280, height: 480 });
-  await page.evaluate(() => globalThis.scrollFixture.populatePiles());
-  const failures = [];
-  let activeTab;
-  // The character's practice accumulates as products of tuning numbers, so the panel must round it.
-  await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
-  activeTab = 'skills';
-  const skillFact = page.locator('#inventory .inv-skill .fact-detail').first();
-  await skillFact.focus();
-  const skillTooltip = skillFact.locator('[role="tooltip"]');
-  assert.equal(await skillTooltip.isVisible(), true, 'skill effect detail is visible on keyboard focus');
-  assert.equal(await skillTooltip.textContent(), 'Fixture handling effect.');
-  await skillFact.evaluate((label) => label.blur());
-  const practiceLine = await page.locator('#inventory .inv-skill-practice').first().textContent();
-  assert.equal(
-    practiceLine?.includes((2.5 * 0.46).toFixed(1)),
-    true,
-    `skills panel rounds accumulated practice: ${practiceLine}`,
-  );
-  assert.equal(/\.\d{2,}/.test(practiceLine ?? ''), false, `skills panel hides float noise: ${practiceLine}`);
-  for (const { tab, selector } of [
-    { tab: 'skills', selector: '#inventory [data-pane="body"]' },
-    { tab: 'items', selector: '#inventory [data-pane="you"]' },
-    { tab: 'items', selector: '#inventory [data-pane="around"]' },
-    { tab: 'items', selector: '#inventory .inv-details' },
-  ]) {
-    if (activeTab !== tab) {
-      await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
-      activeTab = tab;
-    }
-    const size = await page
-      .locator(selector)
-      .evaluate((pane) => ({ height: pane.clientHeight, scroll: pane.scrollHeight }));
-    assert.ok(size.height > 0 && size.scroll > size.height, `${selector} actually overflows: ${JSON.stringify(size)}`);
-    // Unlocked native wheel is the pristine positive control; locked dispatch reproduces the gap.
-    for (const locked of [false, true]) {
-      const box = await page.locator(selector).boundingBox();
-      assert.ok(box);
-      const x = box.x + box.width / 2;
-      const y = box.y + box.height / 2;
-      await page.evaluate(
-        (trial) => {
-          const { input } = globalThis.scrollFixture;
-          globalThis.scrollFixture.resetWheels();
-          input.setPointerModeForTest(trial.locked);
-          document.querySelector(trial.selector).scrollTop = 0;
-          globalThis.scrollFixture.menu.update();
-        },
-        { selector, locked },
+    assert.ok(
+      emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
+      `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
+    );
+    assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
+    await dragSplitter(1);
+    const vicinityAtFloor = await splitState();
+    assert.ok(
+      vicinityAtFloor.aroundMin > 0 && Math.abs(vicinityAtFloor.aroundWidth - vicinityAtFloor.aroundMin) <= 1,
+      `the right clamp leaves the vicinity at its CSS floor: ${JSON.stringify(vicinityAtFloor)}`,
+    );
+    process.stdout.write(`${engine}: stable scroll gutter ${vicinityAtFloor.gutter}px\n`);
+    if (engine === 'chromium') {
+      // With overlay scrollbars both gutters are 0, and the cap-wide check below would pass vacuously.
+      assert.ok(
+        vicinityAtFloor.gutter > 0,
+        `Chromium has classic scrollbars (launched without --hide-scrollbars), so the cap-wide rack meets the pane's scroll gutter: ${JSON.stringify(vicinityAtFloor)}`,
       );
-      if (locked) {
-        const cursor = await page.evaluate(() => {
-          const { input } = globalThis.scrollFixture;
-          return { x: input.cursorX, y: input.cursorY };
-        });
-        await page.evaluate(dispatchMenuPointerMove, {
-          canvasSelector: '#view',
-          movementX: x - cursor.x,
-          movementY: y - cursor.y,
-        });
-        await page.evaluate(() => globalThis.scrollFixture.menu.update());
-        await page.evaluate(() =>
-          globalThis.scrollFixture.target.dispatchEvent(
-            new WheelEvent('wheel', {
-              deltaY: 3,
-              deltaMode: 1,
-              bubbles: true,
-              cancelable: true,
-            }),
-          ),
-        );
-      } else {
-        await page.mouse.move(x, y);
-        await page.mouse.wheel(0, 48);
-        // Observe two frames, not an arbitrary delay, so native scrolling has been submitted.
-        await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
-      }
-      const observed = await page.locator(selector).evaluate((pane) => ({
-        top: pane.scrollTop,
-        pageY: window.scrollY,
-        gameplayWheels: globalThis.scrollFixture.gameplayWheels,
-      }));
-      await page.evaluate(() => globalThis.scrollFixture.redraw());
-      const afterRedraw = await page.locator(selector).evaluate((pane) => pane.scrollTop);
-      const result = { engine, selector, locked, ...size, ...observed, afterRedraw };
-      process.stdout.write(`${JSON.stringify(result)}\n`);
-      if (
-        !(observed.top > 0 && observed.pageY === 0 && observed.gameplayWheels === 0 && afterRedraw === observed.top)
-      ) {
-        failures.push(result);
-      }
     }
-  }
-  const selectedPane = page.locator('#inventory [data-pane="you"]');
-  const scrolledAway = await selectedPane.evaluate((pane) => {
-    pane.scrollTop = pane.scrollHeight;
-    const selectedUid = String(globalThis.scrollFixture.screen.selected.uid);
-    const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
-      (candidate) => candidate.dataset.uid === selectedUid,
+    await page.evaluate(() => globalThis.scrollFixture.addCapRack());
+    const capWideRack = await page.evaluate(() => {
+      const around = document.querySelector('#inventory [data-pane="around"]');
+      const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
+      const grid = rack?.querySelector('.inv-grid');
+      const item = grid?.querySelector('.inv-item');
+      if (!(around && grid && item)) {
+        throw new Error('cap-width rack fixture is missing');
+      }
+      const pane = around.getBoundingClientRect();
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const itemBox = item.getBoundingClientRect();
+      const hit = document.elementFromPoint(itemBox.x + itemBox.width / 2, itemBox.y + itemBox.height / 2);
+      return {
+        pane: { left: pane.left, right: pane.right, top: pane.top, bottom: pane.bottom },
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        sectionWidth: rack.getBoundingClientRect().width,
+        gridWidth: grid.getBoundingClientRect().width,
+        clientWidth: around.clientWidth,
+        scrollWidth: around.scrollWidth,
+        scrollLeft: around.scrollLeft,
+        itemLeft: itemBox.x - grid.getBoundingClientRect().x,
+        itemRect: { x: itemBox.x, y: itemBox.y, width: itemBox.width, height: itemBox.height },
+        cell,
+        cap: globalThis.scrollFixture.containerMaxWidthCells,
+        itemHit: hit?.closest('.inv-item') === item,
+      };
+    });
+    assert.ok(
+      capWideRack.pane.left >= 0 &&
+        capWideRack.pane.right <= capWideRack.viewport.width &&
+        capWideRack.pane.top >= 0 &&
+        capWideRack.pane.bottom <= capWideRack.viewport.height,
+      `cap-wide vicinity stays inside its viewport: ${JSON.stringify(capWideRack)}`,
     );
-    const rowBox = row.getBoundingClientRect();
-    const paneBox = pane.getBoundingClientRect();
-    return {
-      scrollTop: pane.scrollTop,
-      rowOutsidePane: rowBox.bottom <= paneBox.top || rowBox.top >= paneBox.bottom,
-    };
-  });
-  assert.ok(
-    scrolledAway.scrollTop > 0 && scrolledAway.rowOutsidePane,
-    `selected row scrolled away: ${JSON.stringify(scrolledAway)}`,
-  );
-  await page.evaluate(() => globalThis.scrollFixture.redrawAfterNeedsChange());
-  const selectionAfterNeedsRedraw = await selectedPane.evaluate((pane) => pane.scrollTop);
-  assert.equal(
-    selectionAfterNeedsRedraw,
-    scrolledAway.scrollTop,
-    'needs redraw must preserve the player-scrolled pane even while a row remains selected',
-  );
-  assert.deepEqual(errors, []);
-  assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
-
-  // A HUD scale other than 1 changes the root size the UI is measured in, so a drag and the drawn cursor are right
-  // only if their maths use rendered sizes. The target cell is far enough from the origin that a base-size cell
-  // would round to a neighbour.
-  await resizeViewport({ width: 1280, height: 900 });
-  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
-  const baseRootSize = await page.evaluate(() =>
-    Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
-  );
-  await page.evaluate(() => {
-    globalThis.scrollFixture.input.setPointerModeForTest(false);
-    globalThis.scrollFixture.menu.update();
-    globalThis.scrollFixture.useUiTuning({ spacing: 0.75, hudScale: 1.25 });
-  });
-  await nextFrames();
-  const scaled = await page.evaluate(() => {
-    const item = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
-    const grid = item?.closest('.inv-grid');
-    if (!grid) {
-      throw new Error('cap-rack token or its grid is missing');
+    assert.ok(
+      capWideRack.gridWidth <= capWideRack.cap * capWideRack.cell + 1,
+      `cap-wide rack grid stays within the content cap: ${JSON.stringify(capWideRack)}`,
+    );
+    assert.ok(
+      capWideRack.scrollWidth <= capWideRack.clientWidth,
+      `cap-wide rack needs no horizontal scrolling: ${JSON.stringify(capWideRack)}`,
+    );
+    assert.equal(
+      Math.floor(capWideRack.itemLeft / capWideRack.cell),
+      capWideRack.cap - 1,
+      'fixture item occupies the rack’s last column',
+    );
+    assert.equal(capWideRack.scrollLeft, 0, 'revealing the item does not scroll the pane sideways');
+    assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack.itemRect)}`);
+    // Grid names in this browser's UI font at the base tuning, in boxes that copy the rendered rack token, so they keep
+    // its classes. Each line but the last runs until the next glyph would cross the border, nothing shows
+    // past the border, and the cell shows at least the start validate predicts. Scroll sizes are read along the lines
+    // only: across them, Firefox counts a font's content area as overflow where it is taller than the line height, so
+    // the lines' own box is compared with the item's content box instead.
+    const nameFit = await page.evaluate((edge) => {
+      const token = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
+      const grid = token?.closest('.inv-grid');
+      if (!grid) {
+        throw new Error('cap-rack token or its grid is missing');
+      }
+      const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+      const tokenBox = token.getBoundingClientRect();
+      const place = (name, w, h) => {
+        const node = token.cloneNode(false);
+        node.removeAttribute('data-uid');
+        node.classList.remove('selected');
+        node.classList.toggle('inv-item-tall', h > w);
+        node.style.width = `${w * cell - (cell - tokenBox.width)}px`;
+        node.style.height = `${h * cell - (cell - tokenBox.height)}px`;
+        const span = document.createElement('span');
+        span.className = 'inv-item-name';
+        span.textContent = name;
+        node.append(span);
+        grid.append(node);
+        return { node, span };
+      };
+      const contentBox = (node) => {
+        const style = getComputedStyle(node);
+        const inset = (side) =>
+          Number.parseFloat(style[`border${side}Width`]) + Number.parseFloat(style[`padding${side}`]);
+        const box = node.getBoundingClientRect();
+        return {
+          left: box.left + inset('Left'),
+          right: box.right - inset('Right'),
+          top: box.top + inset('Top'),
+          bottom: box.bottom - inset('Bottom'),
+        };
+      };
+      // The centres of a name's glyphs, grouped into the rendered lines by where they sit across the lines.
+      const renderedLines = (span, name, tall) => {
+        const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
+        const lines = [];
+        for (const index of name.split('').keys()) {
+          if (name[index] !== ' ') {
+            const range = document.createRange();
+            range.setStart(span.firstChild, index);
+            range.setEnd(span.firstChild, index + 1);
+            const rect = range.getBoundingClientRect();
+            const glyph = { index, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            const across = tall ? glyph.x : glyph.y;
+            const line = lines.at(-1);
+            if (line && Math.abs(across - line.across) < lineHeight / 2) {
+              line.glyphs.push(glyph);
+            } else {
+              lines.push({ across, glyphs: [glyph] });
+            }
+          }
+        }
+        return lines;
+      };
+      // The inline size of a run set unbroken in the name's font.
+      const runSize = (span, run, tall) => {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'position: absolute; white-space: pre; visibility: hidden';
+        probe.textContent = run;
+        span.append(probe);
+        const rect = probe.getBoundingClientRect();
+        probe.remove();
+        return tall ? rect.height : rect.width;
+      };
+      const check = ({ name, w, h, visible }) => {
+        const tall = h > w;
+        const { node, span } = place(name, w, h);
+        const inner = contentBox(node);
+        const clip = span.getBoundingClientRect();
+        const lines = renderedLines(span, name, tall);
+        const inlineSize = tall ? inner.bottom - inner.top : inner.right - inner.left;
+        const problems = [];
+        // A line breaks only where its text and the next line's first glyph, set unbroken, overrun the border.
+        const runs = lines.slice(1).map(({ glyphs }, at) => name.slice(lines[at].glyphs[0].index, glyphs[0].index + 1));
+        for (const run of runs.filter((text) => runSize(span, text, tall) <= inlineSize - edge)) {
+          problems.push(`breaks before filling "${run}"`);
+        }
+        const shown = lines
+          .flatMap(({ glyphs }) => glyphs)
+          .filter(({ x, y }) => x > clip.left && x < clip.right && y > clip.top && y < clip.bottom).length;
+        if (shown < visible.replaceAll(' ', '').length) {
+          problems.push(`shows ${shown} glyphs, validate predicts "${visible}"`);
+        }
+        if (tall ? span.scrollHeight > span.clientHeight : span.scrollWidth > span.clientWidth) {
+          problems.push('a line overflows');
+        }
+        if (
+          clip.left < inner.left - edge ||
+          clip.right > inner.right + edge ||
+          clip.top < inner.top - edge ||
+          clip.bottom > inner.bottom + edge
+        ) {
+          problems.push('shows past the border');
+        }
+        node.remove();
+        return {
+          label: `${name} [${w}×${h}]`,
+          problems,
+          runs: runs.length,
+          clipped: shown < name.replaceAll(' ', '').length,
+        };
+      };
+      const results = globalThis.scrollFixture.gridNames.map(check);
+      return {
+        failures: results
+          .filter(({ problems }) => problems.length > 0)
+          .map(({ label, problems }) => `${label}: ${problems.join('; ')}`),
+        filledLines: results.reduce((sum, { runs }) => sum + runs, 0),
+        clippedNames: results.filter(({ clipped }) => clipped).length,
+      };
+    }, EDGE);
+    assert.deepEqual(nameFit.failures, [], 'every grid name fills its lines to the border and stays inside it');
+    assert.ok(nameFit.filledLines > 0 && nameFit.clippedNames > 0, `names wrap and clip: ${JSON.stringify(nameFit)}`);
+    // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
+    await resizeViewport({ width: 1280, height: 400 });
+    await dragSplitter(0);
+    const splitAtLeftClamp = await splitState();
+    assert.ok(
+      Math.abs(
+        splitAtLeftClamp.ratio - Math.round((100 * splitAtLeftClamp.youMin) / splitAtLeftClamp.availableWidth),
+      ) <= 1,
+      `left drag stops at the player pane's floor: ${JSON.stringify(splitAtLeftClamp)}`,
+    );
+    await dragSplitter(1);
+    const splitAtRightClamp = await splitState();
+    assert.ok(
+      Math.abs(
+        splitAtRightClamp.ratio -
+          Math.round(100 * (1 - splitAtRightClamp.aroundMin / splitAtRightClamp.availableWidth)),
+      ) <= 1,
+      `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
+    );
+    // The chosen split is a preference: a narrower window clamps only what it applies, and widening restores it.
+    await resizeViewport({ width: 800, height: 400 });
+    await nextFrames();
+    const narrowedSplit = await splitState();
+    assert.ok(
+      narrowedSplit.ratio < splitAtRightClamp.ratio - 1 &&
+        Math.abs(
+          narrowedSplit.ratio - Math.round(100 * (1 - narrowedSplit.aroundMin / narrowedSplit.availableWidth)),
+        ) <= 1,
+      `a narrower window applies its own clamp: ${JSON.stringify({ splitAtRightClamp, narrowedSplit })}`,
+    );
+    await resizeViewport({ width: 1280, height: 400 });
+    await nextFrames();
+    const restoredSplit = await splitState();
+    assert.ok(
+      Math.abs(restoredSplit.ratio - splitAtRightClamp.ratio) <= 1,
+      `widening the window restores the chosen split: ${JSON.stringify({ splitAtRightClamp, restoredSplit })}`,
+    );
+    // A clamp can land a sub-pixel past a floor, depending on how the details width rounds. Five consecutive widths
+    // cover every rounding residue of a 20% details column; past either clamp, the split must hold and fill the body.
+    for (let width = 1280; width < 1285; width++) {
+      await resizeViewport({ width, height: 400 });
+      for (const pastClamp of [-0.2, 1.2]) {
+        await dragSplitter(pastClamp);
+        await nextFrames();
+        const held = await splitState();
+        assert.ok(
+          Math.abs((100 * held.youWidth) / held.availableWidth - held.ratio) <= 1 &&
+            held.aroundRight >= held.bodyRight - 1,
+          `a drag past the clamp holds there and the columns fill the body: ${JSON.stringify({ width, pastClamp, held })}`,
+        );
+      }
     }
-    grid.scrollIntoView({ block: 'center', inline: 'nearest' });
-    return {
-      rootSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
-      item: item.getBoundingClientRect().toJSON(),
-      grid: grid.getBoundingClientRect().toJSON(),
-    };
-  });
-  assert.ok(
-    Math.abs(scaled.rootSize - 1.25 * baseRootSize) < 0.01,
-    `the fixture HUD scale scales the root size: ${JSON.stringify({ baseRootSize, scaled })}`,
-  );
-  const cell = scaled.grid.width / RACK_GRID[0];
-  const press = { x: scaled.item.x + scaled.item.width / 2, y: scaled.item.y + scaled.item.height / 2 };
-  const grab = { x: Math.min(press.x - scaled.item.x, cell / 2), y: Math.min(press.y - scaled.item.y, cell / 2) };
-  const dropCell = { x: 2, y: 4 };
-  const pointer = { x: scaled.grid.x + (dropCell.x + 0.5) * cell, y: scaled.grid.y + (dropCell.y + 0.5) * cell };
-  assert.ok(
-    await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.inv-grid') !== null, pointer),
-    `the drop point is on the visible rack grid: ${JSON.stringify({ scaled, pointer })}`,
-  );
-  await page.mouse.move(press.x, press.y);
-  await page.mouse.down();
-  await page.mouse.move(pointer.x, pointer.y, { steps: 8 });
-  const ghost = await page
-    .locator('#inventory-drag-root .inv-ghost')
-    .evaluate((node) => node.getBoundingClientRect().toJSON());
-  await page.mouse.up();
-  assert.ok(
-    ghost && Math.abs(ghost.x - (pointer.x - grab.x)) <= 0.5 && Math.abs(ghost.y - (pointer.y - grab.y)) <= 0.5,
-    `the drag ghost's origin is the pointer less the grab offset: ${JSON.stringify({ ghost, pointer, grab })}`,
-  );
-  const drop = await page.evaluate(() => {
-    const { dispatches, capTokenUid } = globalThis.scrollFixture;
-    const move = dispatches.findLast(({ kind, itemUid }) => kind === 'inventory.move' && itemUid === capTokenUid);
-    return move && { kind: move.target.kind, at: move.target.at && { x: move.target.at.x, y: move.target.at.y } };
-  });
-  assert.deepEqual(drop, { kind: 'furniture', at: dropCell }, 'the drop lands in the cell under the pointer');
-  const cursorStart = await page.evaluate(() => {
-    const { input, menu } = globalThis.scrollFixture;
-    input.setPointerModeForTest(true);
-    menu.update();
-    return { x: input.cursorX, y: input.cursorY };
-  });
-  await page.evaluate(dispatchMenuPointerMove, {
-    canvasSelector: '#view',
-    movementX: pointer.x - cursorStart.x,
-    movementY: pointer.y - cursorStart.y,
-  });
-  const cursor = await page.evaluate(() => {
-    const { input, menu } = globalThis.scrollFixture;
-    menu.update();
-    const drawn = document.querySelector('#game-cursor');
-    const box = drawn.getBoundingClientRect();
-    return {
-      cursorX: input.cursorX,
-      cursorY: input.cursorY,
-      tip: { x: box.left + (drawn.classList.contains('hand') ? 4 : 0), y: box.top },
-      visible: box.width > 0 && !drawn.hidden,
-    };
-  });
-  assert.ok(
-    Math.abs(cursor.cursorX - pointer.x) <= 0.5 && Math.abs(cursor.cursorY - pointer.y) <= 0.5,
-    `the menu cursor moved to the drop point: ${JSON.stringify({ cursor, pointer })}`,
-  );
-  assert.ok(
-    cursor.visible && Math.abs(cursor.tip.x - cursor.cursorX) <= 0.5 && Math.abs(cursor.tip.y - cursor.cursorY) <= 0.5,
-    `the drawn cursor sits at the menu cursor position: ${JSON.stringify(cursor)}`,
-  );
-  logPhase('render-free scroll contracts');
-  if (engine === 'chromium') {
+    await resizeViewport({ width: 1280, height: 400 });
+    await dragSplitter(0.5);
+    const middleSplit = await splitState();
+    assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
+    await page.evaluate(() => globalThis.scrollFixture.populatePiles());
+    const capContainerLayout = async () =>
+      page.evaluate(() => {
+        const rack = document.querySelector('#inventory .inv-pile[data-entity-uid]');
+        const section = rack?.closest('[data-around-section="container"]');
+        const grid = rack?.querySelector('.inv-grid');
+        const around = document.querySelector('#inventory [data-pane="around"]');
+        if (!(rack && section && grid && around)) {
+          throw new Error('cap-width container layout is missing');
+        }
+        const sectionTop = section.getBoundingClientRect().top;
+        const rowSections = [...around.querySelectorAll('[data-around-section]')].filter(
+          (candidate) => Math.abs(candidate.getBoundingClientRect().top - sectionTop) < 1,
+        ).length;
+        const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+        return {
+          rowSections,
+          aroundWidth: around.getBoundingClientRect().width,
+          sections: [...around.querySelectorAll('[data-around-section]')].map((candidate) => {
+            const box = candidate.getBoundingClientRect();
+            return {
+              label: candidate.querySelector('.inv-pile-label')?.textContent,
+              x: box.x,
+              y: box.y,
+              width: box.width,
+            };
+          }),
+          gridWidth: grid.getBoundingClientRect().width,
+          cap: globalThis.scrollFixture.containerMaxWidthCells,
+          cell,
+          scrollWidth: around.scrollWidth,
+          clientWidth: around.clientWidth,
+        };
+      });
+    const balancedCapContainer = await capContainerLayout();
+    const aroundLayout = async () =>
+      page.evaluate(() => {
+        const around = document.querySelector('#inventory [data-pane="around"]');
+        const sections = [...document.querySelectorAll('#inventory [data-pane="around"] [data-around-section]')];
+        const floor = document.querySelector('#inventory .inv-grid-packed');
+        if (!(around && floor && sections.length > 0)) {
+          throw new Error('responsive vicinity sections are missing');
+        }
+        const aroundBox = around.getBoundingClientRect();
+        const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
+        const firstTop = Math.min(...sectionBoxes.map((box) => box.top));
+        return {
+          firstRow: sectionBoxes.filter((box) => Math.abs(box.top - firstTop) < 1).length,
+          overflow: sectionBoxes.some((box) => box.left < aroundBox.left || box.right > aroundBox.right),
+          floorWidth: floor.getBoundingClientRect().width,
+          floorColumns: getComputedStyle(floor).gridTemplateColumns.trim().split(' ').length,
+          pileState: JSON.stringify(globalThis.scrollFixture.inventory.snapshotState().piles),
+        };
+      });
+    const balancedLayout = await aroundLayout();
+    await dragSplitter(0);
+    const wideLayout = await aroundLayout();
+    const wideCapContainer = await capContainerLayout();
+    assert.ok(
+      wideCapContainer.rowSections > balancedCapContainer.rowSections,
+      `widening Around you lets the capped container share a row: ${JSON.stringify({ balancedCapContainer, wideCapContainer })}`,
+    );
+    for (const [split, layout] of [
+      ['balanced', balancedCapContainer],
+      ['wide', wideCapContainer],
+    ]) {
+      assert.ok(
+        layout.gridWidth <= layout.cap * layout.cell + 1,
+        `${split} container grid stays within the cap: ${JSON.stringify(layout)}`,
+      );
+      assert.ok(
+        layout.scrollWidth <= layout.clientWidth,
+        `${split} shared container fits without horizontal scrolling: ${JSON.stringify(layout)}`,
+      );
+    }
+    assert.ok(
+      wideLayout.firstRow > balancedLayout.firstRow,
+      `wider Around you fits another section: ${JSON.stringify({ balancedLayout, wideLayout })}`,
+    );
+    assert.equal(wideLayout.overflow, false, `Around-you sections stay in their column: ${JSON.stringify(wideLayout)}`);
+    assert.equal(
+      wideLayout.pileState,
+      balancedLayout.pileState,
+      'responsive floor packing leaves saved pile positions unchanged',
+    );
+    await resizeViewport({ width: 800, height: 540 });
+    await nextFrames();
+    await dragSplitter(1);
+    await page.evaluate(() => globalThis.scrollFixture.populateFloorWrapPiles());
+    const floorWrapLayout = await page.evaluate(() => {
+      const around = document.querySelector('#inventory [data-pane="around"]');
+      const grids = globalThis.scrollFixture.floorWrapTargets.map((pos) =>
+        document.querySelector(`#inventory [data-target="pile:${pos.join(',')}"]`),
+      );
+      if (!(around && grids.every(Boolean))) {
+        throw new Error('floor-wrap fixture grids are missing');
+      }
+      const sections = grids.map((grid) => grid.closest('[data-around-section="floor"]'));
+      if (!sections.every(Boolean)) {
+        throw new Error('floor-wrap fixture sections are missing');
+      }
+      const cellWidths = grids.map((grid) =>
+        getComputedStyle(grid).gridTemplateColumns.trim().split(' ').map(Number.parseFloat),
+      );
+      const gridBoxes = grids.map((grid) => grid.getBoundingClientRect());
+      const sectionBoxes = sections.map((section) => section.getBoundingClientRect());
+      const gap = Number.parseFloat(getComputedStyle(around).gap);
+      return {
+        targets: grids.map((grid) => grid.dataset.target),
+        cellWidths,
+        cells: grids.map((grid) => Number.parseFloat(getComputedStyle(grid).backgroundSize)),
+        wraps: sectionBoxes[1].top >= sectionBoxes[0].bottom,
+        exceedsRow: gridBoxes[0].width + gap + gridBoxes[1].width > around.clientWidth,
+      };
+    });
+    assert.ok(floorWrapLayout.exceedsRow, `fixture grids exceed their shared row: ${JSON.stringify(floorWrapLayout)}`);
+    assert.equal(
+      floorWrapLayout.wraps,
+      true,
+      `the second floor grid starts on a new row: ${JSON.stringify(floorWrapLayout)}`,
+    );
+    for (const [tracks, cell] of floorWrapLayout.cellWidths.map((widths, index) => [
+      widths,
+      floorWrapLayout.cells[index],
+    ])) {
+      assert.ok(
+        tracks.every((width) => Math.abs(width - cell) <= 1),
+        `floor grid cells keep their width: ${JSON.stringify(floorWrapLayout)}`,
+      );
+    }
+    if (process.argv[4]) {
+      await page.locator(`#inventory [data-target="${floorWrapLayout.targets[0]}"]`).scrollIntoViewIfNeeded();
+      await page.locator('#inventory [data-pane="around"]').screenshot({ path: process.argv[4] });
+    }
+    await resizeViewport({ width: 960, height: 540 });
+    const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
+    assert.ok(
+      fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
+      `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
+    );
+    await resizeViewport({ width: 480, height: 400 });
+    const narrowLayout = await page.evaluate(() => {
+      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+      const you = body?.querySelector('[data-pane="you"]');
+      const details = body?.querySelector('[data-pane="details"]');
+      const around = body?.querySelector('[data-pane="around"]');
+      if (!(body && you && details && around)) {
+        throw new Error('Narrow inventory columns are missing');
+      }
+      const youBox = you.getBoundingClientRect();
+      const detailsBox = details.getBoundingClientRect();
+      const aroundBox = around.getBoundingClientRect();
+      const actions = [...details.querySelectorAll('.inv-option')];
+      const actionsFit = actions.every((action) => {
+        const bounds = action.getBoundingClientRect();
+        return bounds.left >= detailsBox.left && bounds.right <= detailsBox.right;
+      });
+      return {
+        noHorizontalOverflow: body.scrollWidth <= body.clientWidth,
+        stacked: youBox.bottom <= detailsBox.top && detailsBox.bottom <= aroundBox.top,
+        actionCount: actions.length,
+        actionsFit,
+      };
+    });
+    assert.equal(
+      narrowLayout.noHorizontalOverflow,
+      true,
+      `narrow inventory does not hide columns: ${JSON.stringify(narrowLayout)}`,
+    );
+    assert.equal(
+      narrowLayout.stacked,
+      true,
+      `narrow inventory stacks its scrollable columns: ${JSON.stringify(narrowLayout)}`,
+    );
+    assert.ok(narrowLayout.actionCount > 0, `the details panel exposes an action: ${JSON.stringify(narrowLayout)}`);
+    assert.equal(
+      narrowLayout.actionsFit,
+      true,
+      `narrow detail actions stay inside their panel: ${JSON.stringify(narrowLayout)}`,
+    );
+    await resizeViewport({ width: 1280, height: 480 });
+    await page.evaluate(() => globalThis.scrollFixture.populatePiles());
+    const failures = [];
+    let activeTab;
+    // The character's practice accumulates as products of tuning numbers, so the panel must round it.
+    await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
+    activeTab = 'skills';
+    const skillFact = page.locator('#inventory .inv-skill .fact-detail').first();
+    await skillFact.focus();
+    const skillTooltip = skillFact.locator('[role="tooltip"]');
+    assert.equal(await skillTooltip.isVisible(), true, 'skill effect detail is visible on keyboard focus');
+    assert.equal(await skillTooltip.textContent(), 'Fixture handling effect.');
+    await skillFact.evaluate((label) => label.blur());
+    const practiceLine = await page.locator('#inventory .inv-skill-practice').first().textContent();
+    assert.equal(
+      practiceLine?.includes((2.5 * 0.46).toFixed(1)),
+      true,
+      `skills panel rounds accumulated practice: ${practiceLine}`,
+    );
+    assert.equal(/\.\d{2,}/.test(practiceLine ?? ''), false, `skills panel hides float noise: ${practiceLine}`);
+    for (const { tab, selector } of [
+      { tab: 'skills', selector: '#inventory [data-pane="body"]' },
+      { tab: 'items', selector: '#inventory [data-pane="you"]' },
+      { tab: 'items', selector: '#inventory [data-pane="around"]' },
+      { tab: 'items', selector: '#inventory .inv-details' },
+    ]) {
+      if (activeTab !== tab) {
+        await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+        activeTab = tab;
+      }
+      const size = await page
+        .locator(selector)
+        .evaluate((pane) => ({ height: pane.clientHeight, scroll: pane.scrollHeight }));
+      assert.ok(
+        size.height > 0 && size.scroll > size.height,
+        `${selector} actually overflows: ${JSON.stringify(size)}`,
+      );
+      // Unlocked native wheel is the pristine positive control; locked dispatch reproduces the gap.
+      for (const locked of [false, true]) {
+        const box = await page.locator(selector).boundingBox();
+        assert.ok(box);
+        const x = box.x + box.width / 2;
+        const y = box.y + box.height / 2;
+        await page.evaluate(
+          (trial) => {
+            const { input } = globalThis.scrollFixture;
+            globalThis.scrollFixture.resetWheels();
+            input.setPointerModeForTest(trial.locked);
+            document.querySelector(trial.selector).scrollTop = 0;
+            globalThis.scrollFixture.menu.update();
+          },
+          { selector, locked },
+        );
+        if (locked) {
+          const cursor = await page.evaluate(() => {
+            const { input } = globalThis.scrollFixture;
+            return { x: input.cursorX, y: input.cursorY };
+          });
+          await page.evaluate(dispatchMenuPointerMove, {
+            canvasSelector: '#view',
+            movementX: x - cursor.x,
+            movementY: y - cursor.y,
+          });
+          await page.evaluate(() => globalThis.scrollFixture.menu.update());
+          await page.evaluate(() =>
+            globalThis.scrollFixture.target.dispatchEvent(
+              new WheelEvent('wheel', {
+                deltaY: 3,
+                deltaMode: 1,
+                bubbles: true,
+                cancelable: true,
+              }),
+            ),
+          );
+        } else {
+          await page.mouse.move(x, y);
+          await page.mouse.wheel(0, 48);
+          // Observe two frames, not an arbitrary delay, so native scrolling has been submitted.
+          await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+        }
+        const observed = await page.locator(selector).evaluate((pane) => ({
+          top: pane.scrollTop,
+          pageY: window.scrollY,
+          gameplayWheels: globalThis.scrollFixture.gameplayWheels,
+        }));
+        await page.evaluate(() => globalThis.scrollFixture.redraw());
+        const afterRedraw = await page.locator(selector).evaluate((pane) => pane.scrollTop);
+        const result = { engine, selector, locked, ...size, ...observed, afterRedraw };
+        process.stdout.write(`${JSON.stringify(result)}\n`);
+        if (
+          !(observed.top > 0 && observed.pageY === 0 && observed.gameplayWheels === 0 && afterRedraw === observed.top)
+        ) {
+          failures.push(result);
+        }
+      }
+    }
+    const selectedPane = page.locator('#inventory [data-pane="you"]');
+    const scrolledAway = await selectedPane.evaluate((pane) => {
+      pane.scrollTop = pane.scrollHeight;
+      const selectedUid = String(globalThis.scrollFixture.screen.selected.uid);
+      const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
+        (candidate) => candidate.dataset.uid === selectedUid,
+      );
+      const rowBox = row.getBoundingClientRect();
+      const paneBox = pane.getBoundingClientRect();
+      return {
+        scrollTop: pane.scrollTop,
+        rowOutsidePane: rowBox.bottom <= paneBox.top || rowBox.top >= paneBox.bottom,
+      };
+    });
+    assert.ok(
+      scrolledAway.scrollTop > 0 && scrolledAway.rowOutsidePane,
+      `selected row scrolled away: ${JSON.stringify(scrolledAway)}`,
+    );
+    await page.evaluate(() => globalThis.scrollFixture.redrawAfterNeedsChange());
+    const selectionAfterNeedsRedraw = await selectedPane.evaluate((pane) => pane.scrollTop);
+    assert.equal(
+      selectionAfterNeedsRedraw,
+      scrolledAway.scrollTop,
+      'needs redraw must preserve the player-scrolled pane even while a row remains selected',
+    );
+    assert.deepEqual(errors, []);
+    assert.deepEqual(
+      failures,
+      [],
+      'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw',
+    );
+
+    // A HUD scale other than 1 changes the root size the UI is measured in, so a drag and the drawn cursor are right
+    // only if their maths use rendered sizes. The target cell is far enough from the origin that a base-size cell
+    // would round to a neighbour.
+    await resizeViewport({ width: 1280, height: 900 });
+    await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+    const baseRootSize = await page.evaluate(() =>
+      Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+    );
+    await page.evaluate(() => {
+      globalThis.scrollFixture.input.setPointerModeForTest(false);
+      globalThis.scrollFixture.menu.update();
+      globalThis.scrollFixture.useUiTuning({ spacing: 0.75, hudScale: 1.25 });
+    });
+    await nextFrames();
+    const scaled = await page.evaluate(() => {
+      const item = document.querySelector(`#inventory [data-uid="${globalThis.scrollFixture.capTokenUid}"]`);
+      const grid = item?.closest('.inv-grid');
+      if (!grid) {
+        throw new Error('cap-rack token or its grid is missing');
+      }
+      grid.scrollIntoView({ block: 'center', inline: 'nearest' });
+      return {
+        rootSize: Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
+        item: item.getBoundingClientRect().toJSON(),
+        grid: grid.getBoundingClientRect().toJSON(),
+      };
+    });
+    assert.ok(
+      Math.abs(scaled.rootSize - 1.25 * baseRootSize) < 0.01,
+      `the fixture HUD scale scales the root size: ${JSON.stringify({ baseRootSize, scaled })}`,
+    );
+    const cell = scaled.grid.width / RACK_GRID[0];
+    const press = { x: scaled.item.x + scaled.item.width / 2, y: scaled.item.y + scaled.item.height / 2 };
+    const grab = { x: Math.min(press.x - scaled.item.x, cell / 2), y: Math.min(press.y - scaled.item.y, cell / 2) };
+    const dropCell = { x: 2, y: 4 };
+    const pointer = { x: scaled.grid.x + (dropCell.x + 0.5) * cell, y: scaled.grid.y + (dropCell.y + 0.5) * cell };
+    assert.ok(
+      await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('.inv-grid') !== null, pointer),
+      `the drop point is on the visible rack grid: ${JSON.stringify({ scaled, pointer })}`,
+    );
+    await page.mouse.move(press.x, press.y);
+    await page.mouse.down();
+    await page.mouse.move(pointer.x, pointer.y, { steps: 8 });
+    const ghost = await page
+      .locator('#inventory-drag-root .inv-ghost')
+      .evaluate((node) => node.getBoundingClientRect().toJSON());
+    await page.mouse.up();
+    assert.ok(
+      ghost && Math.abs(ghost.x - (pointer.x - grab.x)) <= 0.5 && Math.abs(ghost.y - (pointer.y - grab.y)) <= 0.5,
+      `the drag ghost's origin is the pointer less the grab offset: ${JSON.stringify({ ghost, pointer, grab })}`,
+    );
+    const drop = await page.evaluate(() => {
+      const { dispatches, capTokenUid } = globalThis.scrollFixture;
+      const move = dispatches.findLast(({ kind, itemUid }) => kind === 'inventory.move' && itemUid === capTokenUid);
+      return move && { kind: move.target.kind, at: move.target.at && { x: move.target.at.x, y: move.target.at.y } };
+    });
+    assert.deepEqual(drop, { kind: 'furniture', at: dropCell }, 'the drop lands in the cell under the pointer');
+    const cursorStart = await page.evaluate(() => {
+      const { input, menu } = globalThis.scrollFixture;
+      input.setPointerModeForTest(true);
+      menu.update();
+      return { x: input.cursorX, y: input.cursorY };
+    });
+    await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
+      movementX: pointer.x - cursorStart.x,
+      movementY: pointer.y - cursorStart.y,
+    });
+    const cursor = await page.evaluate(() => {
+      const { input, menu } = globalThis.scrollFixture;
+      menu.update();
+      const drawn = document.querySelector('#game-cursor');
+      const box = drawn.getBoundingClientRect();
+      return {
+        cursorX: input.cursorX,
+        cursorY: input.cursorY,
+        tip: { x: box.left + (drawn.classList.contains('hand') ? 4 : 0), y: box.top },
+        visible: box.width > 0 && !drawn.hidden,
+      };
+    });
+    assert.ok(
+      Math.abs(cursor.cursorX - pointer.x) <= 0.5 && Math.abs(cursor.cursorY - pointer.y) <= 0.5,
+      `the menu cursor moved to the drop point: ${JSON.stringify({ cursor, pointer })}`,
+    );
+    assert.ok(
+      cursor.visible &&
+        Math.abs(cursor.tip.x - cursor.cursorX) <= 0.5 &&
+        Math.abs(cursor.tip.y - cursor.cursorY) <= 0.5,
+      `the drawn cursor sits at the menu cursor position: ${JSON.stringify(cursor)}`,
+    );
+    logPhase('render-free scroll contracts');
+  }
+  if (scenarioFlow === 'handling') {
     await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       let locked = null;
@@ -2042,201 +2062,192 @@ try {
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
   }
-  await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
-  await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
-  for (const scenario of ['spill-all', 'lost-room']) {
-    await page.evaluate(
-      async ({ recoveryModule, contentModule }) => {
+  if (scenarioFlow === 'ui') {
+    await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+    await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+    logPhase('fresh page after scroll input and tuning trials');
+    for (const scenario of ['spill-all', 'lost-room']) {
+      await page.evaluate(async (recoveryModule) => {
         const original = document.querySelector('#inventory');
         globalThis.scrollFixture.screen.close();
         original.id = 'inventory-original';
         const { mountRecoveryProbe } = await import(recoveryModule);
-        const { buildBundledContent } = await import(contentModule);
-        const { registry } = buildBundledContent();
+        const registry = globalThis.scrollFixture.bundledRegistry;
         globalThis.recoveryProbe = mountRecoveryProbe(registry, {
           ratio: registry.dayCycle.clockRatio,
           start: 0,
         });
-      },
-      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/product/content.ts' },
-    );
-    const recoveryRoot = page.locator('[data-recovery-probe]');
-    const startButton = recoveryRoot.locator('button[data-work-operation="disassemble"]');
-    assert.equal(await startButton.count(), 1, 'a spill-chosen click can start without a second approval');
-    assert.equal(await recoveryRoot.locator('[data-recovery-approval]').count(), 0, 'no separate approval state');
-    if (scenario === 'lost-room') {
-      const receiverName = await page.evaluate(() => {
-        const { inventory, receiver } = globalThis.recoveryProbe;
-        return inventory.name(receiver);
-      });
-      await recoveryRoot.locator('.inv-recovery input[role="combobox"]').click();
-      await page.getByRole('option', { name: receiverName, exact: true }).click();
-    }
-    const consequence = await page.evaluate((mode) => {
-      const { commands, source, receiver, liquid } = globalThis.recoveryProbe;
-      return commands.recovery(source.uid, mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {})
-        .spillLabel;
-    }, scenario);
-    assert.ok(
-      (await startButton.textContent()).includes(consequence),
-      'the action includes its projected spill amount',
-    );
-    await startButton.click();
-    const started = await page.evaluate((mode) => {
-      const probe = globalThis.recoveryProbe;
-      const { inventory, sim, receiver, donor, liquid, screen } = probe;
-      const item = inventory.hands.right;
-      const work = item?.work;
-      if (work?.kind !== 'disassembly') {
-        throw new Error('Recovery UI did not start work');
+      }, '/test/browser/liquid-recovery-ui.ts');
+      const recoveryRoot = page.locator('[data-recovery-probe]');
+      const startButton = recoveryRoot.locator('button[data-work-operation="disassemble"]');
+      assert.equal(await startButton.count(), 1, 'a spill-chosen click can start without a second approval');
+      assert.equal(await recoveryRoot.locator('[data-recovery-approval]').count(), 0, 'no separate approval state');
+      if (scenario === 'lost-room') {
+        const receiverName = await page.evaluate(() => {
+          const { inventory, receiver } = globalThis.recoveryProbe;
+          return inventory.name(receiver);
+        });
+        await recoveryRoot.locator('.inv-recovery input[role="combobox"]').click();
+        await page.getByRole('option', { name: receiverName, exact: true }).click();
       }
-      probe.startedWork = work;
-      probe.workItem = item;
-      const recovered = work.liquids.find((entry) => entry.liquid === liquid).volumeMicrolitres;
-      const approval = work.spillApproval.find((entry) => entry.liquid === liquid)?.volumeMicrolitres;
-      if (mode === 'lost-room' && !inventory.transferLiquid(donor.uid, receiver.uid, 100).ok) {
-        throw new Error('Cannot take receiver room');
-      }
-      sim.scheduler.advance(Math.ceil(work.duration / sim.clock.ratio) + 1);
-      screen.selected = item;
-      screen.update();
-      return {
-        recovered,
-        approval,
-        retained: item.work === work,
-        capacity: inventory.registry.items.get(receiver.type).vessel.capacityMicrolitres,
-      };
-    }, scenario);
-    if (scenario === 'spill-all') {
-      assert.equal(started.approval, started.recovered, 'the spill-all click carries the complete bounded amount');
-      assert.equal(started.retained, false, 'spill-all finishes');
-    } else {
-      assert.equal(
-        started.approval,
-        started.recovered - started.capacity,
-        'the first click approves only its stated remainder',
-      );
-      assert.equal(started.retained, true, 'lost room retains finished work');
-      const continueButton = recoveryRoot.locator('button[data-work-operation="continue"]');
-      const continuation = await page.evaluate(() => {
-        const { commands, workItem } = globalThis.recoveryProbe;
-        return commands.recovery(workItem.uid);
-      });
+      const consequence = await page.evaluate((mode) => {
+        const { commands, source, receiver, liquid } = globalThis.recoveryProbe;
+        return commands.recovery(source.uid, mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {})
+          .spillLabel;
+      }, scenario);
       assert.ok(
-        (await continueButton.textContent()).includes(continuation.spillLabel),
-        'Continue states the larger spill amount',
+        (await startButton.textContent()).includes(consequence),
+        'the action includes its projected spill amount',
       );
-      await page.evaluate(() => {
-        const { inventory, donor, receiver } = globalThis.recoveryProbe;
-        if (!inventory.transferLiquid(donor.uid, receiver.uid, 1).ok) {
-          throw new Error('Cannot stage room loss after drawing Continue');
+      await startButton.click();
+      const started = await page.evaluate((mode) => {
+        const probe = globalThis.recoveryProbe;
+        const { inventory, sim, receiver, donor, liquid, screen } = probe;
+        const item = inventory.hands.right;
+        const work = item?.work;
+        if (work?.kind !== 'disassembly') {
+          throw new Error('Recovery UI did not start work');
         }
-      });
-      await continueButton.click();
-      const refused = await page.evaluate(() => {
-        const { workItem, startedWork, screen } = globalThis.recoveryProbe;
-        const unchanged = JSON.stringify(startedWork.spillApproval);
+        probe.startedWork = work;
+        probe.workItem = item;
+        const recovered = work.liquids.find((entry) => entry.liquid === liquid).volumeMicrolitres;
+        const approval = work.spillApproval.find((entry) => entry.liquid === liquid)?.volumeMicrolitres;
+        if (mode === 'lost-room' && !inventory.transferLiquid(donor.uid, receiver.uid, 100).ok) {
+          throw new Error('Cannot take receiver room');
+        }
+        sim.scheduler.advance(Math.ceil(work.duration / sim.clock.ratio) + 1);
+        screen.selected = item;
         screen.update();
-        return { retained: workItem.work === startedWork, approval: JSON.parse(unchanged) };
-      });
-      assert.equal(refused.retained, true, 'a stale Continue click never silently approves additional spill');
-      assert.equal(
-        refused.approval[0].volumeMicrolitres,
-        started.approval,
-        'refused Continue does not credit a larger approval',
-      );
-      const refreshed = await page.evaluate(() => {
-        const { commands, workItem } = globalThis.recoveryProbe;
-        return commands.recovery(workItem.uid);
-      });
-      assert.ok(
-        (await continueButton.textContent()).includes(refreshed.spillLabel),
-        'redrawn Continue states the new bounded amount',
-      );
-      await continueButton.click();
-      const finished = await page.evaluate(() => {
-        const { sim, workItem, startedWork, receiver } = globalThis.recoveryProbe;
-        sim.scheduler.advance(1);
         return {
-          done: workItem.work === undefined,
-          approval: startedWork.spillApproval,
-          contents: receiver.liquidContents,
+          recovered,
+          approval,
+          retained: item.work === work,
+          capacity: inventory.registry.items.get(receiver.type).vessel.capacityMicrolitres,
         };
+      }, scenario);
+      if (scenario === 'spill-all') {
+        assert.equal(started.approval, started.recovered, 'the spill-all click carries the complete bounded amount');
+        assert.equal(started.retained, false, 'spill-all finishes');
+      } else {
+        assert.equal(
+          started.approval,
+          started.recovered - started.capacity,
+          'the first click approves only its stated remainder',
+        );
+        assert.equal(started.retained, true, 'lost room retains finished work');
+        const continueButton = recoveryRoot.locator('button[data-work-operation="continue"]');
+        const continuation = await page.evaluate(() => {
+          const { commands, workItem } = globalThis.recoveryProbe;
+          return commands.recovery(workItem.uid);
+        });
+        assert.ok(
+          (await continueButton.textContent()).includes(continuation.spillLabel),
+          'Continue states the larger spill amount',
+        );
+        await page.evaluate(() => {
+          const { inventory, donor, receiver } = globalThis.recoveryProbe;
+          if (!inventory.transferLiquid(donor.uid, receiver.uid, 1).ok) {
+            throw new Error('Cannot stage room loss after drawing Continue');
+          }
+        });
+        await continueButton.click();
+        const refused = await page.evaluate(() => {
+          const { workItem, startedWork, screen } = globalThis.recoveryProbe;
+          const unchanged = JSON.stringify(startedWork.spillApproval);
+          screen.update();
+          return { retained: workItem.work === startedWork, approval: JSON.parse(unchanged) };
+        });
+        assert.equal(refused.retained, true, 'a stale Continue click never silently approves additional spill');
+        assert.equal(
+          refused.approval[0].volumeMicrolitres,
+          started.approval,
+          'refused Continue does not credit a larger approval',
+        );
+        const refreshed = await page.evaluate(() => {
+          const { commands, workItem } = globalThis.recoveryProbe;
+          return commands.recovery(workItem.uid);
+        });
+        assert.ok(
+          (await continueButton.textContent()).includes(refreshed.spillLabel),
+          'redrawn Continue states the new bounded amount',
+        );
+        await continueButton.click();
+        const finished = await page.evaluate(() => {
+          const { sim, workItem, startedWork, receiver } = globalThis.recoveryProbe;
+          sim.scheduler.advance(1);
+          return {
+            done: workItem.work === undefined,
+            approval: startedWork.spillApproval,
+            contents: receiver.liquidContents,
+          };
+        });
+        assert.equal(finished.done, true, 'the spill-labelled Continue click finishes recovery');
+        assert.deepEqual(finished.approval, refreshed.choices.spillApproval, 'only the displayed bound reaches work');
+        assert.equal(finished.contents.volumeMicrolitres, started.capacity, 'the receiver gains only what fits');
+      }
+      await page.evaluate(() => {
+        globalThis.recoveryProbe.screen.close();
+        globalThis.recoveryProbe.root.remove();
+        document.querySelector('#inventory-original').id = 'inventory';
       });
-      assert.equal(finished.done, true, 'the spill-labelled Continue click finishes recovery');
-      assert.deepEqual(finished.approval, refreshed.choices.spillApproval, 'only the displayed bound reaches work');
-      assert.equal(finished.contents.volumeMicrolitres, started.capacity, 'the receiver gains only what fits');
     }
-    await page.evaluate(() => {
-      globalThis.recoveryProbe.screen.close();
-      globalThis.recoveryProbe.root.remove();
-      document.querySelector('#inventory-original').id = 'inventory';
-    });
-  }
-  logPhase('liquid take-apart and Continue recovery');
-  await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
-  await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
-  await page.evaluate(
-    async ({ chargerModule, contentModule }) => {
+    logPhase('liquid take-apart and Continue recovery');
+    await page.evaluate(async (chargerModule) => {
       globalThis.scrollFixture.screen.close();
       const { mountChargerFlow } = await import(chargerModule);
-      const { buildBundledContent } = await import(contentModule);
       globalThis.chargerFlow = await mountChargerFlow(
-        buildBundledContent().registry,
+        globalThis.scrollFixture.bundledRegistry,
         document.querySelector('#inventory'),
       );
-    },
-    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/product/content.ts' },
-  );
-  const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
-  await chargerButton('inventory.move').click();
-  await page.evaluate(() => globalThis.chargerFlow.advance(3));
-  assert.equal(await page.evaluate(() => globalThis.chargerFlow.inspect().jobs), 0);
-  await chargerButton('charger.start').click();
-  const started = await page.evaluate(() => {
-    const flow = globalThis.chargerFlow;
-    flow.advance(0.5);
-    flow.blackout(true);
-    return flow.inspect();
-  });
-  assert.ok(started.active && started.energy > 0, 'a started cell has partial powered work');
-  const blackout = await page.evaluate(() => {
-    const flow = globalThis.chargerFlow;
-    flow.move(1);
-    flow.advance(0.5);
-    flow.move(0);
-    return flow.inspect();
-  });
-  assert.notDeepEqual(blackout.pos, started.pos, 'charging does not take movement');
-  assert.ok(
-    blackout.hands.every((uid) => uid === undefined),
-    'loading leaves both hands available',
-  );
-  assert.equal(blackout.energy, started.energy, 'blackout pauses delivered charge');
-  await page.evaluate(() => globalThis.chargerFlow.reload());
-  const reloaded = await page.evaluate(() => globalThis.chargerFlow.inspect());
-  assert.equal(reloaded.uid, started.uid, 'reload retains the same cell');
-  assert.equal(reloaded.energy, started.energy, 'reload preserves partial energy without offline progress');
-  await page.evaluate(() => {
-    const flow = globalThis.chargerFlow;
-    flow.move(-1);
-    flow.advance(0.5);
-    flow.move(0);
-    flow.blackout(false);
-    flow.advance(20);
-  });
-  assert.equal(await chargerButton('charger.start').count(), 0, 'capacity completion removes running demand');
-  await chargerButton('inventory.to-hands').click();
-  await page.evaluate(() => globalThis.chargerFlow.advance(3));
-  const collected = await page.evaluate(() => globalThis.chargerFlow.inspect());
-  assert.ok(collected.hands.includes(started.uid), 'collection returns the exact charged cell');
-  assert.deepEqual(collected.owned, [], 'collection empties appliance ownership');
-  assert.equal(await chargerButton('inventory.to-hands').count(), 0, 'the cell cannot be collected twice');
-  assert.deepEqual(collected.refusals, [], 'every offered charger operation succeeds');
-  logPhase('charger leave, blackout, save/reload and collect');
-  process.stdout.write(
-    `${engine}: inventory/vicinity/details wheel, redraw and charger contracts passed (free pointer + synthetic locked cursor)\n`,
-  );
+    }, '/test/browser/charger-flow.ts');
+    const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
+    await chargerButton('inventory.move').click();
+    await page.evaluate(() => globalThis.chargerFlow.advance(3));
+    assert.equal(await page.evaluate(() => globalThis.chargerFlow.inspect().jobs), 0);
+    await chargerButton('charger.start').click();
+    const started = await page.evaluate(() => {
+      const flow = globalThis.chargerFlow;
+      flow.advance(0.5);
+      flow.blackout(true);
+      return flow.inspect();
+    });
+    assert.ok(started.active && started.energy > 0, 'a started cell has partial powered work');
+    const blackout = await page.evaluate(() => {
+      const flow = globalThis.chargerFlow;
+      flow.move(1);
+      flow.advance(0.5);
+      flow.move(0);
+      return flow.inspect();
+    });
+    assert.notDeepEqual(blackout.pos, started.pos, 'charging does not take movement');
+    assert.ok(
+      blackout.hands.every((uid) => uid === undefined),
+      'loading leaves both hands available',
+    );
+    assert.equal(blackout.energy, started.energy, 'blackout pauses delivered charge');
+    await page.evaluate(() => globalThis.chargerFlow.reload());
+    const reloaded = await page.evaluate(() => globalThis.chargerFlow.inspect());
+    assert.equal(reloaded.uid, started.uid, 'reload retains the same cell');
+    assert.equal(reloaded.energy, started.energy, 'reload preserves partial energy without offline progress');
+    await page.evaluate(() => {
+      const flow = globalThis.chargerFlow;
+      flow.move(-1);
+      flow.advance(0.5);
+      flow.move(0);
+      flow.blackout(false);
+      flow.advance(20);
+    });
+    assert.equal(await chargerButton('charger.start').count(), 0, 'capacity completion removes running demand');
+    await chargerButton('inventory.to-hands').click();
+    await page.evaluate(() => globalThis.chargerFlow.advance(3));
+    const collected = await page.evaluate(() => globalThis.chargerFlow.inspect());
+    assert.ok(collected.hands.includes(started.uid), 'collection returns the exact charged cell');
+    assert.deepEqual(collected.owned, [], 'collection empties appliance ownership');
+    assert.equal(await chargerButton('inventory.to-hands').count(), 0, 'the cell cannot be collected twice');
+    assert.deepEqual(collected.refusals, [], 'every offered charger operation succeeds');
+    logPhase('charger leave, blackout, save/reload and collect');
+  }
+  process.stdout.write(`${engine}: inventory ${scenarioFlow} contracts passed\n`);
 } finally {
   await browser?.close();
   await vite.close();
