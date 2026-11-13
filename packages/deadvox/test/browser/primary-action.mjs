@@ -4338,6 +4338,21 @@ try {
     const releaseAtCentre = await holdDominantUse(page);
     await waitForActionRing(page);
     await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    const labelsOverlap = await page.evaluate(() => {
+      const boxes = [...document.querySelectorAll('#action-radial .radial-entry')].map((label) =>
+        label.getBoundingClientRect(),
+      );
+      return boxes.some((box, index) =>
+        boxes
+          .slice(0, index)
+          .some(
+            (other) =>
+              box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top,
+          ),
+      );
+    });
+    assert.equal(labelsOverlap, false, 'the rag ring label boxes do not overlap');
+    await page.screenshot({ path: resolve(projectRoot, 'test-results/primary-action/rag-ring.png') });
     assert.equal(
       await page.locator('#action-radial .radial-centre-label').count(),
       0,
