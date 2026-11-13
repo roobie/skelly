@@ -3316,6 +3316,8 @@ describe('content', () => {
     const { registry, issues } = buildRegistry([
       baseBlocks,
       base.find(({ source }) => source === 'block-materials.json')!,
+      base.find(({ source }) => source === 'materials-items.json')!,
+      base.find(({ source }) => source === 'models-materials.json')!,
       baseSounds,
       {
         source: 'mod-camo.json',
