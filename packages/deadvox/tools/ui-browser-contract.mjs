@@ -291,17 +291,17 @@ try {
   const feedback = await evaluate(`(async () => {
     const { getBuildRevision } = await import('/@stage/@skelly/engine/packs');
     const url = new URL(document.querySelector('#playtest-feedback').href);
-    const body = url.searchParams.get('body') ?? '';
     return {
       template: url.searchParams.get('template'),
-      body,
-      hasBrowser: body.includes(navigator.userAgent),
-      hasBuild: body.includes(getBuildRevision()),
+      seed: url.searchParams.get('seed'),
+      browser: url.searchParams.get('browser'),
+      build: url.searchParams.get('build'),
+      revision: getBuildRevision(),
     };
   })()`);
-  assert.equal(feedback.template, 'playtest-feedback.md', 'feedback link names the playtest issue template');
-  assert.equal(feedback.hasBrowser, true, 'feedback link includes the browser');
-  assert.equal(feedback.hasBuild, true, 'feedback link includes the build');
+  assert.equal(feedback.template, 'playtest-feedback.yml', 'feedback link names the playtest issue form');
+  assert.equal(feedback.browser, await evaluate('navigator.userAgent'), 'feedback link includes the browser');
+  assert.equal(feedback.build, feedback.revision, 'feedback link includes the build');
   const captureMetricsDownload = () =>
     evaluate(`(() => {
     window.__metricsBlob = undefined;
@@ -559,7 +559,7 @@ try {
     return { seed: sim.seed, run: session.scenarioRun };
   })()`);
   assert.ok(liveAttempt.run, 'default entry starts a scenario attempt');
-  assert.equal(feedback.body.includes(String(liveAttempt.seed)), true, 'feedback link includes the game seed');
+  assert.equal(feedback.seed, String(liveAttempt.seed), 'feedback link includes the game seed');
   assert.deepEqual(exportedMetrics.run, liveAttempt.run, 'download includes the live scenario progress');
   assert.equal(exportedMetrics.seed, liveAttempt.seed, 'download identifies the live world seed');
   assert.equal(exportedMetrics.outcome, 'running', 'download identifies an unfinished attempt');

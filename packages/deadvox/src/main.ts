@@ -33,9 +33,9 @@ import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/pre
 import {
   appendError,
   applyUiTokens,
-  feedbackUrl,
   chooseMods,
   contentLookup,
+  feedbackUrl,
   installErrorLogCopy,
   installErrorReportHandler,
   mountControlsCard,
@@ -343,7 +343,9 @@ if (bench === 'report') {
     }
     const feedback = document.getElementById('playtest-feedback') as HTMLAnchorElement;
     feedback.href = feedbackUrl(feedback.href, {
-      body: `Seed: ${config.seed}\nBrowser: ${navigator.userAgent}\nBuild: ${getBuildRevision()}\n\nWhat happened?`,
+      seed: String(config.seed),
+      browser: navigator.userAgent,
+      build: getBuildRevision(),
     });
     const engine = createEngine(config, view, undefined, engineOptions);
     const restored = await saveController.validateContent(engine.registry);

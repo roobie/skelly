@@ -6,7 +6,7 @@ const handBack = (name: string, value: unknown) => ({
   name,
 });
 
-const FEEDBACK_SOURCE = 'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md';
+const FEEDBACK_SOURCE = 'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.yml';
 
 describe('error reports', () => {
   it('preserves the complete Error message and stack for copying', () => {
@@ -22,7 +22,7 @@ describe('error reports', () => {
     const concise = feedbackUrlForError('Short failure\nstack', FEEDBACK_SOURCE);
     const conciseUrl = new URL(concise.href);
     expect(concise.attachReport).toBe(false);
-    expect(conciseUrl.searchParams.get('template')).toBe('playtest-feedback.md');
+    expect(conciseUrl.searchParams.get('template')).toBe('playtest-feedback.yml');
     expect(conciseUrl.searchParams.get('title')).toContain('Short failure');
     expect(conciseUrl.searchParams.get('body')).toContain('Short failure');
 
