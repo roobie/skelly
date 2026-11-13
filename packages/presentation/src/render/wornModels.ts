@@ -27,7 +27,12 @@ export const registerBaseParts = (baseParts: Map<string, Object3D[]>, part: stri
   const file = (name: unknown, node: Object3D): void => {
     if (typeof name === 'string') {
       const key = `${part}/${name}`;
-      baseParts.set(key, [...(baseParts.get(key) ?? []), node]);
+      const nodes = baseParts.get(key);
+      if (nodes) {
+        nodes.push(node);
+      } else {
+        baseParts.set(key, [node]);
+      }
     }
   };
   scene.traverse((node) => {
