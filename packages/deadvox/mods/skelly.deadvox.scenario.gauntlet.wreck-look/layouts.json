@@ -1,0 +1,55 @@
+{
+  "layouts": [
+    {
+      "actors": [],
+      "bounds": {
+        "x0": -28,
+        "x1": 28,
+        "z0": -10,
+        "z1": 10
+      },
+      "buildings": [
+        {
+          "position": [-13.5, 21, -4.5],
+          "rotation": 90,
+          "template": "gauntlet_car_wreck_muscle_car_doors"
+        },
+        {
+          "position": [-7, 21, -4.5],
+          "rotation": 90,
+          "template": "gauntlet_car_wreck_hatchback_intact"
+        },
+        {
+          "position": [-1.5, 21, -4.5],
+          "rotation": 90,
+          "template": "gauntlet_car_wreck_police_car_intact"
+        },
+        {
+          "position": [5, 21, -5],
+          "rotation": 90,
+          "template": "gauntlet_car_wreck_box_van_front"
+        }
+      ],
+      "demo": true,
+      "ground": 21,
+      "id": "gauntletStreetWrecks",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "player": {
+        "bearing": 0,
+        "position": [-1, 21.5, 1.5]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[-24, -1.5], [24, -1.5]],
+          "surface": "asphalt",
+          "width": 8
+        }
+      ],
+      "woodlands": []
+    }
+  ]
+}

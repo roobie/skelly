@@ -218,22 +218,34 @@ export const FurnitureSchema = pipe(
      */
     solidFill: optional(Fraction),
     /**
-     * Rendered as this vehicle: a blueprint without the `removed` fittings, in `body` paint, `dirt` grimy (0 clean to
-     * 1 filthy). Its blocks stop movement and light where its parts fill at least `solidFill` of them, so a low
-     * bonnet can be climbed while the cabin still blocks.
+     * Rendered as this vehicle: either a spike catalogue blueprint in `body` paint, `dirt` grimy (0 clean to
+     * 1 filthy), or a content vehicle blueprint (`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`), whose
+     * finishes its fittings author. In both cases `removed` names fittings the wreck is without, and its blocks
+     * stop movement and light where its parts fill at least `solidFill` of them, so a low bonnet can be climbed
+     * while the cabin still blocks.
      */
     vehicle: optional(
       pipe(
         strictObject({
           blueprint: string(),
-          body: Color,
-          dirt: Fraction,
+          body: optional(Color),
+          dirt: optional(Fraction),
           removed: array(string()),
           solidFill: Fraction,
         }),
-        check(({ blueprint }) => BLUEPRINTS[blueprint] !== undefined, 'unknown vehicle blueprint'),
+        check(
+          ({ blueprint, body, dirt }) =>
+            BLUEPRINTS[blueprint] === undefined || (body !== undefined && dirt !== undefined),
+          'a catalogue vehicle look needs body paint and dirt',
+        ),
+        check(
+          ({ blueprint, body, dirt }) =>
+            BLUEPRINTS[blueprint] !== undefined || (body === undefined && dirt === undefined),
+          'a content vehicle look takes no body paint or dirt; its blueprint authors its finishes',
+        ),
         check(
           ({ blueprint, removed }) =>
+            BLUEPRINTS[blueprint] === undefined ||
             removed.every((id) => BLUEPRINTS[blueprint]?.fittings.some((fitting) => fitting.id === id)),
           'removed names a fitting the blueprint lacks',
         ),
