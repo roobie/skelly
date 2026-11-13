@@ -3,6 +3,7 @@ read_if:
   - 'you decide the crafting and world-work layout for #1469'
   - you implement the shared requirements rows, target review or world-work entry
   - you prepare a crafting or construction UI look fixture
+  - you change recipe catalogue scale, search, category or tag filtering
 ---
 
 # Crafting and world-work layout
