@@ -53,6 +53,8 @@ The zombie spawn catalogue follows loaded content, including authored-only types
 
 ## Browser stages
 
+Reuse admitted content across UI scenarios with fresh scenario-owned inventories and sessions, because content admission is expensive. Session isolation does not reset page-owned input forwarding or UI tuning: navigate to a fresh fixture after trials that change those, so later native clicks cannot pass through a previous scenario's pointer forwarder. Keep standalone inventory UI checks separate from live-game handling so their combined startup and interaction costs do not consume one step's budget. See `test/browser/inventory-scroll.mjs`, `bundledRegistry` and `scenarioFlow`.
+
 A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `tools/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.
 
 A successful throw fixture needs room at that item's own landing: different dragged flights do not share a destination, and generated loot is not guaranteed to leave it free. Select a valid aim rather than weakening the throw refusal or waiting longer for a refused launch. See `test/browser/primary-action.mjs`, `aimThrowAtFreeLanding`.
