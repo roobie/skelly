@@ -1354,6 +1354,16 @@ const checkFurnitureVehicle = (registry: Registry, furniture: FurnitureDef, repo
     report('furniture', furniture.id, '.vehicle.removed', 'removed names a fitting the blueprint lacks');
     return;
   }
+  if (
+    blueprint.fittings.some(({ part }) => {
+      const item = registry.items.get(part);
+      const parts = item?.model === undefined ? undefined : registry.models.get(item.model)?.parts;
+      return !(item?.vehicle && parts) || Object.values(parts).some(({ collision }) => collision === undefined);
+    })
+  ) {
+    report('furniture', furniture.id, '.vehicle.blueprint', 'vehicle blueprint has an unsound part');
+    return;
+  }
   const blocks = contentVehicleBlocks(registry, look, furniture.size, BLOCK_SIZE);
   if (blocks.length === 0 || blocks.some((block) => block.some((at, axis) => at < 0 || at >= furniture.size[axis]!))) {
     report('furniture', furniture.id, '.vehicle', 'vehicle piece must block somewhere, and only within its size');

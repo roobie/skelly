@@ -123,6 +123,35 @@ const drawnState = (furniture: FurnitureMeshes) => {
 };
 
 describe('furniture batches', () => {
+  it('keeps a plain piece mesh and batch identical when a model arrives', async () => {
+    const { ModelLibrary } = await import('@skelly/presentation/internal/render/models.ts');
+    const { registry, entities } = fixture();
+    const def = registry.furniture.get(plain.id)!;
+    entities.add({ type: def.id, size: def.size, pos: [1, 1, 1], facing: 'n' });
+    const models = new ModelLibrary(
+      registry,
+      (message) => {
+        throw new Error(message);
+      },
+      {},
+      {
+        modelLoadConcurrency: 1,
+        modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
+      },
+    );
+    const furniture = new FurnitureMeshes(BLOCK_SIZE, undefined, undefined, { content: { registry, models } });
+    furniture.sync(entities);
+    const batch = furniture.group.children.find((child) => child instanceof InstancedMesh)!;
+    expect(batch).toBeInstanceOf(InstancedMesh);
+    const { pieces } = furniture as unknown as { pieces: Map<BlockEntity, { mesh: Object3D }> };
+    const { mesh } = [...pieces.values()][0]!;
+    models.version += 1;
+    furniture.sync(entities);
+    expect([...pieces.values()][0]!.mesh).toBe(mesh);
+    expect(furniture.group.children.find((child) => child instanceof InstancedMesh)).toBe(batch);
+    furniture.dispose();
+  });
+
   it('draws each revealed standing piece once, at the transform its standalone mesh has', () => {
     const { registry, entities } = fixture();
     const facings: Facing[] = ['n', 'e', 's', 'w'];

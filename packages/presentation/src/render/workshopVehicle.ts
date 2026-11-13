@@ -129,7 +129,7 @@ export interface ContentVehicleView {
   readonly models: ModelLibrary;
 }
 
-const contentGroups = new Map<string, Group>();
+const contentGroups = new WeakMap<ModelLibrary, { version: number; groups: Map<string, Group> }>();
 
 /** One kept fitting as a posed holder: its part model cloned and wearing its authored finish, or nothing yet. */
 const contentPart = (fitting: VehicleFittingDef, content: ContentVehicleView): Group | undefined => {
@@ -165,8 +165,13 @@ const contentPart = (fitting: VehicleFittingDef, content: ContentVehicleView): G
  * piece restages when the library's version rises (see `furniture.ts`, `sync`).
  */
 const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group => {
-  const key = JSON.stringify([look.blueprint, look.removed, content.models.version]);
-  let group = contentGroups.get(key);
+  let cache = contentGroups.get(content.models);
+  if (cache === undefined || cache.version !== content.models.version) {
+    cache = { version: content.models.version, groups: new Map() };
+    contentGroups.set(content.models, cache);
+  }
+  const key = JSON.stringify([look.blueprint, look.removed]);
+  let group = cache.groups.get(key);
   if (group === undefined) {
     group = new Group();
     const { cx, cz } = contentVehicleFrame(content.registry, look);
@@ -182,7 +187,7 @@ const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group =
     }
     centre.rotation.y = Math.PI;
     group.add(centre);
-    contentGroups.set(key, group);
+    cache.groups.set(key, group);
   }
   return group.clone();
 };

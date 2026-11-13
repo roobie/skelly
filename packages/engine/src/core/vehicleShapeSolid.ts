@@ -72,17 +72,19 @@ export const contentVehicleCells = (
   const { cx, cz } = contentVehicleFrame(registry, look);
   const blueprint = registry.vehicleBlueprints.get(look.blueprint);
   const columns = new Map<string, [number, number]>();
-  if (blueprint) {
-    for (const fitting of blueprint.fittings) {
-      if (look.removed.includes(fitting.id)) {
-        continue;
-      }
-      for (const { min, max } of placeFitting(registry, fitting).collision as readonly Corners[]) {
-        const x = Math.floor(width / 2 - (max[0] - cx) / blockSize);
-        const z = Math.floor(depth / 2 - (max[2] - cz) / blockSize);
+  const boxes = (blueprint?.fittings ?? [])
+    .filter(({ id }) => !look.removed.includes(id))
+    .flatMap((fitting) => placeFitting(registry, fitting).collision);
+  for (const { min, max } of boxes) {
+    const x0 = Math.floor(width / 2 - (max[0] - cx) / blockSize);
+    const x1 = Math.ceil(width / 2 - (min[0] - cx) / blockSize);
+    const z0 = Math.floor(depth / 2 - (max[2] - cz) / blockSize);
+    const z1 = Math.ceil(depth / 2 - (min[2] - cz) / blockSize);
+    const low = min[1] / blockSize;
+    const high = max[1] / blockSize;
+    for (let x = x0; x < x1; x += 1) {
+      for (let z = z0; z < z1; z += 1) {
         const column = `${x},${z}`;
-        const low = min[1] / blockSize;
-        const high = max[1] / blockSize;
         const span = columns.get(column);
         columns.set(column, span ? [Math.min(span[0], low), Math.max(span[1], high)] : [low, high]);
       }

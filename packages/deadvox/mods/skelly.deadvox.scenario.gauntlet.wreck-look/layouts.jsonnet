@@ -11,7 +11,7 @@
     ground: 21,
     terrain: [],
     // One street, east to west, wide enough to stand on; the wrecks park against its north side.
-    tracks: [{ points: [[-26, -1.5], [26, -1.5]], width: 8, surface: 'asphalt' }],
+    tracks: [{ points: [[-24, -1.5], [24, -1.5]], width: 8, surface: 'asphalt' }],
     buildings: [
       // Quarter-turned, so each car shows its flank to the player: a stripped muscle car, an intact
       // hatchback and police car, and a front-stripped box van, the four shapes a look must tell apart.

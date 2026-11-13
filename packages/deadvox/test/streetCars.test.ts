@@ -144,7 +144,11 @@ const vehicleFixtureSources = baseSources.filter(({ source }) =>
   VEHICLE_BASE.some((file) => source.endsWith(`/${file}`)),
 );
 const wreckVehicle = { blueprint: 'police_car', removed: [] as string[], solidFill: 0.4 };
-const checkWreck = (override: Partial<typeof wreckVehicle>, size: [number, number, number] = [4, 4, 10]) => {
+const checkWreck = (
+  override: Partial<typeof wreckVehicle>,
+  size: [number, number, number] = [4, 4, 10],
+  sources = vehicleFixtureSources,
+) => {
   const data: ContentFile = {
     furnitureMaterials: fixtureMaterials(),
     sounds: fixtureSounds(),
@@ -160,7 +164,7 @@ const checkWreck = (override: Partial<typeof wreckVehicle>, size: [number, numbe
       },
     ],
   };
-  return buildRegistry([...vehicleFixtureSources, { source: 'fixture-wreck.json', data }]).issues.filter(
+  return buildRegistry([...sources, { source: 'fixture-wreck.json', data }]).issues.filter(
     ({ source }) => source === 'fixture-wreck.json',
   );
 };
@@ -174,6 +178,72 @@ it('accepts a content blueprint wreck look, and refuses one whose parts block no
   expect(checkWreck({ blueprint: 'no_such_blueprint' }).length).toBeGreaterThan(0);
   for (const refused of [checkWreck({ removed: everyFitting }), checkWreck({}, [1, 1, 1])]) {
     expect(refused.some(({ message }) => message.includes('must block somewhere'))).toBe(true);
+  }
+});
+
+it('reports rather than throws when a furniture blueprint has an unsound part', () => {
+  const sources = vehicleFixtureSources.map(({ source, data }) => ({
+    source,
+    data: {
+      ...(data as ContentFile),
+      models: (data as ContentFile).models?.map((model) => ({ ...model, parts: undefined })),
+    },
+  }));
+  expect(checkWreck({}, [4, 4, 10], sources).some(({ message }) => message.includes('unsound part'))).toBe(true);
+});
+
+it('blocks every column spanned by kept collision in every content wreck look', async () => {
+  const { contentVehicleBlocks, contentVehicleFrame } = await import(
+    '@skelly/engine/internal/core/vehicleShapeSolid.ts'
+  );
+  const { placeFitting } = await import('@skelly/engine/internal/core/vehicleBlueprint.ts');
+  const wrecks = [...registry.furniture.values()].filter(
+    ({ vehicle }) => vehicle && BLUEPRINTS[vehicle.blueprint] === undefined,
+  );
+  expect(wrecks.length).toBeGreaterThan(0);
+  for (const def of wrecks) {
+    const vehicleLook = def.vehicle!;
+    const { cx, cz } = contentVehicleFrame(registry, vehicleLook);
+    const blocked = new Set(contentVehicleBlocks(registry, vehicleLook, def.size, 0.5).map(([x, , z]) => `${x},${z}`));
+    const spans = new Map<string, [number, number]>();
+    const boxes = registry.vehicleBlueprints
+      .get(vehicleLook.blueprint)!
+      .fittings.filter(({ id }) => !vehicleLook.removed.includes(id))
+      .flatMap((fitting) => placeFitting(registry, fitting).collision);
+    for (const { min, max } of boxes) {
+      for (
+        let x = Math.floor(def.size[0] / 2 - (max[0] - cx) / 0.5);
+        x < Math.ceil(def.size[0] / 2 - (min[0] - cx) / 0.5);
+        x += 1
+      ) {
+        for (
+          let z = Math.floor(def.size[2] / 2 - (max[2] - cz) / 0.5);
+          z < Math.ceil(def.size[2] / 2 - (min[2] - cz) / 0.5);
+          z += 1
+        ) {
+          const key = `${x},${z}`;
+          const previous = spans.get(key);
+          spans.set(key, [
+            Math.min(previous?.[0] ?? Number.POSITIVE_INFINITY, min[1] / 0.5),
+            Math.max(previous?.[1] ?? Number.NEGATIVE_INFINITY, max[1] / 0.5),
+          ]);
+        }
+      }
+    }
+    expect(spans.size, def.id).toBeGreaterThan(0);
+    const solidColumns = [...spans].filter(([, [low, high]]) => {
+      for (let y = Math.floor(low); y < Math.ceil(high); y += 1) {
+        if (Math.min(y + 1, high) - Math.max(y, low) >= vehicleLook.solidFill) {
+          return true;
+        }
+      }
+      return false;
+    });
+    expect(solidColumns.length, def.id).toBeGreaterThan(0);
+    expect(
+      solidColumns.filter(([column]) => !blocked.has(column)),
+      def.id,
+    ).toEqual([]);
   }
 });
 

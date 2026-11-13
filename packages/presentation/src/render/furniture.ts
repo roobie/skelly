@@ -1,5 +1,6 @@
 import type { FurnitureDef } from '@skelly/engine/content';
 import type { ColumnReveal } from '@skelly/engine/mesh';
+import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import {
   type BlockEntities,
   type BlockEntity,
@@ -68,7 +69,7 @@ function markerEdges(): EdgesGeometry {
 interface Piece {
   readonly pose: string;
   /** The model library version its mesh was staged against; a content vehicle look restages when it rises. */
-  readonly models: number;
+  readonly models?: number | undefined;
   /** A batched piece's mesh is never drawn; it holds the geometry, material and transform its batch instances. */
   readonly mesh: Group | Mesh;
   /** The batch a piece that never moves between syncs is drawn in. */
@@ -218,10 +219,13 @@ export class FurnitureMeshes {
     this.entities = entities;
     this.drawn = entities.standing;
     const redraw = new Set<string>();
-    // `standingChangesSince` reads undefined when it can no longer tell what changed, and models arriving
-    // restages every piece whatever its pose, so both draw afresh.
-    const every = since === undefined || modelsArrived;
-    for (const entity of new Set(every ? [...this.pieces.keys(), ...entities.all] : since)) {
+    const changed = new Set(since === undefined ? [...this.pieces.keys(), ...entities.all] : since);
+    if (modelsArrived) {
+      for (const [entity] of [...this.pieces].filter(([, piece]) => piece.models !== undefined)) {
+        changed.add(entity);
+      }
+    }
+    for (const entity of changed) {
       this.restage(entity, entities, modelsVersion, redraw);
     }
     if (revealVersion !== this.drawnReveal) {
@@ -240,14 +244,16 @@ export class FurnitureMeshes {
   private restage(entity: BlockEntity, entities: BlockEntities, modelsVersion: number, redraw: Set<string>): void {
     const pose = entities.stands(entity) ? poseKey(entity, entities.wearOf(entity)) : undefined;
     const kept = this.pieces.get(entity);
-    if (kept !== undefined && kept.pose === pose && kept.models === modelsVersion) {
+    if (kept !== undefined && kept.pose === pose && (kept.models === undefined || kept.models === modelsVersion)) {
       return;
     }
     if (kept) {
       this.unstage(entity, kept, redraw);
     }
     if (pose !== undefined) {
-      this.stage(entity, { ...this.piece(entity, entities.defOf(entity), pose), models: modelsVersion }, redraw);
+      const def = entities.defOf(entity);
+      const models = def.vehicle && BLUEPRINTS[def.vehicle.blueprint] === undefined ? modelsVersion : undefined;
+      this.stage(entity, { ...this.piece(entity, def, pose), models }, redraw);
     }
   }
 

@@ -44,7 +44,7 @@
       "terrain": [],
       "tracks": [
         {
-          "points": [[-26, -1.5], [26, -1.5]],
+          "points": [[-24, -1.5], [24, -1.5]],
           "surface": "asphalt",
           "width": 8
         }
