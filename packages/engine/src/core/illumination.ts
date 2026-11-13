@@ -42,8 +42,11 @@ const distanceAttenuation = (
 
 const cellOf = (point: Vec3): string => point.map(Math.floor).join(',');
 
-/** A source reaches a point when no blocking cell lies between them; their own cells never block. */
-const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt): boolean => {
+/**
+ * A source reaches a point when no blocking cell lies between them; their own cells never block. The one wall check
+ * for light: the rules read it here and the picture reads it through `packages/engine/src/core/lampReach.ts`.
+ */
+export const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt): boolean => {
   const delta: Vec3 = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
   const length = Math.hypot(...delta);
   if (length === 0) {

@@ -83,6 +83,7 @@ import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../
 import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
+import { LampReachCache } from '../core/lampReach.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
 import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
@@ -2587,6 +2588,12 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const power = createSessionPower(options, sim, inventory);
+  const lampReach = new LampReachCache(
+    { world, entities },
+    isLightBlocking,
+    s,
+    claimed(registry.senses, 'player')!.light.illumination.reach,
+  );
   const lightScene = (): IlluminationScene => ({
     inventory,
     sky: skyFields,
@@ -2646,6 +2653,8 @@ export const createSession = (options: SessionOptions) => {
       return scenarioRunWon(scenarioRun);
     },
     power,
+    /** Where each powered lamp's light is walled off, for the picture to drop it by. */
+    lampReach,
     skyFields,
     /** Light reaching a point in blocks (`packages/engine/src/core/illumination.ts`, `illuminationAt`). */
     illuminationAt: (point: Vec3): number => illuminationAt(lightScene(), point),
