@@ -1,6 +1,7 @@
 import type { Sky } from '@skelly/engine/sky';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { applyModelMaterials, paintedCopy } from '@skelly/presentation/internal/render/modelMaterials.ts';
+import { skyAnchoredCopy } from '@skelly/presentation/internal/render/skyAnchor.ts';
 import { GradientSkyReflection } from '@skelly/presentation/internal/render/skyReflection.ts';
 import { VehicleFinishes } from '@skelly/presentation/internal/render/vehicleFinishes.ts';
 import {
@@ -123,6 +124,21 @@ it('reflects from the coat alone and caps its grazing reflectance, so the paint 
   expect(afterMaps).toContain('radiance = vec3( 0.0 );');
   expect(afterMaps).toContain('iblIrradiance = vec3( 0.0 );');
   expect(shader.fragmentShader).toContain(`material.clearcoatF90 = ${grazingLimit.toFixed(4)};`);
+});
+
+it('compiles the sky-anchored clone a vehicle draws as the finished copy, though a clone drops its compile hook', () => {
+  const patches = new MaterialPatches();
+  const finishes = finishesOf(patches);
+  const plain = meshOf('coated');
+  finishes.setEnabled(true);
+  const [dressed, anchored] = [meshOf('coated'), meshOf('coated')];
+  finishes.dress(new Group().add(dressed, anchored));
+  anchored.material = skyAnchoredCopy(anchored.material);
+  plain.material = skyAnchoredCopy(plain.material);
+  patches.apply(new Group().add(plain, dressed, anchored));
+  const key = (mesh: Mesh) => (mesh.material as Material).customProgramCacheKey();
+  expect(key(dressed)).not.toBe(key(plain));
+  expect(key(anchored)).toBe(key(dressed));
 });
 
 it('leaves an unfinished material to compile as it would without the option', () => {
