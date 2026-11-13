@@ -1,21 +1,18 @@
 import { worldCellRepair } from '@skelly/engine/internal/core/blockDamage.ts';
 import type { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
-import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
-import {
-  applyReplayActionPayload,
-  type ReplayActionPayload,
-} from '@skelly/engine/internal/game/replayCommands.ts';
+import type { LongJob } from '@skelly/engine/internal/core/longAction.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { applyReplayActionPayload, type ReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
 import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import type { LongJob } from '@skelly/engine/internal/core/longAction.ts';
 import { bindReach, Character } from '@skelly/engine/sim';
-import { contentLookup } from '@skelly/presentation/ui';
 import { type Vec3, World } from '@skelly/engine/world';
+import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -28,12 +25,12 @@ const BLOCK = 'cell_repair_block';
 const RECIPE = 'cell_repair_recipe';
 const AMOUNT = 5;
 const registry = (() => {
-  const registry = baseRegistry();
+  const base = baseRegistry();
   const material = { ...fixtureBlockMaterial('cell_repair_rubble'), id: 'cell_repair_material' };
-  registry.blockMaterials.set(material.id, material);
-  registry.blockIds.set(BLOCK, registry.blocks.length);
-  registry.blocks.push({ id: BLOCK, name: 'Fixture wall', material: material.id, solid: true, color: '#888888' });
-  registry.items.set(STOCK, {
+  base.blockMaterials.set(material.id, material);
+  base.blockIds.set(BLOCK, base.blocks.length);
+  base.blocks.push({ id: BLOCK, name: 'Fixture wall', material: material.id, solid: true, color: '#888888' });
+  base.items.set(STOCK, {
     id: STOCK,
     name: 'Stock',
     category: 'material',
@@ -41,7 +38,7 @@ const registry = (() => {
     weight: 1,
     workInProgress: false,
   });
-  registry.recipes.set(RECIPE, {
+  base.recipes.set(RECIPE, {
     id: RECIPE,
     kind: 'repair',
     result: { item: STOCK, count: 1 },
@@ -54,12 +51,16 @@ const registry = (() => {
     qualities: {},
     components: [[{ item: STOCK, count: 2 }]],
   });
-  return registry;
+  return base;
 })();
 
 /** Block damage records run through the world owner's own terrain view, as strikes do. */
 const terrainOf = (world: World): CanonicalTerrain =>
-  ({ world, getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z), ensureCell: () => undefined }) as unknown as CanonicalTerrain;
+  ({
+    world,
+    getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z),
+    ensureCell: () => undefined,
+  }) as unknown as CanonicalTerrain;
 
 interface Saved {
   inventory: ReturnType<Inventory['snapshotState']>;
