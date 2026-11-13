@@ -158,7 +158,7 @@ export const isCellInMask = (data: Float32Array, layout: CrowdCellMaskLayout, sl
   return (((mask >>> 0) >>> (cell % CROWD_MASK_BITS_PER_TEXEL)) & 1) === 1;
 };
 
-/** A crowd placement: yaw about Y (radians, three.js convention: yaw 0 faces -Z) plus a translation,
+/** A crowd placement: yaw about Y (radians; yaw 0 leaves an actor file facing +Z) plus a translation,
  * applied to every bone. `y` is an ADDITIONAL offset on top of whatever Y the pose itself already has
  * (a walk pose puts the lowest foot at the pose's local y = 0), so `y` is exactly "where the ground is":
  * a per-actor height on uneven terrain. */

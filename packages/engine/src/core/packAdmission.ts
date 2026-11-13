@@ -38,38 +38,26 @@ export interface PackInput {
   files: ContentSource[];
 }
 
-/**
- * The one order of pack manifest keys: by UTF-16 code unit, so locale and platform never reorder packs. The bundle
- * stamp and the save identity list packs in this order, so the browser and the build must share it.
- */
-export const comparePackKeys = (left: string, right: string): number => {
-  if (left < right) {
-    return -1;
-  }
-  return left > right ? 1 : 0;
-};
-
 // An id in no inventory stays out of the closure, so admission reports it as a missing dependency.
-export const selectFolderClosure = (
+export const selectFolderClosure = <T extends { readonly manifest: PackManifest }>(
   requested: readonly string[],
-  available: readonly PackInput[],
-  defaults: readonly PackInput[],
-): PackInput[] => {
+  available: readonly T[],
+  defaults: readonly T[],
+): T[] => {
   const byId = new Map(available.map((pack) => [pack.manifest.id, pack]));
   const loaded = new Set(defaults.map(({ manifest }) => manifest.id));
   const visited = new Set<string>();
-  const selected: PackInput[] = [];
   const visit = (id: string): void => {
     const pack = byId.get(id);
     if (visited.has(id) || loaded.has(id) || !pack) {
       return;
     }
     visited.add(id);
-    selected.push(pack);
     pack.manifest.dependencies.forEach(visit);
   };
   requested.forEach(visit);
-  return selected;
+  // Closure selection must not introduce a second ordering authority before dependency admission.
+  return available.filter(({ manifest }) => visited.has(manifest.id));
 };
 
 /** Ordinary admission of the defaults, selected folder packs and other mods; also returns the kept folder packs. */
@@ -255,7 +243,11 @@ const entrySetters = (packs: readonly PackInput[], fail: Report): Map<string, Pa
   for (const pack of packs) {
     const files = packFileEntries(pack);
     checkSameIdFiles(pack, files, fail);
-    for (const entry of new Set(files.flatMap(({ entries }) => entries))) {
+    const addresses = new Set(files.flatMap(({ entries }) => entries));
+    if (pack.manifest.defaultStart !== undefined) {
+      addresses.add('defaultStart');
+    }
+    for (const entry of addresses) {
       setters.set(entry, [...(setters.get(entry) ?? []), pack]);
     }
   }

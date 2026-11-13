@@ -13,7 +13,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -33,7 +33,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -53,7 +53,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -73,7 +73,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -93,7 +93,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -113,7 +113,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -133,7 +133,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -153,7 +153,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -173,7 +173,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -193,7 +193,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -213,7 +213,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -233,7 +233,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -253,7 +253,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -273,7 +273,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -293,7 +293,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -313,7 +313,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -333,7 +333,7 @@
         },
         "obstruction": {
           "combat": true,
-          "light": true,
+          "light": 0.34999999999999998,
           "sight": true,
           "sound": true
         }
@@ -411,44 +411,44 @@
           "supportedBy": ["frame"]
         },
         {
-          "at": [1.6499999999999999, 0, 0],
+          "at": [0, 0, 1.6499999999999999],
           "id": "front_axle",
           "part": "light_tactical_vehicle_portal_axle",
           "supportedBy": ["frame"]
         },
         {
-          "at": [-1.95, 0, 0],
+          "at": [0, 0, -1.95],
           "id": "rear_axle",
           "part": "light_tactical_vehicle_portal_axle",
           "supportedBy": ["frame"]
         },
         {
-          "at": [-0.87, 0.54000000000000004, 0],
+          "at": [0, 0.54000000000000004, -0.87],
           "id": "rear_prop_shaft",
           "part": "light_tactical_vehicle_rear_prop_shaft",
           "supportedBy": ["frame"]
         },
         {
-          "at": [1.6499999999999999, 0.46999999999999997, 0.92000000000000004],
+          "at": [-0.92000000000000004, 0.46999999999999997, 1.6499999999999999],
           "id": "front_wheel_near",
           "part": "light_tactical_vehicle_wheel",
           "supportedBy": ["frame"]
         },
         {
-          "at": [1.6499999999999999, 0.46999999999999997, -0.92000000000000004],
+          "at": [0.92000000000000004, 0.46999999999999997, 1.6499999999999999],
           "id": "front_wheel_far",
           "mirror": true,
           "part": "light_tactical_vehicle_wheel",
           "supportedBy": ["frame"]
         },
         {
-          "at": [-1.95, 0.46999999999999997, 0.92000000000000004],
+          "at": [-0.92000000000000004, 0.46999999999999997, -1.95],
           "id": "rear_wheel_near",
           "part": "light_tactical_vehicle_wheel",
           "supportedBy": ["frame"]
         },
         {
-          "at": [-1.95, 0.46999999999999997, -0.92000000000000004],
+          "at": [0.92000000000000004, 0.46999999999999997, -1.95],
           "id": "rear_wheel_far",
           "mirror": true,
           "part": "light_tactical_vehicle_wheel",
@@ -481,13 +481,13 @@
           "supportedBy": ["frame"]
         },
         {
-          "at": [2.2599999999999998, 0.85999999999999999, 0.71999999999999997],
+          "at": [-0.71999999999999997, 0.85999999999999999, 2.2599999999999998],
           "id": "headlamp_near",
           "part": "light_tactical_vehicle_headlamp",
           "supportedBy": ["frame"]
         },
         {
-          "at": [2.2599999999999998, 0.85999999999999999, -0.71999999999999997],
+          "at": [0.71999999999999997, 0.85999999999999999, 2.2599999999999998],
           "id": "headlamp_far",
           "mirror": true,
           "part": "light_tactical_vehicle_headlamp",

@@ -6,9 +6,9 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory } from './inventory.ts';
+import { rotatedPoint, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
-import type { FurnitureDef } from './schema.ts';
 import { type Placement, placedPieces } from './templates.ts';
 import { type SimTimestamp, simTimestamp } from './time.ts';
 
@@ -27,6 +27,13 @@ export interface PoweredLight {
 
 const identity = ({ type, pos }: PlacedPowerDevice): string => `${type}:${pos.join(',')}`;
 
+/** The one place a fixture's light position is worked out, so the renderer and the rules cannot disagree on it. */
+const emitterOf = (device: PlacedPowerDevice, size: Readonly<Vec3>, [x, y, z]: Readonly<Vec3> = [0, 0, 0]): Vec3 => {
+  const local: Vec3 = [x + 0.5, y + 0.5, z + 0.5];
+  const turned = rotatedPoint(local, size, rotationOf(device.entitySpec ?? { facing: 'n' }));
+  return turned.map((value, axis) => value + device.pos[axis]!) as Vec3;
+};
+
 export const placedPowerDevices = (registry: Registry, placements: readonly Placement[]): PlacedPowerDevice[] =>
   placements
     .flatMap(placedPieces)
@@ -43,8 +50,7 @@ export class SitePower {
   readonly network: PowerNetwork;
   readonly chargers: BatteryChargers | undefined;
   private readonly chargerIds = new Map<number, string>();
-  private readonly lamps: { id: string; pos: Vec3; light: NonNullable<NonNullable<FurnitureDef['power']>['light']> }[] =
-    [];
+  private readonly lamps: { id: string; light: PoweredLight }[] = [];
 
   constructor({
     registry,
@@ -63,10 +69,12 @@ export class SitePower {
   }) {
     this.registry = registry;
     const states = devices.map((device) => {
-      const spec = registry.furniture.get(device.type)!.power!;
+      const def = registry.furniture.get(device.type)!;
+      const spec = def.power!;
       const id = identity(device);
       if (spec.light) {
-        this.lamps.push({ id, pos: device.pos, light: spec.light });
+        const { offset, ...shine } = spec.light;
+        this.lamps.push({ id, light: { pos: emitterOf(device, def.size, offset), ...shine } });
       }
       return {
         id,
@@ -176,6 +184,6 @@ export class SitePower {
   }
 
   lights(): PoweredLight[] {
-    return this.lamps.filter(({ id }) => this.network.isPowered(id)).map(({ pos, light }) => ({ pos, ...light }));
+    return this.lamps.filter(({ id }) => this.network.isPowered(id)).map(({ light }) => light);
   }
 }

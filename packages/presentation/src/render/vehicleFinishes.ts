@@ -1,48 +1,58 @@
 import type { Sky } from '@skelly/engine/sky';
 import { type MaterialDef, surfaceOf } from '@skelly/thing-core/materials';
 import { type Material, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, type Object3D, ShaderChunk } from 'three';
+import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { physicalCopy } from './modelMaterials.ts';
 import type { ReflectionMap } from './skyReflection.ts';
 
 type Coat = NonNullable<ReturnType<typeof surfaceOf>['clearcoat']>;
 
-const without = (chunk: string, term: string, replacement = ''): string => {
-  if (!chunk.includes(term)) {
+const LIGHT_MAPS_CHUNK = '#include <lights_fragment_maps>';
+const PHYSICAL_CHUNK = '#include <lights_physical_fragment>';
+const FULL_COAT_GRAZING = 'material.clearcoatF90 = 1.0;';
+
+/** Marks a finished copy in its user data, which survives the clone the sky anchoring makes of every vehicle material. */
+const FINISHED = 'vehicleFinish';
+
+const ensured = (source: string, term: string): string => {
+  if (!source.includes(term)) {
     throw new Error(`three.js changed a shader chunk: vehicle finishes can no longer find ${term}`);
   }
-  return chunk.replace(term, replacement);
+  return source;
 };
-
-/**
- * Only the coat samples the reflection. The hemisphere light stays the only ambient on a finish, and the layer under
- * the coat keeps to direct light, because its broad rough lobe spreads the map over the panel as a pale film.
- */
-const COAT_ONLY_MAPS = without(
-  without(ShaderChunk.lights_fragment_maps, 'iblIrradiance += getIBLIrradiance( geometryNormal );'),
-  'radiance += iblRadiance;',
-);
 
 /** A flat panel has no shape to break up what it mirrors, so at a grazing angle a full Fresnel swaps the paint for the sky. */
 const coatGrazing = (limit: number): string =>
-  without(
-    ShaderChunk.lights_physical_fragment,
-    'material.clearcoatF90 = 1.0;',
+  ensured(ShaderChunk.lights_physical_fragment, FULL_COAT_GRAZING).replace(
+    FULL_COAT_GRAZING,
     `material.clearcoatF90 = ${limit.toFixed(4)};`,
   );
 
+/**
+ * Only the coat samples the reflection. The hemisphere light stays the only ambient on a finish, and the layer under
+ * the coat keeps to direct light, because its broad rough lobe spreads the map over the panel as a pale film. The
+ * light maps chunk stays in place for the other patches that read it, and what it added under the coat is dropped
+ * after it.
+ */
+const coatOnly = (grazingLimit: number) =>
+  materialPatch({
+    applies: (material) => material.userData[FINISHED] === true,
+    compile: (shader) => {
+      shader.fragmentShader = ensured(ensured(shader.fragmentShader, LIGHT_MAPS_CHUNK), PHYSICAL_CHUNK)
+        .replace(LIGHT_MAPS_CHUNK, `${LIGHT_MAPS_CHUNK}\niblIrradiance = vec3( 0.0 );\nradiance = vec3( 0.0 );`)
+        .replace(PHYSICAL_CHUNK, coatGrazing(grazingLimit));
+    },
+    key: () => 'vehicle-finish',
+  });
+
 /** The one recipe for a finished material, so warm-up stand-ins compile the very programs the vehicles draw with. */
-const finished = (loaded: MeshStandardMaterial, coat: Coat, reflection: ReflectionMap, grazingLimit: number) => {
+const finished = (loaded: MeshStandardMaterial, coat: Coat, reflection: ReflectionMap) => {
   const material = loaded instanceof MeshPhysicalMaterial ? loaded.clone() : physicalCopy(loaded);
+  material.userData = { ...loaded.userData, [FINISHED]: true };
   material.clearcoat = coat.amount;
   material.clearcoatRoughness = coat.roughness;
   material.metalness = coat.metallic;
   material.envMap = reflection.texture;
-  material.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <lights_fragment_maps>', COAT_ONLY_MAPS)
-      .replace('#include <lights_physical_fragment>', coatGrazing(grazingLimit));
-  };
-  material.customProgramCacheKey = () => 'vehicle-finish';
   return material;
 };
 
@@ -56,14 +66,18 @@ const STAND_IN_COAT: Coat = { amount: 1, roughness: 1, metallic: 0 };
 export class VehicleFinishes {
   private readonly reflection: ReflectionMap;
   private readonly table: Readonly<Record<string, MaterialDef>>;
-  private readonly grazingLimit: number;
   private readonly copies = new WeakMap<Material, Material>();
   private on = false;
 
-  constructor(reflection: ReflectionMap, table: Readonly<Record<string, MaterialDef>>, grazingLimit: number) {
+  constructor(
+    reflection: ReflectionMap,
+    table: Readonly<Record<string, MaterialDef>>,
+    grazingLimit: number,
+    patches: MaterialPatches,
+  ) {
     this.reflection = reflection;
     this.table = table;
-    this.grazingLimit = grazingLimit;
+    patches.add(coatOnly(grazingLimit));
   }
 
   get enabled(): boolean {
@@ -94,9 +108,7 @@ export class VehicleFinishes {
   }
 
   /** The finished programs a loaded material of this kind can take, for the scene's warm-up. */
-  warmUpVariants = (plain: MeshStandardMaterial): Material[] => [
-    finished(plain, STAND_IN_COAT, this.reflection, this.grazingLimit),
-  ];
+  warmUpVariants = (plain: MeshStandardMaterial): Material[] => [finished(plain, STAND_IN_COAT, this.reflection)];
 
   private copyOf(material: Material): Material {
     const coat = this.coatOf(material);
@@ -105,7 +117,7 @@ export class VehicleFinishes {
     }
     let copy = this.copies.get(material);
     if (copy === undefined) {
-      copy = finished(material, coat, this.reflection, this.grazingLimit);
+      copy = finished(material, coat, this.reflection);
       this.copies.set(material, copy);
     }
     return copy;

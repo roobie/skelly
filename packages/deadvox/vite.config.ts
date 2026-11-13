@@ -7,8 +7,9 @@ import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
 import { buildRevisionFromGit } from '@skelly/engine/packs';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
+import { pagesAnalyticsPlugin } from '../../tools/pages-analytics/index.ts';
+import { PRODUCT_ENTRY_PACK, selectAvailableProductPacks } from './src/product/packSelection.ts';
 import { bundleStampPlugin, UNSTAMPED_BUNDLE_DEFINES } from './tools/bundleStampPlugin.ts';
 import { declaredAssetGlobsPlugin } from './tools/declaredAssetGlobsPlugin.ts';
 import { packageStylesheetsPlugin } from './tools/packageStylesheetsPlugin.ts';
@@ -21,8 +22,8 @@ import {
 } from './tools/simulationFingerprint.ts';
 
 const packageRoot = fileURLToPath(new URL('.', import.meta.url));
-const packs = readAvailablePacks(packageRoot);
-const packDefines = await bundledPackDefines(packs);
+const packs = selectAvailableProductPacks(readAvailablePacks(packageRoot));
+const packDefines = await bundledPackDefines(packs, PRODUCT_ENTRY_PACK);
 const filesUnder = (directory: string, prefix: string): { name: string; path: string }[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const relative = `${prefix}${entry.name}`;

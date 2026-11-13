@@ -3,10 +3,10 @@ import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { CONTACT_SKIN } from '@skelly/engine/internal/core/physics.ts';
 import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { templateSpatialIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
-import { compileTemplate, type Turn } from '@skelly/engine/internal/core/templates.ts';
+import { compileTemplate, stampPlacement, type Turn } from '@skelly/engine/internal/core/templates.ts';
 import {
   CHUNK,
-  generateColumn,
+  createTerrainEvaluator,
   makeScale,
   placedPoint,
   stepBody,
@@ -66,7 +66,7 @@ const layoutFixture = (): SiteLayoutDef => ({
   terrain: [],
   tracks: [],
   woodlands: [],
-  shamblers: [],
+  actors: [],
 });
 const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) => {
   template.blocks[x + template.size[0] * (z + template.size[2] * y)] = id;
@@ -204,7 +204,7 @@ describe('explicit storeys and ordinary-block flights on owned geometry', () => 
     const placement = site.placements[0]!;
     expect(placement.origin[1]).toBe(26);
     const world = new World();
-    const terrain = {
+    const terrain = createTerrainEvaluator({
       seed: 1,
       shape: terrainShapeOf(registry),
       scale,
@@ -215,9 +215,9 @@ describe('explicit storeys and ordinary-block flights on owned geometry', () => 
         sand: registry.blockIds.get('sand')!,
         water: registry.blockIds.get('water')!,
       },
-      surface: site.surface,
-      stamp: (chunk: Parameters<typeof site.stamp>[0]) => site.stamp(chunk),
-    };
+      site: site.terrain,
+      structures: [],
+    });
     const points = (
       [
         [1.5, 1, 1.5],
@@ -230,7 +230,7 @@ describe('explicit storeys and ordinary-block flights on owned geometry', () => 
     const columns = [Math.floor(placement.origin[0] / CHUNK), Math.floor(placement.origin[2] / CHUNK)];
     for (let cx = columns[0]!; cx <= columns[0]! + 1; cx++) {
       for (let cz = columns[1]!; cz <= columns[1]! + 1; cz++) {
-        for (const chunk of generateColumn(terrain, cx, cz)) {
+        for (const chunk of terrain.generateColumn(cx, cz)) {
           world.addChunk(chunk);
         }
       }
@@ -238,10 +238,10 @@ describe('explicit storeys and ordinary-block flights on owned geometry', () => 
     for (const point of points) {
       expect(world.getBlock(...point)).toBe(0);
       expect(world.getBlock(point[0], point[1] - 1, point[2])).toBe(planks);
-      world.setBlock(...point, terrain.blocks.rock);
+      world.setBlock(...point, terrain.plan.blocks.rock);
     }
     for (const chunk of world.chunks.values()) {
-      site.stamp(chunk);
+      stampPlacement(chunk, placement);
     }
     for (const point of points) {
       expect(world.getBlock(...point)).toBe(0);

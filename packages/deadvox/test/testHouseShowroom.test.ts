@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { availablePackInputs } from '../src/product/content.ts';
 import { siteRun } from './fixtures/siteRun.ts';
 import { content as baseContent } from './fixtures/startupContent.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
 // The showroom host shows rows only from loaded mods, so the product debug mod brings rows to show.
@@ -118,7 +119,7 @@ describe('test house showroom', () => {
     for (const tree of house.trees) {
       expect(rectsOverlap(tree.bounds, catalogue.rect)).toBe(false);
       const [x, y, z] = tree.origin;
-      expect(y).toBe(site.surface.height(x, z, 0) + 1);
+      expect(y).toBe(terrainFor(site, registry, config.scale, config.seed).surface!.height(x, z, 0) + 1);
     }
   });
 

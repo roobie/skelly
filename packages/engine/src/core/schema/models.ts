@@ -258,9 +258,9 @@ const RevolverSchema = pipe(
 );
 
 const MagazineRoundSchema = strictObject({
-  /** Centre in metres in the magazine model frame (+x forward, +y up, +z right). */
+  /** Centre in metres in the magazine model frame (+z forward, +y up, -x right). */
   at: Point,
-  /** Degrees about +z; nose-up is positive. */
+  /** Degrees about -x, the magazine's right; nose-up is positive. */
   tilt: number(),
 });
 

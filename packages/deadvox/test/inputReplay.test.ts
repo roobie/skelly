@@ -1,6 +1,7 @@
 import {
   clearPendingInputReplay,
   createReplayPlayStateBinding,
+  debugSpawnActorRow,
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
@@ -65,6 +66,7 @@ import {
   fixtureZombieColumn,
   formatVersion,
   formatWorldOptions,
+  registry,
   removeFixtureColumn,
 } from './snapshotTestSupport.ts';
 
@@ -92,6 +94,9 @@ const replaySample = {
   descending: false,
   worldReady: true,
 } as const;
+
+const spawnId = (typeId: string): string => debugSpawnActorRow(typeId, typeId).id;
+const ABSENT_ACTOR = 'fixture_absent_actor';
 
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
@@ -163,6 +168,7 @@ const applyCommand = (
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftRepairEntity: (recipeId, entityUid, preference) =>
       runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
+    craftTakeApartEntity: (entityUid) => runtime.session.crafting.takeApartEntity(entityUid),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
       return uid === undefined ? undefined : runtime.session.crafting.act(uid, 'continue');
@@ -711,6 +717,70 @@ describe('input replay', () => {
     }
   });
 
+  it('decodes every debug spawn the recorder accepted against the same content', async () => {
+    expect(registry.actors.has(ABSENT_ACTOR)).toBe(false);
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    const accepted = [...registry.actors.keys(), ABSENT_ACTOR].map(spawnId).filter((id) => {
+      try {
+        recorder.queueAction(id, 'down', 'play');
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(accepted).toEqual([...registry.actors.keys()].map(spawnId));
+    expect(decoded.inputs.actions.map(({ action }) => action)).toEqual(accepted);
+  });
+
+  it('keeps its content check across rollover', () => {
+    const start = capture(createRuntime());
+    const [present] = registry.actors.keys();
+    const first = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    expect(() => first.queueAction(spawnId(ABSENT_ACTOR), 'down', 'play')).toThrow(ABSENT_ACTOR);
+    first.recordTick(replaySample);
+    const next = rolloverInputReplayRecorder(first, start);
+    expect(() => next.queueAction(spawnId(ABSENT_ACTOR), 'down', 'play')).toThrow(ABSENT_ACTOR);
+    expect(() => next.queueAction(spawnId(present!), 'down', 'play')).not.toThrow();
+  });
+
+  it('refuses every debug spawn when built without a content check', () => {
+    const [present] = registry.actors.keys();
+    const recorder = new InputReplayRecorder(capture(createRuntime()));
+    expect(() => recorder.queueAction(spawnId(present!), 'down', 'play')).toThrow(present!);
+  });
+
+  it('refuses an imported debug spawn action whose actor is absent from the content', async () => {
+    const start = capture(createRuntime());
+    // A replay recorded against other content, where this actor existed.
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup: () => true });
+    recorder.queueAction(spawnId(ABSENT_ACTOR), 'down', 'play');
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    await expect(decodeInputReplay(bytes, { contentLookup })).rejects.toThrow(ABSENT_ACTOR);
+  });
+
+  it('keeps each debug spawn id exact past the range of a stored action index', () => {
+    const start = capture(createRuntime());
+    const indexRange = 2 ** 16;
+    let recorded = 0;
+    while (recorded <= indexRange) {
+      const recorder = new InputReplayRecorder(start, 1, [], { contentLookup: () => true });
+      const expected: string[] = [];
+      while (!recorder.full) {
+        const id = spawnId(`fixture_${recorded + expected.length}`);
+        expected.push(id);
+        recorder.queueAction(id, 'down', 'play');
+      }
+      recorder.recordTick(replaySample);
+      expect(recorder.copyInputs().actions.map(({ action }) => action)).toEqual(expected);
+      recorded += expected.length;
+    }
+  });
+
   it('reports the supplied stop reason instead of an idle recording', () => {
     const options = {
       replayPlayer: undefined,
@@ -924,9 +994,8 @@ describe('input replay', () => {
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
     const site: Site = {
-      surface: fixtureSite.surface,
+      terrain: fixtureSite.terrain,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
@@ -1192,9 +1261,8 @@ describe('input replay', () => {
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
     };
     const site: Site = {
-      surface: fixtureSite.surface,
+      terrain: fixtureSite.terrain,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),

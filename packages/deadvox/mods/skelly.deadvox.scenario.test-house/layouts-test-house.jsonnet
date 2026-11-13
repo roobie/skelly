@@ -92,7 +92,7 @@ local liquidRecoveryStock = [
     },
     bays: bays,
     vehicles: [{ blueprint: 'hatchback', placementKey: 'testHouse.parked-hatchback' } + bays[0]],
-    shamblers: [],
+    actors: [],
     woodlands: [{ polygon: [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]], density: 0.95 }],
     tracks: [
       { points: [[-4, -0.5], [3.5, -0.5]], width: 1, surface: 'dressed_stone' },

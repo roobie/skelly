@@ -112,7 +112,7 @@ export interface Actor {
   /** Previous fixed-step pose used only by rendering interpolation. */
   renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number; time?: number };
   regions: ActorRegions;
-  /** Exact mobgen shambler seed shared with the renderer and persisted as simulation state. */
+  /** Exact mobgen actor seed shared with the renderer and persisted as simulation state. */
   figureSeed: number;
   /** A destroyed torso leaves an inert, gravity-bound entity that may be revived by a later system. */
   incapacitated: boolean;

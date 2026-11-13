@@ -4,7 +4,6 @@ import {
   type InferOutput,
   literal,
   maxValue,
-  minValue,
   nonEmpty,
   number,
   pipe,
@@ -43,8 +42,6 @@ export const exactUnits = (value: number, scale: number): number => {
 
 const exact = (scale: number) =>
   check((value: number) => unitCount(value, scale) !== undefined, 'must be exact in power units');
-const NonNegative = pipe(number(), finite(), minValue(0));
-const Positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const Watts = pipe(NonNegative, exact(POWER_UNITS.rate));
 const Efficiency = pipe(Positive, maxValue(1), exact(POWER_UNITS.efficiency));
 const Identity = pipe(string(), nonEmpty());
@@ -74,6 +71,7 @@ export const PowerDeviceSchema = variant('kind', [
 ]);
 
 import { capabilityField } from './schema/capability.ts';
+import { NonNegative, Positive } from './schema/primitives.ts';
 
 export const PowerTuningSchema = strictObject({
   id: Identity,

@@ -169,7 +169,6 @@
     lightOnDetail: '{charge} · on',
     lightOffDetail: '{charge} · off',
     igniterDetail: 'Fuel for lighting a light held in the other hand',
-    actionListHeading: '{item}:',
   },
   itemActions: {
     stripRound: 'Strip a round',

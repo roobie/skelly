@@ -3,12 +3,13 @@ import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, MesherSource } from '@skelly/engine/mesh';
 import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
 import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '@skelly/engine/world';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { Skylight } from '@skelly/presentation/render';
-import { Scene } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { baseTerrainShape } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 class QuietWorker implements MesherPort {
   post(): void {
@@ -33,7 +34,6 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     },
   ]);
   const entities = new BlockEntities(registry);
-  const scene = new Scene();
   let admit = false;
   const jobs: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields({ world, entities, registry }, { bottom: scale.minCy * CHUNK, top: 96 }, [
@@ -50,6 +50,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     },
     {
       clock: () => 0,
+      patches: new MaterialPatches(),
       submit: (input, receive) => {
         if (!admit) {
           return false;
@@ -59,7 +60,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
       },
     },
   );
-  const update = () => sky.update(scene, [4, 29, 4]);
+  const update = () => sky.update([4, 29, 4]);
   update();
   expect(fields.loaded(0)).toBe(false);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
@@ -67,18 +68,15 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     world,
     meshes: meshes as never,
     mesher: quietMeshers,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const loaded: string[] = [];
   const unloaded: string[] = [];
@@ -114,16 +112,14 @@ it('reports generated-column transitions that match the generated-column snapsho
     world,
     meshes: meshes as never,
     mesher: quietMeshers,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
   });
   const observedGenerated = new Set<string>();
@@ -152,18 +148,15 @@ it('lets replay drive terrain generation and unloading without live streaming si
     world,
     meshes: meshes as never,
     mesher: quietMeshers,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const liveLoads = vi.fn();
   const liveUnloads = vi.fn();
@@ -186,6 +179,33 @@ it('lets replay drive terrain generation and unloading without live streaming si
   expect(liveUnloads).not.toHaveBeenCalled();
 });
 
+it('throttles terrain generation to columnsPerFrame columns per update', () => {
+  const scale = makeScale(0.5);
+  const budgeted = (columnsPerFrame: number) => {
+    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
+    return new Streamer({
+      world: new World(),
+      meshes: meshes as never,
+      mesher: quietMeshers,
+      terrain: fixtureTerrain({ scale }),
+      colors: new Uint8Array(256 * 4),
+      patterns: new Uint8Array(256),
+      weatherable: new Uint8Array(256),
+      scale,
+      radius: 2,
+      preloadRings: 0,
+      columnsPerFrame,
+      hysteresis: 1,
+    });
+  };
+  const one = budgeted(1);
+  one.update(0, 0);
+  expect(one.generatedColumns()).toHaveLength(1);
+  const four = budgeted(4);
+  four.update(0, 0);
+  expect(four.generatedColumns()).toHaveLength(4);
+});
+
 describe('saved columns', () => {
   const scale = makeScale(0.5);
   const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };
@@ -197,18 +217,22 @@ describe('saved columns', () => {
       world,
       meshes: meshes as never,
       mesher: quietMeshers,
-      seed: 17,
-      terrain,
-      shape: baseTerrainShape(),
+      terrain: {
+        ...fixtureTerrain({ scale, blocks: terrain }),
+        generateColumn: (cx, cz) =>
+          generate(cx, cz).map((chunk) => {
+            stamp(chunk);
+            return chunk;
+          }),
+      },
       colors: new Uint8Array(256 * 4),
       patterns: new Uint8Array(256),
       weatherable: new Uint8Array(256),
       scale,
-      structures: [],
       radius: 0,
       preloadRings: 0,
+      columnsPerFrame: 2,
       hysteresis: 1,
-      stamp,
     });
   };
   // Column 0,0 with one changed cell, saved and restored into a fresh world.

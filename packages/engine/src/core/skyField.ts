@@ -1,15 +1,17 @@
 import type { BlockEntities } from './blockEntities.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
-import type { SkyBounds } from './skylight.ts';
+import type { SkyBlocker, SkyBounds } from './skylight.ts';
 import {
   type CapturedSky,
   captureSky,
   containsSky,
   furnitureBounds,
   growSky,
+  overlapsSky,
   SKY_SHELL,
   type SkySnapshot,
+  skyChunkRange,
   skyDependencyBounds,
 } from './skySnapshot.ts';
 import { buildSkyResult, type SkyResult, sampleSky } from './skyTransport.ts';
@@ -33,6 +35,12 @@ export interface SkyFieldOwner {
   registry: Registry;
 }
 
+/** Light blockers that are neither blocks nor standing pieces, such as parked vehicles; `version` changes whenever `boxes` may. */
+export interface SkyOccluders {
+  readonly version: number;
+  readonly boxes: () => readonly SkyBlocker[];
+}
+
 /** Hands a snapshot to an off-thread build; false when it cannot take one now. */
 export type SkySubmit = (input: SkySnapshot, receive: (result: SkyResult, ms: number) => void) => boolean;
 export interface SkySettled {
@@ -49,43 +57,110 @@ export interface SkyField {
 }
 
 interface Entry extends SkyField {
+  /** The chunks a capture reads, inclusive. */
+  chunks: { min: Vec3; max: Vec3 };
   built: { captured: CapturedSky; result: SkyResult } | undefined;
-  /** The world and furniture versions the build was last confirmed current against. */
-  checked: string;
+  /** Set by a change inside `dependency`; until then `built` and `request` need no currency check. */
+  stale: boolean;
   /** The last complete result, kept while a rebuild is pending so a view of it does not flash. */
   latest: SkyResult | undefined;
   /** A capture waiting for, or out at, an off-thread build. */
   request: { captured: CapturedSky; submitted: boolean } | undefined;
 }
 
+/** One number per world column, so the watcher's lookup builds no string; chunk coordinates stay far below the stride. */
+const COLUMN_STRIDE = 1 << 22;
+const columnOf = (cx: number, cz: number): number => cx * COLUMN_STRIDE + cz;
+const NO_ENTRIES: readonly never[] = [];
+const boxKey = ({ min, max, shade }: SkyBlocker): string => `${min.join()},${max.join()},${shade}`;
+
 /**
  * The simulation's sky-visibility cache: one field per sky box, each a pure function of world state.
  * A field rebuilds synchronously at its first query after its inputs change, so when it is built never
  * changes an answer. An off-thread build of the same snapshot may fill it first; it lands only while
  * that snapshot is still current, so it is the result a synchronous build would give.
+ *
+ * A field is rechecked only after a change inside its dependency box: a chunk it reads, or a standing
+ * piece's or occluder's blocking box that overlaps it. Light loses all strength within `SKY_HALO` blocks, so nothing
+ * further away can change a field's answer, and a world change elsewhere costs no field a recheck.
  */
 export class SkyFields {
   readonly fields: readonly SkyField[];
   readonly range: { bottom: number; top: number };
   private readonly entries: Entry[];
   private readonly owner: SkyFieldOwner;
-  private standing = { version: Number.NaN, boxes: [] as SkyBounds[] };
+  /** The fields whose dependency box reaches into each world column. */
+  private readonly columns = new Map<number, Entry[]>();
+  private unwatch: (() => void) | undefined;
+  private occluders: SkyOccluders | undefined;
+  /** Counts `setOccluders` calls, so a new source at an old source's version still rescans. */
+  private occluderSource = 0;
+  /** The blocking boxes by key, with how many blockers have each, at one standing and occluder version. */
+  private standing = {
+    version: '',
+    boxes: [] as SkyBlocker[],
+    counts: new Map<string, { box: SkyBlocker; count: number }>(),
+  };
 
   constructor(owner: SkyFieldOwner, range: { bottom: number; top: number }, boxes: readonly SkyBounds[] = []) {
     this.owner = owner;
     this.range = range;
     this.entries = boxes.map((box) => {
       const bounds = growSky(box, SKY_SHELL);
+      const dependency = skyDependencyBounds(bounds, range.top);
       return {
         bounds,
-        dependency: skyDependencyBounds(bounds, range.top),
+        dependency,
+        chunks: skyChunkRange(dependency, range),
         built: undefined,
-        checked: '',
+        stale: false,
         latest: undefined,
         request: undefined,
       };
     });
     this.fields = this.entries;
+    for (const entry of this.entries) {
+      const {
+        min: [x0, , z0],
+        max: [x1, , z1],
+      } = entry.chunks;
+      for (let cz = z0; cz <= z1; cz++) {
+        for (let cx = x0; cx <= x1; cx++) {
+          const key = columnOf(cx, cz);
+          const column = this.columns.get(key);
+          if (column) {
+            column.push(entry);
+          } else {
+            this.columns.set(key, [entry]);
+          }
+        }
+      }
+    }
+    if (this.entries.length > 0) {
+      this.unwatch = owner.world.watchChunks((cx, cy, cz) => {
+        const column = this.columns.get(columnOf(cx, cz)) ?? NO_ENTRIES;
+        for (const entry of column) {
+          if (!entry.stale && cy >= entry.chunks.min[1] && cy <= entry.chunks.max[1]) {
+            entry.stale = true;
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Adds blockers the world does not hold, such as a session's parked vehicles. A change to them rechecks only the
+   * fields whose dependency box a changed box reaches, as a standing piece's change does.
+   */
+  setOccluders(occluders: SkyOccluders | undefined): void {
+    this.occluders = occluders;
+    this.occluderSource += 1;
+  }
+
+  /** Stops watching the world; a cache dropped before its world calls this so the world does not keep it alive. */
+  dispose(): void {
+    this.unwatch?.();
+    this.unwatch = undefined;
   }
 
   /**
@@ -183,29 +258,56 @@ export class SkyFields {
     return sent;
   }
 
-  private version(): string {
-    return `${this.owner.world.version}:${this.owner.entities.standing}`;
-  }
-
-  /** One furniture scan per standing change, shared by every field's capture and currency check. */
-  private furniture(): readonly SkyBounds[] {
-    const { standing } = this.owner.entities;
-    if (this.standing.version !== standing) {
-      this.standing = { version: standing, boxes: furnitureBounds(this.owner.entities) };
+  /**
+   * One scan of the blockers that are not blocks, per change to the standing pieces or the occluders, shared by
+   * every field's capture and currency check; transport treats them all as furniture. It marks stale each field
+   * that a box added or removed since the last scan overlaps; a field reads boxes as a set, so order does not matter.
+   */
+  private furniture(): readonly SkyBlocker[] {
+    const version = `${this.owner.entities.standing}:${this.occluderSource}:${this.occluders?.version}`;
+    if (this.standing.version !== version) {
+      const boxes = [...furnitureBounds(this.owner.entities), ...(this.occluders?.boxes() ?? [])];
+      const counts = new Map<string, { box: SkyBlocker; count: number }>();
+      for (const box of boxes) {
+        const key = boxKey(box);
+        const seen = counts.get(key);
+        counts.set(key, { box, count: (seen?.count ?? 0) + 1 });
+      }
+      for (const [key, { box, count }] of counts) {
+        if (this.standing.counts.get(key)?.count !== count) {
+          this.staleAround(box);
+        }
+      }
+      for (const [key, { box }] of this.standing.counts) {
+        if (!counts.has(key)) {
+          this.staleAround(box);
+        }
+      }
+      this.standing = { version, boxes, counts };
     }
     return this.standing.boxes;
   }
 
+  private staleAround(box: SkyBounds): void {
+    for (let cz = Math.floor(box.min[2] / CHUNK); cz <= Math.floor((box.max[2] - 1) / CHUNK); cz++) {
+      for (let cx = Math.floor(box.min[0] / CHUNK); cx <= Math.floor((box.max[0] - 1) / CHUNK); cx++) {
+        for (const entry of this.columns.get(columnOf(cx, cz)) ?? []) {
+          entry.stale ||= overlapsSky(entry.dependency, box);
+        }
+      }
+    }
+  }
+
   private refresh(entry: Entry): void {
-    const version = this.version();
-    if (entry.checked === version) {
+    const furniture = this.furniture();
+    if (!entry.stale) {
       return;
     }
-    entry.checked = version;
-    if (entry.built && !entry.built.captured.current(this.furniture())) {
+    entry.stale = false;
+    if (entry.built && !entry.built.captured.current(furniture)) {
       entry.built = undefined;
     }
-    if (entry.request && !entry.request.captured.current(this.furniture())) {
+    if (entry.request && !entry.request.captured.current(furniture)) {
       entry.request = undefined;
     }
   }
@@ -221,7 +323,6 @@ export class SkyFields {
 
   private install(entry: Entry, captured: CapturedSky, result: SkyResult): void {
     entry.built = { captured, result };
-    entry.checked = this.version();
     if (!entry.request?.submitted) {
       entry.request = undefined;
     }

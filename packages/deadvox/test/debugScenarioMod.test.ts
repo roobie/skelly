@@ -25,7 +25,9 @@ const totals = (items: { item: string; count: number; condition: number; liquidC
   return result;
 };
 
-describe('authored debug scenario mod', () => {
+// Registry builds are bounded CPU work whose duration scales with machine load, so a timer only turns a busy
+// machine into a failure.
+describe('authored debug scenario mod', { timeout: 0 }, () => {
   // Selection supplies the default stack, which would hide a row whose owner the debug mod does not declare.
   const debugPacks = readAvailablePacks('.').filter(({ manifest }) => manifest.optIn);
 
@@ -33,7 +35,7 @@ describe('authored debug scenario mod', () => {
     expect(debugPacks.map(({ manifest }) => manifest.id)).toContain(debugManifest.id);
   });
 
-  // Each closure admits the whole actor stack, so one test per mod keeps each build inside its own budget.
+  // Each closure admits the whole actor stack, so one test per mod keeps a failure pointing at its mod.
   it.each(debugPacks.map((pack) => [pack.manifest.id, pack.files] as const))(
     'builds debug mod %s from its own closure and keeps the catalogue rows it declares',
     (id, files) => {
@@ -65,6 +67,20 @@ describe('authored debug scenario mod', () => {
         }
       }
     }
+  });
+
+  it('admits its fixture start when a debug link names the pack', async () => {
+    const { configFromUrl } = await import('@skelly/engine/session');
+    const { ragdollSweepViewer } = await import('../src/product/ragdoll.ts');
+    const query = new URLSearchParams({ 'start-mod': debugManifest.id, mods: debugManifest.id });
+    const linked = selectBundledMods(productModIntake, bundledModIdsFromUrl(query), [], {
+      form: 'id',
+      id: debugManifest.id,
+    });
+    expect(linked.issues).toEqual([]);
+    const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
+    expect(config.startId).toBe(linked.content.startModStart);
+    expect(config.site).toBe(linked.content.registry.starts.get(config.startId)?.site);
   });
 
   it('stays out of the default packs and content unless selected', () => {

@@ -169,9 +169,9 @@ describe('Gore', () => {
     }
     expect(origins.length).toBeGreaterThan(0);
 
-    // Each origin, back in the figure's rest grid (facing -z, from its ground origin), lies in a live flesh cell.
+    // Each origin, back in the figure's rest grid (facing +z, from its ground origin), lies in a live flesh cell.
     const metres = size * figure.scale;
-    const yaw = Math.atan2(-actor.facing[0], -actor.facing[2]);
+    const yaw = Math.atan2(actor.facing[0], actor.facing[2]);
     const [px, py, pz] = actor.body.pos.map((value) => value * scale.blockSize) as Vec3;
     for (const at of origins) {
       const dx = at.x - px;

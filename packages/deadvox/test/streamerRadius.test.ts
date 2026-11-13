@@ -3,7 +3,7 @@ import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { afterEach, expect, it } from 'vitest';
-import { baseTerrainShape } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 /** Answers every mesh request with a non-empty mesh when `drain` runs. */
 class AnsweringWorker implements MesherPort {
@@ -55,18 +55,15 @@ const liveStreamer = (preloadRings = 0) => {
     world: new World(),
     meshes: meshes as never,
     mesher: { count: 1, create: () => new AnsweringWorker() },
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 }, floor: 4 }),
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 },
-    structures: [],
     radius: RADIUS,
     preloadRings,
+    columnsPerFrame: 2,
     hysteresis: HYSTERESIS,
-    surface: { height: () => 4, top: () => undefined },
   });
   /** Streams around column (cx, cz) until nothing more loads. */
   const settle = (cx: number, cz: number) => {
@@ -148,4 +145,17 @@ it.each([0, 1, 2])('keeps the sky margin resident across a border step with %i e
   expect(arrived).toEqual([]);
   expect(new Set(streamer.generatedColumns().map(([cx, cz]) => `${cx},${cz}`))).toEqual(loaded);
   expect(new Set(drawn.keys())).toEqual(shown);
+});
+
+it('streams the new columns when the player crosses a column border after an idle stretch', () => {
+  const { streamer, drawn, settle } = liveStreamer();
+  settle(0, 0);
+  const arrived: string[] = [];
+  streamer.onColumn = (cx, cz) => arrived.push(`${cx},${cz}`);
+  settle(0, 0);
+  expect(arrived).toEqual([]);
+  settle(5, 0);
+  expect(arrived.length).toBeGreaterThan(0);
+  expect(streamer.unmeshedColumns(5.5 * CHUNK, 0.5 * CHUNK, RADIUS)).toBe(0);
+  expect(drawn.has('5,0,0')).toBe(true);
 });

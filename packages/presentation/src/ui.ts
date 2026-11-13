@@ -1,6 +1,7 @@
 export { mountControlsCard } from './presentation/controls.ts';
 export { comboBox } from './ui/comboBox.ts';
 export { mountCredits } from './ui/credits.ts';
+export { appendError, installErrorLogCopy, setError } from './ui/errorLog.ts';
 export { installErrorReportHandler } from './ui/errorReport.ts';
 export { mountFullscreenOptions } from './ui/fullscreenOptions.ts';
 export { positionLookedAtReadout } from './ui/hud.ts';

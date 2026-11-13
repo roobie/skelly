@@ -16,6 +16,8 @@ import {
 } from 'three';
 import { parse } from 'valibot';
 import { glowingCopy } from './itemEmissive.ts';
+import { skyAnchoredCopy } from './skyAnchor.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 /** Three.js's own copy cannot cross from standard to physical: it reads physical fields the source lacks. */
 export const physicalCopy = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
@@ -40,18 +42,12 @@ export const physicalCopy = (material: MeshStandardMaterial): MeshPhysicalMateri
 const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial =>
   material instanceof MeshPhysicalMaterial ? material : physicalCopy(material);
 
-const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
-  if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
-    return loaded;
-  }
-  const { materialId, colourMultiplier } = parse(MaterialReferenceSchema, {
-    materialId: loaded.userData.materialId,
-    colourMultiplier: loaded.userData.colourMultiplier,
-  });
-  const definition = Object.hasOwn(table, materialId) ? table[materialId] : undefined;
-  if (!(definition && loaded instanceof MeshStandardMaterial)) {
-    throw new Error(`Unsupported model material ${materialId}`);
-  }
+/** Draws a library entry on `loaded`, the one way an authored material and a painted copy both get their surface. */
+const surfaced = (
+  loaded: MeshStandardMaterial,
+  definition: MaterialDef,
+  colourMultiplier: readonly [number, number, number],
+): MeshStandardMaterial => {
   const { opacity, transparent, depthWrite, sheen } = surfaceOf(definition.finish);
   const material = sheen ? sheenable(loaded) : loaded;
   if (sheen && material instanceof MeshPhysicalMaterial) {
@@ -71,6 +67,28 @@ const applyMaterial = (loaded: Material, table: Readonly<Record<string, Material
   material.transparent = transparent;
   material.depthWrite = depthWrite;
   return material;
+};
+
+/**
+ * A copy of `material` wearing a library entry whole. It starts from a plain standard copy, so an authored sheen
+ * doesn't outlast a finish that has none.
+ */
+export const paintedCopy = (material: MeshStandardMaterial, definition: MaterialDef): MeshStandardMaterial =>
+  surfaced(new MeshStandardMaterial().copy(material), definition, [1, 1, 1]);
+
+const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
+  if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
+    return loaded;
+  }
+  const { materialId, colourMultiplier } = parse(MaterialReferenceSchema, {
+    materialId: loaded.userData.materialId,
+    colourMultiplier: loaded.userData.colourMultiplier,
+  });
+  const definition = Object.hasOwn(table, materialId) ? table[materialId] : undefined;
+  if (!(definition && loaded instanceof MeshStandardMaterial)) {
+    throw new Error(`Unsupported model material ${materialId}`);
+  }
+  return surfaced(loaded, definition, colourMultiplier);
 };
 
 export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<string, MaterialDef>>): void => {
@@ -96,14 +114,20 @@ export const applyModelMaterials = (scene: Object3D, table: Readonly<Record<stri
  * takes, so the scene's warm-up compiles them before any model has loaded. A model material varies the
  * program only by see-through, double-sidedness, a colour texture and a sheen (colour, finish and texels
  * are uniforms), and a lit item's glow adds its own. `instanced` adds the instanced copies ground piles
- * draw with, and `finishedVariants` the finished copies vehicles draw with while that option is on, so turning it on
- * compiles nothing. Content outside these variants compiles on first draw, which
- * `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
+ * draw with, `skyAnchored` the sky-anchored copies vehicles draw with, and `finishedVariants` the finished copies
+ * vehicles draw with while that option is on, anchored as vehicles anchor them, so turning it on compiles nothing.
+ * Content outside these variants compiles on first draw, which `packages/deadvox/test/modelMaterials.test.ts` checks
+ * the pack against.
  */
-export const modelMaterialWarmUp = (
-  instanced: boolean,
-  finishedVariants?: (plain: MeshStandardMaterial) => readonly Material[],
-): Group => {
+export const modelMaterialWarmUp = ({
+  instanced,
+  skyAnchored,
+  finishedVariants,
+}: {
+  instanced: boolean;
+  skyAnchored: boolean;
+  finishedVariants?: ((plain: MeshStandardMaterial) => readonly Material[]) | undefined;
+}): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
   const variants = [false, true].flatMap((transparent) =>
     [FrontSide, DoubleSide].flatMap((side) => [
@@ -115,21 +139,25 @@ export const modelMaterialWarmUp = (
   const geometry = new BufferGeometry()
     .setAttribute('position', new Float32BufferAttribute([], 3))
     .setAttribute('normal', new Float32BufferAttribute([], 3));
+  const meshes: Mesh[] = variants.flatMap((plain) =>
+    [plain, glowingCopy(plain, 0xff_ff_ff, 1)].flatMap((material) =>
+      instanced
+        ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
+        : [new Mesh(geometry, material)],
+    ),
+  );
+  if (skyAnchored) {
+    meshes.push(...variants.map((plain) => new Mesh(geometry, skyAnchoredCopy(plain))));
+  }
+  for (const material of finishedVariants ? variants.flatMap(finishedVariants) : []) {
+    meshes.push(new Mesh(geometry, skyAnchoredCopy(material)));
+  }
   const group = new Group();
-  const hide = (mesh: Mesh): void => {
+  for (const mesh of meshes) {
     mesh.receiveShadow = true;
     mesh.visible = false;
     group.add(mesh);
-  };
-  for (const material of variants.flatMap((plain) => [plain, glowingCopy(plain, 0xff_ff_ff, 1)])) {
-    for (const mesh of instanced
-      ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
-      : [new Mesh(geometry, material)]) {
-      hide(mesh);
-    }
   }
-  for (const material of finishedVariants ? variants.flatMap(finishedVariants) : []) {
-    hide(new Mesh(geometry, material));
-  }
+  freezeMatrices(group);
   return group;
 };

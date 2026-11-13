@@ -1,26 +1,18 @@
 // First-look forest workload. No foliage-specific renderer, LOD or cut-out path in this round.
-import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Scale } from './scale.ts';
-import { type Rect, rectDistance, type Site } from './site.ts';
+import type { Rect, Site } from './site.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from './sitePalette.ts';
-import {
-  forestDensityAt,
-  leafLitterAt,
-  stampTrees,
-  TreeIndex,
-  type TreePlacement,
-  vegetationPlacements,
-} from './vegetation.ts';
-import { type Surface, terrainHeight } from './worldgen.ts';
+import type { SiteTerrainPlan } from './terrainPlan.ts';
+import { forestDensityAt, type TreePlacement, vegetationPlacements } from './vegetation.ts';
+import { terrainHeight } from './worldgen.ts';
 
 export class Forest implements Site {
   readonly bounds: Rect;
   readonly trees: readonly TreePlacement[];
   readonly spawn: { pos: Vec3; yaw: number };
-  readonly surface: Surface;
-  private readonly treeIndex: TreeIndex;
+  readonly terrain: SiteTerrainPlan;
 
   constructor(seed: number, registry: Registry, scale: Scale, density: number | null = null) {
     const reach = siteGenerationOf(registry).vegetation.forestHalfExtentMetres / scale.blockSize;
@@ -38,17 +30,15 @@ export class Forest implements Site {
       ground: () => floor,
       reserved: [{ x0: -clearing, z0: -clearing, x1: clearing, z1: clearing }],
     });
-    this.treeIndex = new TreeIndex(this.trees);
-    const litter = sitePalette(registry).leafLitter;
-    this.surface = {
-      height: (x, z, natural) => (rectDistance(this.bounds, x, z) === 0 ? floor : natural),
-      top: (x, z) => (leafLitterAt(this.treeIndex.at(x, z), x, z) ? litter : undefined),
+    const data = {
+      bounds: this.bounds,
+      floor,
+      trees: this.trees,
+      litter: sitePalette(registry).leafLitter,
     };
+    this.terrain = { kind: 'forest-flat', data };
   }
 
-  stamp(chunk: Chunk): void {
-    stampTrees(chunk, this.treeIndex.inColumn(chunk.cx, chunk.cz));
-  }
   lootPointsIn() {
     return [];
   }

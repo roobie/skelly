@@ -1,5 +1,10 @@
 // Vehicle parts are items whose exported models carry mass, baked collision and datums; blueprints
-// place them by item id in the vehicle frame (metres; x forward, y up, z toward the near side).
+// place them by item id in the model frame (metres; z forward, y up, the near side at -x).
+local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
+local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
+// A body's half-metre sky cells are mostly air between thin panels, so a cell stops only part of the sky light:
+// the ground under a car and its cabin read shaded, not enclosed.
+local bodyShade = 0.35;
 local part(id, name, size, capabilities, description=null) = {
   id: id,
   name: name,
@@ -12,7 +17,7 @@ local part(id, name, size, capabilities, description=null) = {
     obstruction: {
       // Glazing retains body collision but admits sight and light.
       sight: !std.member(capabilities, 'glazing'),
-      light: !std.member(capabilities, 'glazing'),
+      light: if std.member(capabilities, 'glazing') then 0 else bodyShade,
       // Sound and combat remain explicit rather than inferred from a part name or model.
       sound: true,
       combat: true,
@@ -31,11 +36,11 @@ local service(mount, durationSimSeconds, qualities={}, near=null, far=null) = {
 };
 local sideService(service, side) =
   if service == null then null else service + { name: service.names[side] };
-// A near-side fitting and its far-side twin, reflected across the centre plane. `0 - z` rather than `-z`
+// A near-side fitting and its far-side twin, reflected across the centre plane. `0 - x` rather than `-x`
 // keeps a centred twin at 0: -0 doesn't survive a JSON round trip, so the admitted registry would differ.
 local pair(id, part, at, supportedBy, service=null) = [
   fitting(id + '_near', part, at, [support + '_near' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'near')),
-  fitting(id + '_far', part, [at[0], at[1], 0 - at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'far')) + { mirror: true },
+  fitting(id + '_far', part, [0 - at[0], at[1], at[2]], [support + '_far' for support in supportedBy.paired] + supportedBy.shared, sideService(service, 'far')) + { mirror: true },
 ];
 local on(shared=[], paired=[]) = { shared: shared, paired: paired };
 local batteryBay(tray, at, supportedBy=[]) = [
@@ -67,28 +72,28 @@ local hatchback = [
   fitting('fuel_tank', 'hatchback_fuel_tank', origin, ['shell']),
   fitting('exhaust', 'hatchback_exhaust', origin, ['engine', 'shell']),
   fitting('dashboard', 'hatchback_dashboard', origin, ['shell']),
-  fitting('steering_wheel', 'steering_wheel', [0.3, 0.78, 0.37], ['dashboard']),
-  fitting('gear_lever', 'gear_lever', [0.3, 0.55, 0], ['dashboard']),
+  fitting('steering_wheel', 'steering_wheel', [-0.37, 0.78, 0.3], ['dashboard']),
+  fitting('gear_lever', 'gear_lever', [0, 0.55, 0.3], ['dashboard']),
   fitting('rear_seat', 'hatchback_rear_seat', origin, ['shell']),
 ] + pair('front_door', 'hatchback_front_door', origin, on(['shell']))
   + pair('rear_door', 'hatchback_rear_door', origin, on(['shell']))
   + pair('front_wing', 'hatchback_front_wing', origin, on(['shell']))
   + pair('tail_lamp', 'hatchback_tail_lamp', origin, on(['shell']))
   + pair('front_strut', 'hatchback_front_strut', origin, on(['shell']), service('hatchback_front_strut', 30, { wrenching: 1 }, 'Near front strut', 'Far front strut'))
-  + pair('front_wheel', 'wheel_205_55r16', [1.24, 0.316, 0.75], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel'))
-  + pair('rear_wheel', 'wheel_205_55r16', [-1.27, 0.316, 0.75], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel'))
-  + pair('front_seat', 'front_seat', [0, 0.3, 0.37], on(['shell']))
-  + pair('door_mirror', 'door_mirror', [0.66, 0.98, 0.8675], on(['shell']))
-  + headlamps(1.95, 0.64, 0.56, ['shell'])
-  + batteryBay('hatchback_battery_tray', [1.54, 0.55, 0.42], ['shell']);
+  + pair('front_wheel', 'wheel_205_55r16', [-0.75, 0.316, 1.24], on(paired=['front_strut']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near front wheel', 'Far front wheel'))
+  + pair('rear_wheel', 'wheel_205_55r16', [-0.75, 0.316, -1.27], on(['rear_axle']), service('hatchback_wheel', 30, { wrenching: 1 }, 'Near rear wheel', 'Far rear wheel'))
+  + pair('front_seat', 'front_seat', [-0.37, 0.3, 0], on(['shell']))
+  + pair('door_mirror', 'door_mirror', [-0.8675, 0.98, 0.66], on(['shell']))
+  + headlamps(-0.56, 0.64, 1.95, ['shell'])
+  + batteryBay('battery_tray', [-0.42, 0.55, 1.54], ['shell']);
 // The crane truck's parts are authored where they sit on it, near-side ones for their `pair`; the
 // crossmembers and wheels repeat, so they are placed by their own frames.
 local rails = ['frame_rail_near', 'frame_rail_far'];
 local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
-  fitting('crossmember_rear', 'hoist_crossmember', [-2.875, 0.40625, -0.4375], rails),
-  fitting('crossmember_mid', 'hoist_crossmember', [-2.125, 0.40625, -0.4375], rails),
-  fitting('crossmember_gearbox', 'hoist_crossmember', [0.8125, 0.40625, -0.4375], rails),
-  fitting('crossmember_front', 'hoist_crossmember', [2.6875, 0.40625, -0.4375], rails),
+  fitting('crossmember_rear', 'hoist_crossmember', [0.4375, 0.40625, -2.875], rails),
+  fitting('crossmember_mid', 'hoist_crossmember', [0.4375, 0.40625, -2.125], rails),
+  fitting('crossmember_gearbox', 'hoist_crossmember', [0.4375, 0.40625, 0.8125], rails),
+  fitting('crossmember_front', 'hoist_crossmember', [0.4375, 0.40625, 2.6875], rails),
   fitting('front_axle', 'hoist_front_axle', origin, rails),
   fitting('rear_axle', 'hoist_rear_axle', origin, rails),
   fitting('engine', 'hoist_engine', origin, rails),
@@ -104,9 +109,9 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   fitting('roof', 'hoist_roof', origin, ['a_post_near', 'a_post_far', 'cab_back']),
   fitting('front_bumper', 'hoist_front_bumper', origin, rails),
   fitting('dashboard', 'hoist_dashboard', origin, ['front_panel']),
-  fitting('steering_wheel', 'steering_wheel', [2.51, 1.55, 0.4375], ['dashboard']),
+  fitting('steering_wheel', 'steering_wheel', [-0.4375, 1.55, 2.51], ['dashboard']),
   fitting('engine_cover', 'hoist_engine_cover', origin, ['cab_floor']),
-  fitting('gear_lever', 'gear_lever', [2.09375, 1.25, 0], ['engine_cover']),
+  fitting('gear_lever', 'gear_lever', [0, 1.25, 2.09375], ['engine_cover']),
   fitting('bench', 'hoist_bench', origin, ['cab_floor']),
   fitting('deck_floor', 'hoist_deck_floor', origin, rails),
   fitting('headboard', 'hoist_headboard', origin, ['deck_floor']),
@@ -119,28 +124,28 @@ local hoist = pair('frame_rail', 'hoist_frame_rail', origin, on()) + [
   fitting('luff_ram', 'hoist_luff_ram', origin, ['crane_column']),
   fitting('winch', 'hoist_winch', origin, ['crane_column']),
   fitting('hook_block', 'hoist_hook_block', origin, ['boom_extension']),
-] + pair('rear_wheel', 'hoist_wheel', [-1.5, 0.375, 0.703125], on(['rear_axle']))
-  + pair('front_wheel', 'hoist_wheel', [1.90625, 0.375, 0.703125], on(['front_axle']))
+] + pair('rear_wheel', 'hoist_wheel', [-0.703125, 0.375, -1.5], on(['rear_axle']))
+  + pair('front_wheel', 'hoist_wheel', [-0.703125, 0.375, 1.90625], on(['front_axle']))
   + pair('cab_skirt', 'hoist_cab_skirt', origin, on(['cab_floor']))
   + pair('a_post', 'hoist_a_post', origin, on(['front_panel']))
   + pair('door', 'hoist_door', origin, on(paired=['a_post']))
   + pair('mudguard', 'hoist_mudguard', origin, on(['deck_floor']))
   + pair('tail_lamp', 'hoist_tail_lamp', origin, on(['rear_underrun']))
   + pair('stabiliser', 'hoist_stabiliser', origin, on(['crane_base']))
-  + headlamps(2.88, 1.125, 0.64, ['front_panel'])
-  + batteryBay('pickup_battery_tray', [1.3125, 0.40625, 0.6825], ['frame_rail_near']);
+  + headlamps(-0.64, 1.125, 2.88, ['front_panel'])
+  + batteryBay('pickup_battery_tray', [-0.6825, 0.40625, 1.3125], ['frame_rail_near']);
 // The bed's factory cargo space runs between the wheel tubs; the strips beside them stay free floor.
-local pickup = batteryBay('pickup_battery_tray', [1.9, 0.8, 0.35]) + headlamps(2.35, 0.85, 0.65) + [
+local pickup = batteryBay('pickup_battery_tray', [-0.35, 0.8, 1.9]) + headlamps(-0.65, 0.85, 2.35) + [
   fitting('bed_floor', 'pickup_bed_floor', origin),
   fitting('bed_front', 'pickup_bed_front', origin, ['bed_floor']),
-  cargoSpace('bed_cargo', [-1.15, 0.85, 0], [21, 4, 12], 'bed_floor'),
+  cargoSpace('bed_cargo', [0, 0.85, -1.15], [12, 4, 21], 'bed_floor'),
 ] + pair('bed_side', 'pickup_bed_side', origin, on(['bed_floor']));
 // The van's cargo box: its factory cargo space covers the whole floor up to the roof.
 local boxVan = [
   fitting('box_floor', 'box_van_floor', origin),
   fitting('box_front', 'box_van_front', origin, ['box_floor']),
   fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
-  cargoSpace('box_cargo', [-0.9, 1, 0], [42, 20, 20], 'box_floor'),
+  cargoSpace('box_cargo', [0, 1, -0.9], [20, 20, 42], 'box_floor'),
 ] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
 (import 'tools/jsonnet/lib/item-presentation.libsonnet')(
   import 'presentation/item-materials.json',
@@ -224,7 +229,7 @@ local boxVan = [
   items: [
     part('car_battery', 'Car battery', [3, 2], ['electricity'], 'Twelve volts, if it still holds a charge.'),
     part('car_headlamp', 'Headlamp unit', [2, 2], ['light', 'glazing'], 'A sealed lamp and its lens.'),
-    part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.') + { model: 'battery_tray' },
+    part('battery_tray', 'Battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
     part('pickup_battery_tray', 'Pickup battery tray', [4, 3], ['structure'], 'A heavy steel shelf for a battery.'),
     part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']) + { vehicle+: { mount: 'hatchback_wheel' } },
     part('front_seat', 'Front seat', [5, 10], ['seat']),
@@ -314,6 +319,14 @@ local boxVan = [
     part('box_van_side', 'Box van side wall', pileSize, ['protection']),
     part('box_van_front', 'Box van front wall', pileSize, ['protection']),
     part('box_van_roof', 'Box van roof', pileSize, ['protection']),
+  ],
+  // The release's whole finish library: a site may name any entry. Each is the model material its glTF names,
+  // because a surface such as a sheen is in the material and not in the glTF.
+  vehicleFinishes: [
+    local extras = finishes[id].extras;
+    local surface = surfaces[extras.materialId];
+    surface { id: id, colour: [surface.colour[axis] * extras.colourMultiplier[axis] for axis in [0, 1, 2]] }
+    for id in std.objectFields(finishes)
   ],
   vehicleBlueprints: [
     { id: 'hatchback', name: 'Hatchback', fittings: hatchback },

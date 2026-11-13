@@ -4,7 +4,7 @@
       "file": "assets/models/cartridge_box_308_h_winchester.glb",
       "grip": {
         "at": [0, 0.040000000000000001, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "cartridge_box_308_h_winchester",
@@ -28,7 +28,7 @@
       "file": "assets/models/cartridge_box_5_d_56x45.glb",
       "grip": {
         "at": [0, 0.035000000000000003, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "cartridge_box_5_d_56x45",
@@ -52,7 +52,7 @@
       "file": "assets/models/cartridge_box_7_d_62x39.glb",
       "grip": {
         "at": [0, 0.035000000000000003, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "cartridge_box_7_d_62x39",
@@ -76,7 +76,7 @@
       "file": "assets/models/cartridge_box_357_h_magnum.glb",
       "grip": {
         "at": [0, 0.029999999999999999, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "cartridge_box_357_h_magnum",
@@ -100,7 +100,7 @@
       "file": "assets/models/shotshell_box.glb",
       "grip": {
         "at": [0, 0.040000000000000001, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "shotshell_box",
@@ -124,7 +124,7 @@
       "file": "assets/models/ammo_can.glb",
       "grip": {
         "at": [0, 0.215, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "ammo_can",
@@ -148,7 +148,7 @@
       "file": "assets/models/weapon_sling.glb",
       "grip": {
         "at": [-0.12, 0.0050000000000000001, 0],
-        "turn": [0, 0, 0]
+        "turn": [0, -90, 0]
       },
       "hold": "forward",
       "id": "weapon_sling",
@@ -234,7 +234,7 @@
       },
       "parts": {
         "shell": {
-          "centreOfMass": [-0.19999999999999998, 0.57424324324324316, -0.080945945945945938],
+          "centreOfMass": [-0.20400000000000001, 0.59475388026607545, -0.069463414634146334],
           "massKg": 0.14999999999999999,
           "node": "shell:compound"
         }

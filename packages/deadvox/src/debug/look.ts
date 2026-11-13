@@ -1,5 +1,5 @@
 // Live look controls for the deadvox/look-experiments workstream: they exist so
-// different looks (tone mapping, exposure, block colour space, mood pass, fog) can be compared by
+// different looks (tone mapping, exposure, block colour space, mood pass, weather) can be compared by
 // eye against the game's default look (the `look` content section), which play has already applied.
 
 import type { WeatheringDef } from '@skelly/engine/content';
@@ -10,7 +10,7 @@ import {
   clampExposure,
   clampGrade,
   clampTorch,
-  DEFAULT_SHADOWS,
+  defaultShadows,
   type LookDefaults,
   type LookState,
   lookOf,
@@ -18,10 +18,11 @@ import {
   moodOf,
   nextShadowDistance,
   type ShadowState,
+  type SunShadowTuning,
   TORCH_STEP,
 } from '@skelly/engine/look';
 import {
-  clampFogginess,
+  clampWeatherLevel,
   isWeatheringColor,
   WEATHERING_RANGES,
   type Weather,
@@ -41,7 +42,7 @@ import type { WebGLRenderer } from 'three';
 
 const EXPOSURE_STEP = 0.1;
 const GRADE_STEP = 0.1;
-const FOGGINESS_STEP = 0.1;
+const WEATHER_STEP = 0.1;
 // Coarser than the others: the clip's range is 1 to 8 and the derived values are 1 to 5.
 const BLOOM_CLIP_STEP = 0.5;
 
@@ -62,7 +63,7 @@ type MoodControls = Pick<
   | 'setCrackCheck'
 >;
 
-type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setSun' | 'setTorch' | 'stepDistance'>;
+type ShadowControls = Pick<Shadows, 'settings' | 'restore' | 'setDistance' | 'setSun' | 'setTorch'>;
 
 type LookRenderer = Pick<WebGLRenderer, 'toneMapping' | 'toneMappingExposure'>;
 type LookMeshes = Pick<
@@ -80,9 +81,10 @@ export class LookControls {
   private readonly mood: MoodControls | undefined;
   private readonly weather: Weather;
   private readonly shadows: ShadowControls | undefined;
+  private readonly sunShadow: SunShadowTuning;
   private readonly flashlight: { strength: number };
   private moodValue: MoodState;
-  private shadowValue: ShadowState = { ...DEFAULT_SHADOWS };
+  private shadowValue: ShadowState;
   private exposureValue: number;
   private linearColorsValue: boolean;
   private patternsValue: boolean;
@@ -100,6 +102,7 @@ export class LookControls {
     environment: {
       /** The content's default look, which the controls fall back to for what the renderer cannot tell. */
       defaults: LookDefaults;
+      sunShadow: SunShadowTuning;
       weather: Weather;
       shadows?: ShadowControls;
       flashlight: { strength: number };
@@ -115,6 +118,7 @@ export class LookControls {
     this.mood = mood;
     this.weather = environment.weather;
     this.shadows = environment.shadows;
+    this.sunShadow = environment.sunShadow;
     this.flashlight = environment.flashlight;
     this.weatheringValue = environment.weathering?.state;
     this.weatheringProfiles = environment.weathering?.profiles ?? new Map();
@@ -140,7 +144,7 @@ export class LookControls {
         bloomClip: mood.bloomClip,
       };
     }
-    this.shadowValue = { ...(environment.shadows?.settings ?? DEFAULT_SHADOWS) };
+    this.shadowValue = { ...(environment.shadows?.settings ?? defaultShadows(environment.sunShadow)) };
   }
 
   /** The mood pass as it is now, in the URL's terms. */
@@ -217,9 +221,12 @@ export class LookControls {
   /** Steps the sun's shadow distance through the allowed list, wrapping. */
   stepShadowDistance(): void {
     if (this.shadows) {
-      this.shadows.stepDistance();
+      this.shadows.setDistance(nextShadowDistance(this.shadowState.distance, this.sunShadow));
     } else {
-      this.shadowValue = { ...this.shadowValue, distance: nextShadowDistance(this.shadowValue.distance) };
+      this.shadowValue = {
+        ...this.shadowValue,
+        distance: nextShadowDistance(this.shadowValue.distance, this.sunShadow),
+      };
     }
   }
 
@@ -233,13 +240,14 @@ export class LookControls {
     this.flashlight.strength = clampTorch(this.torch * TORCH_STEP ** steps);
   }
 
-  get fogginess(): number {
-    return this.weather.fogginess;
+  /** The weather play renders with, as it is now. */
+  get weatherState(): Weather {
+    return { ...this.weather };
   }
 
   /** Steps the fogginess by `steps` tenths, clamped to [0, 1]. A weather system would set this itself. */
   stepFogginess(steps: number): void {
-    this.weather.fogginess = clampFogginess(this.weather.fogginess + steps * FOGGINESS_STEP);
+    this.weather.fogginess = clampWeatherLevel(this.weather.fogginess + steps * WEATHER_STEP);
   }
 
   /** Profile values as currently edited; the URL writer omits values equal to the selected profile. */
@@ -328,7 +336,7 @@ export class LookControls {
   restore(
     state: LookState &
       MoodState & {
-        fogginess: number;
+        weather: Weather;
         torch: number;
         shadows: ShadowState;
         crackCheck: boolean;
@@ -347,7 +355,9 @@ export class LookControls {
     if (mode >= 0) {
       this.mode = mode;
     }
-    this.weather.fogginess = clampFogginess(state.fogginess);
+    this.weather.fogginess = clampWeatherLevel(state.weather.fogginess);
+    this.weather.cloudiness = clampWeatherLevel(state.weather.cloudiness);
+    this.weather.rain = clampWeatherLevel(state.weather.rain);
     this.moodValue = {
       post: state.post,
       bloom: state.bloom,

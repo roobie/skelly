@@ -21,6 +21,8 @@ export interface SkyTargets {
   radiusM: number;
   /** The far plane as a multiple of where the fog ends (render/distanceFog.ts). */
   farPlaneScale: number;
+  /** The fog's curve over its band (render/distanceFog.ts). */
+  fogCurveExponent: number;
 }
 
 const set = (color: Color, [r, g, b]: Rgb): Color => color.setRGB(r, g, b, SRGBColorSpace);
@@ -30,11 +32,11 @@ const set = (color: Color, [r, g, b]: Rgb): Color => color.setRGB(r, g, b, SRGBC
  * camera's far plane with where the fog ends.
  */
 export const applySky = (
-  { scene, light, ambient, camera, radiusM, farPlaneScale }: SkyTargets,
+  { scene, light, ambient, camera, radiusM, farPlaneScale, fogCurveExponent }: SkyTargets,
   sky: Sky,
   skyVisibility = 1,
 ): void => {
-  installDistanceFog(farPlaneScale);
+  installDistanceFog({ farPlaneScale, curveExponent: fogCurveExponent });
   if (!(scene.fog instanceof Fog)) {
     scene.fog = new Fog(0);
   }
@@ -43,8 +45,10 @@ export const applySky = (
   fog.near = radiusM * sky.fogNear;
   fog.far = radiusM * sky.fogFar;
   scene.background = fog.color;
-  // At the far plane a surface is already exactly the background colour (render/distanceFog.ts),
-  // so clipping there changes no pixel, and frustum culling skips those chunks (most at night).
+  // At the far plane a surface is already exactly the fog colour (render/distanceFog.ts), and the sky dome
+  // is that colour at the horizon (render/skyDome.ts), so clipping there changes no pixel at the horizon.
+  // Higher up the dome differs from the fog colour, so a clipped surface there shows the sky instead.
+  // Frustum culling skips those chunks (most at night).
   const far = fog.far * farPlaneScale;
   if (camera.far !== far) {
     camera.far = far;

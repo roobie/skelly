@@ -32,6 +32,7 @@ const formatSpan = (seconds: number, text: DeathText): string => {
 /** Looted item names, most taken first, with a count where more than one was taken. */
 export const lootedText = (registry: Registry, looted: ReadonlyMap<string, number>): string =>
   [...looted]
+    // biome-ignore lint/plugin: display-only order for the player's language; it never feeds identity or simulation.
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([type, count]) => {
       const item = defOf(registry, type).name.toLowerCase();

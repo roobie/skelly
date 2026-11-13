@@ -218,7 +218,7 @@ describe('Tiled spawn-window export', () => {
       layouts: [layout],
     } = exportLayout(map);
     const {
-      shamblers: [shambler],
+      actors: [shambler],
     } = layout;
     expect(shambler.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
   });

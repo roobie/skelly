@@ -265,6 +265,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
   for (const { item, location } of walkItemTree(roots)) {
     if (
       location.kind === 'work' ||
+      location.kind === 'pieceWork' ||
       location.kind === 'slot' ||
       (location.kind === 'furniture' && location.entity.charging?.batteryUid === item.uid)
     ) {

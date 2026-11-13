@@ -478,7 +478,7 @@ const partModels = new ModelLibrary(
     renderPanel();
   },
   { packAssets: productAssets.models },
-  graphicsTuningOf(registry).modelLoadConcurrency,
+  graphicsTuningOf(registry),
 );
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
 interface ContentFitting {
@@ -526,7 +526,7 @@ const placeContentFitting = ({ def, placed }: ContentFitting): Object3D | undefi
   const holder = new Group().add(model);
   holder.position.set(...def.at);
   if (def.mirror) {
-    holder.scale.z = -1;
+    holder.scale.x = -1;
   }
   const { hinge_a: hingeA, hinge_b: hingeB } = placed.datums;
   if (!(placed.capabilities.includes('entry') && hingeA && hingeB)) {
@@ -649,10 +649,15 @@ const assembleVoxelBuild = (spec: BuildSpec): string => {
 const assembleContentBuild = (spec: ContentBuildSpec): string => {
   const present = presentContent(spec);
   modelsPending = false;
+  // Content fittings lie in the model frame, forward +z and the near side at -x; the page shows every build
+  // forward along +x with its near side at +z.
+  const frame = new Group();
+  frame.rotation.y = Math.PI / 2;
+  vehicleGroup.add(frame);
   for (const fitting of present) {
     const object = placeContentFitting(fitting);
     if (object) {
-      vehicleGroup.add(object);
+      frame.add(object);
     } else {
       modelsPending = true;
     }
@@ -662,7 +667,8 @@ const assembleContentBuild = (spec: ContentBuildSpec): string => {
     spec.content,
     present.map(({ placed }) => placed),
   );
-  return `${massText(present.length, massKg, centreOfMass)} · exported part masses${modelsPending ? ' · loading part models…' : ''}`;
+  const [x, y, z] = centreOfMass;
+  return `${massText(present.length, massKg, [z, y, -x])} · exported part masses${modelsPending ? ' · loading part models…' : ''}`;
 };
 
 let watchingModels = false;
@@ -785,7 +791,10 @@ const fittingColor = (paint: Paint, fitting: Fitting): string => {
   return first ? hexOf(paint, first.mat) : '#777777';
 };
 
-/** A content fitting's footprint from above, in vehicle metres: the extent of its exported collision. */
+/**
+ * A content fitting's footprint from above, in metres along the page's axes: x forward, z toward the near side.
+ * Its exported collision lies in the model frame, forward +z and the near side at -x.
+ */
 interface MetreRect {
   readonly id: string;
   readonly x0: number;
@@ -796,10 +805,10 @@ interface MetreRect {
 const contentRects = (spec: ContentBuildSpec): readonly MetreRect[] =>
   contentFittingsOf(spec).map(({ placed }) => ({
     id: placed.id,
-    x0: Math.min(...placed.collision.map(({ min }) => min[0])),
-    z0: Math.min(...placed.collision.map(({ min }) => min[2])),
-    x1: Math.max(...placed.collision.map(({ max }) => max[0])),
-    z1: Math.max(...placed.collision.map(({ max }) => max[2])),
+    x0: Math.min(...placed.collision.map(({ min }) => min[2])),
+    z0: Math.min(...placed.collision.map(({ max }) => -max[0])),
+    x1: Math.max(...placed.collision.map(({ max }) => max[2])),
+    z1: Math.max(...placed.collision.map(({ min }) => -min[0])),
   }));
 
 /** Pixels per metre and where the vehicle origin falls on the schematic. */
@@ -1043,6 +1052,7 @@ applySky(
     camera,
     radiusM: 96,
     farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
+    fogCurveExponent: claimed(registry.graphics, 'graphics')?.fogCurveExponent ?? 1,
   },
   skyAt(12, requireDayCycle(registry)),
 );

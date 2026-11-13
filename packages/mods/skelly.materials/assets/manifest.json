@@ -8,6 +8,8 @@
         "assets/models/cord_coil.glb",
         "assets/models/duct_tape.glb",
         "assets/models/fastener_pack.glb",
+        "assets/models/field_patch.glb",
+        "assets/models/hinge_set.glb",
         "assets/models/nails.glb",
         "assets/models/rag.glb",
         "assets/models/scrap_metal.glb",
@@ -15,7 +17,8 @@
         "assets/models/stick.glb",
         "assets/models/tape_roll.glb",
         "assets/models/thread_spool.glb",
-        "assets/models/wax.glb"
+        "assets/models/wax.glb",
+        "assets/models/wooden_plank.glb"
       ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",

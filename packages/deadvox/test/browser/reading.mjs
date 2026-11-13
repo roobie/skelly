@@ -8,6 +8,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { actionRingShown } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
@@ -292,31 +293,19 @@ try {
       stanceBeforeToggle,
     );
     const walk = async (actionId, targetX, increasing) => {
-      const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-      const release = await holdInputAction(page, actionId);
-      try {
-        await waitForSimulation(
-          page,
-          ({ x, up }) => {
-            const { session, body } = globalThis.readingWitness;
-            return {
-              time: session.sim.time,
-              paused: session.sim.paused,
-              reached: up ? body.pos[0] >= x : body.pos[0] <= x,
-            };
-          },
-          { x: targetX, up: increasing },
-          {
-            seconds: 10,
-            from,
-            label: `walk ${actionId} to ${targetX}`,
-            record,
-            stop: release,
-          },
-        );
-      } finally {
-        await release();
-      }
+      await waitForSimulation(
+        page,
+        ({ x, up }) => {
+          const { session, body } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: up ? body.pos[0] >= x : body.pos[0] <= x,
+          };
+        },
+        { x: targetX, up: increasing },
+        { seconds: 10, label: `walk ${actionId} to ${targetX}`, record, hold: actionId },
+      );
     };
     // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
     await page.evaluate(() => {
@@ -914,8 +903,8 @@ try {
     const reopened = await readProgress();
     assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
     assert.ok(reopened.value >= stoppedOnClose.elapsed);
-    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk's length
-    // depends on when the stage releases the key, and the walk to the sign must start on the lane.
+    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk to the sign
+    // must start on the lane.
     await page.evaluate(() => {
       globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.controls.pitch = 0;
@@ -924,18 +913,11 @@ try {
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
     }));
-    await holdAction('movement.forward', async () => {
-      await page.waitForFunction(() => document.querySelector('#reading').hidden);
-      await waitForSimulation(
-        page,
-        (until) => {
-          const { session } = globalThis.readingWitness;
-          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
-        },
-        beforeMove.time + 0.2,
-        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record },
-      );
-    });
+    // The midnight check depends on where this walk ends. `walk` arms its stop in the page before the key goes
+    // down, so the walk ends within a frame of the destination whatever the driver latency. Reading closes by the
+    // walk and is checked after the stop.
+    await walk('movement.forward', beforeMove.position[0] + 1, true);
+    await page.waitForFunction(() => document.querySelector('#reading').hidden);
     const afterMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
@@ -947,24 +929,36 @@ try {
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
-    const seekHour = (hour) =>
-      page.evaluate(async (seconds) => {
+    // One evaluate seeks and measures, so no game frame runs between the new hour and the light read from it.
+    // The measure carries what a failure needs to show where and when the light was read.
+    const probeLight = async (seekSeconds) => {
+      const { session, reading, readCalls, body, saveController } = globalThis.readingWitness;
+      if (seekSeconds !== undefined) {
         const clockModule = '/@stage/@skelly/engine/internal/core/clock.ts';
         const { nextTimeOfDay } = await import(clockModule);
-        const { session, saveController } = globalThis.readingWitness;
-        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
+        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seekSeconds));
         saveController?.rearmAutosaveAfterTimeSeek?.();
-      }, hour * 3600);
-    const lightState = () =>
-      page.evaluate(() => {
-        const { session, reading, readCalls } = globalThis.readingWitness;
-        return {
-          refusal: session.readingLight(),
-          open: reading.isOpen,
-          readCalls,
-          prompt: document.querySelector('#prompt')?.textContent ?? '',
-        };
-      });
+      }
+      // The light is read where `readingLight` samples it, at the reader's eye; the feet only show the route.
+      const eye = session.playerEye();
+      return {
+        refusal: session.readingLight(),
+        open: reading.isOpen,
+        readCalls,
+        prompt: document.querySelector('#prompt')?.textContent ?? '',
+        diagnostics: {
+          time: session.sim.time,
+          hour: (session.sim.calendar / 3600) % 24,
+          eye,
+          feet: [...body.pos],
+          illumination: session.illuminationAt(eye),
+          skyVisibility: session.skyFields.visibilityAt(eye),
+          fixtureLights: session.power?.lights().length ?? 0,
+        },
+      };
+    };
+    const seekHour = (hour) => page.evaluate(probeLight, hour * 3600);
+    const lightState = () => page.evaluate(probeLight);
     const refusedRead = async (slot) => {
       const unread = await lightState();
       await pressAction(page, `quickbar.use.${slot}`);
@@ -978,8 +972,7 @@ try {
       return refused;
     };
     await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
-    await seekHour(0);
-    const midnight = await lightState();
+    const midnight = await seekHour(0);
     assert.ok(midnight.refusal, `the reading spot must be too dark at midnight: ${JSON.stringify(midnight)}`);
     await page.locator('#reading').waitFor({ state: 'hidden' });
     await page.waitForFunction(
@@ -1139,11 +1132,11 @@ try {
     });
     await walk('movement.back', signFixture.x, false);
     await aim(signFixture.type);
-    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action list.
+    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action menu.
     const readSign = async () => {
       await pressAction(page, 'world.interact');
       await page.locator('#reading').waitFor({ state: 'visible' });
-      assert.equal(await page.locator('#item-action-list').isVisible(), false);
+      assert.equal(await actionRingShown(page), false);
     };
     await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);

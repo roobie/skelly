@@ -2,7 +2,18 @@
 // here), so these check the maths and the state machine, not what anything looks like. See the module's
 // own report for what to look at in a real browser.
 
-import { type ActorBody, actorFigure, buildRegistry } from '@skelly/engine/content';
+import {
+  type ActorBody,
+  ActorBodySchema,
+  type ActorClips,
+  ActorClipsSchema,
+  type ActorFigureFile,
+  type ActorFigureFiles,
+  actorClipIssues,
+  actorFigure,
+  actorFigureKey,
+  buildRegistry,
+} from '@skelly/engine/content';
 import { actorHitFlinchDuration, flinchSideForId } from '@skelly/engine/internal/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
 import type { AgentMode } from '@skelly/engine/internal/core/actorState.ts';
@@ -25,13 +36,19 @@ import {
   type Pose,
   posedActor,
   quatToMat3,
+  rotY,
   severedBoneSet,
   transpose,
 } from '@skelly/engine/pose';
 import { ACTIVE_ACTOR_RATE, type Actor, reachTuning } from '@skelly/engine/sim';
 import { CHUNK, makeScale, type Vec3 } from '@skelly/engine/world';
 import { AcidEffects } from '@skelly/presentation/internal/render/acidEffects.ts';
-import { type CrowdCellMaskLayout, isCellInMask } from '@skelly/presentation/internal/render/crowd.ts';
+import { actorFigureGeometry } from '@skelly/presentation/internal/render/actorFigureGeometry.ts';
+import {
+  type CrowdCellMaskLayout,
+  type CrowdPlacement,
+  isCellInMask,
+} from '@skelly/presentation/internal/render/crowd.ts';
 import { Gore } from '@skelly/presentation/internal/render/gore.ts';
 import { LOOK_AT_REST } from '@skelly/presentation/internal/render/lookAt.ts';
 import {
@@ -41,14 +58,18 @@ import {
 } from '@skelly/presentation/internal/render/mobActors.ts';
 import { initializeRagdollPhysics } from '@skelly/presentation/internal/render/ragdoll.ts';
 import RAPIER from '@skelly/presentation/internal/render/ragdollRapier.ts';
+import { SHADOW_CROWD_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
 import { ActorMeshes, ChunkMeshes, MobActorMeshes as RenderMobActorMeshes } from '@skelly/presentation/render';
 import {
+  Box3,
   type BufferGeometry,
   type DataTexture,
   type InstancedBufferAttribute,
   type InstancedMesh,
   PerspectiveCamera,
+  Vector3,
 } from 'three';
+import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -72,6 +93,8 @@ interface TestDebris {
   groundedAt: number | undefined;
   originOffsetY: number;
   initialCenter: Vec3;
+  globalRow: number;
+  variantIndex: number;
   body: {
     asleep: boolean;
     center: Vec3;
@@ -284,6 +307,140 @@ class MobActorMeshes extends FixtureMobActorMeshes {
 const RUNNER = registry.actors.get('runner')!;
 const CRAWLER = registry.actors.get('crawler')!;
 
+/** The renderer's private shape these tests read: variant twins, rows and placements. */
+const rendererInternals = (renderer: MobActorMeshes) =>
+  renderer as unknown as {
+    states: Map<
+      number,
+      {
+        variantIndex: number;
+        globalRow: number;
+        lastPlacement: CrowdPlacement | undefined;
+        drawnFall?: unknown;
+        bodyTransforms: readonly {
+          readonly r: Parameters<typeof mulMV>[0];
+          readonly t: readonly [number, number, number];
+        }[];
+      }
+    >;
+    variants: readonly {
+      mesh: InstancedMesh;
+      geometry: BufferGeometry;
+      body: { scale: number; bones: readonly Bone[]; anchors: { readonly [id: string]: BodyAnchor } };
+      bones: readonly { readonly id: string }[];
+      shadowPasses: readonly { mesh: InstancedMesh; slots: InstancedBufferAttribute }[];
+      casterReach: number;
+    }[];
+  };
+
+/** An axis-aligned box `radius` metres around a placement. */
+const boxAround = (at: CrowdPlacement, radius: number): Box3 =>
+  new Box3(
+    new Vector3(at.x - radius, at.y - radius, at.z - radius),
+    new Vector3(at.x + radius, at.y + radius, at.z + radius),
+  );
+
+/** A copy of a built actor GLB with every POSITION vertex's X moved by `units` model units — the same
+ * layout actorFigureGeometry reads (glTF 2.0 binary, one tightly packed FLOAT VEC3 POSITION accessor),
+ * bone indices untouched and the accessor's declared min/max kept in step: bind geometry loader-accepted
+ * yet offset from the figure's origin. */
+const offsetGlbPositions = (mesh: Uint8Array, units: number, id: string): Uint8Array => {
+  const out = new Uint8Array(mesh);
+  const view = new DataView(out.buffer);
+  if (out.byteLength < 20 || view.getUint32(0, true) !== 0x46_54_6c_67 || view.getUint32(4, true) !== 2) {
+    throw new Error(`Actor mesh ${id} is not a glTF 2.0 binary`);
+  }
+  const jsonLength = view.getUint32(12, true);
+  const binAt = 20 + jsonLength;
+  const json = JSON.parse(new TextDecoder().decode(out.subarray(20, binAt))) as {
+    nodes: { mesh?: number }[];
+    meshes: { primitives: { attributes: Record<string, number> }[] }[];
+    accessors: {
+      bufferView: number;
+      byteOffset?: number;
+      componentType: number;
+      count: number;
+      type: string;
+      min?: number[];
+      max?: number[];
+    }[];
+    bufferViews: { byteOffset?: number; byteLength: number; byteStride?: number }[];
+  };
+  const node = json.nodes.find((candidate) => candidate.mesh !== undefined);
+  const primitive = json.meshes[node?.mesh ?? -1]?.primitives[0];
+  const accessorIndex = primitive?.attributes.POSITION ?? -1;
+  const accessor = json.accessors[accessorIndex];
+  const bufferView = json.bufferViews[accessor?.bufferView ?? -1];
+  if (
+    !(accessor && bufferView && accessor.type === 'VEC3' && accessor.componentType === 5126) ||
+    (bufferView.byteStride !== undefined && bufferView.byteStride !== 12)
+  ) {
+    throw new Error(`Actor mesh ${id} POSITION must be a tightly packed FLOAT VEC3 accessor`);
+  }
+  const start = binAt + 8 + (bufferView.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+  for (let vertex = 0; vertex < accessor.count; vertex++) {
+    view.setFloat32(start + vertex * 12, view.getFloat32(start + vertex * 12, true) + units, true);
+  }
+  // Keep the accessor's declared bounds in step with the moved vertices, as a real export would: the
+  // JSON chunk is re-serialized (space-padded to 4 bytes, glTF-Binary's convention) and the BIN chunk
+  // follows at the new offset, its own internal offsets unchanged.
+  if (accessor.min) {
+    accessor.min[0]! += units;
+  }
+  if (accessor.max) {
+    accessor.max[0]! += units;
+  }
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(json));
+  const jsonPad = (4 - (jsonBytes.length % 4)) % 4;
+  const bin = out.subarray(binAt + 8);
+  const rebuilt = new Uint8Array(20 + jsonBytes.length + jsonPad + 8 + bin.length);
+  const rebuiltView = new DataView(rebuilt.buffer);
+  rebuiltView.setUint32(0, 0x46_54_6c_67, true);
+  rebuiltView.setUint32(4, 2, true);
+  rebuiltView.setUint32(8, rebuilt.length, true);
+  rebuiltView.setUint32(12, jsonBytes.length + jsonPad, true);
+  rebuiltView.setUint32(16, 0x4e_4f_53_4a, true);
+  rebuilt.set(jsonBytes, 20);
+  for (let k = 0; k < jsonPad; k++) {
+    rebuilt[20 + jsonBytes.length + k] = 0x20;
+  }
+  const binHeader = 20 + jsonBytes.length + jsonPad;
+  rebuiltView.setUint32(binHeader, bin.length, true);
+  rebuiltView.setUint32(binHeader + 4, 0x00_4e_49_42, true);
+  rebuilt.set(bin, binHeader + 8);
+  return rebuilt;
+};
+/** The largest root translation one baked clip entry authors, in model units: a pose clip's or death
+ * pair's frames' roots, a stance idle's base roots, or an overlay's authored drops. */
+const entryRootsOf = (entry: NonNullable<ActorClips['standing']>[string]): number => {
+  if ('kind' in entry) {
+    if (entry.kind === 'pose') {
+      return Math.max(0, ...entry.frames.map((frame) => Math.hypot(...frame.root)));
+    }
+    return entry.kind === 'overlay' ? Math.max(0, ...entry.frames.map((frame) => Math.abs(frame.dropMetres))) : 0;
+  }
+  if ('slack' in entry) {
+    return Math.max(Math.hypot(...entry.slack.base.root), Math.hypot(...entry.aggravated.base.root));
+  }
+  return Math.max(
+    0,
+    ...[entry.forward, entry.backward].flatMap((fall) => fall.frames.map((frame) => Math.hypot(...frame.root))),
+  );
+};
+
+/** The largest root translation a figure's baked entries author, in model units — the load-time input
+ * of the placement bound the packed-row bound replaced: every pose-clip and death-pair frame root, every
+ * stance idle base root, every overlay drop, and the fused-mass origin offset. */
+const authoredRootsOf = (figure: ActorFigureFile): number => {
+  const fused = figure.fusedMass;
+  let max = fused ? Math.hypot(...(fused.originOffset.map((c) => c / fused.scale) as Vec3)) : 0;
+  for (const set of [figure.clips.standing, figure.clips.crawling]) {
+    for (const entry of Object.values(set ?? {})) {
+      max = Math.max(max, entryRootsOf(entry));
+    }
+  }
+  return max;
+};
 /** A minimal, valid Actor — same shape ActorSystem.add() builds (packages/engine/src/core/actorSystem.ts), constructed
  * directly so these tests don't need a full ActorSystem (physics/senses/etc, irrelevant here). */
 const makeActor = (
@@ -416,9 +573,11 @@ const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward:
   };
   const state = internal.states.get(id)!;
   const head = boneTransforms(internal.variants[state.variantIndex]!.bones, state.lastPose!).get('head')!;
+  // The pose is root-local and faces +z; these actors face -z, a half turn from it.
+  const turned = ([x, y, z]: readonly number[]): Vec3 => [-x!, y!, -z!];
   return {
-    forward: [...mulMV(head.r, [0, 0, -1])] as Vec3,
-    center: [...applyPoint(head, [0, 0, 0])] as Vec3,
+    forward: turned(mulMV(head.r, [0, 0, 1])),
+    center: turned(applyPoint(head, [0, 0, 0])),
   };
 };
 
@@ -430,7 +589,7 @@ describe('facing convention', () => {
       const id = store.add(makeActor([0, 0, 0], [1, 0, 0]));
       renderer.sync(store, 0, 1);
       const pelvis = renderer.boneMatrix(id, 'pelvis')!;
-      const forward: Vec3 = [-pelvis[2]!, -pelvis[6]!, -pelvis[10]!];
+      const forward: Vec3 = [pelvis[2]!, pelvis[6]!, pelvis[10]!];
       expect(forward[0]).toBeCloseTo(1, 9);
       expect(forward[1]).toBeCloseTo(0, 9);
       expect(forward[2]).toBeCloseTo(0, 9);
@@ -479,6 +638,113 @@ describe('feet at body.pos.y (built pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('repacks only the actors whose pose inputs changed since the last sync', () => {
+    const renderer = new MobActorMeshes(0.5, 3, { actors: registry.actors });
+    const packed: number[] = [];
+    const internals = renderer as unknown as {
+      packSkeleton: (globalRow: number, ...rest: unknown[]) => void;
+    };
+    const original = internals.packSkeleton.bind(renderer);
+    internals.packSkeleton = (globalRow, ...rest) => {
+      packed.push(globalRow);
+      original(globalRow, ...rest);
+    };
+    const store = new MapEntityStore<Actor>();
+    const still = makeActor([0, 0, -5]);
+    const mover = makeActor([4, 0, -5]);
+    const stillId = store.add(still);
+    const moverId = store.add(mover);
+    const { states } = renderer as unknown as { states: Map<number, { globalRow: number }> };
+    try {
+      renderer.sync(store, 1 / 60);
+      const stillRow = states.get(stillId)!.globalRow;
+      const moverRow = states.get(moverId)!.globalRow;
+      packed.length = 0;
+
+      renderer.sync(store, 1 / 60);
+      expect(packed).toEqual([]);
+
+      mover.body.pos[0] += 0.5;
+      mover.renderPrevious = { ...mover.renderPrevious, pos: [...mover.body.pos] };
+      renderer.sync(store, 1 / 60);
+      expect(packed).toContain(moverRow);
+      expect(packed).not.toContain(stillRow);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('redraws a kept row as a fresh renderer draws it once any pose or row input changes', () => {
+    let bloodiness = 0;
+    const options = { actors: registry.actors, poolSize: 1, bloodiness: () => bloodiness };
+    const kept = new MobActorMeshes(0.5, 1, options);
+    const store = new MapEntityStore<Actor>();
+    const actor = makeActor([0, 0, -5]);
+    const id = store.add(actor);
+    const drawnRow = (renderer: MobActorMeshes): Float32Array => {
+      const { texture, states } = renderer as unknown as {
+        texture: DataTexture;
+        states: Map<number, { globalRow: number }>;
+      };
+      const width = texture.image.width * 4;
+      const start = states.get(id)!.globalRow * width;
+      return (texture.image.data as Float32Array).slice(start, start + width);
+    };
+    const changes: readonly (readonly [string, () => void])[] = [
+      [
+        'placement',
+        () => {
+          actor.body.pos[0] += 0.25;
+          actor.renderPrevious = { ...actor.renderPrevious, pos: [...actor.body.pos] };
+        },
+      ],
+      [
+        'yaw',
+        () => {
+          actor.facing = [1, 0, 0];
+          actor.renderPrevious = { ...actor.renderPrevious, facing: [...actor.facing] };
+        },
+      ],
+      [
+        'clip',
+        () => {
+          actor.horizontalSpeed = 1;
+          actor.gaitPhase += 0.5;
+        },
+      ],
+      ['severed parts', () => actor.severed.push('hand.L')],
+      [
+        'bloodiness',
+        () => {
+          bloodiness = 1;
+        },
+      ],
+    ];
+    try {
+      for (const [input, change] of changes) {
+        kept.sync(store, 1 / 60);
+        kept.sync(store, 1 / 60);
+        const before = drawnRow(kept);
+        change();
+        kept.sync(store, 1 / 60);
+        const fresh = new MobActorMeshes(0.5, 1, options);
+        try {
+          const freshStore = new MapEntityStore<Actor>();
+          // The pose reads the entity id, so both renderers must see the same one.
+          expect(freshStore.add(actor)).toBe(id);
+          fresh.sync(freshStore, 1 / 60);
+          const after = drawnRow(kept);
+          expect(after, input).not.toEqual(before);
+          expect(after, input).toEqual(drawnRow(fresh));
+        } finally {
+          fresh.dispose();
+        }
+      }
+    } finally {
+      kept.dispose();
+    }
+  });
+
   it('queues exact pose texture contents through admission, offscreen movement, severing, death and row reuse', () => {
     const canvas = new EventTarget() as HTMLCanvasElement;
     const renderer = new MobActorMeshes(0.5, 3, {
@@ -1056,6 +1322,608 @@ describe('MobActorMeshes', () => {
     }
   });
 
+  it("casts shadows only through the twin a light's pass selects, never the crowd mesh itself", () => {
+    const renderer = new MobActorMeshes(0.5, 8, { actors: registry.actors });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const near = store.add(makeActor([1, 0, 0]));
+      store.add(makeActor([400, 0, 0])); // 200 m out: past any 24 m shadow volume
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const variant = internals.variants[internals.states.get(near)!.variantIndex]!;
+      const twin = variant.shadowPasses[0]!;
+      // The crowd mesh never casts: its bone-placed instances are un-cullable, so three.js would draw
+      // every figure into every shadow map. The twin is the only caster, on the shadow-only layer.
+      expect(variant.mesh.castShadow).toBe(false);
+      expect(twin.mesh.castShadow).toBe(true);
+      expect(twin.mesh.frustumCulled).toBe(false);
+      expect(twin.mesh.layers.mask).toBe(1 << SHADOW_CROWD_LAYER);
+
+      const nearRow = internals.states.get(near)!.globalRow;
+      let tested = 0;
+      const casts = (box: Box3): boolean => {
+        tested += 1;
+        return Math.hypot((box.min.x + box.max.x) / 2, (box.min.z + box.max.z) / 2) <= 20;
+      };
+      renderer.selectShadowCasters(0, casts);
+      const rows = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(tested).toBeGreaterThanOrEqual(2); // every live holder was tested by its world box
+      expect(variant.mesh.count).toBe(2); // the crowd's own instances are untouched
+      expect(twin.mesh.count).toBe(1);
+      expect(twin.mesh.visible).toBe(true);
+      expect(rows).toEqual([nearRow]); // the twin reads the same revealed row the crowd draws
+
+      // A pass that selects nothing (a map drawn only to be allocated) empties its twin.
+      renderer.selectShadowCasters(0, () => false);
+      expect(twin.mesh.count).toBe(0);
+      expect(twin.mesh.visible).toBe(false);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('reserves a separate twin geometry and crowd-slot attribute per light pass', () => {
+    const renderer = new MobActorMeshes(0.5, 8, { actors: new Map([[SHAMBLER.id, SHAMBLER]]) });
+    try {
+      // One sun (slot 0) and one torch (slot 1), as render/shadows.ts reserves them.
+      renderer.reserveShadowSlots(2);
+      const store = new MapEntityStore<Actor>();
+      const byTorch = store.add(makeActor([80, 0, 0])); // 40 m out: only the torch's range reaches it
+      const bySun = store.add(makeActor([1, 0, 0]));
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const variant = internals.variants[internals.states.get(bySun)!.variantIndex]!;
+      expect(variant.shadowPasses.length).toBe(2);
+      const [sunTwin, torchTwin] = variant.shadowPasses as readonly [
+        { mesh: InstancedMesh; slots: InstancedBufferAttribute },
+        { mesh: InstancedMesh; slots: InstancedBufferAttribute },
+      ];
+      // Three uploads a geometry's attributes once per renderer frame (WebGLObjects.update guards on
+      // info.render.frame), so each pass's rows must live in their own geometry and attribute: passes
+      // sharing one would all draw whichever rows reached the GPU first.
+      expect(sunTwin.mesh.geometry).not.toBe(torchTwin.mesh.geometry);
+      expect(sunTwin.slots).not.toBe(torchTwin.slots);
+      expect(sunTwin.mesh.geometry.getAttribute('crowdSlot')).toBe(sunTwin.slots);
+      expect(torchTwin.mesh.geometry.getAttribute('crowdSlot')).toBe(torchTwin.slots);
+      // The twins share the crowd's vertex buffers, so the extra slots cost no second copy of the figure.
+      for (const name of ['position', 'normal']) {
+        expect(sunTwin.mesh.geometry.getAttribute(name)).toBe(variant.mesh.geometry.getAttribute(name));
+      }
+
+      const sunRow = internals.states.get(bySun)!.globalRow;
+      const torchRow = internals.states.get(byTorch)!.globalRow;
+      const within =
+        (x: number): ((box: Box3) => boolean) =>
+        (box) =>
+          box.distanceToPoint(new Vector3(x, 0, 0)) <= 4;
+      // The two selections happen in one renderer frame: the sun's pass first, then the torch's.
+      renderer.selectShadowCasters(0, within(internals.states.get(bySun)!.lastPlacement!.x));
+      renderer.selectShadowCasters(1, within(internals.states.get(byTorch)!.lastPlacement!.x));
+      const rowsOf = (twin: { mesh: InstancedMesh; slots: InstancedBufferAttribute }): number[] =>
+        Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(rowsOf(sunTwin)).toEqual([sunRow]);
+      expect(rowsOf(torchTwin)).toEqual([torchRow]);
+      // Only the pass about to draw sees its twin, so a pass never draws another pass's rows.
+      expect(sunTwin.mesh.visible).toBe(false);
+      expect(torchTwin.mesh.visible).toBe(true);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a figure whose placement is outside the volume but whose posed geometry reaches in', () => {
+    // A walk clip whose every frame authors a 20 m root translation: the figure draws 20 m from its
+    // placement, farther than any multiple of its bind sphere radius — the pose contract a bound must
+    // honour (PoseFrameSchema roots are translations, not just rotations).
+    const rootMetres = 20;
+    const rooted = new Map(FIGURES);
+    for (const seed of SHAMBLER_FIGURE_SEEDS) {
+      const key = actorFigureKey(SHAMBLER.id, seed);
+      const figure = FIGURES.get(key)!;
+      rooted.set(key, {
+        ...figure,
+        clips: {
+          ...figure.clips,
+          standing: Object.fromEntries(
+            Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
+              name,
+              'kind' in entry && entry.kind === 'pose'
+                ? { ...entry, frames: entry.frames.map((frame) => ({ ...frame, root: [rootMetres, 0, 0] })) }
+                : entry,
+            ]),
+          ),
+        },
+      });
+    }
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: rooted,
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([4, 0, 0]);
+      actor.horizontalSpeed = 4; // a walking figure draws the walk clip's authored root
+      actor.gaitPhase = 1;
+      const id = store.add(actor);
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      const variant = internals.variants[state.variantIndex]!;
+      const placement = state.lastPlacement!;
+      // Where the figure actually draws: every bone's world position, as packCrowdBoneMatrix places it.
+      const yawDeg = (placement.yawRad * 180) / Math.PI;
+      let reached: Vec3 = [placement.x, placement.y, placement.z];
+      let reach = 0;
+      for (const { t } of state.bodyTransforms) {
+        const world = mulMV(rotY(yawDeg), [...t] as Vec3);
+        const at: Vec3 = [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
+        const distance = Math.hypot(at[0] - placement.x, at[1] - placement.y, at[2] - placement.z);
+        if (distance > reach) {
+          reach = distance;
+          reached = at;
+        }
+      }
+      const assumed = 2 * (variant.geometry.boundingSphere?.radius ?? 1) * variant.body.scale + 0.3;
+      // The fixture reaches far past the placement-radius multiple the old bound assumed, and the light
+      // volume (4 m around the reached geometry) stays clear of that assumed box.
+      expect(reach).toBeGreaterThan(assumed);
+      expect(reach - 4).toBeGreaterThan(assumed);
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...reached)) <= 4;
+      expect(casts(boxAround(placement, assumed))).toBe(false); // the placement alone cannot cast in
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      expect(twin.mesh.count).toBe(1);
+      expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a figure whose bind geometry is offset from its origin, so its drawn vertices reach past the diameter', () => {
+    // Bind geometry can sit offset from the figure's origin: translated GLB POSITION vertices keep every
+    // bone index and stay loader-accepted, and the shader draws each vertex through one bone matrix, that
+    // far from the placement. A placement radius of 2·bind-sphere radius (the diameter) drops such a
+    // figure while its transformed vertices — not a bone translation — are inside the light volume.
+    const offsetBindFigures = (): ActorFigureFiles => {
+      const offset = new Map(FIGURES);
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        const probe = actorFigureGeometry(figure.mesh, figure.body);
+        const sphere = probe.boundingSphere!;
+        // Far enough that even the nearest translated vertex stays outside the old diameter bound's
+        // box (plus the 4 m light volume), sized from the fixture instead of a pinned number.
+        const oldAssumed = 2 * sphere.radius * figure.body.scale + 0.3;
+        const units = Math.ceil((oldAssumed + 4) / figure.body.scale + sphere.center.length() + sphere.radius + 1);
+        offset.set(key, { ...figure, mesh: offsetGlbPositions(figure.mesh, units, key) });
+        probe.dispose();
+      }
+      return offset;
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: offsetBindFigures(),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const id = store.add(makeActor([4, 0, 0]));
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      const variant = internals.variants[state.variantIndex]!;
+      const placement = state.lastPlacement!;
+      // Where the figure actually draws its farthest bind vertex: the crowd shader sends each vertex
+      // through its owning bone's packed matrix (render/crowd.ts, CROWD_BEGIN_VERTEX), so this is the
+      // drawn position, not just a bone translation.
+      const yaw = rotY((placement.yawRad * 180) / Math.PI);
+      const positions = variant.geometry.getAttribute('position');
+      let drawn: Vec3 = [placement.x, placement.y, placement.z];
+      let reach = 0;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const bind: Vec3 = [positions.getX(vertex), positions.getY(vertex), positions.getZ(vertex)];
+        const bone = state.bodyTransforms[variant.geometry.getAttribute('boneIndex').getX(vertex)]!;
+        const local = mulMV(bone.r, bind);
+        const world = mulMV(yaw, [local[0] + bone.t[0], local[1] + bone.t[1], local[2] + bone.t[2]]);
+        const at: Vec3 = [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
+        const distance = Math.hypot(at[0] - placement.x, at[1] - placement.y, at[2] - placement.z);
+        if (distance > reach) {
+          reach = distance;
+          drawn = at;
+        }
+      }
+      const sphere = variant.geometry.boundingSphere!;
+      const assumed = 2 * sphere.radius * variant.body.scale + 0.3; // the diameter bound the fix replaces
+      expect(reach).toBeGreaterThan(assumed);
+      expect(reach - 4).toBeGreaterThan(assumed);
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
+      expect(casts(boxAround(placement, assumed))).toBe(false); // the diameter box cannot contain it
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      expect(twin.mesh.count).toBe(1);
+      expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a figure whose offset bone pivot swings its posed geometry past the placement bound', () => {
+    // core/pose.ts's boneLocalTransform pivots every bone rotation about the bone head
+    // (t = head − R·head + root), so rotating a root bone whose head sits offset from the figure's
+    // origin swings the whole figure by twice that offset — a translation that lives in the packed bone
+    // matrix, in no authored root and no bind-vertex norm. The placement bound that added only the bind
+    // reach and the authored roots dropped such a figure while its drawn vertices sat far outside it.
+    const pivotSwingFigures = (): { files: ActorFigureFiles; assumedBySeed: Map<number, number> } => {
+      const swung = new Map(FIGURES);
+      const assumedBySeed = new Map<number, number>();
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        // Zero-root frames that rotate only the root bone 180° about Z, pivoting about its head.
+        const root = figure.body.bones.find((bone) => bone.parent === null)!;
+        const clips: ActorClips = {
+          ...figure.clips,
+          standing: Object.fromEntries(
+            Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
+              name,
+              'kind' in entry && entry.kind === 'pose'
+                ? {
+                    ...entry,
+                    frames: entry.frames.map((frame) => ({
+                      ...frame,
+                      root: [0, 0, 0] as Vec3,
+                      rotations: { [root.id]: [0, 0, 1, 0] },
+                    })),
+                  }
+                : entry,
+            ]),
+          ),
+        };
+        const probe = actorFigureGeometry(figure.mesh, figure.body);
+        const sphere = probe.boundingSphere!;
+        const bindReach = sphere.center.length() + sphere.radius;
+        probe.dispose();
+        // The placement bound the packed-row bound replaces (metres), over this mutated figure's own
+        // clips, and a pivot offset whose swing clears it and the 4 m light volume — sized from the
+        // fixture's own sphere and roots rather than a pinned number, with headroom for the stance
+        // blend diluting the walk clip's swing.
+        const assumed = (bindReach + authoredRootsOf({ ...figure, clips })) * figure.body.scale + 0.3;
+        const units = Math.ceil((assumed + 4) / figure.body.scale + bindReach) + 4;
+        const body: ActorBody = {
+          ...figure.body,
+          bones: figure.body.bones.map((bone) =>
+            bone.parent === null
+              ? {
+                  ...bone,
+                  head: [bone.head[0]! + units, bone.head[1]!, bone.head[2]!],
+                  tail: [bone.tail[0]! + units, bone.tail[1]!, bone.tail[2]!],
+                }
+              : bone,
+          ),
+        };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        expect(safeParse(ActorClipsSchema, clips).success).toBe(true);
+        expect(actorClipIssues(body, clips)).toEqual([]);
+        swung.set(key, { ...figure, body, clips });
+        assumedBySeed.set(seed, assumed);
+      }
+      return { files: swung, assumedBySeed };
+    };
+    const { files, assumedBySeed } = pivotSwingFigures();
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: files,
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([4, 0, 0]);
+      actor.horizontalSpeed = 4; // a walking figure draws the standing walk clip
+      actor.gaitPhase = 1;
+      const id = store.add(actor);
+      renderer.sync(store, 0, 1);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      const variant = internals.variants[state.variantIndex]!;
+      const placement = state.lastPlacement!;
+      // Where the figure actually draws each vertex: through the packed bone matrix the crowd shader
+      // applies — renderer.boneMatrix reads the very row the crowd mesh and the twin draw.
+      const positions = variant.geometry.getAttribute('position');
+      const owners = variant.geometry.getAttribute('boneIndex');
+      let drawn: Vec3 = [placement.x, placement.y, placement.z];
+      let reach = 0;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const matrix = renderer.boneMatrix(id, variant.bones[owners.getX(vertex)]!.id)!;
+        const at: Vec3 = [0, 1, 2].map(
+          (axis) =>
+            matrix[axis * 4]! * positions.getX(vertex) +
+            matrix[axis * 4 + 1]! * positions.getY(vertex) +
+            matrix[axis * 4 + 2]! * positions.getZ(vertex) +
+            matrix[axis * 4 + 3]!,
+        ) as Vec3;
+        const distance = Math.hypot(at[0] - placement.x, at[1] - placement.y, at[2] - placement.z);
+        if (distance > reach) {
+          reach = distance;
+          drawn = at;
+        }
+      }
+      const assumed = assumedBySeed.get(actor.figureSeed)!; // the bind-reach-plus-roots bound, replaced
+      expect(reach).toBeGreaterThan(assumed);
+      expect(reach - 4).toBeGreaterThan(assumed);
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
+      expect(casts(boxAround(placement, assumed))).toBe(false); // the placement bound cannot contain it
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      expect(twin.mesh.count).toBe(1);
+      expect(Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count)).toEqual([state.globalRow]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects debris whose offset carried pivot draws far past the body-centre bound', () => {
+    // packDebris draws each carried bone through its own physics-placed matrix,
+    // center + delta * (source.t - initialCenter), so an articulated subtree's geometry can draw far
+    // from the debris body centre the old bound boxed. The offset-pivot hand below is that case: the
+    // packed debris row holds the carried bones' real translations, so boxing the row keeps such
+    // debris selected where the centre bound dropped its shadow.
+    const swungHandFigures = (): { files: ActorFigureFiles; reachBySeed: Map<number, number> } => {
+      const swung = new Map(FIGURES);
+      const reachBySeed = new Map<number, number>();
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        // Zero-root frames that rotate only hand.L 180° about Z, pivoting about its offset head.
+        const clips: ActorClips = {
+          ...figure.clips,
+          standing: Object.fromEntries(
+            Object.entries(figure.clips.standing ?? {}).map(([name, entry]) => [
+              name,
+              'kind' in entry && entry.kind === 'pose'
+                ? {
+                    ...entry,
+                    frames: entry.frames.map((frame) => ({
+                      ...frame,
+                      root: [0, 0, 0] as Vec3,
+                      rotations: { 'hand.L': [0, 0, 1, 0] },
+                    })),
+                  }
+                : entry,
+            ]),
+          ),
+        };
+        const probe = actorFigureGeometry(figure.mesh, figure.body);
+        const sphere = probe.boundingSphere!;
+        const bindReach = sphere.center.length() + sphere.radius;
+        probe.dispose();
+        const casterReach = (bindReach * figure.body.scale + 0.3) as number; // Variant.casterReach's formula
+        // The hand pivot offset, sized from the fixture's own sphere so the swung hand's drawn
+        // vertices clear the centre bound and a 4 m light volume even after the stance blend dilutes
+        // the authored swing.
+        const units = Math.ceil((casterReach + 4) / figure.body.scale + bindReach) + 4;
+        const body: ActorBody = {
+          ...figure.body,
+          bones: figure.body.bones.map((bone) =>
+            bone.id === 'hand.L'
+              ? {
+                  ...bone,
+                  head: [bone.head[0]! + units, bone.head[1]!, bone.head[2]!],
+                  tail: [bone.tail[0]! + units, bone.tail[1]!, bone.tail[2]!],
+                }
+              : bone,
+          ),
+        };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        expect(safeParse(ActorClipsSchema, clips).success).toBe(true);
+        expect(actorClipIssues(body, clips)).toEqual([]);
+        swung.set(key, { ...figure, body, clips });
+        reachBySeed.set(seed, casterReach);
+      }
+      return { files: swung, reachBySeed };
+    };
+    const { files, reachBySeed } = swungHandFigures();
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: files,
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([4, 0, 0]);
+      actor.horizontalSpeed = 4; // a walking figure draws the standing walk clip
+      actor.gaitPhase = 1;
+      const id = store.add(actor);
+      renderer.sync(store, 0, 1);
+      expect(renderer.actorSevered(id, 'forearm.L')).toBeDefined(); // debris now carries forearm.L + hand.L
+      renderer.sync(store, 1 / 60, 1); // advanceDebris packs the debris row
+      const internals = rendererInternals(renderer);
+      const [, debris] = [...debrisEntries(renderer).entries()].find(([key]) => key.includes(':forearm.L:'))!;
+      const variant = internals.variants[debris.variantIndex]!;
+      const carried = new Set(severedBoneSet(variant.body.bones, ['forearm.L']));
+      const { center } = debris.body;
+      // Where the debris actually draws each carried vertex: through the packed matrices the crowd
+      // shader applies — renderer.debrisBoneMatrix reads the very row the debris mesh and twin draw.
+      const positions = variant.geometry.getAttribute('position');
+      const owners = variant.geometry.getAttribute('boneIndex');
+      let drawn: Vec3 = [0, 0, 0];
+      let reach = Number.NEGATIVE_INFINITY;
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const bone = variant.bones[owners.getX(vertex)]!;
+        if (!carried.has(bone.id)) {
+          continue;
+        }
+        const matrix = renderer.debrisBoneMatrix(id, 'forearm.L', bone.id)!;
+        const at: Vec3 = [0, 1, 2].map(
+          (axis) =>
+            matrix[axis * 4]! * positions.getX(vertex) +
+            matrix[axis * 4 + 1]! * positions.getY(vertex) +
+            matrix[axis * 4 + 2]! * positions.getZ(vertex) +
+            matrix[axis * 4 + 3]!,
+        ) as Vec3;
+        const distance = Math.hypot(at[0] - center[0], at[1] - center[1], at[2] - center[2]);
+        if (distance > reach) {
+          reach = distance;
+          drawn = at;
+        }
+      }
+      expect(reach).toBeGreaterThan(0); // the fixture carried and drew real vertices
+      const assumed = reachBySeed.get(actor.figureSeed)!; // the body-centre bound the fix replaces
+      expect(reach).toBeGreaterThan(assumed + 4); // a 4 m volume at the drawn vertex rejects it
+      const centreBound = new Box3(
+        new Vector3(center[0] - assumed, center[1] - assumed, center[2] - assumed),
+        new Vector3(center[0] + assumed, center[1] + assumed, center[2] + assumed),
+      );
+      const casts = (box: Box3): boolean => box.distanceToPoint(new Vector3(...drawn)) <= 4;
+      expect(casts(centreBound)).toBe(false); // the centre bound cannot contain it
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      const selected = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(selected).toContain(debris.globalRow);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects a scaled figure whose crawl fall draws inside a volume holding its drawn vertex', async () => {
+    // packCrawlFall packed unit rotations, unlike every other packing path (which scale the rotation
+    // by the body's scale, as Variant.casterReach assumes), so a small figure's falling body drew its
+    // bind vertices at bind size, past its row box, and the cull selected nothing for a volume that
+    // contained what it actually drew.
+    const scale = 0.1;
+    const scaledFigures = (): ActorFigureFiles => {
+      const scaled = new Map(FIGURES);
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        const body = { ...figure.body, scale };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        expect(actorClipIssues(body, figure.clips)).toEqual([]);
+        scaled.set(key, { ...figure, body });
+      }
+      return scaled;
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: scaledFigures(),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const id = store.add(makeActor([0, 0, 0]));
+      renderer.sync(store);
+      store.replace(id, makeActor([0, 0, 0], [0, 0, -1], ['thigh.L'])); // a severed leg starts a crawl fall
+      renderer.sync(store);
+      await renderer.whenCorpsesReady();
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      expect(state.drawnFall).toBeDefined(); // the fall is drawing
+      const variant = internals.variants[state.variantIndex]!;
+      // Where the falling body actually draws each vertex: through the packed matrices the crowd
+      // shader applies — renderer.boneMatrix reads the very row the crowd mesh and the twin draw.
+      const positions = variant.geometry.getAttribute('position');
+      const owners = variant.geometry.getAttribute('boneIndex');
+      let box = new Box3();
+      renderer.selectShadowCasters(0, (candidate) => {
+        box = candidate.clone();
+        return true; // capture the real box for the farthest drawn vertex
+      });
+      const distanceFromBox = (at: Vec3): number => box.distanceToPoint(new Vector3(...at));
+      let overflow = Number.NEGATIVE_INFINITY;
+      let checked = 0;
+      let worst: Vec3 = [0, 0, 0];
+      for (let vertex = 0; vertex < positions.count; vertex++) {
+        const matrix = renderer.boneMatrix(id, variant.bones[owners.getX(vertex)]!.id)!;
+        if (matrix.every((value) => value === 0)) {
+          continue; // a severed or hidden bone draws nothing
+        }
+        const at: Vec3 = [0, 1, 2].map(
+          (axis) =>
+            matrix[axis * 4]! * positions.getX(vertex) +
+            matrix[axis * 4 + 1]! * positions.getY(vertex) +
+            matrix[axis * 4 + 2]! * positions.getZ(vertex) +
+            matrix[axis * 4 + 3]!,
+        ) as Vec3;
+        checked += 1;
+        // >= keeps `worst` at a genuinely inspected vertex even when every distance ties at zero.
+        const distance = distanceFromBox(at);
+        if (distance >= overflow) {
+          overflow = distance;
+          worst = at;
+        }
+      }
+      expect(checked).toBeGreaterThan(0); // real drawn vertices were inspected
+      expect(overflow).toBe(0); // every drawn vertex sits inside the row's caster box
+      const casts = (candidate: Box3): boolean =>
+        candidate.distanceToPoint(new Vector3(...worst)) <= overflow / 2 + 0.1;
+      renderer.selectShadowCasters(0, casts);
+      const twin = variant.shadowPasses[0]!;
+      const selected = Array.from(twin.slots.array as Float32Array).slice(0, twin.mesh.count);
+      expect(selected).toContain(state.globalRow); // the volume holds a drawn vertex: keep the shadow
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it("reports a scaled falling body's anchors where its packed row draws them", async () => {
+    // anchors() ran the world-space drawnFall transforms through the model-space conversion (yaw,
+    // scale, placement), scaling the already-scaled anchor point again and collapsing its world
+    // position toward the origin. An anchor must equal its point through the packed bone matrix —
+    // the very matrix that draws the bone it rides.
+    const scale = 0.1;
+    const anchoredFigures = (): ActorFigureFiles => {
+      const anchored = new Map(FIGURES);
+      for (const seed of SHAMBLER_FIGURE_SEEDS) {
+        const key = actorFigureKey(SHAMBLER.id, seed);
+        const figure = FIGURES.get(key)!;
+        const body: ActorBody = {
+          ...figure.body,
+          scale,
+          anchors: {
+            ...figure.body.anchors,
+            mouth: { bone: figure.body.bones[0]!.id, position: [0, 1, 0] },
+          },
+        };
+        expect(safeParse(ActorBodySchema, body).success).toBe(true);
+        anchored.set(key, { ...figure, body });
+      }
+      return anchored;
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 8, {
+      actors: new Map([[SHAMBLER.id, SHAMBLER]]),
+      actorFigureFiles: anchoredFigures(),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const id = store.add(makeActor([80, 0, 0])); // far from the origin, where double-scaling shows
+      renderer.sync(store);
+      store.replace(id, makeActor([80, 0, 0], [0, 0, -1], ['thigh.L'])); // starts a crawl fall
+      renderer.sync(store);
+      await renderer.whenCorpsesReady();
+      renderer.sync(store, ragdollConfig.timestepRealSeconds);
+      const internals = rendererInternals(renderer);
+      const state = internals.states.get(id)!;
+      expect(state.drawnFall).toBeDefined(); // the fall is drawing
+      const variant = internals.variants[state.variantIndex]!;
+      const anchor = variant.body.anchors.mouth!;
+      // Where the crowd shader draws the anchor: the packed bone matrix applied to its position.
+      const matrix = renderer.boneMatrix(id, anchor.bone)!;
+      const drawn: Vec3 = [0, 1, 2].map(
+        (axis) =>
+          matrix[axis * 4]! * anchor.position[0] +
+          matrix[axis * 4 + 1]! * anchor.position[1] +
+          matrix[axis * 4 + 2]! * anchor.position[2] +
+          matrix[axis * 4 + 3]!,
+      ) as Vec3;
+      expect(Math.abs(drawn[0])).toBeGreaterThan(8); // the fall lies far from the world origin
+      const mouth = [...renderer.anchors()][0]!.mouth!;
+      expect(mouth).toBeDefined();
+      for (const axis of [0, 1, 2]) {
+        // The packed matrix is float32 (the crowd texture); drawnFall is float64, so parity to ~1e-5 m.
+        expect(mouth[axis]).toBeCloseTo(drawn[axis]!, 4);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('draws every registry zombie type, visibly, with the built figure of its type and seed', () => {
     const renderer = new MobActorMeshes(0.5, registry.actors.size, { actors: registry.actors, poolSize: 1 });
     try {
@@ -1585,7 +2453,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('re-derives hidden bones from zombie.severed every sync (source of truth, e.g. after a save/load)', () => {
+  it('re-derives hidden bones from zombie.severed when it grows (source of truth, e.g. after a save/load)', () => {
     const renderer = new MobActorMeshes(0.5, 4, { actors: registry.actors, poolSize: 2 });
     try {
       const store = new MapEntityStore<Actor>();

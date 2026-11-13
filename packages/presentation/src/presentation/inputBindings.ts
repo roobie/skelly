@@ -124,6 +124,13 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
   }
   return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
 };
+/** Which way an arrow key steps an open action menu. Like a native list control's keys, these are fixed. */
+const CHOICE_STEPS: ReadonlyMap<string, number> = new Map([
+  ['ArrowDown', 1],
+  ['ArrowRight', 1],
+  ['ArrowUp', -1],
+  ['ArrowLeft', -1],
+]);
 /** Whether a key leaves the inventory find field without changing its filter (`src/ui/inventoryScreen.ts`). */
 export const blursFindField = (event: Event): boolean =>
   event instanceof KeyboardEvent && (event.key === 'Escape' || event.key === 'Enter');
@@ -184,6 +191,8 @@ export class KeyboardInput {
   command: (command: InputCommand) => void = () => undefined;
   cancelled: (preservePointer?: boolean, reason?: InputCancellationReason) => void = () => undefined;
   escape: () => void = () => undefined;
+  /** Steps an open action menu; false when none is open, so the key keeps its binding. */
+  choiceStep: (direction: number) => boolean = () => false;
   capture: ((chord: Chord | string | undefined) => void) | undefined;
   /** What a mouse press lands on; a locked menu pointer replaces the canvas with the element under its cursor. */
   pointerTarget: (event: MouseEvent) => EventTarget | null = (event) => event.target;
@@ -404,6 +413,10 @@ export class KeyboardInput {
     if (browserEscape(event)) {
       this.escape();
       return false;
+    }
+    const step = CHOICE_STEPS.get(event.code);
+    if (!text && step !== undefined && this.choiceStep(step)) {
+      return this.traceDown(event, true, 'accepted');
     }
     const browserModifier = REFUSED_MODIFIERS.some((modifier) => {
       if (modifier === 'alt') {

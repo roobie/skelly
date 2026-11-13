@@ -18,6 +18,7 @@ import {
 import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
 import { compileTemplate, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { Rng } from '@skelly/engine/math';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { placementOf } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -240,7 +241,7 @@ describe('loot economy descriptions', () => {
           value: lootPointStream(43, point).next(),
           supply: point.supply,
         }))
-        .sort((a, b) => a.id.localeCompare(b.id));
+        .sort((a, b) => compareCodeUnits(a.id, b.id));
     const forward = read(sources);
     expect(forward).toHaveLength(sources.length);
     expect(new Set(forward.map((point) => point.id)).size).toBe(sources.length);
@@ -390,7 +391,7 @@ describe('loot economy descriptions', () => {
       terrain: [],
       buildings: [],
       player: { position: [2, 0.5, 2], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     };

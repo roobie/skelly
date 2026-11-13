@@ -1,7 +1,7 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
 import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import { TONE_KEYS } from '@skelly/engine/internal/core/mood.ts';
-import { clampExposure, clampGrade, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
+import { clampExposure, clampGrade, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import { TONE_MODES } from '@skelly/presentation/render';
 import { describe, expect, it } from 'vitest';
 import { defaultLookUrlState, parseLookParams, writeLookParams } from '../src/debug/lookUrl.ts';
@@ -10,7 +10,11 @@ import { LOOK_FIXTURE } from './lookFixture.ts';
 
 const registry = baseRegistry();
 const defaults = lookDefaultsOf(registry);
-const urlDefaults = { look: defaults, defaultFogginess: requireDayCycle(registry).weather.defaultFogginess };
+const urlDefaults = {
+  look: defaults,
+  defaultWeather: requireDayCycle(registry).weather.defaults,
+  sunShadow: graphicsTuningOf(registry).sunShadow,
+};
 
 describe('the content default look', () => {
   it('requires complete mob presentation tuning and admits a mod-authored look', () => {

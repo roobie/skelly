@@ -7,7 +7,7 @@ import { runReport } from './site-never-spawn-report.mjs';
 const fixture = () => {
   const { registry } = buildRegistry([]);
   const site = 'fixture_site';
-  registry.layouts.set(site, { id: site, buildings: [], shamblers: [] });
+  registry.layouts.set(site, { id: site, buildings: [], actors: [] });
   for (const id of ['fixture_default_stock', 'fixture_alternate_stock']) {
     registry.items.set(id, {
       id,

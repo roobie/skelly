@@ -11,7 +11,7 @@ describe('look settings dump', () => {
       wideOcclusion: true,
       mood: { post: true, bloom: false, film: true, grade: 0.700_000_000_1, bloomClip: null },
       bloomClip: 2.000_000_000_3,
-      fogginess: 0.300_000_000_4,
+      weather: { fogginess: 0.300_000_000_4, cloudiness: 0.600_000_000_1, rain: 0 },
       torch: 1.560_000_000_2,
       shadows: { sun: true, torch: false, distance: 64 },
       performance: {
@@ -49,6 +49,8 @@ describe('look settings dump', () => {
         film: true,
         gradeStrength: 0.7,
         fogginess: 0.3,
+        cloudiness: 0.6,
+        rain: 0,
         flashlightStrength: 1.56,
         shadows: { sun: true, flashlight: false, distanceM: 64 },
         gameTime: 'Day 2, 12:00',

@@ -41,6 +41,7 @@ export class Input {
   private readonly cancelOnBlurAllowed: () => boolean;
   private readonly viewerInputAllowed: () => boolean;
   private mouseLookOverride: ((movementX: number, movementY: number) => boolean) | undefined;
+  private heldUseOverride: { press: (at: number) => boolean; release: (at: number) => void } | undefined;
   private lookSensitivity: { base: number; appliedPower: () => number } | undefined;
   constructor(
     target: HTMLElement,
@@ -81,7 +82,8 @@ export class Input {
         !controls.dominantUseHeld &&
         this.locked &&
         !this.menuPointer &&
-        this.dominantUseAllowed()
+        this.dominantUseAllowed() &&
+        !this.heldUseOverride?.press(mouse.timeStamp)
       ) {
         controls.pressDominantUse();
       }
@@ -97,6 +99,7 @@ export class Input {
         controls.releaseRightMouse();
       }
       if (button === 0) {
+        this.heldUseOverride?.release(mouse.timeStamp);
         controls.releaseDominantUse();
       }
     });
@@ -130,6 +133,10 @@ export class Input {
   }
   setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
     this.mouseLookOverride = override;
+  }
+  /** Lets the held item's action press take the dominant use; a press it refuses stays the ordinary use. */
+  setHeldUseOverride(override: { press: (at: number) => boolean; release: (at: number) => void }): void {
+    this.heldUseOverride = override;
   }
   setLookSensitivity(base: number, appliedPower: () => number): void {
     this.lookSensitivity = { base, appliedPower };

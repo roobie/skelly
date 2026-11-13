@@ -1,6 +1,12 @@
 {
   "layouts": [
     {
+      "actors": [
+        {
+          "position": [-8, 21, 14],
+          "type": "amalgam"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -652,12 +658,6 @@
         "bearing": 90,
         "position": [-7.5, 21.5, -0.5]
       },
-      "shamblers": [
-        {
-          "position": [-8, 21, 14],
-          "type": "amalgam"
-        }
-      ],
       "showroom": {
         "capacity": 3,
         "catalogue": {
@@ -967,6 +967,12 @@
       ]
     },
     {
+      "actors": [
+        {
+          "position": [-8, 21, 14],
+          "type": "amalgam"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -1618,12 +1624,6 @@
         "bearing": 270,
         "position": [-1, 21, 14]
       },
-      "shamblers": [
-        {
-          "position": [-8, 21, 14],
-          "type": "amalgam"
-        }
-      ],
       "showroom": {
         "capacity": 3,
         "catalogue": {
@@ -1933,6 +1933,12 @@
       ]
     },
     {
+      "actors": [
+        {
+          "position": [-8, 21, 14],
+          "type": "amalgam"
+        }
+      ],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,

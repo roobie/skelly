@@ -1,18 +1,69 @@
 import type { WeatherTuning } from '@skelly/engine/internal/core/weather.ts';
-import { clampFogginess, skyAt as skyAtCycle, skyInWeather as skyInWeatherTuned } from '@skelly/engine/sky';
+import {
+  clampWeatherLevel,
+  type Rgb,
+  type Sky,
+  skyAt as skyAtCycle,
+  skyInWeather as skyInWeatherTuned,
+  type Weather,
+} from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 const skyAt = (hour: number) => skyAtCycle(hour, BASE_DAY_CYCLE);
-const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
-const skyInWeather = (
-  sky: ReturnType<typeof skyAt>,
-  weather: { fogginess: number },
-  tuning: WeatherTuning = BASE_DAY_CYCLE.weather,
-) => skyInWeatherTuned(sky, weather, tuning);
+const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaults.fogginess;
+const FAIR = BASE_DAY_CYCLE.weather.fair.cloudiness;
+/** The sky under `weather`, in fair weather where it names no level. */
+const skyInWeather = (sky: Sky, weather: Partial<Weather>, tuning: WeatherTuning = BASE_DAY_CYCLE.weather) =>
+  skyInWeatherTuned(sky, { fogginess: DEFAULT_FOGGINESS, cloudiness: FAIR, rain: 0, ...weather }, tuning);
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i / 2);
 const STEPS = [0, 0.1, 0.2, 0.3, 0.5, 0.8, 1];
+const NOON = phaseMidpoint('day') / 3600;
+
+/** The sky with its fog values zeroed, so what else a weather state moved shows by comparison. */
+const withoutFog = (sky: Sky): Sky => ({ ...sky, fogNear: 0, fogFar: 0, heightFog: 0 });
+
+/** How far a colour is from grey. */
+const chroma = (colour: Rgb): number => Math.max(...colour) - Math.min(...colour);
+
+/** The values cloudiness and rain move, each oriented so overcast never makes it smaller. */
+const overcastSigns = (sky: Sky): number[] => [
+  sky.dome.clouds.cover,
+  sky.dome.clouds.opacity,
+  -sky.dome.physical.weight,
+  -sky.dome.sun.brightness,
+  -sky.dome.sun.glow,
+  -sky.dome.moon.brightness,
+  -sky.dome.stars,
+  -sky.lightIntensity,
+  -sky.ambientIntensity,
+  -chroma(sky.dome.zenith),
+  -chroma(sky.dome.horizonGlow),
+  -chroma(sky.sky),
+];
+
+/** The values outside their range: fractions and colour channels outside [0, 1], brightnesses below 0. */
+const outOfRange = (sky: Sky): number[] => {
+  const fractions = [
+    sky.dome.clouds.cover,
+    sky.dome.clouds.opacity,
+    sky.dome.physical.weight,
+    ...sky.sky,
+    ...sky.heightFogColor,
+    ...sky.dome.zenith,
+    ...sky.dome.horizonGlow,
+  ];
+  const brightnesses = [
+    sky.dome.sun.brightness,
+    sky.dome.sun.glow,
+    sky.dome.moon.brightness,
+    sky.dome.stars,
+    sky.lightIntensity,
+    sky.ambientIntensity,
+  ];
+  return [...fractions.filter((value) => value < 0 || value > 1), ...brightnesses.filter((value) => value < 0)];
+};
 
 describe('fogginess in the sky', () => {
   it('is a light mist by default, at which the height fog is the keyframes own', () => {
@@ -59,33 +110,197 @@ describe('fogginess in the sky', () => {
   it('keeps dawn and night mistier than noon at the same fogginess', () => {
     const dawn = phaseMidpoint('dawn') / 3600;
     const night = phaseMidpoint('night') / 3600;
-    const noon = phaseMidpoint('day') / 3600;
     for (const fogginess of STEPS.filter((f) => f > 0)) {
       const mist = (hour: number) => skyInWeather(skyAt(hour), { fogginess }).heightFog;
-      expect(mist(dawn)).toBeGreaterThan(mist(noon));
-      expect(mist(night)).toBeGreaterThan(mist(noon));
+      expect(mist(dawn)).toBeGreaterThan(mist(NOON));
+      expect(mist(night)).toBeGreaterThan(mist(NOON));
       expect(skyInWeather(skyAt(night), { fogginess }).fogFar).toBeLessThan(
-        skyInWeather(skyAt(noon), { fogginess }).fogFar,
+        skyInWeather(skyAt(NOON), { fogginess }).fogFar,
       );
     }
   });
 
-  it('changes only the fog, not the light, the colours or the bloom', () => {
+  it('changes only the fog when dry and in fair weather', () => {
     const sky = skyAt(18);
-    const foggy = skyInWeather(sky, { fogginess: 0.9 });
-    expect({ ...foggy, fogNear: 0, fogFar: 0, heightFog: 0 }).toEqual({ ...sky, fogNear: 0, fogFar: 0, heightFog: 0 });
+    expect(withoutFog(skyInWeather(sky, { fogginess: 0.9 }))).toEqual(withoutFog(sky));
   });
 });
 
-describe('fogginess steps', () => {
-  it('rounds to a tenth and clamps to 0..1', () => {
-    expect(clampFogginess(0.300_000_000_000_000_04)).toBe(0.3);
-    expect(clampFogginess(1.04)).toBe(1);
-    expect(clampFogginess(-0.3)).toBe(0);
-    let fogginess = 0.2;
-    for (let i = 0; i < 7; i++) {
-      fogginess = clampFogginess(fogginess + 0.1);
+describe('cloudiness and rain in the sky', () => {
+  it('leaves a saturated sky exactly as it is in fair weather without rain', () => {
+    const saturated: Rgb = [0.8, 0.35, 0.15];
+    const base = skyAt(NOON);
+    const sky: Sky = { ...base, sky: saturated, dome: { ...base.dome, zenith: saturated, horizonGlow: saturated } };
+    expect(withoutFog(skyInWeather(sky, {}))).toEqual(withoutFog(sky));
+  });
+
+  it('clears every cloud at cloudiness 0 and moves nothing else', () => {
+    for (const hour of HOURS) {
+      const sky = skyAt(hour);
+      const clear = withoutFog(skyInWeather(sky, { cloudiness: 0 }));
+      expect(clear.dome.clouds.cover).toBe(0);
+      const cloudless = { ...sky.dome, clouds: { ...sky.dome.clouds, cover: 0 } };
+      expect(clear).toEqual(withoutFog({ ...sky, dome: cloudless }));
     }
-    expect(fogginess).toBe(0.9);
+  });
+
+  it('never moves the fog, the tone or the bloom', () => {
+    for (const hour of HOURS) {
+      const sky = skyAt(hour);
+      const dry = skyInWeather(sky, {});
+      const wet = skyInWeather(sky, { cloudiness: 1, rain: 1 });
+      const unmoved = ({ fogNear, fogFar, heightFog, tone, bloom }: Sky) => ({
+        fogNear,
+        fogFar,
+        heightFog,
+        tone,
+        bloom,
+      });
+      expect(unmoved(wet)).toEqual(unmoved(dry));
+    }
+  });
+
+  it('moves the sky one way only as either rises: more cloud, less physical sky, sky lights and light, greyer colours', () => {
+    for (const hour of HOURS) {
+      for (const state of ['cloudiness', 'rain'] as const) {
+        const signs = STEPS.map((level) => overcastSigns(skyInWeather(skyAt(hour), { [state]: level })));
+        for (let i = 1; i < signs.length; i++) {
+          signs[i]!.forEach((value, index) => {
+            expect(value).toBeGreaterThanOrEqual(signs[i - 1]![index]! - 1e-12);
+          });
+        }
+      }
+    }
+  });
+
+  it('turns a fair noon overcast: more cloud, less physical sky and sun, dimmer lights and a greyer zenith', () => {
+    const clear = skyInWeather(skyAt(NOON), {});
+    const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
+    expect(overcast.dome.clouds.cover).toBeGreaterThan(clear.dome.clouds.cover);
+    expect(overcast.dome.physical.weight).toBeLessThan(clear.dome.physical.weight);
+    expect(overcast.dome.sun.brightness).toBeLessThan(clear.dome.sun.brightness);
+    expect(overcast.lightIntensity).toBeLessThan(clear.lightIntensity);
+    expect(overcast.ambientIntensity).toBeLessThan(clear.ambientIntensity);
+    expect(chroma(overcast.dome.zenith)).toBeLessThan(chroma(clear.dome.zenith));
+  });
+
+  it('darkens a noon overcast further when it rains: dimmer lights and a darker zenith', () => {
+    const overcast = skyInWeather(skyAt(NOON), { cloudiness: 1 });
+    const rain = skyInWeather(skyAt(NOON), { rain: 1 });
+    const sum = (colour: Rgb) => colour[0] + colour[1] + colour[2];
+    expect(rain.lightIntensity).toBeLessThan(overcast.lightIntensity);
+    expect(rain.ambientIntensity).toBeLessThan(overcast.ambientIntensity);
+    expect(sum(rain.dome.zenith)).toBeLessThan(sum(overcast.dome.zenith));
+  });
+
+  it('dims the moon and the stars by the same share as the sun, and leaves them all in fair weather', () => {
+    const base = skyAt(phaseMidpoint('night') / 3600);
+    const lit: Sky = {
+      ...base,
+      dome: {
+        ...base.dome,
+        stars: 1,
+        moon: { ...base.dome.moon, brightness: 1 },
+        sun: { ...base.dome.sun, brightness: 1, glow: 1 },
+      },
+    };
+    const lights = ({ dome }: Sky) => [dome.sun.brightness, dome.sun.glow, dome.moon.brightness, dome.stars];
+    expect(lights(skyInWeather(lit, {}))).toEqual([1, 1, 1, 1]);
+    const rain = lights(skyInWeather(lit, { rain: 1 }));
+    expect(rain[0]).toBeLessThan(1);
+    expect(rain).toEqual([rain[0], rain[0], rain[0], rain[0]]);
+  });
+
+  it('brings its own level of overcast above fair weather with rain, at least as much as the same cloudiness', () => {
+    for (const hour of HOURS) {
+      for (const level of STEPS) {
+        const rain = skyInWeather(skyAt(hour), { rain: level });
+        const brought = FAIR + level * (1 - FAIR);
+        for (const cloudiness of level > 0 ? [0, FAIR, brought] : [FAIR]) {
+          expect(skyInWeather(skyAt(hour), { cloudiness, rain: level })).toEqual(rain);
+        }
+        const cloudy = overcastSigns(skyInWeather(skyAt(hour), { cloudiness: level }));
+        overcastSigns(rain).forEach((value, index) => {
+          expect(value).toBeGreaterThanOrEqual(cloudy[index]! - 1e-12);
+        });
+      }
+    }
+  });
+
+  it('keeps every value in its range under any levels and the strongest tuning', () => {
+    const strongest: WeatherTuning['rain'] = {
+      kind: 'layered',
+      clouds: { cover: 1, opacity: 1 },
+      physicalWeight: 0,
+      skyLights: 0,
+      light: 0,
+      ambient: 0,
+      skyColour: { saturation: 0, brightness: 0 },
+    };
+    const tunings = [
+      BASE_DAY_CYCLE.weather,
+      {
+        ...BASE_DAY_CYCLE.weather,
+        cloudy: { ...strongest, cloudiness: BASE_DAY_CYCLE.weather.cloudy.cloudiness },
+        overcast: strongest,
+        rain: strongest,
+      },
+    ];
+    const cases = tunings.flatMap((tuning) =>
+      HOURS.flatMap((hour) => [...STEPS, -3, 7].map((level) => ({ tuning, hour, level }))),
+    );
+    for (const { tuning, hour, level } of cases) {
+      expect(outOfRange(skyInWeather(skyAt(hour), { cloudiness: level, rain: level }, tuning))).toEqual([]);
+    }
+  });
+});
+
+describe('the kind of cloud in the weather', () => {
+  /** Fair and overcast skies of the layered kind with a cloudy sky of the scatter kind between them. */
+  const tuning: WeatherTuning = {
+    ...BASE_DAY_CYCLE.weather,
+    fair: { cloudiness: 0.2, kind: 'layered' },
+    cloudy: { ...BASE_DAY_CYCLE.weather.cloudy, cloudiness: 0.6, kind: 'scatter' },
+    overcast: { ...BASE_DAY_CYCLE.weather.overcast, kind: 'layered' },
+    rain: { ...BASE_DAY_CYCLE.weather.rain, kind: 'layered' },
+  };
+  const scatterAt = (weather: Partial<Weather>): number =>
+    skyInWeather(skyAt(NOON), { cloudiness: 0.2, ...weather }, tuning).dome.clouds.scatter;
+
+  it("shows each state's own kind at its cloudiness and blends the kinds' shares between them", () => {
+    expect([0, 0.2, 0.6, 1].map((cloudiness) => scatterAt({ cloudiness }))).toEqual([0, 0, 1, 0]);
+    expect(scatterAt({ cloudiness: 0.4 })).toBeCloseTo(0.5, 12);
+    expect(scatterAt({ cloudiness: 0.8 })).toBeCloseTo(0.5, 12);
+  });
+
+  it("moves to the rain's kind by the rain's level", () => {
+    expect(scatterAt({ cloudiness: 0.6, rain: 0.5 })).toBeCloseTo(0.5, 12);
+  });
+
+  it('leaves no step in the sky where the cloudy state hands over to overcast', () => {
+    const leaves = (value: unknown): number[] => {
+      if (typeof value === 'number') {
+        return [value];
+      }
+      return typeof value === 'object' ? Object.values(value as object).flatMap(leaves) : [];
+    };
+    const near = (cloudiness: number) => leaves(skyInWeather(skyAt(NOON), { cloudiness }, tuning));
+    const [below, above] = [near(0.6 - 1e-9), near(0.6 + 1e-9)];
+    below.forEach((value, index) => {
+      expect(value).toBeCloseTo(above[index]!, 6);
+    });
+  });
+});
+
+describe('weather level steps', () => {
+  it('rounds to a tenth and clamps to 0..1', () => {
+    expect(clampWeatherLevel(0.300_000_000_000_000_04)).toBe(0.3);
+    expect(clampWeatherLevel(1.04)).toBe(1);
+    expect(clampWeatherLevel(-0.3)).toBe(0);
+    let level = 0.2;
+    for (let i = 0; i < 7; i++) {
+      level = clampWeatherLevel(level + 0.1);
+    }
+    expect(level).toBe(0.9);
   });
 });

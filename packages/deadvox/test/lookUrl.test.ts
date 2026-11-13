@@ -1,18 +1,12 @@
-import {
-  BLOOM_CLIP_BY_TONE,
-  MAX_EXPOSURE,
-  MIN_BLOOM_CLIP,
-  MIN_EXPOSURE,
-  SHADOW_DISTANCES,
-} from '@skelly/engine/internal/core/mood.ts';
+import { BLOOM_CLIP_BY_TONE, MAX_EXPOSURE, MIN_BLOOM_CLIP, MIN_EXPOSURE } from '@skelly/engine/internal/core/mood.ts';
 import {
   bloomClipFor,
   clampBloomClip,
   clampExposure,
   clampShadowDistance,
   clampTorch,
-  DEFAULT_SHADOWS,
   DEFAULT_TORCH,
+  defaultShadows,
   type LookDefaults,
   lookOf,
   moodOf,
@@ -34,7 +28,7 @@ import type { HashState } from '../src/hashState.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-import { LOOK_FIXTURE } from './lookFixture.ts';
+import { LOOK_FIXTURE, SUN_SHADOW_FIXTURE } from './lookFixture.ts';
 
 // Every switch off, against the parser's "on unless false" reading, and the exposure inside the clamp range, so a
 // parser that ignores the given default for a switch or an exposure fails instead of passing by coincidence.
@@ -48,8 +42,11 @@ const URL_LOOK: LookDefaults = {
   bloom: false,
   film: false,
 };
-const DEFAULT_FOGGINESS = BASE_DAY_CYCLE.weather.defaultFogginess;
-const URL_DEFAULTS = { look: URL_LOOK, defaultFogginess: DEFAULT_FOGGINESS };
+const DEFAULT_WEATHER = BASE_DAY_CYCLE.weather.defaults;
+const URL_DEFAULTS = { look: URL_LOOK, defaultWeather: DEFAULT_WEATHER, sunShadow: SUN_SHADOW_FIXTURE };
+const DEFAULT_SHADOWS = defaultShadows(SUN_SHADOW_FIXTURE);
+const SHADOW_DISTANCES = SUN_SHADOW_FIXTURE.debugReachMetres;
+const weatherFixture = () => ({ fogginess: 0.2, cloudiness: 0, rain: 0 });
 const DEFAULT_LOOK_URL_STATE = defaultLookUrlState(URL_DEFAULTS);
 const parse = (hash: HashState) => parseLookParams(hash, URL_DEFAULTS);
 const write = (hash: HashState, state: LookUrlState) => writeLookParams(hash, state, URL_DEFAULTS);
@@ -69,7 +66,7 @@ const CHANGED_STATE: LookUrlState = {
   film: true,
   grade: 0.6,
   bloomClip: 3.5,
-  fogginess: 0.7,
+  weather: { fogginess: 0.7, cloudiness: 0.4, rain: 0.9 },
   torch: 1.56,
   shadows: { sun: false, torch: false, distance: 64 },
   crackCheck: true,
@@ -96,7 +93,7 @@ describe('look hash keys', () => {
       ...lookOf(URL_LOOK),
       ...moodOf(URL_LOOK),
       freeze: false,
-      fogginess: DEFAULT_FOGGINESS,
+      weather: DEFAULT_WEATHER,
       torch: DEFAULT_TORCH,
       shadows: DEFAULT_SHADOWS,
       crackCheck: false,
@@ -145,7 +142,7 @@ describe('look hash keys', () => {
       expect(distance(stop)).toBe(stop);
     }
     for (const raw of [33.6, 1, -50, 500, 5000]) {
-      expect(distance(raw)).toBe(clampShadowDistance(raw));
+      expect(distance(raw)).toBe(clampShadowDistance(raw, SUN_SHADOW_FIXTURE));
       expect(Number.isInteger(distance(raw))).toBe(true);
     }
     expect(distance(1)).toBeGreaterThan(1);
@@ -169,7 +166,7 @@ describe('look hash keys', () => {
     expect(write({}, { ...DEFAULT_LOOK_URL_STATE, srgb: true })).toEqual({ srgb: true });
     expect(write({}, { ...DEFAULT_LOOK_URL_STATE, tone: 'none' })).toEqual({ tone: 'none' });
     expect(write({}, { ...DEFAULT_LOOK_URL_STATE, exposure: 1 })).toEqual({ exposure: 1 });
-    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, fogginess: 0 })).toEqual({ fog: 0 });
+    expect(write({}, { ...DEFAULT_LOOK_URL_STATE, weather: { ...DEFAULT_WEATHER, fogginess: 0 } })).toEqual({ fog: 0 });
     // Other values for the defaulted keys are dropped when the state is the default.
     expect(write({ debug: true, tone: 'auto', exposure: 3, fog: 0.2, grade: 1 }, DEFAULT_LOOK_URL_STATE)).toEqual({
       debug: true,
@@ -259,11 +256,12 @@ describe('look hash keys', () => {
     expect(write({}, { ...DEFAULT_LOOK_URL_STATE, torch: 4 })).toEqual({ torch: 4 });
   });
 
-  it('clamps fogginess to 0..1 in tenths', () => {
-    expect(parse({ fog: 0 }).fogginess).toBe(0);
-    expect(parse({ fog: 0.34 }).fogginess).toBe(0.3);
-    expect(parse({ fog: 7 }).fogginess).toBe(1);
-    expect(parse({ fog: -1 }).fogginess).toBe(0);
+  it('clamps each weather level to 0..1 in tenths', () => {
+    const levels = (value: number) => parse({ fog: value, clouds: value, rain: value }).weather;
+    expect(levels(0)).toEqual({ fogginess: 0, cloudiness: 0, rain: 0 });
+    expect(levels(0.34)).toEqual({ fogginess: 0.3, cloudiness: 0.3, rain: 0.3 });
+    expect(levels(7)).toEqual({ fogginess: 1, cloudiness: 1, rain: 1 });
+    expect(levels(-1)).toEqual({ fogginess: 0, cloudiness: 0, rain: 0 });
   });
 
   it('reads colour decode from srgb, else the given default', () => {
@@ -313,6 +311,8 @@ describe('look hash keys', () => {
         exposure: Number.NaN,
         grade: Number.NaN,
         fog: Number.NaN,
+        clouds: Number.NaN,
+        rain: Number.NaN,
         bloomclip: Number.NaN,
         torch: Number.NaN,
         shadowdist: Number.NaN,
@@ -362,7 +362,8 @@ describe('restoring look controls from URL state', () => {
   it('takes the parsed tone, exposure, colour decode and patterns', () => {
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       defaults: URL_LOOK,
-      weather: { fogginess: 0.2 },
+      sunShadow: SUN_SHADOW_FIXTURE,
+      weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
@@ -376,19 +377,20 @@ describe('restoring look controls from URL state', () => {
     ]);
   });
 
-  it('takes the parsed mood pass and fogginess', () => {
+  it('takes the parsed mood pass and weather', () => {
     const mood = new FakeMood();
-    const weather = { fogginess: 0.2 };
+    const weather = weatherFixture();
     const look = new LookControls(renderer, meshes, mood, {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather,
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
-    look.restore(parse({ post: false, bloom: false, film: false, grade: 0.5, fog: 0.6 }));
+    look.restore(parse({ post: false, bloom: false, film: false, grade: 0.5, fog: 0.6, clouds: 0.8, rain: 0.3 }));
     expect(look.moodState).toEqual({ post: false, bloom: false, film: false, grade: 0.5, bloomClip: null });
     expect(mood.grade).toBe(0.5);
-    expect(weather.fogginess).toBe(0.6);
+    expect(weather).toEqual({ fogginess: 0.6, cloudiness: 0.8, rain: 0.3 });
   });
 
   it('takes the parsed bloom clip and flashlight strength, and steps them in direction up to their clamps', () => {
@@ -397,7 +399,8 @@ describe('restoring look controls from URL state', () => {
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, mood, {
       defaults: URL_LOOK,
-      weather: { fogginess: 0.2 },
+      sunShadow: SUN_SHADOW_FIXTURE,
+      weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight,
     });
@@ -445,7 +448,8 @@ describe('restoring look controls from URL state', () => {
     const mood = new FakeMood();
     const look = new LookControls(renderer, meshes, mood, {
       defaults: URL_LOOK,
-      weather: { fogginess: 0.2 },
+      sunShadow: SUN_SHADOW_FIXTURE,
+      weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
@@ -462,7 +466,8 @@ describe('restoring look controls from URL state', () => {
     const shadows = new FakeShadows();
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       defaults: URL_LOOK,
-      weather: { fogginess: 0.2 },
+      sunShadow: SUN_SHADOW_FIXTURE,
+      weather: weatherFixture(),
       shadows,
       flashlight: { strength: 1 },
     });
@@ -475,7 +480,8 @@ describe('restoring look controls from URL state', () => {
     const game = { toneMapping: ACESFilmicToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, new FakeMood(), {
       defaults: URL_LOOK,
-      weather: { fogginess: 0.2 },
+      sunShadow: SUN_SHADOW_FIXTURE,
+      weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
@@ -494,7 +500,8 @@ describe('restoring look controls from URL state', () => {
     const game = { toneMapping: CustomToneMapping, toneMappingExposure: 3 };
     const look = new LookControls(game, meshes, mood, {
       defaults: URL_LOOK,
-      weather: { fogginess: 0.2 },
+      sunShadow: SUN_SHADOW_FIXTURE,
+      weather: weatherFixture(),
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },
     });
@@ -514,9 +521,10 @@ describe('restoring look controls from URL state', () => {
   });
 
   it('steps fogginess within 0..1 and back to where it started', () => {
-    const weather = { fogginess: 0.2 };
+    const weather = weatherFixture();
     const look = new LookControls(renderer, meshes, new FakeMood(), {
       defaults: URL_LOOK,
+      sunShadow: SUN_SHADOW_FIXTURE,
       weather,
       shadows: new FakeShadows(),
       flashlight: { strength: 1 },

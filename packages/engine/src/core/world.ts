@@ -82,6 +82,23 @@ export class World {
   private readonly touched = new Set<string>();
   /** Saved form of touched columns unchanged since it was built, so a save re-encodes only changed columns. */
   private readonly encoded = new Map<string, Readonly<SavedColumn>>();
+  private readonly watchers = new Set<(cx: number, cy: number, cz: number) => void>();
+
+  /**
+   * Calls `changed` with each chunk whose blocks change, at every change that bumps `version`, so a cache can drop
+   * only what reads that chunk. Returns the unsubscribe.
+   */
+  watchChunks(changed: (cx: number, cy: number, cz: number) => void): () => void {
+    this.watchers.add(changed);
+    return () => this.watchers.delete(changed);
+  }
+
+  private changed(cx: number, cy: number, cz: number): void {
+    this.version += 1;
+    for (const watcher of this.watchers) {
+      watcher(cx, cy, cz);
+    }
+  }
 
   getChunk(cx: number, cy: number, cz: number): Chunk | undefined {
     return this.chunks.get(chunkKey(cx, cy, cz));
@@ -95,7 +112,7 @@ export class World {
     }
     this.chunks.set(key, chunk);
     this.encoded.delete(column);
-    this.version += 1;
+    this.changed(chunk.cx, chunk.cy, chunk.cz);
   }
 
   removeChunk(cx: number, cy: number, cz: number): void {
@@ -108,7 +125,7 @@ export class World {
         this.columnChunks.set(column, remaining);
       }
       this.encoded.delete(column);
-      this.version += 1;
+      this.changed(cx, cy, cz);
     }
   }
 
@@ -186,7 +203,7 @@ export class World {
       const column = columnKey(cx, cz);
       this.touched.add(column);
       this.encoded.delete(column);
-      this.version += 1;
+      this.changed(cx, cy, cz);
     }
     return affectedChunks(x, y, z);
   }

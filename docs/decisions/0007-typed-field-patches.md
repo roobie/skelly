@@ -7,6 +7,7 @@ read_if:
   - you write a mod that needs one value of a base or other mod's entry changed
   - you schedule field-patch implementation or the mod tool's editing prerequisites
   - you integrate product and theme mods through declared overrides
+  - you change which pack supplies the default start
 tags: [deadvox, adr, mods, content, schema, validation]
 ---
 
@@ -91,6 +92,14 @@ place where two mods claim one thing. The declaration is needed as well, because
 alone lets a mod overwrite its owner's value by accident with nothing to flag it. Declaring each
 override makes it deliberate and checkable at load, and failing closed stops a silent change
 from reaching play.
+
+A pack's `defaultStart` is an address under the same override rule, not an exception
+selected by load order; see `packages/engine/src/core/packAdmission.ts`, `admitPacks`.
+A start pack depends on the product it starts and declares its override there, because
+choosing a start must be as deliberate and checkable as changing any other value.
+Shipping alternative opt-ins does not require them to coexist: build proofs cover each
+selection with the defaults, while admission still rejects conflicting selections.
+See `packages/deadvox/tools/readBundledPacks.ts`, `admittedSelections`.
 
 **Growth.** A new operation is added by decision, when a need cannot be stated with the existing
 ones. Each must declare whether it commutes or overrides against every existing operation, so

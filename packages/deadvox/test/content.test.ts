@@ -381,7 +381,7 @@ describe('content', () => {
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
-      layout.shamblers.some(({ type }) => type === soldier.id) ? [layout] : [],
+      layout.actors.some(({ type }) => type === soldier.id) ? [layout] : [],
     );
     const soldierSite = (id: string) => id.startsWith('camp_') || id.startsWith('crisis_hq');
     expect(templateSpawns.some((id) => id.startsWith('camp_'))).toBe(true);
@@ -437,6 +437,20 @@ describe('content', () => {
     expect(issuesFor(swapped)).toContainEqual(expect.stringContaining('keys[2].at'));
     expect(issuesFor(sharedInstant)).toContainEqual(expect.stringContaining('keys[4].at'));
     expect(issuesFor(wrapped)).toContainEqual(expect.stringContaining(`keys[${keys.length}].at`));
+  });
+
+  it('rejects weather cloud-kind thresholds that fall instead of rising from fair to cloudy', () => {
+    const { weather } = rawBaseDayCycle.dayCycle;
+    const withThresholds = (fair: number, cloudy: number) => ({
+      ...rawBaseDayCycle.dayCycle,
+      weather: {
+        ...weather,
+        fair: { ...weather.fair, cloudiness: fair },
+        cloudy: { ...weather.cloudy, cloudiness: cloudy },
+      },
+    });
+    expect(safeParse(DayCycleSchema, withThresholds(0.2, 0.6)).success).toBe(true);
+    expect(safeParse(DayCycleSchema, withThresholds(0.6, 0.2)).success).toBe(false);
   });
 
   it('keeps input instructions out of item descriptions', () => {
@@ -1083,6 +1097,44 @@ describe('content', () => {
     });
   });
 
+  it("checks a piece's take-apart yield references and admits exactly one take-apart route", () => {
+    const source = 'take-apart-fixture.json';
+    const takeApart = (item: string) => ({
+      yield: {
+        timeGameMinutes: 1,
+        skill: 'crafting',
+        yields: [{ item, count: 2, fractions: [0.5, 1], rounding: 'floor' }],
+      },
+    });
+    const data = (route: object) => ({
+      items: [{ id: 'fixture_offcut', name: 'Offcut', category: 'material', weight: 1, size: [1, 1] }],
+      furniture: [
+        {
+          id: 'fixture_piece',
+          name: 'Piece',
+          size: [1, 1, 1],
+          color: '#123456',
+          massKg: 5,
+          breach: fixtureBreach(),
+          material: FIXTURE_MATERIAL,
+          takeApart: route,
+        },
+      ],
+    });
+    expect(buildRegistry([{ source, data: data(takeApart('fixture_offcut')) }]).issues).toEqual([]);
+    expect(buildRegistry([{ source, data: data(takeApart('fixture_missing')) }]).issues).toContainEqual({
+      source,
+      path: 'furniture[0].takeApart.yield.yields[0].item',
+      message: 'no item "fixture_missing"',
+    });
+    const bothRoutes = buildRegistry([
+      { source, data: data({ ...takeApart('fixture_offcut'), parts: 'fixture_parts' }) },
+    ]);
+    expect(bothRoutes.registry.furniture.has('fixture_piece')).toBe(false);
+    const neitherRoute = buildRegistry([{ source, data: data({}) }]);
+    expect(neitherRoute.registry.furniture.has('fixture_piece')).toBe(false);
+  });
+
   it('keeps every sleep surface that is carried like a rug poorer than every fixed one', () => {
     const sleepers = [...baseRegistry.furniture.values()].filter((def) => def.rest?.sleep === true);
     const carried = sleepers.filter((def) => def.cover === true);
@@ -1289,7 +1341,7 @@ describe('content', () => {
         terrain: [],
         buildings: [{ template: 'shed', position: [0, 0, 0], rotation: 0 }],
         player: { position: [8, 0.5, 8], bearing: 0 },
-        shamblers: [],
+        actors: [],
         woodlands: [],
         tracks: [],
       },
@@ -2623,6 +2675,7 @@ describe('content references', () => {
       ...structuredClone(baseRegistry.furniture.get('crate')!),
       id: 'fixture_crate',
       material: FIXTURE_MATERIAL,
+      takeApart: undefined,
     };
     const [width, height, depth] = furniture.size;
     const template = {
@@ -3349,7 +3402,7 @@ describe('content', () => {
       { body: { ...body, model: 'fixture_missing_model' } },
       { body: { ...body, joints: { ...body.joints, leftHip: 'fixture_missing_anchor' } } },
       { limbs: { ...limbs, rightArm: { ...limbs.rightArm!, joint: 'fixture_missing_anchor' } } },
-      { armRig: { ...rig, fore: { ...rig.fore, part: 'fixture_missing_part' } } },
+      { armRig: { ...rig, fore: { ...rig.fore, parts: ['fixture_missing_part'] } } },
       { armRig: { ...rig, hand: { ...rig.hand, pivot: 'fixture_missing_anchor' } } },
       {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
@@ -3371,8 +3424,8 @@ describe('content', () => {
       'figures[1].body.model',
       'figures[2].body.joints.leftHip',
       'figures[3].limbs.rightArm.joint',
-      'figures[4].armRig.fore.part',
-      'figures[4].armRig.fore.part',
+      'figures[4].armRig.fore.parts[0]',
+      'figures[4].armRig.fore.parts[0]',
       'figures[5].armRig.hand.pivot',
       'figures[5].armRig.hand.pivot',
       'figures[6].armRig.shoulderFromEye',

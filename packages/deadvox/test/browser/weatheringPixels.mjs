@@ -19,15 +19,18 @@ const measureInPage = async (page) =>
           uWeatheringSplit: { value: 0 },
         },
         vertexShader: `
+#include <batching_pars_vertex>
 attribute float weatherable;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying float vWeatherable;
 void main() {
-  vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+#include <batching_vertex>
+  vec4 placed = batchingMatrix * vec4(position, 1.0);
+  vWorld = (modelMatrix * placed).xyz;
   vNormal = normalize(normal);
   vWeatherable = weatherable;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * placed;
 }`,
         fragmentShader: `
 precision highp float;
@@ -197,25 +200,26 @@ void main() {
       THREE: Three,
       boxes,
     });
-    const maskGroup = engine.meshes.group.clone(true);
-    maskGroup.traverse((object) => {
-      if (object.isMesh) {
-        object.material = maskMaterial;
-      }
-    });
-    const maskScene = new Three.Scene();
-    maskScene.add(maskGroup);
+    // The chunk batch redraws the chunks on screen, the main pass's, with the mask material in place of its own.
+    const { batch } = meshes;
+    const chunkMaterial = batch.material;
+    batch.material = maskMaterial;
     checkCamera('before masks');
-    const masks = renderMasks({
-      THREE: Three,
-      renderer: webglRenderer,
-      maskScene,
-      camera: activeCamera,
-      maskMaterial,
-      width: canvas.width,
-      height: canvas.height,
-      boxes,
-    });
+    let masks;
+    try {
+      masks = renderMasks({
+        THREE: Three,
+        renderer: webglRenderer,
+        maskScene: batch,
+        camera: activeCamera,
+        maskMaterial,
+        width: canvas.width,
+        height: canvas.height,
+        boxes,
+      });
+    } finally {
+      batch.material = chunkMaterial;
+    }
     const maskPixelCounts = masks.map((mask) => {
       let count = 0;
       for (let offset = 0; offset < mask.length; offset += 4) {
@@ -225,7 +229,8 @@ void main() {
       }
       return count;
     });
-    const meshBounds = new Three.Box3().setFromObject(maskGroup);
+    batch.computeBoundingBox();
+    const meshBounds = batch.boundingBox.clone().applyMatrix4(batch.matrixWorld);
     const buildingMask = maskReader(masks[0], canvas.width, canvas.height);
     const weatherableMask = maskReader(masks[1], canvas.width, canvas.height);
     const buildingPixels = [];

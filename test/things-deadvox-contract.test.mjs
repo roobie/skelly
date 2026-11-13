@@ -47,7 +47,7 @@ const figureParts = [...registry.figures.values()].flatMap((figure) => [
     return {
       model,
       joints: { [limb]: joint, grip: rig.grip, ...pivots },
-      parts: ARM_SEGMENTS.map((segment) => rig[segment].part),
+      parts: ARM_SEGMENTS.flatMap((segment) => rig[segment].parts),
     };
   }),
 ]);

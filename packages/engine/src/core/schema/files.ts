@@ -15,7 +15,15 @@ import { FigureSchema } from './figures.ts';
 import { FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
 import { GraphicsTuningSchema } from './graphics.ts';
 import { InventoryTuningSchema } from './inventory.ts';
-import { ItemSchema, LiquidSchema, MeleeClassSchema, type TreatmentSchema, VehicleBlueprintSchema } from './items.ts';
+import {
+  ItemSchema,
+  LiquidSchema,
+  MeleeClassSchema,
+  type RecoveryWorkSchema,
+  type TreatmentSchema,
+  VehicleBlueprintSchema,
+  VehicleFinishSchema,
+} from './items.ts';
 import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutSchema } from './layouts.ts';
 import { LookDefaultsSchema } from './look.ts';
 import { LootPolicySchema, LootTableSchema } from './loot.ts';
@@ -57,6 +65,7 @@ const SECTION_DESCRIPTOR = {
   itemEconomy: { schema: optional(array(ItemScarcitySchema)), label: 'item scarcity', order: 1.1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
+  vehicleFinishes: { schema: optional(array(VehicleFinishSchema)), label: 'vehicle finishes', order: 32.5 },
   vehicleBlueprints: { schema: optional(array(VehicleBlueprintSchema)), label: 'vehicle blueprints', order: 33 },
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
@@ -168,6 +177,8 @@ export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
+
+export type RecoveryWork = InferOutput<typeof RecoveryWorkSchema>;
 
 type LootTable = InferOutput<typeof LootTableSchema>;
 

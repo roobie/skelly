@@ -3,6 +3,7 @@ import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import {
   drugVignetteShown,
   GRAPHICS_KEYS,
+  type GraphicsKey,
   type GraphicsOptions,
   resolveGraphics,
   setGraphicsSetting,
@@ -39,6 +40,14 @@ const tuning: GraphicsOptions = {
   coarseWeathering: toggle('Fixture weather'),
   cachedSurfaceNoise: toggle('Fixture noise'),
   vehicleFinishes: toggle('Fixture finishes'),
+  msaaSamples: {
+    label: 'Fixture smoothing',
+    default: 4,
+    choices: [
+      { value: 0, label: 'Fixture off' },
+      { value: 4, label: 'Fixture four' },
+    ],
+  },
 };
 const source = (options: GraphicsOptions) => ({
   source: 'fixture-graphics.json',
@@ -48,12 +57,15 @@ const source = (options: GraphicsOptions) => ({
         id: fixtureIds.graphics,
         capability: 'graphics',
         ...fixtureGraphics,
+        viewRadiusM: 96,
         readyRadiusM: 16,
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,
+        fogCurveExponent: 1,
         itemPictureCacheCapacity: 2,
         itemPicture: { framing: 1.1 },
         modelLoadConcurrency: 2,
+        modelFetchRetry: { retries: 1, backoffRealSeconds: 1 },
         unbuiltSkyCap: 0.5,
         vehicleReflection: {
           cubeSize: 16,
@@ -64,8 +76,12 @@ const source = (options: GraphicsOptions) => ({
           horizonGain: 2,
           coatGrazing: 0.25,
         },
+        sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
         skyJobsInFlight: 2,
         skyPreloadRings: 1,
+        columnsPerFrame: 2,
+        terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },
+        furnitureSectorChunks: 1,
         itemViewer: {
           framing: 1,
           startYawDegrees: 0,
@@ -154,10 +170,17 @@ it('merges a graphics mod by row identity and requires graphics in a playable pa
   expect(requiredContentIssues(buildRegistry([]).registry).some(({ path }) => path === 'graphics')).toBe(true);
 });
 
+const explicitChoice = (option: GraphicsOptions[GraphicsKey]): number | boolean => {
+  if ('options' in option) {
+    return false;
+  }
+  return 'choices' in option ? option.choices[0]!.value : option.min;
+};
+
 it('resolves player over mod for every knob, including explicit false', () => {
   for (const key of GRAPHICS_KEYS) {
     const option = tuning[key];
-    const playerValue = 'options' in option ? false : option.min;
+    const playerValue = explicitChoice(option);
     expect(resolveGraphics(tuning)[key]).toBe(option.default);
     expect(resolveGraphics(tuning, { [key]: playerValue })[key]).toBe(playerValue);
   }
@@ -171,6 +194,14 @@ it('validated setters reject disallowed values without mutating the player choic
   expect(() => setGraphicsSetting(tuning, settings, 'renderScale', tuning.renderScale.max + 1)).toThrow(RangeError);
   const locked = { ...tuning, fastCamo: { ...tuning.fastCamo, options: [true] } };
   expect(() => setGraphicsSetting(locked, settings, 'fastCamo', false)).toThrow(RangeError);
+});
+
+it('a choice knob accepts only the content-listed values and ignores a stale stored one', () => {
+  const listed = tuning.msaaSamples.choices.map((choice) => choice.value);
+  const unlisted = Math.max(...listed) + 1;
+  expect(setGraphicsSetting(tuning, {}, 'msaaSamples', listed[0]!).msaaSamples).toBe(listed[0]);
+  expect(() => setGraphicsSetting(tuning, {}, 'msaaSamples', unlisted)).toThrow(RangeError);
+  expect(validGraphicsSettings(tuning, { msaaSamples: unlisted })).toEqual({});
 });
 
 it('applies all resolved knobs on startup and player changes', () => {

@@ -1,0 +1,16 @@
+{
+  "defaultStart": "holdout",
+  "dependencies": ["skelly.deadvox", "skelly.deadvox.scenario.holdout"],
+  "files": [],
+  "id": "skelly.deadvox.scenario.holdout.play",
+  "optIn": true,
+  "overrides": [
+    {
+      "entry": "defaultStart",
+      "pack": "skelly.deadvox"
+    }
+  ],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

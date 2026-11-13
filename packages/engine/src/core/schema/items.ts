@@ -1,3 +1,4 @@
+import { MaterialSchema } from '@skelly/thing-core/materials';
 import { ModelPointSchema } from '@skelly/thing-core/schema';
 import {
   array,
@@ -629,12 +630,17 @@ const DisassemblyYieldSchema = strictObject({
   ...LiquidRecoverySchema.entries,
 });
 
-const DisassemblySchema = strictObject({
+/** Taking a whole thing apart, an item or a furniture piece, so both scale their yields by one rule. */
+export const RecoveryWorkSchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   /** Mechanism role; the provider's skill scales the yields, and a role with no provider adds no requirement. */
   skill: capabilitySelection('skills'),
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
+});
+
+const DisassemblySchema = strictObject({
+  ...RecoveryWorkSchema.entries,
   liquidRecovery: optional(LiquidRecoverySchema),
 });
 
@@ -853,7 +859,11 @@ export const ItemSchema = strictObject({
       /** Channel-specific blockers; a physical fitting need not hide, shade, hear or stop a strike. */
       obstruction: strictObject({
         sight: vBoolean(),
-        light: vBoolean(),
+        /**
+         * The share of diffuse sky light each of the part's cells stops; any share blocks direct light. A part's
+         * cells are coarse and mostly air around thin panels, so only content can say how much sky gets past.
+         */
+        light: Fraction,
         sound: vBoolean(),
         combat: vBoolean(),
       }),
@@ -875,18 +885,26 @@ export const ItemSchema = strictObject({
   ),
 });
 
+/** Library material names carry hyphens, unlike content ids. */
+const FinishId = pipe(string(), nonEmpty('must not be empty'));
+
+/** One paint in the finish library: a whole model material, so a mod's entry can use all a model's material can. */
+export const VehicleFinishSchema = strictObject({ id: FinishId, ...MaterialSchema.entries });
+
 const VehicleFittingSchema = strictObject({
   id: Id,
   /** An item with a `vehicle` block. */
   part: Id,
-  /** Where the part's model origin sits, in vehicle metres: x forward, y up, z toward the near side. */
+  /** Where the part's model origin sits, in the model frame's metres: z forward, y up, the near side at -x. */
   at: ModelPointSchema,
-  /** Reflected across z about `at`: the other side's placement of an unhanded part. */
+  /** Reflected across x about `at`: the other side's placement of an unhanded part. */
   mirror: optional(literal(true)),
   /** Every fitting it rests on; an authored structural choice, not inferred from contact. */
   supportedBy: array(Id),
-  /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
+  /** A factory cargo space's size in inventory cells along x, y and z; its pocket is z by x. */
   cargo: optional(tuple([Cells, Cells, Cells])),
+  /** The `vehicleFinishes` entry this copy of the part is painted when the vehicle spawns; the part owns it after. */
+  finish: optional(FinishId),
   /** Overrides the part's work requirements at this authored site. */
   service: optional(
     strictObject({

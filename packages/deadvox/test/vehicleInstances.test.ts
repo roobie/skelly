@@ -7,6 +7,7 @@ import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { IDLE } from '@skelly/engine/session';
 import { registerLayoutVehicles, terrainShapeOf, toChunk } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
+import { terrainFor } from './fixtures/terrain.ts';
 import {
   advance,
   capture,
@@ -152,6 +153,50 @@ describe('production vehicle ownership', () => {
     expect(inventory.vehicles.snapshotState()).toEqual(before.world.vehicles);
   });
 
+  it('keeps a part’s finish on its own copy through a save, fitted and removed loose', async () => {
+    const hatchback = registry.vehicleBlueprints.get('hatchback')!;
+    const finish = [...registry.vehicleFinishes.keys()][0]!;
+    const painted = new Set(['front_wheel_near', 'door_mirror_far']);
+    registry.vehicleBlueprints.set('fixture_painted', {
+      ...hatchback,
+      id: 'fixture_painted',
+      fittings: hatchback.fittings.map((fitting) => (painted.has(fitting.id) ? { ...fitting, finish } : fitting)),
+    });
+    try {
+      const runtime = createRuntime();
+      const { inventory } = runtime;
+      inventory.canReach = () => true;
+      inventory.canReachVehicle = () => true;
+      const [x, y, z] = runtime.player.body.pos;
+      const id = inventory.registerVehicle({
+        placementKey: 'fixture.painted',
+        blueprint: 'fixture_painted',
+        origin: [x + 1, y, z],
+        facing: 'n',
+      });
+      const wheel = inventory.vehicles.get(id)!.fittings.find((fitting) => fitting.id === 'front_wheel_near')!;
+      const refusal = inventory.vehicleTransfer({
+        kind: 'remove',
+        vehicleId: id,
+        fittingId: wheel.id,
+        itemUid: wheel.item.uid,
+        placement: wheel,
+        output: { kind: 'pile', pos: [Math.floor(x), Math.floor(y), Math.floor(z)] },
+      });
+      expect(refusal).toBeUndefined();
+
+      const saved = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+      const resumed = createRuntime(saved.snapshot);
+      const loose = resumed.inventory.itemByUid(wheel.item.uid)!;
+      expect(resumed.inventory.locate(loose)).toMatchObject({ kind: 'pile' });
+      expect(loose.finish).toBe(finish);
+      expect(occupied(resumed.inventory, id, 'door_mirror_far').finish).toBe(finish);
+      expect(occupied(resumed.inventory, id, 'door_mirror_near').finish).toBeUndefined();
+    } finally {
+      registry.vehicleBlueprints.delete('fixture_painted');
+    }
+  });
+
   it('rejects an invalid replacement without making the session unsavable', async () => {
     const { runtime, inventory, id } = fixture();
     const before = inventory.vehicles.snapshotState();
@@ -223,7 +268,7 @@ describe('production vehicle ownership', () => {
     }
     const invalid = structuredClone(capture(runtime));
     const cargo = invalid.world.vehicles.instances[0]!.vehicle.fittings.find(({ item }) => item.cargo)!;
-    cargo.item.pockets![0]![0]!.x = cargo.item.cargo![0];
+    cargo.item.pockets![0]![0]!.x = cargo.item.cargo![2];
     expect(() => createRuntime(invalid)).toThrow('Invalid item placement');
     const floating = structuredClone(capture(runtime));
     floating.world.vehicles.instances[0]!.vehicle.fittings.find(({ item }) => item.cargo)!.at[1] += 1;
@@ -330,7 +375,7 @@ describe('production vehicle ownership', () => {
     }
     const [x, , z] = hedge.min;
     const startZ = z + 3.5;
-    const ground = fixtureSite.surface.height(
+    const ground = terrainFor(fixtureSite, registry, scale, seed).surface!.height(
       x,
       startZ,
       terrainHeight(seed, terrainShapeOf(registry), scale, x, startZ),

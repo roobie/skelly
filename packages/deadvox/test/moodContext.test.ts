@@ -22,6 +22,7 @@ const owner = vi.hoisted(() => ({
   composers: [] as {
     passes: unknown[];
     readBuffer: object;
+    target: { samples: number };
     dispose: ReturnType<typeof vi.fn>;
     setPixelRatio: ReturnType<typeof vi.fn>;
     render: ReturnType<typeof vi.fn>;
@@ -37,7 +38,9 @@ vi.mock('three/addons/postprocessing/EffectComposer.js', () => {
     setPixelRatio = vi.fn();
     setSize = vi.fn();
     render = vi.fn(() => owner.onRender?.());
-    constructor() {
+    target: { samples: number };
+    constructor(_renderer: unknown, target: { samples: number }) {
+      this.target = target;
       owner.composers.push(this);
     }
     addPass(pass: { dispose: () => void }) {
@@ -74,6 +77,23 @@ const gogglesMood = (renderer: WebGLRenderer, scene = new Scene()) => {
   mood.setNightVision(GOGGLES);
   return mood;
 };
+
+it('draws the chain into a target with the chosen sample count, content default when none is given', () => {
+  const samplesOf = (mood: Mood, chosen?: number): number => {
+    if (chosen !== undefined) {
+      mood.setMsaaSamples(chosen);
+    }
+    mood.externalGpuTiming = true;
+    mood.setNightVision(GOGGLES);
+    mood.render(() => undefined);
+    return owner.composers.at(-1)!.target.samples;
+  };
+  const tuning = graphics.graphics[0]!;
+  const unsmoothed = tuning.msaaSamples.choices.find((choice) => choice.value !== tuning.msaaSamples.default)!.value;
+  const renderer = fakeRenderer(NeutralToneMapping, 1);
+  expect(samplesOf(new Mood(renderer, new Scene(), new PerspectiveCamera(), tuning), unsmoothed)).toBe(unsmoothed);
+  expect(samplesOf(new Mood(renderer, new Scene(), new PerspectiveCamera(), tuning))).toBe(tuning.msaaSamples.default);
+});
 
 it('undoes exposure on the sky in the chain only for a tone mapper that applies it', () => {
   const sky = new Color(0.1, 0.2, 0.3);

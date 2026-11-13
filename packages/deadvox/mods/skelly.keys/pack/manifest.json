@@ -1,0 +1,78 @@
+{
+  "dependencies": ["skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "models-keys.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camp_armoury_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camp_hq_safe_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dad_cabin_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gauntlet_lab_entry_card.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pharmacy_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/police_armoury_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shed_key.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camp_armoury_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camp_hq_safe_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dad_cabin_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gauntlet_lab_entry_card.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pharmacy_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/police_armoury_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shed_key.glb"
+    }
+  ],
+  "id": "skelly.keys",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

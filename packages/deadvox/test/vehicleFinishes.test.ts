@@ -1,4 +1,5 @@
 import type { Sky } from '@skelly/engine/sky';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { GradientSkyReflection } from '@skelly/presentation/internal/render/skyReflection.ts';
 import { VehicleFinishes } from '@skelly/presentation/internal/render/vehicleFinishes.ts';
 import {
@@ -34,12 +35,15 @@ const meshOf = (materialId: string) => {
   return new Mesh(new BoxGeometry(), material);
 };
 
+const finishesOf = (patches = new MaterialPatches(), update = reflection.update) =>
+  new VehicleFinishes({ texture: reflection.texture, update }, table, grazingLimit, patches);
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 it('leaves a vehicle on its shared materials while the option is off', () => {
-  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
+  const finishes = finishesOf();
   const mesh = meshOf('coated');
   const { material } = mesh;
   finishes.dress(new Group().add(mesh));
@@ -48,7 +52,7 @@ it('leaves a vehicle on its shared materials while the option is off', () => {
 });
 
 it('reflects on a finished copy and never on the material other views share', () => {
-  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
+  const finishes = finishesOf();
   finishes.setEnabled(true);
   const mesh = meshOf('coated');
   const shared = mesh.material;
@@ -59,7 +63,7 @@ it('reflects on a finished copy and never on the material other views share', ()
 });
 
 it('takes a coat, and the metalness under it, only from the finish content', () => {
-  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
+  const finishes = finishesOf();
   finishes.setEnabled(true);
   const [coated, bare] = [meshOf('coated'), meshOf('bare')];
   const shared = coated.material;
@@ -75,7 +79,7 @@ it('takes a coat, and the metalness under it, only from the finish content', () 
 });
 
 it('keeps one finished copy per shared material, so a rebuilt vehicle compiles and uploads nothing new', () => {
-  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
+  const finishes = finishesOf();
   finishes.setEnabled(true);
   const first = meshOf('coated');
   const shared = first.material;
@@ -86,23 +90,36 @@ it('keeps one finished copy per shared material, so a rebuilt vehicle compiles a
 });
 
 it('reflects from the coat alone and caps its grazing reflectance, so the paint under it keeps its colour', () => {
-  const finishes = new VehicleFinishes(reflection, table, grazingLimit);
+  const patches = new MaterialPatches();
+  const finishes = finishesOf(patches);
   finishes.setEnabled(true);
   const mesh = meshOf('coated');
-  finishes.dress(new Group().add(mesh));
+  const model = new Group().add(mesh);
+  finishes.dress(model);
+  patches.apply(model);
+  const maps = '#include <lights_fragment_maps>';
   const shader = {
-    fragmentShader: '#include <lights_physical_fragment>\n#include <lights_fragment_maps>',
+    fragmentShader: `#include <lights_physical_fragment>\n${maps}`,
   } as WebGLProgramParametersWithUniforms;
   (mesh.material as Material).onBeforeCompile(shader, {} as WebGLRenderer);
-  expect(shader.fragmentShader).toContain('clearcoatRadiance +=');
-  expect(shader.fragmentShader).not.toContain('radiance += iblRadiance;');
-  expect(shader.fragmentShader).not.toContain('iblIrradiance += getIBLIrradiance');
+  const afterMaps = shader.fragmentShader.slice(shader.fragmentShader.indexOf(maps) + maps.length);
+  expect(afterMaps).toContain('radiance = vec3( 0.0 );');
+  expect(afterMaps).toContain('iblIrradiance = vec3( 0.0 );');
   expect(shader.fragmentShader).toContain(`material.clearcoatF90 = ${grazingLimit.toFixed(4)};`);
+});
+
+it('leaves an unfinished material to compile as it would without the option', () => {
+  const patches = new MaterialPatches();
+  finishesOf(patches);
+  const mesh = meshOf('bare');
+  const { onBeforeCompile } = mesh.material;
+  patches.apply(new Group().add(mesh));
+  expect(mesh.material.onBeforeCompile).toBe(onBeforeCompile);
 });
 
 it('follows the sky only while the option is on', () => {
   const update = vi.fn();
-  const finishes = new VehicleFinishes({ texture: reflection.texture, update }, table, grazingLimit);
+  const finishes = finishesOf(new MaterialPatches(), update);
   const sky = {} as Sky;
   finishes.update(sky);
   expect(update).not.toHaveBeenCalled();
@@ -135,6 +152,7 @@ it('draws the reflection again once a lost graphics context comes back', () => {
   const target = new WebGLRenderTarget(1, 1);
   const bake = vi.spyOn(PMREMGenerator.prototype, 'fromEquirectangular').mockReturnValue(target);
   const canvas = new EventTarget();
+  // biome-ignore lint/correctness/noUnusedInstantiation: constructing it subscribes to the canvas's context events.
   new GradientSkyReflection(renderer(canvas), gradientTuning);
   const drawn = bake.mock.calls.length;
   canvas.dispatchEvent(new Event('webglcontextrestored'));

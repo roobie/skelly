@@ -6,8 +6,10 @@ import type { FurnitureDef, Registry } from '@skelly/engine/content';
 import type { ColumnReveal } from '@skelly/engine/mesh';
 import { type BlockEntities, type BlockEntity, type Body, rotationOf } from '@skelly/engine/world';
 import { Group, Matrix4, Vector3 } from 'three';
+import { bakeMeshes, disposeBaked } from './bakedMeshes.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 import { FIGURE_PIVOT, PlayerMeshes } from './playerFigure.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 /** The world's default layer: a corpse blocks the flashlight's shadow like any other piece. */
 const WORLD_LAYER = 0;
@@ -19,6 +21,8 @@ interface Corpse {
   meshes: PlayerMeshes;
   /** Whether the figure is laid out and can be shown. */
   settled: boolean;
+  /** The settled figure merged in place of `laid`, so a body in the world costs a few draws, not one per part. */
+  baked?: Group;
 }
 
 const STILL_BODY: Body = { pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0, height: 0, onGround: true };
@@ -55,6 +59,23 @@ const settle = (corpse: Corpse): void => {
   const centre = box.getCenter(new Vector3());
   laid.position.set(-centre.x, -box.min.y, -centre.z);
   group.add(laid);
+};
+
+/** Swaps a settled figure for its merged stand-in; a settled figure never moves again within its piece. */
+const bake = (corpse: Corpse): void => {
+  if (!corpse.settled || corpse.baked) {
+    return;
+  }
+  corpse.baked = bakeMeshes(corpse.laid);
+  corpse.group.remove(corpse.laid);
+  corpse.group.add(corpse.baked);
+};
+
+const dispose = (corpse: Corpse): void => {
+  if (corpse.baked) {
+    disposeBaked(corpse.baked);
+  }
+  corpse.meshes.dispose();
 };
 
 /** Stands the corpse's frame where `entity` stands: its footprint's bottom centre, turned as it is turned. */
@@ -100,9 +121,21 @@ export class CorpseFigures {
       }
       const corpse = this.corpses.get(entity) ?? this.corpse(def.corpse);
       settle(corpse);
+      bake(corpse);
       place(corpse, entity, def, this.blockSize);
       corpse.group.visible = corpse.settled && (this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true);
+      // Each sync re-places before freezing, so a moved body recomposes once and then stands still until
+      // the next sync. A body still loading stays unfrozen: `settle` moves its parts in place, and the
+      // carried `figure` clones stay unfrozen with their holder.
+      if (corpse.settled) {
+        freezeMatrices(corpse.group);
+      }
       corpses.set(entity, corpse);
+    }
+    for (const [entity, corpse] of this.corpses) {
+      if (corpses.get(entity) !== corpse) {
+        dispose(corpse);
+      }
     }
     this.group.clear();
     for (const corpse of corpses.values()) {
@@ -111,7 +144,20 @@ export class CorpseFigures {
     this.corpses = corpses;
   }
 
-  /** A corpse built as it lies where `entity` stands, for drawing it away from the world, such as carried. */
+  /** Frees what the drawn bodies own; the shared models and their materials stay with the model library. */
+  dispose(): void {
+    for (const corpse of this.corpses.values()) {
+      dispose(corpse);
+    }
+    this.corpses.clear();
+    this.group.clear();
+    this.drawn = '';
+  }
+
+  /**
+   * A corpse built as it lies where `entity` stands, for drawing it away from the world, such as carried. It stays
+   * unbaked: its holder drops it without freeing anything, and one body is no draw cost worth owning geometry for.
+   */
   figure(entity: BlockEntity, def: FurnitureDef): Group {
     const corpse = this.corpse(def.corpse!);
     settle(corpse);

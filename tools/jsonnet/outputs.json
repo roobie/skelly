@@ -13,6 +13,10 @@
       "output": "packages/deadvox/mods/skelly.deadvox.actors/assets/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.actors/controls-actors.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.actors/controls-actors.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/enemies.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.actors/enemies.json"
     },
@@ -31,10 +35,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.actors/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.actors/models-actors.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.actors/models-actors.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.actors/pack/manifest.jsonnet",
@@ -77,20 +77,12 @@
       "output": "packages/deadvox/mods/skelly.deadvox.buildings/templates.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.camp/assets/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.camp/assets/manifest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.camp/camp.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.camp/camp.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.camp/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.camp/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.camp/models-camp.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.camp/models-camp.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.camp/pack/manifest.jsonnet",
@@ -149,20 +141,12 @@
       "output": "packages/deadvox/mods/skelly.deadvox.loot/pack/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/assets/manifest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/furniture-medical.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/models-rural-sites.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.rural-sites/models-rural-sites.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.rural-sites/pack/manifest.jsonnet",
@@ -253,10 +237,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.forest/starts.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/assets/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/assets/manifest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/footstep-sounds.json"
     },
@@ -271,10 +251,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/item-economy.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/models-items.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/models-items.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.city/pack/manifest.jsonnet",
@@ -293,6 +269,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.debug/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.night-fog-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.play/pack/manifest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.play/pack/manifest.json"
     },
@@ -309,6 +293,26 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.play/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.json"
     },
@@ -321,20 +325,12 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.hunting-cabins/starts.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/assets/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/assets/manifest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/item-economy.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/item-economy.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/locks.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/locks.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/models-lock-test.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/models-lock-test.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.lock-test/pack/manifest.jsonnet",
@@ -369,10 +365,6 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest.play/pack/manifest.json"
     },
     {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/assets/manifest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/assets/manifest.json"
-    },
-    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/furniture-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/furniture-playtest.json"
     },
@@ -391,10 +383,6 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/layouts-playtest.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/layouts-playtest.json"
-    },
-    {
-      "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/models-playtest.jsonnet",
-      "output": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/models-playtest.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.playtest/pack/manifest.jsonnet",
@@ -449,6 +437,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.stairs/templates-stairs.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.action-menu/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.json"
     },
@@ -471,6 +467,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet",
@@ -577,6 +585,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox/pack/manifest.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.keys/assets/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.keys/assets/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.keys/models-keys.jsonnet",
+      "output": "packages/deadvox/mods/skelly.keys/models-keys.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.keys/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.keys/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/src/config/browser-mods.jsonnet",
       "output": "packages/deadvox/src/config/browser-mods.json"
     },
@@ -657,16 +677,8 @@
       "output": "packages/mods/skelly.basic-foods/pack/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.basic-recipes/assets/manifest.jsonnet",
-      "output": "packages/mods/skelly.basic-recipes/assets/manifest.json"
-    },
-    {
       "source": "packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet",
       "output": "packages/mods/skelly.basic-recipes/basic-recipes-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.basic-recipes/models-basic-recipes.jsonnet",
-      "output": "packages/mods/skelly.basic-recipes/models-basic-recipes.json"
     },
     {
       "source": "packages/mods/skelly.basic-recipes/pack/manifest.jsonnet",
@@ -745,12 +757,12 @@
       "output": "packages/mods/skelly.crafting/pack/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
-      "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
+      "source": "packages/mods/skelly.day-cycle/dayCycle.jsonnet",
+      "output": "packages/mods/skelly.day-cycle/dayCycle.json"
     },
     {
-      "source": "packages/mods/skelly.electric-power/assets/manifest.jsonnet",
-      "output": "packages/mods/skelly.electric-power/assets/manifest.json"
+      "source": "packages/mods/skelly.day-cycle/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.day-cycle/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.electric-power/electric-power-furniture.jsonnet",
@@ -759,10 +771,6 @@
     {
       "source": "packages/mods/skelly.electric-power/electric-power-items.jsonnet",
       "output": "packages/mods/skelly.electric-power/electric-power-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.electric-power/models-electric-power.jsonnet",
-      "output": "packages/mods/skelly.electric-power/models-electric-power.json"
     },
     {
       "source": "packages/mods/skelly.electric-power/pack/manifest.jsonnet",
@@ -881,32 +889,16 @@
       "output": "packages/mods/skelly.firearms/sounds-weapons.json"
     },
     {
-      "source": "packages/mods/skelly.flame-tools/assets/manifest.jsonnet",
-      "output": "packages/mods/skelly.flame-tools/assets/manifest.json"
-    },
-    {
       "source": "packages/mods/skelly.flame-tools/flame-tools-items.jsonnet",
       "output": "packages/mods/skelly.flame-tools/flame-tools-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.flame-tools/models-flame-tools.jsonnet",
-      "output": "packages/mods/skelly.flame-tools/models-flame-tools.json"
     },
     {
       "source": "packages/mods/skelly.flame-tools/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.flame-tools/pack/manifest.json"
     },
     {
-      "source": "packages/mods/skelly.fuel/assets/manifest.jsonnet",
-      "output": "packages/mods/skelly.fuel/assets/manifest.json"
-    },
-    {
       "source": "packages/mods/skelly.fuel/fuel-items.jsonnet",
       "output": "packages/mods/skelly.fuel/fuel-items.json"
-    },
-    {
-      "source": "packages/mods/skelly.fuel/models-fuel.jsonnet",
-      "output": "packages/mods/skelly.fuel/models-fuel.json"
     },
     {
       "source": "packages/mods/skelly.fuel/pack/manifest.jsonnet",
@@ -967,6 +959,18 @@
     {
       "source": "packages/mods/skelly.household-electrical/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.household-electrical/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.household/assets/manifest.jsonnet",
+      "output": "packages/mods/skelly.household/assets/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.household/models-household.jsonnet",
+      "output": "packages/mods/skelly.household/models-household.json"
+    },
+    {
+      "source": "packages/mods/skelly.household/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.household/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.inventory/compression.jsonnet",
@@ -1119,14 +1123,6 @@
     {
       "source": "packages/mods/skelly.natural-world/vegetation.jsonnet",
       "output": "packages/mods/skelly.natural-world/vegetation.json"
-    },
-    {
-      "source": "packages/mods/skelly.packaged-foods/assets/manifest.jsonnet",
-      "output": "packages/mods/skelly.packaged-foods/assets/manifest.json"
-    },
-    {
-      "source": "packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet",
-      "output": "packages/mods/skelly.packaged-foods/models-packaged-foods.json"
     },
     {
       "source": "packages/mods/skelly.packaged-foods/pack/manifest.jsonnet",

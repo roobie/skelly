@@ -47,8 +47,8 @@ const within = (value: number, maximum: number): boolean => Math.abs(value) <= r
 
 /** Yaw and pitch of a correction, measured by where it points the rig's forward axis. */
 const correctionAngles = (rotation: Mat3): readonly [number, number] => {
-  const [x, y, z] = mulMV(rotation, [0, 0, -1]);
-  return [Math.atan2(-x, -z), Math.atan2(y, Math.hypot(x, z))];
+  const [x, y, z] = mulMV(rotation, [0, 0, 1]);
+  return [Math.atan2(x, z), Math.atan2(y, Math.hypot(x, z))];
 };
 
 const splitCorrection = (total: Mat3): { readonly neck: Mat3; readonly head: Mat3 } => {
@@ -127,8 +127,9 @@ export const lookAtPose = ({
   if (target && Math.hypot(...target) > 0) {
     const direction = [target[0] - fromHead[0], target[1] - fromHead[1], target[2] - fromHead[2]] as const;
     if (Math.hypot(...direction) > 1e-9) {
-      const targetYaw = Math.atan2(-direction[0], -direction[2]);
-      const targetPitch = Math.atan2(direction[1], Math.hypot(direction[0], direction[2]));
+      const targetYaw = Math.atan2(direction[0], direction[2]);
+      // A turn about +x lowers +z, so raising the gaze is a negative pitch.
+      const targetPitch = -Math.atan2(direction[1], Math.hypot(direction[0], direction[2]));
       const targetOrientation = mulMM(rotY(degrees(targetYaw)), rotX(degrees(targetPitch)));
       const required = mulMM(targetOrientation, transpose(headTransform.r));
       bounded = clampCorrection(required, profile);

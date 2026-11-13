@@ -10,7 +10,7 @@ import type {
 } from '@skelly/engine/sim';
 import type { Weather } from '@skelly/engine/sky';
 import type { HeardSound } from '@skelly/engine/sound';
-import type { Body, Vec3 } from '@skelly/engine/world';
+import type { Body, SolidAt, Vec3 } from '@skelly/engine/world';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
@@ -41,10 +41,12 @@ export interface DebugHooks {
   readonly engine: Engine;
   /** The page's keyboard; the panel shows its keys and traces its presses. */
   readonly keyboard: KeyboardInput;
-  /** The weather play renders with; the debug look controls set its fogginess. */
+  /** The weather play renders with; the debug look controls set all three levels from the hash. */
   readonly weather: Weather;
   /** The held light's beam; the debug look controls set its strength multiplier. */
   readonly flashlight: { strength: number };
+  /** The session's solid and sight rule, which counts parked vehicles; the engine's own queries do not. */
+  readonly solidity: { readonly isSolid: SolidAt; readonly isOpaque: SolidAt };
   readonly body: Body;
   readonly inventory: Inventory;
   readonly character: Character;
@@ -109,6 +111,8 @@ export interface DebugReadout {
   readonly chunks: number;
   readonly pending: number;
   readonly holes: number;
+  /** The whole view radius is meshed: `pending` never reaches zero because the preload rings stay queued, so scripts wait on this. */
+  readonly meshingDone: boolean;
   readonly actors: number;
   readonly sounds: readonly HeardSound[];
   readonly simulationMs: number;
@@ -129,7 +133,7 @@ export interface DebugRuntime {
   readonly aimEnabled: boolean;
   updateAim: (aim: ActorAim | undefined) => void;
   setCrosshairVisible: (visible: boolean) => void;
-  /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
+  /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when an actor is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
   readonly interactionRayEnabled: boolean;
   drawInteractionRay: (options: {

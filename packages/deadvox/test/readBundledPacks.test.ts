@@ -1,6 +1,8 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildRegistry } from '@skelly/engine/content';
 import { launcherModCatalogue } from '@skelly/engine/modCatalogue';
@@ -24,6 +26,48 @@ it('lists the real pack tree in the same order for the browser and for the build
   expect(bundledPacks.map(({ manifest }) => manifest.id)).toEqual(
     readAvailablePacks(packageRoot).map(({ manifest }) => manifest.id),
   );
+});
+
+const COLLATIONS = ['en_US.UTF-8', 'th_TH.UTF-8'];
+
+const orderUnderCollation = (collation: string, packageRoot: string) => {
+  const script = `
+    const { readAvailablePacks } = await import(${JSON.stringify(new URL('../tools/readBundledPacks.ts', import.meta.url).href)});
+    const { bundledPacksFrom } = await import(${JSON.stringify(import.meta.resolve('@skelly/engine/packs'))});
+    const built = readAvailablePacks(${JSON.stringify(packageRoot)});
+    const manifests = Object.fromEntries(
+      built.toReversed().map(({ source, manifest }) => [source + '/pack/manifest.json', manifest]),
+    );
+    console.log(JSON.stringify({
+      build: built.map(({ manifest }) => manifest.id),
+      browser: bundledPacksFrom(manifests).map(({ manifest }) => manifest.id),
+    }));`;
+  return JSON.parse(
+    execFileSync(process.execPath, ['--input-type=module', '--eval', script], {
+      env: { LC_ALL: collation, LANG: collation },
+      encoding: 'utf8',
+    }),
+  ) as { build: string[]; browser: string[] };
+};
+
+it('orders packs by code unit in the browser and the build under any collation', () => {
+  const root = mkdtempSync(join(tmpdir(), 'pack-order-'));
+  try {
+    // Upper case sorts before lower case by code unit and after it in every locale's collation.
+    const ids = ['fixture.Zed', 'fixture.alpha'];
+    for (const id of ids) {
+      mkdirSync(join(root, 'mods', id, 'pack'), { recursive: true });
+      writeFileSync(
+        join(root, 'mods', id, 'pack/manifest.json'),
+        JSON.stringify({ id, version: '1', tier: 'theme', product: false, dependencies: [], overrides: [], files: [] }),
+      );
+    }
+    for (const collation of COLLATIONS) {
+      expect(orderUnderCollation(collation, root)).toEqual({ build: ids, browser: ids });
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 it('injects exporter JSON digests without model payloads while preserving runtime pack identity', async () => {
@@ -52,7 +96,7 @@ it('injects exporter JSON digests without model payloads while preserving runtim
     writeFileSync(modelPath, JSON.stringify({ fixtureGeometry: 1, fixtureMaterial: 'plain' }));
     writeFileSync(join(directory, 'model.glb'), new Uint8Array([1, 2, 3]));
     const [input] = readBundledPacks(root);
-    const defines = await bundledPackDefines([input!]);
+    const defines = await bundledPackDefines([input!], input!.manifest.id);
     const hashesDefine = '__SKELLY_FILE_HASHES__';
     const identitiesDefine = '__SKELLY_CONTENT_PACKS__';
     const hashes: Record<string, string> = JSON.parse(defines[hashesDefine]!);
@@ -105,7 +149,7 @@ it('keeps opt-in packs out of the default identity and no-stack set while hashin
     expect(ids(readBundledPacks(root))).toEqual(['fixture.default']);
     expect(ids(readBundledPacks(root, 'fixture.opt-in'))).toEqual(['fixture.default', 'fixture.opt-in']);
     const available = readAvailablePacks(root);
-    const defines = await bundledPackDefines(available);
+    const defines = await bundledPackDefines(available, 'fixture.default');
     const listed = (define: string) => JSON.parse(defines[define]!).map(({ id }: { id: string }) => id);
     expect(listed('__SKELLY_CONTENT_PACKS__')).toEqual(['fixture.default']);
     expect(listed('__SKELLY_OPT_IN_PACKS__')).toEqual(['fixture.opt-in']);
@@ -353,7 +397,7 @@ it('a directory under the external root naming no bundled pack is not listed and
 it('external json and asset entries admit in the browser with the reader hashes', () =>
   withExternalPack(async (root) => {
     const [input] = readAvailablePacks(root, EXTERNAL);
-    const defines = await bundledPackDefines([input!]);
+    const defines = await bundledPackDefines([input!], input!.manifest.id);
     const hashes: Record<string, string> = JSON.parse(defines.__SKELLY_FILE_HASHES__!);
     const identities = JSON.parse(defines.__SKELLY_CONTENT_PACKS__!);
     // The browser looks each entry up by its logical key, as `packages/engine/src/game/bundledContent.ts` does.
@@ -374,7 +418,7 @@ it('external json and asset entries admit in the browser with the reader hashes'
 it('stamps each pack in a multi-root stack with its own content identity', () =>
   withMultiRootFixture(async (root) => {
     const inputs = readBundledPacks(root, 'fixture.entry');
-    const stamps = await stampPacks(inputs, 'fixture-proof');
+    const stamps = await stampPacks(inputs, 'fixture-proof', 'fixture.entry');
     expect(Object.keys(stamps).sort()).toEqual(inputs.map(({ manifest }) => manifest.id).sort());
     const hashes = await Promise.all(inputs.map(packContentHash));
     inputs.forEach((input, index) => {

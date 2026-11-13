@@ -5,5 +5,6 @@ manifest(
   tier='scenario',
   defaultStart='gauntlet',
   optIn=true,
-  dependencies=['skelly.deadvox.scenario.gauntlet.start'],
+  dependencies=['skelly.deadvox', 'skelly.deadvox.scenario.gauntlet.start'],
+  overrides=[{ pack: 'skelly.deadvox', entry: 'defaultStart' }],
 )

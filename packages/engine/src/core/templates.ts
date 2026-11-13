@@ -7,6 +7,7 @@
 
 import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { type LootContext, type LootDepth, lootDepthOf } from './loot.ts';
@@ -26,6 +27,7 @@ import type {
 } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 import { compileOwnership, ownershipCell } from './templateOwnership.ts';
+import type { TerrainPlacement } from './terrainPlan.ts';
 
 /** Horizontal front facings follow WORLD_NORTH in coords.ts. */
 export type Facing = 'n' | 'e' | 's' | 'w';
@@ -331,7 +333,7 @@ export interface Placement {
 }
 
 /** Width along x and depth along z once turned. */
-export const footprint = ({ template, turn }: Placement): [number, number] =>
+export const footprint = ({ template, turn }: TerrainPlacement): [number, number] =>
   turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
@@ -378,7 +380,7 @@ export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | u
 };
 
 /** Writes the part of a placed template that falls inside the chunk. */
-export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
+export const stampPlacement = (chunk: Chunk, placement: TerrainPlacement): void => {
   const { template, origin, turn } = placement;
   const [sx, sy, sz] = template.size;
   const [w, d] = footprint(placement);
@@ -517,12 +519,7 @@ const traversalContract = (registry: Registry, template: CompiledTemplate): stri
   }
   return JSON.stringify([
     Object.entries(template.anchors ?? {})
-      .sort(([a], [b]) => {
-        if (a === b) {
-          return 0;
-        }
-        return a < b ? -1 : 1;
-      })
+      .sort(([a], [b]) => compareCodeUnits(a, b))
       .map(([id, anchor]) => [id, anchor.kind, anchor.at]),
     [...occupied].sort((a, b) => a - b),
     ladders.sort(),
@@ -568,10 +565,7 @@ const resolveSlot = (
   const choices = [...resolved].sort((a, b) => {
     const left = refKey(a.ref);
     const right = refKey(b.ref);
-    if (left === right) {
-      return 0;
-    }
-    return left < right ? -1 : 1;
+    return compareCodeUnits(left, right);
   });
   if (choices.length === 0 || new Set(choices.map((choice) => refKey(choice.ref))).size !== choices.length) {
     throw new Error(`${label}: choices must be nonempty and unique`);
@@ -601,7 +595,7 @@ const resolveSlot = (
   });
   const reference = candidates[0]!.placement.template;
   const portContract = (template: CompiledTemplate) =>
-    JSON.stringify([...(template.ports ?? [])].sort((a, b) => (a.id < b.id ? -1 : 1)));
+    JSON.stringify([...(template.ports ?? [])].sort((a, b) => compareCodeUnits(a.id, b.id)));
   for (const { placement } of candidates) {
     if (
       placement.template.ownership!.some(

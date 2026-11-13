@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { buildRegistry } from '@skelly/engine/content';
 import { claimedId } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { footprint, HORDE_MEMBERS, placementOf, TEMPLATE_BLOCK_SIZE } from '@skelly/engine/world';
 import { readStackContentSources } from './readBundledPacks.ts';
 
@@ -72,7 +73,7 @@ const nearestBeat = (building) =>
 const rangeText = ([min, max]) => (min === max ? String(min) : `${min}–${max}`);
 const itemName = (id) => registry.items.get(id)?.name ?? id;
 const weightText = (weight, total) => `${weight}/${total} (${((100 * weight) / total).toFixed(1)}%)`;
-const sortedTables = (tableCounts) => [...tableCounts].sort(([a], [b]) => a.localeCompare(b));
+const sortedTables = (tableCounts) => [...tableCounts].sort(([a], [b]) => compareCodeUnits(a, b));
 
 const describeTable = (tableId, indent = '    ', seen = new Set()) => {
   const table = registry.loot.get(tableId);
@@ -135,7 +136,7 @@ function groupSpawns(spawns) {
     group.count += 1;
     groups.set(key, group);
   }
-  return [...groups.values()].sort((a, b) => a.actor.localeCompare(b.actor) || a.chance - b.chance);
+  return [...groups.values()].sort((a, b) => compareCodeUnits(a.actor, b.actor) || a.chance - b.chance);
 }
 
 const furnitureLootLines = (placement) => {
@@ -199,7 +200,7 @@ const sourceForZombie = (id) => {
 };
 const addSpawnCounts = (counts, chance, count = 1) => counts.set(chance, (counts.get(chance) ?? 0) + count);
 
-for (const spawn of playtest.shamblers) {
+for (const spawn of playtest.actors) {
   addSpawnCounts(sourceForZombie(spawn.type).map, spawn.chance ?? 1);
 }
 for (const { spawns } of buildings) {
@@ -233,7 +234,7 @@ const outsideLootLines = () => {
     'Map and template spawns can drop these tables on death; route tracks do not place loot.',
   ];
   const tableUsers = new Map();
-  for (const [typeId, source] of [...zombieSources].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [typeId, source] of [...zombieSources].sort(([a], [b]) => compareCodeUnits(a, b))) {
     const zombie = registry.actors.get(typeId);
     const tableId = zombie?.loot;
     const loot = tableId === undefined ? 'no drop table' : `\`${tableId}\``;
@@ -244,7 +245,7 @@ const outsideLootLines = () => {
       tableUsers.set(tableId, users);
     }
   }
-  for (const [tableId, users] of [...tableUsers].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [tableId, users] of [...tableUsers].sort(([a], [b]) => compareCodeUnits(a, b))) {
     lines.push('', `### \`${tableId}\``, `Used by: ${users.join(', ')}`);
     lines.push(...describeTable(tableId, '  '));
   }

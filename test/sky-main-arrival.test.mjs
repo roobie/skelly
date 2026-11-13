@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { it } from 'node:test';
 import {
+  adaptMainArmParts,
   baseOnlyWorkspacePlugin,
   mainArrivalGit,
   mainOverlayPath,
@@ -20,12 +21,24 @@ import {
 
 const { createServer } = createRequire(new URL('../packages/deadvox/package.json', import.meta.url))('vite');
 
-it('main rendering overlays retain branch core API owners', () => {
-  assert.ok(mainSourceOverlays.length > 0);
+it('main startup keeps terrain construction on one revision while retaining unrelated branch core owners', () => {
+  const terrainBoundary = new Set([
+    'engine:core/authoredSite.ts',
+    'engine:core/citySite.ts',
+    'engine:core/forest.ts',
+    'engine:core/canonicalTerrain.ts',
+    'engine:game/weatheringTestSite.ts',
+  ]);
+  for (const key of ['engine:game/worldSetup.ts', 'engine:game/streamer.ts', ...terrainBoundary]) {
+    assert.ok(mainSourceOverlays.includes(key), `${key} must share main's terrain construction contract`);
+  }
   for (const key of mainSourceOverlays) {
     const separator = key.indexOf(':');
     assert.ok(separator > 0 && !key.slice(separator + 1).startsWith('/'), `${key} is not a package-qualified src path`);
-    assert.ok(!key.slice(separator + 1).startsWith('core/'), `${key} takes a branch core owner`);
+    assert.ok(
+      !key.slice(separator + 1).startsWith('core/') || terrainBoundary.has(key),
+      `${key} takes an unrelated branch core owner`,
+    );
   }
 });
 
@@ -57,6 +70,18 @@ it('main play overlays keep the entire UI boundary on the base even when export 
   assert.ok(!sources.includes('engine:core/rules.ts'));
   assert.ok(!sources.includes('engine:game/unrelated.ts'));
   assert.ok(!sources.includes('presentation:ui/style.css'));
+});
+
+it('main figure arm reads follow the branch segments listing parts, and a base that already lists them is untouched', () => {
+  const single = `{ name: 'elbow', parts: [armRig.fore.part], pivot: armRig.fore.pivot },
+{ name: 'wrist', parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part], pivot: armRig.hand.pivot }`;
+  assert.equal(
+    adaptMainArmParts(single),
+    `{ name: 'elbow', parts: armRig.fore.parts, pivot: armRig.fore.pivot },
+{ name: 'wrist', parts: [...armRig.hand.parts, ...armRig.fingers.parts, ...armRig.thumb.parts], pivot: armRig.hand.pivot }`,
+  );
+  const listed = adaptMainArmParts(single);
+  assert.equal(adaptMainArmParts(listed), listed);
 });
 
 it('main imports of an export the branch removed are found, and type-only or kept exports are not', () => {

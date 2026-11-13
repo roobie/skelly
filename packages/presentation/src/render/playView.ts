@@ -2,7 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import { type ActorFigureFiles, type BodyTuningDef, type NightVision, requireDayCycle } from '@skelly/engine/content';
 import { claimed, type Inventory, type Item } from '@skelly/engine/inventory';
-import { DEFAULT_SHADOWS, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
+import { defaultShadows, graphicsTuningOf, lookDefaultsOf, lookOf, moodOf } from '@skelly/engine/look';
 import type { FromMesher } from '@skelly/engine/mesh';
 import {
   adsCameraEye,
@@ -23,6 +23,7 @@ import {
   type EntityStore,
   hourOfDay,
   playerTuning,
+  type RealTimestamp,
   reachTuning,
 } from '@skelly/engine/sim';
 import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/engine/sky';
@@ -70,6 +71,8 @@ import { PlayerMeshes } from './playerFigure.ts';
 import type { RagdollConfig } from './ragdoll.ts';
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
+import { createSkyDome, type SkyDome } from './skyDome.ts';
+import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
@@ -224,6 +227,7 @@ type PlayViewEngine = Readonly<
     | 'entities'
     | 'skylight'
     | 'vehicleFinishes'
+    | 'materialPatches'
     | 'site'
     | 'scenario'
   >
@@ -263,10 +267,17 @@ export const createPlayView = (
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
   const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
-  const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics.modelLoadConcurrency);
+  const models = new ModelLibrary(registry, report, { packAssets: modelFiles }, graphics);
   let pictures: ItemPictures | undefined;
+  let skyDome: SkyDome | undefined;
+  let skyEnvironment: SkyEnvironment | undefined;
+  /** The cloud clock: simulation seconds of the latest `syncWorld`. */
+  let simSeconds = 0;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
+    skyDome = createSkyDome(dayCycle.clouds, dayCycle.domeShape);
+    scene.add(skyDome.mesh);
+    skyEnvironment = createSkyEnvironment(renderer, skyDome.openSky, dayCycle.environment, engine.materialPatches);
     pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
       framing: graphics.itemPicture.framing,
     });
@@ -279,9 +290,9 @@ export const createPlayView = (
     applyLook(renderer, meshes, lookOf(look));
     setHeightFogTuning(look.heightFog);
     mood.restore(moodOf(look));
-    shadows.restore(DEFAULT_SHADOWS);
+    shadows.restore(defaultShadows(graphics.sunShadow));
   }
-  const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
+  const weather: Weather = { ...dayCycle.weather.defaults };
   const playerFigure = claimed(registry.figures, 'player')!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s, engine.vehicleFinishes);
@@ -314,7 +325,10 @@ export const createPlayView = (
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
     sunSource: engine.sky.light,
+    patches: engine.materialPatches,
   });
+  skyEnvironment?.light(scene);
+  skyEnvironment?.light(held.warmUpTarget.scene);
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -324,9 +338,20 @@ export const createPlayView = (
     leverProps.group,
     acidEffects.group,
   );
+  // The terrain stays: pagehide is not the end of the view's life. A save checkpoint fires it and play goes on, and
+  // the browser can restore the page from bfcache, so freeing the terrain here would leave the view using it freed. A
+  // real unload frees the GL context anyway; `ChunkMeshes.dispose` is for a real end of the view.
   const dispose = () => {
+    models.dispose();
+    skyEnvironment?.dispose();
+    if (skyDome) {
+      scene.remove(skyDome.mesh);
+      skyDome.dispose();
+    }
     pictures?.dispose();
     piles.dispose();
+    furniture.dispose();
+    corpses.dispose();
     vehicles.dispose();
     caseEffects.dispose();
     gore.dispose();
@@ -344,7 +369,7 @@ export const createPlayView = (
   page.addEventListener('pagehide', dispose);
   const vehicleMesher = vehicleShapesInWorker();
   page.addEventListener('pagehide', vehicleMesher.terminate);
-  const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes);
+  const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes, graphics.furnitureSectorChunks);
   const corpses = new CorpseFigures(s, registry, models, meshes);
   const carriedPiece = new CarriedPiece(
     inventory.entities,
@@ -372,7 +397,11 @@ export const createPlayView = (
     furniture.group,
     corpses.group,
     playerMeshes.group,
-    modelMaterialWarmUp(true, engine.vehicleFinishes?.warmUpVariants),
+    modelMaterialWarmUp({
+      instanced: true,
+      skyAnchored: true,
+      finishedVariants: engine.vehicleFinishes?.warmUpVariants,
+    }),
   );
   const avatarStudy = createAvatarStudy(scene, s, models, config.debug ? probes.avatarStudy : []);
   const avatarMannequin = createAvatarMannequin(
@@ -404,6 +433,8 @@ export const createPlayView = (
       : new ActorMeshes(s, undefined, meshes);
   actorMeshes.setWorld?.(physicalSolid, s);
   scene.add(actorMeshes.group);
+  // The shadow passes pick the renderer's figures per light (a no-op for the box fallback).
+  engine.shadows?.attachCrowd(actorMeshes);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
@@ -596,14 +627,17 @@ export const createPlayView = (
       actorMeshes.setPlayerChestPosition?.(playerChest);
       actorMeshes.setPerceptionLabels?.(perceptionLabels);
       actorMeshes.sync(actors, dt, alpha, frozen, backgroundAlpha, time);
+      simSeconds = time;
       return { sky };
     },
-    prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
+    prepareLighting: (sky: ReturnType<typeof skyInWeather>, now: RealTimestamp) => {
       const cameraPosition: Vec3 = [camera.position.x, camera.position.y, camera.position.z];
       const skyVisibility = engine.skylight?.at(cameraPosition) ?? 1;
       applySky(engine.sky, sky, skyVisibility);
+      skyDome?.update({ sky, simSeconds, camera, skyVisibility });
+      skyEnvironment?.refresh(sky, now);
+      skyDome?.setHidden(engine.mood?.crackCheck ?? false);
       engine.mood?.setSky(sky, skyVisibility);
-      held.setSkyVisibility(skyVisibility);
       cameraDaylightScale = flashlightDaylightScale(sky, skyVisibility);
       engine.skylight?.setDaylight(sky);
       engine.vehicleFinishes?.update(sky);
@@ -754,7 +788,8 @@ export const createPlayView = (
       if (!shadows) {
         return Promise.resolve();
       }
-      engine.skylight?.patchMaterials(scene);
+      engine.materialPatches.apply(scene);
+      engine.materialPatches.apply(held.warmUpTarget.scene);
       return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
     },
   };

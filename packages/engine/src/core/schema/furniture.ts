@@ -1,6 +1,7 @@
 import {
   array,
   check,
+  finite,
   literal,
   ltValue,
   maxValue,
@@ -22,7 +23,7 @@ import { solidBlocks } from '../../vehicles/solid.ts';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
 import { capabilitySelection } from './capability.ts';
-import { ContainerSchema, ReadableSchema } from './items.ts';
+import { ContainerSchema, ReadableSchema, RecoveryWorkSchema } from './items.ts';
 import {
   Color,
   Count,
@@ -36,6 +37,8 @@ import {
   SimSeconds,
   Size,
 } from './primitives.ts';
+
+const FiniteBlocks = pipe(number(), finite());
 
 // ---- furniture ----
 
@@ -180,6 +183,20 @@ export const FurnitureSchema = pipe(
         debris: array(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
       }),
     ),
+    /**
+     * How taking the piece apart goes (`packages/deadvox/DESIGN.md`, "World repair selection"): an authored `yield`
+     * for a whole piece, or a `parts` blueprint whose jobs remove or fit one part. The parts route has no runtime
+     * until a kind earns it, so only its exclusion with a yield is checked.
+     */
+    takeApart: optional(
+      pipe(
+        strictObject({ yield: optional(RecoveryWorkSchema), parts: optional(Id) }),
+        check(
+          (route) => (route.yield === undefined) !== (route.parts === undefined),
+          "a piece's take-apart route is an authored yield or a parts blueprint, exactly one",
+        ),
+      ),
+    ),
     /** The player climbs it; its facing is the side the climber stands on (`packages/deadvox/DESIGN.md`, "Ladders and hatches"). */
     climbable: optional(strictObject({ speedMetresPerSimSecond: Positive })),
     appearance: optional(
@@ -230,7 +247,15 @@ export const FurnitureSchema = pipe(
           check((value) => unitCount(value, POWER_UNITS.amount) !== undefined, 'fuel must be exact in power units'),
         ),
         enabled: vBoolean(),
-        light: optional(strictObject({ color: Color, intensity: Positive, radius: Positive })),
+        light: optional(
+          strictObject({
+            color: Color,
+            intensity: Positive,
+            radius: Positive,
+            /** Blocks from the centre of the piece's origin cell, in its own axes; absent, it shines from that centre. */
+            offset: optional(tuple([FiniteBlocks, FiniteBlocks, FiniteBlocks])),
+          }),
+        ),
       }),
     ),
     charger: optional(

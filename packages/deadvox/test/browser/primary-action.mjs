@@ -8,18 +8,27 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { modFileBytes } from '../modFile.ts';
+import {
+  actionRingShown,
+  chooseHeldAction,
+  holdDominantUse,
+  pointActionMenu,
+  stepActionMenuTo,
+  waitForActionRing,
+} from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
-// The flow group is the long live-page journey; the replays group is the independent replay and search contexts.
-// They are separate CI steps so each keeps headroom under its own timeout.
-const groups = ['flow', 'replays'];
+// The flow group is the long live-page journey; the replays groups are the independent replay and search contexts,
+// split so each CI step keeps headroom under its own timeout.
+const groups = ['flow', 'replays-search-look', 'replays-motion-fire'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
@@ -676,8 +685,14 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       r.clearHand(r.off);
       const light = r.inventory.create('glowstick');
       r.setHand(r.off, light);
+      // A cell light offers a choice, so its battery comes out only through the ring.
+      const torch = r.inventory.create('flashlight');
+      if (!torch.slots?.battery) {
+        throw new Error('The held-choice fixture needs a fitted battery');
+      }
+      r.setHand(r.dominant, torch);
       r.startInputReplayRecording();
-      return { uid: light.uid, start: r.session.sim.time };
+      return { uid: light.uid, torchUid: torch.uid, start: r.session.sim.time };
     });
     const litInEvent = await page.evaluate((uid) => {
       document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
@@ -687,6 +702,24 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await page.waitForFunction(
       (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
       fixture.uid,
+    );
+    await chooseHeldAction(page, 'battery:unload');
+    await waitForSimulation(
+      page,
+      ({ uid }) => {
+        const r = globalThis.primaryActionTest;
+        return {
+          time: r.session.sim.time,
+          paused: r.session.sim.paused,
+          reached: !r.inventory.itemByUid(uid).slots?.battery,
+        };
+      },
+      { uid: fixture.torchUid },
+      {
+        seconds: 30,
+        label: 'the chosen battery unload completes',
+        record: (line) => process.stdout.write(`${line}\n`),
+      },
     );
     await waitForSimulation(
       page,
@@ -726,6 +759,11 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     });
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
+    assert.deepEqual(
+      artifact.actions.filter(({ payload }) => payload?.kind === 'hand.action').map(({ payload }) => payload),
+      [{ kind: 'hand.action', itemUid: fixture.torchUid, actionId: 'battery:unload' }],
+      'the ring records its choice once, as the action it chose',
+    );
     const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
@@ -741,15 +779,17 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       undefined,
       { timeout: 20_000 },
     );
-    const replay = await page.evaluate((uid) => {
+    const replay = await page.evaluate(({ uid, torchUid }) => {
       const r = globalThis.primaryActionTest;
       return {
         state: document.querySelector('#input-replay-status')?.dataset.state,
         lightOn: r.inventory.itemByUid(uid)?.on,
+        torchLoaded: Boolean(r.inventory.itemByUid(torchUid)?.slots?.battery),
         endSnapshot: r.captureSnapshot(),
       };
-    }, fixture.uid);
+    }, fixture);
     assert.equal(replay.lightOn, true, 'replaying the recorded forward-button press lights the off-hand light');
+    assert.equal(replay.torchLoaded, false, 'replay runs the chosen held action without opening its ring');
     assert.equal(replay.state, 'verified', 'the replay reproduces the recorded end state');
     assert.deepEqual(replay.endSnapshot, liveEndSnapshot);
     assert.deepEqual(pageErrors, []);
@@ -1707,24 +1747,35 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
       doorUid,
     );
-    assert.equal(
-      await page.locator('#item-action-list').isVisible(),
-      false,
-      'a door opens directly without a movement list',
-    );
+    assert.equal(await actionRingShown(page), false, 'a door opens directly without movement choices');
     const fixedUid = await aimFurnitureFixture('fixed');
-    const openAlternatives = async () => {
-      const releaseHold = await holdAction(page, 'world.interact');
-      await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
-      await releaseHold();
-    };
-    await openAlternatives();
+    const look = () =>
+      page.evaluate(() => {
+        const { yaw, pitch } = globalThis.primaryActionTest.input.controls;
+        return { yaw, pitch };
+      });
+    // The ring lasts only while interact is held, and its release confirms the chosen entry.
     for (const way of ['push', 'drag']) {
-      if (way === 'drag') {
-        await openAlternatives();
-        await page.mouse.wheel(0, 100);
+      const releaseHold = await holdAction(page, 'world.interact');
+      try {
+        await waitForActionRing(page);
+        if (way === 'push') {
+          const lookBefore = await look();
+          await pointActionMenu(page, way);
+          assert.deepEqual(await look(), lookBefore, 'pointing at a ring entry holds the camera look');
+        } else {
+          await stepActionMenuTo(page, way, () => page.mouse.wheel(0, 100));
+          // The arrow keys step the same ring: off the wheel's choice and back to it.
+          await page.keyboard.press('ArrowRight');
+          await page.waitForFunction(
+            (id) => document.querySelector('#action-radial .radial-entry.selected')?.dataset.action !== id,
+            way,
+          );
+          await stepActionMenuTo(page, way, () => page.keyboard.press('ArrowLeft'));
+        }
+      } finally {
+        await releaseHold();
       }
-      await pressAction(page, 'world.interact');
       await page.waitForFunction(
         ({ uid, way: expectedWay }) =>
           globalThis.primaryActionTest.inputRecorder
@@ -1744,6 +1795,26 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         'a fastened piece refuses movement rather than queuing a step',
       );
     }
+    const movesRecorded = () =>
+      page.evaluate(
+        (uid) =>
+          globalThis.primaryActionTest.inputRecorder
+            .copyInputs()
+            .actions.filter(
+              ({ payload }) =>
+                payload?.entityUid === uid && (payload.kind === 'furniture.slide' || payload.kind === 'furniture.lift'),
+            ).length,
+        fixedUid,
+      );
+    const movesBeforeCancel = await movesRecorded();
+    const releaseUnchosen = await holdAction(page, 'world.interact');
+    try {
+      await waitForActionRing(page);
+    } finally {
+      await releaseUnchosen();
+    }
+    await waitForActionRing(page, false);
+    assert.equal(await movesRecorded(), movesBeforeCancel, 'releasing with nothing chosen moves nothing');
     await pressAction(page, 'world.interact');
     // The queued search proves the tap resolved to Search; waiting for it to finish adds only its game time.
     await page.waitForFunction(
@@ -1795,8 +1866,8 @@ const verifyVehicleService = async (page) => {
     const part = parts.find(({ fittingId }) => fittingId === site.id);
     const { min, max } = part.boxes[0];
     const centre = [0, 1, 2].map((axis) => (min[axis] + max[axis]) / 2);
-    // Out from the car's side by the part's half width plus a body's clearance.
-    const side = [Math.sin(part.transform.yaw), Math.cos(part.transform.yaw)];
+    // Out from the car's side by the part's half width plus a body's clearance: along the vehicle's x, across it.
+    const side = [Math.cos(part.transform.yaw), -Math.sin(part.transform.yaw)];
     const outward = Math.sign(
       (centre[0] - vehicle.origin[0] * s) * side[0] + (centre[2] - vehicle.origin[2] * s) * side[1],
     );
@@ -2066,17 +2137,51 @@ try {
       const can = r.inventory.create('canned_beans');
       r.setHand(r.dominant, r.inventory.create('machete'));
       r.setHand(r.off, can);
-      return { uid: can.uid, opened: r.inventory.registry.items.get(can.type).unpack.item };
+      return { uid: can.uid, closed: can.type, opened: r.inventory.registry.items.get(can.type).unpack.item };
     });
-    await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
-    const actionListBounds = await page.locator('#item-action-list').boundingBox();
-    assert(actionListBounds.x < 640 && actionListBounds.y > 360, 'action choices stay in the lower left');
-    await page.mouse.wheel(0, 100);
+    const heldOutcome = (uid) =>
+      page.evaluate((canUid) => {
+        const r = globalThis.primaryActionTest;
+        return { busy: r.queue.busy, swings: r.swings.length, type: r.inventory.itemByUid(canUid).type };
+      }, uid);
+    const beforeTap = await heldOutcome(canOpening.uid);
+    // A weapon swings only from the ready stance, so the tap is made with right mouse held.
+    await page.mouse.down({ button: 'right' });
+    await page.waitForFunction(() => globalThis.primaryActionTest.input.controls.rightMouseActionHeld);
+    try {
+      await page.mouse.click(640, 450);
+      await page.waitForFunction((before) => globalThis.primaryActionTest.swings.length > before, beforeTap.swings);
+    } finally {
+      await page.mouse.up({ button: 'right' });
+    }
     await page.waitForFunction(() => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.opening === true;
+      const combat = globalThis.primaryActionTest.session.playerCombat;
+      return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
     });
-    await page.mouse.click(640, 450);
+    const afterTap = await heldOutcome(canOpening.uid);
+    assert.deepEqual(
+      afterTap,
+      { busy: false, swings: beforeTap.swings + 1, type: canOpening.closed },
+      'a tap keeps the ordinary use: one swing, and the can stays shut',
+    );
+    const releaseUnchosen = await holdDominantUse(page);
+    try {
+      await waitForActionRing(page);
+      // The ring follows the interaction hints, like the prompt it sits beside.
+      await page.evaluate(() => {
+        globalThis.primaryActionTest.hudOptions.interaction = false;
+      });
+      await waitForActionRing(page, false);
+      await page.evaluate(() => {
+        globalThis.primaryActionTest.hudOptions.interaction = true;
+      });
+      await waitForActionRing(page);
+    } finally {
+      await releaseUnchosen();
+    }
+    await waitForActionRing(page, false);
+    assert.deepEqual(await heldOutcome(canOpening.uid), afterTap, 'releasing at the centre does nothing');
+    await chooseHeldAction(page, 'open-can');
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const openedInHand = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -2087,9 +2192,9 @@ try {
     assert.deepEqual(
       openedInHand,
       { failures: [], type: canOpening.opened, held: true },
-      'the wheel-selected click opens rather than swings',
+      'the chosen release opens rather than swings',
     );
-    await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
+    assert.equal(await actionRingShown(page), false, 'confirming closes the ring');
     const honing = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -2099,14 +2204,10 @@ try {
       r.setHand(r.off, r.inventory.create('whetstone'));
       return { uid: blade.uid, condition: blade.condition };
     });
-    await page.mouse.wheel(0, 100);
-    await page.waitForFunction(() => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.sharpening === true;
-    });
-    for (const trigger of ['click', 'offhand']) {
-      if (trigger === 'click') {
-        await page.mouse.click(640, 450);
+    // The blade's own press chooses Sharpen from its ring; the whetstone's only action is to sharpen.
+    for (const trigger of ['ring', 'offhand']) {
+      if (trigger === 'ring') {
+        await chooseHeldAction(page, 'sharpen');
       } else {
         await pressAction(page, 'hand.use-off');
       }
@@ -2515,22 +2616,17 @@ try {
         time: globalThis.primaryActionTest.session.sim.time,
         feet: globalThis.primaryActionTest.feet(),
       }));
-      const releaseForward = await holdAction(page, 'movement.forward');
-      try {
-        await waitForSimulation(
-          page,
-          progressingSample,
-          { start: before.time },
-          {
-            seconds: 0.35,
-            label: 'render-free input and simulation witness',
-            record: (line) => process.stderr.write(`${line}\n`),
-            stop: releaseForward,
-          },
-        );
-      } finally {
-        await releaseForward();
-      }
+      await waitForSimulation(
+        page,
+        progressingSample,
+        { start: before.time },
+        {
+          seconds: 0.35,
+          label: 'render-free input and simulation witness',
+          record: (line) => process.stderr.write(`${line}\n`),
+          hold: 'movement.forward',
+        },
+      );
       const witness = await page.evaluate(() => ({
         renderer: Boolean(globalThis.primaryActionTest.engine.renderer),
         requests: globalThis.renderFreeWitness.webglRequests,
@@ -2557,9 +2653,10 @@ try {
       return { uid: item.uid, profile: tool.weapon.melee.type };
     });
     const first = await strike();
-    assert.deepEqual(first.swings[0], { result: true, profile: loadout.profile, hand: 'left' });
+    assert.deepEqual(first.swings.at(-1), { result: true, profile: loadout.profile, hand: 'left' });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
     await finishedSwing();
+    await installScopedGun(page);
     await page.evaluate(async (magazineUrl) => {
       const { magazineWellCalibre } = await import(magazineUrl);
       const r = globalThis.primaryActionTest;
@@ -2586,19 +2683,37 @@ try {
             def.ammo
           ),
       );
-      const gun = defs.find(
-        (def) =>
-          def.firearm &&
-          magazineWellCalibre(r.inventory.registry, def.id) &&
-          r.inventory.registry.models.get(def.model)?.gun?.attachments?.some((mounted) => {
-            const range = mounted.properties.magnification;
-            return range && range.min < range.max;
-          }),
-      );
-      if (!(light && tool && inert && gun)) {
+      const variableOptics = defs.filter((def) => {
+        const range = r.inventory.registry.models.get(def.model)?.gun?.attachment?.properties.magnification;
+        return range && range.min < range.max && def.opticZoom?.step > 0;
+      });
+      const fitting = defs
+        .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
+        .flatMap((gun) =>
+          (r.inventory.registry.models.get(gun.model)?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
+            variableOptics.map((optic) => ({ gun, optic, station })),
+          ),
+        )
+        .find(({ gun, optic, station }) => {
+          try {
+            r.scopedGun(gun.id, station, optic.id);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+      if (!(light && tool && inert && fitting)) {
         throw new Error('Missing hand-action fixture capabilities');
       }
-      r.types = { light: light.id, tool: tool.id, profile: tool.weapon.melee.type, inert: inert.id, gun: gun.id };
+      r.types = {
+        light: light.id,
+        tool: tool.id,
+        profile: tool.weapon.melee.type,
+        inert: inert.id,
+        gun: fitting.gun.id,
+        optic: fitting.optic.id,
+        opticStation: fitting.station,
+      };
       r.clearHand(r.dominant);
     }, magazineModule);
     // Fixture creation and placement stay with Inventory, never its hand map.
@@ -3553,7 +3668,7 @@ try {
       if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
         throw new Error('Could not pocket the loaded fixture magazine');
       }
-      const gun = r.inventory.create(r.types.gun);
+      const gun = r.scopedGun(r.types.gun, r.types.opticStation, r.types.optic);
       r.setHand(r.dominant, gun);
       must(firearms.loadNext(gun.uid, sim.time));
       settle();
@@ -4167,50 +4282,41 @@ try {
       r.setHand(r.dominant, rag);
       r.session.sim.body.impact(1, 'leftArm', { bleeding: 0 });
       r.session.sim.body.impact(3, 'rightArm', { bleeding: 0 });
-      return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
+      return {
+        uid: rag.uid,
+        defaultRegion: r.survival.selectedItemAction(rag)?.treatment?.region,
+        wounds: r.survival
+          .availableItemActions(rag)
+          .filter((action) => action.treatment)
+          .map((action) => ({ id: action.id, region: action.treatment.region })),
+      };
     });
-    await page.evaluate(() => {
-      globalThis.primaryActionTest.hudOptions.interaction = false;
-    });
-    await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
-    await page.evaluate(() => {
-      globalThis.primaryActionTest.hudOptions.interaction = true;
-    });
-    let hintWaitError;
-    try {
-      await page.waitForFunction(
-        () => document.querySelector('#item-action-list')?.textContent?.includes('›') === true,
-        undefined,
-        { timeout: 5000 },
+    const ringEntriesShown = (ids) =>
+      page.waitForFunction(
+        (expected) =>
+          JSON.stringify(
+            [...document.querySelectorAll('#action-radial .radial-entry')].map((entry) => entry.dataset.action),
+          ) === JSON.stringify(expected),
+        ids,
       );
-    } catch (error) {
-      hintWaitError = error;
-    }
-    const actionHint = await page.locator('#item-action-list').textContent();
-    const hintCount = (actionHint?.match(/›/g) ?? []).length;
-    const hintWaitFailure = hintWaitError ? `; hint wait failed: ${hintWaitError}` : '';
-    assert.equal(
-      hintWaitError === undefined && hintCount === 1,
-      true,
-      `expected exactly one treatment hint marker within 5 seconds; prompt was ${JSON.stringify(actionHint)}${hintWaitFailure}`,
+    // Treat gathers the wounds under one entry, whose child ring offers each one and returns to its parent at the centre.
+    await chooseHeldAction(page, 'treat');
+    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    const releaseAtCentre = await holdDominantUse(page);
+    await releaseAtCentre();
+    await page.waitForSelector('#action-radial .radial-entry[data-action="treat"]', { state: 'attached' });
+    assert.notEqual(
+      await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
+      'treatment',
+      'the child ring centre returns to the parent ring without treating',
     );
-    const selectedBeforeWheel = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
-    }, treatment.uid);
-    await page.evaluate(() => globalThis.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, cancelable: true })));
-    await page.waitForFunction(
-      (args) => {
-        const r = globalThis.primaryActionTest;
-        return r.survival.selectedItemAction(r.inventory.itemByUid(args.uid))?.treatment?.region !== args.before;
-      },
-      { uid: treatment.uid, before: selectedBeforeWheel },
-    );
-    const selected = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
-    }, treatment.uid);
-    await page.mouse.click(640, 450);
+    // A wound other than the default proves the choice, not the default, picks what is treated.
+    const chosenWound = treatment.wounds.find(({ region }) => region !== treatment.defaultRegion);
+    assert(chosenWound, 'the treatment fixture offers a wound besides the default');
+    await chooseHeldAction(page, 'treat');
+    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    await chooseHeldAction(page, chosenWound.id);
+    const selected = chosenWound.region;
     await page.waitForFunction(
       (uid) => {
         const { sim } = globalThis.primaryActionTest.session;
@@ -4350,13 +4456,14 @@ try {
 
     assert.deepEqual(pageErrors, []);
     await page.close();
-  } else {
+  } else if (group === 'replays-search-look') {
     await withTestHouse(browser, address.port, renderOverride, async (testHousePage) => {
       await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
       await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
     });
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
+  } else {
     await timePhase('forward-button-replay-case', () =>
       verifyForwardButtonReplay(browser, address.port, renderOverride),
     );

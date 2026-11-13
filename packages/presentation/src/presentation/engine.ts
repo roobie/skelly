@@ -5,23 +5,30 @@
 
 import { requireDayCycle } from '@skelly/engine/content';
 import { claimed } from '@skelly/engine/inventory';
+import { resolveGraphics } from '@skelly/engine/look';
 import type { GameConfig } from '@skelly/engine/session';
 import { skyAt } from '@skelly/engine/sky';
 import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@skelly/engine/world';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
+import { MaterialPatches } from '../render/materialPatches.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
 import { GradientSkyReflection } from '../render/skyReflection.ts';
+import { freezeMatrices } from '../render/staticMatrices.ts';
 import { VehicleFinishes } from '../render/vehicleFinishes.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
+import { browserTerrainWorkerSource } from '../worker/terrainPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
+import { readGraphicsSettings } from './graphicsSettings.ts';
 
 export interface Engine extends WorldSetup {
+  /** Patches for the main scene's materials, installed in one walk before each draw. */
+  materialPatches: MaterialPatches;
   skylight?: Skylight;
   vehicleFinishes?: VehicleFinishes;
   renderer?: WebGLRenderer;
@@ -68,7 +75,15 @@ export function createEngine(
   { render = true, graphicsSource = 'player' }: EngineOptions = {},
 ): Engine {
   const { scale, radiusM } = config;
-  const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
+  const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
+  if (!graphicsTuning) {
+    throw new Error('Missing core graphics policy');
+  }
+  const { msaaSamples } = resolveGraphics(
+    graphicsTuning,
+    graphicsSource === 'player' ? readGraphicsSettings(graphicsTuning) : {},
+  );
+  const renderer = render ? new WebGLRenderer({ antialias: msaaSamples > 0 }) : undefined;
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   if (renderer) {
     renderer.localClippingEnabled = true;
@@ -76,10 +91,6 @@ export function createEngine(
   }
 
   const scene = new Scene();
-  const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
-  if (!graphicsTuning) {
-    throw new Error('Missing core graphics policy');
-  }
   // Short-relief optics belong to this scene too, not only to the optical adapter's closer camera.
   const camera = new PerspectiveCamera(graphicsTuning.playerViewFovDegrees, 1, graphicsTuning.nearPlaneMetres, radiusM);
   camera.rotation.order = 'YXZ';
@@ -92,20 +103,28 @@ export function createEngine(
     camera,
     radiusM,
     farPlaneScale: config.fogFarPlaneScale,
+    fogCurveExponent: config.fogCurveExponent,
   };
   // The sun sits in a rig so shadows can move its box with the player without touching the light's
   // direction (its position within the rig, which the hands' light copies, stays a unit vector).
   const sunRig = new Group();
   sunRig.add(sky.light, sky.light.target);
   scene.add(sky.ambient, sunRig);
+  // The sun rig moves with the player; the ambient light and the chunk batch never move.
+  freezeMatrices(sky.ambient);
   applySky(sky, skyAt(12, requireDayCycle(config.content.registry)));
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
   meshes.setWeathering(config.weathering, config.weatheringSplit);
-  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), stats);
-  scene.add(meshes.group);
+  const worldSetup = createWorldSetup(config, meshes, browserMesherSource(), {
+    stats,
+    terrainWorkers: browserTerrainWorkerSource,
+  });
+  scene.add(meshes.batch);
+  freezeMatrices(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
+  const materialPatches = new MaterialPatches();
   const skylight =
     skyFields.fields.length > 0
       ? new Skylight(
@@ -117,7 +136,7 @@ export function createEngine(
             skyJobsInFlight: graphicsTuning.skyJobsInFlight,
             buildRadiusM: (config.radiusChunks + graphicsTuning.skyPreloadRings) * CHUNK * scale.blockSize,
           },
-          { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
+          { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive), patches: materialPatches },
         )
       : undefined;
   if (skylight) {
@@ -125,11 +144,12 @@ export function createEngine(
     worldSetup.streamer.onBeforeReveal = (cx, cz) => skyFields.finishColumn(cx, cz);
   }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
-    skylight?.update(scene, [
+    skylight?.update([
       camera.position.x / scale.blockSize,
       camera.position.y / scale.blockSize,
       camera.position.z / scale.blockSize,
     ]);
+    materialPatches.apply(scene);
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 
@@ -141,9 +161,11 @@ export function createEngine(
           new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection),
           MATERIALS,
           graphicsTuning.vehicleReflection.coatGrazing,
+          materialPatches,
         ),
       }
     : {};
+  drawing.mood?.setMsaaSamples(msaaSamples);
   const graphics = new GraphicsControls(graphicsTuning, { meshes, ...drawing }, { source: graphicsSource });
 
   const resize = () => {
@@ -157,6 +179,7 @@ export function createEngine(
 
   return {
     ...worldSetup,
+    materialPatches,
     ...(skylight ? { skylight } : {}),
     ...(renderer ? { renderer } : {}),
     scene,

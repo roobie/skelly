@@ -29,7 +29,7 @@ read_if:
   - you're choosing world scale, view distance, performance targets or the default render scale
   - you change player movement, lateral lean, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
-  - you change standing water, basins, the flooded-lot check or how liquids are meshed
+  - you change standing water, basins, the flooded-lot check, water evaluation ownership or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you change furniture lifting, carrying, placement, floor movement or stack support
   - you change furniture repair admission or the boundary between repair and replacement
@@ -160,6 +160,8 @@ place the authorities gave up on.
 Terrain goes on screen a whole column at a time and never beyond a column that isn't drawn yet, so no missing chunk shows what solid blocks hide. This lets play begin once a smaller ready ring is drawn while the remaining view fills in safely, without exposing sealed or buried rooms during loading or movement. Furniture, piles and actors share the terrain's reveal membership so their silhouettes and shadows cannot expose a hidden room before its walls arrive. Edits keep already drawn columns visible so replacement work does not create a gap. See `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes`, `packages/presentation/src/render/piles.ts`, `PileMeshes`, `packages/presentation/src/render/mobActors.ts`, `MobActorMeshes`, `packages/presentation/src/render/actors.ts`, `ActorMeshes`, `packages/presentation/src/render/chunks.ts`, `ChunkMeshes`, `packages/engine/src/core/columnReveal.ts`, `revealedColumns`, `packages/engine/src/game/streamer.ts`, `Streamer`, `packages/presentation/src/presentation/worldLoading.ts`, `WorldLoading`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `readyRadiusM`.
 
 Terrain range should not extend farther diagonally than along an axis. Retention prevents repeated streaming work when the player crosses a column border. See `packages/engine/src/game/streamer.ts`, `Streamer`, and `packages/mods/skelly.graphics/graphics.jsonnet`, `streamHysteresisM`. Fog goes by horizontal distance, not view depth, so turning in place does not change what is drawn. See `packages/presentation/src/render/distanceFog.ts`, `withDistanceFog`.
+
+The default view radius is content, and the fog reaches full strength at its edge along a curve that content shapes. A shorter radius pulls the fog in until it reads as a grey wall that hides the sky, so the default favours a readable horizon over the cheaper view, and the acceptance below applies at that default. See `packages/mods/skelly.graphics/graphics.jsonnet`, `viewRadiusM` and `fogCurveExponent`, and `packages/engine/src/game/config.ts`, `defaultViewRadiusM`.
 
 Performance acceptance targets 60 fps on a portable reference-laptop class:
 Intel HD 530-class integrated graphics at a device pixel ratio of 1.5. The
@@ -398,9 +400,13 @@ Only an emitted event stops a long action, except that bleeding also refuses
 compression for player actions. Nearby or aware shamblers do not make the game
 judge an area safe on the player's behalf: the player may choose to wait where
 enemies cannot reach them. Damage, a need threshold, a carried light dying, or
-deliberate debug noise can interrupt. A sleeper wakes; other actions return to
-real time and offer Continue or Stop without losing completed progress. Debug
-compression is not stopped by bleeding. See `Simulation.checkInterruptions` in
+deliberate debug noise can interrupt, and none loses completed progress. A
+sleeper wakes. A blow stops any other action outright, because being hit is no
+moment for a choice. A critical need such as starving returns the action to real
+time and offers Continue or Stop, because hunger is a choice the player can weigh
+against finishing the work. Thirst, exhaustion and a dying light offer the same
+prompt; no ruling has set any of them apart from starving. The prompt's form is in
+`INTERFACE.md`, "HUD". Debug compression is not stopped by bleeding. See `Simulation.checkInterruptions` in
 `packages/engine/src/core/sim.ts` and `LongActions.syncInterruption` in `packages/engine/src/core/longAction.ts`.
 
 Without an alarm-bearing item, sleep ends when fatigue reaches zero. With an
@@ -482,16 +488,28 @@ must not become saved edits merely because an admission check reached them. See
 Authored supply must have one truth before and after arrival. A speculative check
 cannot allocate live items, and an emptied source must not regenerate its original
 stock. Owner-controlled publication preserves existing item aliases rather than
-replacing the live inventory with a private copy. See `packages/engine/src/core/columnSupply.ts`,
-`createColumnSupply`; `packages/engine/src/game/session.ts`, `rolledColumns`; and
+replacing the live inventory with a private copy. Arrival checks a column's supply
+before publishing it, so a supply that fails publishes nothing, and checks it against
+only the owners that supply can meet, so a far view's many arrivals stay cheap however
+much of the world is explored. See `packages/engine/src/core/columnSupply.ts`,
+`createColumnSupply`; `packages/engine/src/core/inventory.ts`, `Inventory.projectAt`;
+`packages/engine/src/game/session.ts`, `rolledColumns`; and
 `packages/engine/src/core/saveState.ts`, `SaveSnapshot`.
 
 Voluntary removal protects what relies on a piece rather than stranding or losing it.
 Stale handles must fail loudly instead of corrupting occupancy, and removing a work
-target must not leave saved jobs naming something absent. Pending deconstruction needs
-a reservation so paused work cannot lose its target to another use. See
-`packages/engine/src/core/furnitureMove.ts`, `removalRefusal`; `packages/engine/src/core/blockEntities.ts`,
-`BlockEntities.remove`; and `packages/engine/src/game/session.ts`, `forgetPiece`.
+target must not leave saved jobs naming something absent. A world job reserves its
+piece by living on it, so paused work cannot lose its target to another use and the
+reservation has no record of its own to fall out of step with the job. Taking a piece
+apart is a recorded command, so replay reaches the same yield, and it revalidates the
+piece at Start, on resume and at completion, because the piece can change while the
+job waits. Completion removes the piece only through voluntary removal, so the job
+cannot strand what rests on it. Ruin conserves a job's escrowed inputs with its debris,
+because damage is not permission to lose them. See
+`packages/engine/src/core/furnitureMove.ts`, `removalRefusal` and `jobInputs`;
+`packages/engine/src/core/blockEntities.ts`, `BlockEntities.useRefusal` and
+`BlockEntities.remove`; `packages/engine/src/core/craftWork.ts`, `pieceTakeApartRefusal`;
+and `packages/engine/src/game/session.ts`, `forgetPiece`.
 
 Destruction must not inherit voluntary removal refusals, but damage is not permission
 to lose contents. Whole-plan drop admission keeps a crowded ruin standing until its
@@ -623,18 +641,26 @@ because rearranging a room should not require destroying its contents. See `pack
   `packages/engine/src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. A tap-and-hold opens
-  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
-  deliberate hold. Readability does not fasten a board; its ordinary use stays
-  on the tap. The list belongs to movable kinds: building parts keep direct use
-  because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the list and explains why
-  it cannot move, so fitting does not silently change that kind's controls.
-  An open list is a single confirmation, not a persistent interaction mode:
-  returning from a pause or another target must not unexpectedly act instead of
-  offering choices. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
-  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/furnitureActions.ts`,
-  `FurnitureActionSelection`.
+  search, rest, read), so the common action stays one tap. Holding opens the
+  radial action menu of rarer actions, which move or break the piece and so sit
+  behind a deliberate hold; releasing on an entry confirms it. Repair, taking
+  apart and continuing held work enter through the same menu, so every hold
+  choice reads alike, and their directions are authored before they are offered
+  so their arrival moves no existing entry. Readability does not fasten a board;
+  its ordinary use stays on the tap. The menu opens on any piece that has a
+  hold action, building parts included, because a hold that opens nothing is a
+  dead gesture and a player's own boards must be able to come down; a piece
+  with nothing to choose opens no menu, so the tap's use is never obstructed. A
+  fitted placement of a movable kind offers the menu and explains why it cannot
+  move, so fitting does not silently change that kind's controls. An open menu is a
+  single confirmation, not a persistent interaction mode: returning from a
+  pause or another target must not unexpectedly act instead of offering
+  choices. Each action keeps one authored direction, so muscle memory survives
+  a piece gaining or losing actions. Nothing is chosen until the pull leaves the
+  dead zone within an entry's selection angle, so a release at the centre or a
+  pull away from the only entry does nothing. See `packages/engine/src/core/furnitureMove.ts`, `slidableFurniture`,
+  `packages/presentation/src/presentation/play.ts`, `furnitureActions`, and `packages/engine/src/game/actionMenu.ts`,
+  `ActionMenu`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `packages/engine/src/core/furnitureMove.ts`, `turnCarried`,
@@ -673,11 +699,6 @@ because rearranging a room should not require destroying its contents. See `pack
   rule as lifting: what remains supported stays, and what loses support settles
   instead of riding the piece. A fall with no loaded floor is refused, because
   an unloaded chunk reads as air. See `packages/engine/src/core/furnitureMove.ts`, `settle`.
-- **Nothing falls on a body.** Hurting the player with their own tidying would
-  punish an action the game wants them to take, and crushing shamblers with a
-  stack would be a cheaper weapon than any the game balances. Lifting and floor
-  steps therefore share the fall refusal; see `packages/engine/src/core/furnitureMove.ts`,
-  `fallRefusal`.
 - **Nothing moves from under a body.** Movement and removal share one support
   query so no parallel rule can drift. Clearing a body off a piece needs a
   separate decision rather than making furniture movement a weapon. See
@@ -766,13 +787,11 @@ replaces it. Flow, rivers and tides would need a field this design does not prom
 authored sites have water; generated terrain has none. See `packages/engine/src/core/worldgen.ts`, `Surface`,
 and `packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
-Lakes are map features of any size. The haven's lake is hundreds of metres across and lakes
-elsewhere on a map can be much larger, so no schema field, fill rule, generation step or
-validation check caps a water body, and the debug lake is built at the haven's scale so its look
-is judged at the size that ships. Work that could grow with a lake's area stays bounded instead:
-validation searches a polygon's cells from coarse to fine and stops at the first one that holds
-water, and the shore's per-column cache is cleared when full. See `packages/engine/src/core/authoredLayout.ts`,
-`coarseToFineCentres`, and `packages/engine/src/core/authoredSite.ts`, `siteWater`.
+Lakes are map features of any size, so water-body area must not be capped to bound evaluation
+work. The debug lake must represent the haven's scale so its look is judged at the size that
+ships. See `packages/engine/src/core/authoredLayout.ts`, `coarseToFineCentres`, and
+`packages/engine/src/core/authoredTerrainEvaluator.ts`, `siteWater` for bounded validation and
+shore evaluation.
 
 A water row's level is the water's top face, the plane the eye breaks when surfacing, while a
 layout's `ground` is the lower face of the top ground block. The ground names the block an author
@@ -831,8 +850,8 @@ rule predicting whether a jump can clear the wall. Sounds and crowds beyond the 
 are a separate decision. The ground around the wall is flat at the city floor, because the
 gauntlet is a confined playtest area and relief beyond the wall would only be
 unreachable scenery; a distant ridge can return later as an authored feature. The
-scenario opts in, so other sites keep their natural ground; see `packages/engine/src/core/citySite.ts`,
-`surface` and `packages/engine/src/core/schema/scenarios.ts`, `flatSurroundings`.
+scenario opts in, so other sites keep their natural ground; see `packages/engine/src/core/terrainEvaluator.ts`,
+`createCitySurface` and `packages/engine/src/core/schema/scenarios.ts`, `flatSurroundings`.
 See `packages/engine/src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
@@ -1495,7 +1514,7 @@ held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. Clear glass does not hide a flame because it still shows ignition.
 The lamp's authored grip must leave the flame visible; see
-`packages/skelly-assets/models/lights.libsonnet`, `oil_lamp`, and `packages/presentation/src/render/modelFlame.ts`, `ModelFlames`.
+`packages/skelly-assets/models/catalogue/sets/lights.libsonnet`, `oil_lamp`, and `packages/presentation/src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
 punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
@@ -1551,7 +1570,7 @@ Can vessels are inventory atoms because opening and eating retain one vessel,
 not a disassemblable set of parts. Sharing filled-package geometry must not impose
 its mass on an empty vessel; shell and food tuning must remain independent.
 Game content owns these atoms' inventory mass so geometry-helper refactors cannot
-remove carried-weight tuning. See `packages/mods/skelly.packaged-foods/models-packaged-foods.jsonnet`, `models`,
+remove carried-weight tuning. See `packages/mods/skelly.basic-foods/models-basic-foods.jsonnet`, `partless`,
 `packages/mods/skelly.packaged-foods/packaged-foods-items.jsonnet`, `canShellGrams`,
 `packages/engine/src/core/items.ts`, `typeWeightGrams` and `weightOf`.
 
@@ -1559,15 +1578,15 @@ An opened vessel must read as opened even after its food is gone, so the lid
 stays attached and raised rather than relying on a food surface or an item name.
 The dedicated opener needs the silhouette of a hand tool rather than a storage
 bundle. These are visual distinctions, not extra inventory parts or mass sources.
-See `packages/skelly-assets/models/cans.libsonnet`,
+See `packages/skelly-assets/models/catalogue/sets/cans.libsonnet`,
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/openTin.ts`, `openTin`, and
 `packages/skelly-assets/tools/packages/thing-authoring-tool/src/families/handOpener.ts`, `handOpener`.
 
 Sharpening is held-item work rather than a craft-list repair: the prepared
 blade-and-stone pair makes carried equipment matter, and the wheel rewards a
 trip to furniture. Like can opening, a blade's competing action remains a player
-choice so sharpening does not cause a surprise swing. Aimed wheel activation
-uses the held blade. Repair recipes retain the shared content-owned restoration,
+choice so sharpening does not cause a surprise swing. Choosing it in the held
+action menu uses the held blade. Repair recipes retain the shared content-owned restoration,
 skill and work-rate contract; their activation selector keeps held work out of
 the craft list. See `packages/engine/src/game/sharpening.ts`, `Sharpening`,
 `packages/engine/src/game/itemActions.ts`, `ItemActionSelection`, `packages/engine/src/core/schema/recipes.ts`,
@@ -1703,7 +1722,7 @@ scatter is involved. See `packages/engine/src/core/pileDisplay.ts`, `effectivePi
 Pill medicines show a blister strip or bottle regardless of stack size, including
 when one item is one pill. A pack is easier to see and reads as medicine; the
 visual pack does not change dose counts or carried mass. See
-`packages/skelly-assets/models/food-medical.libsonnet`, `bottle`, and
+`packages/skelly-assets/models/catalogue/sets/food-medical.libsonnet`, `bottle`, and
 `packages/mods/skelly.medicine/medicine-items.jsonnet`, `pillPack`.
 
 Food portions depict food rather than a second vessel, so a serving does not
@@ -1731,7 +1750,7 @@ lose its presentation. Copies belong to the rendered instance, not the library;
 replacing a viewer model or painting a still must release them without disposing
 shared geometry. Recipe-owned geometry must stay in its recipe so refresh and
 export checks agree; hand-authored assets retain a separate preparation owner.
-See `packages/skelly-assets/models/handhelds.libsonnet`, `carrier`,
+See `packages/skelly-assets/models/catalogue/sets/handhelds.libsonnet`, `carrier`,
 `tools/item-fuel-models.mjs`, `recipes`, `tools/item-model-metadata.mjs`, `metadata`,
 `packages/engine/src/core/itemPresentation.ts`, `modelPresentationAssetIssues`, and
 `packages/presentation/src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
@@ -2572,9 +2591,12 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   Resistance precedes the strength gate so an ineffective blow does not accumulate
   damage. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`; `packages/engine/src/core/content.ts`,
   `buildRegistry`; and `packages/engine/src/core/blockDamage.ts`, `bashBlock`.
-- **Rubble preserves wreckage.** A material's fallen form is solid rubble because
-  wreckage should still provide cover; falling alone is not loose salvage. Strikes
-  and deconstruction are the intended routes to loose resources. See
+- **Rubble preserves wreckage.** A material's fallen form is solid rubble until
+  cleared, because wreckage should still provide cover; falling alone is not loose
+  salvage. Clearing is the take-apart command applied to rubble, so it arrives with
+  that command and adds no second destruction verb. Breaking also yields, at far
+  more time per unit than looting stock, so looting stays the efficient path; see
+  `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
@@ -2704,9 +2726,43 @@ renderer only chooses which fields to build early and draws what the cache holds
 caches would let the room a player sees and the room gameplay reads disagree. The
 visibility is derived, so it is not saved: a reload recomputes the same answer from
 restored state. Outside every field the answer is open sky, as `docs/readables.md`,
-"Reading needs light" requires, so missing data never reads as darkness. See
-`packages/engine/src/core/skyField.ts`, `SkyFields`, `packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
+"Reading needs light" requires, so missing data never reads as darkness. Sky light fades
+out within a fixed halo, so a field depends only on the chunks and blocking furniture inside
+its dependency box, and a change rechecks only the fields whose box it reaches. Every arriving
+column changes the world, so rechecking every field on every change costs frame rate in
+proportion to view radius while the world fills. See
+`packages/engine/src/core/skyField.ts`, `SkyFields`,
+`packages/engine/src/game/worldSetup.ts`, `createWorldSetup`, and
 `packages/engine/src/game/session.ts`, `createSession`.
+
+A parked vehicle shades sky light through the same cells that block sight and sun, so the
+ground under a car and its cabin read as shaded to both the renderer and the rules. Its
+light-blocking cells join the fields' input as blocking furniture does, so a vehicle edit
+rechecks only the fields its cells reach, and glows that ignore furniture ignore vehicles too.
+A half-metre cell of a car body is mostly air between thin panels, so an opaque cell would
+leave the ground under the car and its cabin black with a hard edge. Each cell instead stops
+the share of diffuse light its part's content gives, while still roofing the air below it,
+so how much sky a body lets past is moddable. Readers of the light channel other than the
+sky field still treat any share as blocking: they ask whether a ray passes a cell, not how
+much diffuse light a cell lets on.
+Its parts sit inside those coarse cells, so each surface samples the sky from the first open
+cell along its normal, as a shaped piece samples from its envelope face; otherwise the car
+would shade its own skin. The search stops at the car's own light-blocking geometry: an open
+cell above the roof is not the sky a seat under the roof sees, so a surface that meets its own
+body first samples the shaded cells inside it, while one facing out through glass still finds
+open sky. Only the car's own cells and geometry count there, because they alone key its
+render; a neighbour shades it through the field. Each layout-parked vehicle gets
+its own field because open sky outside every field would otherwise leave a car on open
+ground unshaded; layout vehicles keep their origin in play, so their fields can be fixed
+when the world is set up. Only a few field volumes are resident at once, so a street of
+parked cars would crowd house fields out; #1631 settles that before a layout parks one. A
+field rebuild is worker transport work, too costly to pay every frame for a moving vehicle;
+when a vehicle can be driven (#322), it should leave the occluders while it moves and
+rejoin them, and gain a field where it stops, once it parks. See `packages/engine/src/core/skyField.ts`, `SkyFields.setOccluders`,
+`packages/presentation/src/render/skyAnchor.ts`, `addSkyCellAnchors`,
+`packages/presentation/src/render/skylight.ts`, `RESIDENT_FIELDS`,
+`packages/engine/src/core/vehicleProjection.ts`, `VehicleOccupancy.boxes`, and
+`packages/engine/src/game/layoutVehicles.ts`, `layoutVehicleSkyBoxes`.
 
 Rules that ask whether a place is lit enough, such as reading a page or a sign, take the
 renderer's falloff and its content tuning, so light levels for the rules are never tuned
@@ -2715,6 +2771,18 @@ player aims it at what they read; a beam set down points somewhere the rules don
 so it counts for nothing. A lit candle held alone is enough to read by at night. See
 `packages/engine/src/core/illumination.ts`, `illuminationAt`, and `packages/presentation/src/render/lightFalloff.ts`,
 `installNearFieldFalloff`.
+
+A powered fixture's light position has one owner, which the renderer and the rules both read, so a room cannot look
+lit from one place and count as lit from another. A fixture with no authored offset shines from the centre of its origin
+cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such as a ceiling strip or a lamp's shade,
+authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
+`packages/engine/src/core/schema/furniture.ts`, `offset`.
+
+Lights form pools: the near field stays low so brightness falls off across a room instead of flooding it. That fixes
+the cause, so an intensity means something physical rather than compensating for a flat falloff light by light. One
+near-field value serves the renderer and the rules, so what the player sees keeps predicting whether they can read.
+When the near field moves, rescale each light to hold its strength at half its radius, so its reach stays about the
+same. See `packages/mods/skelly.senses/senses.jsonnet`, `nearFieldMetres`.
 
 Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
 transport therefore belongs ahead of reveal on workers; synchronous completion at
@@ -2791,8 +2859,8 @@ rechecks the route that admitted it when it completes. See `packages/engine/src/
 `batterySlotOption` and `batteryOption`, and `packages/presentation/src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen on the wheel
-and then activated, because a swap needs a spare: without one a player could not move
+A held light's battery can be taken out on its own, as an action chosen in the held
+action menu, because a swap needs a spare: without one a player could not move
 a cell to a charger, another light or a pocket. It follows magazine removal: the light
 must be in hand, the battery keeps its charge and goes to the first pocket with room,
 else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
@@ -2871,8 +2939,10 @@ matters for a far kill at the loaded edge together with full supported spots,
 so the case is rare; loss is already the outcome when no room is found.
 Readiness uses the replay-aware zombie rule.
 
-With no supported landing or no room found by the permitted search, the item is
-lost: the zombie has been removed or the limb cut, so no owner can retain it.
+With no supported landing or no room found by the permitted search, including an
+unready column that cannot search farther, discard the item. The zombie has been
+removed or the limb cut, so no owner can retain it. Discarding avoids a pending-drop
+queue in saves; pre-pre-alpha accepts loot lost at the loaded edge.
 Loss adds neither a notice nor a sound. Zombie loot can yield nothing, and a
 line about an unseen body would narrate what the character cannot know; see
 `INTERFACE.md`, "Text". Zombie drops search wider because they have no retained
@@ -3205,7 +3275,9 @@ and the anchors they join at, and holds every value that shapes the drawn
 figure. Shared authored joints and grips keep idle and active arms connected to
 the body rather than making first person another art obligation. Missing model,
 anchor or rig data must fail validation instead of silently drawing a partial
-body. Hit regions keep a box layout because the body simulation, not the drawn
+body. An arm segment names every part that turns with it: the finger bones curl as one rigid piece about
+the knuckles and the thumb bones about the thumb root, and the arm model's per-bone joints stay unposed
+until #1675. Hit regions keep a box layout because the body simulation, not the drawn
 shape, decides where a hit lands. Gore placement must not change with the observer. See `packages/engine/src/core/schema/figures.ts`, `FigureSchema`,
 `packages/presentation/src/render/armRig.ts`, `buildArmRig`, and `packages/presentation/src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
@@ -3424,6 +3496,27 @@ or free-form-building follow-up, not a permanently excluded interaction. Start w
 useful fitted cargo; further compartments extend the same ownership model rather
 than turning the entire wreck into a container.
 
+**Part finish.** The fitted spot sets the paint at spawn, and after that the part owns
+it: a fitting may name a finish, which becomes that copy's paint when the vehicle is
+spawned. A door pulled off a red car stays red, loose and in saves, and fitted to
+another car keeps its red until something repaints it. One part model painted per
+vehicle lets paint-only near-duplicates merge, and it matches how vehicles already
+choose their parts. See `packages/engine/src/core/items.ts`, `ItemState`, and
+`packages/engine/src/core/inventory.ts`, `Inventory.registerVehicle`.
+
+Paint is cosmetic and per copy, so no copy shares another's paint: it replaces only
+materials the asset marks `paintable`, and mass, strength and collision never read it.
+Wear and damage draw over paint where they are drawn; a fitted part draws no wear. See
+`packages/presentation/src/render/itemStateLook.ts`, `applyItemStateLook`, and
+`packages/presentation/src/render/vehicles.ts`, `VehicleMeshes`. A finish names a library
+entry and wears all of it, as a model's own material would, so any entry looks the same
+painted or authored. A mod adds one without engine change; a part with none, or naming
+one no pack provides, shows its own authored material. See
+`packages/presentation/src/render/modelMaterials.ts`, `paintedCopy`,
+`packages/engine/src/core/schema/items.ts`, `VehicleFinishSchema`, and
+`packages/mods/skelly.ground-vehicles/vehicles.jsonnet`, `vehicleFinishes`. Finishes
+apply to vehicles only.
+
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
 structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built
 frames are in the goal (point 1) but come after factory structures (point 8); #322
@@ -3588,7 +3681,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `packages/engine/src/core/schema/graphics.ts`,
   `GraphicsTuningSchema`; `packages/presentation/src/presentation/engine.ts`, `createEngine`; and `packages/presentation/src/render/hands.ts`, `HeldItems`.
 - **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `packages/mods/skelly.graphics/graphics.jsonnet`, `graphics`; `packages/engine/src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `packages/presentation/src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
-- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
+- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/skelly-assets/models/guns/tables/opticPresentation.jsonnet`; and `packages/presentation/src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
@@ -3637,7 +3730,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
-  The targets are 96–128 m near detail and 512 m or more of far terrain; to be
+  The targets are 128 m near detail and 512 m or more of far terrain; to be
   measured.
 - **Zombie bodies:** an actor moving off-screen must not come back with stale
   bones or snap by the distance it moved while culled, and an actor taking over
@@ -3762,11 +3855,17 @@ and render caches are not durable knowledge. See `packages/engine/src/core/schem
 
 ## World repair selection
 
-Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
+Holding world interaction opens the action menu on every piece with a hold action, intact or damaged (`DESIGN.md`, "Moving furniture"); lifting requires pointing at it and releasing. One gesture shape keeps lift and repair from competing for the same hold. See `packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`, and `packages/presentation/src/presentation/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `packages/presentation/src/presentation/play.ts`, `confirmFurnitureAction`; `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `packages/engine/src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
+Taking a piece apart is world work like repairing it: one chosen piece, a review of what the job touches, explicit Start, then handling progress. Both reviews share one target-pinned world-work view, differing only in whether the rows are inputs to choose or a yield to read, so a player learns one surface and the view has one owner. Neither entry is offered to players until the #1469 crafting view settles: the world-work view is laid out together with that view, and a review shipped alone before then would fix the view's shape (target, rows, time, blockers, Start) before the crafting layout it must sit beside, leaving a second surface to replace or to let drift. The engine command for taking a piece apart does not wait, because it carries no view. The entries return with that view, together with the turnable 3D view of the target beside its rows, so the player can inspect the piece they are committing supplies to or about to lose. Keyboard arrow aiming is not a second target-selection path: the menu choice already names the piece.
+
+A piece is whole by default: its definition authors what taking it apart yields, and repair stays one recipe per kind, so a stool needs no parts to come apart or to mend. A kind that authors a parts blueprint takes the parts path instead: a job removes or fits one part, and condition is per part. Keeping the parts route per kind leaves it open for the kinds that earn it without paying its cost on every cupboard, and both routes feed the same review, so the player still learns one surface. The content check refuses a kind that authors both, because a piece's model decides how the verb behaves and two models on one kind would leave that undecided. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`, `checkRecoveryYields`.
+
+A world job lives on its piece, running or paused. The piece holds the job, its progress and, for repair, its escrowed inputs, as a work item in the piece's own work slot of the item tree, so item ownership stays in the item tree and progress gains no second owner. The slot is not a pocket: a chair has none, and a job in a pocket would make the piece refuse its own take apart as not empty. Continue is on the piece's ring. A job that stays at its piece also works reasonably in multiplayer: whoever stands at the piece can continue it, and nobody carries another player's job away. A paused repair reserves its piece as a paused take apart does, one rule for every world job, so another move cannot take the target and leave the job vanishing under the player; a piece mid-repair cannot move until its job is cancelled. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.useRefusal`, and `DESIGN.md`, "Block entities".
+
+Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
 
 ## UI principles
 

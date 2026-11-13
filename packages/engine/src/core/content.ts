@@ -5,6 +5,7 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
@@ -65,6 +66,7 @@ import {
   type ModelDef,
   type RecipeCategoryDef,
   type RecipeDef,
+  type RecoveryWork,
   type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
@@ -195,7 +197,7 @@ const templateIssues = (
   return out;
 };
 
-/** Checks that need only the file itself: duplicate ids, the built-in air block, template sizes. */
+/** Checks that need only the file itself, not the rest of the registry. */
 const fileIssues = (file: ContentFile): [string, string][] => {
   const out: [string, string][] = [];
   for (const section of SECTIONS) {
@@ -211,6 +213,9 @@ const fileIssues = (file: ContentFile): [string, string][] => {
     if (block.id === AIR.id) {
       out.push([`blocks[${i}].id`, '"air" is built in']);
     }
+  });
+  (file.ui ?? []).forEach((tuning, i) => {
+    out.push(...actionMenuIssues(tuning.actionMenu, `ui[${i}].actionMenu`));
   });
   (file.templates ?? []).forEach((template, i) => {
     out.push(...templateIssues(template, `templates[${i}]`));
@@ -401,25 +406,33 @@ const checkUnpacking = (item: ItemDef, registry: Registry, qualities: ReadonlySe
   }
 };
 
+const checkRecoveryYields = (
+  { section, id, path, yields }: { section: ContentSection; id: string; path: string; yields: RecoveryWork['yields'] },
+  registry: Registry,
+  qualities: ReadonlySet<string>,
+  report: Report,
+) => {
+  yields.forEach((yieldItem, index) => {
+    if (!registry.items.has(yieldItem.item)) {
+      report(section, id, `${path}[${index}].item`, `no item "${yieldItem.item}"`);
+    } else if (section === 'items' && yieldItem.item === id) {
+      report(section, id, `${path}[${index}].item`, 'disassembly cannot yield the input item itself');
+    }
+    const quality = yieldItem.toolModifier?.quality;
+    if (quality !== undefined && !qualities.has(quality)) {
+      report(section, id, `${path}[${index}].toolModifier.quality`, `no tool quality "${quality}"`);
+    }
+  });
+};
+
 const checkDisassembly = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
-  const { disassembly } = item;
-  if (disassembly) {
-    disassembly.yields.forEach((yieldItem, index) => {
-      if (!registry.items.has(yieldItem.item)) {
-        report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
-      } else if (yieldItem.item === item.id) {
-        report(
-          'items',
-          item.id,
-          `.disassembly.yields[${index}].item`,
-          'disassembly cannot yield the input item itself',
-        );
-      }
-      const quality = yieldItem.toolModifier?.quality;
-      if (quality !== undefined && !qualities.has(quality)) {
-        report('items', item.id, `.disassembly.yields[${index}].toolModifier.quality`, `no tool quality "${quality}"`);
-      }
-    });
+  if (item.disassembly) {
+    checkRecoveryYields(
+      { section: 'items', id: item.id, path: '.disassembly.yields', yields: item.disassembly.yields },
+      registry,
+      qualities,
+      report,
+    );
   }
   item.salvage?.forEach((output, index) => {
     if (!registry.items.has(output.item)) {
@@ -1284,6 +1297,7 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
 const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   checkMaterialSounds(registry, report);
+  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const furniture of registry.furniture.values()) {
     if (liftableFurniture(furniture) && furniture.massKg === undefined) {
       report('furniture', furniture.id, '.massKg', 'liftable furniture needs an estimated mass');
@@ -1301,6 +1315,15 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    const takeApart = furniture.takeApart?.yield;
+    if (takeApart) {
+      checkRecoveryYields(
+        { section: 'furniture', id: furniture.id, path: '.takeApart.yield.yields', yields: takeApart.yields },
+        registry,
+        qualities,
+        report,
+      );
+    }
     furniture.ruin?.debris.forEach(({ item }, index) => {
       if (!registry.items.has(item)) {
         report('furniture', furniture.id, `.ruin.debris[${index}].item`, `no item "${item}"`);
@@ -1550,8 +1573,8 @@ const checkSpawnWindows = (registry: Registry, report: Report) => {
     }
   }
   for (const layout of registry.layouts.values()) {
-    layout.shamblers?.forEach((shambler, index) => {
-      check(shambler.window, (message) => report('layouts', layout.id, `.shamblers[${index}].window`, message));
+    layout.actors?.forEach((spawn, index) => {
+      check(spawn.window, (message) => report('layouts', layout.id, `.actors[${index}].window`, message));
     });
   }
 };
@@ -2262,10 +2285,9 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
     ...ARM_SEGMENTS.map((segment): [string, string] => [`.armRig.${segment}.pivot`, figure.armRig[segment].pivot]),
     ['.armRig.grip', figure.armRig.grip],
   ];
-  const rigParts: [string, string][] = ARM_SEGMENTS.map((segment) => [
-    `.armRig.${segment}.part`,
-    figure.armRig[segment].part,
-  ]);
+  const rigParts = ARM_SEGMENTS.flatMap((segment): [string, string][] =>
+    figure.armRig[segment].parts.map((part, index) => [`.armRig.${segment}.parts[${index}]`, part]),
+  );
   const legAnchors = LEG_SEGMENTS.map((segment): [string, string] => [
     `.legRig.${segment}.pivot`,
     figure.legRig[segment].pivot,

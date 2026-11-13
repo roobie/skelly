@@ -4,6 +4,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildRegistry, type ContentSource, requiredContentIssues } from '@skelly/engine/content';
 import { admitPacks, type BundleStamp, bundleSourceHash, type PackInput, packContentHash } from '@skelly/engine/packs';
+import { admittedSelections } from './readBundledPacks.ts';
 
 export async function stampBundle(sources: readonly ContentSource[], proofHash: string): Promise<BundleStamp> {
   const { registry, issues } = buildRegistry(sources);
@@ -17,19 +18,16 @@ export async function stampBundle(sources: readonly ContentSource[], proofHash: 
 export async function stampPacks(
   inputs: readonly PackInput[],
   proofHash: string,
+  entryPack: string,
 ): Promise<Record<string, BundleStamp>> {
-  const admitted = admitPacks(inputs);
-  if (admitted.issues.length > 0) {
-    throw new Error(`Pack admission failed: ${JSON.stringify(admitted.issues)}`);
-  }
-  await stampBundle(admitted.sources, proofHash);
-  // A stamp lets startup trust the default set, so that set is validated without the opt-in packs too.
-  if (inputs.some(({ manifest }) => manifest.optIn)) {
-    await stampBundle(admitPacks(inputs.filter(({ manifest }) => !manifest.optIn)).sources, proofHash);
-  }
+  const selections = admittedSelections(inputs, entryPack);
+  await Promise.all(selections.map((packs) => stampBundle(admitPacks(packs).sources, proofHash)));
   return Object.fromEntries(
     await Promise.all(
-      admitted.packs.map(async (pack) => [pack.manifest.id, { sourceHash: await packContentHash(pack), proofHash }]),
+      [...new Set(selections.flat())].map(async (pack) => [
+        pack.manifest.id,
+        { sourceHash: await packContentHash(pack), proofHash },
+      ]),
     ),
   );
 }
@@ -40,6 +38,10 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
   for await (const chunk of process.stdin) {
     input += chunk;
   }
-  const { packs, proofHash } = JSON.parse(input) as { packs: PackInput[]; proofHash: string };
-  process.stdout.write(JSON.stringify(await stampPacks(packs, proofHash)));
+  const { packs, proofHash, entryPack } = JSON.parse(input) as {
+    packs: PackInput[];
+    proofHash: string;
+    entryPack: string;
+  };
+  process.stdout.write(JSON.stringify(await stampPacks(packs, proofHash, entryPack)));
 }

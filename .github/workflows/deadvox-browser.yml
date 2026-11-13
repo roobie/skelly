@@ -34,6 +34,11 @@ jobs:
         with:
           path: packages/skelly-assets/tools/jsonnet/bin
           key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
+      - name: Cache pinned skelly-assets release
+        uses: actions/cache@v4
+        with:
+          path: tools/skelly-assets/archives
+          key: skelly-assets-${{ runner.os }}-${{ hashFiles('tools/skelly-assets/release.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -70,10 +75,14 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs flow
-      - name: Primary-action replay contract
+      - name: Primary-action search and look replay contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
-        run: node test/browser/primary-action.mjs replays
+        run: node test/browser/primary-action.mjs replays-search-look
+      - name: Primary-action motion and fire replay contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action.mjs replays-motion-fire
       - name: Primary-action glowstick pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2

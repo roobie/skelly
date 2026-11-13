@@ -17,12 +17,10 @@ import {
   FloatType,
   LinearFilter,
   type Material,
-  type Mesh,
   NearestFilter,
   RedFormat,
   RGBAFormat,
   RGFormat,
-  type Scene,
   ShaderChunk,
   UnsignedByteType,
   Vector2,
@@ -30,7 +28,8 @@ import {
 } from 'three';
 import { FADE_SHARPNESS, HALF_BRIGHTNESS } from './flashlight.ts';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
-import { SKY_ANCHOR_ATTRIBUTE } from './skyAnchor.ts';
+import { type MaterialPatches, materialPatch } from './materialPatches.ts';
+import { SKY_ANCHOR_ATTRIBUTE, SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
 const SPOT_LIGHT_INFO_CALL = /getSpotLightInfo\([^;]+\);/;
 const DIRECTIONAL_LIGHT_INFO_CALL = /getDirectionalLightInfo\([^;]+\);/;
@@ -40,6 +39,8 @@ const PREFETCH_M = 16;
 interface SkyRuntime {
   submit: SkySubmit;
   clock?: () => number;
+  /** Where the skylight registers its patch; the owner applies the set to scenes. */
+  patches: MaterialPatches;
 }
 const vectors = () => Array.from({ length: RESIDENT_FIELDS }, () => new Vector3());
 /** Red holds `SkyVolume`, "light"; green holds its "unfurnished" twin, interleaved per voxel. */
@@ -100,7 +101,6 @@ function regionIndex(fields: readonly SkyField[]) {
  */
 export class Skylight {
   private readonly texture = { value: volumeTexture(new Uint8Array([255, 255]), [1, 1, 1]) };
-  private readonly patched = new WeakSet<Material>();
   private readonly sky: SkyFields;
   private readonly fields: readonly SkyField[];
   /** The result each field's uploads were made from. */
@@ -119,6 +119,11 @@ export class Skylight {
   private readonly jobs: SkyRuntime;
   private readonly index: ReturnType<typeof regionIndex>;
   private readonly clock: () => number;
+  private readonly receiverPatch = materialPatch({
+    compile: (shader) => this.compile(shader),
+    key: () =>
+      `receiver-daylight-far-sun-skylight:unfurnished-fade:fixture-fade-${ITEM_POINT_LIGHTS}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`,
+  });
   private recordedTerrain = false;
 
   /** Replays request only fields whose recorded terrain is all present. */
@@ -166,6 +171,7 @@ export class Skylight {
     this.maxJobs = skyJobsInFlight;
     this.jobs = runtime;
     this.clock = runtime.clock ?? (() => performance.now());
+    runtime.patches.add(this.receiverPatch);
     let heightOffset = 0;
     this.heightOffsets = this.fields.map(({ dependency }) => {
       const offset = heightOffset;
@@ -312,7 +318,7 @@ export class Skylight {
     }
     return sent;
   }
-  update(scene: Scene, position: Vec3): void {
+  update(position: Vec3): void {
     const start = this.clock();
     this.publish();
     const nearby = this.nearby(position);
@@ -330,19 +336,7 @@ export class Skylight {
       this.refreshMetadata();
     }
     this.prepare(position);
-    this.patchMaterials(scene);
     this.onService?.(this.clock() - start);
-  }
-  /** The patch joins a material's program key, so a warm-up that runs before it compiles programs nothing draws. */
-  patchMaterials(scene: Scene): void {
-    scene.traverse((object) => {
-      const { material } = object as Mesh;
-      if (material) {
-        for (const entry of Array.isArray(material) ? material : [material]) {
-          this.patch(entry);
-        }
-      }
-    });
   }
   private refreshMetadata(): void {
     const data = this.regions.value.image.data!;
@@ -444,62 +438,58 @@ export class Skylight {
     this.index.grid.value.dispose();
     this.index.indices.value.dispose();
   }
-  private patch(material: Material): void {
-    if (this.patched.has(material)) {
+  private compile(shader: Parameters<Material['onBeforeCompile']>[0]): void {
+    if (!shader.fragmentShader.includes('#include <lights_fragment_end>')) {
       return;
     }
-    this.patched.add(material);
-    const compile = material.onBeforeCompile;
-    const key = material.customProgramCacheKey;
-    material.onBeforeCompile = (shader, renderer) => {
-      compile.call(material, shader, renderer);
-      if (!shader.fragmentShader.includes('#include <lights_fragment_end>')) {
-        return;
-      }
-      const shaderStartedRealMs = this.onShader ? this.clock() : undefined;
-      shader.uniforms.uSkyDaylight = this.daylight;
-      shader.uniforms.uSkyVolume = this.texture;
-      shader.uniforms.uSkyMinimum = this.minimum;
-      shader.uniforms.uSkyExtent = this.extent;
-      shader.uniforms.uSkyEnabled = this.enabled;
-      shader.uniforms.uSkyAtlasScale = this.atlasScale;
-      shader.uniforms.uSkyAtlasOffset = this.atlasOffset;
-      shader.uniforms.uSkyRegions = this.regions;
-      shader.uniforms.uSkyHeights = this.heights;
-      shader.uniforms.uSkyHeightSize = this.heightSize;
-      shader.uniforms.uSkyGrid = this.index.grid;
-      shader.uniforms.uSkyIndices = this.index.indices;
-      shader.uniforms.uSkyGridOrigin = this.index.origin;
-      shader.uniforms.uSkyGridSize = this.index.size;
-      shader.vertexShader = shader.vertexShader
-        .replace(
-          '#include <common>',
-          `#include <common>
+    const shaderStartedRealMs = this.onShader ? this.clock() : undefined;
+    shader.uniforms.uSkyDaylight = this.daylight;
+    shader.uniforms.uSkyVolume = this.texture;
+    shader.uniforms.uSkyMinimum = this.minimum;
+    shader.uniforms.uSkyExtent = this.extent;
+    shader.uniforms.uSkyEnabled = this.enabled;
+    shader.uniforms.uSkyAtlasScale = this.atlasScale;
+    shader.uniforms.uSkyAtlasOffset = this.atlasOffset;
+    shader.uniforms.uSkyRegions = this.regions;
+    shader.uniforms.uSkyHeights = this.heights;
+    shader.uniforms.uSkyHeightSize = this.heightSize;
+    shader.uniforms.uSkyGrid = this.index.grid;
+    shader.uniforms.uSkyIndices = this.index.indices;
+    shader.uniforms.uSkyGridOrigin = this.index.origin;
+    shader.uniforms.uSkyGridSize = this.index.size;
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
 #ifdef SKY_ANCHOR
 attribute vec3 ${SKY_ANCHOR_ATTRIBUTE};
 #endif`,
-        )
-        .replace(
-          '#include <worldpos_vertex>',
-          `#include <worldpos_vertex>
+      )
+      .replace(
+        '#include <worldpos_vertex>',
+        `#include <worldpos_vertex>
 vec4 skyPosition = vec4(transformed, 1.0);
 #ifdef SKY_ANCHOR
 skyPosition = vec4(${SKY_ANCHOR_ATTRIBUTE}, 1.0);
 #endif
 vec3 skyNormal = objectNormal;
+#ifdef USE_BATCHING
+skyPosition = batchingMatrix * skyPosition;
+skyNormal = mat3(batchingMatrix) * skyNormal;
+#endif
 #ifdef USE_INSTANCING
 skyPosition = instanceMatrix * skyPosition;
 skyNormal = mat3(instanceMatrix) * skyNormal;
 #endif
 vSkyWorld = (modelMatrix * skyPosition).xyz;
 vSkyNormal = normalize(mat3(modelMatrix) * skyNormal);`,
-        );
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <common>',
-          `#include <common>
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
 uniform float uSkyDaylight;
 uniform highp sampler3D uSkyVolume;
 uniform sampler2D uSkyRegions;
@@ -518,7 +508,7 @@ varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
 vec2 skyVisibility(out bool unbuilt) {
   unbuilt = false;
-  vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * 0.5});
+  vec3 point = vSkyWorld + normalize(vSkyNormal) * float(${this.blockSize * SKY_RECEIVER_STEP});
   vec2 gridCell = floor(point.xz / float(${this.blockSize * CHUNK})) - uSkyGridOrigin;
   if (any(lessThan(gridCell, vec2(0.0))) || any(greaterThanEqual(gridCell, uSkyGridSize))) return vec2(1.0);
   vec2 candidates = texture2D(uSkyGrid, (gridCell + 0.5) / uSkyGridSize).xy;
@@ -553,10 +543,10 @@ vec2 skyVisibility(out bool unbuilt) {
   unbuilt = covered && !known;
   return vec2(covered ? (known ? fallback : float(${this.unbuiltCap})) : 1.0);
 }`,
-        )
-        .replace(
-          '#include <lights_fragment_begin>',
-          `bool receiverSkyUnbuilt;
+      )
+      .replace(
+        '#include <lights_fragment_begin>',
+        `bool receiverSkyUnbuilt;
 vec2 receiverSky = skyVisibility(receiverSkyUnbuilt);
 float receiverSkyVisibility = receiverSky.x;
 float receiverSkyFade = receiverSky.y;
@@ -583,22 +573,18 @@ ${ShaderChunk.lights_fragment_begin
         directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyFade /float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));
 #endif`,
   )}`,
-        )
-        .replace(
-          '#include <lights_fragment_end>',
-          `irradiance *= receiverSkyVisibility;
-#if defined(USE_ENVMAP) && defined(RE_IndirectSpecular)
+      )
+      .replace(
+        '#include <lights_fragment_end>',
+        `irradiance *= receiverSkyVisibility;
+#if defined( RE_IndirectSpecular )
 radiance *= receiverSkyVisibility;
 clearcoatRadiance *= receiverSkyVisibility;
 #endif
 #include <lights_fragment_end>`,
-        );
-      if (shaderStartedRealMs !== undefined) {
-        this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
-      }
-    };
-    material.customProgramCacheKey = () =>
-      `${key.call(material)}:receiver-daylight-far-sun-skylight:unfurnished-fade:fixture-fade-${ITEM_POINT_LIGHTS}:${this.blockSize}:${this.unbuiltCap}:${this.fields.length}:${this.index.maximum}:${this.index.length}`;
-    material.needsUpdate = true;
+      );
+    if (shaderStartedRealMs !== undefined) {
+      this.onShader?.(shader.uniforms, this.clock() - shaderStartedRealMs);
+    }
   }
 }

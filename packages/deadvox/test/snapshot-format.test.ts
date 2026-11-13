@@ -55,9 +55,9 @@ const editBudgetChunk = (runtime: ReturnType<typeof createRuntime>, cx: number, 
   }
 };
 
-// PROJECT.md/config.ts default radius is 96 m; 32-block chunks at 0.5 m are 16 m,
-// so config.ts/streamer.ts cover a 13x13 mesh square, with 8 vertical layers from scale.ts.
-// The 25%-edited / 8-cells-per-edited-chunk load is an explicit high-side stress assumption.
+// A fixed edited area, not the default view radius: the budget stays comparable when the
+// default is retuned. The 25%-edited / 8-cells-per-edited-chunk load is an explicit
+// high-side stress assumption.
 const applyBudgetWorldEdits = (runtime: ReturnType<typeof createRuntime>) => {
   const radiusChunks = chunksFor(scale, 96);
   const centerX = toChunk(Math.floor(runtime.site.spawn.pos[0] / scale.blockSize));
@@ -65,7 +65,7 @@ const applyBudgetWorldEdits = (runtime: ReturnType<typeof createRuntime>) => {
   const visitedChunks = (radiusChunks * 2 + 1) ** 2 * (scale.maxCy - scale.minCy + 1);
   let ordinal = 0;
   let editedChunks = 0;
-  // 13x13 horizontal columns x 8 vertical layers: one edited layer in four, 8 block changes.
+  // One edited vertical layer in four, 8 block changes each.
   for (let cz = centerZ - radiusChunks; cz <= centerZ + radiusChunks; cz++) {
     for (let cx = centerX - radiusChunks; cx <= centerX + radiusChunks; cx++) {
       runtime.session.onColumn(cx, cz, runtime.site);

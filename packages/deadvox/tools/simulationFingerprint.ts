@@ -97,6 +97,10 @@ export const SIMULATION_EXCLUSIONS = [
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'engine/core/meshInput.ts',
   'engine/core/occlusion.ts',
+  // What a mesher builds from a mesh request: presentation only.
+  'engine/game/meshRequest.ts',
+  // Which chunk blocks each mesher keeps between mesh requests: presentation only.
+  'engine/game/sentChunks.ts',
   // Which columns are drawn yet: presentation only.
   'engine/core/columnReveal.ts',
   // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
@@ -277,6 +281,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
     { root: resolve(projectRoot, 'mods'), prefix: 'mods/' },
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
+    { root: resolve(projectRoot, '../skelly-assets/models'), prefix: 'asset-models/' },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
   ];
   for (const { root, prefix } of roots) {
@@ -349,7 +354,7 @@ async function resolveTrackableModule(
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, the engine's and presentation's src/, the submodule's thing-core/src/, and node_modules: ${resolvedId}`,
+      `Runtime dependency ${specifier} resolves outside src/, the engine's and presentation's src/, the submodule's thing-core and models sources, and node_modules: ${resolvedId}`,
     );
   }
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
@@ -364,7 +369,9 @@ async function resolveTrackableModule(
   }
   if (
     extension === '.json' &&
-    ['src/config/', 'src/feasibility/', 'thing-core/'].some((prefix) => relativePath.startsWith(prefix))
+    ['src/config/', 'src/feasibility/', 'thing-core/', 'asset-models/'].some((prefix) =>
+      relativePath.startsWith(prefix),
+    )
   ) {
     return { file, relativePath };
   }

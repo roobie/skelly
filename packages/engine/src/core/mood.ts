@@ -101,23 +101,30 @@ export interface ShadowState {
   distance: number;
 }
 
-/** The sun's shadow distances the debug key steps through, in metres. */
-export const SHADOW_DISTANCES: readonly number[] = [24, 40, 64];
+/** The content-owned sun-shadow reach and debug cycle. */
+export interface SunShadowTuning {
+  readonly defaultReachMetres: number;
+  readonly debugReachMetres: readonly number[];
+}
 
-export const DEFAULT_SHADOWS: ShadowState = { sun: true, torch: true, distance: 24 };
+export const SHADOW_DISTANCE_RANGE = { min: 12, max: 96 } as const;
 
-const MIN_SHADOW_DISTANCE = 16;
-const MAX_SHADOW_DISTANCE = 96;
+/** The untouched shadow switches with the reach content selects. */
+export const defaultShadows = ({ defaultReachMetres }: SunShadowTuning): ShadowState => ({
+  sun: true,
+  torch: true,
+  distance: defaultReachMetres,
+});
 
-/** A whole number of metres within the allowed range; anything else (NaN) is the default. */
-export const clampShadowDistance = (value: number): number =>
+/** A whole number of metres within the renderer's supported range; a non-number returns the content default. */
+export const clampShadowDistance = (value: number, tuning: SunShadowTuning): number =>
   Number.isFinite(value)
-    ? Math.min(MAX_SHADOW_DISTANCE, Math.max(MIN_SHADOW_DISTANCE, Math.round(value)))
-    : DEFAULT_SHADOWS.distance;
+    ? Math.min(SHADOW_DISTANCE_RANGE.max, Math.max(SHADOW_DISTANCE_RANGE.min, Math.round(value)))
+    : tuning.defaultReachMetres;
 
-/** The next of `SHADOW_DISTANCES` above `current`, wrapping to the first. */
-export const nextShadowDistance = (current: number): number =>
-  SHADOW_DISTANCES.find((distance) => distance > current) ?? SHADOW_DISTANCES[0]!;
+/** The next content-owned debug reach above `current`, wrapping to the first. */
+export const nextShadowDistance = (current: number, { debugReachMetres }: SunShadowTuning): number =>
+  debugReachMetres.find((distance) => distance > current) ?? debugReachMetres[0]!;
 
 /** Multiplier on the flashlight's intensity (render/flashlight.ts); the debug controls and URL change it. */
 export const DEFAULT_TORCH = 1;

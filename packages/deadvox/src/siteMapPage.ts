@@ -1,19 +1,17 @@
 import { blockColors } from '@skelly/engine/content';
-import { DEFAULT_RADIUS_M, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
+import { defaultViewRadiusM, makeConfig, siteFromUrl, startForSite } from '@skelly/engine/session';
 import { buildingBounds } from '@skelly/engine/terrain';
 import {
   BLOCK_SIZE,
   CHUNK,
-  type Chunk,
   compassBearing,
-  generateColumn,
+  createTerrainEvaluator,
   siteForReviewMap,
   sitePalette,
   terrainShapeOf,
   toChunk,
   toLocal,
   WORLD_BOTTOM_M,
-  worldGroundAt,
 } from '@skelly/engine/world';
 import { MAP_SLICE_ACTIONS, mapSliceKeys } from '@skelly/presentation/input';
 import {
@@ -39,7 +37,7 @@ const params = new URLSearchParams(globalThis.location.search);
 const overlay = params.get('overlay') === '1';
 const rawSeed = Number(params.get('seed') ?? DEFAULT_SEED);
 const seed = Number.isFinite(rawSeed) ? rawSeed | 0 : DEFAULT_SEED;
-const config = makeConfig(seed, DEFAULT_RADIUS_M, content);
+const config = makeConfig(seed, defaultViewRadiusM(content), content);
 Object.assign(config, siteFromUrl(params, 'playtest', registry, params.get('debug') === '1'), mapWorldShape(params));
 config.debug = true;
 if (registry.scenarios.has(config.site)) {
@@ -85,14 +83,14 @@ const height = maxBlockZ - minBlockZ;
 let heights: Float32Array = new Float32Array(width * height);
 const sliceEmptyMetres = WORLD_BOTTOM_M;
 const blockIds = new Uint16Array(width * height);
-const terrain = {
+const terrain = createTerrainEvaluator({
   seed,
   scale,
   blocks: sitePalette(registry).terrain,
   shape: terrainShapeOf(registry),
-  surface: site?.surface,
-  ...(site ? { stamp: (chunk: Chunk) => site.stamp(chunk) } : {}),
-};
+  site: site?.terrain ?? { kind: 'natural' },
+  structures: [],
+});
 const canvas = document.querySelector<HTMLCanvasElement>('#map')!;
 const context = canvas.getContext('2d', { alpha: false })!;
 const status = document.querySelector<HTMLElement>('#map-status')!;
@@ -243,14 +241,7 @@ const sampleGround = async () => {
       const { z: zm } = siteMapRasterToWorld(0, row + 0.5, mapGrid);
       for (let column = 0; column < width; column += 1) {
         const { x: xm } = siteMapRasterToWorld(column + 0.5, row + 0.5, mapGrid);
-        heights[column + row * width] = worldGroundAt({
-          seed,
-          shape: terrain.shape,
-          scale,
-          surface: site?.surface,
-          xm,
-          zm,
-        });
+        heights[column + row * width] = terrain.groundAt(xm, zm);
       }
     },
     (rows) => {
@@ -275,7 +266,7 @@ const sampleTopBlocks = async (ceilingY?: number): Promise<{ columns: number; re
     (index) => {
       const cx = minCx + Math.floor(index / countZ);
       const cz = minCz + (index % countZ);
-      const chunks = generateColumn(terrain, cx, cz);
+      const chunks = terrain.generateColumn(cx, cz);
       const x0 = Math.max(minBlockX, cx * CHUNK);
       const x1 = Math.min(maxBlockX, (cx + 1) * CHUNK);
       const z0 = Math.max(minBlockZ, cz * CHUNK);

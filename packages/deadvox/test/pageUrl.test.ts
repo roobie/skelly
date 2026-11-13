@@ -91,7 +91,7 @@ describe('page links', () => {
     const links = {
       newWorld: newWorldHref(page, hash, 4),
       replay: replayHref(page, hash),
-      enterPractice: tutorialUrl(page, 'fixture.practice', tutorialHash(hash)),
+      enterPractice: tutorialUrl(page, 'fixture.practice', [], tutorialHash(hash)).href,
     };
     for (const [name, href] of Object.entries(links)) {
       const url = new URL(href);

@@ -12,9 +12,13 @@ import {
   strictObject,
 } from 'valibot';
 import { GraphicsOptionsSchema } from '../graphics.ts';
+import { SHADOW_DISTANCE_RANGE } from '../mood.ts';
 import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
 import { Count, Fraction, Id, NonNegative, Positive, range } from './primitives.ts';
+
+/** The view radii a run accepts, from the content default or a debug hash. */
+export const VIEW_RADIUS_BOUNDS_M = { min: 32, max: 256 } as const;
 
 /** An inclusive { min, max } range of one kind of number. */
 const orderedRange = (item: typeof NonNegative | typeof Positive) =>
@@ -32,6 +36,11 @@ export const GraphicsTuningSchema = strictObject({
     rimSoftness: pipe(Positive, maxValue(0.5)),
     reticleAntiAliasWidth: pipe(Positive, maxValue(2)),
   }),
+  /**
+   * The view radius a run starts with: what is meshed and drawn, and where the distance fog must be complete.
+   * Streaming loads past it, so it sets the world's load as well as its look.
+   */
+  viewRadiusM: pipe(number(), finite(), minValue(VIEW_RADIUS_BOUNDS_M.min), maxValue(VIEW_RADIUS_BOUNDS_M.max)),
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),
@@ -41,12 +50,37 @@ export const GraphicsTuningSchema = strictObject({
    * (`packages/presentation/src/render/distanceFog.ts`).
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
+  /**
+   * The distance fog's curve between a look's fog start and end: fog = t ** exponent, t running 0 to 1 over the band.
+   * Above 1 the fog stays thin over most of the band and closes late, so far silhouettes keep their shape while the
+   * view's edge still ends in pure fog colour.
+   */
+  fogCurveExponent: pipe(number(), finite(), minValue(0.25), maxValue(8)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   /** The inventory picture camera's margin around a model's fitted bounds. */
   itemPicture: strictObject({ framing: Positive }),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
+  /** Retries of a model fetch that hit a passing server or network error, and the first wait, which doubles. */
+  modelFetchRetry: strictObject({ retries: Count, backoffRealSeconds: NonNegative }),
   skyJobsInFlight: pipe(number(), integer(), minValue(2)),
+  /**
+   * The side, in chunks, of the square area one instanced batch of standing furniture covers. A larger area draws
+   * fewer batches but culls less of what is out of view (`packages/presentation/src/render/furniture.ts`).
+   */
+  furnitureSectorChunks: pipe(number(), integer(), minValue(1)),
   skyPreloadRings: Count,
+  /** Terrain columns admitted per frame while streaming (`packages/engine/src/game/streamer.ts`, `update`). */
+  columnsPerFrame: pipe(number(), integer(), minValue(1)),
+  /**
+   * Dedicated workers that compute terrain columns ahead of admission, how many missing columns they are asked
+   * for, nearest first, and how many columns may be running or staged at once
+   * (`packages/engine/docs/decisions/terrain-workers.md`, "Decision").
+   */
+  terrainWorkers: strictObject({
+    count: pipe(number(), integer(), minValue(1)),
+    lookaheadColumns: pipe(number(), integer(), minValue(1)),
+    maxOutstandingColumns: pipe(number(), integer(), minValue(1)),
+  }),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`packages/deadvox/DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The sky gradient vehicle finishes reflect (`packages/deadvox/GRAPHICS.md`, "Vehicle finishes"). */
@@ -64,6 +98,25 @@ export const GraphicsTuningSchema = strictObject({
     horizonGain: Positive,
     coatGrazing: Fraction,
   }),
+  sunShadow: pipe(
+    strictObject({
+      defaultReachMetres: pipe(
+        number(),
+        integer(),
+        minValue(SHADOW_DISTANCE_RANGE.min),
+        maxValue(SHADOW_DISTANCE_RANGE.max),
+      ),
+      debugReachMetres: pipe(
+        array(pipe(number(), integer(), minValue(SHADOW_DISTANCE_RANGE.min), maxValue(SHADOW_DISTANCE_RANGE.max))),
+        minLength(1),
+      ),
+    }),
+    check(
+      ({ defaultReachMetres, debugReachMetres }) =>
+        new Set(debugReachMetres).size === debugReachMetres.length && debugReachMetres.includes(defaultReachMetres),
+      'sun shadow reaches must be unique and include the default',
+    ),
+  ),
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
   itemViewer: pipe(
     strictObject({

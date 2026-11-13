@@ -3,11 +3,11 @@ import { placedGroundLoot, placedSpawns } from '@skelly/engine/internal/core/tem
 import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
-import { defaultStartOf } from './fixtures/scenario.ts';
+import { authoredCityScenarios, defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
+const gauntlets = authoredCityScenarios(registry);
 
 describe('gauntlet crisis HQ threat and supplies', () => {
   it('is guarded mostly by soldiers and has loot piles lying in its rooms', () => {

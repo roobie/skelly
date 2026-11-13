@@ -1,20 +1,11 @@
 // Tiled is build-time only. This Site consumes validated layout JSON and existing ASCII templates.
-import { inPolygon, type LayoutPoint } from './authoredLayout.ts';
+import { inPolygon } from './authoredLayout.ts';
 import { blocks, placementOf } from './authoredPlacement.ts';
-import {
-  buildingBounds,
-  LOT_APRON_M,
-  layoutHeight,
-  lotOf,
-  polylineDistance,
-  polylineDistanceAt,
-  rectDistance,
-  smoothstep,
-} from './authoredTerrain.mjs';
+import { buildingBounds, LOT_APRON_M, lotOf, polylineDistance, rectDistance } from './authoredTerrain.mjs';
+import { type AuthoredGroundData, createAuthoredGround } from './authoredTerrainEvaluator.ts';
 import { claimed, claimedId } from './capabilities.ts';
-import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
+import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { type LootSpawnPoint, lootPointsByColumn } from './loot.ts';
 import { placementKeyLoot } from './placementLoot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
@@ -45,99 +36,9 @@ import {
   SupplyFootprints,
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
-import { type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
-import {
-  forestDensityAt,
-  leafLitterAt,
-  stampTrees,
-  TreeIndex,
-  type TreePlacement,
-  vegetationPlacements,
-} from './vegetation.ts';
-import type { Surface } from './worldgen.ts';
-
-/** Room for many chunk columns' shore scans, so clearing only repeats work, never inside one column. */
-const WET_CACHE_COLUMNS = 64 * CHUNK * CHUNK;
-
-/**
- * A layout's water rows as a surface's water and its sand: the bed and a shore ring. Without rows
- * there is no `water`, so generation skips the water column.
- */
-const siteWater = (
-  layout: SiteLayoutDef,
-  s: number,
-  height: (x: number, z: number, natural: number) => number,
-): { water?: Surface['water']; sandy: (x: number, z: number) => boolean } => {
-  const rows = (layout.water ?? []).map((row) => {
-    const xs = row.polygon.map(([x]) => x);
-    const zs = row.polygon.map(([, z]) => z);
-    const { shore } = row;
-    const reach = {
-      x0: Math.min(...xs) - shore,
-      x1: Math.max(...xs) + shore,
-      z0: Math.min(...zs) - shore,
-      z1: Math.max(...zs) + shore,
-    };
-    return { ...row, reach };
-  });
-  if (rows.length === 0) {
-    return { sandy: () => false };
-  }
-  // Overlapping bodies fill to the highest level.
-  const levelAt = (x: number, z: number): number | undefined => {
-    const at: LayoutPoint = [(x + 0.5) * s, (z + 0.5) * s];
-    let level: number | undefined;
-    for (const { level: rowLevel, polygon } of rows) {
-      if ((level === undefined || rowLevel > level) && inPolygon(at, polygon)) {
-        level = rowLevel;
-      }
-    }
-    return level;
-  };
-  const reaches = ({ reach }: (typeof rows)[number], x: number, z: number): boolean => {
-    const [xm, zm] = [(x + 0.5) * s, (z + 0.5) * s];
-    return xm >= reach.x0 && xm <= reach.x1 && zm >= reach.z0 && zm <= reach.z1;
-  };
-  // Inside the site bounds `natural` has no weight, and validation keeps water polygons inside them.
-  // The shore scan asks each column's neighbours, so answers are cached; the cache is cleared when
-  // full because a lake's area has no bound, while the columns being generated at once are few.
-  const wetColumns = new Map<string, boolean>();
-  const wet = (x: number, z: number): boolean => {
-    const key = `${x},${z}`;
-    let value = wetColumns.get(key);
-    if (value === undefined) {
-      const level = levelAt(x, z);
-      value = level !== undefined && height(x, z, layout.ground / s) + 1 < level / s;
-      if (wetColumns.size >= WET_CACHE_COLUMNS) {
-        wetColumns.clear();
-      }
-      wetColumns.set(key, value);
-    }
-    return value;
-  };
-  const onShore = (row: (typeof rows)[number], x: number, z: number): boolean => {
-    if (!reaches(row, x, z)) {
-      return false;
-    }
-    const cells = Math.floor(row.shore / s);
-    for (let dz = -cells; dz <= cells; dz++) {
-      for (let dx = -cells; dx <= cells; dx++) {
-        if (Math.hypot(dx, dz) * s <= row.shore && wet(x + dx, z + dz)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-  return {
-    water: (x, z) => {
-      const level = levelAt(x, z);
-      return level === undefined ? undefined : level / s;
-    },
-    // A grass lake bed reads as a hole in a lawn, so the bed and a shore ring around the actual water are sand.
-    sandy: (x, z) => rows.some((row) => reaches(row, x, z)) && (wet(x, z) || rows.some((row) => onShore(row, x, z))),
-  };
-};
+import { type Placement, placedPieces, placedSpawns } from './templates.ts';
+import { type SiteTerrainPlan, terrainPlacements } from './terrainPlan.ts';
+import { forestDensityAt, type TreePlacement, vegetationPlacements } from './vegetation.ts';
 
 const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
   const { showroom } = layout;
@@ -150,18 +51,18 @@ const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
 
 export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
-  readonly surface: Surface;
+  readonly terrain: SiteTerrainPlan;
   readonly placements: readonly Placement[];
   readonly publicCartography: readonly PublicCartographicFeature[];
   get authoredPlacements(): readonly Placement[] {
     return this.placements;
   }
   get trees(): readonly TreePlacement[] {
-    return this.treeIndex.trees;
+    return this.terrainTrees;
   }
   private readonly spawns: readonly ActorSpawn[];
   private readonly hordes: readonly HordeSpawn[];
-  private readonly treeIndex: TreeIndex;
+  private readonly terrainTrees: readonly TreePlacement[];
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
@@ -231,7 +132,7 @@ export class AuthoredSite implements Site {
     };
     const spawnPoints: [number, number][] = [
       [layout.player.position[0], layout.player.position[2]],
-      ...layout.shamblers.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
+      ...layout.actors.map((spawn): [number, number] => [spawn.position[0], spawn.position[2]]),
       ...(layout.hordes ?? []).map((horde): [number, number] => [horde.position[0], horde.position[2]]),
       ...this.placements
         .flatMap(placedSpawns)
@@ -240,146 +141,23 @@ export class AuthoredSite implements Site {
     const protectedBuildings = layout.buildings.map((building) =>
       buildingBounds(building, registry.templates.get(building.template)!.size),
     );
-    type NoiseTrack = SiteLayoutDef['tracks'][number];
-    interface NoiseInfluences {
-      buildings: Rect[];
-      tracks: NoiseTrack[];
-      spawns: [number, number][];
-    }
-    const noiseColumns = new Map<number, Map<number, NoiseInfluences>>();
-    const columnSpanMetres = CHUNK * s;
-    const addNoiseInfluence = <K extends keyof NoiseInfluences>(
-      bounds: Rect,
-      kind: K,
-      value: NoiseInfluences[K][number],
-    ): void => {
-      const cx0 = Math.floor(bounds.x0 / columnSpanMetres);
-      const cx1 = Math.floor(bounds.x1 / columnSpanMetres);
-      const cz0 = Math.floor(bounds.z0 / columnSpanMetres);
-      const cz1 = Math.floor(bounds.z1 / columnSpanMetres);
-      for (let cx = cx0; cx <= cx1; cx++) {
-        let row = noiseColumns.get(cx);
-        if (!row) {
-          row = new Map();
-          noiseColumns.set(cx, row);
-        }
-        for (let cz = cz0; cz <= cz1; cz++) {
-          let column = row.get(cz);
-          if (!column) {
-            column = { buildings: [], tracks: [], spawns: [] };
-            row.set(cz, column);
-          }
-          (column[kind] as NoiseInfluences[K][number][]).push(value);
-        }
-      }
+    const groundData: AuthoredGroundData = {
+      blockSize: s,
+      seed,
+      topography: tuning.topography,
+      protectedBuildings,
+      layout: { bounds: layout.bounds, ground: layout.ground, terrain: layout.terrain, water: layout.water },
+      spawnPoints,
+      lots: lots.map(({ rect, floor, key }) => ({ rect, floor, key })),
+      catalogue: catalogue?.terrain,
+      tracks: layout.tracks.map((track) => ({
+        points: track.points,
+        width: track.width,
+        surface: registry.blockIds.get(track.surface),
+      })),
     };
-    const { topography } = tuning;
-    const buildingReach = topography.buildingMarginMetres + s;
-    for (const rect of protectedBuildings) {
-      addNoiseInfluence(
-        {
-          x0: rect.x0 - buildingReach,
-          x1: rect.x1 + buildingReach,
-          z0: rect.z0 - buildingReach,
-          z1: rect.z1 + buildingReach,
-        },
-        'buildings',
-        rect,
-      );
-    }
-    const roadReach = topography.roadShoulderMetres + s;
-    for (const track of layout.tracks) {
-      let x0 = Number.POSITIVE_INFINITY;
-      let x1 = Number.NEGATIVE_INFINITY;
-      let z0 = Number.POSITIVE_INFINITY;
-      let z1 = Number.NEGATIVE_INFINITY;
-      for (const [x, z] of track.points) {
-        x0 = Math.min(x0, x);
-        x1 = Math.max(x1, x);
-        z0 = Math.min(z0, z);
-        z1 = Math.max(z1, z);
-      }
-      const reach = track.width / 2 + roadReach;
-      addNoiseInfluence({ x0: x0 - reach, x1: x1 + reach, z0: z0 - reach, z1: z1 + reach }, 'tracks', track);
-    }
-    const spawnReach = topography.spawnMarginMetres + s;
-    for (const [x, z] of spawnPoints) {
-      addNoiseInfluence({ x0: x - spawnReach, x1: x + spawnReach, z0: z - spawnReach, z1: z + spawnReach }, 'spawns', [
-        x,
-        z,
-      ]);
-    }
-    const buildingWeight = (buildings: readonly Rect[], xm: number, zm: number): number => {
-      let weight = 1;
-      for (const rect of buildings) {
-        const distance = rectDistance(rect, xm, zm, s);
-        const candidate =
-          topography.buildingMarginMetres === 0
-            ? Number(distance > 0)
-            : smoothstep(Math.min(1, distance / topography.buildingMarginMetres));
-        weight = Math.min(weight, candidate);
-        if (weight === 0) {
-          return 0;
-        }
-      }
-      return weight;
-    };
-    const trackWeight = (tracks: readonly NoiseTrack[], xm: number, zm: number): number => {
-      let weight = 1;
-      for (const track of tracks) {
-        const distance = polylineDistanceAt(xm, zm, track.points) - track.width / 2;
-        const candidate =
-          topography.roadShoulderMetres === 0
-            ? Number(distance > 0)
-            : smoothstep(Math.min(1, Math.max(0, distance) / topography.roadShoulderMetres));
-        weight = Math.min(weight, candidate);
-        if (weight === 0) {
-          return 0;
-        }
-      }
-      return weight;
-    };
-    const spawnWeight = (spawns: readonly [number, number][], xm: number, zm: number): number => {
-      let weight = 1;
-      for (const [spawnX, spawnZ] of spawns) {
-        const distance = Math.hypot(xm - spawnX, zm - spawnZ);
-        const candidate =
-          topography.spawnMarginMetres === 0
-            ? Number(distance > 0)
-            : smoothstep(Math.min(1, distance / topography.spawnMarginMetres));
-        weight = Math.min(weight, candidate);
-        if (weight === 0) {
-          return 0;
-        }
-      }
-      return weight;
-    };
-    const noiseWeight = (x: number, z: number, xm: number, zm: number): number => {
-      const column = noiseColumns.get(toChunk(x))?.get(toChunk(z));
-      if (!column) {
-        return 1;
-      }
-      return Math.min(
-        buildingWeight(column.buildings, xm, zm),
-        trackWeight(column.tracks, xm, zm),
-        spawnWeight(column.spawns, xm, zm),
-      );
-    };
-    const height = (x: number, z: number, natural: number): number => {
-      const xm = (x + 0.5) * s;
-      const zm = (z + 0.5) * s;
-      const profile = layoutHeight(layout, lots, [xm, zm], natural * s);
-      const noise = simplexNoise2(
-        seed + 0x51_7e,
-        xm / tuning.topography.wavelengthMetres,
-        zm / tuning.topography.wavelengthMetres,
-      );
-      const ground = Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
-      return catalogue ? catalogue.height(x, z, ground) : ground;
-    };
-    const trackAt = (x: number, z: number) =>
-      layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
-    const { water, sandy } = siteWater(layout, s, height);
+    const ground = createAuthoredGround(groundData);
+    const { height, sandy } = ground;
     const player = blocks(layout.player.position);
     const reserved = [
       ...(catalogue ? [catalogue.rect] : []),
@@ -449,25 +227,13 @@ export class AuthoredSite implements Site {
         (track) => polylineDistance([centreX, centreZ], track.points) <= track.width / 2 + radius,
       );
     });
-    this.treeIndex = new TreeIndex(trees);
+    this.terrainTrees = trees;
     const { leafLitter: litter, terrain } = sitePalette(registry);
-    this.surface = {
-      height,
-      ...(water && { water }),
-      top: (x, z) => {
-        const floor = catalogue?.top(x, z);
-        if (floor !== undefined) {
-          return floor;
-        }
-        if (sandy(x, z)) {
-          return terrain.sand;
-        }
-        const track = trackAt(x, z);
-        if (track) {
-          return registry.blockIds.get(track.surface);
-        }
-        return leafLitterAt(this.treeIndex.at(x, z), x, z) ? litter : undefined;
-      },
+    this.terrain = {
+      kind: 'authored',
+      ground: groundData,
+      data: { catalogue: catalogue?.terrain, trees, litter, sand: terrain.sand },
+      placements: terrainPlacements(this.placements),
     };
     const markers = this.placements.flatMap(placedSpawns).map((marker) => ({
       type: marker.actor,
@@ -475,7 +241,7 @@ export class AuthoredSite implements Site {
       chance: marker.chance,
       ...(marker.window ? { window: marker.window } : {}),
     }));
-    const explicit = layout.shamblers.map((spawn) => ({
+    const explicit = layout.actors.map((spawn) => ({
       ...spawn,
       pos: blocks(spawn.position),
       chance: spawn.chance ?? 1,
@@ -502,13 +268,6 @@ export class AuthoredSite implements Site {
       (focusPose(this.slots, furniture, this.showroom.focusDistance) ??
         (this.catalogue && focusPose(this.catalogue.props, furniture, this.showroom.focusDistance)));
     return pose && { pos: [...pose.pos], yaw: pose.yaw };
-  }
-
-  stamp(chunk: Chunk): void {
-    stampTrees(chunk, this.treeIndex.inColumn(chunk.cx, chunk.cz));
-    for (const placement of this.placements) {
-      stampPlacement(chunk, placement);
-    }
   }
 
   supplySourcesIn(area: Rect) {

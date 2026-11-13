@@ -9,7 +9,17 @@ import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
-import { type Placed, type PlacedState, restorePlaced, snapshotPlaced, weightOf } from './items.ts';
+import {
+  type Item,
+  type ItemState,
+  type Placed,
+  type PlacedState,
+  restoreItem,
+  restorePlaced,
+  snapshotItem,
+  snapshotPlaced,
+  weightOf,
+} from './items.ts';
 import { type Pose, rotatedSize, rotationOf, type Tip } from './orientation.ts';
 import { type Body, bodyOverlapsBlock } from './physics.ts';
 import type { DoorLockDef, InventoryTuningDef } from './schema.ts';
@@ -43,6 +53,8 @@ export interface BlockEntity {
   readonly fixed?: true;
   /** One grid per pocket of the furniture's container. */
   pockets?: Placed[][];
+  /** The world job on this piece, running or paused, which reserves it (`BlockEntities.useRefusal`). */
+  work?: Item | undefined;
   charging?: ChargingState | undefined;
   /** A container's contents show once it's been searched. */
   searched: boolean;
@@ -84,6 +96,7 @@ export interface BlockEntityState {
   damage?: number;
   broken?: true;
   pockets?: PlacedState[][];
+  work?: ItemState;
   charging?: ChargingState;
 }
 
@@ -98,8 +111,6 @@ export type BashOutcome = 'resisted' | 'damaged' | 'broken' | 'ruined';
 export interface BlockEntitiesState {
   nextUid: number;
   entities: BlockEntityState[];
-  /** Pieces pending deconstruction, held against use; absent when none are. */
-  reserved?: number[];
 }
 
 export interface EntitySpec {
@@ -282,7 +293,6 @@ export class BlockEntities {
   private readonly doorways = new Map<string, BlockEntity>();
   private readonly masks = new WeakMap<FurnitureDef, ReadonlySet<string>>();
   private readonly boxes = new WeakMap<BlockEntity, { pose: string; boxes: readonly BlockingBox[] }>();
-  private readonly reservedUids = new Set<number>();
   /**
    * Derived from `byOrigin` and rebuilt on restore, never saved: every explored piece stays in memory, so a lookup
    * must not scan them all (`packages/deadvox/DESIGN.md`, "Edits persist").
@@ -293,22 +303,55 @@ export class BlockEntities {
   /** Each piece's place in `byOrigin`, so a by-column lookup lists pieces in the order `all` does. */
   private readonly sequence = new Map<BlockEntity, number>();
   private sequenced = 0;
+  /** Derived from the pieces' `carried`, never saved, so asking for the carried piece doesn't scan them all. */
+  private held: BlockEntity | undefined;
   private nextUid = 1;
+  /**
+   * Derived, never saved: the piece each `standing` step after `journalFrom` changed, oldest first, so a view can
+   * redraw only those (`standingChangesSince`).
+   */
+  private readonly journal: BlockEntity[] = [];
+  private journalFrom = 0;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
-  /**
-   * Goes up when the standing pieces' cells, poses or blocking change. Turning the carried piece, searching or a
-   * lock leaves it, so collision and sky light don't rebuild for what can't change them.
-   */
-  standing = 0;
 
   constructor(registry: Registry) {
     this.registry = registry;
   }
 
-  /** The pieces standing in the world; a carried piece is in the player's hands instead. */
+  /**
+   * Goes up when the standing pieces' cells, poses or blocking change. Turning the carried piece, searching or a
+   * lock leaves it, so collision and sky light don't rebuild for what can't change them.
+   */
+  get standing(): number {
+    return this.journalFrom + this.journal.length;
+  }
+
+  /**
+   * The pieces whose cells, pose or blocking changed since `standing` had the given value, repeats included; undefined
+   * when the journal no longer reaches back that far, after a restore or for a reader far behind, so the reader must
+   * look at every piece.
+   */
+  standingChangesSince(standing: number): readonly BlockEntity[] | undefined {
+    return standing < this.journalFrom || standing > this.standing
+      ? undefined
+      : this.journal.slice(standing - this.journalFrom);
+  }
+
+  /**
+   * The pieces standing in the world; a carried piece is in the player's hands instead. It walks the pieces lazily, so
+   * a caller that adds or removes pieces on the way copies it first.
+   */
   get all(): IterableIterator<BlockEntity> {
-    return [...this.byOrigin.values()].filter((entity) => !entity.carried).values();
+    return this.standingPieces();
+  }
+
+  private *standingPieces(): Generator<BlockEntity, undefined, undefined> {
+    for (const entity of this.byOrigin.values()) {
+      if (entity !== this.held) {
+        yield entity;
+      }
+    }
   }
 
   /** Furniture's own content mass plus every item it contains. */
@@ -349,18 +392,44 @@ export class BlockEntities {
         }
       }
     }
-    return [...found].sort((a, b) => this.sequence.get(a)! - this.sequence.get(b)!);
+    return this.listed(found);
+  }
+
+  /** Live pieces in the order `all` lists them. */
+  listed(pieces: Iterable<BlockEntity>): BlockEntity[] {
+    return [...pieces].sort((a, b) => this.sequence.get(a)! - this.sequence.get(b)!);
   }
 
   /** The piece in the player's hands. */
   carrying(): BlockEntity | undefined {
-    return [...this.byOrigin.values()].find((entity) => entity.carried);
+    return this.held;
+  }
+
+  /** Whether a piece stands in this world: live and not carried. */
+  stands(entity: BlockEntity): boolean {
+    return this.uids.get(entity.uid) === entity && entity !== this.held;
   }
 
   snapshotState(foodAt?: number): Readonly<BlockEntitiesState> {
+    return this.stateOf([...this.byOrigin.values()], foodAt);
+  }
+
+  /** The pieces claiming these origins, as a state that restores on its own with the live allocator. */
+  snapshotAt(origins: readonly Readonly<Vec3>[]): Readonly<BlockEntitiesState> {
+    const found = new Set<BlockEntity>();
+    for (const origin of origins) {
+      const entity = this.byOrigin.get(key(...origin));
+      if (entity) {
+        found.add(entity);
+      }
+    }
+    return this.stateOf([...found]);
+  }
+
+  private stateOf(entities: readonly BlockEntity[], foodAt?: number): Readonly<BlockEntitiesState> {
     return freezeSnapshot({
       nextUid: this.nextUid,
-      entities: [...this.byOrigin.values()].map((entity) => ({
+      entities: entities.map((entity) => ({
         uid: entity.uid,
         type: entity.type,
         origin: [...entity.origin],
@@ -378,8 +447,8 @@ export class BlockEntities {
         ...(entity.pockets === undefined
           ? {}
           : { pockets: entity.pockets.map((grid) => grid.map((placed) => snapshotPlaced(placed, foodAt))) }),
+        ...(entity.work === undefined ? {} : { work: snapshotItem(entity.work, foodAt) as ItemState }),
       })),
-      ...(this.reservedUids.size === 0 ? {} : { reserved: [...this.reservedUids].sort((a, b) => a - b) }),
     });
   }
 
@@ -388,10 +457,6 @@ export class BlockEntities {
     this.byOrigin.clear();
     this.cells.clear();
     this.doorways.clear();
-    this.reservedUids.clear();
-    for (const uid of restored.reservedUids) {
-      this.reservedUids.add(uid);
-    }
     for (const [origin, entity] of restored.byOrigin) {
       this.byOrigin.set(origin, entity);
     }
@@ -405,7 +470,9 @@ export class BlockEntities {
     this.nextUid = restored.nextUid;
     // A restored count could repeat one a view cached for another state, and the view would keep the stale state.
     this.version = Math.max(this.version, restored.version) + 1;
-    this.standing += 1;
+    // Every piece is new, so the journal restarts past every step a view could have drawn.
+    this.journalFrom = this.standing + 1;
+    this.journal.length = 0;
   }
 
   static restoreState(registry: Registry, state: BlockEntitiesState): BlockEntities {
@@ -424,12 +491,6 @@ export class BlockEntities {
       throw new Error('Invalid next block entity id');
     }
     entities.nextUid = state.nextUid;
-    for (const uid of state.reserved ?? []) {
-      if (!ids.has(uid) || entities.reservedUids.has(uid)) {
-        throw new Error(`Reserved block entity ${uid} is missing or repeated`);
-      }
-      entities.reservedUids.add(uid);
-    }
     return entities;
   }
 
@@ -437,6 +498,7 @@ export class BlockEntities {
     this.uids.clear();
     this.columns.clear();
     this.sequence.clear();
+    this.held = undefined;
     for (const entity of this.byOrigin.values()) {
       this.track(entity);
       if (!entity.carried) {
@@ -449,6 +511,20 @@ export class BlockEntities {
     this.uids.set(entity.uid, entity);
     this.sequence.set(entity, this.sequenced);
     this.sequenced += 1;
+    if (entity.carried) {
+      this.held = entity;
+    }
+  }
+
+  /** Records a change to a piece's cells, pose or blocking: a `standing` step. */
+  private standingChanged(entity: BlockEntity): void {
+    this.journal.push(entity);
+    if (this.journal.length > this.byOrigin.size) {
+      // Past one step per piece, replaying the journal costs a reader more than looking at every piece.
+      const dropped = Math.ceil(this.journal.length / 2);
+      this.journal.splice(0, dropped);
+      this.journalFrom += dropped;
+    }
   }
 
   private index(entity: BlockEntity, filled: boolean): void {
@@ -494,22 +570,32 @@ export class BlockEntities {
     if (saved.pockets) {
       entity.pockets = saved.pockets.map((grid) => grid.map((placed) => restorePlaced(this.registry, placed)));
     }
-    if (saved.charging) {
-      entity.charging = { ...saved.charging };
-      const spec = this.registry.furniture.get(entity.type)?.charger;
-      const grid = spec && entity.pockets?.[spec.pocket];
-      if (
-        !(spec && grid) ||
-        grid.length !== 1 ||
-        grid[0]!.item.uid !== saved.charging.batteryUid ||
-        grid[0]!.item.count !== 1 ||
-        !spec.batteries.includes(grid[0]!.item.type) ||
-        !Number.isSafeInteger(saved.charging.atGameMilliseconds) ||
-        saved.charging.atGameMilliseconds < 0 ||
-        entity.carried
-      ) {
-        throw new Error('Invalid saved charger ownership');
+    if (saved.work) {
+      if (saved.carried) {
+        throw new Error('A carried piece cannot hold a world job');
       }
+      entity.work = restoreItem(this.registry, saved.work);
+    }
+    if (saved.charging) {
+      this.restoreCharging(entity, saved.charging);
+    }
+  }
+
+  private restoreCharging(entity: BlockEntity, charging: ChargingState): void {
+    entity.charging = { ...charging };
+    const spec = this.registry.furniture.get(entity.type)?.charger;
+    const grid = spec && entity.pockets?.[spec.pocket];
+    if (
+      !(spec && grid) ||
+      grid.length !== 1 ||
+      grid[0]!.item.uid !== charging.batteryUid ||
+      grid[0]!.item.count !== 1 ||
+      !spec.batteries.includes(grid[0]!.item.type) ||
+      !Number.isSafeInteger(charging.atGameMilliseconds) ||
+      charging.atGameMilliseconds < 0 ||
+      entity.carried
+    ) {
+      throw new Error('Invalid saved charger ownership');
     }
   }
 
@@ -594,7 +680,7 @@ export class BlockEntities {
       this.occupy(entity, true);
     }
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return entity;
   }
 
@@ -633,9 +719,10 @@ export class BlockEntities {
     }
     this.occupy(entity, false);
     entity.carried = true;
+    this.held = entity;
     entity.floorLocked = floorLocked ? true : undefined;
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** Records a floor-drag step, so canceling a drag leaves the piece there. */
@@ -684,10 +771,11 @@ export class BlockEntities {
     }
     entity.pos = [...pos];
     entity.carried = false;
+    this.held = undefined;
     entity.floorLocked = undefined;
     this.occupy(entity, true);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** Reindexes a standing floor step without ever claiming the player's hands. */
@@ -696,7 +784,7 @@ export class BlockEntities {
     entity.pos = [...pos];
     this.occupy(entity, true);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** Moves a standing piece straight down, for a piece whose support was taken. */
@@ -705,7 +793,7 @@ export class BlockEntities {
     entity.pos = [entity.pos[0], y, entity.pos[2]];
     this.occupy(entity, true);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /**
@@ -736,6 +824,9 @@ export class BlockEntities {
     if (entity.carried) {
       throw new Error('Cannot remove a carried block entity');
     }
+    if (entity.work) {
+      throw new Error('Cannot remove a block entity that holds a world job');
+    }
     const refusal = this.removalRefusal(entity);
     if (refusal) {
       throw new Error(refusal);
@@ -760,9 +851,8 @@ export class BlockEntities {
     this.byOrigin.delete(key(...entity.origin));
     this.uids.delete(entity.uid);
     this.sequence.delete(entity);
-    this.reservedUids.delete(entity.uid);
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
   }
 
   /** The entity covering a cell: a piece barricading a doorway, rather than its door. */
@@ -980,7 +1070,7 @@ export class BlockEntities {
     }
     entity.open = open;
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return undefined;
   }
 
@@ -1002,7 +1092,7 @@ export class BlockEntities {
     }
     entity.bar = { side: this.sideOf(entity, from), item };
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return undefined;
   }
 
@@ -1015,7 +1105,7 @@ export class BlockEntities {
     const { item } = entity.bar!;
     entity.bar = undefined;
     this.version += 1;
-    this.standing += 1;
+    this.standingChanged(entity);
     return { item };
   }
 
@@ -1080,7 +1170,7 @@ export class BlockEntities {
     entity.damage = share === 0 ? undefined : share * this.defOf(entity).breach.durability;
     this.version += 1;
     if (this.wearOf(entity) !== worn) {
-      this.standing += 1;
+      this.standingChanged(entity);
     }
   }
 
@@ -1114,7 +1204,7 @@ export class BlockEntities {
     entity.damage = remaining === 0 ? undefined : remaining;
     this.version += 1;
     if (this.wearOf(entity) !== worn) {
-      this.standing += 1;
+      this.standingChanged(entity);
     }
     return true;
   }
@@ -1142,7 +1232,7 @@ export class BlockEntities {
       const worn = this.wearOf(entity);
       entity.damage = Math.min(damage, breach.durability);
       if (this.wearOf(entity) !== worn) {
-        this.standing += 1;
+        this.standingChanged(entity);
       }
       return damage < breach.durability ? 'damaged' : 'ruined';
     }
@@ -1151,31 +1241,26 @@ export class BlockEntities {
     entity.lock = undefined;
     entity.bar = undefined;
     entity.open = true;
-    this.standing += 1;
+    this.standingChanged(entity);
     return 'broken';
   }
 
-  /**
-   * Holds a standing piece against use while its deconstruction is pending, paused or not, until `release` or its
-   * removal (`packages/deadvox/DESIGN.md`, "Edits persist").
-   */
-  reserve(entity: BlockEntity): void {
-    if (this.byUid(entity.uid) !== entity || entity.carried) {
-      throw new Error('Only a live standing block entity can be reserved');
+  /** Sets or clears the world job a standing piece holds, for the item tree's owner (`src/core/inventory.ts`, `Inventory`). */
+  hostWork(entity: BlockEntity, work: Item | undefined): void {
+    if (work && (this.byUid(entity.uid) !== entity || entity.carried || entity.work)) {
+      throw new Error('Only a live standing block entity with no job can hold one');
     }
-    this.reservedUids.add(entity.uid);
+    entity.work = work;
     this.version += 1;
   }
 
-  release(entity: BlockEntity): void {
-    if (this.reservedUids.delete(entity.uid)) {
-      this.version += 1;
-    }
-  }
-
-  /** Why a piece can't be used now: its deconstruction holds it. Every use path that refuses a missing piece asks. */
-  useRefusal(entity: BlockEntity): string | undefined {
-    return this.reservedUids.has(entity.uid)
+  /**
+   * Why a piece can't be used now: a world job on it, running or paused, holds it, so another use can't take the
+   * target from under the job (`packages/deadvox/DESIGN.md`, "Edits persist"). Only that job's own work item may still
+   * use it. Every use path that refuses a missing piece asks.
+   */
+  useRefusal(entity: BlockEntity, asking?: Item): string | undefined {
+    return entity.work !== undefined && entity.work !== asking
       ? claimed(this.registry.ui, 'interface')!.furnitureMoveMessages.reserved
       : undefined;
   }

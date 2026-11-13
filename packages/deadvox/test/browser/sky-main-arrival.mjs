@@ -55,9 +55,17 @@ export const mainSourceOverlays = [
   'engine:game/bundledContent.ts',
   'engine:game/browserMods.ts',
   'engine:game/config.ts',
+  'engine:session.ts',
   'engine:game/worldSetup.ts',
   'engine:game/streamer.ts',
+  // Removed object members and changed constructor arguments cannot be repaired by export shims.
+  'engine:core/authoredSite.ts',
+  'engine:core/citySite.ts',
+  'engine:core/forest.ts',
+  'engine:core/canonicalTerrain.ts',
+  'engine:game/weatheringTestSite.ts',
   'presentation:presentation/engine.ts',
+  'presentation:render/distanceFog.ts',
   'presentation:presentation/graphicsControls.ts',
   'presentation:presentation/play.ts',
   'presentation:presentation/controls.ts',
@@ -66,6 +74,9 @@ export const mainSourceOverlays = [
   'presentation:presentation/painCue.ts',
   'presentation:presentation/worldLoading.ts',
   'presentation:render/playView.ts',
+  // The engine adds the chunk meshes' scene object and play reads its drawn chunks, so the chunk owner stays with
+  // them. The shadows keep the branch: they use only the caster selection both revisions share.
+  'presentation:render/chunks.ts',
   // Keep the view and figure together: their constructor and per-frame pose contracts change together. The
   // view builds the held items, whose arms hang from the figure's shoulders and whose displays sit on its
   // palm, so hands and held display stay on the figure's revision too.
@@ -86,11 +97,13 @@ export const mainSourceOverlays = [
   'presentation:render/sky.ts',
   'presentation:render/skylight.ts',
   'presentation:render/mood.ts',
+  // The view builds the sky environment and calls its members, so a member the branch drops breaks base play.
+  'presentation:render/skyEnvironment.ts',
   'presentation:worker/mesh.worker.ts',
 ];
 
 // UI callees can keep their exports while changing arguments; export shims cannot pair those contracts.
-// Keep the whole presentation UI boundary with base play/main, including UI-to-UI calls, but retain branch core.
+// Keep the whole presentation UI boundary with base play/main, including UI-to-UI calls; unrelated core stays branch.
 // `basePaths` maps each workspace package name to its base tree of src-relative paths.
 export const mainOverlaySources = (basePaths) => [
   ...mainSourceOverlays,
@@ -313,8 +326,71 @@ function assertOverlayBoundary(packageSources, overlays, branchPaths) {
   }
 }
 
-/** Measurement hooks added to a served base startup source: engine readiness and first mesh delivery. */
+// Base startup reads one default fogginess from the branch's day-cycle content and one fogginess from the
+// branch's look controls; both became whole weather states (#1543). Content selectors and object members are
+// beyond export shims, so the base callers read the branch's weather instead. Drop once the base carries it.
+export function adaptMainWeather(source) {
+  return source
+    .replaceAll('{ fogginess: dayCycle.weather.defaultFogginess }', '{ ...dayCycle.weather.defaults }')
+    .replace(
+      'const { defaultFogginess } = requireDayCycle(hooks.engine.registry).weather;',
+      'const defaultWeather = requireDayCycle(hooks.engine.registry).weather.defaults;',
+    )
+    .replaceAll('defaultFogginess,', 'defaultWeather,')
+    .replaceAll('fogginess: look.fogginess,', 'weather: look.weatherState,')
+    .replaceAll('look.fogginess', 'look.weatherState.fogginess');
+}
+
+// Base figure reads one `part` per arm segment from the branch's figure content; segments now list `parts`
+// (#1676). A missing part resolves to the model root, which the pivot then adopts as its own descendant and
+// the scene graph loops. Content selectors are beyond export shims. Drop once the base carries it.
+export function adaptMainArmParts(source) {
+  return source
+    .replace('parts: [armRig.fore.part]', 'parts: armRig.fore.parts')
+    .replace(
+      'parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part]',
+      'parts: [...armRig.hand.parts, ...armRig.fingers.parts, ...armRig.thumb.parts]',
+    );
+}
+
+const adaptMainBenchShadows = (source) =>
+  `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
+    .replace(
+      'AUTO_TONE, DEFAULT_SHADOWS, type LookState, lookDefaultsOf, type MoodState',
+      'AUTO_TONE, defaultShadows, graphicsTuningOf, type LookState, lookDefaultsOf, type MoodState',
+    )
+    .replace(
+      'shadows.restore(DEFAULT_SHADOWS);',
+      'shadows.restore(defaultShadows(mainGraphicsTuningOf(engine.registry).sunShadow));',
+    );
+
+const adaptMainDebugShadows = (source) =>
+  `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
+    .replace('DEFAULT_SHADOWS, graphicsTuningOf', 'defaultShadows, graphicsTuningOf')
+    .replace(
+      'shadows.restore(DEFAULT_SHADOWS);',
+      'shadows.restore(defaultShadows(mainGraphicsTuningOf(hooks.engine.registry).sunShadow));',
+    )
+    .replace(
+      'defaults: lookDefaults,',
+      'defaults: lookDefaults,\n    sunShadow: mainGraphicsTuningOf(hooks.engine.registry).sunShadow,',
+    )
+    .replaceAll(
+      'defaultWeather,',
+      'defaultWeather,\n    sunShadow: mainGraphicsTuningOf(hooks.engine.registry).sunShadow,',
+    );
+
+const adaptMainPlayViewShadows = (source) =>
+  source
+    .replace('DEFAULT_SHADOWS, graphicsTuningOf', 'defaultShadows, graphicsTuningOf')
+    .replace('shadows.restore(DEFAULT_SHADOWS);', 'shadows.restore(defaultShadows(graphics.sunShadow));');
+
+/** Measurement hooks and contract adapters applied to a served base startup source. */
 const OVERLAY_ADAPTERS = {
+  'deadvox:bench/post.ts': (source) => adaptMainBenchShadows(adaptMainWeather(source)),
+  'deadvox:debug/index.ts': (source) => adaptMainDebugShadows(adaptMainWeather(source)),
+  'presentation:render/playView.ts': (source) => adaptMainPlayViewShadows(adaptMainWeather(source)),
+  'presentation:render/playerFigure.ts': adaptMainArmParts,
   'presentation:presentation/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',
@@ -410,7 +486,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   const overlays = new Map(sourceOverlays.map((key) => [key, showBase(key)]));
   assertOverlayBoundary(packageSources, overlays, branchPaths);
   // A main source may import an export the branch removed from a module both keep. That module stays the
-  // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
+  // branch's owner outside the contract-coupled overlays: a shim adds only removed names from main's copy.
   const modules = removedModuleExports(git, base);
   const { removedFrom, baseCopy, deletedFrom, shimmed: shimmedExports } = modules;
   const servedFromBase = (path) => {
@@ -515,6 +591,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     for (const source of [
       'index.html',
       'presentation:presentation/engine.ts',
+      'presentation:render/distanceFog.ts',
       'presentation:presentation/play.ts',
       'presentation:render/playView.ts',
       'engine:game/streamer.ts',
@@ -542,7 +619,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
       browser: browser.version(),
       viewport: page.viewportSize(),
       attribution:
-        'Main lighting and worker sources with branch core contracts, the same fixture/content and browser; startup mesh delivery, not first rendered pixels or a pristine whole-build screenshot.',
+        'Main startup, lighting and worker sources with contract-coupled construction owners and unrelated branch core, the same fixture/content and browser; startup mesh delivery, not first rendered pixels or a pristine whole-build screenshot.',
     });
     await writeFile(resolve(artifacts, 'main-first-mesh.json'), JSON.stringify(evidence, null, 2));
     process.stdout.write(`MAIN_FIRST_MESH_EVIDENCE ${JSON.stringify(evidence)}\n`);

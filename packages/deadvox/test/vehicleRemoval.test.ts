@@ -10,6 +10,7 @@ import { CHUNK, generateColumn, makeScale, type Terrain, type Vec3, World } from
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 const ids = { part: 'removal_part', load: 'removal_load', hand: 'removal_hand', host: 'removal_host' };
 const fixture = ({
@@ -59,7 +60,7 @@ const fixture = ({
           massKg: 1,
           centreOfMass: [0, 0, 0],
           voxelGrain: scale.blockSize,
-          collision: [{ min: [0, 0, 0], max: [scale.blockSize, scale.blockSize, scale.blockSize] }],
+          collision: [{ min: [-scale.blockSize, 0, 0], max: [0, scale.blockSize, scale.blockSize] }],
         },
       },
     }),
@@ -108,7 +109,10 @@ const fixture = ({
     world,
     generateColumn(terrain, 0, 0).filter((chunk) => chunk.cy === Math.floor(height / CHUNK)),
   );
-  const canonical = new CanonicalTerrain(world, terrain);
+  const canonical = new CanonicalTerrain(world, {
+    ...fixtureTerrain({ scale }),
+    generateColumn: (cx, cz) => generateColumn(terrain, cx, cz),
+  });
   const source: ColumnSource = {
     furnitureIn: () => [],
     lootPointsIn: () => [],

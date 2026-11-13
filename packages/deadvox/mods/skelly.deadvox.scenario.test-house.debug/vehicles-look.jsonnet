@@ -15,7 +15,8 @@ local parts = std.set([site.part for site in sites]);
     vehicle: {
       drops: { default: 'item_drop_wood' },
       capabilities: ['structure'],
-      obstruction: { sight: true, light: true, sound: true, combat: true },
+      // The shade a shipped body's panels give, so the fixture lights as a real vehicle would.
+      obstruction: { sight: true, light: 0.35, sound: true, combat: true },
     },
   } for part in parts],
   vehicleBlueprints: [{

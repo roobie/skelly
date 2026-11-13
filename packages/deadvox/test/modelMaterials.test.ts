@@ -1,6 +1,8 @@
 import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { skyAnchoredCopy } from '@skelly/presentation/internal/render/skyAnchor.ts';
 import { VehicleFinishes } from '@skelly/presentation/internal/render/vehicleFinishes.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
@@ -78,7 +80,8 @@ it('draws a sheened material with its sheen, keeping one prepared copy per share
 
 const MAP_KEY = /map$/i;
 
-// What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper).
+// What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper) and a
+// patch's own key.
 const programKey = (mesh: Mesh, material: Material): string => {
   const fields = material as unknown as Record<string, unknown>;
   const maps = Object.keys(fields)
@@ -105,10 +108,12 @@ const programKey = (mesh: Mesh, material: Material): string => {
     mesh.constructor.name,
     ['normal', 'tangent', 'color'].map((name) => geometry.getAttribute(name)?.itemSize),
     Object.keys(geometry.morphAttributes).sort(),
+    Object.keys(material.defines ?? {}).sort(),
+    material.customProgramCacheKey(),
   ]);
 };
 
-it('warm-up stand-ins share a program with every material the pack models draw, lit or not, held or piled', async () => {
+it('warm-up stand-ins share a program with every material the pack models draw, lit or not, held, piled or fitted', async () => {
   const imageLoader = {
     isImageBitmapLoader: true,
     load(_url: string, onLoad: (image: ImageBitmap) => void) {
@@ -138,26 +143,48 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
       ...(material instanceof MeshStandardMaterial ? [[mesh, glowingCopy(material, 0xff_00_00, 2)] as const] : []),
     ]),
   );
-  for (const instanced of [false, true]) {
-    const warm = modelMaterialWarmUp(instanced).children as Mesh[];
+  const fitted = meshes.flatMap((mesh) =>
+    (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map(
+      (material: Material) => [mesh, skyAnchoredCopy(material)] as const,
+    ),
+  );
+  for (const scene of [
+    { instanced: false, skyAnchored: false },
+    { instanced: true, skyAnchored: true },
+  ]) {
+    const warm = modelMaterialWarmUp(scene).children as Mesh[];
     expect(warm.every((mesh) => !mesh.visible)).toBe(true);
     const warmed = new Set(warm.map((mesh) => programKey(mesh, mesh.material as Material)));
-    const keys = drawn.flatMap(([mesh, material]) =>
-      (instanced ? [mesh, new InstancedMesh(mesh.geometry, material, 1)] : [mesh]).map((shown) =>
-        programKey(shown, material),
+    const keys = [
+      ...drawn.flatMap(([mesh, material]) =>
+        (scene.instanced ? [mesh, new InstancedMesh(mesh.geometry, material, 1)] : [mesh]).map((shown) =>
+          programKey(shown, material),
+        ),
       ),
-    );
+      ...(scene.skyAnchored ? fitted.map(([mesh, material]) => programKey(mesh, material)) : []),
+    ];
     expect([...new Set(keys)].filter((key) => !warmed.has(key))).toEqual([]);
   }
-  const finishes = new VehicleFinishes({ texture: new Texture(), update: vi.fn() }, MATERIALS, 0.25);
+  const patches = new MaterialPatches();
+  const finishes = new VehicleFinishes({ texture: new Texture(), update: vi.fn() }, MATERIALS, 0.25, patches);
   finishes.setEnabled(true);
   const finishedMeshes = meshes.map((mesh) => mesh.clone());
-  finishes.dress(new Group().add(...finishedMeshes));
+  const finishedModel = new Group().add(...finishedMeshes);
+  finishes.dress(finishedModel);
   expect(finishedMeshes.some((mesh) => Number((mesh.material as MeshPhysicalMaterial).clearcoat ?? 0) > 0)).toBe(true);
+  // Vehicles draw sky-anchored copies of what they are dressed in.
+  for (const mesh of finishedMeshes) {
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(skyAnchoredCopy) : skyAnchoredCopy(mesh.material);
+  }
+  const warmUp = modelMaterialWarmUp({
+    instanced: false,
+    skyAnchored: false,
+    finishedVariants: finishes.warmUpVariants,
+  });
+  patches.apply(warmUp);
+  patches.apply(finishedModel);
   const warmedFinishes = new Set(
-    (modelMaterialWarmUp(false, finishes.warmUpVariants).children as Mesh[]).map((mesh) =>
-      programKey(mesh, mesh.material as Material),
-    ),
+    (warmUp.children as Mesh[]).map((mesh) => programKey(mesh, mesh.material as Material)),
   );
   const finishedKeys = finishedMeshes.flatMap((mesh) =>
     (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map((material: Material) =>

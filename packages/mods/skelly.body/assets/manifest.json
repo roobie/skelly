@@ -6,9 +6,19 @@
       "download": null,
       "files": [
         "assets/models/actors/player.1.glb",
+        "assets/models/flesh_chunk_large.glb",
+        "assets/models/flesh_chunk_medium.glb",
+        "assets/models/flesh_chunk_small.glb",
+        "assets/models/flesh_chunk_strip.glb",
         "assets/models/player_arm.glb",
         "assets/models/player_bust.glb",
-        "assets/models/player_leg.glb"
+        "assets/models/player_leg.glb",
+        "assets/models/shambler_head.glb",
+        "assets/models/shambler_left_arm.glb",
+        "assets/models/shambler_left_leg.glb",
+        "assets/models/shambler_right_arm.glb",
+        "assets/models/shambler_right_leg.glb",
+        "assets/models/shambler_torso.glb"
       ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",

@@ -88,6 +88,12 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Heard-sound record and occlusion, reached only from the WebAudio adapter, which no simulation entry reaches.',
   'engine/game/bindingRegistry.ts':
     'Default keys and rebinding preferences; replay records action ids from the input actions, not from key bindings.',
+  'engine/game/actionMenu.ts':
+    'Live-input pointing and choice of the radial action menu; replay applies the recorded command, not the gesture.',
+  'engine/game/heldActionPress.ts':
+    'Live-input tap-or-hold of a held use press; replay applies the recorded hand.action, not the press.',
+  'engine/core/forwardReleaseWatch.ts':
+    'Live-input forward-button release reading; replay applies the recorded hand.action, not the button events.',
   'engine/game/voiceCaps.ts':
     'Playback voice caps, reached only from the WebAudio adapter, which no simulation entry reaches.',
   'engine/core/schedulerIds.ts':
@@ -445,7 +451,7 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
-  it.each(['../config/intake.json', '../../../skelly-assets/tools/packages/thing-core/src/materials.json'])(
+  it.each(['../config/intake.json', '../../../skelly-assets/models/finishes.json'])(
     'fingerprints declarative JSON dependency %s without parsing it as a module',
     async (specifier) => {
       const entry = resolve(root, entries[0]!);

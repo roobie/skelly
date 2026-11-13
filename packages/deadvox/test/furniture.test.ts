@@ -26,7 +26,7 @@ import {
   searchTime,
 } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
-import { Box3, type Group, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
+import { Box3, type Group, InstancedMesh, Matrix4, type Mesh, type MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterialSource } from './economyFixtures.ts';
@@ -291,7 +291,7 @@ describe('furniture', () => {
     expect(stoppedByWall).toBeUndefined();
   });
 
-  it('keeps each shaped furniture instance to one draw object', () => {
+  it('draws every instance of a shaped furniture in one draw object', () => {
     const fixture = {
       id: 'fixture_shaped_furniture',
       name: 'Fixture shaped furniture',
@@ -319,10 +319,13 @@ describe('furniture', () => {
     const furniture = new FurnitureMeshes(BLOCK_SIZE);
     furniture.sync(entities);
 
-    const meshes = furniture.group.children.filter((child) => child.type !== 'LineSegments') as Mesh[];
-    expect(meshes).toHaveLength(3);
-    expect(meshes.every((mesh) => mesh.isMesh && mesh.geometry.groups.length === 0)).toBe(true);
-    expect(meshes.every((mesh) => !Array.isArray(mesh.material))).toBe(true);
+    const [batch, ...rest] = furniture.group.children.filter((child) => child.type !== 'LineSegments');
+    expect(rest).toEqual([]);
+    expect(batch).toBeInstanceOf(InstancedMesh);
+    const { count, geometry, material } = batch as InstancedMesh;
+    expect(count).toBe(3);
+    expect(geometry.groups).toEqual([]);
+    expect(Array.isArray(material)).toBe(false);
   });
 
   it('renders wall-mount shapes flush with the back face in every facing', () => {
@@ -418,6 +421,30 @@ describe('furniture', () => {
     expect(entities.standing).toBe(standing);
     furniture.sync(entities);
     expect(furniture.group.children[0]).toBe(drawn);
+  });
+
+  it('touches only the mesh of the piece that changed, and frees a removed piece', () => {
+    const entities = new BlockEntities(registry);
+    const crate = entities.add({ type: 'crate', pos: [0, 0, 0], size: [2, 2, 2], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities);
+    const [drawnCrate] = furniture.group.children;
+    const door = entities.add({ type: 'wood_door', pos: [4, 1, 0], size: [2, 4, 1], facing: 'n' })!;
+    furniture.sync(entities);
+    const before = [...furniture.group.children];
+
+    const { durability } = entities.defOf(door).breach;
+    expect(entities.bash(door, durability * 0.8)).toBe('damaged');
+    furniture.sync(entities);
+    const after = [...furniture.group.children];
+    expect(after).toContain(drawnCrate);
+    expect(before.filter((child) => !after.includes(child))).toHaveLength(1);
+    expect(after.filter((child) => !before.includes(child))).toHaveLength(1);
+
+    entities.remove(crate);
+    furniture.sync(entities);
+    expect(furniture.group.children).not.toContain(drawnCrate);
+    expect(furniture.group.children).toHaveLength(after.length - 1);
   });
 
   it("repaints a piece that isn't a door only when its damage crosses into another of its material's steps", () => {

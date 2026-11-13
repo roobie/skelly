@@ -1,5 +1,12 @@
 import { requireDayCycle } from '@skelly/engine/content';
-import { AUTO_TONE, DEFAULT_SHADOWS, type LookState, lookDefaultsOf, type MoodState } from '@skelly/engine/look';
+import {
+  AUTO_TONE,
+  defaultShadows,
+  graphicsTuningOf,
+  type LookState,
+  lookDefaultsOf,
+  type MoodState,
+} from '@skelly/engine/look';
 import type { GameConfig } from '@skelly/engine/session';
 import { skyAt, skyInWeather, sunShadowStrength } from '@skelly/engine/sky';
 import type { RenderedEngine } from '@skelly/presentation/play';
@@ -52,13 +59,9 @@ export const benchDraw = (engine: RenderedEngine, options: BenchDrawOptions): ((
   }
   applyLook(renderer, engine.meshes, BENCH_LOOK);
   mood.restore(BENCH_MOOD);
-  shadows.restore(DEFAULT_SHADOWS);
+  shadows.restore(defaultShadows(graphicsTuningOf(engine.registry).sunShadow));
   const dayCycle = requireDayCycle(engine.registry);
-  const sky = skyInWeather(
-    skyAt(options.skyAngle, dayCycle),
-    { fogginess: dayCycle.weather.defaultFogginess },
-    dayCycle.weather,
-  );
+  const sky = skyInWeather(skyAt(options.skyAngle, dayCycle), dayCycle.weather.defaults, dayCycle.weather);
   mood.setSky(sky);
   const sunStrength = sunShadowStrength(sky.lightIntensity);
   return () => {

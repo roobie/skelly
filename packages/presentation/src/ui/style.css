@@ -8,6 +8,7 @@
   --ui-layer-inventory-feedback: 21;
   --ui-layer-crafting: 21;
   --ui-layer-activity-progress: 22;
+  --ui-layer-combo-list: 22;
   --ui-layer-drag-ghost: 23;
   /* Inside the inventory panel's own stacking context, above its drop marks. */
   --ui-layer-item-viewer: 24;
@@ -20,6 +21,8 @@
   --ui-layer-game-cursor: 2003;
   --ui-layer-startup-screen: 3000;
   --ui-layer-world-loading: 3000;
+  /* Above the startup screen, so a refused start's text can be selected and copied. */
+  --ui-layer-error-log: 3001;
   --ui-layer-review-map: 10000;
   --ui-layer-error-report: 11000;
   --panel: rgb(18 20 24 / 88%);
@@ -355,14 +358,75 @@ body.unconscious::after {
   display: none;
 }
 
-#item-action-list {
+#action-radial {
   position: fixed;
-  left: 1rem;
-  bottom: 4rem;
-  padding: calc(var(--ui-spacing) * 0.5rem);
-  background: var(--panel);
-  white-space: pre;
+  left: 50%;
+  top: 50%;
   pointer-events: none;
+}
+#action-radial[hidden] {
+  display: none;
+}
+/* Transparent inside, so the target under the crosshair stays visible while choosing. */
+.radial-centre {
+  position: absolute;
+  width: calc(var(--radial-dead-zone) * 2);
+  height: calc(var(--radial-dead-zone) * 2);
+  transform: translate(-50%, -50%);
+  border: var(--radial-stroke) dashed var(--muted);
+  border-radius: 50%;
+}
+.radial-centre.selected {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.radial-centre-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.75em;
+}
+/* A release with an entry selected picks it, so the centre's action no longer applies. */
+.radial-centre.selected .radial-centre-label {
+  visibility: hidden;
+}
+.radial-pull {
+  position: absolute;
+  width: var(--radial-pull-size);
+  height: var(--radial-pull-size);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 var(--radial-stroke) var(--panel);
+}
+.radial-pointer {
+  position: absolute;
+  transform-origin: 0 0;
+}
+.radial-spoke {
+  position: absolute;
+  left: var(--radial-dead-zone);
+  width: max(0px, calc(var(--radial-radius) - var(--radial-dead-zone)));
+  height: var(--radial-stroke);
+  transform: translateY(-50%);
+  background: var(--accent);
+}
+.radial-entry {
+  position: absolute;
+  width: max-content;
+  padding: calc(var(--ui-spacing) * var(--radial-label-padding));
+  border: var(--radial-stroke) solid var(--line);
+  border-radius: var(--radial-label-radius);
+  background: var(--panel);
+  color: var(--muted);
+}
+.radial-entry.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--panel);
+  font-size: calc(1em * var(--radial-selected-label-scale));
 }
 
 /* A bound key shown beside its action; every hint draws it through `keyCap` in src/ui/keyCap.ts. */
@@ -1530,20 +1594,31 @@ body:has(#handling:not([hidden])) #prompt {
   top: auto;
   bottom: calc(50% + 3.5rem);
 }
-#errors {
+#error-log {
   position: fixed;
   left: 0.75rem;
   bottom: 0.75rem;
+  z-index: var(--ui-layer-error-log);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
   max-width: 60ch;
+}
+#errors {
   padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.625rem);
   border-radius: 0.375rem;
   background: #5a1d1d;
   white-space: pre-wrap;
+  user-select: text;
   font:
     0.75rem ui-monospace,
     monospace;
 }
 #errors:empty {
+  display: none;
+}
+#errors-copy[hidden] {
   display: none;
 }
 #error-report {
@@ -1932,10 +2007,11 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .combo-box-field.game-cursor-hover {
   border-color: var(--accent);
 }
-/* Fixed to the viewport so a scrolling panel can't clip it. Positioned without a z-index, it paints over
-   the host panel's content and stays in the host's layer. */
+/* Fixed to the viewport so a scrolling panel can't clip it. It has its own layer so later sibling detail
+   content in the host panel does not paint over it. */
 .combo-box-list {
   position: fixed;
+  z-index: var(--ui-layer-combo-list);
   box-sizing: border-box;
   margin: 0;
   padding: calc(var(--ui-spacing) * 0.25rem);
@@ -2062,7 +2138,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root .debug-panel .debug-panel-header,
 #debug-ui-root .debug-readout,
-#debug-ui-root .debug-shambler-count,
+#debug-ui-root .debug-actor-count,
 #debug-ui-root .debug-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2129,8 +2205,8 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root .debug-panel .debug-readout span,
 #debug-ui-root .debug-panel .debug-readout button,
-#debug-ui-root .debug-panel .debug-shambler-count button,
-#debug-ui-root .debug-panel .debug-shambler-count output,
+#debug-ui-root .debug-panel .debug-actor-count button,
+#debug-ui-root .debug-panel .debug-actor-count output,
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-panel-header button {
   padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
@@ -2144,13 +2220,13 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-readout button,
-#debug-ui-root .debug-panel .debug-shambler-count button {
+#debug-ui-root .debug-panel .debug-actor-count button {
   cursor: pointer;
 }
-#debug-ui-root .debug-panel .debug-shambler-count {
+#debug-ui-root .debug-panel .debug-actor-count {
   align-items: center;
 }
-#debug-ui-root .debug-panel .debug-shambler-count button:disabled {
+#debug-ui-root .debug-panel .debug-actor-count button:disabled {
   opacity: 0.5;
   cursor: default;
 }

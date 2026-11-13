@@ -1,4 +1,11 @@
-import { claimed, type Inventory, type Item, type Location, lightExposureFor } from '@skelly/engine/inventory';
+import {
+  claimed,
+  type Inventory,
+  type Item,
+  type Location,
+  lightExposureFor,
+  placedLightEntries,
+} from '@skelly/engine/inventory';
 import type { PoweredLight } from '@skelly/engine/world';
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
 import type { HeldItems } from './hands.ts';
@@ -22,7 +29,8 @@ interface LightPoolContext {
   daylightScale: number;
   /**
    * World output must not inherit the viewer's daylight washout through a bright doorway.
-   * The separate hand scene still adapts to the viewer through `daylightScale`.
+   * The hand scene's item lights still adapt to the viewer through `daylightScale`. Its fixture lights copy the
+   * world's: the hand scene compiles with the world's patches, so it fades them wherever the world does.
    */
   worldDaylightScale?: number;
   fixtures?: readonly PoweredLight[];
@@ -135,7 +143,7 @@ export class LightPool {
     light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
     light.color.set(fixture.color);
     light.distance = fixture.radius;
-    this.syncHandLight(index, light, fixture.intensity * daylightScale);
+    this.syncHandLight(index, light);
   }
 
   update(inventory: Inventory, context: LightPoolContext): void {
@@ -143,7 +151,7 @@ export class LightPool {
     const tuning = claimed(inventory.registry.senses, 'player')!.light;
     const groundLiftMetres = tuning.groundLight.renderLiftMetres;
     const { pointDecay } = tuning.illumination;
-    const entries = [...inventory.items()]
+    const entries = placedLightEntries(inventory)
       .map((entry, order) => ({
         ...entry,
         order,

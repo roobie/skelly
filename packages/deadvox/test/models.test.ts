@@ -35,6 +35,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { fitFixtureOptic } from './fixtures/debugStarts.ts';
 
 import { modFileBytes } from './modFile.ts';
 import { thingModels } from './thingModels.ts';
@@ -482,7 +483,7 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
       expect(def.gun!.internalMagazine!.capacity).toBeGreaterThan(0);
       expect(def.gun?.calibre).toBeDefined();
       expect(def.gun?.sight?.kind).toBe('iron');
-      expect(def.gun?.sight?.direction[0]).toBeGreaterThan(0);
+      expect(def.gun?.sight?.direction[2]).toBeGreaterThan(0);
       for (const part of Object.values(def.gun!.action!.parts)) {
         const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
         expect(index).toBeGreaterThanOrEqual(0);
@@ -498,11 +499,11 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
         expect(part.strokeMetres).toBeGreaterThan(0);
       }
       const raw = new Box3().setFromObject(gltf.scene);
-      expect(def.anchors!.muzzle![0]).toBeCloseTo(raw.max.x, 5);
+      expect(def.anchors!.muzzle![2]).toBeCloseTo(raw.max.z, 5);
       const prepared = prepareModel(def, gltf.scene);
       const ground = new Box3().setFromObject(prepared.ground);
       expect(ground.min.y).toBeCloseTo(0, 9);
-      expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.x - raw.min.x, 9);
+      expect(ground.max.x - ground.min.x).toBeCloseTo(raw.max.z - raw.min.z, 9);
       expect(new Box3().setFromObject(prepared.held).isEmpty()).toBe(false);
     }),
   );
@@ -531,7 +532,7 @@ it('bounds model fetches, advances after success and gives requested models prio
       { ...registry, models: new Map(defs.map((def) => [def.id, def])) },
       (message) => reports.push(message),
       Object.fromEntries(defs.map((def) => [def.file, def.file])),
-      2,
+      { modelLoadConcurrency: 2, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
     );
     expect(started).toEqual(['assets/models/first.glb', 'assets/models/second.glb']);
     expect(models.has('fourth')).toBe(false);
@@ -569,7 +570,7 @@ it("draws a grenade without the pin and lever it has shed, by the exported glb's
       throw new Error(message);
     },
     { [def.file]: def.file },
-    1,
+    { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
   );
   spy.mockRestore();
   await Promise.all(loads);
@@ -598,7 +599,7 @@ describe('model forms', () => {
     expect(box.min.y).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
-    expect(box.max.x - box.min.x).toBeCloseTo(0.3); // long side along x
+    expect(box.max.x - box.min.x).toBeCloseTo(0.3); // its long side, +z in the file, turned onto x
   });
 
   it('stands a model that rests upright on its back end, its front end up and centred over its origin', async () => {
@@ -609,10 +610,10 @@ describe('model forms', () => {
     ground.updateMatrixWorld(true);
     const box = new Box3().setFromObject(ground);
     expect(box.min.y).toBeCloseTo(0);
-    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.x - raw.min.x);
+    expect(box.max.y - box.min.y).toBeCloseTo(raw.max.z - raw.min.z);
     expect(box.getCenter(new Vector3()).x).toBeCloseTo(0);
     expect(box.getCenter(new Vector3()).z).toBeCloseTo(0);
-    const front = groundModelFrame(ground).localToWorld(new Vector3(raw.max.x, 0, 0));
+    const front = groundModelFrame(ground).localToWorld(new Vector3(0, 0, raw.max.z));
     expect(front.y).toBeCloseTo(box.max.y);
   });
 
@@ -641,7 +642,7 @@ describe('model forms', () => {
   it('is held at its grip, pointing forward', async () => {
     const { held } = await load();
     held.updateMatrixWorld(true);
-    // The fixture's box runs 0.3 m along x; the grip is 0.05 m from its back end.
+    // The fixture's box runs 0.3 m along z; the grip is 0.05 m from its back end.
     const box = new Box3().setFromObject(held);
     expect(box.min.z).toBeCloseTo(-0.25);
     expect(box.max.z).toBeCloseTo(0.05);
@@ -670,18 +671,17 @@ describe('fitted attachment model frames', () => {
     }
   });
 
-  it('keeps the default fitted optic along the bore and seated on its rail', async () => {
+  it('keeps a fitted optic along the bore and seated on its rail', async () => {
     const firearm = registry.models.get('rifle_assault')!;
-    const optic = firearm.gun?.attachments?.find(({ kind }) => kind === 'optic');
-    if (!optic) {
-      throw new Error('Exported firearm has no default optic');
-    }
-    const mount = firearm.gun!.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
-    const look = itemLook(registry, new Inventory(registry).create('rifle_assault'))!;
-    const slot = look.slots.find(({ slot: id }) => id === optic.mountedAt)!;
+    const inventory = new Inventory(registry);
+    const rifle = inventory.create('rifle_assault');
+    fitFixtureOptic(inventory, rifle, 'optic_lpvo_1_6x');
+    const look = itemLook(registry, rifle)!;
+    const slot = look.slots.find(({ model }) => model === registry.items.get('optic_lpvo_1_6x')!.model)!;
     if (!(slot.model && slot.mountFrame)) {
-      throw new Error('Default optic look is incomplete');
+      throw new Error('Fitted optic look is incomplete');
     }
+    const mount = firearm.gun!.attachmentSlots!.find(({ id }) => id === slot.slot)!;
     const gunScene = (await parseGlb(modFileBytes(firearm.file))).scene;
     const opticScene = (await parseGlb(modFileBytes(registry.models.get(slot.model)!.file))).scene;
     const { held } = prepareModel(firearm, gunScene);
@@ -745,9 +745,10 @@ describe('fitted magazine model frame', () => {
 describe('base pack melee', () => {
   // Melee models from every mod holding them: a mod's other tools carry no hold pose or strike anchor to check.
   const handToolMelee = ['crowbar', 'hammer', 'kitchen_knife', 'sledgehammer', 'wrench'];
-  const handTools = read('../mods/skelly.hand-tools/models-hand-tools.json').data as { models: { id: string }[] };
+  const meleeSources = ['hand-tools', 'household'].map((mod) => read(`../mods/skelly.${mod}/models-${mod}.json`));
+  const heldModels = meleeSources.flatMap(({ data }) => (data as { models: { id: string }[] }).models);
   for (const id of handToolMelee) {
-    if (!handTools.models.some((model) => model.id === id)) {
+    if (!heldModels.some((model) => model.id === id)) {
       throw new Error(`no hand-tool model "${id}"`);
     }
   }
@@ -755,7 +756,7 @@ describe('base pack melee', () => {
     read('../mods/skelly.melee/models-melee.json'),
     {
       source: 'models-hand-tools.json',
-      data: { models: handTools.models.filter(({ id }) => handToolMelee.includes(id)) },
+      data: { models: heldModels.filter(({ id }) => handToolMelee.includes(id)) },
     },
   ]).registry;
   // A pack may hold models no melee weapon draws yet; only a drawn model must carry a hold and strike anchor.
@@ -809,7 +810,7 @@ describe('base pack melee', () => {
   });
 
   it.each(models.map((model) => [model.id, model] as const))(
-    '%s loads, rests on x, and has usable palm and strike anchors at real-world scale',
+    '%s loads, lies along z, and has usable palm and strike anchors at real-world scale',
     async (_, def) => {
       const bytes = modFileBytes(def.file);
       const { scene } = await parseGlb(bytes);
@@ -822,7 +823,7 @@ describe('base pack melee', () => {
 
       expect(grip).toBeDefined();
       expect(strike).toBeDefined();
-      expect(strike![0]).toBeGreaterThan(grip![0]);
+      expect(strike![2]).toBeGreaterThan(grip![2]);
       const anchors = Object.values(def.anchors ?? {});
       expect(
         [grip!, ...anchors].every((anchor) => anchorIsInBounds(anchor, sourceBox)),
@@ -873,24 +874,27 @@ describe('base pack melee', () => {
   it.each(['forward', 'upright'] as const)(
     'preserves fixture scale and palm-to-strike displacement when held %s',
     (hold) => {
-      const scene = new Mesh(new BoxGeometry(0.8, 0.12, 0.06));
-      const grip: [number, number, number] = [-0.3, 0, 0];
-      const strike: [number, number, number] = [0.4, 0, 0];
+      const scene = new Mesh(new BoxGeometry(0.06, 0.12, 0.8));
+      const grip: [number, number, number] = [0, 0, -0.3];
+      const strike: [number, number, number] = [0, 0, 0.4];
       const { held, ground } = prepareModel({ id: 'fixture', file: 'fixture.glb', hold, grip: { at: grip } }, scene);
       held.updateMatrixWorld(true);
       const frame = heldModelFrame(held);
       expect(frame.localToWorld(new Vector3(...grip)).length()).toBeCloseTo(0);
       const contact = frame.localToWorld(new Vector3(...strike));
-      expect(contact.length()).toBeCloseTo(strike[0] - grip[0]);
+      expect(contact.length()).toBeCloseTo(strike[2] - grip[2]);
       expect(contact.x).toBeCloseTo(0);
       expect(hold === 'forward' ? contact.z : contact.y).toBeCloseTo(
-        (hold === 'forward' ? -1 : 1) * (strike[0] - grip[0]),
+        (hold === 'forward' ? -1 : 1) * (strike[2] - grip[2]),
       );
       const bounds = new Box3().setFromObject(ground);
       expect(bounds.min.y).toBeCloseTo(0);
-      expect(bounds.getSize(new Vector3()).toArray()).toEqual(
-        new Box3().setFromObject(scene).getSize(new Vector3()).toArray(),
-      );
+      // The ground form turns the fixture's long side, its z, onto x.
+      const { x, y, z } = new Box3().setFromObject(scene).getSize(new Vector3());
+      const size = bounds.getSize(new Vector3());
+      expect(size.x).toBeCloseTo(z);
+      expect(size.y).toBeCloseTo(y);
+      expect(size.z).toBeCloseTo(x);
     },
   );
 });
@@ -959,12 +963,12 @@ it('loads both exported STANAG magazine GLBs with the same body width', async ()
       expect(size.x).toBeGreaterThan(0);
       expect(size.y).toBeGreaterThan(0);
       expect(size.z).toBeGreaterThan(0);
-      expect(size.z).toBeLessThan(size.x);
-      expect(size.z).toBeLessThan(size.y);
+      expect(size.x).toBeLessThan(size.z);
+      expect(size.x).toBeLessThan(size.y);
       return size;
     }),
   );
-  expect(sizes[0]!.z).toBeCloseTo(sizes[1]!.z, 7);
+  expect(sizes[0]!.x).toBeCloseTo(sizes[1]!.x, 7);
 });
 
 describe('base pack guns', () => {

@@ -4,6 +4,7 @@ import {
   posedRegionHitDistance,
 } from '@skelly/engine/internal/core/actorRegions.ts';
 import { PLAYER_ARM_REACH_M } from '@skelly/engine/internal/core/actorState.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
 import { actorPoseInputFor, type HumanoidHitRegion } from '@skelly/engine/pose';
 import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
@@ -29,7 +30,7 @@ const weapons = [
     item.weapon?.melee ? [{ name: item.id, ...runtimeWeapon(item.weapon.melee) }] : [],
   ),
   { name: 'fists', ...FISTS_MELEE },
-].sort((a, b) => a.reach - b.reach || a.name.localeCompare(b.name));
+].sort((a, b) => a.reach - b.reach || compareCodeUnits(a.name, b.name));
 const poses = [
   { name: 'standing', mode: 'idle' as const, speed: 0, gaitPhase: 0, attackWindup: 0 },
   { name: 'walking', mode: 'chase' as const, speed: 0.7, gaitPhase: 0.8, attackWindup: 0 },

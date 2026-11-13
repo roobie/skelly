@@ -3,6 +3,7 @@ import type { ColumnReveal } from '@skelly/engine/mesh';
 import {
   type BlockEntities,
   type BlockEntity,
+  CHUNK,
   type DoorPanelBox,
   doorBarBox,
   type Facing,
@@ -10,6 +11,7 @@ import {
   panelFor,
   poseKey,
   rotationOf,
+  toChunk,
   type Vec3,
 } from '@skelly/engine/world';
 import {
@@ -19,6 +21,7 @@ import {
   EdgesGeometry,
   Float32BufferAttribute,
   Group,
+  InstancedMesh,
   LineSegments,
   Matrix4,
   Mesh,
@@ -31,6 +34,7 @@ import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { addSkyAnchors } from './skyAnchor.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
@@ -61,6 +65,31 @@ function markerEdges(): EdgesGeometry {
   return edges;
 }
 
+interface Piece {
+  readonly pose: string;
+  /** A batched piece's mesh is never drawn; it holds the geometry, material and transform its batch instances. */
+  readonly mesh: Group | Mesh;
+  /** The batch a piece that never moves between syncs is drawn in. */
+  readonly batch?: string;
+  /** The column its lowest corner stands in, which decides whether it is revealed. */
+  readonly column: RevealColumn;
+}
+
+/** The drawn pieces whose lowest corner stands in one chunk column, which `ColumnReveal` reveals as a whole. */
+interface RevealColumn {
+  readonly key: string;
+  /** The column's lowest corner, in blocks. */
+  readonly x: number;
+  readonly z: number;
+  revealed: boolean;
+  readonly pieces: Set<BlockEntity>;
+}
+
+interface Batch {
+  readonly members: readonly Piece[];
+  readonly mesh: InstancedMesh;
+}
+
 export class FurnitureMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
@@ -80,13 +109,23 @@ export class FurnitureMeshes {
   private drawn = -1;
   private drawnReveal = -1;
   private readonly reveal: ColumnReveal | undefined;
-  private pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
+  private readonly sectorBlocks: number | undefined;
+  private readonly pieces = new Map<BlockEntity, Piece>();
+  private readonly columns = new Map<string, RevealColumn>();
+  /** Every drawn piece of each batch, revealed or not. */
+  private readonly batched = new Map<string, Set<BlockEntity>>();
+  private readonly batches = new Map<string, Batch>();
 
-  /** `vehicles` meshes vehicle displays; with a worker behind it a vehicle appears when its mesh arrives. */
-  constructor(blockSize: number, reveal?: ColumnReveal, vehicles = new VehicleShapes()) {
+  /**
+   * `vehicles` meshes vehicle displays; with a worker behind it a vehicle appears when its mesh arrives.
+   * `sectorChunks` is the side of the square area one batch of standing pieces covers; without it one batch covers
+   * the world.
+   */
+  constructor(blockSize: number, reveal?: ColumnReveal, vehicles = new VehicleShapes(), sectorChunks?: number) {
     this.blockSize = blockSize;
     this.vehicles = vehicles;
     this.reveal = reveal;
+    this.sectorBlocks = sectorChunks === undefined ? undefined : sectorChunks * CHUNK;
     this.marker.visible = false;
     this.marker.receiveShadow = true;
     this.group.add(this.marker);
@@ -144,28 +183,195 @@ export class FurnitureMeshes {
     this.marker.visible = true;
   }
 
-  /** Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. */
+  /**
+   * Rebuilds the meshes of pieces added, moved, turned, opened or closed, and keeps the rest. Pieces that never move
+   * between syncs are drawn as one instanced batch per geometry, material and sector, so a frame draws, culls and
+   * updates a batch rather than each piece; a batch whose revealed members did not change is kept. Every explored
+   * piece stays in memory, so a sync looks only at the pieces `standingChangesSince` names and the columns whose
+   * reveal changed, and draws what looking at every piece would.
+   */
   sync(entities: BlockEntities): void {
     const revealVersion = this.reveal?.revealVersion ?? 0;
-    if (entities.standing === this.drawn && revealVersion === this.drawnReveal) {
+    if (entities === this.entities && entities.standing === this.drawn && revealVersion === this.drawnReveal) {
       return;
     }
+    const changed = entities === this.entities ? entities.standingChangesSince(this.drawn) : undefined;
     this.entities = entities;
     this.drawn = entities.standing;
-    this.drawnReveal = revealVersion;
-    const pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
-    this.group.clear();
-    for (const entity of entities.all) {
-      const pose = poseKey(entity, entities.wearOf(entity));
-      const kept = this.pieces.get(entity);
-      const piece =
-        kept?.pose === pose ? kept : { pose, mesh: castsAndReceives(this.meshFor(entity, entities.defOf(entity))) };
-      piece.mesh.visible = this.reveal?.isRevealed(entity.pos[0], entity.pos[2]) ?? true;
-      pieces.set(entity, piece);
-      this.group.add(piece.mesh);
+    const redraw = new Set<string>();
+    for (const entity of new Set(changed ?? [...this.pieces.keys(), ...entities.all])) {
+      this.restage(entity, entities, redraw);
     }
-    this.pieces = pieces;
-    this.group.add(this.marker);
+    if (revealVersion !== this.drawnReveal) {
+      this.drawnReveal = revealVersion;
+      this.recheckReveal(redraw);
+    }
+    for (const key of redraw) {
+      this.redrawBatch(key, entities);
+    }
+    if (this.group.children.at(-1) !== this.marker) {
+      this.group.add(this.marker);
+    }
+  }
+
+  /** Keeps an entity's piece while its pose is unchanged, else rebuilds it, or drops it once the entity stops standing. */
+  private restage(entity: BlockEntity, entities: BlockEntities, redraw: Set<string>): void {
+    const pose = entities.stands(entity) ? poseKey(entity, entities.wearOf(entity)) : undefined;
+    const kept = this.pieces.get(entity);
+    if (kept?.pose === pose) {
+      return;
+    }
+    if (kept) {
+      this.unstage(entity, kept, redraw);
+    }
+    if (pose !== undefined) {
+      this.stage(entity, this.piece(entity, entities.defOf(entity), pose), redraw);
+    }
+  }
+
+  private stage(entity: BlockEntity, piece: Piece, redraw: Set<string>): void {
+    this.pieces.set(entity, piece);
+    piece.column.pieces.add(entity);
+    if (piece.batch === undefined) {
+      piece.mesh.visible = piece.column.revealed;
+      // A staged piece stands where it was built until a change restages it as a fresh mesh, so its
+      // subtree never moves in place.
+      freezeMatrices(piece.mesh);
+      this.group.add(piece.mesh);
+      return;
+    }
+    let members = this.batched.get(piece.batch);
+    if (!members) {
+      members = new Set();
+      this.batched.set(piece.batch, members);
+    }
+    members.add(entity);
+    redraw.add(piece.batch);
+  }
+
+  private unstage(entity: BlockEntity, piece: Piece, redraw: Set<string>): void {
+    this.pieces.delete(entity);
+    piece.column.pieces.delete(entity);
+    if (piece.column.pieces.size === 0) {
+      this.columns.delete(piece.column.key);
+    }
+    if (piece.batch === undefined) {
+      this.group.remove(piece.mesh);
+      return;
+    }
+    const members = this.batched.get(piece.batch)!;
+    members.delete(entity);
+    if (members.size === 0) {
+      this.batched.delete(piece.batch);
+    }
+    redraw.add(piece.batch);
+  }
+
+  /** Shows or hides the pieces of each column whose reveal changed. */
+  private recheckReveal(redraw: Set<string>): void {
+    for (const column of this.columns.values()) {
+      const revealed = this.revealedAt(column.x, column.z);
+      if (revealed === column.revealed) {
+        continue;
+      }
+      column.revealed = revealed;
+      for (const entity of column.pieces) {
+        const piece = this.pieces.get(entity)!;
+        if (piece.batch === undefined) {
+          piece.mesh.visible = revealed;
+        } else {
+          redraw.add(piece.batch);
+        }
+      }
+    }
+  }
+
+  /**
+   * Draws a batch's revealed pieces in the order `all` lists them, keeping the drawn batch when they are the same and
+   * disposing it otherwise.
+   */
+  private redrawBatch(key: string, entities: BlockEntities): void {
+    const revealed = [...(this.batched.get(key) ?? [])].filter((entity) => this.pieces.get(entity)!.column.revealed);
+    const members = entities.listed(revealed).map((entity) => this.pieces.get(entity)!);
+    const kept = this.batches.get(key);
+    if (kept && sameMembers(kept.members, members)) {
+      return;
+    }
+    if (kept) {
+      this.group.remove(kept.mesh);
+      kept.mesh.dispose();
+      this.batches.delete(key);
+    }
+    if (members.length > 0) {
+      const batch = { members, mesh: batchMesh(members) };
+      this.batches.set(key, batch);
+      this.group.add(batch.mesh);
+    }
+  }
+
+  private piece(entity: BlockEntity, def: FurnitureDef, pose: string): Piece {
+    const column = this.columnOf(entity);
+    if (!standsStill(def)) {
+      return { pose, mesh: castsAndReceives(this.meshFor(entity, def)), column };
+    }
+    const mesh = this.standingMesh(entity, def);
+    mesh.updateMatrix();
+    const sector = this.sectorBlocks
+      ? `${Math.floor(entity.pos[0] / this.sectorBlocks)}:${Math.floor(entity.pos[2] / this.sectorBlocks)}`
+      : '';
+    return { pose, mesh, batch: `${mesh.geometry.uuid}:${mesh.material.uuid}:${sector}`, column };
+  }
+
+  private columnOf(entity: BlockEntity): RevealColumn {
+    const x = toChunk(entity.pos[0]) * CHUNK;
+    const z = toChunk(entity.pos[2]) * CHUNK;
+    const key = `${x},${z}`;
+    let column = this.columns.get(key);
+    if (!column) {
+      column = { key, x, z, revealed: this.revealedAt(x, z), pieces: new Set() };
+      this.columns.set(key, column);
+    }
+    return column;
+  }
+
+  private revealedAt(x: number, z: number): boolean {
+    return this.reveal?.isRevealed(x, z) ?? true;
+  }
+
+  /**
+   * Frees the batches, then each geometry and material this owner made, once. Pieces from `pieceMesh` borrow those,
+   * so they go with it; vehicle and lift parts belong to their modules (workshopVehicle.ts) and stay.
+   */
+  dispose(): void {
+    for (const { mesh } of this.batches.values()) {
+      mesh.dispose();
+    }
+    this.batches.clear();
+    this.batched.clear();
+    this.pieces.clear();
+    this.columns.clear();
+    this.group.clear();
+    const geometries = new Set<BufferGeometry>([
+      this.geometry,
+      this.marker.geometry,
+      ...this.shapeGeometries.values(),
+      ...this.doorGeometries.values(),
+    ]);
+    const materials = new Set<MeshLambertMaterial>([
+      this.marker.material,
+      ...this.materials.values(),
+      ...this.anchoredMaterials.values(),
+    ]);
+    for (const geometry of geometries) {
+      geometry.dispose();
+    }
+    for (const material of materials) {
+      material.dispose();
+    }
+    this.shapeGeometries.clear();
+    this.doorGeometries.clear();
+    this.materials.clear();
+    this.anchoredMaterials.clear();
   }
 
   /** A piece built as it would stand, for drawing it away from the world; it shares this owner's geometry and materials. */
@@ -188,9 +394,15 @@ export class FurnitureMeshes {
     if (def.door) {
       return this.door(entity, material, def);
     }
+    return this.standingMesh(entity, def);
+  }
+
+  /** The one mesh of a piece that `standsStill`. */
+  private standingMesh(entity: BlockEntity, def: FurnitureDef): Mesh<BufferGeometry, MeshLambertMaterial> {
     if (def.appearance || def.shape?.some((box) => box.color)) {
       return this.shaped(entity, def, this.damageLook(entity, this.material('#ffffff', true), def));
     }
+    const material = this.material(def.color);
     if (def.shape) {
       return this.shaped(entity, def, this.damageLook(entity, material, def));
     }
@@ -221,7 +433,7 @@ export class FurnitureMeshes {
     return result;
   }
 
-  private box(entity: BlockEntity, material: MeshLambertMaterial): Mesh {
+  private box(entity: BlockEntity, material: MeshLambertMaterial): Mesh<BufferGeometry, MeshLambertMaterial> {
     const s = this.blockSize;
     const [x, y, z] = entity.pos;
     const [w, h, d] = entity.size;
@@ -231,7 +443,11 @@ export class FurnitureMeshes {
     return mesh;
   }
 
-  private shaped(entity: BlockEntity, def: FurnitureDef, material: MeshLambertMaterial): Mesh {
+  private shaped(
+    entity: BlockEntity,
+    def: FurnitureDef,
+    material: MeshLambertMaterial,
+  ): Mesh<BufferGeometry, MeshLambertMaterial> {
     let geometry = this.shapeGeometries.get(def.id);
     if (!geometry) {
       const [width, , depth] = def.size;
@@ -394,6 +610,26 @@ export class FurnitureMeshes {
     return leaf;
   }
 }
+
+/** Doors swing, vehicles and the lift move their parts, and corpses are drawn elsewhere; the rest is one mesh. */
+const standsStill = (def: FurnitureDef): boolean =>
+  def.id !== 'workshop_lift' && !def.vehicle && !def.corpse && !def.door;
+
+const sameMembers = (kept: readonly Piece[], list: readonly Piece[]): boolean =>
+  kept.length === list.length && kept.every((piece, index) => piece === list[index]);
+
+/** One instanced draw of `members`, which share a geometry and material, each at its own mesh's transform. */
+const batchMesh = (members: readonly Piece[]): InstancedMesh => {
+  const { geometry, material } = members[0]!.mesh as Mesh;
+  const batch = castsAndReceives(new InstancedMesh(geometry, material, members.length));
+  for (const [index, piece] of members.entries()) {
+    batch.setMatrixAt(index, piece.mesh.matrix);
+  }
+  batch.computeBoundingBox();
+  batch.computeBoundingSphere();
+  freezeMatrices(batch);
+  return batch;
+};
 
 /** Unit axes of a leaf's panel: away from its hinge edge, and along that edge. */
 function leafAxes(entity: BlockEntity, hatch: boolean): [Vector3, Vector3] {

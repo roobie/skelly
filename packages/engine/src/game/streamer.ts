@@ -1,27 +1,26 @@
 // Keeps the world around the player generated and meshed.
-// Terrain is generated one column at a time on the main thread; meshes are built in
-// workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
+// Terrain columns are admitted one at a time on the main thread, from a worker's staged result or
+// evaluated there and then; meshes are built in workers. A chunk is only meshed once all eight neighbouring columns exist, so faces
 // and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
 // and never need a second pass.
 
 import { installColumn } from '../core/canonicalTerrain.ts';
 import type { Chunk } from '../core/chunk.ts';
-import { revealedColumns } from '../core/columnReveal.ts';
+import { RevealWindow } from '../core/columnReveal.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
-import { extractPadded, extractWide } from '../core/meshInput.ts';
 import type { Scale } from '../core/scale.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
-import type { BlockBox } from '../core/structure.ts';
+import type { TerrainEvaluator } from '../core/terrainEvaluator.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 import type { World } from '../core/world.ts';
 import { isEnclosed } from '../core/world.ts';
-import { generateColumn, type Surface, type TerrainBlocks, type TerrainShape } from '../core/worldgen.ts';
+import { DirtyChunks } from './dirtyChunks.ts';
 import type { FromMesher, MesherPort, MesherSource, ToMesher } from './mesherProtocol.ts';
-
-const COLUMNS_PER_FRAME = 2;
+import { SentChunks } from './sentChunks.ts';
+import { TerrainJobs, type TerrainWorkerOptions } from './terrainJobs.ts';
 
 /** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
 const withinRadius = (dx: number, dz: number, radius: number): boolean => dx * dx + dz * dz <= radius * radius;
@@ -72,9 +71,7 @@ export interface StreamerOptions {
   world: World;
   meshes: ChunkMeshSink;
   mesher: MesherSource;
-  seed: number;
-  terrain: TerrainBlocks;
-  shape: TerrainShape;
+  terrain: TerrainEvaluator;
   colors: Uint8Array;
   /** Surface pattern id per block id, for the mesher. */
   patterns: Uint8Array;
@@ -85,24 +82,22 @@ export interface StreamerOptions {
   liquids?: Uint8Array;
   fencePosts?: FencePostDefs;
   scale: Scale;
-  /** Stamped into every column as it generates. */
-  structures: readonly BlockBox[];
-  /** Changes to the ground (flattened lots, roads). */
-  surface?: Surface | undefined;
-  /** Writes buildings into each chunk as it generates. */
-  stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
+  /** Terrain columns generated per frame while streaming; from graphics tuning. */
+  columnsPerFrame: number;
   /** Extra terrain rings for sky prebuilding, without expanding mesh/reveal admission. */
   preloadRings: number;
   /** Chunks beyond the rings that meshes and chunk data stay, so a column on the edge does not churn. */
   hysteresis: number;
   /** When given, per-column and per-chunk timings are appended here. */
   stats?: StreamerStats;
+  /** Workers computing columns ahead of admission; without them every column is evaluated at admission. */
+  terrainWorkers?: TerrainWorkerOptions | undefined;
 }
 
 export interface StreamerStats {
-  /** Main-thread milliseconds to generate each column. */
+  /** Main-thread milliseconds to admit each column, including any generation main does itself. */
   genMs: number[];
   /** Worker milliseconds to mesh each chunk. */
   meshMs: number[];
@@ -116,11 +111,13 @@ export class Streamer {
   private readonly generated = new Set<string>(); // column keys "cx,cz"
   // An edit replaces an existing mesh; it must not close a column that already has its occluders drawn.
   private readonly completeColumns = new Set<string>();
-  private readonly dirty = new Set<string>(); // chunks needing a (re)mesh
+  private readonly dirty = new DirtyChunks();
   private readonly versions = new Map<string, number>();
   private readonly inFlight = new Set<string>();
   private readonly workers: MesherPort[] = [];
+  private readonly sentChunks = new Map<MesherPort, SentChunks>();
   private readonly maxInFlight: number;
+  private jobs: TerrainJobs | undefined;
   private generationFailed = false;
   failure: string | undefined;
 
@@ -128,8 +125,18 @@ export class Streamer {
     return this.offsets.length + this.meshOffsets.length * (this.opts.scale.maxCy - this.opts.scale.minCy + 1);
   }
   private replayControlled = false;
+  /**
+   * The last `update` found nothing to load, mesh or unload, and nothing since has changed that
+   * (every mutation outside `update` clears it), so the next `update` in the same column skips the full pass.
+   */
+  private settled = false;
   /** The generated ring, nearest first. */
   private readonly offsets: [number, number][];
+  /**
+   * Every column of `offsets` before this index is generated around the scan centre, so the scan resumes here;
+   * a move or an unload resets it.
+   */
+  private generatedPrefix = 0;
   private readonly offsetKeys: Set<string>;
   /** The meshed disc, nearest first. */
   private readonly meshOffsets: [number, number][];
@@ -144,6 +151,10 @@ export class Streamer {
   /** Admission seam for lighting; neighbour residency policy is separate. */
   onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
   private revealed = new Set<string>();
+  private readonly reveal: RevealWindow;
+  /** Columns whose meshed state may have just turned true, awaiting `refreshReveal`. */
+  private readonly recheck = new Set<string>();
+  private centerChanged = true;
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<MesherPort, number>();
   onSkyService: ((realMs: number) => void) | undefined;
@@ -210,13 +221,19 @@ export class Streamer {
         wireMeshes: opts.wireMeshes ?? [],
         liquids: opts.liquids ?? new Uint8Array(0),
         fencePosts: opts.fencePosts ?? [],
+        occluders: this.occluders,
       });
       this.workers.push(worker);
+      this.sentChunks.set(worker, new SentChunks());
     }
     this.maxInFlight = count * 2;
+    if (opts.terrainWorkers) {
+      this.jobs = new TerrainJobs(opts.terrainWorkers, opts.terrain.plan, opts.scale);
+    }
 
     this.meshOffsets = discOffsets(opts.radius);
     this.revealOffsets = grownOffsets(this.meshOffsets);
+    this.reveal = new RevealWindow(this.revealOffsets);
     this.offsets = grownOffsets(discOffsets(opts.radius + opts.preloadRings));
     this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
@@ -231,7 +248,11 @@ export class Streamer {
   }
 
   setReplayControlled(): void {
+    this.settled = false;
     this.replayControlled = true;
+    // Replay owns every arrival; no speculative reply may outlive that.
+    this.jobs?.dispose();
+    this.jobs = undefined;
   }
 
   /** Generated terrain columns at a replay recording boundary. */
@@ -247,6 +268,7 @@ export class Streamer {
 
   /** Generates replay-required terrain without applying its load-time simulation effects. */
   generateForReplay(cx: number, cz: number): boolean {
+    this.settled = false;
     if (this.generated.has(`${cx},${cz}`)) {
       return true;
     }
@@ -260,21 +282,19 @@ export class Streamer {
 
   /** Removes replay-unloaded terrain without applying its unload-time simulation effects. */
   unloadForReplay(cx: number, cz: number): void {
+    this.settled = false;
     const col = `${cx},${cz}`;
-    if (!(this.replayControlled && this.generated.delete(col))) {
+    if (!(this.replayControlled && this.ungenerate(col))) {
       return;
     }
     const { world, scale, meshes } = this.opts;
-    this.completeColumns.delete(col);
+    this.forgetComplete(cx, cz);
     this.dirtyReplayNeighbours(cx, cz);
     const pinned = world.isTouched(cx, cz);
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
-      const key = chunkKey(cx, cy, cz);
-      meshes.remove(key);
+      meshes.remove(chunkKey(cx, cy, cz));
       if (!pinned) {
-        world.removeChunk(cx, cy, cz);
-        this.dirty.delete(key);
-        this.versions.delete(key);
+        this.removeChunk(cx, cy, cz);
       }
     }
     this.refreshReveal();
@@ -328,7 +348,7 @@ export class Streamer {
           const chunk = this.opts.world.getChunk(x, y, z);
           if (chunk && !chunk.isEmpty()) {
             const key = chunkKey(x, y, z);
-            this.dirty.add(key);
+            this.dirty.add(x, y, z);
             this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
           }
         }
@@ -338,10 +358,11 @@ export class Streamer {
 
   /** Call after editing blocks with the chunks World.setBlock returned. */
   markEdited(chunks: Vec3[]): void {
+    this.settled = false;
     for (const [cx, cy, cz] of chunks) {
       const key = chunkKey(cx, cy, cz);
       this.versions.set(key, (this.versions.get(key) ?? 0) + 1);
-      this.dirty.add(key);
+      this.dirty.add(cx, cy, cz);
     }
   }
 
@@ -354,49 +375,66 @@ export class Streamer {
       // Escapes the frame like an unhandled generation failure: the loading mask during load, the error report after.
       throw new Error(this.failure);
     }
+    if (this.jobs?.failure) {
+      // Decided here, not in the worker's message handler, and before admission could cover it with main-thread work.
+      this.failGeneration(new Error(this.jobs.failure));
+      return;
+    }
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
+    const moved = pcx !== this.center[0] || pcz !== this.center[1];
 
-    let budget = COLUMNS_PER_FRAME;
-    for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
-      if (this.generationFailed || budget === 0) {
-        break;
-      }
-      if (this.generate(pcx + dx, pcz + dz)) {
-        budget -= 1;
-      }
+    // Sky prebuild depends on state outside the streamer, so it runs even when the streamer is settled.
+    if (this.settled && !moved) {
+      this.onTerrainReady?.(x, z);
+      this.dispatchSky();
+      return;
     }
 
+    if (moved) {
+      this.generatedPrefix = 0;
+      this.jobs?.retireAll();
+    }
+    let worked = this.generateNearest(pcx, pcz) || moved;
     if (this.generationFailed) {
+      return;
+    }
+    this.prefetch(pcx, pcz);
+    if (this.jobs?.failure) {
+      // A request that could not be sent fails this update, so no later admission covers it.
+      this.failGeneration(new Error(this.jobs.failure));
       return;
     }
     this.onTerrainReady?.(x, z);
     this.dispatchSky();
     for (const [dx, dz] of this.meshOffsets) {
       if (this.occupied >= this.maxInFlight) {
+        worked = true; // dirty chunks may remain
         break;
       }
       const cx = pcx + dx;
       const cz = pcz + dz;
-      if (!(this.replayControlled || this.neighboursGenerated(cx, cz))) {
+      if (!(this.dirty.inColumn(cx, cz) && (this.replayControlled || this.neighboursGenerated(cx, cz)))) {
         continue;
       }
       for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy && this.occupied < this.maxInFlight; cy++) {
         const key = chunkKey(cx, cy, cz);
         if (this.dirty.has(key) && !this.inFlight.has(key)) {
           this.requestMesh(key, cx, cy, cz);
+          worked = true;
         }
       }
     }
 
-    if (pcx !== this.center[0] || pcz !== this.center[1]) {
+    if (moved) {
       this.center = [pcx, pcz];
+      this.centerChanged = true;
       for (const key of [...this.opts.meshes.keys()]) {
-        const [cx, , cz] = key.split(',').map(Number) as Vec3;
+        const [cx, cy, cz] = key.split(',').map(Number) as Vec3;
         if (!this.inRange(cx, cz)) {
           this.opts.meshes.remove(key);
-          this.completeColumns.delete(`${cx},${cz}`);
-          this.dirty.add(key); // remesh when we come back
+          this.forgetComplete(cx, cz);
+          this.dirty.add(cx, cy, cz); // remesh when we come back
         }
       }
       if (!this.replayControlled) {
@@ -404,28 +442,104 @@ export class Streamer {
       }
     }
     this.refreshReveal();
+    this.settled = !worked;
   }
 
+  /** Generates the nearest missing columns within the frame budget; true when it generated any or some may remain. */
+  private generateNearest(pcx: number, pcz: number): boolean {
+    if (this.replayControlled) {
+      return false;
+    }
+    let budget = this.opts.columnsPerFrame;
+    let worked = false;
+    for (; this.generatedPrefix < this.offsets.length; this.generatedPrefix++) {
+      if (budget === 0) {
+        return true; // columns may remain
+      }
+      const [dx, dz] = this.offsets[this.generatedPrefix]!;
+      if (this.generate(pcx + dx, pcz + dz)) {
+        budget -= 1;
+        worked = true;
+      }
+      if (this.generationFailed) {
+        return true;
+      }
+    }
+    return worked;
+  }
+
+  /** Asks the workers for the next missing columns in admission order; never admits one. */
+  private prefetch(pcx: number, pcz: number): void {
+    const { jobs } = this;
+    if (!jobs || this.replayControlled) {
+      return;
+    }
+    const wanted: [number, number][] = [];
+    for (let at = this.generatedPrefix; at < this.offsets.length && wanted.length < jobs.lookahead; at++) {
+      const [dx, dz] = this.offsets[at]!;
+      const [cx, cz] = [pcx + dx, pcz + dz];
+      // A touched column arrives from its resident chunks, so computing it would be wasted.
+      if (!(this.generated.has(`${cx},${cz}`) || this.opts.world.isTouched(cx, cz))) {
+        wanted.push([cx, cz]);
+      }
+    }
+    jobs.want(wanted);
+  }
+
+  private ungenerate(col: string): boolean {
+    const removed = this.generated.delete(col);
+    if (removed) {
+      this.generatedPrefix = 0;
+    }
+    return removed;
+  }
+
+  private forgetComplete(cx: number, cz: number): void {
+    if (this.completeColumns.delete(`${cx},${cz}`)) {
+      this.reveal.touch(cx, cz);
+    }
+  }
+
+  private markComplete(cx: number, cz: number): void {
+    const key = `${cx},${cz}`;
+    if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
+      this.completeColumns.add(key);
+      this.reveal.touch(cx, cz);
+    }
+  }
+
+  /**
+   * Only a column event (generated, meshed, unloaded) or a move changes which columns are complete,
+   * so the window is rescanned after a move and otherwise only the columns an event touched.
+   */
   private refreshReveal(): void {
-    for (const [dx, dz] of this.revealOffsets) {
-      const cx = this.center[0] + dx;
-      const cz = this.center[1] + dz;
-      const key = `${cx},${cz}`;
-      if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
-        this.completeColumns.add(key);
+    if (this.centerChanged) {
+      this.centerChanged = false;
+      this.recheck.clear();
+      this.reveal.recenter(this.center);
+      for (const [dx, dz] of this.revealOffsets) {
+        this.markComplete(this.center[0] + dx, this.center[1] + dz);
+      }
+    } else {
+      for (const key of this.recheck) {
+        const [cx, cz] = key.split(',').map(Number) as [number, number];
+        if (this.reveal.contains(cx, cz)) {
+          this.markComplete(cx, cz);
+        }
+      }
+      this.recheck.clear();
+    }
+    const change = this.reveal.settle((cx, cz) => this.completeColumns.has(`${cx},${cz}`));
+    if (!change) {
+      return;
+    }
+    for (const [cx, cz] of change.added) {
+      if (!this.revealed.has(`${cx},${cz}`)) {
+        this.onBeforeReveal?.(cx, cz);
       }
     }
-    const columns = revealedColumns(this.center, this.revealOffsets, (cx, cz) =>
-      this.completeColumns.has(`${cx},${cz}`),
-    );
-    for (const key of columns) {
-      if (!this.revealed.has(key)) {
-        const [cx, cz] = key.split(',').map(Number);
-        this.onBeforeReveal?.(cx!, cz!);
-      }
-    }
-    this.revealed = columns;
-    this.opts.meshes.setRevealedColumns(columns);
+    this.revealed = change.columns;
+    this.opts.meshes.setRevealedColumns(change.columns);
   }
 
   /**
@@ -437,18 +551,24 @@ export class Streamer {
     // The meshing dependency shell reaches less than a diagonal step past the preload disc.
     for (const col of farColumns(this.generated, this.center, radius + preloadRings + Math.SQRT2 + hysteresis)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
-      const pinned = world.isTouched(cx, cz);
-      for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
-        const key = chunkKey(cx, cy, cz);
-        if (!pinned) {
-          world.removeChunk(cx, cy, cz);
-          this.dirty.delete(key);
-          this.versions.delete(key);
+      if (!world.isTouched(cx, cz)) {
+        for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+          this.removeChunk(cx, cy, cz);
         }
       }
-      this.generated.delete(col);
-      this.completeColumns.delete(col);
+      this.ungenerate(col);
+      this.forgetComplete(cx, cz);
       this.onColumnUnload(cx, cz);
+    }
+  }
+
+  private removeChunk(cx: number, cy: number, cz: number): void {
+    const key = chunkKey(cx, cy, cz);
+    this.opts.world.removeChunk(cx, cy, cz);
+    this.dirty.delete(cx, cy, cz);
+    this.versions.delete(key);
+    for (const sent of this.sentChunks.values()) {
+      sent.drop(key);
     }
   }
 
@@ -479,34 +599,47 @@ export class Streamer {
     }
     const start = performance.now();
     try {
-      const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz);
+      if (this.jobs?.failure) {
+        throw new Error(this.jobs.failure);
+      }
+      // Taken first so a touched column's staged bytes are discarded, never installed.
+      const staged = this.jobs?.take(cx, cz);
+      const arrived = this.residentTouchedColumn(cx, cz) ?? this.addGenerated(cx, cz, staged);
       this.opts.stats?.genMs.push(performance.now() - start);
       for (const chunk of arrived) {
         if (!chunk.isEmpty()) {
-          this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
+          this.dirty.add(chunk.cx, chunk.cy, chunk.cz);
         }
       }
       this.generated.add(col);
+      this.recheck.add(col);
       if (notify) {
         this.onColumn(cx, cz);
       }
       return true;
     } catch (error) {
-      this.generationFailed = true;
-      this.failure = (error instanceof Error ? error.message : String(error)) || 'World generation failed';
-      if (!this.onGenerationError) {
-        throw error;
-      }
-      this.onGenerationError(error);
+      this.failGeneration(error);
       return true;
     }
   }
 
-  /** Generates a column and adds the chunks the world doesn't hold yet; returns those. */
-  private addGenerated(cx: number, cz: number): Chunk[] {
-    const { world, seed, terrain, shape, scale, structures, surface, stamp } = this.opts;
-    const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
-    return installColumn(world, column);
+  private failGeneration(error: unknown): void {
+    this.generationFailed = true;
+    this.failure = (error instanceof Error ? error.message : String(error)) || 'World generation failed';
+    this.jobs?.dispose();
+    if (!this.onGenerationError) {
+      throw error;
+    }
+    this.onGenerationError(error);
+  }
+
+  /**
+   * Adds the chunks of a column the world doesn't hold yet; returns those. A column no worker staged by its
+   * admission is evaluated here, in the same frame and by the same evaluator, so arrival never waits on a worker.
+   */
+  private addGenerated(cx: number, cz: number, staged: Chunk[] | undefined): Chunk[] {
+    const { world, terrain } = this.opts;
+    return installColumn(world, staged ?? terrain.generateColumn(cx, cz));
   }
 
   /** A touched column's chunks when every one is resident, so it is installed instead of generated. */
@@ -526,28 +659,29 @@ export class Streamer {
     return chunks;
   }
 
+  private recheckChunkColumn(chunkKeyText: string): void {
+    const [cx, , cz] = chunkKeyText.split(',');
+    this.recheck.add(`${cx},${cz}`);
+  }
+
   private requestMesh(key: string, cx: number, cy: number, cz: number): void {
-    this.dirty.delete(key);
+    this.dirty.delete(cx, cy, cz);
     const { world, scale, meshes } = this.opts;
     if (isEnclosed(world, [cx, cy, cz], scale.minCy, this.occluders)) {
       meshes.remove(key); // nothing visible; skip the worker entirely
+      this.recheckChunkColumn(key);
       return;
     }
     this.inFlight.add(key);
-    const padded = extractPadded(world, [cx, cy, cz], scale.minCy);
-    const wide = extractWide(world, [cx, cy, cz], scale.minCy, this.occluders);
     const worker = this.workers[this.nextWorker % this.workers.length]!;
     this.nextWorker += 1;
-    this.send(worker, {
-      type: 'mesh',
-      key,
-      version: this.versions.get(key) ?? 0,
-      padded,
-      wide,
-    });
+    // The worker builds the padded and wide arrays; the main thread only copies the chunks they read that it lacks.
+    const [neighbourhood, transfer] = this.sentChunks.get(worker)!.send(world, [cx, cy, cz], scale.minCy);
+    this.send(worker, { type: 'mesh', key, version: this.versions.get(key) ?? 0, neighbourhood }, transfer);
   }
 
   private receive(worker: MesherPort, msg: FromMesher): void {
+    this.settled = false;
     this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
     if (msg.type === 'sky') {
       const callback = this.skyReplies.get(msg.id);
@@ -561,7 +695,8 @@ export class Streamer {
     }
     if (msg.type === 'meshFailed') {
       this.inFlight.delete(msg.key);
-      this.dirty.add(msg.key);
+      const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;
+      this.dirty.add(cx, cy, cz);
       this.failure ??= `World mesh worker failed on chunk ${msg.key}: ${msg.message}`;
       return;
     }
@@ -571,6 +706,7 @@ export class Streamer {
 
   private receiveMesh(msg: Extract<FromMesher, { type: 'mesh' }>): void {
     this.inFlight.delete(msg.key);
+    this.recheckChunkColumn(msg.key);
     const { stats } = this.opts;
     if (stats) {
       stats.meshMs.push(msg.ms);
@@ -584,7 +720,7 @@ export class Streamer {
     const [cx, cy, cz] = msg.key.split(',').map(Number) as Vec3;
     if (!this.inRange(cx, cz)) {
       if (this.opts.world.getChunk(cx, cy, cz)) {
-        this.dirty.add(msg.key);
+        this.dirty.add(cx, cy, cz);
       }
       return;
     }
@@ -593,13 +729,9 @@ export class Streamer {
     this.refreshReveal();
   }
 
-  private send(worker: MesherPort, msg: ToMesher): void {
+  private send(worker: MesherPort, msg: ToMesher, transfer: ArrayBuffer[] = []): void {
     if (msg.type !== 'init') {
       this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 0) + 1);
-    }
-    const transfer: ArrayBuffer[] = [];
-    if (msg.type === 'mesh') {
-      transfer.push(msg.padded.buffer as ArrayBuffer, msg.wide.buffer as ArrayBuffer);
     }
     if (msg.type === 'sky') {
       transfer.push(...msg.input.chunks.flatMap((chunk) => (chunk.raw ? [chunk.raw.buffer as ArrayBuffer] : [])));

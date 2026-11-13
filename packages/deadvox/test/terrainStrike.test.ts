@@ -9,16 +9,16 @@ import { affectedChunks } from '@skelly/engine/internal/core/world.ts';
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { PILE_GRID } from '@skelly/engine/inventory';
-import type { MesherPort, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh } from '@skelly/engine/mesh';
+import type { MesherPort, ReceivedMeshRequest, ToMesher } from '@skelly/engine/mesh';
+import { buildMesh, HeldChunks, paddedFrom, wideFrom } from '@skelly/engine/mesh';
 import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
 import type { BlockBlow } from '@skelly/engine/sim';
 import { playerTuning } from '@skelly/engine/sim';
 import {
   CHUNK,
-  generateColumn,
-  type Terrain,
+  createTerrainEvaluator,
+  type TerrainPlan,
   toChunk,
   toLocal,
   type Vec3,
@@ -143,7 +143,7 @@ const fixture = (
     { min: [CHUNK - 2, 1, 4], max: [CHUNK + 3, 8, 5], block: floor },
     { min: [CHUNK + 4, 1, 8], max: [CHUNK + 5, 2, 9], block: floor },
   ];
-  const terrain: Terrain = {
+  const terrain: TerrainPlan = {
     seed: 7,
     scale,
     blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
@@ -155,13 +155,21 @@ const fixture = (
       featureSizeMetres: 1,
       octaves: 1,
     },
-    stamp: (chunk) => {
-      if (chunk.cx === 1 && chunk.cz === 0) {
-        chunk.set(toLocal(marker[0]), marker[1], marker[2], floor);
-      }
+    site: {
+      kind: 'weathering-pad',
+      data: {
+        blockSize: scale.blockSize,
+        padTop: 0,
+        heightPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        materialPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        concrete: floor,
+        structures: [{ min: marker, max: marker.map((value) => value + 1) as Vec3, block: floor }],
+      },
     },
+    structures,
   };
-  const canonical = new CanonicalTerrain(world, terrain, structures);
+  const evaluator = createTerrainEvaluator(terrain);
+  const canonical = new CanonicalTerrain(world, evaluator);
   const spawns = fixtureSpawns(variant);
   const points = fixtureGround(variant.full);
   const footprints = new SupplyFootprints(
@@ -206,7 +214,7 @@ const fixture = (
   if (!restored) {
     if (variant.resident) {
       for (const cx of order) {
-        installColumn(world, generateColumn(terrain, cx, 0, structures));
+        installColumn(world, evaluator.generateColumn(cx, 0));
       }
     }
     if (variant.collision) {
@@ -301,7 +309,7 @@ const logical = (f: Fixture) => {
   return {
     inventory,
     columns: [0, 1].map((cx) =>
-      (f.world.getChunk(cx, 0, 0) ?? generateColumn(f.terrain, cx, 0, f.structures)[0]!).toArray(),
+      (f.world.getChunk(cx, 0, 0) ?? createTerrainEvaluator(f.terrain).generateColumn(cx, 0)[0]!).toArray(),
     ),
     damage: f.world.blockDamage.snapshotState(),
     rolled: [...f.snapshot().world.rolledColumns].sort(),
@@ -317,16 +325,16 @@ const restore = async (f: Fixture, variant: Variant) => {
 };
 
 const meshing = (f: Fixture) => {
-  type Request = Extract<ToMesher, { type: 'mesh' }>;
-  const requests: { worker: ControlledWorker; message: Request }[] = [];
+  const requests: { worker: ControlledWorker; message: ReceivedMeshRequest }[] = [];
   class ControlledWorker implements MesherPort {
     handlers: MesherHandlers | undefined;
+    private readonly held = new HeldChunks();
     listen(handlers: MesherHandlers): void {
       this.handlers = handlers;
     }
     post(message: ToMesher): void {
       if (message.type === 'mesh') {
-        requests.push({ worker: this, message });
+        requests.push({ worker: this, message: this.held.receive(message) });
       }
     }
   }
@@ -336,17 +344,14 @@ const meshing = (f: Fixture) => {
     world: f.world,
     meshes: meshes as never,
     mesher: { count: 1, create: () => new ControlledWorker() },
-    seed: f.terrain.seed,
-    terrain: f.terrain.blocks,
-    shape: f.terrain.shape,
+    terrain: createTerrainEvaluator(f.terrain),
     scale,
-    structures: f.structures,
-    stamp: f.terrain.stamp,
     colors,
     patterns: new Uint8Array(f.registry.blocks.length),
     weatherable: new Uint8Array(f.registry.blocks.length),
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
   });
   const next = () => {
@@ -360,7 +365,7 @@ const meshing = (f: Fixture) => {
     return request;
   };
   const reply = ({ worker, message }: ReturnType<typeof next>) => {
-    const mesh = buildMesh(message.padded, colors, { wide: message.wide });
+    const mesh = buildMesh(paddedFrom(message.neighbourhood), colors, { wide: wideFrom(message.neighbourhood) });
     worker.handlers?.message({ type: 'mesh', key: message.key, version: message.version, ms: 0, mesh });
     return mesh;
   };
@@ -459,7 +464,7 @@ describe('supply-aware terrain destruction', () => {
       edited.mockImplementation((chunks) => streamer.markEdited(chunks));
       const old = next();
       const index = paddedIndex(toLocal(cell[0]) + 1, toLocal(cell[1]) + 1, toLocal(cell[2]) + 1);
-      expect(old.message.padded[index]).toBe(f.floor);
+      expect(paddedFrom(old.message.neighbourhood)[index]).toBe(f.floor);
       if (state === 'drawn') {
         const mesh = reply(old);
         expect(meshes.set).toHaveBeenCalledWith(old.message.key, expect.any(Array), mesh);
@@ -477,7 +482,7 @@ describe('supply-aware terrain destruction', () => {
       const replacement = next();
       expect(replacement.message.key).toBe(old.message.key);
       expect(replacement.message.version).toBeGreaterThan(old.message.version);
-      expect(replacement.message.padded[index]).toBe(0);
+      expect(paddedFrom(replacement.message.neighbourhood)[index]).toBe(0);
       const mesh = reply(replacement);
       expect(meshes.set).toHaveBeenCalledExactlyOnceWith(replacement.message.key, expect.any(Array), mesh);
     },
@@ -530,17 +535,12 @@ describe('supply-aware terrain destruction', () => {
 
   it('admits a canonical fall path deeper than the resident-only furniture search limit', () => {
     const f = fixture();
-    const deep: Terrain = {
+    const deep: TerrainPlan = {
       ...f.terrain,
       scale: { ...scale, minCy: -3 },
       shape: { ...f.terrain.shape, minHeightMetres: -35.5, maxHeightMetres: -35.5 },
-      stamp: (chunk) => {
-        if (chunk.cy === 0) {
-          f.terrain.stamp?.(chunk);
-        }
-      },
     };
-    const canonical = new CanonicalTerrain(f.world, deep, f.structures);
+    const canonical = new CanonicalTerrain(f.world, createTerrainEvaluator(deep));
     const source: ColumnSource = {
       ...f.source,
       furnitureIn: (cx, cz) => (cx === 0 && cz === 0 ? [f.spawns[0]!] : []),

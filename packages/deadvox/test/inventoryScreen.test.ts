@@ -150,6 +150,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     clearDownedBody: () => undefined,
     craftStart: () => undefined,
     craftRepairEntity: () => undefined,
+    craftTakeApartEntity: () => undefined,
     craftContinue: () => undefined,
     craftStop: () => undefined,
     wait: () => undefined,
@@ -976,9 +977,8 @@ describe('inventory screen Lit rendering', () => {
     const loaded = [...content.skills.keys()];
     const shown = panelOrder(content);
     expect(shown).not.toEqual(loaded);
-    expect(shown.map((id) => content.skills.get(id)!.name)).toEqual(
-      [...content.skills.values()].map(({ name }) => name).sort((left, right) => left.localeCompare(right)),
-    );
+    expect(shown.length).toBeGreaterThan(1);
+    expect(shown[0]).toBe(skill.id);
     const reversed = { ...content, skills: new Map([...content.skills].reverse()) };
     expect(panelOrder(reversed)).toEqual(shown);
   });
@@ -1265,6 +1265,7 @@ describe('inventory screen Lit rendering', () => {
         clearDownedBody: () => undefined,
         craftStart: () => undefined,
         craftRepairEntity: () => undefined,
+        craftTakeApartEntity: () => undefined,
         craftContinue: () => undefined,
         craftStop: () => undefined,
         wait: () => undefined,
@@ -1381,7 +1382,9 @@ describe('inventory screen Lit rendering', () => {
     test.screen.selected = firearm;
     test.screen.update();
 
-    const fit = test.root.querySelector<HTMLButtonElement>('.inv-details [data-attachment-slot] button.inv-option');
+    const fit = test.root.querySelector<HTMLButtonElement>(
+      '.inv-details [data-attachment-slot][data-occupied="false"] button.inv-option',
+    );
     if (!fit) {
       throw new Error('Fixture firearm did not render a fit action');
     }

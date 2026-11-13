@@ -151,6 +151,8 @@ interface LiveGesturePorts {
   wornLight: PressGesture;
   /** Picks the interaction target at the press and forgets it at the release. */
   interact: PressGesture;
+  /** Takes the off-hand use press when the held item offers a choice; false leaves it to the ordinary use. */
+  offHandUse: { keyDown: (at: number) => boolean; keyUp: (at: number) => void };
   quickbar: { keyDown: (slot: number, at: number) => void; keyUp: (slot: number, at: number) => void };
   /** Cancels every held live gesture, as a refusal does. */
   cancelHeld: () => void;
@@ -1074,7 +1076,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         withUnlockedInput(() => liveGestures.wornLight.keyDown(action, at));
         break;
       case 'hand.use-off':
-        if (!ports.replaying()) {
+        if (!(ports.replaying() || liveGestures.offHandUse.keyDown(at))) {
           controls.useOff();
         }
         break;
@@ -1105,26 +1107,23 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       presentation.refusal(reason, ports.sim().time);
     }
   };
+  const releaseHandlers = new Map<string, (action: string, at: number) => void>([
+    [
+      'stance.ready',
+      () => {
+        controls.rightMouseHeld = false;
+        controls.aimingDownSights = false;
+      },
+    ],
+    ['firearm.reload', (_action, at) => controls.reload.keyUp(at)],
+    ['world.interact', (action, at) => liveGestures.interact.keyUp(action, at)],
+    ['hand.use-off', (_action, at) => liveGestures.offHandUse.keyUp(at)],
+    ['player.crouch-toggle', (action, at) => liveGestures.crouchProne.keyUp(action, at)],
+    ['player.throw', (action, at) => liveGestures.throwStance.keyUp(action, at)],
+    ['light.worn-toggle', (action, at) => liveGestures.wornLight.keyUp(action, at)],
+  ]);
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (action === 'stance.ready') {
-      controls.rightMouseHeld = false;
-      controls.aimingDownSights = false;
-    }
-    if (action === 'firearm.reload') {
-      controls.reload.keyUp(at);
-    }
-    if (action === 'world.interact') {
-      liveGestures.interact.keyUp(action, at);
-    }
-    if (action === 'player.crouch-toggle') {
-      liveGestures.crouchProne.keyUp(action, at);
-    }
-    if (action === 'player.throw') {
-      liveGestures.throwStance.keyUp(action, at);
-    }
-    if (action === 'light.worn-toggle') {
-      liveGestures.wornLight.keyUp(action, at);
-    }
+    releaseHandlers.get(action)?.(action, at);
     if (slot !== undefined) {
       liveGestures.quickbar.keyUp(slot, at);
     }
@@ -1238,6 +1237,21 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         const item = inventory.itemByUid(uid);
         return item ? survival.activateHeld(item) : lines.common.gone;
       },
+      handAction: (uid, actionId) => {
+        const item = inventory.itemByUid(uid);
+        const hand = item && survival.handOf(item);
+        if (!item || hand === undefined) {
+          return lines.common.gone;
+        }
+        return survival.withItemAction(item, actionId, (action) => {
+          // Resumes here rather than through the hand use, which would record a second command for the one choice.
+          if (action.continuing) {
+            continueAction();
+          } else {
+            handUse.perform(hand);
+          }
+        });
+      },
       pickup: (uid, mode, feetPosition) => {
         const item = inventory.itemByUid(uid);
         if (!item) {
@@ -1268,6 +1282,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       craftStart: (recipeId, preference, sources) => session.crafting.start(recipeId, preference, sources),
       craftRepairEntity: (recipeId, entityUid, preference, sources) =>
         session.crafting.repairEntity(recipeId, entityUid, preference, sources),
+      craftTakeApartEntity: (entityUid) => session.crafting.takeApartEntity(entityUid),
       craftContinue: () => {
         continueAction();
       },
@@ -1291,6 +1306,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     if (
       payload.kind === 'craft.start' ||
       payload.kind === 'craft.repair-entity' ||
+      payload.kind === 'craft.take-apart-entity' ||
       payload.kind === 'action.wait' ||
       payload.kind === 'vehicle.work'
     ) {

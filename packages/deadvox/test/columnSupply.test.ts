@@ -6,7 +6,7 @@ import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skell
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
 import { decodeSave } from '@skelly/engine/save';
-import { CHUNK, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
+import { CHUNK, createTerrainEvaluator, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -175,6 +175,22 @@ describe('authored supply projection', () => {
     expect(runs[0]).toEqual(runs[1]);
   });
 
+  it('arrival publishes only its column, and a column a live pile refuses publishes nothing', () => {
+    const { registry, inventory, consumed, owner, source } = fixture();
+    const filler = 'supply_fixture_filler';
+    registry.items.set(filler, { ...registry.items.get(loot.type)!, id: filler, size: [PILE_GRID.w, PILE_GRID.h] });
+    expect(inventory.add(inventory.create(filler), { kind: 'pile', pos: ground.destination })).toBe(true);
+    const before = owners(inventory);
+    // Column 1 furnishes its shelf before its ground loot meets the full pile.
+    expect(() => owner.arrive(1, 0, source)).toThrow('does not fit in its pile');
+    expect(owners(inventory)).toEqual(before);
+    expect([...consumed]).toEqual([]);
+    owner.arrive(0, 0, source);
+    expect(inventory.entities.at(...shelf.pos)).toBeDefined();
+    expect(inventory.entities.at(...second.pos)).toBeUndefined();
+    expect([...consumed]).toEqual(['0,0']);
+  });
+
   it('rebuilds closure in source order and resolves stable entity and item handles to eventual owners', () => {
     const { inventory, owner, source } = fixture();
     const existing = inventory.furnish({ ...shelf, pos: [-4, 2, 3] }, [loot])!;
@@ -260,19 +276,24 @@ describe('authored supply projection', () => {
     const { registry, source } = fixture();
     const runtime = createRuntime(undefined, false, [[8, 8]], { registry });
     const floor = registry.blockIds.get('supply_fixture_floor')!;
-    const canonical = new CanonicalTerrain(runtime.world, {
-      seed: 7,
-      scale: makeScale(0.5),
-      blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
-      shape: {
-        minHeightMetres: 0.5,
-        maxHeightMetres: 0.5,
-        beachBelowMetres: 0,
-        dirtDepthMetres: 1,
-        featureSizeMetres: 1,
-        octaves: 1,
-      },
-    });
+    const canonical = new CanonicalTerrain(
+      runtime.world,
+      createTerrainEvaluator({
+        site: { kind: 'natural' },
+        structures: [],
+        seed: 7,
+        scale: makeScale(0.5),
+        blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
+        shape: {
+          minHeightMetres: 0.5,
+          maxHeightMetres: 0.5,
+          beachBelowMetres: 0,
+          dirtDepthMetres: 1,
+          featureSizeMetres: 1,
+          octaves: 1,
+        },
+      }),
+    );
     const projection = runtime.session.projectSupply(source);
     projection.read(region);
     projection.include(2, 0);

@@ -1,6 +1,44 @@
 {
   "ui": [
     {
+      "actionMenu": {
+        "deadZonePixels": 30,
+        "directions": {
+          "furniture": {
+            "continue": 135,
+            "drag": 180,
+            "lift": 270,
+            "push": 0,
+            "repair": 90,
+            "take_apart": 225
+          },
+          "held": {
+            "battery:unload": 180,
+            "continue-work": 225,
+            "magazine:strip": 135,
+            "open-can": 90,
+            "own": 0,
+            "sharpen": 45,
+            "treat": 270
+          },
+          "treat": {
+            "head": 0,
+            "leftArm": 300,
+            "leftLeg": 225,
+            "rightArm": 60,
+            "rightLeg": 135,
+            "torso": 180
+          }
+        },
+        "entryCap": 8,
+        "labelPaddingRem": 0.5,
+        "labelRadiusRem": 0.375,
+        "pullIndicatorPixels": 6,
+        "radiusPixels": 110,
+        "selectedLabelScale": 1.25,
+        "selectionHalfAngleDegrees": 22.5,
+        "strokePixels": 3
+      },
       "actionText": {
         "attachments": {
           "fit": "Fit {item}",
@@ -164,7 +202,6 @@
           "pull": "Trigger pull"
         },
         "survival": {
-          "actionListHeading": "{item}:",
           "batteryDetail": "Battery {percent}%",
           "burnedOut": "It has burned out",
           "cantUseFromHere": "I can't use the {item} from here",
@@ -267,6 +304,7 @@
         "barDoorOpen": "I can't bar an open door",
         "barredOtherSide": "It's barred from the other side",
         "batteryDead": "The battery is dead",
+        "batteryDeadHeldSpare": "The battery is dead, and I'm holding one that fits",
         "batteryDeadNoSpare": "The battery is dead, and I'm not holding a spare",
         "batteryGone": "The battery isn't there any more",
         "boardedUp": "It's boarded up",
@@ -325,6 +363,7 @@
         "needsBothHands": "It needs both hands",
         "needsSling": "It needs a sling to go on my shoulder",
         "noBattery": "There's no battery in it",
+        "noBatteryHeldSpare": "There's no battery in it, and I'm holding one that fits",
         "noBatteryNoSpare": "There's no battery in it, and I'm not holding one",
         "noCartridge": "There's no gas cartridge in it",
         "noGroundRoom": "There's no room on the ground",
@@ -408,7 +447,7 @@
         "otherInWay": "Someone's in the way",
         "outOfReach": "I can't reach there",
         "playerInWay": "I'm in the way",
-        "reserved": "I'm taking it apart",
+        "reserved": "I'm working on it",
         "slideTired": "I'm too tired to move it",
         "someoneOnIt": "Someone's standing on it",
         "standingOn": "I'm standing on it",
@@ -425,6 +464,10 @@
         "sleep": "Sleeping"
       },
       "screenText": {
+        "actionMenu": {
+          "back": "Back",
+          "treat": "Treat"
+        },
         "attachmentSlot": {
           "light-mount": "Light mount",
           "muzzle": "Muzzle",
@@ -689,8 +732,10 @@
           "hudHeading": "HUD",
           "leaveFullscreen": "Leave fullscreen",
           "modDefault": "Mod default",
+          "noMatches": "No matches",
           "off": "Off",
           "on": "On",
+          "reloadDetail": "Takes effect after the page is reloaded.",
           "showHud": "Show the HUD (hold {key} in play)",
           "volume": "{category} volume"
         },

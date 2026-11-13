@@ -1,4 +1,5 @@
 import type { WeatheringDef } from '@skelly/engine/content';
+import { graphicsTuningOf } from '@skelly/engine/look';
 import { WEATHERING_RANGES } from '@skelly/engine/sky';
 import { describe, expect, it } from 'vitest';
 import { LookControls } from '../src/debug/look.ts';
@@ -29,7 +30,8 @@ describe('debug weathering controls', () => {
     };
     const look = new LookControls(undefined, meshes, new FakeMood(), {
       defaults: LOOK_FIXTURE,
-      weather: { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess },
+      sunShadow: graphicsTuningOf(BUNDLED_CONTENT.registry).sunShadow,
+      weather: { ...BASE_DAY_CYCLE.weather.defaults },
       flashlight: { strength: 1 },
       weathering: {
         state: { profileId: defaultProfile.id, settings: { ...defaultProfile } },

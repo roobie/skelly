@@ -1,9 +1,9 @@
+import { compareCodeUnits } from '@skelly/engine/packs';
 import {
   type PaperMapCoverage,
   type PublicCartographicFeature,
   paperMapBounds,
-  type Terrain,
-  worldGroundAt,
+  type TerrainEvaluator,
 } from '@skelly/engine/world';
 import { type ContourSegments, hillshade as calculateHillshade, marchingSquares } from './siteMap.ts';
 
@@ -102,7 +102,7 @@ const publicFeaturesFor = (
       });
       return segments.length === 0 ? [] : [{ kind: 'track', width: feature.width, segments }];
     })
-    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    .sort((a, b) => compareCodeUnits(JSON.stringify(a), JSON.stringify(b)));
 
 interface ContourInputs {
   readonly samples: Float64Array;
@@ -159,7 +159,7 @@ const contoursFor = ({
  * contour cells, while the returned values and segments are clipped to the covered region.
  */
 export const samplePaperMapTerrain = (
-  terrain: Pick<Terrain, 'seed' | 'shape' | 'scale' | 'surface'>,
+  terrain: Pick<TerrainEvaluator, 'groundAt'>,
   coverage: PaperMapCoverage,
   config: PaperMapRenderConfig = PAPER_MAP_RENDER_CONFIG,
   publicCartography: readonly PublicCartographicFeature[] = [],
@@ -179,12 +179,10 @@ export const samplePaperMapTerrain = (
   const halo = new Float64Array(haloWidth * haloWidth);
   for (let row = 0; row < haloWidth; row += 1) {
     for (let column = 0; column < haloWidth; column += 1) {
-      halo[column + row * haloWidth] = worldGroundAt({
-        ...terrain,
-        surface: terrain.surface ?? undefined,
-        xm: bounds.x0 + (column - 1) * config.cellMetres,
-        zm: bounds.z0 + (row - 1) * config.cellMetres,
-      });
+      halo[column + row * haloWidth] = terrain.groundAt(
+        bounds.x0 + (column - 1) * config.cellMetres,
+        bounds.z0 + (row - 1) * config.cellMetres,
+      );
     }
   }
   const shadedHalo = calculateHillshade(halo, haloWidth, haloWidth, config.cellMetres);

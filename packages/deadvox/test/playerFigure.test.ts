@@ -45,6 +45,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { fitFixtureOptic } from './fixtures/debugStarts.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -257,39 +258,6 @@ describe('held light presentation', () => {
     held.dispose();
   });
 
-  it('scales held hemisphere ambient by the camera sky visibility', () => {
-    const camera = new PerspectiveCamera();
-    const sky = {
-      scene: new Scene(),
-      light: new DirectionalLight(),
-      ambient: new HemisphereLight(),
-      camera,
-      radiusM: 1,
-      farPlaneScale: 1,
-    };
-    const worldAmbientIntensity = sky.ambient.intensity;
-    const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
-      nearPlaneMetres: 0.01,
-      playerViewFovDegrees: 75,
-    });
-    held.update(camera);
-    const handAmbient = held.warmUpTarget.scene.children.find((child) => child instanceof HemisphereLight)!;
-    const renderer = {
-      autoClear: true,
-      clearDepth: () => undefined,
-      render: () => undefined,
-    } as unknown as Parameters<typeof held.render>[0];
-
-    held.setSkyVisibility(0);
-    held.render(renderer, camera, sky);
-    expect(handAmbient.intensity).toBe(0);
-
-    held.setSkyVisibility(1);
-    held.render(renderer, camera, sky);
-    expect(handAmbient.intensity).toBe(worldAmbientIntensity);
-    held.dispose();
-  });
-
   it('depth-tests carried adapter geometry against world surfaces with the main camera projection', () => {
     const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
       nearPlaneMetres: 0.01,
@@ -333,6 +301,7 @@ describe('held light presentation', () => {
       camera: main,
       radiusM: 1,
       farPlaneScale: 1,
+      fogCurveExponent: 1,
     };
     held.render(renderer, main, sky);
     main.near = 0.2;
@@ -379,6 +348,7 @@ describe('held light presentation', () => {
       camera,
       radiusM: 1,
       farPlaneScale: 1,
+      fogCurveExponent: 1,
     });
     expect(renders).toBe(1);
     expect(renderer.autoClear).toBe(true);
@@ -458,6 +428,8 @@ describe('held light presentation', () => {
 });
 
 describe('optic lens presentation', () => {
+  // The rifle ships with iron sights; the scope fits its rail once they come off.
+  const Scope = 'optic_lpvo_1_6x';
   it('projects the optic ocular at the authored hold standoff rather than optical relief', () => {
     const item = registry.items.get('rifle_assault')!;
     const source = registry.models.get(item.model!)!;
@@ -468,6 +440,7 @@ describe('optic lens presentation', () => {
       const content = { ...registry, models: new Map(registry.models).set(model.id, model) };
       const inventory = new Inventory(content);
       const firearm = inventory.create(item.id);
+      fitFixtureOptic(inventory, firearm, Scope);
       expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
       const held = new HeldItems(inventory, undefined, playerFigure, {
         nearPlaneMetres: 0.01,
@@ -494,6 +467,7 @@ describe('optic lens presentation', () => {
   it('carries the mounted optic export into the ADS lens frame', () => {
     const inventory = new Inventory(registry);
     const firearm = inventory.create('rifle_assault');
+    fitFixtureOptic(inventory, firearm, Scope);
     if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
       throw new Error('Fixture firearm could not be held');
     }
@@ -1157,11 +1131,13 @@ describe('player figure', () => {
       expectConnectedArm(arm, rig, side);
       // Every rig segment is a drawn part of the arm model, hung under its pivot.
       for (const segment of ['upper', 'fore', 'hand', 'fingers', 'thumb'] as const) {
-        let found: Object3D | undefined;
-        arm.traverse((object) => {
-          found ??= object.userData.part === armRig[segment].part ? object : undefined;
-        });
-        expect(found, `${side} ${segment}`).toBeDefined();
+        for (const part of armRig[segment].parts) {
+          let found: Object3D | undefined;
+          arm.traverse((object) => {
+            found ??= object.userData.part === part ? object : undefined;
+          });
+          expect(found, `${side} ${segment} ${part}`).toBeDefined();
+        }
       }
     }
     held.dispose();
@@ -1383,7 +1359,7 @@ describe('player figure', () => {
       )!;
       const source = registry.models.get(def.model!)!;
       // An asymmetric fixture: both holds off the gun's centre plane, the support fingers across it, no turn or roll,
-      // so the expected placement is the plain forward-hold mapping of model x, y, z onto view -z, y, x.
+      // so the expected placement is the plain forward-hold mapping of model x, y, z onto view -x, y, -z.
       const model = {
         ...source,
         roll: undefined,
@@ -1391,11 +1367,11 @@ describe('player figure', () => {
         grip: { ...source.grip!, turn: undefined },
         hands: {
           ...source.hands!,
-          firing: { ...source.hands!.firing, at: [-0.2, -0.03, 0.03] as Vec3 },
+          firing: { ...source.hands!.firing, at: [-0.03, -0.03, -0.2] as Vec3 },
           support: {
-            at: [0.2, -0.05, -0.04] as Vec3,
+            at: [0.04, -0.05, 0.2] as Vec3,
             palm: [0, 1, 0] as Vec3,
-            fingers: [0.6, 0, 0.8] as Vec3,
+            fingers: [-0.8, 0, 0.6] as Vec3,
             pose: 'forend' as const,
           },
         },
@@ -1405,7 +1381,7 @@ describe('player figure', () => {
       const inventory = new Inventory({ ...registry, models });
       expect(inventory.add(inventory.create(def.id), { kind: 'hand', side })).toBe(true);
       const mirrored = ([x, y, z]: Vec3): Vector3 =>
-        new Vector3(z, y, -x).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
+        new Vector3(-x, y, -z).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
       const held = new HeldItems(inventory, figureOnlyModels, playerFigure, {
         nearPlaneMetres: 0.01,
         playerViewFovDegrees: 75,

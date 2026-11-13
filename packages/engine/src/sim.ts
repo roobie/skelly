@@ -133,8 +133,22 @@ export {
   simTimestamp,
   simToGameSeconds,
 } from './core/time.ts';
+export {
+  ActionMenu,
+  heldRadialEntries,
+  type RadialAction,
+  radialEntries,
+  radialEntryIndex,
+} from './game/actionMenu.ts';
 export { firearmBoreRay, firearmBoreTarget } from './game/firearmAim.ts';
-export { FurnitureActionSelection, furnitureActionsFor } from './game/furnitureActions.ts';
+export { furnitureActionsFor } from './game/furnitureActions.ts';
+export {
+  HeldActionPress,
+  type HeldActionTrigger,
+  type HeldUseState,
+  heldMenuOpens,
+  heldUsePressTaken,
+} from './game/heldActionPress.ts';
 export { unarmedMeleeWeapon } from './game/melee.ts';
 export { createPlayerBody, type MoveIntent, physicsFor, playerTuning } from './game/player.ts';
 export { PlayerTickActions } from './game/playerTickActions.ts';

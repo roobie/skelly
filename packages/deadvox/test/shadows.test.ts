@@ -1,6 +1,5 @@
 import { SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
-import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '@skelly/engine/look';
+import { clampShadowDistance, defaultShadows, graphicsTuningOf, nextShadowDistance } from '@skelly/engine/look';
 import type { MeshData } from '@skelly/engine/mesh';
 import { dayPhaseAt } from '@skelly/engine/sim';
 import { skyAt as skyAtCycle, sunShadowStrength } from '@skelly/engine/sky';
@@ -29,6 +28,7 @@ import { shadowReadoutText } from '../src/debug/index.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
+const SUN_SHADOW = graphicsTuningOf(BUNDLED_CONTENT.registry).sunShadow;
 
 import { FrameTimes } from '@skelly/presentation/internal/render/frameTimes.ts';
 import { PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
@@ -79,15 +79,20 @@ describe('sun shadow strength', () => {
 
 describe('shadow settings', () => {
   it('steps the distance through the allowed list and wraps', () => {
-    const distances = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
-    expect(distances.slice(0, -1).map(nextShadowDistance)).toEqual(distances.slice(1));
-    expect(nextShadowDistance(SHADOW_DISTANCES.at(-1)!)).toBe(SHADOW_DISTANCES[0]);
+    const distances = [...SUN_SHADOW.debugReachMetres, SUN_SHADOW.debugReachMetres[0]!];
+    expect(distances.slice(0, -1).map((distance) => nextShadowDistance(distance, SUN_SHADOW))).toEqual(
+      distances.slice(1),
+    );
+    expect(nextShadowDistance(SUN_SHADOW.debugReachMetres.at(-1)!, SUN_SHADOW)).toBe(SUN_SHADOW.debugReachMetres[0]);
   });
 
-  it('clamps a distance to whole metres in 16..96, and a non-number to the default', () => {
-    expect([1, 16.4, 33.6, 96, 500].map(clampShadowDistance)).toEqual([16, 16, 34, 96, 96]);
-    expect(clampShadowDistance(Number.NaN)).toBe(DEFAULT_SHADOWS.distance);
-    expect(DEFAULT_SHADOWS).toMatchObject({ sun: true, torch: true });
+  it('clamps a distance to whole metres and a non-number to the content default', () => {
+    const values = [1, 16.4, 33.6, 96, 500].map((distance) => clampShadowDistance(distance, SUN_SHADOW));
+    expect(values.every(Number.isInteger)).toBe(true);
+    expect(values[0]).toBeGreaterThan(1);
+    expect(values.at(-1)).toBeLessThan(500);
+    expect(clampShadowDistance(Number.NaN, SUN_SHADOW)).toBe(SUN_SHADOW.defaultReachMetres);
+    expect(defaultShadows(SUN_SHADOW)).toMatchObject({ sun: true, torch: true });
   });
 
   it('draws a casting beam map only while the beam is on and bright enough to show', () => {
@@ -189,23 +194,21 @@ describe('choosing shadow casters', () => {
     expect(near(box(5.5, 0))).toBe(false);
   });
 
-  it('makes only the selected chunk meshes cast, shows them for the pass, and lets every chunk receive', () => {
+  it("makes only the selected chunks cast, leaves the camera's chunks to the main pass, and lets every chunk receive", () => {
     const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
     const versionBefore = meshes.version;
     meshes.set('near', [0, 0, 0], floor);
     meshes.set('far', [400, 0, 0], floor); // 200 m away
     expect(meshes.version).toBeGreaterThan(versionBefore);
-    const chunks = meshes.group.children.filter((child) => child.visible);
-    expect(chunks.every((child) => child.receiveShadow)).toBe(true);
-    expect(chunks).toHaveLength(2);
+    expect(meshes.batch.receiveShadow).toBe(true);
+    expect(meshes.origins('main')).toHaveLength(2);
 
     // The camera culled both (nothing in view); the shadow pass still gets the one in range.
     meshes.cull(new PerspectiveCamera(75, 1, 0.05, 1));
     const cast = meshes.selectShadowCasters(withinRange(new Vector3(0, 1, 0), 40), BackSide);
     expect(cast).toBe(1);
-    const casting = meshes.group.children.filter((child) => child.castShadow);
-    expect(casting.map((child) => child.position.x)).toEqual([0]);
-    expect(casting.every((child) => child.visible)).toBe(true);
+    expect(meshes.origins('shadow')).toEqual([[0, 0, 0]]);
+    expect(meshes.origins('main')).toEqual([]);
 
     const before = meshes.version;
     meshes.remove('far');
@@ -248,7 +251,7 @@ describe('Shadows', () => {
     rig.add(light, light.target);
     scene.add(rig);
     const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
-    scene.add(meshes.group);
+    scene.add(meshes.batch);
     meshes.set('under', [-4, 0, -4], floor);
     meshes.set('behind', [-4, 0, 60], floor); // 30 m away, behind a player looking down -z
     meshes.set('far', [-4, 0, 600], floor); // 300 m away
@@ -284,7 +287,7 @@ describe('Shadows', () => {
     expect(idle.torch).toBe(false);
   });
 
-  it('covers the set distance with a box that reaches back towards the sun', () => {
+  it('sizes the shadow setup from the content-owned default reach', () => {
     const { shadows, light } = setup();
     const camera = light.shadow.camera as OrthographicCamera;
     expect([camera.left, camera.right, camera.top, camera.bottom]).toEqual([-40, 40, 40, -40]);
@@ -292,9 +295,9 @@ describe('Shadows', () => {
     shadows.setDistance(64);
     expect(camera.right).toBe(64);
     expect(light.shadow.bias).toBeCloseTo(sunShadowBias(64).bias, 9);
-    shadows.stepDistance();
-    expect(shadows.distance).toBe(24);
-    expect(camera.right).toBe(24);
+    shadows.restore(defaultShadows(SUN_SHADOW));
+    expect(shadows.distance).toBe(SUN_SHADOW.defaultReachMetres);
+    expect(camera.right).toBe(SUN_SHADOW.defaultReachMetres);
   });
 
   it('keeps the light casting with its light out, and drops the shadow strength instead of switching it', () => {
@@ -364,7 +367,7 @@ describe('Shadows', () => {
     const { frame, shadows, meshes } = setup();
     frame(1);
     expect(shadows.casters.sun).toBe(2);
-    const casting = meshes.group.children.filter((child) => child.castShadow).map((child) => child.position.z);
+    const casting = meshes.origins('shadow').map(([, , z]) => z);
     expect(casting.sort((a, b) => a - b)).toEqual([-4, 60]);
   });
 

@@ -57,11 +57,11 @@ local batteryBeam = lights.batteryBeam;
       description: 'A battery-powered beam worn on the head, leaving both hands free.',
       disassembly: disassembly(5, [yield('flashlight', 1), yield('cloth_strip', 1)]),
       wearable: { slot: 'head', encumbrance: 0 },
-      figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.055, 0], turn: [0, 0, 0] }],
+      figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.055, 0], turn: [0, 180, 0] }],
       light: batteryBeam(
         radius=12,
         seenFrom=30,
-        intensity=4.5,
+        intensity=3.3,
         beam={ angleDegrees: 48, penumbra: 0.5, decay: 1, spill: { enabled: false, radiusRatio: 1.5, intensity: 0.18 } },
         chargePerGameHour=0.2,
       ) + { wornSwitch: true },
@@ -80,7 +80,7 @@ local batteryBeam = lights.batteryBeam;
         radius: 14,
         seenFrom: 8,
         color: '#7dff86',
-        intensity: 0.8,
+        intensity: 0.6,
         power: { battery: 'aa_battery', compatibleBatteries: ['rechargeable_aa_battery'], chargePerGameHour: 0.15, swapSimSeconds: 2 },
         wornSwitch: true,
         nightVision: {

@@ -23,7 +23,7 @@ it('draws the shared cache for an above-ground authored placement without an ind
     terrain: [],
     woodlands: [],
     tracks: [],
-    shamblers: [],
+    actors: [],
     player: { position: [8, 1, 8], bearing: 0 },
     buildings: [
       {
@@ -60,6 +60,6 @@ it('draws the shared cache for an above-ground authored placement without an ind
   const metres = room.map((value) => value * scale.blockSize) as Vec3;
   expect(engine.skylight!.at(metres)).toBeLessThanOrEqual(graphicsTuningOf(fixture.registry).unbuiltSkyCap);
   expect(skyFields.visibilityAt(room)).toBe(0);
-  engine.skylight!.update(engine.scene, room);
+  engine.skylight!.update(room);
   expect(engine.skylight!.at(metres)).toBe(0);
 });

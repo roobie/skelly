@@ -82,6 +82,7 @@ describe('UI layer order', () => {
         name !== '--ui-layer-error-report' &&
         name !== '--ui-layer-startup-screen' &&
         name !== '--ui-layer-world-loading' &&
+        name !== '--ui-layer-error-log' &&
         name !== '--ui-layer-review-map'
       ) {
         expect(layerPositions.get(name)).toBeLessThan(cursorPosition);

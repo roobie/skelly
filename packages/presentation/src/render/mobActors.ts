@@ -10,6 +10,17 @@
 // packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile at the
 // <begin_vertex>/<beginnormal_vertex> chunks (checked against three r186's meshlambert.glsl.js).
 //
+// Those bone-placed instances are invisible to frustum culling (identity instance matrices; see
+// `frustumCulled = false`), so three.js would draw every figure in the world into every shadow map.
+// Each variant therefore draws shadows through selection-only twins on SHADOW_CROWD_LAYER, one twin per
+// light pass, whose instance slots and count selectShadowCasters sets for that pass — the same per-light
+// caster selection chunks.ts makes for its boxes; the crowd mesh itself never casts. One twin per pass,
+// not one shared twin, because three uploads a geometry's attributes only once per renderer frame
+// (`WebGLObjects.update` guards on `info.render.frame`): rows rewritten per light into one shared
+// attribute would reach the GPU once, and every later pass in the frame would draw the first pass's rows.
+// A light's map draws only the figures that can cast into the map's volume, and the same bone texture
+// poses every twin.
+//
 // Known simplification: each drawn figure variant owns a block of `capacity` bone-texture rows. The figures
 // are those the `actors` option's types author (`drawnSeeds`), and types that bake the same figure share one
 // variant (`src/render/actorFigureVariants.ts`, `figureVariants`);
@@ -32,8 +43,9 @@
 //
 // Dismemberment: packages/engine/src/core/actorState.ts's Actor.severed (part names, e.g.
 // "upperArm.L") is the *only* source of truth — this renderer never keeps its own copy for a live actor,
-// just re-expands actor.severed via severedBoneSet every sync() (cheap, and it's what makes save/load
-// "just work": a restored actor's severed list is already exactly right). A severed bone is hidden by
+// just re-expands actor.severed via severedBoneSet whenever that list grows (the simulation only appends
+// to it), which is what makes save/load "just work": a restored actor's severed list is already exactly
+// right. A severed bone is hidden by
 // writing an all-zero 3x4 matrix for it in the shared texture (packZeroBone) — a zero matrix collapses
 // every one of that bone's vertices to the origin, degenerate, so hiding it needs no shader logic at all.
 // The severed-bone bitmask (crowd.ts's packSeveredMask) exists only for the *gore* effect: a survivor
@@ -101,7 +113,8 @@ import {
 } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import {
-  type BufferGeometry,
+  Box3,
+  BufferGeometry,
   type Camera,
   Color,
   CylinderGeometry,
@@ -111,6 +124,7 @@ import {
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
+  type Material,
   Matrix4,
   Mesh,
   MeshDepthMaterial,
@@ -155,7 +169,8 @@ import { LOOK_AT_REST, type LookAtState, lookAtPose } from './lookAt.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { type Ragdoll, type RagdollConfig, RagdollWorld } from './ragdoll.ts';
 import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
-import { castsAndReceives } from './shadowFlags.ts';
+import { castsAndReceives, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ActorMeshes | MobActorMeshes` behind one
  * variable. `dispose`/`setCamera`/`actorDied` are optional: ActorMeshes has none of them (see
@@ -188,6 +203,12 @@ export interface ActorRenderer {
   actorSevered?: (id: EntityId, part: string, hit?: HitImpulse, actor?: Actor) => Vec3 | undefined;
   /** Called when a hit knocks flesh out of a fused-mass body (packages/engine/src/core/actorSystem.ts's onCarve, forwarded by play.ts). */
   actorCarved?: (id: EntityId, actor: Actor) => void;
+  /** Picks the instanced figures each shadow pass draws, per light (render/shadows.ts): the crowd twins'
+   * selection, or a no-op where three.js already culls (ActorMeshes' boxes). */
+  selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void;
+  /** Makes `slots` per-pass shadow selections available (one per light that can cast in a renderer
+   * frame); render/shadows.ts calls it before the first render. No-op where three.js already culls. */
+  reserveShadowSlots: (slots: number) => void;
 }
 
 const DEFAULT_CAPACITY = 64; // matches ActorMeshes' own default
@@ -199,7 +220,7 @@ const BOUNDING_RADIUS_M = 1.2;
 export const mobFigurePoolSizeThrough = (figureSeeds: readonly number[], figureSeed: number): number => {
   const index = figureSeeds.indexOf(figureSeed);
   if (index < 0) {
-    throw new RangeError(`Unknown shambler figure seed: ${figureSeed}`);
+    throw new RangeError(`Unknown actor figure seed: ${figureSeed}`);
   }
   return index + 1;
 };
@@ -243,6 +264,14 @@ interface RigidPart {
   readonly boneIndices: readonly number[];
 }
 
+/** One light pass's selection twin (see the module header): the crowd geometry's vertex buffers in
+ * their own geometry wrapper, with this pass's own crowd slots — a geometry's attributes upload once
+ * per renderer frame in three, so each pass's rows must live in their own attribute. */
+interface ShadowPassTwin {
+  readonly mesh: InstancedMesh;
+  readonly slots: InstancedBufferAttribute;
+}
+
 interface Variant {
   readonly body: ActorBody;
   readonly clips: ActorClips;
@@ -265,6 +294,18 @@ interface Variant {
   readonly geometry: BufferGeometry;
   readonly mesh: InstancedMesh;
   readonly crowdSlotAttr: InstancedBufferAttribute;
+  /** The pass-through twins the shadow passes draw instead of drawing every figure: one per light pass
+   * (`ShadowPassTwin`), same geometry and materials, its own slots (`slots`) and a per-light count set by
+   * selectShadowCasters. Grown by reserveShadowSlots; slot 0 exists from construction. */
+  readonly shadowPasses: ShadowPassTwin[];
+  /** How far a drawn vertex can sit from the translation of the packed bone matrix that poses it: the
+   * bind sphere centre's distance from the origin plus its radius (bind geometry can sit offset from
+   * its origin; the diameter alone would ignore that), since the crowd shader applies each vertex
+   * exactly one packed matrix (render/crowd.ts, CROWD_BEGIN_VERTEX) whose rotation is the bind
+   * vertex's rotation scaled by this variant's scale — every packing path (packPlaced, packCrawlFall,
+   * packCorpse, packDebris) packs it that way. Expands the box around packed bone translations
+   * (boxAroundRow). Metres. */
+  readonly casterReach: number;
   /** Reused every frame for every actor of this variant: each place-and-pack fully consumes it before
    * returning, so nothing overlaps. */
   readonly scratch: MutableTransform[];
@@ -297,7 +338,15 @@ interface ActorRenderState extends SlotHolder {
   crawlFall?: { physics: Ragdoll; elapsedRealSeconds: number; released: boolean } | undefined;
   drawnFall?: Map<number, Transform> | undefined;
   lastPose: Pose | undefined;
+  /** `lastPose`'s bone transforms at the body's scale, in bone order: what the row is drawn from. */
+  readonly bodyTransforms: MutableTransform[];
   lastPlacement: CrowdPlacement | undefined;
+  /** Every input `lastPose` read; equal inputs and a resting gaze pose the same body again. */
+  poseStamp: readonly (number | string)[] | undefined;
+  /** Bone indices `actor.severed` hides, kept until the list grows. */
+  severed: SeveredBones | undefined;
+  /** What the row holds besides `bodyTransforms`; undefined once the pose or row changes underneath it. */
+  row: RowInputs | undefined;
   /** The simulation actor last drawn in this slot. */
   actor: Actor | undefined;
   lastSeenFrame: number;
@@ -475,6 +524,36 @@ export interface DrawnAnchors {
   readonly mouth: Vec3 | undefined;
 }
 
+const gazeAtRest = (state: LookAtState): boolean =>
+  state.every((value, index) => Math.abs(value - LOOK_AT_REST[index]!) < 1e-6);
+
+const sameStamp = (a: readonly (number | string)[], b: readonly (number | string)[]): boolean =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
+/** The simulation only appends to `actor.severed`, so the list and its length identify what it hides. */
+interface SeveredBones {
+  readonly parts: readonly string[];
+  readonly count: number;
+  readonly indices: ReadonlySet<number>;
+}
+
+/** Everything a skeleton row packs besides its bone transforms. */
+interface RowInputs {
+  readonly placement: CrowdPlacement;
+  readonly severedIndices: ReadonlySet<number>;
+  readonly bloodiness: number;
+  readonly charge: number;
+}
+
+const sameRow = (a: RowInputs, b: RowInputs): boolean =>
+  a.placement.x === b.placement.x &&
+  a.placement.y === b.placement.y &&
+  a.placement.z === b.placement.z &&
+  a.placement.yawRad === b.placement.yawRad &&
+  a.severedIndices === b.severedIndices &&
+  a.bloodiness === b.bloodiness &&
+  a.charge === b.charge;
+
 /** The sac's emission multiplier: idle at rest, rising to charged across the spit wind-up. */
 const acidCharge = (actor: Actor): number => {
   const body = actor.type.acidBody;
@@ -561,6 +640,56 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale: 
       transform.t[i] = transform.t[i]! * scale;
     }
   }
+};
+
+/** The farthest a drawn vertex can sit from the translation of the packed bone matrix that poses it:
+ * the crowd shader applies each vertex exactly one packed matrix (render/crowd.ts,
+ * CROWD_BEGIN_VERTEX), whose rotation is the bind vertex's rotation scaled by the body's scale —
+ * every packing path maintains that — so the vertex's distance from that translation is at most its
+ * bind-space norm times that scale: the bind sphere centre's distance from the origin plus its
+ * radius. The diameter alone is not that norm — bind geometry can sit offset from its origin, and
+ * its far side then reaches past the diameter. Model units. */
+const bindReachOf = (geometry: BufferGeometry): number => {
+  const sphere = geometry.boundingSphere;
+  return sphere ? sphere.center.length() + sphere.radius : 2;
+};
+
+/**
+ * Builds a variant's selection-only shadow twin (see the module header): the crowd geometry's vertex
+ * buffers with the twin's own crowd slots, identity instance matrices, and the crowd's materials — on
+ * SHADOW_CROWD_LAYER so no main view draws it. `geometry` must have its bounding sphere computed.
+ */
+const shadowCrowdTwin = (
+  geometry: BufferGeometry,
+  material: Material,
+  depthMaterial: Material,
+  capacity: number,
+): ShadowPassTwin => {
+  const shadowSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
+  const shadowGeometry = new BufferGeometry();
+  for (const [name, attribute] of Object.entries(geometry.attributes)) {
+    shadowGeometry.setAttribute(name, attribute);
+  }
+  shadowGeometry.setIndex(geometry.index);
+  shadowGeometry.setAttribute('crowdSlot', shadowSlotAttr);
+  shadowGeometry.boundingBox = geometry.boundingBox;
+  shadowGeometry.boundingSphere = geometry.boundingSphere;
+  const shadowMesh = new InstancedMesh(shadowGeometry, material, capacity);
+  shadowMesh.customDepthMaterial = depthMaterial;
+  shadowMesh.castShadow = true;
+  shadowMesh.frustumCulled = false; // instances are bone-placed, like the crowd mesh's (module header)
+  shadowMesh.count = 0;
+  const shadowInstances = shadowMesh.instanceMatrix.array as Float32Array;
+  for (let k = 0; k < capacity; k++) {
+    shadowInstances[k * 16] = 1;
+    shadowInstances[k * 16 + 5] = 1;
+    shadowInstances[k * 16 + 10] = 1;
+    shadowInstances[k * 16 + 15] = 1;
+  }
+  shadowMesh.instanceMatrix.needsUpdate = true;
+  shadowMesh.layers.set(SHADOW_CROWD_LAYER);
+  shadowMesh.visible = false; // only the pass that just selected this twin draws it
+  return { mesh: shadowMesh, slots: shadowSlotAttr };
 };
 
 /**
@@ -740,7 +869,15 @@ export class MobActorMeshes implements ActorRenderer {
       mesh.instanceMatrix.needsUpdate = true;
       const crowdSlotAttr = new InstancedBufferAttribute(new Float32Array(capacity), 1);
       mesh.geometry.setAttribute('crowdSlot', crowdSlotAttr);
+      // Figures pose through the bone texture and instance matrices; the crowd meshes themselves never
+      // move (the tentacles in `this.group` do, and stay unfrozen).
+      freezeMatrices(mesh);
       this.group.add(mesh);
+      mesh.castShadow = false; // the passes draw the twin's selected instances instead
+      geometry.computeBoundingSphere();
+      // three.js would otherwise draw every instance of the un-cullable crowd into every shadow map.
+      // Slot 0 exists from construction; reserveShadowSlots grows the rest before the first render.
+      const shadowPasses: ShadowPassTwin[] = [this.addShadowPass(geometry, cells)];
 
       const freeLocalSlots: number[] = [];
       for (let k = capacity - 1; k >= 0; k--) {
@@ -767,6 +904,8 @@ export class MobActorMeshes implements ActorRenderer {
         geometry,
         mesh,
         crowdSlotAttr,
+        shadowPasses,
+        casterReach: bindReachOf(geometry) * body.scale + 0.3,
         scratch: allocateBoneTransforms(bones.length),
         freeLocalSlots,
         liveIds: [],
@@ -896,7 +1035,7 @@ export class MobActorMeshes implements ActorRenderer {
 
   /** Test-only: `boneId`'s *rotation* submatrix (row-major, the Mat3 convention of
    * packages/engine/src/core/boneMath.ts) as currently packed in the shared texture for `id` (a live actor or a corpse) —
-   * the world rotation, not just this bone's own local pose delta, but since an actor facing along -Z has
+   * the world rotation, not just this bone's own local pose delta, but since an actor facing along +Z has
    * yaw 0 (packCrowdBoneMatrix contributes no extra rotation at yaw 0 — see its own comment), comparing this
    * against IDENTITY_M is exactly "did any pose ever rotate this bone or one of its ancestors" —
    * used to assert the old bind/A-pose (every bone left at its raw rest orientation) never reappears.
@@ -1070,7 +1209,11 @@ export class MobActorMeshes implements ActorRenderer {
       instanceIndex,
       crawling: actorCrawls(actor, variant.body),
       lastPose: undefined,
+      bodyTransforms: allocateBoneTransforms(variant.bones.length),
       lastPlacement: undefined,
+      poseStamp: undefined,
+      severed: undefined,
+      row: undefined,
       actor: undefined,
       lastSeenFrame: this.frameCounter,
     };
@@ -1135,7 +1278,7 @@ export class MobActorMeshes implements ActorRenderer {
       yaw: rotY((placement.yaw * 180) / Math.PI),
       position: placement.worldPos,
     });
-    const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
+    const facing: Vec3 = [Math.sin(placement.yaw), 0, Math.cos(placement.yaw)];
     const pose = fusedMassTentaclePose({
       start,
       target,
@@ -1266,6 +1409,7 @@ export class MobActorMeshes implements ActorRenderer {
     castsAndReceives(mesh);
     // Its vertices are placed by the bone texture, like the crowd mesh's, so its own bounds mean nothing.
     mesh.frustumCulled = false;
+    freezeMatrices(mesh);
     this.group.add(mesh);
     cells.walls[localSlot] = mesh;
   }
@@ -1338,7 +1482,7 @@ export class MobActorMeshes implements ActorRenderer {
       instanceIndex: state.instanceIndex,
       basePose,
       worldPos,
-      yaw: Math.atan2(-actor.facing[0], -actor.facing[2]),
+      yaw: Math.atan2(actor.facing[0], actor.facing[2]),
       direction: fallDirectionAwayFromPlayer(actor.facing, actor.body.pos, undefined),
       launch: this.hitDirections.get(id),
       poseSeed: id ^ actor.figureSeed,
@@ -1405,7 +1549,7 @@ export class MobActorMeshes implements ActorRenderer {
       instanceIndex: state.instanceIndex,
       basePose,
       worldPos,
-      yaw: Math.atan2(-actor.facing[0], -actor.facing[2]),
+      yaw: Math.atan2(actor.facing[0], actor.facing[2]),
       direction: fallDirectionAwayFromPlayer(actor.facing, actor.body.pos, playerPos),
       launch: this.hitDirections.get(id),
       poseSeed: id ^ actor.figureSeed,
@@ -1534,9 +1678,7 @@ export class MobActorMeshes implements ActorRenderer {
     }
     const variant = this.variants[state.variantIndex]!;
     if (actor && !state.drawnFall && !(actorCrawls(actor, variant.body) && !state.crawling && state.lastPose)) {
-      const posed = this.posedFrame(state, actor, this.currentRenderPlacement(actor));
-      state.lastPose = posed.pose;
-      state.lastPlacement = posed.placement;
+      this.keepPose(state, variant, this.posedFrame(state, actor, this.currentRenderPlacement(actor)));
     }
     if (!(state.lastPose && state.lastPlacement)) {
       return undefined;
@@ -1660,13 +1802,11 @@ export class MobActorMeshes implements ActorRenderer {
     indices: readonly number[],
   ): Map<number, MutableTransform> {
     if (state.drawnFall) {
+      // drawnFall already carries the body's scale (packCrawlFall packs it scaled), so copy as is.
       return new Map(
         indices.map((index) => {
           const source = state.drawnFall!.get(index)!;
-          return [
-            index,
-            { r: source.r.map((v) => v * variant.scale) as MutableTransform['r'], t: [...source.t] as Vec3 },
-          ];
+          return [index, { r: [...source.r] as MutableTransform['r'], t: [...source.t] as Vec3 }];
         }),
       );
     }
@@ -1816,8 +1956,8 @@ export class MobActorMeshes implements ActorRenderer {
       previous.pos[1] + (actor.body.pos[1] - previous.pos[1]) * blend,
       previous.pos[2] + (actor.body.pos[2] - previous.pos[2]) * blend,
     ];
-    const yawBefore = Math.atan2(-previous.facing[0], -previous.facing[2]);
-    const yawAfter = Math.atan2(-actor.facing[0], -actor.facing[2]);
+    const yawBefore = Math.atan2(previous.facing[0], previous.facing[2]);
+    const yawAfter = Math.atan2(actor.facing[0], actor.facing[2]);
     const yawDelta = Math.atan2(Math.sin(yawAfter - yawBefore), Math.cos(yawAfter - yawBefore));
     const yaw = yawBefore + yawDelta * blend;
     const headYaw = previous.headYaw + (actor.headYaw - previous.headYaw) * blend;
@@ -1857,33 +1997,17 @@ export class MobActorMeshes implements ActorRenderer {
     }
   }
 
-  /** FK from `pose`, then packs every bone at `globalRow`: severed bones get a zero matrix (hidden — see
-   * packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask and the
-   * bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared by
-   * packPose (a live actor) and packCorpse; packDebris packs its own inverse (only the carried subtree is
+  /** Packs every bone of `transforms` (scaled, in bone order) at `globalRow`: severed bones get a zero matrix
+   * (hidden — see packZeroBone), survivors get their real placed transform. Always (re)packs the severed mask
+   * and the bloodiness too, even when nothing is severed or bloodied, so a reused row never goes stale. Shared
+   * by packPlaced (a live actor) and packCorpse; packDebris packs its own inverse (only the carried subtree is
    * real) directly, since the two cases share little beyond "call packCrowdBoneMatrix or packZeroBone". */
   private packSkeleton(
     globalRow: number,
     variant: Variant,
-    frame: {
-      pose: Pose;
-      placement: CrowdPlacement;
-      severedIndices: ReadonlySet<number>;
-      bloodiness: number;
-      charge: number;
-      transforms?: ReadonlyMap<string, Transform>;
-    },
+    transforms: readonly MutableTransform[],
+    { placement, severedIndices, bloodiness, charge }: RowInputs,
   ): void {
-    const { pose, placement, severedIndices, bloodiness, charge, transforms } = frame;
-    if (transforms) {
-      for (let bone = 0; bone < variant.bones.length; bone++) {
-        const source = transforms.get(variant.bones[bone]!.id)!;
-        copyScaledTransform(source, variant.scratch[bone]!, variant.scale);
-      }
-    } else {
-      boneTransformsInto(variant.bones, pose, variant.parentIndex, variant.scratch);
-      scaleTransformsInPlace(variant.scratch, variant.scale);
-    }
     for (let bone = 0; bone < variant.bones.length; bone++) {
       if (severedIndices.has(bone)) {
         this.packZeroBone(globalRow, bone);
@@ -1891,7 +2015,7 @@ export class MobActorMeshes implements ActorRenderer {
         packCrowdBoneMatrix(
           this.textureData,
           { layout: this.layout, slot: globalRow, bone },
-          variant.scratch[bone]!,
+          transforms[bone]!,
           placement,
         );
       }
@@ -1942,7 +2066,7 @@ export class MobActorMeshes implements ActorRenderer {
     const posed = posedActor(
       actorPoseInputFor(actor, state.id, this.poseScene, {
         position,
-        facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
+        facing: [Math.sin(yaw), 0, Math.cos(yaw)],
         headYaw,
       }),
     );
@@ -1987,37 +2111,53 @@ export class MobActorMeshes implements ActorRenderer {
     };
   }
 
-  /** Packs the shared simulation pose and its FK into the texture, hiding whatever actor.severed currently
-   * covers (actor.severed is the only source of truth, re-expanded every call). */
-  private packPose(
-    state: ActorRenderState,
-    variant: Variant,
-    actor: Actor,
-    frame: {
-      placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number };
-      gazeFrameDelta: number;
-      presentationSimSeconds: number;
-    },
-  ): void {
-    const posed = this.posedFrame(state, actor, frame.placement, {
-      dt: frame.gazeFrameDelta,
-      presentationSimSeconds: frame.presentationSimSeconds,
-    });
-    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
-    if (state.crawlFall) {
-      this.packCrawlFall(state, variant, actor, { posed, severedIndices });
-    } else {
-      state.drawnFall = undefined;
-      this.packSkeleton(state.globalRow, variant, {
-        ...posed,
-        severedIndices,
-        bloodiness: this.bloodiness(actor),
-        charge: acidCharge(actor),
-      });
+  /** Keeps `posed` as the actor's pose, which neither its stamp nor its packed row describes yet. */
+  private keepPose(state: ActorRenderState, variant: Variant, posed: ReturnType<MobActorMeshes['posedFrame']>): void {
+    for (let bone = 0; bone < variant.bones.length; bone++) {
+      copyScaledTransform(posed.transforms.get(variant.bones[bone]!.id)!, state.bodyTransforms[bone]!, variant.scale);
     }
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
-    state.actor = actor;
+    state.poseStamp = undefined;
+    state.row = undefined;
+  }
+
+  /** Bone indices `actor.severed` hides (it is the only source of truth), re-expanded only when it grows. */
+  private severedIndicesOf(state: ActorRenderState, variant: Variant, actor: Actor): ReadonlySet<number> {
+    const { severed } = state;
+    if (severed?.parts === actor.severed && severed.count === actor.severed.length) {
+      return severed.indices;
+    }
+    const indices = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
+    state.severed = { parts: actor.severed, count: actor.severed.length, indices };
+    return indices;
+  }
+
+  /** Draws the kept pose at this frame's placement, leaving a row that already holds exactly that untouched. */
+  private packPlaced(
+    state: ActorRenderState,
+    variant: Variant,
+    actor: Actor,
+    placement: { worldPos: Vec3; yaw: number },
+  ): void {
+    state.drawnFall = undefined;
+    const row: RowInputs = {
+      placement: {
+        x: placement.worldPos[0],
+        y: placement.worldPos[1],
+        z: placement.worldPos[2],
+        yawRad: placement.yaw,
+      },
+      severedIndices: this.severedIndicesOf(state, variant, actor),
+      bloodiness: this.bloodiness(actor),
+      charge: acidCharge(actor),
+    };
+    state.lastPlacement = row.placement;
+    if (state.row && sameRow(state.row, row)) {
+      return;
+    }
+    this.packSkeleton(state.globalRow, variant, state.bodyTransforms, row);
+    state.row = row;
   }
 
   private releaseCrawlFall(state: ActorRenderState): void {
@@ -2045,7 +2185,7 @@ export class MobActorMeshes implements ActorRenderer {
           direction: -1,
           seed: this.options.ragdollSeed ?? state.id ^ actor.figureSeed,
           ground: this.rigidWorld(),
-          excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, actor.severed))),
+          excluded: this.severedIndicesOf(state, variant, actor),
           ...(state.fallHit ? { launch: state.fallHit } : {}),
           motion: this.options.ragdoll.crawlFall.motion,
           motionScale: this.options.ragdoll.crawlFall.motionScale,
@@ -2053,7 +2193,7 @@ export class MobActorMeshes implements ActorRenderer {
       };
     }
     if (state.crawlFall && !state.crawlFall.released) {
-      const excluded = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
+      const excluded = this.severedIndicesOf(state, variant, actor);
       if ([...excluded].some((index) => !state.crawlFall!.physics.excluded.has(index))) {
         this.ragdolls?.sever(state.crawlFall.physics, variant.body, excluded);
       }
@@ -2087,10 +2227,16 @@ export class MobActorMeshes implements ActorRenderer {
     variant.bones.forEach((bone, index) => {
       const source = fall.physics.transforms.get(index)!;
       const target = posed.transforms.get(bone.id)!;
-      const offset = mulMV(yaw, target.t);
+      // The pose side of the blend is model-space (posedFrame) while the ragdoll side is world-space,
+      // and the packed rotation must land at the body's scale like every packing path does
+      // (Variant.casterReach bounds a drawn vertex by it): scaling it here also draws a scaled
+      // figure's fall at its authored size instead of its bind size.
+      const offset = mulMV(yaw, target.t.map((value) => value * variant.scale) as Vec3);
       const translation = [posed.placement.x, posed.placement.y, posed.placement.z];
       const transform: MutableTransform = {
-        r: [...quatToMat3(slerpQuat(mat3ToQuat(source.r), mat3ToQuat(mulMM(yaw, target.r)), blend))],
+        r: [...quatToMat3(slerpQuat(mat3ToQuat(source.r), mat3ToQuat(mulMM(yaw, target.r)), blend))].map(
+          (value) => value * variant.scale,
+        ) as MutableTransform['r'],
         t: source.t.map((value, axis) => value + (offset[axis]! + translation[axis]! - value) * blend) as Vec3,
       };
       drawn.set(index, transform);
@@ -2123,36 +2269,21 @@ export class MobActorMeshes implements ActorRenderer {
       const transforms = state.drawnFall
         ? new Map(variant.bones.map((bone, index) => [bone.id, state.drawnFall!.get(index)!]))
         : boneTransforms(variant.bones, state.lastPose);
-      const placement = state.drawnFall ? { x: 0, y: 0, z: 0, yawRad: 0 } : state.lastPlacement;
-      const at = (anchor: BodyAnchor | undefined): Vec3 | undefined =>
-        anchor && anchorWorld(transforms, anchor, placement!, variant.scale);
+      // drawnFall transforms are world-space already (packCrawlFall packs them scaled and placed), so
+      // an anchor needs only their point; the pose branch still converts model space — yaw, scale,
+      // placement (anchorWorld).
+      const at = (anchor: BodyAnchor | undefined): Vec3 | undefined => {
+        if (!anchor) {
+          return undefined;
+        }
+        if (state.drawnFall) {
+          const world = applyPoint(transforms.get(anchor.bone)!, anchor.position);
+          return [world[0], world[1], world[2]];
+        }
+        return anchorWorld(transforms, anchor, state.lastPlacement!, variant.scale);
+      };
       yield { actor, glow: at(anchors.glow), mouth: at(anchors.mouth) };
     }
-  }
-
-  private packCachedPose(
-    state: ActorRenderState,
-    variant: Variant,
-    actor: Actor,
-    placement: { worldPos: Vec3; yaw: number },
-  ): void {
-    state.drawnFall = undefined;
-    const crowdPlacement: CrowdPlacement = {
-      x: placement.worldPos[0],
-      y: placement.worldPos[1],
-      z: placement.worldPos[2],
-      yawRad: placement.yaw,
-    };
-    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, actor.severed));
-    this.packSkeleton(state.globalRow, variant, {
-      pose: state.lastPose!,
-      placement: crowdPlacement,
-      severedIndices,
-      bloodiness: this.bloodiness(actor),
-      charge: acidCharge(actor),
-    });
-    state.lastPlacement = crowdPlacement;
-    state.actor = actor;
   }
 
   /** No LOD/frustum culling: the shared corpse cap bounds presentation work regardless of camera distance. */
@@ -2223,8 +2354,9 @@ export class MobActorMeshes implements ActorRenderer {
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
-    this.packSkeleton(corpse.globalRow, variant, {
-      pose,
+    boneTransformsInto(variant.bones, pose, variant.parentIndex, variant.scratch);
+    scaleTransformsInPlace(variant.scratch, variant.scale);
+    this.packSkeleton(corpse.globalRow, variant, variant.scratch, {
       placement: crowdPlacement,
       severedIndices,
       bloodiness: corpse.bloodiness,
@@ -2306,12 +2438,66 @@ export class MobActorMeshes implements ActorRenderer {
       presentationSimSeconds: number;
     },
   ): void {
+    state.actor = actor;
     const bounds = this.actorPoseBounds(actor, frame.placement);
-    if (!state.crawlFall && this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
-      this.packCachedPose(state, variant, actor, frame.placement);
-      return;
+    const keepsPose = !state.crawlFall && state.lastPose && this.shouldSkipPose(bounds.center, bounds.radius);
+    if (!keepsPose) {
+      const stamp = this.poseStampOf(state, variant, actor, frame.placement);
+      if (!(stamp && state.poseStamp && sameStamp(stamp, state.poseStamp))) {
+        const posed = this.posedFrame(state, actor, frame.placement, {
+          dt: frame.gazeFrameDelta,
+          presentationSimSeconds: frame.presentationSimSeconds,
+        });
+        this.keepPose(state, variant, posed);
+        state.poseStamp = stamp;
+        if (state.crawlFall) {
+          this.packCrawlFall(state, variant, actor, {
+            posed,
+            severedIndices: this.severedIndicesOf(state, variant, actor),
+          });
+          return;
+        }
+      }
     }
-    this.packPose(state, variant, actor, frame);
+    this.packPlaced(state, variant, actor, frame.placement);
+  }
+
+  /**
+   * The numbers posing the body reads, or undefined when the pose also depends on something else (a fall in
+   * progress, a gaze that is turning or following the player). Placement is not among them: the pose is root-local.
+   */
+  private poseStampOf(
+    state: ActorRenderState,
+    variant: Variant,
+    actor: Actor,
+    placement: { headYaw: number },
+  ): (number | string)[] | undefined {
+    if (state.crawlFall || state.drawnFall || actor.spitWindup > 0) {
+      return undefined;
+    }
+    if (
+      variant.gaze &&
+      actor.regions.head! > 0 &&
+      !actor.severed.includes(variant.gaze.headPart) &&
+      (!gazeAtRest(state.lookAtState) || actor.agent?.mode === 'chase' || this.hasRecentNearStimulus(state, actor))
+    ) {
+      return undefined;
+    }
+    return [
+      placement.headYaw,
+      actor.gaitPhase,
+      actor.horizontalSpeed,
+      actor.chaseStance ? 1 : 0,
+      actor.attackWindup,
+      actor.attackWait ?? -1,
+      actor.wanderClock,
+      actor.stanceWeight ?? -1,
+      actor.hitFlinchTime ?? -1,
+      actor.regions.head!,
+      actor.regions.leftLeg!,
+      actor.regions.rightLeg!,
+      actor.severed.join(','),
+    ];
   }
 
   private syncActor(
@@ -2558,6 +2744,120 @@ export class MobActorMeshes implements ActorRenderer {
     }
   }
 
+  /** Makes `slots` per-pass selections available (see ActorRenderer.reserveShadowSlots): one twin per
+   * slot, because three uploads a geometry's attributes once per renderer frame, so two passes sharing
+   * one twin's attribute would both draw whichever rows reached the GPU. Only grows, never shrinks. */
+  reserveShadowSlots(slots: number): void {
+    if (!(Number.isInteger(slots) && slots >= 1)) {
+      throw new RangeError(`shadow slots must be a positive integer, got ${slots}`);
+    }
+    for (const variant of this.variants) {
+      for (let slot = variant.shadowPasses.length; slot < slots; slot++) {
+        variant.shadowPasses.push(this.addShadowPass(variant.geometry, variant.cells));
+      }
+    }
+  }
+
+  /** Builds one twin and adds it to the group. */
+  private addShadowPass(geometry: BufferGeometry, cells: VariantCells | undefined): ShadowPassTwin {
+    const twin = shadowCrowdTwin(
+      geometry,
+      cells?.material ?? this.material,
+      cells?.depthMaterial ?? this.depthMaterial,
+      this.capacity,
+    );
+    freezeMatrices(twin.mesh);
+    this.group.add(twin.mesh);
+    return twin;
+  }
+
+  /**
+   * Makes the shadow pass owning `slot` draw only the figures that can cast into the volume `casts`
+   * accepts — shadows.ts calls this per light, before that light's map is drawn, and each pass reads its
+   * own twin. A figure's caster box bounds what its packed row actually draws (see holderCasterBox),
+   * so a box `casts` rejects cannot shadow the volume; holders whose position is not yet known (first
+   * sync pending) stay selected rather than lose a shadow. The twin reads the same revealed row the crowd
+   * mesh draws (`crowdSlotAttr` at the holder's live instance), so hidden figures stay hidden here too.
+   * Only this slot's twin stays visible, so the pass about to draw sees its own rows and no other pass's.
+   */
+  selectShadowCasters(slot: number, casts: (box: Box3) => boolean): void {
+    for (const variant of this.variants) {
+      const twin = variant.shadowPasses[slot];
+      if (!twin) {
+        throw new RangeError(`shadow slot ${slot} was not reserved (reserveShadowSlots)`);
+      }
+      twin.mesh.count = this.packShadowRows(variant, twin.slots, casts);
+      for (const other of variant.shadowPasses) {
+        other.mesh.visible = false;
+      }
+      twin.mesh.visible = twin.mesh.count > 0;
+      twin.slots.needsUpdate = true;
+    }
+  }
+
+  /** Writes the rows of every holder that can cast into the selected volume, densely from 0; returns
+   * how many. A holder whose position is not yet known (first sync pending) stays selected rather than
+   * lose a shadow. */
+  private packShadowRows(variant: Variant, slots: InstancedBufferAttribute, casts: (box: Box3) => boolean): number {
+    const rows = slots.array as Float32Array;
+    let count = 0;
+    for (const key of variant.liveIds) {
+      const holder = typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+      if (!holder) {
+        continue;
+      }
+      const box = this.holderCasterBox(key, variant);
+      if (!box || casts(box)) {
+        rows[count] = variant.crowdSlotAttr.getX(holder.instanceIndex);
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  private readonly casterBox = new Box3();
+  private readonly casterPoint = new Vector3();
+
+  /** The world box a holder's drawn figure occupies, read from what it actually draws: the box around
+   * its crowd row's packed bone translations (boxAroundRow). Every holder kind packs the row it draws
+   * before any shadow pass selects — a live actor at its placement (packPlaced), a crawl-fall body
+   * (packCrawlFall packs the very transforms it stores in drawnFall), a corpse (packCorpse packs its
+   * ragdoll or death-clip pose with the sink offset already applied), debris (packDebris packs each
+   * carried bone's own physics-placed matrix) — so the row holds exactly the translations the mesh and
+   * the twin draw, whatever pivot, root motion, sink or debris flight moved them. Reused per call. */
+  private holderCasterBox(key: SlotKey, variant: Variant): Box3 | undefined {
+    const holder: SlotHolder | undefined =
+      typeof key === 'number' ? (this.states.get(key) ?? this.corpses.get(key)) : this.debris.get(key);
+    return holder ? this.boxAroundRow(holder.globalRow, variant) : undefined;
+  }
+
+  /** The box around the packed bone translations a figure's crowd row holds, expanded by the rotations
+   * reach: a drawn vertex sits at most that far from the translation of the packed matrix that poses it
+   * (see Variant.casterReach), and the row's matrices are exactly what the mesh and the twin draw — so
+   * every pivot, ancestor and root translation a pose authored is already inside the box. Read straight
+   * back from the crowd texture's own data, so no pose is recomputed here. A bone packed zero
+   * (packZeroBone — severed) draws nothing, so its zero translation is skipped; a row whose every bone
+   * is zero (never packed, or fully severed) has no box, and its holder stays selected rather than lose
+   * a shadow. Reuses this.casterBox. */
+  private boxAroundRow(globalRow: number, variant: Variant): Box3 | undefined {
+    const box = this.casterBox.makeEmpty();
+    const data = this.textureData;
+    for (let bone = 0; bone < variant.bones.length; bone++) {
+      const i = crowdTexelIndex(this.layout, globalRow, bone);
+      let packed = false;
+      for (let k = 0; k < 12; k++) {
+        if (data[i + k] !== 0) {
+          packed = true;
+          break;
+        }
+      }
+      if (packed) {
+        box.expandByPoint(this.casterPoint.set(data[i + 3]!, data[i + 7]!, data[i + 11]!));
+      }
+    }
+    return box.isEmpty() ? undefined : box.expandByScalar(variant.casterReach);
+  }
+
   /** Adds `headYawRad` as an extra yaw on the head bone, innermost (applied before whatever sway/tilt
    * walkPose already gave it) — same "yaw innermost" convention walkPose itself uses for the pelvis (see
    * mob/gait.ts's own pelvisR composition). Cheap and clean since Pose.rotations is just one matrix per
@@ -2576,6 +2876,11 @@ export class MobActorMeshes implements ActorRenderer {
     this.material.dispose();
     this.depthMaterial.dispose();
     for (const variant of this.variants) {
+      // The twins' geometries share the crowd's vertex buffers, so all must go together (nothing renders
+      // between the disposals) or a later disposal would free buffers a remaining geometry still uses.
+      for (const twin of variant.shadowPasses) {
+        twin.mesh.geometry.dispose();
+      }
       variant.geometry.dispose();
       for (const walls of variant.cells?.walls ?? []) {
         walls?.geometry.dispose();

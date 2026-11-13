@@ -2,9 +2,6 @@
   import 'presentation/item-materials.json',
 ).pack({
   models: [
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/scissor_jack.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/bottle_jack.model.json',
-    import 'packages/skelly-assets/built/skelly.ground-vehicles/things/engine_hoist.model.json',
     // Only the finishes look fixture draws these, from its debug pack; a debug pack cannot ship built files of its own.
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_frame.model.json',
     import 'packages/skelly-assets/built/skelly.ground-vehicles/things/light_tactical_vehicle_hull.model.json',

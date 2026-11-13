@@ -34,6 +34,7 @@ import { pageUrl, replacePageUrl } from '../pageUrl.ts';
 import { linkStartMod } from '../product/page.ts';
 import { ragdollConfig } from '../product/ragdoll.ts';
 import { createBenchLightFixture } from './lightFixture.ts';
+import { withLayoutVehicles } from './placementWorld.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -349,7 +350,8 @@ export const startBench = (
       return;
     }
     try {
-      playerBody = findShamblerBenchPlayer(engine);
+      const parked = withLayoutVehicles(engine);
+      playerBody = findShamblerBenchPlayer(parked);
       x = playerBody.pos[0] * s;
       z = playerBody.pos[2] * s;
       const simulation = new Simulation({
@@ -365,8 +367,8 @@ export const startBench = (
         activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
         actorFigureFiles,
         seed: config.seed,
-        isSolid: engine.isSolid,
-        isOpaque: engine.isOpaque,
+        isSolid: parked.isSolid,
+        isOpaque: parked.isOpaque,
         blockSize: s,
         tuning: claimed(engine.registry.senses, 'player')!,
         physics: physicsFor(config.scale, Player),
@@ -386,7 +388,7 @@ export const startBench = (
         count: shamblerCount,
         seed: config.seed,
         player: playerBody,
-        engine,
+        engine: parked,
         registry: engine.registry,
         actors,
       });

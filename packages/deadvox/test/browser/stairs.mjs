@@ -92,7 +92,7 @@ engine.scene.onBeforeRender = function(...args) {
   if(args[2] !== engine.camera) return;
   const s = engine.config.scale.blockSize;
   if(Math.hypot(engine.camera.position.x/s-155,engine.camera.position.z/s-122)>1) return;
-  if(!engine.meshes.group.children.some(mesh=>mesh.position.x===128&&mesh.position.y===32&&mesh.position.z===96)) return;
+  if(!engine.meshes.origins().some(([x,y,z])=>x===128&&y===32&&z===96)) return;
   const point=[151.5,43.5,121.5];
   const fields=engine.skylight.inspect().filter(({bounds})=>point.every((v,a)=>v>=bounds.min[a]&&v<bounds.max[a]));
   if(!fields.length) throw new Error('Camo arrival witness has no eligible field');
@@ -412,9 +412,9 @@ try {
     page.waitForFunction(
       (lighting) =>
         [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
-          globalThis.stairsWitness.engine.meshes.group.children.some(
-            (mesh) => mesh.position.x === x && mesh.position.y === y && mesh.position.z === z,
-          ),
+          globalThis.stairsWitness.engine.meshes
+            .origins()
+            .some(([chunkX, chunkY, chunkZ]) => chunkX === x && chunkY === y && chunkZ === z),
         ),
       isLightingMode,
       { timeout: 60_000 },
@@ -698,14 +698,17 @@ try {
           throw new Error('Could not place fixture flashlight in hand');
         }
       });
+      // A tap: the flashlight has a choice of actions, so its use runs on release.
       const mouse5 = () =>
-        page.evaluate(() =>
-          document
-            .querySelector('#view canvas')
-            .dispatchEvent(
-              new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
-            ),
-        );
+        page.evaluate(() => {
+          const canvas = document.querySelector('#view canvas');
+          canvas.dispatchEvent(
+            new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
+          );
+          canvas.dispatchEvent(
+            new PointerEvent('pointerup', { button: 4, buttons: 0, pointerType: 'mouse', bubbles: true }),
+          );
+        });
       await mouse5();
       await page.waitForFunction(() => {
         const { session, engine } = globalThis.stairsWitness;
@@ -931,7 +934,7 @@ try {
             body: [...session.body.pos],
             velocity: [...session.body.vel],
             calendar: session.sim.calendar,
-            meshes: engine.meshes.group.children.length,
+            meshes: engine.meshes.count,
             film: engine.mood.film,
             grain: engine.mood.gradePass?.uniforms.uGrain.value,
             grainSeed: engine.mood.gradePass?.uniforms.uSeed.value,
@@ -1012,9 +1015,7 @@ try {
     });
   }
   const walk = async (actionId, targetX, ascending, targetFeet) => {
-    const release = await holdAction(page, actionId);
     try {
-      const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await waitForSimulation(
         page,
         ({ x, increasing }) => {
@@ -1026,13 +1027,7 @@ try {
           };
         },
         { x: targetX, increasing: ascending },
-        {
-          seconds: 10,
-          from: keyDownTime,
-          label: `arrival ${actionId} x=${targetX}`,
-          record: state,
-          stop: release,
-        },
+        { seconds: 10, label: `arrival ${actionId} x=${targetX}`, record: state, hold: actionId },
       );
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await waitForSimulation(
@@ -1046,11 +1041,8 @@ try {
         { seconds: 3, from: start, label: `settle ${actionId} x=${targetX} feet=${targetFeet}`, record: state },
       );
     } catch (error) {
-      await release();
       await state(`walk/settle failure ${actionId} x=${targetX} feet=${targetFeet}: ${error}`);
       throw error;
-    } finally {
-      await release();
     }
   };
   const openResidentDoor = async (residentId) => {
@@ -1115,66 +1107,61 @@ try {
       input.controls.pitch = 0;
       return session.sim.time;
     }, target);
-    const releaseForward = await holdAction(page, 'movement.forward');
-    try {
-      await waitForSimulation(
-        page,
-        ({ target: destination, from, seconds }) => {
-          const { body, session, input, engine } = globalThis.stairsWitness;
-          const dx = destination[0] - body.pos[0];
-          const dz = destination[2] - body.pos[2];
-          input.controls.yaw = Math.atan2(-dx, -dz);
-          const distance = Math.hypot(dx, dz);
-          const reached = distance < 0.5;
-          const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
-          if (!terminal) {
-            return { time: session.sim.time, paused: session.sim.paused, reached, distance };
-          }
-          const supportCell = (position) => [
-            Math.floor(position[0]),
-            Math.floor(position[1] - 1),
-            Math.floor(position[2]),
-          ];
-          const playerSupport = supportCell(body.pos);
-          const targetSupport = supportCell(destination);
-          const intent = input.controls.intent();
-          return {
-            time: session.sim.time,
-            paused: session.sim.paused,
-            reached,
-            distance,
-            position: [...body.pos],
-            target: [...destination],
-            onGround: body.onGround,
-            velocity: [...body.vel],
-            path: {
-              from: [body.pos[0], body.pos[2]],
-              to: [destination[0], destination[2]],
-              delta: [dx, dz],
-              yaw: input.controls.yaw,
-              forward: intent.forward,
-              sprint: intent.sprint,
-            },
-            readiness: {
-              playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
-              playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
-              playerSupport: engine.isSolid(...playerSupport),
-              targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
-              targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
-              targetSupport: engine.isSolid(...targetSupport),
-            },
-            residents: [...session.actorStore.entries()].map(([, resident]) => ({
-              position: [...resident.body.pos],
-              mode: resident.agent.mode,
-            })),
-          };
-        },
-        { target, from: start, seconds: 12 },
-        { seconds: 12, from: start, label, record: state, stop: releaseForward },
-      );
-    } finally {
-      await releaseForward();
-    }
+    await waitForSimulation(
+      page,
+      ({ target: destination, from, seconds }) => {
+        const { body, session, input, engine } = globalThis.stairsWitness;
+        const dx = destination[0] - body.pos[0];
+        const dz = destination[2] - body.pos[2];
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        const distance = Math.hypot(dx, dz);
+        const reached = distance < 0.5;
+        const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
+        if (!terminal) {
+          return { time: session.sim.time, paused: session.sim.paused, reached, distance };
+        }
+        const supportCell = (position) => [
+          Math.floor(position[0]),
+          Math.floor(position[1] - 1),
+          Math.floor(position[2]),
+        ];
+        const playerSupport = supportCell(body.pos);
+        const targetSupport = supportCell(destination);
+        const intent = input.controls.intent();
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached,
+          distance,
+          position: [...body.pos],
+          target: [...destination],
+          onGround: body.onGround,
+          velocity: [...body.vel],
+          path: {
+            from: [body.pos[0], body.pos[2]],
+            to: [destination[0], destination[2]],
+            delta: [dx, dz],
+            yaw: input.controls.yaw,
+            forward: intent.forward,
+            sprint: intent.sprint,
+          },
+          readiness: {
+            playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
+            playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
+            playerSupport: engine.isSolid(...playerSupport),
+            targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
+            targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
+            targetSupport: engine.isSolid(...targetSupport),
+          },
+          residents: [...session.actorStore.entries()].map(([, resident]) => ({
+            position: [...resident.body.pos],
+            mode: resident.agent.mode,
+          })),
+        };
+      },
+      { target, from: start, seconds: 12 },
+      { seconds: 12, from: start, label, record: state, hold: 'movement.forward' },
+    );
     const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
       page,
@@ -1399,31 +1386,24 @@ try {
     );
     await state('upper resident and lower-floor/stair collision ready', { upperAnchor });
     await openResidentDoor(residentId);
-    const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-    const releaseForward = await holdAction(page, 'movement.forward');
-    try {
-      await waitForSimulation(
-        page,
-        (id) => {
-          const { body, session } = globalThis.stairsWitness;
-          const target = session.actorStore.get(id)?.agent.lastPerceived;
-          const distance = target
-            ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
-            : Number.POSITIVE_INFINITY;
-          return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
-        },
-        residentId,
-        {
-          seconds: 8,
-          from: approachStart,
-          label: 'resident hears the player at the open doorway',
-          record: state,
-          stop: releaseForward,
-        },
-      );
-    } finally {
-      await releaseForward();
-    }
+    await waitForSimulation(
+      page,
+      (id) => {
+        const { body, session } = globalThis.stairsWitness;
+        const target = session.actorStore.get(id)?.agent.lastPerceived;
+        const distance = target
+          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
+          : Number.POSITIVE_INFINITY;
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
+      },
+      residentId,
+      {
+        seconds: 8,
+        label: 'resident hears the player at the open doorway',
+        record: state,
+        hold: 'movement.forward',
+      },
+    );
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {

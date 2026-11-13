@@ -1,5 +1,5 @@
 import type { TerrainShape } from '@skelly/engine/internal/core/worldgen.ts';
-import { makeScale, paperMapBounds } from '@skelly/engine/world';
+import { createTerrainEvaluator, makeScale, paperMapBounds, type TerrainPlan } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import {
   type PaperMapCacheKey,
@@ -16,7 +16,15 @@ const shape: TerrainShape = {
   featureSizeMetres: 23,
   octaves: 3,
 };
-const terrain = { seed: 91, shape, scale: makeScale(1), surface: undefined };
+const plan: TerrainPlan = {
+  seed: 91,
+  shape,
+  scale: makeScale(1),
+  site: { kind: 'natural' },
+  structures: [],
+  blocks: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
+};
+const terrain = createTerrainEvaluator(plan);
 const config: PaperMapRenderConfig = { cellMetres: 8, contourSpacingMetres: 4, revision: 'fixture-v1' };
 const samples = (coverage: { x: number; z: number }) => samplePaperMapTerrain(terrain, coverage, config);
 
@@ -25,7 +33,11 @@ const edge = (map: ReturnType<typeof samples>, side: 'left' | 'right') =>
 
 it('reproduces terrain-only semantic output from restored generation inputs', () => {
   const original = samples({ x: -1, z: 2 });
-  const restored = samplePaperMapTerrain(structuredClone(terrain), { x: -1, z: 2 }, structuredClone(config));
+  const restored = samplePaperMapTerrain(
+    createTerrainEvaluator(structuredClone(plan)),
+    { x: -1, z: 2 },
+    structuredClone(config),
+  );
   expect(restored.heights).toEqual(original.heights);
   expect(restored.hillshade).toEqual(original.hillshade);
   expect(restored.contours).toEqual(original.contours);

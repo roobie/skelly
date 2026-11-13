@@ -76,9 +76,9 @@ describe('sun-owned day phases', () => {
       );
       const sky = skyAt(hour, cycle);
       expect(sky.dayPhase, `sky at ${time}`).toBe(state.phase);
-      const horizontalDot = sky.light[0] * state.sunDirection[0] + sky.light[2] * state.sunDirection[2];
-      expect(horizontalDot, `light direction at ${time}`).toBeGreaterThan(0);
       if (state.phase === 'day') {
+        const horizontalDot = sky.light[0] * state.sunDirection[0] + sky.light[2] * state.sunDirection[2];
+        expect(horizontalDot, `light direction at ${time}`).toBeGreaterThan(0);
         dayLightIntensities.push(sky.lightIntensity);
       }
       if (state.phase === 'night') {

@@ -1,10 +1,11 @@
 import type { ActorSystem } from './actorSystem.ts';
 import { type SpawnTimeWindow, spawnWindowOpen } from './clock.ts';
+import { compareCodeUnits } from './codeUnitOrder.ts';
 import { type Registry, requireDayCycle } from './content.ts';
 import type { ActorSpawn, Site } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-/** Chunk-driven spawns with session-lifetime de-duplication: killed shamblers stay gone. */
+/** Chunk-driven spawns with session-lifetime de-duplication: killed actors stay gone. */
 export interface ActorColumnLoad {
   cx: number;
   cz: number;
@@ -61,12 +62,7 @@ export class ActorSpawner {
   /** Reconsiders only markers in columns already loaded. */
   advance({ calendar, registry, actors }: ActorSpawnAdvance): void {
     // Restore can load columns in another order; preserve marker-to-id and RNG assignment.
-    const pending = [...this.pending].sort(([left], [right]) => {
-      if (left === right) {
-        return 0;
-      }
-      return left < right ? -1 : 1;
-    });
+    const pending = [...this.pending].sort(([left], [right]) => compareCodeUnits(left, right));
     for (const [key, { spawn }] of pending) {
       if (this.spawned.has(key)) {
         this.pending.delete(key);

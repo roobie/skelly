@@ -13,6 +13,12 @@ export const PLAYER_SELF_MASK_LAYER = 2;
  * window, and the image must yield to this optic's opaque housing (render/opticLens.ts).
  */
 export const OPTIC_BODY_LAYER = 3;
+/**
+ * The shadow crowd (render/mobActors.ts): figures drawn only into shadow maps, on slots a light's pass
+ * selected. No main view enables the layer, so nothing here reaches the screen; the shadow passes
+ * enable it on their cameras (render/shadows.ts).
+ */
+export const SHADOW_CROWD_LAYER = 4;
 
 /**
  * Makes every node added anywhere under `root`, now or later, take its new parent's layers, so a mesh added late

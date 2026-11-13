@@ -53,6 +53,8 @@
     on: 'On',
     off: 'Off',
     modDefault: 'Mod default',
+    reloadDetail: 'Takes effect after the page is reloaded.',
+    noMatches: 'No matches',
     fullscreen: 'Fullscreen',
     leaveFullscreen: 'Leave fullscreen',
     browserShortcutsLabel: 'Browser shortcuts',
@@ -113,6 +115,7 @@
     drag: 'Drag',
     lift: 'Lift',
   },
+  actionMenu: { treat: 'Treat', back: 'Back' },
   crafting: {
     heading: 'Crafting',
     all: 'All',

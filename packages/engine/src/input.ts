@@ -1,9 +1,11 @@
 export { type ActionText, actionText, fillText } from './core/actionText.ts';
+export { ForwardReleaseWatch } from './core/forwardReleaseWatch.ts';
 export {
   type Binding,
   bindingIsDebugOnly,
   type Chord,
   contextsForRun,
+  debugSpawnActorRow,
   INPUT_ACTIONS,
   INVENTORY_TAB_BINDINGS,
   type InputContext,

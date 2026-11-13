@@ -3,17 +3,21 @@ read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
-  - you're implementing bear traps, data-driven events or the playtest wave
+  - you're implementing bear traps, data-driven events or the playtest waves
+  - you're authoring the base-building playtest's site, supplies or wave schedule
 ---
 
 # Slice 5 — Holding ground
 
-**Status: the power network core is built; construction, fire and exposure,
-appliance controls and processes, and the integration proofs are open.** The wire
-graph, its cache invalidation, saved identity, closed-form away-time balance and
-refuelling exist; see `packages/engine/src/core/powerGraph.ts`, `PowerGraph`, and `packages/engine/src/core/power.ts`,
-`PowerNetwork`. The bear trap is built (`INTERACTIONS.md`, "Traps"). No player
-construction, placed-entity store, fire or smoke model, or appliance process exists in
+**Status: the power network core, the placed-entity store, the first appliance
+process, world repair work and the first wave rule are built; player placement,
+take-apart, structural collapse, fire and exposure, and the integration proofs are
+open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+`packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
+`BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
+`packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`, `rule`. The bear trap is
+built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
 defending?**
 This plan separates settled intent from choices that must precede dependent work.
@@ -25,12 +29,14 @@ The candidate loop is to claim a shelter, scavenge construction and electrical
 supplies, improve its defences, connect useful appliances, and choose how much
 light to expose at night. Leave it working, return to consequential resource use,
 and decide whether to defend, repair or abandon it after a breach or fire.
-The playtest is a scenario with a scripted wave after three elapsed scenario days,
-so preparation and defence receive a deliberate pressure test. Data-driven event
-rules author the wave; this does not select an authored shelter-and-supply route.
-The day is a content tunable, not an engine constant. The value of staying must
-compete with the cost of attracting attention, supplying machines and risking
-stored goods.
+The playtest is a scenario whose first wave arrives after three elapsed scenario
+days and whose later waves never stop coming, growing harder through an authored
+list and then holding at its last row, so preparation and defence receive a
+deliberate and then an enduring pressure test.
+Data-driven event rules author the waves; this does not select an authored
+shelter-and-supply route. Every wave day is a content tunable, not an engine
+constant. The value of staying must compete with the cost of attracting attention,
+supplying machines and risking stored goods.
 
 ## Scope and boundaries
 
@@ -191,12 +197,70 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   completion so save/load cannot duplicate the wave. A script language is not
   admitted. Position-trigger permission remains open below and does not block the
   elapsed-time wave.
-- **Wave day:** ship the wave after three elapsed scenario days. The bounded
+- **Wave day:** the first wave arrives after three elapsed scenario days. The bounded
   preparation window suits the small playable content volume without making
   participants wait through days with little to do. Raise the content value as
   content growth warrants a longer preparation loop; this is author tuning, not
   automatic code-based scaling. Keep the day in scenario content under
   `PILLARS.md`, "Content forward compatibility" (repo root).
+- **Waves never end:** after the first wave the scenario keeps sending waves, harder
+  in both quantity and quality through the authored list under "Escalation" below and
+  then level, so holding ground is an endurance test rather than one scripted fight.
+  Survival time is still not a pass threshold; see "Playtest questions and exit".
+- **Wave gap:** later waves arrive five scenario days apart, a middle value that
+  leaves room for supply excursions without long waits with little to do. The gap is
+  authored in scenario content, not chosen at game start, so timing has one
+  authority and a mod sets its own; the player gets no pacing choice.
+- **Repeat clock:** the gap counts from one arrival to the next, not from the end of
+  a fight. The saved scenario run's calendar then fixes the whole schedule, and no
+  rule has to decide when a fight with unloaded zombies has ended. Waves may
+  overlap; that is accepted pressure, not a defect.
+- **Wave target:** every wave heads for where the player stands when it fires, as
+  the first wave does. No shelter identity is needed, so an unattended base is never
+  attacked; unattended shelter defence waits on Slice 4b's region work.
+- **Escalation:** content lists the waves as rows of count, type and strength, and
+  the last row repeats, so an author tunes a wave by editing a row and the end of the
+  list is a plateau rather than endless growth. A formula over the wave index is not
+  admitted; two sources for one value would compete.
+
+### Settled base-building playtest rules
+
+The base-building playtest, the third playtest round, is scoped in #1332.
+
+- **Site:** a new small authored site, built for defence rather than a reused
+  playtest or gauntlet site, so the shelter, its approaches and its supply runs are
+  deliberate. Its size is open under #1332. The mansion stays deferred past this
+  playtest under #1332.
+- **Supplies:** the site offers all three sources: rubble and take-apart of what
+  stands there, authored stockpiles at a distance, and loot tables. Salvage alone
+  starves the loop into dismantling the shelter to fix it, and loot alone makes
+  supply random; distant stockpiles give excursions a deliberate target.
+- **Supply sites:** a hardware store, a construction site and a ruin ring by the
+  shelter, each its own template placed by the site layout, so each kind tells the
+  player what to find there and an author changes one without touching the others.
+- **Stockpile distance:** a small starter pile sits by the shelter and bulk stock
+  lies an excursion away, so arrival can start fortifying under "Early session"
+  while bulk still needs the excursion #1332 names.
+- **Bulk stock:** stacks of material are pieces taken apart through work. The
+  take-apart command comes first, so no bulk-stock piece is faked by bashing and
+  reworked once the command exists.
+- **Break yields:** every block material and piece yields materials when broken,
+  but breaking costs far more time per unit than looting stock, so looting stays
+  the efficient path and tearing down walls a slow fallback. The yields per
+  material and the time they cost are content under
+  `PILLARS.md`, "Content forward compatibility" (repo root).
+- **Material loot usage:** building materials get a loot usage of their own, so a
+  hardware store or construction site keeps a place-specific promise and the stock
+  does not drift into workshop crates.
+- **Rubble:** fallen material stays solid until cleared, and clearing is the
+  take-apart command applied to rubble, so it waits on that command and adds no
+  second destruction verb; see
+  `DESIGN.md`, "Damage, destruction and dismemberment".
+- **Early session:** a first base-building session runs once world repair,
+  take-apart and the first wave work, before fire, power controls and the brute
+  land, because the building UI is what blocks this playtest and early feedback on
+  it is cheaper than a long wait. Slice exit still needs the whole slice; see
+  "Playtest questions and exit".
 
 ### Remaining event gate — issue #313
 
@@ -216,11 +280,10 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
 These are work packages, not new work-item IDs. Every stateful package includes
 validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
 
-1. **Readiness and decisions.** Run or explicitly reuse the slice-start consolidation
-   surveys from `EPIC.md`, "How each slice runs"; give findings owners and revisit
-   dates in the owning tracker. Close dependent gates and run the small spikes below.
-   Done when the implementation briefs can distinguish settled rules from blocked
-   choices and each performance claim has an owning benchmark.
+1. **Readiness and decisions: closed, except position triggers.** The construction,
+   destruction, wave and playtest choices this slice waited on are ruled; only
+   "Remaining event gate — issue #313" stays open, and it blocks no package. Run the
+   small spikes below where a package's claim has no owning benchmark yet.
 2. **Power network core: built.** Topology, cache invalidation, saved identity,
    split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
    solar by time of day exist; see `packages/engine/src/core/powerGraph.ts`, `PowerGraph`,
@@ -256,16 +319,68 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    lamps expose light consistently to rendering and attention. Show a window cover
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
-7. **Event rules, scenario wave and region integration.** #313's rules and their
-   one-shot state are in `DESIGN.md`, "Scenario events". The wave lives in the playtest
-   scenario mod because the playtest adopts it, with its own arrival point; see
-   `mods/skelly.deadvox.scenario.playtest/holding-wave.libsonnet`, `rule`. Cross the catch-up horizon with a working and
+7. **Event rules, scenario waves and region integration.** #313's rules and their
+   one-shot state are built; see `DESIGN.md`, "Scenario events". The Holdout pack
+   adopts the first wave with its own arrival point; see
+   `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`, `rule`.
+   Add the recurring, escalating waves under "Settled event and playtest rules", then
+   grow the site's content and supplies under "Settled base-building playtest rules".
+   Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
-   and nearby/background light attention. Exercise preparation, the wave and recovery
+   and nearby/background light attention. Exercise preparation, the waves and recovery
    with charged attacks and stagger available; ordinary ambient attention remains
    active but is not the scenario's pressure substitute. Run cross-browser replay
    and the owning weak-GPU performance benchmarks, then the playtest and slice-exit consolidation/deep docs
    pass. Passing a debug fixture is not completion.
+
+### Lanes and the next rounds
+
+The open packages run as four lanes, each one PR per round from main. Within a
+lane the order is a dependency; across lanes only the joins named here hold.
+
+- **Destruction.** No BR gate remains, so it starts now. Zombies bash terrain by
+  material strength first, so the brute wrecks walls through its strength rather than
+  an identity flag and ordinary types break doors only because door pieces sit below
+  their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
+  support with surface ground follows, and until collapse lands live play refuses a
+  blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
+  in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
+  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies to
+  be dug out by ordinary strikes and hurts every body, generating terrain on demand
+  wherever it reaches, so no region departure-and-return work precedes it; its PR
+  reports collapse time at the largest authored roof rather than gating on it. Blast
+  by share and breach charges follow, then furniture knock-out and push-off, which
+  replace the fall refusal with landing crush; see
+  `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
+- **Construction.** The radial action menu is built (`INTERFACE.md`, "HUD"); every
+  hold job (Repair, Take apart, Continue, Fortify) enters through it, on building parts
+  as on movable pieces (`DESIGN.md`, "Moving furniture"). Player-facing
+  world work, repair and take apart alike, is one design and queues behind the #1469
+  crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
+  bulk-stock pieces and rubble clearing under "Settled base-building playtest rules",
+  over the take-apart command (`packages/engine/src/core/craftCommands.ts`,
+  `CraftCommands.takeApartEntity`), then cell repair, placement and the kit content.
+- **Built systems.** Appliance controls and processes after placement; brute
+  knockback and displacement independently, since nothing above needs it; fire last,
+  under "Settled fire and exposure rules".
+- **Playtest pack.** The Holdout pack has adopted the first wave on an empty site, so
+  the other lanes have a shipped scenario to test in; recurrence and escalation next;
+  the site's supplies and later procedural content after, joined to the construction
+  lane's take-apart command because bulk stock and rubble clearing go through it; then
+  the region proofs of package 7. The site starts empty because an existing site's
+  buildings are not useful for the base-building loop, and it grows step by step so
+  each addition is deliberate. The site stays a content value so the later site rounds
+  change content, not the pack's rules.
+
+The next rounds, in dispatch order:
+
+1. **Adopt the first wave in a base-building scenario pack: done.** The committed
+   Holdout pack starts on the empty site the Playtest pack lane names, so the other
+   lanes have a shipped scenario to test in; see `docs/url-mods.md`,
+   "Committed scenarios", and
+   `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`,
+   `rule`. No engine code, recurrence, shelter identity or supply authoring: those
+   are the later playtest-pack rounds.
 
 ## State and technical proof
 

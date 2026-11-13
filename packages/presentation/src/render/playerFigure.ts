@@ -69,7 +69,7 @@ export const setPlayerFigurePosition = (
   );
 };
 
-/** A shambler leg box's `at` is its top, at the hip; a region box's `at` is its centre. */
+/** An actor leg box's `at` is its top, at the hip; a region box's `at` is its centre. */
 const legRegion = ({ size, at }: FigureBox): FigureBox => ({ size, at: [at[0], at[1] - size[1] / 2, at[2]] });
 
 /** The body regions' boxes in the figure frame; gore lands on them, and the body simulation decides hits. */
@@ -398,10 +398,10 @@ export class PlayerMeshes {
       })),
       // The body arm bends on the same parts and pivots as the first-person rig, so both views share one arm.
       arm: [
-        { name: FIGURE_PIVOT.elbow, parts: [armRig.fore.part], pivot: armRig.fore.pivot },
+        { name: FIGURE_PIVOT.elbow, parts: armRig.fore.parts, pivot: armRig.fore.pivot },
         {
           name: FIGURE_PIVOT.wrist,
-          parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part],
+          parts: [...armRig.hand.parts, ...armRig.fingers.parts, ...armRig.thumb.parts],
           pivot: armRig.hand.pivot,
         },
       ],

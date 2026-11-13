@@ -32,10 +32,82 @@
       }
     },
     {
+      "file": "assets/models/fanny_pack.glb",
+      "grip": {
+        "at": [0, 0.070000000000000007, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "fanny_pack",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fanny_pack": {
+          "centreOfMass": [0, 0.06670046801872076, -0.0065990639625585013],
+          "massKg": 0.20000000000000001,
+          "node": "fanny_pack:bag"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/school_backpack.glb",
+      "grip": {
+        "at": [0, 0.47999999999999998, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "school_backpack",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "school_backpack": {
+          "centreOfMass": [0, 0.2249778538353131, -0.003026978055164083],
+          "massKg": 0.59999999999999998,
+          "node": "school_backpack:bag"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/hiking_backpack.glb",
+      "grip": {
+        "at": [0, 0.60499999999999998, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "hiking_backpack",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hiking_backpack": {
+          "centreOfMass": [0, 0.28711519719316475, -0.0089633552075888516],
+          "massKg": 1.3999999999999999,
+          "node": "hiking_backpack:bag"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/jerry_can.glb",
       "grip": {
         "at": [0.040000000000000001, 0.46000000000000002, 0],
-        "turn": [0, 0, -90]
+        "turn": [90, -90, 0]
       },
       "hold": "upright",
       "id": "jerry_can",
@@ -51,6 +123,30 @@
           "centreOfMass": [-0.00027423897337937455, 0.21481420419758526, 9.4139543996277537e-5],
           "massKg": 4,
           "node": "jerry_can:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/gas_canister.glb",
+      "grip": {
+        "at": [0, 0.070000000000000007, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "gas_canister",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "package": {
+          "centreOfMass": [0, 0.059107579462102697, 0],
+          "massKg": 0.34999999999999998,
+          "node": "package:vessel"
         }
       },
       "roll": 0

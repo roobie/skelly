@@ -2,7 +2,7 @@
 import type { Vec3 } from './coords.ts';
 import type { StairDef } from './schema.ts';
 
-/** The player body in the authored half-metre grid; also encloses the shorter shambler. */
+/** The player body in the authored half-metre grid; also encloses a shorter actor. */
 export const STAIR_BODY_HEIGHT = 3.6;
 export const STAIR_BODY_HALF_WIDTH = 0.6;
 export interface FlightPlan {

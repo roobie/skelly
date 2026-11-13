@@ -1,5 +1,4 @@
-import { BindingRegistry } from '@skelly/engine/input';
-import { SHADOW_DISTANCES } from '@skelly/engine/internal/core/mood.ts';
+import { BindingRegistry, debugSpawnActorRow } from '@skelly/engine/input';
 import type { Weather } from '@skelly/engine/sky';
 import type { DebugHooks } from '@skelly/presentation/debug';
 import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
@@ -11,10 +10,11 @@ import { type Action, createDebugActions, dispatchDebugAction } from '../src/deb
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_KEYS } from '../src/debug/lookUrl.ts';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-import { LOOK_FIXTURE } from './lookFixture.ts';
+import { LOOK_FIXTURE, SUN_SHADOW_FIXTURE } from './lookFixture.ts';
 
 const inputBindings = new BindingRegistry(INPUT_BINDINGS);
 
@@ -92,10 +92,11 @@ describe('debug action dispatch', () => {
       expect(look.toneKey).toBe(tone);
     }
 
-    const shadowStart = SHADOW_DISTANCES.indexOf(look.shadowState.distance);
+    const shadowDistances = SUN_SHADOW_FIXTURE.debugReachMetres;
+    const shadowStart = shadowDistances.indexOf(look.shadowState.distance);
     expect(shadowStart).toBeGreaterThanOrEqual(0);
-    const distances = SHADOW_DISTANCES.map(
-      (_, index) => SHADOW_DISTANCES[(shadowStart + index + 1) % SHADOW_DISTANCES.length],
+    const distances = shadowDistances.map(
+      (_, index) => shadowDistances[(shadowStart + index + 1) % shadowDistances.length],
     );
     for (const distance of distances) {
       expect(dispatchDebugAction(actions, 'debug.shadow-distance-cycle')).toBe(true);
@@ -108,7 +109,7 @@ describe('debug action dispatch', () => {
       ['debug.exposure-increase', 'debug.exposure-decrease', () => look.exposure],
       ['debug.grade-decrease', 'debug.grade-increase', () => -look.moodState.grade],
       ['debug.torch-increase', 'debug.torch-decrease', () => look.torch],
-      ['debug.fog-increase', 'debug.fog-decrease', () => look.fogginess],
+      ['debug.fog-increase', 'debug.fog-decrease', () => look.weatherState.fogginess],
       ['debug.bloom-clip-increase', 'debug.bloom-clip-decrease', () => look.bloomClip],
     ] as const;
     for (const [increase, decrease, value] of pairs) {
@@ -131,8 +132,8 @@ describe('debug action dispatch', () => {
       dispatchDebugAction(actions, action, true);
       expect(skips).toHaveLength(count);
     }
-    dispatchDebugAction(actions, 'debug.spawn-shamblers');
-    dispatchDebugAction(actions, 'debug.spawn-shamblers', true);
+    dispatchDebugAction(actions, 'debug.spawn-actors');
+    dispatchDebugAction(actions, 'debug.spawn-actors', true);
     expect(spawnCounts).toEqual([25]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
   });
@@ -145,6 +146,16 @@ describe('debug action dispatch', () => {
       expect(dispatchDebugAction(actions, id, true)).toBe(true);
     }
     expect(spawnRequests).toEqual(fixtureActorTypes.map((type) => ({ typeId: type.id, count: 1 })));
+  });
+  it('offers one spawn row per actor type in shipped content', () => {
+    const shipped = [...baseRegistry().actors.values()];
+    const { actions } = makeActions(1, undefined, shipped);
+    const rows = shipped.map((type) => debugSpawnActorRow(type.id, type.name));
+    for (const { id, description } of rows) {
+      expect(actions.filter((action) => action.id === id).map(({ label }) => label)).toEqual([description]);
+    }
+    const spawnPrefix = debugSpawnActorRow('', '').id;
+    expect(actions.filter((action) => action.id.startsWith(spawnPrefix))).toHaveLength(shipped.length);
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
@@ -161,6 +172,7 @@ describe('debug action dispatch', () => {
 const makeActions = (
   shamblerCount = 1,
   mannequin?: DebugHooks['mannequin'],
+  actorTypes: Iterable<{ id: string; name: string }> = fixtureActorTypes,
 ): {
   actions: Action[];
   spawnCounts: number[];
@@ -175,7 +187,7 @@ const makeActions = (
   let patterns = true;
   let occlusion = true;
   const mood = new FakeMood();
-  const weather: Weather = { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess };
+  const weather: Weather = { ...BASE_DAY_CYCLE.weather.defaults };
   const shadows = new FakeShadows();
   const flashlight = { strength: 1 };
   const look = new LookControls(
@@ -201,7 +213,7 @@ const makeActions = (
       },
     },
     mood,
-    { defaults: LOOK_FIXTURE, weather, shadows, flashlight },
+    { defaults: LOOK_FIXTURE, sunShadow: SUN_SHADOW_FIXTURE, weather, shadows, flashlight },
   );
   const sim = {
     godMode: false,
@@ -283,7 +295,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
-    actorTypes: fixtureActorTypes,
+    actorTypes,
     look,
     build,
     spawnMenu,

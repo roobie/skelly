@@ -1,26 +1,33 @@
 import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
 import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
 import { Inventory } from '@skelly/engine/inventory';
-import type { FromMesher, MesherPort, MesherSource, ToMesher } from '@skelly/engine/mesh';
-import { buildMesh } from '@skelly/engine/mesh';
+import type {
+  FromMesher,
+  MesherInit,
+  MesherPort,
+  MesherSource,
+  ReceivedMeshRequest,
+  ToMesher,
+} from '@skelly/engine/mesh';
+import { buildRequestedMesh, HeldChunks } from '@skelly/engine/mesh';
 import { buildSkyResult } from '@skelly/engine/sky';
 import { CHUNK, makeScale, World } from '@skelly/engine/world';
 import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
 import { ChunkMeshes, PileMeshes } from '@skelly/presentation/render';
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { skyFixture } from './fixtures/sky.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 class OwnedWorker implements MesherPort {
   static instances: OwnedWorker[] = [];
   handlers: MesherHandlers | undefined;
-  readonly waiting: Exclude<ToMesher, { type: 'init' }>[] = [];
+  readonly waiting: (Exclude<ToMesher, { type: 'init' | 'mesh' }> | ReceivedMeshRequest)[] = [];
   readonly posted: string[] = [];
-  colors: Uint8Array = new Uint8Array();
-  patterns: Uint8Array = new Uint8Array();
-  weatherable: Uint8Array = new Uint8Array();
+  init: MesherInit | undefined;
+  private readonly held = new HeldChunks();
   constructor() {
     OwnedWorker.instances.push(this);
   }
@@ -30,12 +37,10 @@ class OwnedWorker implements MesherPort {
   post(message: ToMesher, transfer: readonly ArrayBuffer[]) {
     const copy = structuredClone(message, { transfer: [...transfer] });
     if (copy.type === 'init') {
-      this.colors = copy.colors;
-      this.patterns = copy.patterns;
-      this.weatherable = copy.weatherable;
+      this.init = copy;
       return;
     }
-    this.waiting.push(copy);
+    this.waiting.push(copy.type === 'mesh' ? this.held.receive(copy) : copy);
     this.posted.push(copy.type);
   }
   replyNext(index = 0) {
@@ -50,11 +55,7 @@ class OwnedWorker implements MesherPort {
             key: message.key,
             version: message.version,
             ms: 0,
-            mesh: buildMesh(message.padded, this.colors, {
-              patterns: this.patterns,
-              wide: message.wide,
-              weatherable: this.weatherable,
-            }),
+            mesh: buildRequestedMesh(this.init!, message),
           }
         : { type: 'sky', id: message.id, result: buildSkyResult(message.input), workerRealMs: 0 };
     this.handlers?.message(data as FromMesher);
@@ -74,18 +75,15 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
     world: new World(),
     meshes: meshes as never,
     mesher: ownedMeshers(1),
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const beforeReveal = vi.fn((cx: number, cz: number) => {
     const published = meshes.setRevealedColumns.mock.calls.at(-1)![0] as Set<string>;
@@ -168,19 +166,25 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     world,
     meshes,
     mesher: ownedMeshers(1),
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: {
+      ...fixtureTerrain({ scale, floor: -1 }),
+      generateColumn: (cx, cz) =>
+        fixtureTerrain({ scale, floor: -1 })
+          .generateColumn(cx, cz)
+          .map((chunk) => {
+            chunk.set(1, 1, 1, 1);
+            chunk.compact();
+            return chunk;
+          }),
+    },
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 2,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => -1, top: () => undefined },
-    stamp: (chunk) => chunk.set(1, 1, 1, 1),
   });
   streamer.setReplayControlled();
   streamer.update(0, 0);
@@ -220,16 +224,14 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     }
     expect(inventory.snapshotState()).toEqual(snapshot);
     meshes.selectShadowCasters(() => true, DoubleSide);
-    const shadows = meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray());
+    const shadows = meshes.origins('shadow');
     const camera = new OrthographicCamera(-200, 200, 200, -200, 0.1, 1000);
     camera.position.set(0, 100, 100);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld();
     meshes.cull(camera);
-    expect(meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray())).toEqual(
-      shadows,
-    );
-    return shadows.map(([x, , z]) => `${x! / CHUNK},${z! / CHUNK}`);
+    expect(meshes.origins('main')).toEqual(shadows);
+    return shadows.map(([x, , z]) => `${x / CHUNK},${z / CHUNK}`);
   };
   drain(missing);
   expect(worker.waiting.some((message) => message.type === 'mesh' && message.key === missing)).toBe(true);
@@ -256,18 +258,15 @@ function skyStreamer(meshers: number) {
     world: new World(),
     meshes: meshes as never,
     mesher: ownedMeshers(meshers),
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   return { streamer, meshes };
 }

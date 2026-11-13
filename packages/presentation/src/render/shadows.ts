@@ -5,13 +5,14 @@
 // are not used). Its centre snaps to the map's texel grid in light space so shadow edges don't
 // shimmer as the player walks. Only the shadow casters inside that box are drawn into it.
 //
-// three.js draws shadow maps from inside `renderer.render`, skipping meshes the *camera* has culled
-// (`visible` false), which would drop the chunks behind you that shade what is in front. So this
+// Culling chunks to the camera would drop the ones behind you that shade what is in front. So this
 // takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
-// `selectShadowCasters`), draws one map per light through it, and leaves the main pass's already
-// queued draw list alone. A light's `castShadow` stays true while its setting is on, so the hour
-// doesn't change shader programs. The sun's shadow is full whenever its light shines, the night
-// stand-in included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
+// takes over `renderer.shadowMap.render`: it picks the casters itself (chunks.ts
+// `selectShadowCasters`, and the crowd figures through mobActors.ts `selectShadowCasters`, whose
+// bone-placed instances no frustum can cull) and draws one map per light through it; the chunk batch
+// draws each pass's own set (chunkBatch.ts), so the main pass keeps the camera's chunks. A light's `castShadow` stays true while its setting is on, so the hour
+// doesn't change shader programs. The sun's shadow is full whenever its light shines, the moon's
+// light at night included (core/sky.ts `sunShadowStrength` says why); with the light out it sets
 // `shadow.intensity` to 0 and stops redrawing its map (but a casting light with no map yet always gets
 // one allocated by three's pass, `needsMap`). The flashlight's beams likewise keep `castShadow` with
 // the setting whether on or off (flashlight.ts, `shadowsAllowed`), and a beam's map is drawn only
@@ -29,7 +30,7 @@
 // another per-frame shadow pass. Its point-light copies do not cast shadows. The player's world figure is on
 // its own layer (shadowFlags.ts): the sun's pass sees it, the torch's pass doesn't.
 
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '@skelly/engine/look';
+import { SHADOW_DISTANCE_RANGE, type ShadowState } from '@skelly/engine/look';
 import {
   BackSide,
   type Box3,
@@ -42,12 +43,13 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   type Scene,
+  type Side,
   type SpotLight,
   Vector3,
   type WebGLRenderer,
 } from 'three';
 import type { ChunkMeshes } from './chunks.ts';
-import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
+import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER, SHADOW_CROWD_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
 export const SUN_MAP_SIZE = 2048;
@@ -134,15 +136,27 @@ export const needsMap = (light: { castShadow: boolean; shadow: { map: unknown } 
 
 type DrawMaps = (lights: Light[], scene: Scene, camera: Camera) => void;
 
+/** A renderer whose instanced casters must be picked per light, as ChunkMeshes picks its boxes: the
+ * crowd figures (render/mobActors.ts), whose bone-placed instances no frustum can cull. One slot per
+ * light that casts within a renderer frame (the sun plus every torch), because three uploads a
+ * geometry's attributes only once per renderer frame — passes sharing one selection would all draw
+ * whichever rows reached the GPU first. */
+export interface CrowdCasters {
+  reserveShadowSlots: (slots: number) => void;
+  selectShadowCasters: (slot: number, casts: (box: Box3) => boolean) => void;
+}
+
 export class Shadows {
   private readonly scene: Scene;
   private readonly light: DirectionalLight;
   /** Holds the sun and its target, so moving it moves the shadow box without changing the light's direction. */
   private readonly rig: Object3D;
   private readonly meshes: ChunkMeshes;
-  private state: ShadowState = { ...DEFAULT_SHADOWS, sun: false, torch: false };
+  private crowds: readonly CrowdCasters[] = [];
+  private state: ShadowState = { sun: false, torch: false, distance: SHADOW_DISTANCE_RANGE.min };
   private torches: readonly SpotLight[] = [];
-  /** What the flashlight's pass looks through: only layer 0, so the player's figure (layer 1) is left out. */
+  /** What the flashlight's pass looks through: layer 0 plus the shadow crowd, so the player's figure
+   * (layer 1) is left out while the selected crowd figures still cast. */
   private readonly torchView = new PerspectiveCamera();
   private strength = 0;
   private sunDue = false;
@@ -179,6 +193,7 @@ export class Shadows {
     const { shadowMap } = renderer;
     const draw: DrawMaps = shadowMap.render.bind(shadowMap);
     shadowMap.render = (_lights, drawnScene, camera) => this.drawMaps(draw, drawnScene, camera);
+    this.torchView.layers.enable(SHADOW_CROWD_LAYER);
   }
 
   get sunOn(): boolean {
@@ -225,11 +240,25 @@ export class Shadows {
 
   attachTorches(lights: readonly SpotLight[]): void {
     this.torches = lights;
+    this.reserveCrowdSlots();
+  }
+
+  /** Adds a crowd whose figures the passes pick per light (see CrowdCasters); call before the first render. */
+  attachCrowd(crowd: CrowdCasters): void {
+    this.crowds = [...this.crowds, crowd];
+    this.reserveCrowdSlots();
+  }
+
+  /** One slot per light that can cast in a frame: the sun plus every torch. */
+  private reserveCrowdSlots(): void {
+    for (const crowd of this.crowds) {
+      crowd.reserveShadowSlots(1 + this.torches.length);
+    }
   }
 
   /** Takes a whole state, as read from the defaults or the URL. Turning a light's shadows on or off rebuilds the programs once. */
   restore(state: ShadowState): void {
-    this.state = { ...state, distance: clampShadowDistance(state.distance) };
+    this.state = { ...state };
     this.configureSun();
   }
 
@@ -243,10 +272,6 @@ export class Shadows {
 
   setDistance(metres: number): void {
     this.restore({ ...this.state, distance: metres });
-  }
-
-  stepDistance(): void {
-    this.setDistance(nextShadowDistance(this.state.distance));
   }
 
   /**
@@ -307,6 +332,16 @@ export class Shadows {
     this.stale = true;
   }
 
+  /** Picks one light's casters into `slot`'s selection: the chunk boxes and every attached crowd's
+   * figures. Returns the chunk count. */
+  private selectCasters(slot: number, casts: (box: Box3) => boolean, side: Side): number {
+    const chunks = this.meshes.selectShadowCasters(casts, side);
+    for (const crowd of this.crowds) {
+      crowd.selectShadowCasters(slot, casts);
+    }
+    return chunks;
+  }
+
   /** `renderer.shadowMap.render`, replaced: draws the sun's map when due and the flashlight's when it is casting. */
   private drawMaps(draw: DrawMaps, scene: Scene, camera: Camera): void {
     // The held scene samples the world's existing sun map; its render must not draw shadow maps again.
@@ -319,6 +354,7 @@ export class Shadows {
       camera.layers.enable(PLAYER_FIGURE_LAYER);
       camera.layers.enable(PLAYER_SELF_MASK_LAYER);
       camera.layers.enable(OPTIC_BODY_LAYER);
+      camera.layers.enable(SHADOW_CROWD_LAYER);
       try {
         draw([light], scene, camera);
       } finally {
@@ -330,12 +366,12 @@ export class Shadows {
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
       // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
       // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
-      this.sunCasters = meshes.selectShadowCasters(noBoxes, DoubleSide);
+      this.sunCasters = this.selectCasters(0, noBoxes, DoubleSide);
       sunDraw();
     }
     if (this.sunDue) {
       light.shadow.updateMatrices(light);
-      this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()), DoubleSide);
+      this.sunCasters = this.selectCasters(0, inFrustum(light.shadow.getFrustum()), DoubleSide);
       sunDraw();
       this.drawnAt.copy(this.snapped);
       this.drawnToSun.copy(this.toSun);
@@ -345,17 +381,18 @@ export class Shadows {
       this.sunDue = false;
     }
     this.torchCasters = 0;
-    for (const torch of torches) {
+    for (const [index, torch] of torches.entries()) {
+      const slot = index + 1; // slot 0 is the sun's
       const due = torch.castShadow && beamMapDue(torch.intensity);
       // A faint beam still lights receivers, which sample its map; a map it no longer refreshes would cast
       // stale shadows, so it shades nothing until it is redrawn. three.js reads this after this pass.
       torch.shadow.intensity = due ? 1 : 0;
       if (due) {
-        this.torchCasters += meshes.selectShadowCasters(withinRange(torch.position, torch.distance), BackSide);
+        this.torchCasters += this.selectCasters(slot, withinRange(torch.position, torch.distance), BackSide);
         draw([torch], scene, this.torchView);
       } else if (needsMap(torch)) {
         // An off beam still casts, so its programs sample a map; allocate it empty, as for the sun above.
-        meshes.selectShadowCasters(noBoxes, BackSide);
+        this.selectCasters(slot, noBoxes, BackSide);
         draw([torch], scene, this.torchView);
       }
     }

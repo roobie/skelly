@@ -5,7 +5,14 @@ import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
 import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { SurvivalHooks } from '@skelly/engine/internal/game/survival.ts';
 import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
-import { HandlingQueue, Inventory, type Item, toggleLight, typeWeightGrams } from '@skelly/engine/inventory';
+import {
+  HandlingQueue,
+  Inventory,
+  type Item,
+  type ItemAction,
+  toggleLight,
+  typeWeightGrams,
+} from '@skelly/engine/inventory';
 import { bindReach, Survival } from '@skelly/engine/sim';
 import { coreLabel } from '@skelly/engine/text';
 import { describe, expect, it, vi } from 'vitest';
@@ -157,7 +164,6 @@ describe('a paused craft in the held-item list', () => {
     const t = setup();
     const item = heldWork(t, 'hand');
     expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(true);
-    expect(t.survival.wieldedItemActionHint()).toBeDefined();
   });
 
   it('offers nothing for a dropped paused work item', () => {
@@ -220,7 +226,7 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
   });
 
-  it('uses the selected wound for held treatment and lets the wheel change that target', () => {
+  it('treats the default wound on a plain use and another wound when it is chosen for that use', () => {
     const t = setup();
     t.sim.body.impact(1, 'leftArm', { bleeding: fixtureTier('serious') });
     t.sim.body.impact(3, 'rightArm', { bleeding: fixtureTier('serious') });
@@ -232,11 +238,10 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
     expect(beginTreatment.mock.calls[0]?.[0]).toBe(initial?.treatment?.region);
     expect(beginTreatment.mock.calls[0]?.[1]).toBe(rag.uid);
-    expect(t.survival.cycleItemAction(rag, 1)).toBe(true);
-    const selected = t.survival.selectedItemAction(rag);
-    expect(selected).not.toBe(initial);
-    expect(t.survival.use(rag)).toBeUndefined();
-    expect(beginTreatment.mock.calls[1]?.[0]).toBe(selected?.treatment?.region);
+    const other = t.survival.availableItemActions(rag).find((action) => action.id !== initial?.id);
+    expect(other?.treatment).toBeDefined();
+    expect(t.survival.withItemAction(rag, other!.id, () => t.survival.use(rag))).toBeUndefined();
+    expect(beginTreatment.mock.calls[1]?.[0]).toBe(other?.treatment?.region);
   });
 
   it('passes the read item type to the read hook', () => {
@@ -519,10 +524,19 @@ describe('using what you hold', () => {
     const battery = hold('aa_battery', 'left');
     const original = batteryOf(light);
     original.charges = 0;
-    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
+    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadHeldSpare'));
     expect(queue.jobs).toEqual([]);
     expect(light.slots?.battery).toBe(original);
     expect(inventory.locate(battery)?.kind).toBe('hand');
+  });
+
+  it('a dead light with a dead battery in the other hand names no spare', () => {
+    const { survival, hold } = setup();
+    const light = hold('flashlight');
+    const battery = hold('aa_battery', 'left');
+    batteryOf(light).charges = 0;
+    battery.charges = 0;
+    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
   });
 
   it('a hand load refuses once an earlier queued move has put the light down', () => {
@@ -541,11 +555,17 @@ describe('using what you hold', () => {
 });
 
 describe('taking the battery out of a held light', () => {
-  // The player turns the wheel once from the light's own action, then activates.
+  // The player chooses taking the battery out for one use of the light.
   const unload = (t: ReturnType<typeof setup>, light: Item) => {
-    t.survival.cycleItemAction(light, 1);
-    const selected = t.survival.selectedItemAction(light)?.battery;
-    const refusal = t.survival.use(light);
+    const unloadAction = t.survival.availableItemActions(light).find((action) => action.battery === 'unload');
+    if (!unloadAction) {
+      throw new Error('a loaded held light offers taking the battery out');
+    }
+    let selected: ItemAction['battery'];
+    const refusal = t.survival.withItemAction(light, unloadAction.id, () => {
+      selected = t.survival.selectedItemAction(light)?.battery;
+      return t.survival.use(light);
+    });
     const ticked = t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);
     return { selected, refusal, failed: ticked.failed };
   };
@@ -598,7 +618,14 @@ describe('taking the battery out of a held light', () => {
     unload(t, light);
 
     expect(t.survival.availableItemActions(light).some((action) => action.battery === 'unload')).toBe(false);
-    expect(t.survival.wieldedItemActionHint()).toBeUndefined();
+  });
+
+  it('an empty light with a charged battery in the other hand names that spare', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    unload(t, light);
+    t.hold('aa_battery', 'left');
+    expect(t.survival.use(light)).toBe(coreMessage(registry, 'noBatteryHeldSpare'));
   });
 
   it('leaves the light empty: it says so, and a battery goes back in through the slot', () => {
