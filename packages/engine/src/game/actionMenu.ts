@@ -81,8 +81,8 @@ export const heldRadialEntries = (
 
 /**
  * The one open action menu, for a furniture piece or a held item. Callers pass the current entries on every call, so
- * an action that went away since the menu opened is never chosen. Nothing is chosen until the player points at or
- * steps to an entry. Confirming an entry with children opens their ring in its place, whose centre returns to it.
+ * an action that went away since the menu opened is never chosen. With alternatives, nothing is chosen until the
+ * player points at or steps to an entry. Child rings keep the same choice grammar without adding a lone-entry step.
  */
 export class ActionMenu {
   private target: Readonly<{ source: ActionMenuSource; uid: number }> | undefined;
@@ -91,13 +91,24 @@ export class ActionMenu {
   private selectedId: string | undefined;
   private parentId: string | undefined;
 
-  /** Opens even for one action, so the player sees what confirming will do. */
-  open(source: ActionMenuSource, target: { uid: number }, actions: readonly ItemAction[]): void {
-    if (actions.length === 0) {
-      return;
-    }
+  /** Returns a lone action to its caller to run; only alternatives need a menu. */
+  open(source: ActionMenuSource, target: { uid: number }, actions: readonly RadialAction[]): RadialAction | undefined {
     this.close();
+    const sole = actions.length === 1 ? actions[0] : undefined;
+    if (sole && !sole.children) {
+      return sole;
+    }
+    if (sole?.children?.length === 1) {
+      return sole.children[0];
+    }
+    if (actions.length === 0 || sole?.children?.length === 0) {
+      return undefined;
+    }
     this.target = { source, uid: target.uid };
+    if (sole) {
+      this.enter(sole.id);
+    }
+    return undefined;
   }
 
   get opened(): Readonly<{ source: ActionMenuSource; uid: number }> | undefined {
@@ -116,12 +127,21 @@ export class ActionMenu {
     return this.parentId !== undefined;
   }
 
-  /** The open ring's entries among the current `actions`: its parent's children, or nothing once that parent has gone. */
+  canReturn(actions: readonly RadialAction[]): boolean {
+    return this.childOpen && actions.length > 1;
+  }
+
+  /** Losing alternatives cancels rather than choosing an unseen fallback. */
   ring(actions: readonly RadialAction[]): readonly RadialAction[] | undefined {
     if (!this.target) {
       return undefined;
     }
-    return this.childOpen ? actions.find((action) => action.id === this.parentId)?.children : actions;
+    const ring = this.childOpen ? actions.find((action) => action.id === this.parentId)?.children : actions;
+    if (ring && ring.length > 1) {
+      return ring;
+    }
+    this.close();
+    return undefined;
   }
 
   /** Moves the pull by `movement` pixels, held within the ring, and selects what it then points at. */
@@ -162,16 +182,20 @@ export class ActionMenu {
   }
 
   /**
-   * Closes the menu and returns the chosen action, or opens the chosen entry's child ring and returns nothing.
-   * Confirming with nothing chosen goes back from a child ring to its parent, and otherwise closes without acting.
+   * Returns the chosen action or its sole child; child alternatives open their own ring.
+   * An unchosen child ring returns to a parent with alternatives, otherwise closes without acting.
    */
   confirm(actions: readonly RadialAction[]): RadialAction | undefined {
     const chosen = this.choice(actions);
     if (chosen?.children) {
-      this.enter(chosen.id);
-      return undefined;
+      if (chosen.children.length > 1) {
+        this.enter(chosen.id);
+        return undefined;
+      }
+      this.close();
+      return chosen.children[0];
     }
-    if (!chosen && this.childOpen) {
+    if (!chosen && this.canReturn(actions)) {
       this.enter(undefined);
       return undefined;
     }

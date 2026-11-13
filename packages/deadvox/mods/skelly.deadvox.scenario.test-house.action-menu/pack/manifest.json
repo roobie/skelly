@@ -1,7 +1,8 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
-    "skelly.deadvox.scenario.test-house.debug",
+    "skelly.body",
+    "skelly.deadvox.scenario.test-house",
     "skelly.electric-power",
     "skelly.flame-tools",
     "skelly.hand-tools",
