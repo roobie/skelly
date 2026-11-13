@@ -1,7 +1,7 @@
+import type { RapierApi } from '../../src/core/rapier.ts';
 import type { Candidate, Tier } from '../../src/feasibility/contract.ts';
-import type * as Rapier from '../../vendor/rapier-f64/rapier.js';
 
-export function rapierCandidate(api: typeof Rapier, precision: string): Candidate {
+export function rapierCandidate(api: RapierApi, precision: string): Candidate {
   return {
     identity: { candidate: 'rapier-moving-body', precision, collision: 'none', hiddenWork: 'unmeasured' },
     create(fixture, tickHz) {
