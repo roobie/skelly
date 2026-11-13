@@ -2,7 +2,7 @@
   "dependencies": [
     "skelly.basic-recipes",
     "skelly.deadvox.actors",
-    "skelly.deadvox.scenario.gauntlet.city",
+    "skelly.body",
     "skelly.deadvox.site-generation",
     "skelly.flame-tools",
     "skelly.light-sources",
