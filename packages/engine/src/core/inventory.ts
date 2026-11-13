@@ -1471,10 +1471,11 @@ export class Inventory {
       );
     }
     if (repair.target.kind === 'cell') {
-      // A damaged cell holds no work item, so nothing reserves it: the world's say and reach gate the job directly.
+      // A damaged cell holds no work item, so nothing reserves it: the world's say over the pinned damage episode and
+      // reach gate the job directly.
       return Boolean(
-        this.cellRepair?.refusal(repair.target.cell, recipe.repair?.block, repair.amount) === undefined &&
-          this.canReachCell(repair.target.cell),
+        this.cellRepair?.refusal(repair.target.cell, repair.target.epoch, recipe.repair?.block, repair.amount) ===
+          undefined && this.canReachCell(repair.target.cell),
       );
     }
     const target = this.itemByUid(repair.target.uid);
@@ -1822,7 +1823,9 @@ export class Inventory {
     if (payload.kind !== 'craft' || payload.repairTarget?.kind !== 'cell') {
       return true;
     }
-    return this.cellRepair?.repair(payload.repairTarget.cell, payload.repairAmount!) === true;
+    return (
+      this.cellRepair?.repair(payload.repairTarget.cell, payload.repairTarget.epoch, payload.repairAmount!) === true
+    );
   }
 
   private workLiquidAdmission(
@@ -2777,7 +2780,13 @@ const validWorkTarget = (
     return true;
   }
   if (target.kind === 'cell') {
-    return target.cell.length === 3 && target.cell.every(Number.isSafeInteger) && recipe?.repair?.block !== undefined;
+    return (
+      target.cell.length === 3 &&
+      target.cell.every(Number.isSafeInteger) &&
+      Number.isSafeInteger(target.epoch) &&
+      target.epoch >= 1 &&
+      recipe?.repair?.block !== undefined
+    );
   }
   if (target.kind !== 'item' && target.kind !== 'entity') {
     return false;

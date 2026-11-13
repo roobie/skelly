@@ -479,7 +479,7 @@ itemSchema = obj({
         repairTarget: opt(
           union(
             obj({ kind: enumeration(['item', 'entity']), uid: positiveInt }),
-            obj({ kind: enumeration(['cell']), cell: tuple(safeInt, safeInt, safeInt) }),
+            obj({ kind: enumeration(['cell']), cell: tuple(safeInt, safeInt, safeInt), epoch: positiveInt }),
           ),
         ),
         repairAmount: opt(positive),

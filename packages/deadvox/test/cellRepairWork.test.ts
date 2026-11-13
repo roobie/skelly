@@ -206,7 +206,7 @@ it('refuses cell repair of an undamaged cell, a missing block and an unreachable
 
 it('saves and loads a mid-job cell repair and completes it once without duplicate payout', async () => {
   const r = start(AMOUNT - 1);
-  expect(r.work.work?.repairTarget).toEqual({ kind: 'cell', cell: [...CELL] });
+  expect(r.work.work?.repairTarget).toEqual({ kind: 'cell', cell: [...CELL], epoch: r.world.blockDamage.get(CELL)!.epoch });
   r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
   r.sim.actions.stop();
   expect(r.work.work!.elapsed).toBeGreaterThan(0);

@@ -24,9 +24,14 @@ import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
 import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export type WorkTarget = { kind: 'item'; uid: number } | { kind: 'entity'; uid: number } | { kind: 'cell'; cell: Vec3 };
+export type WorkTarget =
+  | { kind: 'item'; uid: number }
+  | { kind: 'entity'; uid: number }
+  | { kind: 'cell'; cell: Vec3; epoch: number };
 export const copyWorkTarget = (target: WorkTarget): WorkTarget =>
-  target.kind === 'cell' ? { kind: 'cell', cell: [...target.cell] } : { kind: target.kind, uid: target.uid };
+  target.kind === 'cell'
+    ? { kind: 'cell', cell: [...target.cell], epoch: target.epoch }
+    : { kind: target.kind, uid: target.uid };
 const repairTargetFields = ({ repairTarget }: { repairTarget?: WorkTarget }) =>
   repairTarget ? { repairTarget: copyWorkTarget(repairTarget) } : {};
 

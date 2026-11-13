@@ -210,14 +210,15 @@ export class CraftCommands {
     const snapshot = this.reach();
     const result = repair?.block ? planCraft(recipe!, snapshot, this.character, { prefer, sources }) : undefined;
     const skill = repair ? recipeSkillLevel(registry, this.character, repair.skill) : 0;
+    const state = repair?.block ? this.inventory.cellRepair?.state(cell) : undefined;
     const targetRefusal = repair?.block
       ? cellRepairRefusal(this.inventory, {
           cell,
+          epoch: state?.epoch ?? 0,
           block: repair.block,
           amount: repair.amount + repair.perSkill * skill,
         })
       : coreMessage(registry, 'noRepairTarget');
-    const state = repair?.block ? this.inventory.cellRepair?.state(cell) : undefined;
     return {
       targetCell: [...cell],
       targetName: state ? registry.blocks[blockId(registry, state.block)]!.name : undefined,
@@ -237,6 +238,10 @@ export class CraftCommands {
     if (!repair?.block) {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
+    const state = this.inventory.cellRepair?.state(cell);
+    if (!state) {
+      return coreMessage(this.inventory.registry, 'repairTargetGone');
+    }
     const result = this.preview(recipeId, prefer, sources);
     if (!result || 'missing' in result) {
       return result && 'missing' in result
@@ -245,7 +250,10 @@ export class CraftCommands {
     }
     const skill = recipeSkillLevel(this.inventory.registry, this.character, repair.skill);
     const amount = repair.amount + repair.perSkill * skill;
-    return this.sim.actions.beginCraft(result.plan, { target: { kind: 'cell', cell: [...cell] }, amount });
+    return this.sim.actions.beginCraft(result.plan, {
+      target: { kind: 'cell', cell: [...cell], epoch: state.epoch },
+      amount,
+    });
   }
   /** The yield taking a piece apart gives now, with why it can't start; the work's admission owns the piece checks. */
   previewTakeApartEntity(entityUid: number): {

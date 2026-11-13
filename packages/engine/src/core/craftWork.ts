@@ -48,14 +48,15 @@ export const entityRepairRefusal = (
 
 /**
  * Why a damaged terrain cell can't be repaired now, at Start, at each resume and at completion alike. A cell holds no
- * work item, so nothing reserves it: identity, damage and reach revalidate live instead.
+ * work item, so nothing reserves it: identity, damage and reach revalidate live instead, and the epoch pins the
+ * damage episode so a replacement block's fresh damage is a different target.
  */
 export const cellRepairRefusal = (
   inventory: Inventory,
-  target: { cell: Vec3; block: string | undefined; amount: number },
+  target: { cell: Vec3; epoch: number; block: string | undefined; amount: number },
 ): string | undefined =>
   (inventory.cellRepair
-    ? inventory.cellRepair.refusal(target.cell, target.block, target.amount)
+    ? inventory.cellRepair.refusal(target.cell, target.epoch, target.block, target.amount)
     : coreMessage(inventory.registry, 'repairTargetGone')) ??
   (inventory.canReachCell(target.cell) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'));
 
@@ -76,6 +77,7 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
     const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
     return cellRepairRefusal(inventory, {
       cell: destination.cell,
+      epoch: destination.epoch,
       block: recipe?.repair?.block,
       amount: item.work?.repairAmount ?? 0,
     });

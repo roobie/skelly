@@ -47,16 +47,24 @@ export interface CellDamageState {
   readonly block: string;
   readonly damage: number;
   readonly durability: number;
+  /** The damage episode's identity: replacement clears it and fresh damage mints a new one. */
+  readonly epoch: number;
 }
 
 /** The world's say over repairing a damaged terrain cell, bound to one world and registry by the game. */
 export interface CellRepair {
   /** The solid block at the cell and the damage it retains, or undefined where no solid block stands there. */
   readonly state: (cell: Readonly<Vec3>) => CellDamageState | undefined;
-  /** Why the cell cannot be repaired now, at Start, at each resume and at completion alike. */
-  readonly refusal: (cell: Readonly<Vec3>, block: string | undefined, amount: number) => string | undefined;
-  /** Applies the repair; false leaves the world's damage untouched. */
-  readonly repair: (cell: Readonly<Vec3>, amount: number) => boolean;
+  /** Why the cell cannot be repaired now, at Start, at each resume and at completion alike; `epoch` pins the damage
+   * episode the job is for, so a replacement block's fresh damage is a different target. */
+  readonly refusal: (
+    cell: Readonly<Vec3>,
+    epoch: number,
+    block: string | undefined,
+    amount: number,
+  ) => string | undefined;
+  /** Applies the repair to the pinned damage episode; false leaves the world's damage untouched. */
+  readonly repair: (cell: Readonly<Vec3>, epoch: number, amount: number) => boolean;
 }
 
 /** Binds the cell-repair owner to a world: the named block must still stand there, damaged, for a job to touch it. */
@@ -66,19 +74,19 @@ export const worldCellRepair = (world: World, registry: Registry): CellRepair =>
     const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
     const entry = world.blockDamage.get(cell);
     return block && material && entry
-      ? { block: block.id, damage: entry.damage, durability: material.durability }
+      ? { block: block.id, damage: entry.damage, durability: material.durability, epoch: entry.epoch }
       : undefined;
   };
   return {
     state,
-    refusal: (cell, block, amount) => {
+    refusal: (cell, epoch, block, amount) => {
       const at = state(cell);
-      if (at && at.block === block && Number.isFinite(amount) && amount > 0) {
+      if (at && at.block === block && at.epoch === epoch && Number.isFinite(amount) && amount > 0) {
         return;
       }
       return coreMessage(registry, 'repairTargetGone');
     },
-    repair: (cell, amount) => world.blockDamage.repair(cell, amount),
+    repair: (cell, epoch, amount) => world.blockDamage.repair(cell, epoch, amount),
   };
 };
 
@@ -153,10 +161,11 @@ export class BlockDamage {
     }
   }
 
-  /** Mending reduces retained damage without a new identity; a fully mended cell ends the identity, as replacement does. */
-  repair(cell: Readonly<Vec3>, amount: number): boolean {
+  /** Mending reduces retained damage without a new identity; a fully mended cell ends the identity, as replacement
+   * does. `epoch` pins which damage episode may be mended, so a replacement block's fresh damage refuses. */
+  repair(cell: Readonly<Vec3>, epoch: number, amount: number): boolean {
     const entry = this.entries.get(keyOf(cell));
-    if (!(validCell(cell) && entry && Number.isFinite(amount) && amount > 0)) {
+    if (!(validCell(cell) && entry && entry.epoch === epoch && Number.isFinite(amount) && amount > 0)) {
       return false;
     }
     const remaining = Math.max(0, entry.damage - amount);
