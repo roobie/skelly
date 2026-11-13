@@ -103,11 +103,11 @@
         "usage": ["Residential"]
       },
       "player": {
-        "bearing": 0,
-        "position": [1, 21, -7]
+        "bearing": 90,
+        "position": [8.5, 21, -1.75]
       },
       "showroom": {
-        "capacity": 3,
+        "capacity": 4,
         "facing": "s",
         "focusDistance": 1,
         "row": [-12, 21.5, -1],
@@ -330,6 +330,13 @@
                 "placement": "surface"
               }
             ]
+          },
+          {
+            "furniture": "wardrobe",
+            "placement": {
+              "facing": "n",
+              "position": [6.5, 21, -1]
+            }
           }
         ],
         "spacing": 1
