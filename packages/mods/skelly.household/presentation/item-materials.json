@@ -1,0 +1,308 @@
+{
+  "assets/models/acetylene_cooker.glb": { "materials": ["steel-grey", "brass", "brass-dull", "plastic-black"] },
+  "assets/models/american_flag.glb": { "materials": ["cloth-navy", "cloth-red", "cloth-white"] },
+  "assets/models/bathroom_scale.glb": {
+    "materials": [
+      "enamel-white",
+      "rubber-black",
+      "plastic-charcoal",
+      "steel-stainless",
+      "paper-white",
+      "plastic-red",
+      "glass-clear"
+    ]
+  },
+  "assets/models/bellows_plunger.glb": { "materials": ["plastic-black", "plastic-red"] },
+  "assets/models/black_chitin_cauldron.glb": { "materials": ["void-black", "chitin-black"] },
+  "assets/models/body_pillow.glb": { "materials": ["cloth-cotton", "plastic-pink", "cloth-navy", "steel-stainless"] },
+  "assets/models/box_mod_vaporiser.glb": {
+    "materials": ["alu-anodized-black", "screen-black", "steel-stainless", "plastic-clear", "plastic-black"]
+  },
+  "assets/models/brazier.glb": { "materials": ["iron-dull", "steel-parkerized", "steel-grey"] },
+  "assets/models/broom.glb": {
+    "materials": ["wood-pine", "plastic-red", "straw-pale", "steel-galvanised", "cloth-red"]
+  },
+  "assets/models/brush.glb": { "materials": ["plastic-blue", "plastic-white"] },
+  "assets/models/butter_knife.glb": { "materials": ["steel-stainless"] },
+  "assets/models/camp_toilet.glb": { "materials": ["plastic-grey", "plastic-white", "plastic-black"] },
+  "assets/models/can_opener.glb": { "materials": ["steel-grey", "plastic-red", "steel-parkerized", "paint-charcoal"] },
+  "assets/models/canning_pot.glb": { "materials": ["paint-drum-blue", "plastic-black", "steel-galvanised"] },
+  "assets/models/casserole.glb": { "materials": ["paint-oxblood", "ceramic-white"] },
+  "assets/models/ceramic_bowl.glb": { "materials": ["ceramic-white", "paint-police-blue"] },
+  "assets/models/ceramic_cup.glb": { "materials": ["ceramic-white"] },
+  "assets/models/ceramic_mug.glb": { "materials": ["paint-oxblood", "ceramic-white"] },
+  "assets/models/ceramic_plate.glb": { "materials": ["ceramic-white"] },
+  "assets/models/chalice.glb": { "materials": ["metal-gold"] },
+  "assets/models/charcoal_cooker.glb": {
+    "materials": ["iron-dull", "steel-grey", "iron-cast", "brass", "steel-galvanised"]
+  },
+  "assets/models/charcoal_smoker.glb": {
+    "materials": ["paint-charcoal", "steel-grey", "plastic-black", "paint-white"]
+  },
+  "assets/models/charcoal_water_filter.glb": {
+    "materials": [
+      "plastic-white",
+      "stone-grey",
+      "brick-buff",
+      "coal-black",
+      "cloth-cream",
+      "plastic-clear-blue",
+      "plastic-blue"
+    ]
+  },
+  "assets/models/childs_plastic_bowl.glb": { "materials": ["plastic-orange", "plastic-white"] },
+  "assets/models/chopsticks.glb": { "materials": ["lacquer-red", "wood-birch"] },
+  "assets/models/churn.glb": { "materials": ["wood-oak", "iron-dull", "wood-pine"] },
+  "assets/models/clay_cup.glb": { "materials": ["clay-terracotta"] },
+  "assets/models/clay_flower_pot.glb": { "materials": ["clay-terracotta"] },
+  "assets/models/clay_pot.glb": { "materials": ["clay-terracotta"] },
+  "assets/models/clay_teapot.glb": { "materials": ["clay-terracotta"] },
+  "assets/models/clay_urn.glb": { "materials": ["clay-terracotta", "paint-oxblood"] },
+  "assets/models/clock.glb": { "materials": ["paint-red", "steel-stainless", "paper-white", "plastic-black"] },
+  "assets/models/clothes_hanger.glb": { "materials": ["plastic-black", "steel-bright"] },
+  "assets/models/coffeepot.glb": { "materials": ["glass-clear", "plastic-black"] },
+  "assets/models/collapsible_mop.glb": { "materials": ["plastic-blue", "alu-bare", "plastic-grey", "cloth-cream"] },
+  "assets/models/copper_pot.glb": { "materials": ["copper", "steel-grey", "brass"] },
+  "assets/models/cow_bell.glb": { "materials": ["steel-grey", "steel-bright", "coal-black", "rubber-black"] },
+  "assets/models/crackpipe.glb": { "materials": ["glass-clear", "coal-black", "plastic-scorched"] },
+  "assets/models/crystal_urn.glb": { "materials": ["glass-clear", "plastic-frosted"] },
+  "assets/models/cutting_board.glb": { "materials": ["wood-birch"] },
+  "assets/models/dental_floss.glb": {
+    "materials": ["plastic-gloss-white", "plastic-clear-blue", "steel-stainless", "cord-cotton"]
+  },
+  "assets/models/dish_towel.glb": { "materials": ["cloth-cream", "cloth-red"] },
+  "assets/models/down_pillow.glb": { "materials": ["cloth-white", "cloth-cotton", "cloth-navy", "plastic-black"] },
+  "assets/models/dutch_oven.glb": { "materials": ["iron-cast", "steel-grey"] },
+  "assets/models/electric_toothbrush.glb": {
+    "materials": ["plastic-gloss-white", "plastic-blue", "plastic-clear-blue"]
+  },
+  "assets/models/fiber_mat.glb": { "materials": ["straw-pale", "plant-dried", "jute", "straw-wicker"] },
+  "assets/models/firefly_terrarium.glb": {
+    "materials": [
+      "plastic-black",
+      "glass-clear",
+      "bark",
+      "stone-grey",
+      "plant-purple",
+      "leaf-green",
+      "wood-walnut",
+      "chitin-black",
+      "crystal-glow-white",
+      "chitin-brown",
+      "mesh-black",
+      "steel-bright"
+    ]
+  },
+  "assets/models/fish_bowl.glb": {
+    "materials": ["glass-clear", "plastic-clear-blue", "stone-grey", "plastic-orange", "plastic-black"]
+  },
+  "assets/models/foil_cup.glb": { "materials": ["alu-bare"] },
+  "assets/models/folded_camp_toilet.glb": { "materials": ["plastic-grey", "plastic-white"] },
+  "assets/models/fork.glb": { "materials": ["steel-stainless"] },
+  "assets/models/funnel.glb": { "materials": ["plastic-orange"] },
+  "assets/models/gasoline_cooker.glb": { "materials": ["brass", "brass-dull", "steel-grey"] },
+  "assets/models/glass.glb": { "materials": ["glass-clear"] },
+  "assets/models/glass_bowl.glb": { "materials": ["glass-clear"] },
+  "assets/models/glass_pipe.glb": { "materials": ["glass-clear", "glass-lens-green", "coal-black"] },
+  "assets/models/hair_curler.glb": { "materials": ["foam-orange", "plastic-pink"] },
+  "assets/models/hair_dye.glb": { "materials": ["plastic-white", "plastic-black", "plastic-charcoal", "cloth-brown"] },
+  "assets/models/hair_dye_kit.glb": {
+    "materials": ["paper-white", "plastic-pink", "leather-chestnut", "body-skin-player"]
+  },
+  "assets/models/hairbrush.glb": {
+    "materials": ["plastic-charcoal", "rubber-black", "plastic-white", "plastic-black"]
+  },
+  "assets/models/heavy_wire_rack.glb": { "materials": ["steel-stainless"] },
+  "assets/models/hexamine_stove.glb": { "materials": ["alu-bare", "chalk-white", "plastic-charcoal"] },
+  "assets/models/improvised_oven.glb": {
+    "materials": ["steel-grey", "coal-black", "steel-bright", "plastic-black", "stone-grey"]
+  },
+  "assets/models/iron_pot.glb": { "materials": ["iron-cast", "paint-cream"] },
+  "assets/models/kettle.glb": { "materials": ["steel-stainless", "plastic-black"] },
+  "assets/models/kitchen_knife.glb": { "materials": ["plastic-black", "steel-stainless"] },
+  "assets/models/leaflet_stand.glb": { "materials": ["plastic-clear", "paint-cream"] },
+  "assets/models/lice_comb.glb": { "materials": ["steel-stainless"] },
+  "assets/models/makeshift_copper_pot.glb": { "materials": ["copper", "verdigris", "steel-grey"] },
+  "assets/models/makeshift_haircut_kit.glb": {
+    "materials": [
+      "leather-brown",
+      "leather-tan",
+      "cord-cotton",
+      "mirror-silver",
+      "steel-bright",
+      "steel-grey",
+      "glass-clear"
+    ]
+  },
+  "assets/models/makeshift_mess_kit.glb": {
+    "materials": [
+      "steel-stainless",
+      "plastic-black",
+      "steel-bright",
+      "steel-grey",
+      "brass",
+      "coal-black",
+      "glass-clear",
+      "fuel-amber",
+      "cork"
+    ]
+  },
+  "assets/models/makeshift_pillow.glb": { "materials": ["cloth-cotton", "plant-dried", "cord-olive"] },
+  "assets/models/makeshift_pot.glb": { "materials": ["steel-grey", "iron-dull"] },
+  "assets/models/makeshift_shaving_kit.glb": {
+    "materials": [
+      "leather-brown",
+      "leather-tan",
+      "cord-cotton",
+      "mirror-silver",
+      "wood-oak",
+      "glass-clear",
+      "wax-cream"
+    ]
+  },
+  "assets/models/makeshift_wire_sieve.glb": { "materials": ["steel-bright", "steel-grey", "steel-stainless"] },
+  "assets/models/mannequin.glb": { "materials": ["plastic-gloss-white", "steel-grey"] },
+  "assets/models/mannequin_decoy.glb": {
+    "materials": [
+      "leather-patent",
+      "latex-pale",
+      "cloth-red",
+      "lace-white",
+      "plastic-charcoal",
+      "plastic-yellow",
+      "leather-chestnut",
+      "gem-blue",
+      "paint-red",
+      "plastic-gloss-white",
+      "steel-grey"
+    ]
+  },
+  "assets/models/mess_kit.glb": { "materials": ["alu-bare", "steel-grey", "paint-charcoal", "rubber-black"] },
+  "assets/models/metal_butcher_rack.glb": {
+    "materials": ["steel-galvanised", "steel-grey", "webbing-black", "steel-bright", "rubber-black"]
+  },
+  "assets/models/metal_smoking_rack.glb": { "materials": ["steel-grey", "steel-bright", "webbing-black"] },
+  "assets/models/mirror.glb": { "materials": ["wood-walnut", "mirror-silver"] },
+  "assets/models/mop.glb": { "materials": ["wood-pine", "plastic-charcoal", "steel-galvanised", "cord-cotton"] },
+  "assets/models/mortar_pestle.glb": { "materials": ["stone-grey", "stone-whet"] },
+  "assets/models/national_flag.glb": {
+    "materials": ["cloth-red", "cloth-white", "cloth-navy", "cloth-canvas", "brass-polished", "cord-cotton", "wood-oak"]
+  },
+  "assets/models/oil_cooker.glb": {
+    "materials": ["steel-grey", "brass", "steel-stainless", "plastic-black", "iron-cast", "steel-parkerized"]
+  },
+  "assets/models/orichalcum_cauldron.glb": { "materials": ["orichalcum", "crystal-glow-blue", "bronze"] },
+  "assets/models/orrery.glb": {
+    "materials": [
+      "wood-walnut",
+      "brass-polished",
+      "brass-dull",
+      "steel-blued",
+      "metal-gold",
+      "paint-police-blue",
+      "paint-terracotta",
+      "copper",
+      "bronze-polished"
+    ]
+  },
+  "assets/models/oven_broiler_pan.glb": {
+    "materials": ["iron-dull", "steel-grey", "paint-charcoal", "steel-stainless"]
+  },
+  "assets/models/pan.glb": { "materials": ["iron-cast", "coal-black"] },
+  "assets/models/pasta_extruder.glb": {
+    "materials": ["iron-cast", "steel-grey", "paint-charcoal", "steel-stainless", "wood-walnut"]
+  },
+  "assets/models/pen.glb": { "materials": ["steel-stainless", "metal-gold", "rubber-black", "steel-grey"] },
+  "assets/models/permanent_marker.glb": { "materials": ["plastic-black", "plastic-grey", "paper-white"] },
+  "assets/models/pet_tag.glb": { "materials": ["plastic-red", "paint-white", "metal-silver"] },
+  "assets/models/pewter_bowl.glb": { "materials": ["alu-bare", "steel-grey"] },
+  "assets/models/pillow.glb": { "materials": ["cloth-cream", "cloth-white", "cloth-rag-shadow", "cord-cotton"] },
+  "assets/models/pizza_cutter.glb": { "materials": ["plastic-red", "steel-stainless"] },
+  "assets/models/plastic_cup.glb": { "materials": ["plastic-white"] },
+  "assets/models/plastic_flower_pot.glb": { "materials": ["paint-terracotta"] },
+  "assets/models/plastic_plate.glb": { "materials": ["plastic-blue"] },
+  "assets/models/plastic_straw.glb": { "materials": ["plastic-red"] },
+  "assets/models/plastic_tumbler.glb": { "materials": ["plastic-clear"] },
+  "assets/models/pocket_comb.glb": { "materials": ["plastic-black"] },
+  "assets/models/pocket_watch.glb": { "materials": ["metal-gold", "enamel-white", "plastic-matte-black"] },
+  "assets/models/porcelain_urn.glb": { "materials": ["ceramic-white", "metal-gold"] },
+  "assets/models/portable_stove.glb": {
+    "materials": ["steel-stainless", "steel-grey", "coal-black", "steel-parkerized", "steel-galvanised"]
+  },
+  "assets/models/pot.glb": { "materials": ["steel-stainless", "plastic-black"] },
+  "assets/models/pride_flag.glb": {
+    "materials": [
+      "cloth-white",
+      "cloth-cream",
+      "brass-polished",
+      "cloth-red",
+      "cloth-orange",
+      "cloth-yellow",
+      "cloth-green",
+      "cloth-blue",
+      "plant-purple"
+    ]
+  },
+  "assets/models/propane_cooker.glb": {
+    "materials": [
+      "paint-green",
+      "steel-stainless",
+      "iron-cast",
+      "paint-charcoal",
+      "brass",
+      "plastic-black",
+      "steel-parkerized"
+    ]
+  },
+  "assets/models/razor_blade.glb": { "materials": ["steel-stainless", "plastic-charcoal", "steel-mirror"] },
+  "assets/models/rock_quern.glb": {
+    "materials": ["stone-grey", "chalk-white", "stone-whet", "paint-charcoal", "wood-oak"]
+  },
+  "assets/models/rolling_pin.glb": { "materials": ["wood-birch"] },
+  "assets/models/sand_water_filter.glb": {
+    "materials": ["plastic-white", "brick-buff", "stone-grey", "steel-bright", "plastic-blue"]
+  },
+  "assets/models/shaving_kit.glb": {
+    "materials": ["nylon-black", "plastic-charcoal", "steel-grey", "webbing-black", "cloth-charcoal"]
+  },
+  "assets/models/shaving_razor.glb": {
+    "materials": ["steel-stainless", "rubber-black", "plastic-charcoal", "steel-bright", "jelly-teal"]
+  },
+  "assets/models/shot_glass.glb": { "materials": ["glass-clear"] },
+  "assets/models/sippy_cup.glb": { "materials": ["plastic-blue", "plastic-white"] },
+  "assets/models/soap_holder.glb": { "materials": ["plastic-clear-blue"] },
+  "assets/models/soda_can_stove.glb": {
+    "materials": ["alu-bare", "paint-charcoal", "plastic-clear", "paper-white", "plastic-blue"]
+  },
+  "assets/models/splatter_guard.glb": { "materials": ["steel-stainless", "plastic-black"] },
+  "assets/models/sponge.glb": { "materials": ["cloth-yellow", "cloth-green", "paint-crane-yellow"] },
+  "assets/models/spoon.glb": { "materials": ["steel-stainless", "steel-mirror"] },
+  "assets/models/state_flag.glb": {
+    "materials": ["cloth-cream", "cloth-khaki", "brass-polished", "cloth-blue", "cloth-yellow"]
+  },
+  "assets/models/steel_colander.glb": { "materials": ["mesh-black", "steel-stainless"] },
+  "assets/models/steel_sieve.glb": { "materials": ["steel-stainless", "steel-grey", "steel-bright", "brass"] },
+  "assets/models/still.glb": { "materials": ["copper", "brass", "paint-white", "steel-galvanised", "water"] },
+  "assets/models/stock_pot.glb": { "materials": ["steel-stainless", "alu-bare", "steel-grey"] },
+  "assets/models/tarp.glb": { "materials": ["plastic-blue", "cloth-navy", "steel-galvanised"] },
+  "assets/models/teapot.glb": { "materials": ["steel-stainless", "plastic-black"] },
+  "assets/models/tobacco_pipe.glb": { "materials": ["wood-walnut", "coal-black", "brass-polished", "lacquer-black"] },
+  "assets/models/toilet_brush.glb": { "materials": ["plastic-gloss-white", "steel-stainless", "plastic-grey"] },
+  "assets/models/toilet_paper.glb": { "materials": ["paper-white", "paperboard-tan", "cloth-cream"] },
+  "assets/models/toilet_plunger.glb": { "materials": ["wood-oak", "plastic-red"] },
+  "assets/models/tongs.glb": { "materials": ["steel-stainless", "rubber-black"] },
+  "assets/models/toothbrush.glb": {
+    "materials": ["plastic-blue", "rubber-white", "plastic-gloss-white", "plastic-clear-blue"]
+  },
+  "assets/models/umbrella.glb": { "materials": ["wood-walnut", "alu-bare", "nylon-black", "cloth-charcoal"] },
+  "assets/models/vibrator.glb": {
+    "materials": ["plastic-gloss-white", "alu-bare", "plastic-pink", "plastic-charcoal"]
+  },
+  "assets/models/waffle_iron.glb": { "materials": ["alu-bare", "paint-charcoal", "steel-grey", "wood-walnut"] },
+  "assets/models/wash_kit.glb": {
+    "materials": ["wood-oak", "wood-pine", "wood-birch", "plastic-blue", "plastic-white", "cord-cotton"]
+  },
+  "assets/models/washboard.glb": { "materials": ["wood-oak", "wood-pine", "wood-birch"] },
+  "assets/models/wine_glass.glb": { "materials": ["glass-clear"] },
+  "assets/models/woven_sieve.glb": { "materials": ["straw-wicker", "plant-dried", "bark"] }
+}

@@ -6,5 +6,5 @@ manifest(
   content=['electronics-items', 'models-electronics'],
   assets=assets,
   json=['assets/manifest.json', 'presentation/item-materials.json'],
-  dependencies=['skelly.crafting', 'skelly.hand-tools', 'skelly.inventory', 'skelly.materials', 'skelly.natural-world', 'skelly.structures'],
+  dependencies=['skelly.crafting', 'skelly.hand-tools', 'skelly.inventory', 'skelly.light-sources', 'skelly.materials', 'skelly.natural-world', 'skelly.structures'],
 )

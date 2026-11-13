@@ -5,13 +5,13 @@ manifest(
   tier='product',
   content=[
     'actors-items', 'actors-sounds', 'controls-actors', 'enemies', 'figures-actors', 'footstep-sounds', 'graphics-actors',
-    'item-economy', 'models-actors',
+    'item-economy',
   ],
   assets=assets,
-  json=['assets/manifest.json', 'presentation/item-materials.json'],
+  json=['assets/manifest.json'],
   dependencies=[
-    'skelly.deadvox.loot', 'skelly.graphics', 'skelly.inventory', 'skelly.manufactured-blocks', 'skelly.melee-classes',
-    'skelly.natural-world',
+    'skelly.body', 'skelly.deadvox.loot', 'skelly.graphics', 'skelly.inventory', 'skelly.manufactured-blocks',
+    'skelly.melee-classes', 'skelly.natural-world',
   ],
   overrides=[{ pack: 'skelly.graphics', entry: 'graphics:core' }],
 )

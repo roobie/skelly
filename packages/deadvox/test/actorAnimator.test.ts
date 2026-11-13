@@ -51,28 +51,20 @@ import { createPlayerBody } from './playerFixture.ts';
 vi.mock('@skelly/presentation/internal/render/magazineLoadPose.ts', { spy: true });
 vi.mock('@skelly/presentation/internal/render/armRig.ts', { spy: true });
 
+// The scoped default is a rifle whose rail takes the 1-6x scope once its iron sights come off.
+const SCOPED_RIFLE = 'rifle_assault';
+const SCOPE = 'optic_lpvo_1_6x';
+
 const fixture = async (
   firearm = true,
   firearmType?: string,
-  { optic, heldLook }: { optic?: string; heldLook?: ModelLibrary['heldLook'] } = {},
+  { optic: requestedOptic, heldLook }: { optic?: string; heldLook?: ModelLibrary['heldLook'] } = {},
 ) => {
   const base = baseRegistry();
-  const gun = firearmType
-    ? base.items.get(firearmType)
-    : [...base.items.values()].find(
-        (def) =>
-          def.firearm &&
-          base.models.get(def.model!)?.hands?.butt &&
-          base.models
-            .get(def.model!)
-            ?.gun?.attachments?.some((attachment) =>
-              [...base.models.values()].some(
-                (model) => model.gun?.attachment?.id === attachment.id && model.gun.attachment.kind === 'optic',
-              ),
-            ),
-      );
+  const optic = requestedOptic ?? (firearm && !firearmType ? SCOPE : undefined);
+  const gun = base.items.get(firearmType ?? SCOPED_RIFLE);
   if (!gun) {
-    throw new Error('Need an optic-equipped firearm source');
+    throw new Error('Need a firearm source');
   }
   const itemDef = firearm
     ? { ...gun, id: 'actor-fixture-item' }
@@ -222,8 +214,9 @@ const bodySamples = (world: Group, camera: PerspectiveCamera) => {
   const ray = new Raycaster();
   ray.layers.mask = camera.layers.mask;
   const samples: NonNullable<ReturnType<typeof bodySurfaceSample>>[] = [];
-  for (const x of [-1, -0.5, 0, 0.5, 1]) {
-    for (const y of [-1, -0.5, 0, 0.5, 1]) {
+  const grid = Array.from({ length: 9 }, (_, index) => (index - 4) / 4);
+  for (const x of grid) {
+    for (const y of grid) {
       ray.setFromCamera(new Vector2(x, y), camera);
       for (const hit of ray.intersectObject(world, true)) {
         const sample = bodySurfaceSample(hit, camera);
@@ -294,6 +287,9 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
       const distance = bounds.getSize(new Vector3()).length();
       camera.position.copy(centre).addScalar(distance);
       camera.lookAt(centre);
+      // Zoomed so the ray grid spans the figure instead of the empty space around it.
+      camera.zoom = 4;
+      camera.updateProjectionMatrix();
       camera.updateMatrixWorld(true);
       const external = bodySamples(f.world.group, camera);
       expect(external.length).toBeGreaterThan(0);

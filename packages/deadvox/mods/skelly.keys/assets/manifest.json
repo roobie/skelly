@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/camp_armoury_key.glb",
+        "assets/models/camp_hq_safe_key.glb",
+        "assets/models/dad_cabin_key.glb",
+        "assets/models/gauntlet_lab_entry_card.glb",
+        "assets/models/pharmacy_key.glb",
+        "assets/models/police_armoury_key.glb",
+        "assets/models/shed_key.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    }
+  ]
+}

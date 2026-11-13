@@ -6,6 +6,9 @@
       "download": null,
       "files": [
         "assets/models/candle.glb",
+        "assets/models/dead_desk_lamp.glb",
+        "assets/models/flashlight.glb",
+        "assets/models/headlamp.glb",
         "assets/models/lighter.glb",
         "assets/models/matches.glb",
         "assets/models/oil_lamp.glb",

@@ -8,6 +8,7 @@
     "skelly.deadvox.site-generation",
     "skelly.household-electrical",
     "skelly.inventory",
+    "skelly.keys",
     "skelly.manufactured-blocks",
     "skelly.natural-world",
     "skelly.structures"
@@ -20,10 +21,6 @@
     {
       "kind": "content",
       "path": "item-economy.json"
-    },
-    {
-      "kind": "content",
-      "path": "models-rural-sites.json"
     },
     {
       "kind": "content",
@@ -52,30 +49,6 @@
     {
       "kind": "content",
       "path": "templates-medical.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/pharmacy_key.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/police_armoury_key.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/pharmacy_key.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/police_armoury_key.glb"
     }
   ],
   "id": "skelly.deadvox.rural-sites",

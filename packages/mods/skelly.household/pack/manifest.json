@@ -1,0 +1,38 @@
+{
+  "dependencies": ["skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "models-household.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/can_opener.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kitchen_knife.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/can_opener.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kitchen_knife.glb"
+    }
+  ],
+  "id": "skelly.household",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

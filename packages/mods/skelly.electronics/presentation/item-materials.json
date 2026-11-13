@@ -1,4 +1,5 @@
 {
+  "assets/models/aa_battery.glb": { "materials": ["steel-grey", "steel-stainless", "paint-charcoal"] },
   "assets/models/amplifier.glb": {
     "materials": [
       "plastic-green",
@@ -109,7 +110,6 @@
   "assets/models/curling_iron.glb": {
     "materials": ["plastic-black", "ceramic-white", "steel-stainless", "plastic-red"]
   },
-  "assets/models/dead_desk_lamp.glb": { "materials": ["steel-grey", "paint-charcoal", "paint-terracotta"] },
   "assets/models/dehydrator.glb": { "materials": ["plastic-white", "plastic-charcoal", "plastic-amber"] },
   "assets/models/desk_fan.glb": {
     "materials": ["plastic-white", "plastic-grey", "plastic-blue", "plastic-clear-blue", "steel-stainless"]
@@ -211,7 +211,6 @@
     ]
   },
   "assets/models/extension_cable.glb": { "materials": ["plastic-orange", "brass", "plastic-black"] },
-  "assets/models/field_patch.glb": { "materials": ["steel-grey", "paint-charcoal"] },
   "assets/models/field_power_pack.glb": {
     "materials": [
       "polymer-od-green",
@@ -466,6 +465,7 @@
       "steel-stainless"
     ]
   },
+  "assets/models/night_vision_goggles.glb": { "materials": ["rubber-black", "polymer-od-green", "glass-lens-green"] },
   "assets/models/noise_emitter.glb": {
     "materials": [
       "plastic-grey",
@@ -532,6 +532,9 @@
   "assets/models/piezo_igniter.glb": { "materials": ["plastic-red", "plastic-black", "alu-bare", "steel-bright"] },
   "assets/models/portable_hard_drive.glb": {
     "materials": ["rubber-black", "alu-bare", "plastic-clear-blue", "plastic-charcoal"]
+  },
+  "assets/models/portable_radio.glb": {
+    "materials": ["polymer-od-green", "steel-grey", "paint-charcoal", "glass-grey", "plastic-red"]
   },
   "assets/models/power_supply.glb": {
     "materials": ["alu-bare", "plastic-black", "steel-bright", "plastic-red", "paper-white", "plastic-yellow"]
