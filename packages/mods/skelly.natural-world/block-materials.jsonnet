@@ -3,7 +3,7 @@ local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
 };
 local material(id, minimum, durability, mass, span, resist, tint, yield) = {
   id: id, minimumStrength: minimum, durability: durability, massKg: mass, span: span,
-  resistance: resist, fallsTo: id + '_rubble', rubble: [{ item: yield, count: 1 }], blowSound: 'door_bash',
+  resistance: resist, fallsTo: id + '_rubble', breakable: true, rubble: [{ item: yield, count: 1 }], blowSound: 'door_bash',
   broken: { tint: tint, strength: 0.6 },
   damaged: [
     { from: 0.25, tint: tint, strength: 0.15 },
@@ -16,7 +16,7 @@ local materials = [
   material('timber', 3.5, 100, 65, 3, resistance(0.1, 0, 0.5, 0.1, 0.4, 0, 0.1, 0.5), '#776144', 'wood_offcut'),
   material('metal', 9, 400, 180, 4, resistance(0.4, 0.7, 0.6, 0.2, 0.6, 0, 0.3, 0.6), '#6e6965', 'scrap_metal'),
   material('textile', 0, 15, 8, 1, resistance(0.5, 0, 0.1, 0, 0.1, 0, 0, 0), '#68604e', 'cloth_strip'),
-  material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone') + { fallsTo: 'soil_rubble', rubble: [] },
+  material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone') + { fallsTo: 'soil_rubble', breakable: false, rubble: [] },
 ];
 {
   blockMaterials: materials,

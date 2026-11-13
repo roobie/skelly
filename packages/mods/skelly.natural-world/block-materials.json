@@ -2,6 +2,7 @@
   "blockMaterials": [
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#685744"
@@ -43,6 +44,7 @@
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#827b71"
@@ -84,6 +86,7 @@
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#776144"
@@ -125,6 +128,7 @@
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#6e6965"
@@ -166,6 +170,7 @@
     },
     {
       "blowSound": "door_bash",
+      "breakable": true,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#68604e"
@@ -207,6 +212,7 @@
     },
     {
       "blowSound": "door_bash",
+      "breakable": false,
       "broken": {
         "strength": 0.59999999999999998,
         "tint": "#52616b"

@@ -22,7 +22,13 @@ const stampCell: Vec3 = [4, 5, 4];
 const structureCell: Vec3 = [6, 5, 6];
 const fixtureData = () => ({
   ...blockMaterialFixture('fixture_rubble'),
-  blockMaterials: [{ ...fixtureBlockMaterial('fixture_rubble'), rubble: [{ item: 'fixture_rubble_yield', count: 1 }] }],
+  blockMaterials: [
+    {
+      ...fixtureBlockMaterial('fixture_rubble'),
+      breakable: true,
+      rubble: [{ item: 'fixture_rubble_yield', count: 1 }],
+    },
+  ],
   items: [
     {
       id: 'fixture_rubble_yield',
