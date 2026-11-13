@@ -546,6 +546,9 @@
           }
         }
       },
+      "pieces": {
+        "body": ["trunk", "shoulders"]
+      },
       "proneAdsPose": {
         "ankleDegrees": 0,
         "armsForwardDegrees": 0,

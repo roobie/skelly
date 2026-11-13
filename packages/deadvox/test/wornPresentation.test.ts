@@ -289,6 +289,40 @@ describe('shared worn presentation', () => {
     expect(baseNodes.every((node) => node.visible)).toBe(true);
   });
 
+  it('hides only the covered region of a body part and restores it when the garment comes off', () => {
+    const [covered, ...rest] = figure.pieces!.body!;
+    const top: ItemDef = {
+      ...fixtureItem,
+      id: 'fixture_region_top',
+      figureModels: [{ ...segment, frame: 'torso', covers: [covered!] }],
+    };
+    const regionRegistry = { ...registry, items: new Map([...registry.items, [top.id, top]]) };
+    const inventory = new Inventory(regionRegistry);
+    const { models } = library();
+    const meshes = new PlayerMeshes(0.5, figure, regionRegistry.models, models);
+    const regions = (name: string): Mesh[] => {
+      const found: Mesh[] = [];
+      meshes.group.getObjectByName('figure-body')!.traverse((node) => {
+        if (node instanceof Mesh && node.geometry.userData.piece === name) {
+          found.push(node);
+        }
+      });
+      return found;
+    };
+    const shirt = inventory.create(top.id);
+    expect(inventory.add(shirt, { kind: 'worn' })).toBe(true);
+    meshes.sync(pose(inventory));
+    expect(regions(covered!).length).toBeGreaterThan(0);
+    expect(regions(covered!).every((mesh) => !mesh.visible)).toBe(true);
+    for (const name of rest) {
+      expect(regions(name).length).toBeGreaterThan(0);
+      expect(regions(name).every((mesh) => mesh.visible)).toBe(true);
+    }
+    expect(inventory.move(shirt, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    meshes.sync(pose(inventory));
+    expect(regions(covered!).every((mesh) => mesh.visible)).toBe(true);
+  });
+
   it('keeps paired garment segments on independently swinging limbs through stance poses', () => {
     const otherFrame = 'other_shin';
     const pairedFigure: FigureDef = {
@@ -451,6 +485,7 @@ describe('shared worn presentation', () => {
           overTorso: { fixture: 'fixture_missing_fit_model' },
         },
         { ...segment, frame: 'head', covers: ['fixture_missing_part'] },
+        { ...segment, frame: 'torso', covers: figure.pieces!.body },
       ],
     };
     const { issues } = buildRegistry([
@@ -500,5 +535,6 @@ describe('shared worn presentation', () => {
         }),
       ]),
     );
+    expect(issues.filter(({ path }) => path.startsWith('items[0].figureModels[2].covers'))).toEqual([]);
   });
 });

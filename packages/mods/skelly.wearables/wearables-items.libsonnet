@@ -87,6 +87,22 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
       }
     },
     {
+      "id": "tank_top",
+      "name": "Tank top",
+      "category": "clothing",
+      "model": "tank_top",
+      // Covers the trunk region only, so the shoulders and arms stay drawn.
+      figureModels: [worn('tank_top_worn_body', 'clothing_body', ['trunk'])],
+      "size": [2, 2],
+      "wearable": {
+        "slot": "torso",
+        figureFit: 'jacket',
+        "encumbrance": 2,
+        "warmth": 3,
+        "wearPerDamage": 0.0012
+      }
+    },
+    {
       "id": "hoodie",
       "name": "Hoodie",
       "category": "clothing",

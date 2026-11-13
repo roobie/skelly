@@ -83,6 +83,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
+      // The bust's torso is drawn as two regions, so a close shell can cover the trunk and leave the shoulders.
+      pieces: { body: ['trunk', 'shoulders'] },
       // Gear shares the body's anchors and camera mask so it cannot reveal a hidden body's interior.
       attachmentFrames: {
         head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
