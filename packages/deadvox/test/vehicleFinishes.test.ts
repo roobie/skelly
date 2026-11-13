@@ -95,7 +95,7 @@ it('takes the coat of a painted part, and the metalness under it, from the paint
   expect(onCoated.material).toBe(flat);
 });
 
-it('keeps one finished copy per shared material, so a rebuilt vehicle compiles and uploads nothing new', () => {
+it('gives the meshes that share a material one finished copy within a build rather than one each', () => {
   const finishes = finishesOf();
   finishes.setEnabled(true);
   const first = meshOf('coated');
