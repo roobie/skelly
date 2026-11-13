@@ -23,7 +23,7 @@
         {
           "id": "shelter",
           "kind": "place",
-          "template": "holdout_shelter"
+          "template": "holdout_house"
         }
       ],
       "body": "player",

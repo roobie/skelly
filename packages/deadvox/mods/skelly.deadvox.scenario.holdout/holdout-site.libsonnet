@@ -1,35 +1,11 @@
 local waves = import 'waves.libsonnet';
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 local context = { usage: ['Residential'], tier: 'Tier1' };
-local floor = [
-  'ppppppp',
-  'ppppppp',
-  'ppppppp',
-  'ppppppp',
-  'ppppppp',
-  'ppppppp',
-  'ppppppp',
-];
-local walls = [
-  'pp...pp',
-  'p.....p',
-  'p.....p',
-  'p.....p',
-  'p.....p',
-  'p.....p',
-  'ppppppp',
-];
+local house = import 'holdout-house.libsonnet';
 {
   waveDay: 24 * 3,
   debugWaveDay: 0.1,
-  shelter: {
-    id: 'holdout_shelter',
-    lootContext: context,
-    size: [7, 7, 7],
-    palette: { '.': 'air', p: 'planks' },
-    layers: [floor, walls, walls, walls, walls, walls, floor],
-    access: { ground: 'ground', entrance: [3, 1, 1], storeys: [{ id: 'ground', floor: 1 }], stairs: [] },
-  },
+  shelter: house,
   scenario(afterGameHours):: {
     id: 'holdout',
     kind: 'composedSite',
@@ -43,7 +19,7 @@ local walls = [
     settlementKind: 'rural',
     start: { ask: 'shelter' },
     placement: { apronMetres: 2, attempts: 1000 },
-    asks: [{ kind: 'place', id: 'shelter', template: 'holdout_shelter' }],
+    asks: [{ kind: 'place', id: 'shelter', template: house.id }],
     guarantee: {},
     population: { authoredMarkers: false },
     anchors: [

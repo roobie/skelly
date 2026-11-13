@@ -3,6 +3,7 @@ read_if:
   - you add a composed-site ask, anchor or population mechanism
   - you decide whether a world feature belongs in the city planner or authored layout
   - you change supply guarantees or the boundary between wave content and runtime events
+  - you change Holdout's starting building or decide whether it should force a base location
 ---
 
 # 0010 Composed sites compile content asks into the authored layout
@@ -49,6 +50,13 @@ populate. Template markers are explicitly admitted or suppressed; Holdout suppre
 them so waves remain the forcing function, independent of shelter-template occupants.
 See `packages/engine/src/game/worldSetup.ts`, `SCENARIO_SITES`, and
 `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+
+Holdout's start should feel like a good place with potential, not a forced base. Reuse
+an ordinary house with authored damage so useful enclosed space and familiar furnishings
+invite repair, while breaches leave a reason to improve it or choose another location.
+Keep this treatment in content rather than adding a scenario-specific ruin mechanism.
+See `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-house.libsonnet`, `house`,
+and `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 
 ## Growth constraints
 
