@@ -1,8 +1,8 @@
-import type * as Rapier from '../../vendor/rapier-f64/rapier.js';
+import type { RapierApi } from '../core/rapier.ts';
 import config from './vehicleFeasibility.json' with { type: 'json' };
 
 export const { driving } = config;
-type RapierApi = Pick<typeof Rapier, 'World' | 'RigidBodyDesc' | 'ColliderDesc'>;
+type DrivingApi = Pick<RapierApi, 'World' | 'RigidBodyDesc' | 'ColliderDesc'>;
 export type Scenario = (typeof driving.scenarios)[number];
 export type Box = Scenario['boxes'][number];
 export type Vector = [number, number, number];
@@ -70,7 +70,7 @@ function admit(scenario: Scenario) {
     throw new Error('Initially penetrating collider');
   }
 }
-export function rapierDriver(api: RapierApi, scenario: Scenario): Driver {
+export function rapierDriver(api: DrivingApi, scenario: Scenario): Driver {
   admit(scenario);
   const world = new api.World({ x: driving.gravity[0]!, y: driving.gravity[1]!, z: driving.gravity[2]! });
   world.timestep = 1 / driving.tickHz;
@@ -135,7 +135,7 @@ export function traceBits(value: unknown): string {
     return view.getBigUint64(0, false).toString(16).padStart(16, '0');
   });
 }
-export function runDriving(api: RapierApi) {
+export function runDriving(api: DrivingApi) {
   return Object.fromEntries(
     driving.scenarios.map((scenario) => {
       const driver = rapierDriver(api, scenario);

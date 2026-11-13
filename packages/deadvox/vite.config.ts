@@ -72,6 +72,9 @@ function simulationFingerprintPlugin() {
         readFile(path) {
           return Promise.resolve(readFileSync(path, 'utf8'));
         },
+        readBinary(path) {
+          return Promise.resolve(readFileSync(path));
+        },
       },
       { exclude: SIMULATION_EXCLUSIONS },
     );
