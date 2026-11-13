@@ -21,7 +21,7 @@ const app = text
           <li>${text.metrics}</li>
           <li>${text.sending}</li>
           <li>${text.analytics}</li>
-          <li>${text.feedbackBefore}<a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md">${text.feedbackLink}</a>${text.feedbackAfter}</li>
+          <li>${text.feedbackBefore}<a href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.yml">${text.feedbackLink}</a>${text.feedbackAfter}</li>
           <li>${text.email}</li>
         </ul>
         <section class="mode" aria-labelledby="mode-play">

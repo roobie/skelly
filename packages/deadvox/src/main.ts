@@ -35,6 +35,7 @@ import {
   applyUiTokens,
   chooseMods,
   contentLookup,
+  feedbackUrl,
   installErrorLogCopy,
   installErrorReportHandler,
   mountControlsCard,
@@ -42,6 +43,7 @@ import {
   mountFullscreenOptions,
   mountInputOptions,
   mountWorldLoading,
+  PLAYTEST_FEEDBACK_FIELD_IDS,
   SaveController,
   setError,
 } from '@skelly/presentation/ui';
@@ -340,6 +342,12 @@ if (bench === 'report') {
       applyWeatheringConfig(resumed, hash);
       config = resumed;
     }
+    const feedback = document.getElementById('playtest-feedback') as HTMLAnchorElement;
+    feedback.href = feedbackUrl(feedback.href, {
+      [PLAYTEST_FEEDBACK_FIELD_IDS.seed]: String(config.seed),
+      [PLAYTEST_FEEDBACK_FIELD_IDS.browser]: navigator.userAgent,
+      [PLAYTEST_FEEDBACK_FIELD_IDS.build]: getBuildRevision(),
+    });
     const engine = createEngine(config, view, undefined, engineOptions);
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {

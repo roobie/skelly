@@ -108,7 +108,7 @@ export const mainSourceOverlays = [
 export const mainOverlaySources = (basePaths) => [
   ...mainSourceOverlays,
   ...[...(basePaths.get('presentation') ?? [])]
-    .filter((path) => path.startsWith('ui/') && SCRIPT_MODULE.test(path))
+    .filter((path) => (path === 'ui.ts' || path.startsWith('ui/')) && SCRIPT_MODULE.test(path))
     .map((path) => `presentation:${path}`),
 ];
 
@@ -140,18 +140,25 @@ export const removedExports = (baseSource, branchSource) => {
 const IMPORT_CLAUSE =
   /^import\s+(?!type\s)((?:[\w$]+|\*\s+as\s+[\w$]+)?\s*,?\s*(?:\{[^}]*\})?)\s*from\s+['"]([^'"]+)['"]/gm;
 const NAMED_IMPORTS = /\{([^}]*)\}/;
+const RE_EXPORT_CLAUSE = /^export\s+\{([^}]*)\}\s+from\s+['"]([^'"]+)['"]/gm;
 
-/** Runtime names `source` imports by name, keyed by the specifier as written; type-only imports are erased. */
+/** Runtime names `source` imports and named re-exports, keyed by the specifier as written; type-only names are erased. */
 export function valueImports(source) {
   const imports = new Map();
-  for (const [, clause, specifier] of source.matchAll(IMPORT_CLAUSE)) {
+  const addNames = (specifier, list) => {
     const names = imports.get(specifier) ?? new Set();
-    for (const item of (NAMED_IMPORTS.exec(clause)?.[1] ?? '').split(',').map((entry) => entry.trim())) {
+    for (const item of list.split(',').map((entry) => entry.trim())) {
       if (item && !item.startsWith('type ')) {
         names.add(item.split(ALIAS)[0]);
       }
     }
     imports.set(specifier, names);
+  };
+  for (const [, clause, specifier] of source.matchAll(IMPORT_CLAUSE)) {
+    addNames(specifier, NAMED_IMPORTS.exec(clause)?.[1] ?? '');
+  }
+  for (const [, list, specifier] of source.matchAll(RE_EXPORT_CLAUSE)) {
+    addNames(specifier, list);
   }
   return imports;
 }
