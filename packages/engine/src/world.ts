@@ -57,6 +57,7 @@ export { raycast, type SolidAt } from './core/raycast.ts';
 export { BLOCK_SIZE, chunksFor, makeScale, type Scale, WORLD_BOTTOM_M } from './core/scale.ts';
 export { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './core/settlementSpawns.ts';
 export { siteGenerationOf, sitePalette, terrainShapeOf } from './core/sitePalette.ts';
+export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';
 export { type PlacedPowerDevice, type PoweredLight, placedPowerDevices, SitePower } from './core/sitePower.ts';
 export { type SolidBricks, worldBricks } from './core/solidBricks.ts';
 export { type BlockBox, type MetreBox, rasterize, stampChunk } from './core/structure.ts';

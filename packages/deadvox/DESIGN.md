@@ -2785,6 +2785,18 @@ cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such
 authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
 `packages/engine/src/core/schema/furniture.ts`, `offset`.
 
+A wall stops a powered fixture's light in the picture by the same check that stops it in the rules, because a room
+the rules call dark must not look lit by a lamp behind brick. Fixture point lights cast no shadows, so the rules own
+the answer: one owner samples the rules' wall check into a reach grid per lamp, and the renderer only uploads the grids
+and drops a lamp's light where its grid says blocked. A second wall model in the shader would let picture and rules
+disagree. Edges are one cell wide because the grid is; smoothing is not worth its cost yet. A block edit near a lamp
+rebuilds that lamp's grid, and only the lamps whose grid the edit reaches, so a wall put up beside a lamp changes its
+light for base building to work. A changed world chunk or standing piece marks the lamps whose grid it overlaps; a
+parked vehicle's move is not tracked. Cell size and range are content, and a lamp's light beyond the range is not
+walled. See `packages/engine/src/core/lampReach.ts`, `LampReachCache`;
+`packages/engine/src/core/illumination.ts`, `reaches`; `packages/presentation/src/render/fixtureReach.ts`,
+`FixtureReach`; and `packages/engine/src/core/schema/senses.ts`, `illumination`.
+
 Lights form pools: the near field stays low so brightness falls off across a room instead of flooding it. That fixes
 the cause, so an intensity means something physical rather than compensating for a flat falloff light by light. One
 near-field value serves the renderer and the rules, so what the player sees keeps predicting whether they can read.

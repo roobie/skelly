@@ -92,6 +92,8 @@ export class LightPool {
   readonly flareSkipped: boolean[];
   /** Shader point-light slots: the item partitions plus the content's fixture limit. */
   readonly size: number;
+  /** The lamp in each fixture slot as of the last update, nearest the camera first; undefined where a slot is dark. */
+  readonly fixtureSlots: (PoweredLight | undefined)[];
   private readonly fixtureLimit: number;
   private readonly handLights: readonly PointLight[];
   private readonly positions: readonly Vector3[];
@@ -99,6 +101,7 @@ export class LightPool {
   constructor(scene: Scene, fixtureLimit: number, handScene?: Scene) {
     this.fixtureLimit = fixtureLimit;
     this.size = ITEM_POINT_LIGHTS + fixtureLimit;
+    this.fixtureSlots = Array.from({ length: fixtureLimit }, () => undefined);
     this.flareSkipped = Array.from({ length: this.size }, () => false);
     this.positions = Array.from({ length: this.size }, () => new Vector3());
     this.lights = Array.from({ length: this.size }, () => {
@@ -191,7 +194,10 @@ export class LightPool {
         return distance(a) - distance(b);
       })
       .slice(0, this.fixtureLimit);
-    const glowDistance = ({ position }: BodyGlow) =>
+    this.fixtureSlots.forEach((_, slot) => {
+      this.fixtureSlots[slot] = fixtures[slot];
+    });
+    const glowDistance =({ position }: BodyGlow) =>
       (position[0] - camera.position.x) ** 2 +
       (position[1] - camera.position.y) ** 2 +
       (position[2] - camera.position.z) ** 2;
