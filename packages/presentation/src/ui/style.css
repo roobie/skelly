@@ -21,6 +21,8 @@
   --ui-layer-game-cursor: 2003;
   --ui-layer-startup-screen: 3000;
   --ui-layer-world-loading: 3000;
+  /* Above the startup screen, so a refused start's text can be selected and copied. */
+  --ui-layer-error-log: 3001;
   --ui-layer-review-map: 10000;
   --ui-layer-error-report: 11000;
   --panel: rgb(18 20 24 / 88%);
@@ -1592,20 +1594,31 @@ body:has(#handling:not([hidden])) #prompt {
   top: auto;
   bottom: calc(50% + 3.5rem);
 }
-#errors {
+#error-log {
   position: fixed;
   left: 0.75rem;
   bottom: 0.75rem;
+  z-index: var(--ui-layer-error-log);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
   max-width: 60ch;
+}
+#errors {
   padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.625rem);
   border-radius: 0.375rem;
   background: #5a1d1d;
   white-space: pre-wrap;
+  user-select: text;
   font:
     0.75rem ui-monospace,
     monospace;
 }
 #errors:empty {
+  display: none;
+}
+#errors-copy[hidden] {
   display: none;
 }
 #error-report {
