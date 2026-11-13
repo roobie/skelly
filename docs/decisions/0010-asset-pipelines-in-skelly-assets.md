@@ -95,12 +95,14 @@ be read alike, defeating the one-output rule. See
 
 ## Canonical baked fall
 
-Deadvox plays baked clips only, because asset pipelines live in skelly-assets, so
-an actor's death fall is authored once there. The fall leaves the living pose by
-blending onto the baked death clip across the clip's first frame interval, then plays
-the clip and holds its last frame, so every corpse of one figure and direction
-settles in the same pose. Per-kill variation in the settled corpse is given up for
-that. See `packages/presentation/src/render/corpsePose.ts`, `corpseFallPose`.
+A body whose content selects the baked death fall plays baked clips only, because asset
+pipelines live in skelly-assets, so an actor's death fall is authored once there. The fall
+leaves the living pose by blending onto the baked death clip across the clip's first frame
+interval, then plays the clip and holds its last frame, so every corpse of one figure and
+direction settles in the same pose. Per-kill variation in the settled corpse is given up for
+that. Which bodies fall this way is each actor type's content selection; see
+`packages/deadvox/docs/content.md`, "Death falls". See `packages/presentation/src/render/corpsePose.ts`,
+`corpseFallPose`.
 
 ## Shared appearance and replacement
 
