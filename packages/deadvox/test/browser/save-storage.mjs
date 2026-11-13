@@ -94,14 +94,24 @@ const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url
 let vite;
 const startWebServer = async () => {
   if (productionBundleStage) {
+    // The production build is deterministic compile work sized by the app, not server readiness: its duration
+    // tracks runner speed and once pushed a 30 s startup wait over its bound on runner variance alone (#1691).
+    // Report the duration; keep the readiness bound on the server startup that follows it.
+    const buildStartedMs = performance.now();
     process.stdout.write(`${browserName}: building production bundle for pixel stage ${stageId}\n`);
     await viteBuild({ configFile: viteConfig, root: projectRoot, logLevel: 'error' });
-    vite = await vitePreview({
-      configFile: viteConfig,
-      root: projectRoot,
-      logLevel: 'error',
-      preview: { host: '127.0.0.1', port: 0 },
-    });
+    process.stdout.write(
+      `${browserName}: production bundle built in ${Math.round(performance.now() - buildStartedMs)} ms\n`,
+    );
+    vite = await withTimeout(
+      'Vite preview startup',
+      vitePreview({
+        configFile: viteConfig,
+        root: projectRoot,
+        logLevel: 'error',
+        preview: { host: '127.0.0.1', port: 0 },
+      }),
+    );
     return vite.httpServer.address();
   }
   vite = await createStageServer({
@@ -124,11 +134,11 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
     globalThis.clearTimeout(timer);
   }
 };
-const navigationPhase = async (label, action) => {
+const navigationPhaseLog = async (label, action) => {
   const startedRealMs = performance.now();
   process.stdout.write(`SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'start', at: Date.now() })}\n`);
   try {
-    const result = await withTimeout(label, action());
+    const result = await action();
     process.stdout.write(
       `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'end', elapsedRealMs: performance.now() - startedRealMs, at: Date.now() })}\n`,
     );
@@ -140,12 +150,16 @@ const navigationPhase = async (label, action) => {
     throw error;
   }
 };
+// The Vite startup phase spans the production-bundle build, which is compile work rather than a readiness wait,
+// so that one phase is logged without its own bound; the server starts inside startWebServer keep the
+// readiness bound (#1691). Every other navigation phase stays bounded.
+const navigationPhase = (label, action) => navigationPhaseLog(label, () => withTimeout(label, action()));
+const startStageServer = () =>
+  productionBundleStage ? startWebServer() : withTimeout('Vite startup', startWebServer());
 let browser;
 let firefoxServer;
 try {
-  const address = await (navigationOnly
-    ? navigationPhase('Vite startup', startWebServer)
-    : withTimeout('Vite startup', startWebServer()));
+  const address = await (navigationOnly ? navigationPhaseLog('Vite startup', startStageServer) : startStageServer());
   assert(address && typeof address !== 'string');
   const testUrl =
     autosaveOnly || navigationOnly
