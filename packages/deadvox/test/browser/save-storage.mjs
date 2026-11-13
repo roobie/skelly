@@ -12,6 +12,7 @@ import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
+import { createSaveStorageStartup } from './saveStorageStartup.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
@@ -92,70 +93,32 @@ const { expect } = await import('playwright/test');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
-const startWebServer = async () => {
-  if (productionBundleStage) {
-    // The production build is deterministic compile work sized by the app, not server readiness: its duration
-    // tracks runner speed and once pushed a 30 s startup wait over its bound on runner variance alone (#1691).
-    // Report the duration; keep the readiness bound on the server startup that follows it.
-    const buildStartedMs = performance.now();
-    process.stdout.write(`${browserName}: building production bundle for pixel stage ${stageId}\n`);
-    await viteBuild({ configFile: viteConfig, root: projectRoot, logLevel: 'error' });
-    process.stdout.write(
-      `${browserName}: production bundle built in ${Math.round(performance.now() - buildStartedMs)} ms\n`,
-    );
-    vite = await withTimeout(
-      'Vite preview startup',
-      vitePreview({
-        configFile: viteConfig,
-        root: projectRoot,
-        logLevel: 'error',
-        preview: { host: '127.0.0.1', port: 0 },
-      }),
-    );
+const { navigationPhase, navigationPhaseLog, startStageServer, withTimeout } = createSaveStorageStartup({
+  browserName,
+  productionBundleStage,
+  stageId,
+  timeoutMs: STAGE_TIMEOUT_MS,
+  build: () => viteBuild({ configFile: viteConfig, root: projectRoot, logLevel: 'error' }),
+  preview: async () => {
+    vite = await vitePreview({
+      configFile: viteConfig,
+      root: projectRoot,
+      logLevel: 'error',
+      preview: { host: '127.0.0.1', port: 0 },
+    });
     return vite.httpServer.address();
-  }
-  vite = await createStageServer({
-    configFile: viteConfig,
-    root: projectRoot,
-    logLevel: 'error',
-    server: { host: '127.0.0.1', port: 0 },
-  });
-  await vite.listen();
-  return vite.httpServer.address();
-};
-const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = globalThis.setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs} ms`)), timeoutMs);
-  });
-  try {
-    return await Promise.race([task, timeout]);
-  } finally {
-    globalThis.clearTimeout(timer);
-  }
-};
-const navigationPhaseLog = async (label, action) => {
-  const startedRealMs = performance.now();
-  process.stdout.write(`SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'start', at: Date.now() })}\n`);
-  try {
-    const result = await action();
-    process.stdout.write(
-      `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'end', elapsedRealMs: performance.now() - startedRealMs, at: Date.now() })}\n`,
-    );
-    return result;
-  } catch (error) {
-    process.stderr.write(
-      `SAVE_NAV_PHASE ${JSON.stringify({ label, event: 'error', elapsedRealMs: performance.now() - startedRealMs, at: Date.now(), error: String(error) })}\n`,
-    );
-    throw error;
-  }
-};
-// The Vite startup phase spans the production-bundle build, which is compile work rather than a readiness wait,
-// so that one phase is logged without its own bound; the server starts inside startWebServer keep the
-// readiness bound (#1691). Every other navigation phase stays bounded.
-const navigationPhase = (label, action) => navigationPhaseLog(label, () => withTimeout(label, action()));
-const startStageServer = () =>
-  productionBundleStage ? startWebServer() : withTimeout('Vite startup', startWebServer());
+  },
+  devServer: async () => {
+    vite = await createStageServer({
+      configFile: viteConfig,
+      root: projectRoot,
+      logLevel: 'error',
+      server: { host: '127.0.0.1', port: 0 },
+    });
+    await vite.listen();
+    return vite.httpServer.address();
+  },
+});
 let browser;
 let firefoxServer;
 try {
