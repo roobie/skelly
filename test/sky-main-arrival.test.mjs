@@ -61,10 +61,11 @@ it('main overlays keep play, view and their presentation constructor contracts o
 
 it('main play overlays keep the entire UI boundary on the base even when export names survive signature changes', () => {
   const basePaths = new Map([
-    ['presentation', new Set(['ui/options.ts', 'ui/nested/readout.ts', 'ui/style.css', 'presentation/play.ts'])],
+    ['presentation', new Set(['ui.ts', 'ui/options.ts', 'ui/nested/readout.ts', 'ui/style.css', 'presentation/play.ts'])],
     ['engine', new Set(['core/rules.ts', 'game/unrelated.ts'])],
   ]);
   const sources = mainOverlaySources(basePaths);
+  assert.ok(sources.includes('presentation:ui.ts'));
   assert.ok(sources.includes('presentation:ui/options.ts'));
   assert.ok(sources.includes('presentation:ui/nested/readout.ts'));
   assert.ok(!sources.includes('engine:core/rules.ts'));
@@ -116,6 +117,11 @@ it('branch modules beside the overlays are refused a name the overlaid base copy
   ]);
   base.set('render/hands.ts', "import { SHOULDER } from './figure.ts';\n");
   assert.deepEqual(overlayBoundaryGaps(base, branch), []);
+  base.set('ui/errorReport.ts', 'export const existing = 1;\n');
+  branch.set('ui.ts', "export { feedbackUrl } from './ui/errorReport.ts';\n");
+  assert.deepEqual(overlayBoundaryGaps(base, branch), [
+    { importer: 'ui.ts', module: 'ui/errorReport.ts', names: ['feedbackUrl'] },
+  ]);
 });
 
 const MISSING_WORKSPACE = /No workspace package named missing/;
