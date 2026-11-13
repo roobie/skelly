@@ -16,7 +16,7 @@ import {
   type WebGLRenderTarget,
 } from 'three';
 
-/** What vehicle finishes reflect. A real sky bake (#1542) replaces the source behind this and nothing else. */
+/** What vehicle finishes reflect, kept to this so the world-following map of #1542 can replace the source alone. */
 export interface ReflectionMap {
   readonly texture: Texture;
   update: (sky: Sky) => void;
