@@ -178,4 +178,17 @@ describe('material reference validation', () => {
       expect(() => applyModelMaterials(new Group().add(new Mesh(new BoxGeometry(), material)), table)).toThrow();
     }
   });
+
+  it('rejects fabric extras on a material outside the library that name no known kind or lack a grain', () => {
+    for (const fabric of [
+      { kind: 'satin', grain: 0.002, relief: 0.5, noise: 0.1, crease: 0.2, fold: 0.07 },
+      { kind: 'woven', relief: 0.5, noise: 0.1, crease: 0.2, fold: 0.07 },
+    ]) {
+      const material = new MeshStandardMaterial();
+      material.userData = { fabric };
+      expect(() => applyModelMaterials(new Group().add(new Mesh(new BoxGeometry(), material)), table)).toThrow(
+        'unusable fabric extras',
+      );
+    }
+  });
 });

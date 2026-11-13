@@ -15,6 +15,7 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { parse } from 'valibot';
+import { checkFabric } from './fabricGrain.ts';
 import { glowingCopy } from './itemEmissive.ts';
 import { skyAnchoredCopy } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
@@ -73,6 +74,7 @@ export const paintedCopy = (material: MeshStandardMaterial, definition: Material
 
 const applyMaterial = (loaded: Material, table: Readonly<Record<string, MaterialDef>>): Material => {
   if (!(Object.hasOwn(loaded.userData, 'materialId') || Object.hasOwn(loaded.userData, 'colourMultiplier'))) {
+    checkFabric(loaded);
     return loaded;
   }
   const { materialId, colourMultiplier } = parse(MaterialReferenceSchema, {

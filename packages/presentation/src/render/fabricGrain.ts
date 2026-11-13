@@ -1,5 +1,6 @@
-import { FABRIC_KINDS, type FabricDef } from '@skelly/thing-core/materials';
+import { type FabricDef, MaterialSchema } from '@skelly/thing-core/materials';
 import type { Material } from 'three';
+import { parse } from 'valibot';
 import { materialPatch } from './materialPatches.ts';
 
 // A port of skelly-assets' showcase grain, stacked on the game's other material patches rather than replacing the
@@ -48,8 +49,6 @@ vFabricU = normalize((modelViewMatrix * vec4(fabricU, 0.0)).xyz);
 vFabricV = normalize((modelViewMatrix * vec4(fabricV, 0.0)).xyz);
 `;
 
-// Each kind's pattern at `p`, in repeats of its grain: x is the height across the repeat, 0 to 1, and y the thread's or
-// cell's lightness offset, -1 to 1.
 const PATTERNS = /* glsl */ `
 const float FABRIC_PI = 3.14159265;
 float fabricHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -128,11 +127,10 @@ ${PLANE}
 ${PATTERNS}
 `;
 
-// The steepest a full-relief grain tilts the surface, as the slope of its threads' sides.
 const MAX_SLOPE = 0.9;
-// Cells per pixel at which the fine grain has faded out, and at which it starts to.
+// A grain finer than a pixel shimmers, so it fades before it gets there.
 const FADE = [0.2, 0.45] as const;
-// How many repeats a mottle, the slow lightness drift of a yarn, spans; it outlasts the grain at a distance.
+// A yarn's slow lightness drift spans many repeats, so it still reads where the grain has faded.
 const MOTTLE = 9;
 // How much longer a fold runs down than across, as cloth hangs.
 const DRAPE = 4;
@@ -176,13 +174,23 @@ const injected = (source: string, chunk: string, code: string): string => {
   return source.replace(chunk, `${chunk}\n${code}`);
 };
 
-/** The fabric a material's glTF extras declare, which the export writes from its finish. */
-export const fabricOf = (material: Material): FabricDef | undefined => {
-  const fabric = material.userData.fabric as FabricDef | undefined;
-  if (fabric !== undefined && !(FABRIC_KINDS as readonly string[]).includes(fabric.kind)) {
-    throw new Error(`${material.name}: no fabric kind ${fabric.kind}; the kinds are ${FABRIC_KINDS.join(', ')}`);
+/** The fabric a material draws: its library finish's, or outside the library its export's, as `checkFabric` passed. */
+export const fabricOf = (material: Material): FabricDef | undefined =>
+  material.userData.fabric as FabricDef | undefined;
+
+// thing-core keeps its fabric schema private, so it is reached through the material schema that holds it.
+const FabricSchema = MaterialSchema.entries.finish.pipe[0].entries.fabric;
+
+/**
+ * Rejects a fabric the content checks never saw, one an exported material outside the library declares, once at load,
+ * so the per-frame patch walk can trust what it reads.
+ */
+export const checkFabric = (material: Material): void => {
+  try {
+    parse(FabricSchema, material.userData.fabric);
+  } catch (error) {
+    throw new Error(`${material.name}: unusable fabric extras`, { cause: error });
   }
-  return fabric;
 };
 
 const defineOf = (kind: FabricKind): string => `FABRIC_${kind.toUpperCase()}`;
@@ -193,9 +201,12 @@ const defineOf = (kind: FabricKind): string => `FABRIC_${kind.toUpperCase()}`;
  */
 export const fabricGrain = materialPatch({
   applies: (material) => fabricOf(material) !== undefined,
-  key: (material) => `fabric-${fabricOf(material)!.kind}`,
+  key: (material) => `fabric-${fabricOf(material)?.kind ?? 'none'}`,
   compile: (shader, _renderer, material) => {
-    const fabric = fabricOf(material)!;
+    const fabric = fabricOf(material);
+    if (fabric === undefined) {
+      return;
+    }
     Object.assign(shader.uniforms, {
       fabricGrain: { value: fabric.grain },
       fabricRelief: { value: fabric.relief },
