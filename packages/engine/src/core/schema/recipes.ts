@@ -19,7 +19,7 @@ import {
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../character.ts';
 import { capabilitySelection } from './capability.ts';
 import { ItemCountSchema, LiquidAmountSchema } from './items.ts';
-import { Count, Fraction, Id, Name, Positive, PositiveGameMinutes, SkillLevel } from './primitives.ts';
+import { Count, Id, Name, NonNegative, Positive, PositiveGameMinutes, SkillLevel } from './primitives.ts';
 
 const RecipeInputSchema = union([ItemCountSchema, LiquidAmountSchema]);
 
@@ -44,12 +44,14 @@ export const RecipeSchema = strictObject({
   result: ItemCountSchema,
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type or terrain block. */
   kind: optional(picklist(['craft', 'repair'])),
-  /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
+  /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something; perSkill adds
+   * per skill level on top. Item repair is a fraction of condition and clamps at runtime; world repair (entity or block)
+   * counts damage points, so perSkill may exceed 1 there. */
   repair: optional(
     strictObject({
       skill: capabilitySelection('skills'),
       amount: Positive,
-      perSkill: Fraction,
+      perSkill: NonNegative,
       entity: optional(Id),
       block: optional(Id),
     }),

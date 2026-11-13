@@ -134,6 +134,8 @@ pack changes no other start. See `mods/skelly.deadvox.scenario.test-house.action
 
 The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
 
+The cell-repair look start is staging for mending terrain by eye: it teaches the wall repair recipes and pockets a repair kit and scrap, and the reviewer cracks a brick wall with the build tool's damage key and mends it with the repair key, because cell repair has no crafting view until #1469. See `mods/skelly.deadvox.scenario.test-house.cell-repair-look/starts.jsonnet`.
+
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker
