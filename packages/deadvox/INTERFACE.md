@@ -19,7 +19,7 @@ read_if:
 
 Prefer information carried by the world, the character's body and held items. The interface adds only what those cannot convey. Development readouts, instructions and test controls may break diegesis when clearly separated from the shipped profile and removable as a whole.
 
-Every element is diegetic, bodily, spatial or meta. Prefer bodily cues over persistent statistics when a state can be communicated through sight or sound; use spatial outlines only when the world cannot make an interaction clear. Meta HUD elements start enabled and can be turned off individually.
+Every element is diegetic, bodily, spatial or meta. Prefer bodily cues over persistent statistics when a state can be communicated through sight or sound; use spatial outlines only when the world cannot make an interaction clear. Meta HUD elements start enabled and can be turned off individually, except the GameMaster marker, which stays on while the role is held because it exists to warn the player who turned the rest off (`docs/game-master-mode.md`, "Entry and presence").
 
 A new element names its kind at the view-model boundary and explains why a less intrusive kind would not suffice. See `packages/presentation/src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`.
 
@@ -47,7 +47,7 @@ Short first-person refusals and observations name the world or the character's s
 
 ## HUD
 
-The HUD options and master toggle govern HUD-owned elements without changing individual settings. World, bodily and held-item cues, the compass display, inventory controls and the rest card remain outside them. Interaction hints are hidden while a modal screen is open, because the screen owns input and a world hint over it is noise. See `packages/presentation/src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
+The HUD options and master toggle govern HUD-owned elements without changing individual settings. World, bodily and held-item cues, the compass display, inventory controls, the rest card and the GameMaster marker remain outside them; the marker's reason is in `docs/game-master-mode.md`, "Entry and presence". Interaction hints are hidden while a modal screen is open, because the screen owns input and a world hint over it is noise. See `packages/presentation/src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
 
 A bound key in a hint or label is drawn as a key cap, a small bordered capital, so the player reads it as a key to press rather than as a word. One shared render takes the live binding label, so a rebind redraws every cap and the look stays in the stylesheet. See `packages/presentation/src/ui/keyCap.ts`, `keyCap`, and `packages/presentation/src/ui/style.css`, ".keycap".
 
