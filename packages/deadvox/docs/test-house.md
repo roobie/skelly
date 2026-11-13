@@ -132,6 +132,8 @@ second row in the debug mod, because a start mod supplies exactly one start row;
 `docs/url-mods.md`, "Start mod". It is not the site's default start, so admitting the
 pack changes no other start. See `mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet`.
 
+The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
+
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker
