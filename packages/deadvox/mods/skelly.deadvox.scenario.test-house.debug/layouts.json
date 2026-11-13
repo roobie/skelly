@@ -1,12 +1,7 @@
 {
   "layouts": [
     {
-      "actors": [
-        {
-          "position": [-8, 21, 14],
-          "type": "amalgam"
-        }
-      ],
+      "actors": [],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,

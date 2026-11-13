@@ -14,8 +14,6 @@ local debugHouse = layout + {
     lootContext: { usage: ['Residential', 'Hunting', 'Police', 'Military'], tier: 'Tier4', lowerTiers: true },
     fixedLoot: [{ at: [3, 1, 24], items: import 'test-house-rack.libsonnet' }],
   }],
-  // One amalgam in the open south of the garden wall, to look at carving; the range rack's shotgun carves it.
-  actors: layout.actors + [amalgam],
 };
 {
   templates: [import 'test-house-range.libsonnet'],
@@ -24,6 +22,8 @@ local debugHouse = layout + {
     // The amalgam look's fixture site: the same house with the player standing east of the amalgam, facing it.
     debugHouse + {
       id: 'testHouseAmalgam',
+      // One amalgam in the open south of the garden wall, to look at carving; the range rack's shotgun carves it.
+      actors: debugHouse.actors + [amalgam],
       player: { position: [amalgam.position[0] + 7, 21, amalgam.position[2]], bearing: 270 },
     },
   ],
