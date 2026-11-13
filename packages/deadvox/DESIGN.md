@@ -499,9 +499,10 @@ much of the world is explored. See `packages/engine/src/core/columnSupply.ts`,
 
 Voluntary removal protects what relies on a piece rather than stranding or losing it.
 Stale handles must fail loudly instead of corrupting occupancy, and removing a work
-target must not leave saved jobs naming something absent. A world job reserves its
-piece by living on it, so paused work cannot lose its target to another use and the
-reservation has no record of its own to fall out of step with the job. Taking a piece
+target must not leave saved jobs naming something absent. A job on a piece reserves
+its piece by living on it, so paused work cannot lose its target to another use and
+the reservation has no record of its own to fall out of step with the job. A terrain
+cell job reserves nothing and revalidates instead (`DESIGN.md`, "World repair selection"). Taking a piece
 apart is a recorded command, so replay reaches the same yield, and it revalidates the
 piece at Start, on resume and at completion, because the piece can change while the
 job waits. Completion removes the piece only through voluntary removal, so the job
@@ -3884,7 +3885,9 @@ Taking a piece apart is world work like repairing it: one chosen piece, a review
 
 A piece is whole by default: its definition authors what taking it apart yields, and repair stays one recipe per kind, so a stool needs no parts to come apart or to mend. A kind that authors a parts blueprint takes the parts path instead: a job removes or fits one part, and condition is per part. Keeping the parts route per kind leaves it open for the kinds that earn it without paying its cost on every cupboard, and both routes feed the same review, so the player still learns one surface. The content check refuses a kind that authors both, because a piece's model decides how the verb behaves and two models on one kind would leave that undecided. See `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and `packages/engine/src/core/content.ts`, `checkRecoveryYields`.
 
-A world job lives on its piece, running or paused. The piece holds the job, its progress and, for repair, its escrowed inputs, as a work item in the piece's own work slot of the item tree, so item ownership stays in the item tree and progress gains no second owner. The slot is not a pocket: a chair has none, and a job in a pocket would make the piece refuse its own take apart as not empty. Continue is on the piece's ring. A job that stays at its piece also works reasonably in multiplayer: whoever stands at the piece can continue it, and nobody carries another player's job away. A paused repair reserves its piece as a paused take apart does, one rule for every world job, so another move cannot take the target and leave the job vanishing under the player; a piece mid-repair cannot move until its job is cancelled. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.useRefusal`, and `DESIGN.md`, "Block entities".
+A job on a piece — furniture repair or take apart — lives on its piece, running or paused. The piece holds the job, its progress and, for repair, its escrowed inputs, as a work item in the piece's own work slot of the item tree, so item ownership stays in the item tree and progress gains no second owner. The slot is not a pocket: a chair has none, and a job in a pocket would make the piece refuse its own take apart as not empty. Continue is on the piece's ring. A job that stays at its piece also works reasonably in multiplayer: whoever stands at the piece can continue it, and nobody carries another player's job away. A paused repair reserves its piece as a paused take apart does, one rule for every job on a piece, so another move cannot take the target and leave the job vanishing under the player; a piece mid-repair cannot move until its job is cancelled. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities.useRefusal`, and `DESIGN.md`, "Block entities".
+
+A terrain cell job, by contrast, lives in the hand as an ordinary craft work item and reserves nothing: a damaged cell is not a possession, so no piece could host the job or be reserved against a move. Instead of a reservation, Start pins the cell's damage episode and every resume and completion revalidate that the same block still stands there with that identity, refusing and returning the escrow when it does not. See `packages/engine/src/core/items.ts`, `WorkTarget`, and `packages/engine/src/core/craftWork.ts`, `cellRepairRefusal`. Cell repair reaches players with the requirements view settled by #1469.
 
 Take apart's yield lands in a ground pile where the disassembling actor stood, through the drop spots a drop at the feet uses; nothing goes to the hands, because a hold on a wardrobe that ends with boards in hand would surprise the player. See `packages/engine/src/core/inventory.ts`, `dropSpots`.
 
