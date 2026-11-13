@@ -212,7 +212,8 @@ in it. See `mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet`,
 The vehicle finishes site is a separate fixture, so judging paint, glass and sky reflection
 does not crowd the garage. Its opt-in start mod gives the site a start of its own because
 a start mod must hold exactly one start row, which the amalgam look's mod already uses; open it with
-`?start-mod=skelly.deadvox.scenario.test-house.finishes`. See
+`?start-mod=skelly.deadvox.scenario.test-house.finishes#{debug:true}`, since the start is a
+debug-only fixture. See
 `mods/skelly.deadvox.scenario.test-house.finishes/starts.jsonnet`, `starts`.
 
 The building and its ordinary furnishings stay in normal mode. Shared house power makes
