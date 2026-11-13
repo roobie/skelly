@@ -80,6 +80,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     clearDownedBody: unexpected,
     craftStart: unexpected,
     craftRepairEntity: unexpected,
+    craftRepairCell: unexpected,
     craftTakeApartEntity: unexpected,
     craftContinue: unexpected,
     craftStop: unexpected,

@@ -621,6 +621,15 @@
       ]
     },
     {
+      "id": "debug.repair-cell",
+      "keys": [
+        {
+          "code": "KeyR",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
       "id": "debug.impact-laser",
       "keys": [
         {

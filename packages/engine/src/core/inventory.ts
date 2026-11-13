@@ -2,6 +2,7 @@
 // Moves are planned first (does it fit, how long does it take) and applied when the
 // handling time is up (handling.ts). `packages/deadvox/DESIGN.md`, "Items and inventory"; `packages/deadvox/DESIGN.md`, "Hands".
 
+import type { CellRepair } from './blockDamage.ts';
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
@@ -15,7 +16,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
-import type { ItemDef, Registry } from './content.ts';
+import type { ItemDef, RecipeDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
@@ -43,6 +44,7 @@ import { PILE_GRID } from './inventoryScale.ts';
 import {
   assertSavedLiquidContents,
   cellCount,
+  copyWorkTarget,
   couldFit,
   craftComponentEligible,
   defOf,
@@ -305,6 +307,10 @@ export class Inventory {
   canReachVehicle: (vehicleId: number) => boolean = () => true;
   /** Whether a piece of furniture is within reach. */
   canReachEntity: (entity: BlockEntity) => boolean = () => true;
+  /** Whether a terrain cell is within reach; the game sets it from the player's position. */
+  canReachCell: (cell: Vec3) => boolean = () => true;
+  /** The world's say over repairing a damaged terrain cell; the game binds it to its world, so cell work refuses without it. */
+  cellRepair: CellRepair | undefined;
   /** Where a pile put down in a block comes to rest, or undefined with nowhere to land; the game sets it. */
   landing: (pos: Vec3) => Vec3 | undefined = (pos) => pos;
   /** The block a drop is made from, at the player's feet; the game sets it. */
@@ -1464,6 +1470,13 @@ export class Inventory {
           this.entities.canRepair(entity, repair.amount),
       );
     }
+    if (repair.target.kind === 'cell') {
+      // A damaged cell holds no work item, so nothing reserves it: the world's say and reach gate the job directly.
+      return Boolean(
+        this.cellRepair?.refusal(repair.target.cell, recipe.repair?.block, repair.amount) === undefined &&
+          this.canReachCell(repair.target.cell),
+      );
+    }
     const target = this.itemByUid(repair.target.uid);
     return Boolean(
       target &&
@@ -1577,7 +1590,7 @@ export class Inventory {
       })),
       ...unstarted(plan.gather + plan.work),
       components,
-      ...(repair ? { repairTarget: { ...repair.target }, repairAmount: repair.amount } : {}),
+      ...(repair ? { repairTarget: copyWorkTarget(repair.target), repairAmount: repair.amount } : {}),
     };
   }
 
@@ -1805,6 +1818,13 @@ export class Inventory {
     );
   }
 
+  private completeCellRepair(payload: NonNullable<Item['work']>): boolean {
+    if (payload.kind !== 'craft' || payload.repairTarget?.kind !== 'cell') {
+      return true;
+    }
+    return this.cellRepair?.repair(payload.repairTarget.cell, payload.repairAmount!) === true;
+  }
+
   private workLiquidAdmission(
     payload: NonNullable<Item['work']>,
     finish: boolean,
@@ -1865,7 +1885,7 @@ export class Inventory {
     const outputs = this.workOutputs(payload, finish, calendar);
     const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
-    if (finish && !this.completeEntityRepair(work, payload)) {
+    if (finish && !(this.completeEntityRepair(work, payload) && this.completeCellRepair(payload))) {
       this.releaseWork(work, false, { feet, calendar });
       return;
     }
@@ -2749,6 +2769,26 @@ const validateCraftLiquidDraws = (
   return liquidGroups;
 };
 
+const validWorkTarget = (
+  target: NonNullable<ItemState['work']>['repairTarget'],
+  recipe: RecipeDef | undefined,
+): boolean => {
+  if (target === undefined) {
+    return true;
+  }
+  if (target.kind === 'cell') {
+    return target.cell.length === 3 && target.cell.every(Number.isSafeInteger) && recipe?.repair?.block !== undefined;
+  }
+  if (target.kind !== 'item' && target.kind !== 'entity') {
+    return false;
+  }
+  return (
+    Number.isSafeInteger(target.uid) &&
+    target.uid >= 1 &&
+    (target.kind === 'entity') === (recipe?.repair?.entity !== undefined)
+  );
+};
+
 const validateCraftWorkItem = (
   registry: Registry,
   work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
@@ -2758,10 +2798,7 @@ const validateCraftWorkItem = (
     !recipe ||
     (recipe.kind === 'repair') !== (work.repairTarget !== undefined && work.repairAmount !== undefined) ||
     (work.repairTarget === undefined) !== (work.repairAmount === undefined) ||
-    (work.repairTarget !== undefined &&
-      (!(['item', 'entity'].includes(work.repairTarget.kind) && Number.isSafeInteger(work.repairTarget.uid)) ||
-        work.repairTarget.uid < 1 ||
-        (work.repairTarget.kind === 'entity') !== (recipe.repair?.entity !== undefined))) ||
+    !validWorkTarget(work.repairTarget, recipe) ||
     (work.repairAmount !== undefined &&
       (!Number.isFinite(work.repairAmount) ||
         work.repairAmount <= 0 ||

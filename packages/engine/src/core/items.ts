@@ -6,6 +6,7 @@ import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
+import type { Vec3 } from './coords.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
@@ -23,9 +24,11 @@ import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
 import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export type WorkTarget = { kind: 'item'; uid: number } | { kind: 'entity'; uid: number };
+export type WorkTarget = { kind: 'item'; uid: number } | { kind: 'entity'; uid: number } | { kind: 'cell'; cell: Vec3 };
+export const copyWorkTarget = (target: WorkTarget): WorkTarget =>
+  target.kind === 'cell' ? { kind: 'cell', cell: [...target.cell] } : { kind: target.kind, uid: target.uid };
 const repairTargetFields = ({ repairTarget }: { repairTarget?: WorkTarget }) =>
-  repairTarget ? { repairTarget: { ...repairTarget } } : {};
+  repairTarget ? { repairTarget: copyWorkTarget(repairTarget) } : {};
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
 interface WorkProgress<Node> {

@@ -2,6 +2,7 @@ import type { DamageKind } from './body.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import type { BlockMaterialDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { World } from './world.ts';
@@ -39,6 +40,46 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   }
   const total = Math.min(material.durability, damage + strength);
   return { outcome: total === material.durability ? 'broken' : 'damaged', damage: total };
+};
+
+/** What stands at a cell the repair owner reads: the block's id and the damage it retains. */
+export interface CellDamageState {
+  readonly block: string;
+  readonly damage: number;
+  readonly durability: number;
+}
+
+/** The world's say over repairing a damaged terrain cell, bound to one world and registry by the game. */
+export interface CellRepair {
+  /** The solid block at the cell and the damage it retains, or undefined where no solid block stands there. */
+  readonly state: (cell: Readonly<Vec3>) => CellDamageState | undefined;
+  /** Why the cell cannot be repaired now, at Start, at each resume and at completion alike. */
+  readonly refusal: (cell: Readonly<Vec3>, block: string | undefined, amount: number) => string | undefined;
+  /** Applies the repair; false leaves the world's damage untouched. */
+  readonly repair: (cell: Readonly<Vec3>, amount: number) => boolean;
+}
+
+/** Binds the cell-repair owner to a world: the named block must still stand there, damaged, for a job to touch it. */
+export const worldCellRepair = (world: World, registry: Registry): CellRepair => {
+  const state = (cell: Readonly<Vec3>): CellDamageState | undefined => {
+    const block = registry.blocks[world.getBlock(...cell)];
+    const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
+    const entry = world.blockDamage.get(cell);
+    return block && material && entry
+      ? { block: block.id, damage: entry.damage, durability: material.durability }
+      : undefined;
+  };
+  return {
+    state,
+    refusal: (cell, block, amount) => {
+      const at = state(cell);
+      if (at && at.block === block && Number.isFinite(amount) && amount > 0) {
+        return;
+      }
+      return coreMessage(registry, 'repairTargetGone');
+    },
+    repair: (cell, amount) => world.blockDamage.repair(cell, amount),
+  };
 };
 
 export interface DamageEntry {
@@ -110,6 +151,22 @@ export class BlockDamage {
     if (this.entries.delete(keyOf(cell))) {
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
+  }
+
+  /** Mending reduces retained damage without a new identity; a fully mended cell ends the identity, as replacement does. */
+  repair(cell: Readonly<Vec3>, amount: number): boolean {
+    const entry = this.entries.get(keyOf(cell));
+    if (!(validCell(cell) && entry && Number.isFinite(amount) && amount > 0)) {
+      return false;
+    }
+    const remaining = Math.max(0, entry.damage - amount);
+    if (remaining === 0) {
+      this.clear(cell);
+      return true;
+    }
+    this.entries.set(keyOf(cell), Object.freeze({ damage: remaining, epoch: entry.epoch }));
+    this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
+    return true;
   }
 
   snapshotState(): Readonly<SavedBlockDamage> {

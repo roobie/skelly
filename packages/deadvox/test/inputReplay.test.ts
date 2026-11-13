@@ -169,6 +169,7 @@ const applyCommand = (
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftRepairEntity: (recipeId, entityUid, preference) =>
       runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
+    craftRepairCell: (recipeId, cell, preference) => runtime.session.crafting.repairCell(recipeId, cell, preference),
     craftTakeApartEntity: (entityUid) => runtime.session.crafting.takeApartEntity(entityUid),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;

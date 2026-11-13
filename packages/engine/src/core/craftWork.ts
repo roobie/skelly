@@ -46,6 +46,19 @@ export const entityRepairRefusal = (
   );
 };
 
+/**
+ * Why a damaged terrain cell can't be repaired now, at Start, at each resume and at completion alike. A cell holds no
+ * work item, so nothing reserves it: identity, damage and reach revalidate live instead.
+ */
+export const cellRepairRefusal = (
+  inventory: Inventory,
+  target: { cell: Vec3; block: string | undefined; amount: number },
+): string | undefined =>
+  (inventory.cellRepair
+    ? inventory.cellRepair.refusal(target.cell, target.block, target.amount)
+    : coreMessage(inventory.registry, 'repairTargetGone')) ??
+  (inventory.canReachCell(target.cell) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'));
+
 const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnapshot): string | undefined => {
   const destination = item.work?.repairTarget;
   if (destination === undefined) {
@@ -58,6 +71,14 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
       { uid: destination.uid, entityType: recipe?.repair?.entity, amount: item.work?.repairAmount ?? 0 },
       item,
     );
+  }
+  if (destination.kind === 'cell') {
+    const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
+    return cellRepairRefusal(inventory, {
+      cell: destination.cell,
+      block: recipe?.repair?.block,
+      amount: item.work?.repairAmount ?? 0,
+    });
   }
   const target = inventory.itemByUid(destination.uid);
   const { work } = item;

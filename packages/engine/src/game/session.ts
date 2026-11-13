@@ -29,7 +29,7 @@ import {
   playerAimTuning,
 } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
-import type { BlockBlow } from '../core/blockDamage.ts';
+import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
@@ -981,6 +981,7 @@ export const createSession = (options: SessionOptions) => {
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
+  inventory.cellRepair = worldCellRepair(world, registry);
   const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
   const chest = (): Vec3 => [
     body.pos[0],

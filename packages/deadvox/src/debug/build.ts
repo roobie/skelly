@@ -34,6 +34,7 @@ export class BuildMode {
   private readonly reach: number;
   private readonly outline: LineSegments;
   private readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+  private readonly repairCell: (cell: Vec3) => string | undefined;
   private readonly bindings: BindingRegistry;
 
   constructor(
@@ -42,14 +43,17 @@ export class BuildMode {
     reachBlocks: number,
     {
       strikeTerrainCell,
+      repairCell,
       bindings,
     }: {
       readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
+      readonly repairCell: (cell: Vec3) => string | undefined;
       readonly bindings: BindingRegistry;
     },
   ) {
     this.engine = engine;
     this.strikeTerrainCell = strikeTerrainCell;
+    this.repairCell = repairCell;
     this.bindings = bindings;
     bindings.subscribe(() => this.draw());
     this.body = body;
@@ -112,6 +116,17 @@ export class BuildMode {
         streamer.markEdited(world.setBlock(...target, blockId(registry, block.id)));
       }
     }
+  }
+
+  /** Starts mending the damaged targeted block; returns why not, so the panel can say it. */
+  repair(eye: Vec3, dir: Vec3): string | undefined {
+    const { config, registry } = this.engine;
+    if (!(config.debug && this.on)) {
+      return undefined;
+    }
+    const tuning = playerTuning(registry).debugBlockTool;
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, this.engine.isOpaque);
+    return hit ? this.repairCell(hit.block) : undefined;
   }
 
   strike(mode: 'step' | 'destroy', eye: Vec3, dir: Vec3): boolean {

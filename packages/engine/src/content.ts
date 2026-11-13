@@ -35,6 +35,7 @@ export {
   type ModelDef,
   type RecipeDef,
   type Registry,
+  repairTargetName,
   requireDayCycle,
   requiredContentIssues,
   type SoundDef,
