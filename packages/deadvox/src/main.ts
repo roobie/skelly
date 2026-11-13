@@ -43,6 +43,7 @@ import {
   mountFullscreenOptions,
   mountInputOptions,
   mountWorldLoading,
+  PLAYTEST_FEEDBACK_FIELD_IDS,
   SaveController,
   setError,
 } from '@skelly/presentation/ui';
@@ -343,9 +344,9 @@ if (bench === 'report') {
     }
     const feedback = document.getElementById('playtest-feedback') as HTMLAnchorElement;
     feedback.href = feedbackUrl(feedback.href, {
-      seed: String(config.seed),
-      browser: navigator.userAgent,
-      build: getBuildRevision(),
+      [PLAYTEST_FEEDBACK_FIELD_IDS.seed]: String(config.seed),
+      [PLAYTEST_FEEDBACK_FIELD_IDS.browser]: navigator.userAgent,
+      [PLAYTEST_FEEDBACK_FIELD_IDS.build]: getBuildRevision(),
     });
     const engine = createEngine(config, view, undefined, engineOptions);
     const restored = await saveController.validateContent(engine.registry);

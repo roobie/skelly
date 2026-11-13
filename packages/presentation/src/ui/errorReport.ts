@@ -40,6 +40,13 @@ export const errorText = (details: ErrorDetails): string =>
 
 const GITHUB_URL_LIMIT = 7000;
 
+export const PLAYTEST_FEEDBACK_FIELD_IDS = {
+  whatHappened: 'what-happened',
+  seed: 'seed',
+  browser: 'browser',
+  build: 'build',
+} as const;
+
 export const feedbackUrl = (sourceHref: string, fields: Readonly<Record<string, string>>): string => {
   const url = new URL(sourceHref);
   for (const [name, value] of Object.entries(fields)) {
@@ -51,7 +58,7 @@ export const feedbackUrl = (sourceHref: string, fields: Readonly<Record<string, 
 export const feedbackUrlForError = (text: string, sourceHref: string): { href: string; attachReport: boolean } => {
   const href = feedbackUrl(sourceHref, {
     title: `Game error: ${text.split('\n', 1)[0]!.slice(0, 100)}`,
-    body: `The game encountered an error.\n\nPlease attach the downloaded error report.\n\n\`\`\`text\n${text}\n\`\`\``,
+    [PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened]: text,
   });
   if (href.length <= GITHUB_URL_LIMIT) {
     return { href, attachReport: false };
