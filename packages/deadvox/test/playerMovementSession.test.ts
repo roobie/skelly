@@ -565,9 +565,7 @@ describe('long-gun skill ownership', () => {
     runtime.advance(1);
     expect(session.firearms.isAdsAcquired(rifle.uid)).toBe(true);
     expect(session.firearms.adsAcquisitionProgress(rifle.uid)).toBe(1);
-    expect(rifle.firearm?.adsAcquiring?.elapsedSimSeconds).toBe(
-      rifle.firearm?.adsAcquiring?.durationSimSeconds,
-    );
+    expect(rifle.firearm?.adsAcquiring?.elapsedSimSeconds).toBe(rifle.firearm?.adsAcquiring?.durationSimSeconds);
   });
 });
 
