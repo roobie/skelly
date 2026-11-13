@@ -1,9 +1,15 @@
 import { buildRegistry } from '@skelly/engine/content';
+import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { placedBlockAt } from '@skelly/engine/internal/core/templates.ts';
+import { playerTuning } from '@skelly/engine/internal/game/player.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, toChunk } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import lookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
+  type: 'json',
+};
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
 import { bundledPackInputs } from '../src/product/content.ts';
@@ -81,6 +87,32 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
     const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
     expect(config.startId).toBe(linked.content.startModStart);
     expect(config.site).toBe(linked.content.registry.starts.get(config.startId)?.site);
+  });
+
+  // The cell-repair look's whole staging is the damaged brick the start ships beside the spawn; a cell that
+  // points anywhere else refuses the start at boot, so its geometry is checked here rather than by eye.
+  it("ships the cell-repair look start damage on the alcove brick at the spawn's eye height", () => {
+    const admitted = admitPacks(readBundledPacks('.', lookManifest.id));
+    expect(admitted.issues).toEqual([]);
+    const { registry, issues } = buildRegistry(admitted.sources);
+    expect(issues).toEqual([]);
+    const layout = registry.layouts.get('testHouseCellRepairLook')!;
+    const alcove = layout.buildings.find(({ template }) => template === 'test_house_repair_alcove')!;
+    const placement = placementOf(registry, alcove, layout.lootContext);
+    const start = registry.starts.get('cellrepairlook')!;
+    const block = (cell: readonly number[]): string | undefined => {
+      const id = placedBlockAt(placement, [...cell] as [number, number, number]);
+      return id === undefined ? undefined : registry.blocks[id]!.id;
+    };
+    const feet = layout.player.position.map((value) => value / 0.5);
+    const eye = Math.floor(feet[1]! + playerTuning(baseContent.registry).eye / 0.5);
+    for (const { cell } of start.blockDamage ?? []) {
+      expect(block(cell)).toBe('brick');
+      expect(cell[0]).toBe(Math.floor(feet[0]!));
+      expect(cell[1]).toBe(eye);
+      expect(cell[2]).toBe(Math.floor(feet[2]!) - 1);
+      expect(block([cell[0], cell[1], cell[2] + 1])).toBe('air');
+    }
   });
 
   it('stays out of the default packs and content unless selected', () => {

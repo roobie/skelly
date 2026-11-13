@@ -21,7 +21,7 @@ import {
 import { BODY_REGIONS } from '../body.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
 import { FixedLootOverride, StartDescentSchema } from './layouts.ts';
-import { Count, Fraction, GameTimeOfDay, Id, Name } from './primitives.ts';
+import { Count, Fraction, GameTimeOfDay, Id, Name, Positive } from './primitives.ts';
 import { CellPosition } from './templates.ts';
 
 const KitDestinationSchema = union([
@@ -75,6 +75,15 @@ export const StartSchema = strictObject({
     }),
   ),
   wounds: array(strictObject({ region: picklist(BODY_REGIONS), bleeding: Id })),
+  /** Terrain cells the start ships already damaged, in world blocks; the damage amount is content, not code. */
+  blockDamage: optional(
+    array(
+      strictObject({
+        cell: CellPosition,
+        damage: Positive,
+      }),
+    ),
+  ),
   /** Every content skill's starting level, under the start's own `skills`; null marks a debug start that tests
    * skills and so keeps the ordinary levels (`docs/PROCESS.md`, "Reviews by eye and by play"). */
   allSkills: optional(nullable(pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_MAX)))),

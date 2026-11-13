@@ -1232,6 +1232,7 @@ const startPlayWith = (
       fresh: true,
       character: session.character,
       body: sim.body,
+      damageCell: (cell, damage) => session.damageTerrainCell(cell, damage),
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);

@@ -1,12 +1,14 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
-// Cell repair by eye: the test house stands the tester beside its brick walls. The build tool (B) cracks a wall
-// block (D), and Shift+R mends the aimed block through the repair recipe the kit teaches; there is no crafting
-// UI for cell repair yet, so the debug tool is the look's trigger.
+// Cell repair by eye: the alcove layout stands the tester inside a brick alcove, facing its north wall, and
+// the start ships that wall's eye-height brick already cracked, so the look is only the build tool (B) and
+// the repair key (Shift+R) through the repair recipe the kit teaches; cell repair has no crafting view until
+// #1469. The damage amount is content here, not code.
 {
-  starts: [kit.fixture + kit.notSiteDefault + {
+  starts: [kit.fixture + {
     id: 'cellrepairlook',
-    site: 'testHouseAmalgam',
+    site: 'testHouseCellRepairLook',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
+    blockDamage: [{ cell: [-22, 45, 28], damage: 120 }],
     kit+: [
       { id: 'pack', item: 'school_backpack', condition: 0.8, destination: { kind: 'worn' } },
       { id: 'repair_kit', item: 'repair_kit', destination: { kind: 'pocket', parent: 'pack', pocket: 0 } },

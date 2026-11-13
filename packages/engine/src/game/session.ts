@@ -39,7 +39,7 @@ import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
@@ -1599,6 +1599,20 @@ export const createSession = (options: SessionOptions) => {
     }
     return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
   };
+  /** Records authored start damage on a cell, admitted like a strike's retained damage: the column's supply is
+   * read and published before the damage lands, so the damaged world survives streaming and saves. */
+  const damageTerrainCell = (cell: Vec3, damage: number): void => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      throw new Error('Start damaged a cell with no terrain destruction owner');
+    }
+    const supply = columnSupply.project(context.source);
+    const ensure = (cx: number, cz: number): void => context.terrain.ensureColumn(cx, cz);
+    supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
+    supply.publish(supply.revision, ensure, () => {
+      world.blockDamage.record(context.terrain, registry, cell, damage);
+    });
+  };
   const traps = new BearTraps(inventory);
   const actorReady = actorReadinessFor(options);
   const placeActorDrop = (item: Item, pos: Vec3): 'placed' | 'discarded' => {
@@ -2885,6 +2899,7 @@ export const createSession = (options: SessionOptions) => {
       return playerEyeHeightMetres();
     },
     strikeTerrainCell,
+    damageTerrainCell,
     projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {

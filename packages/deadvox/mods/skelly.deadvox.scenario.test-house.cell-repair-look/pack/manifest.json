@@ -1,9 +1,10 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
-    "skelly.deadvox.scenario.test-house.debug",
+    "skelly.deadvox.scenario.test-house",
     "skelly.hand-tools",
     "skelly.light-sources",
+    "skelly.manufactured-blocks",
     "skelly.materials",
     "skelly.medicine",
     "skelly.melee",
@@ -11,6 +12,10 @@
     "skelly.wearables"
   ],
   "files": [
+    {
+      "kind": "content",
+      "path": "layouts.json"
+    },
     {
       "kind": "content",
       "path": "starts.json"

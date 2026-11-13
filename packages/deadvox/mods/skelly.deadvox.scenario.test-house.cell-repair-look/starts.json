@@ -2,7 +2,14 @@
   "starts": [
     {
       "allSkills": 10,
+      "blockDamage": [
+        {
+          "cell": [-22, 45, 28],
+          "damage": 120
+        }
+      ],
       "debugOnly": true,
+      "defaultForSite": true,
       "density": null,
       "id": "cellrepairlook",
       "kit": [
@@ -115,7 +122,7 @@
         "repair_planks"
       ],
       "seed": 1,
-      "site": "testHouseAmalgam",
+      "site": "testHouseCellRepairLook",
       "skills": {},
       "startTimeGameTimeOfDay": "12:00",
       "storeys": 1,

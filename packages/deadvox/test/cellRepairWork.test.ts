@@ -346,7 +346,7 @@ it('saves and loads a mid-job cell repair and completes it once without duplicat
       throw new Error('Fixture input did not fit');
     }
   }
-  expect(f.session.strikeTerrainCell(WALL, { strength: 4, kind: 'blunt' })).toBe(true);
+  f.session.damageTerrainCell(WALL, 4);
   const damage = f.world.blockDamage.get(WALL)!;
   expect(damage.damage).toBe(4);
   expect(f.session.crafting.repairCell(RECIPE, WALL)).toBeUndefined();
