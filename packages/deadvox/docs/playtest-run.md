@@ -7,7 +7,7 @@ read_if:
 
 # Slice 3 playtest
 
-The playtest is self-serve: testers use the landing page to play or practise the controls, and may share feedback or metrics by choice. Practice is unsaved and leaves the saved world alone so newcomers can learn without risking a run. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../../.github/ISSUE_TEMPLATE/playtest-feedback.md).
+The playtest is self-serve: testers use the landing page to play or practise the controls, and may share feedback or metrics by choice. Practice is unsaved and leaves the saved world alone so newcomers can learn without risking a run. The Round 1 page asks them to survive and find the military camp. See `../EPIC.md`, "Playtest plan", and the [playtest feedback form](../../../.github/ISSUE_TEMPLATE/playtest-feedback.yml).
 
 ## Frozen round publication
 
@@ -29,7 +29,7 @@ There is no fixed play duration or number of sittings. Continue resumes a living
 
 When the blocking error panel appears, stop playing. Copy the complete displayed error and download the local report; nothing is sent automatically. The report may include build, world, browser and recent playtest data. Review it before posting publicly. Use the feedback form, and attach the report if the error is too long to prefill. See `packages/presentation/src/ui/errorReport.ts`, `errorReportText`, and `packages/presentation/src/presentation/play.ts`, `stopPlayAfterError`.
 
-The menu can export playtest metrics and a recent replay during play or after death. Sending either is the tester's choice. Review files before posting or emailing them.
+The feedback form has one box because its previous four-section form made testers bail. The game pre-fills seed, browser and build because it can provide facts without asking testers. The menu can export playtest metrics and a recent replay during play or after death. Sending either is the tester's choice. Review files before posting or emailing them.
 
 ## Findings
 

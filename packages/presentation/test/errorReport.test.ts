@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { errorDetails, errorReportText, errorText, feedbackUrlForError } from '../src/ui/errorReport.ts';
+import {
+  errorDetails,
+  errorReportText,
+  errorText,
+  feedbackUrlForError,
+  PLAYTEST_FEEDBACK_FIELD_IDS,
+} from '../src/ui/errorReport.ts';
 
 const handBack = (name: string, value: unknown) => ({
   blob: new Blob([JSON.stringify(value)], { type: 'application/json' }),
   name,
 });
 
-const FEEDBACK_SOURCE = 'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md';
+const FEEDBACK_SOURCE = 'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.yml';
 
 describe('error reports', () => {
   it('preserves the complete Error message and stack for copying', () => {
@@ -19,12 +25,14 @@ describe('error reports', () => {
   });
 
   it('prefills concise GitHub feedback and falls back to attaching the report when long', () => {
-    const concise = feedbackUrlForError('Short failure\nstack', FEEDBACK_SOURCE);
+    const concise = feedbackUrlForError('Short failure\nstack ``` text', FEEDBACK_SOURCE);
     const conciseUrl = new URL(concise.href);
     expect(concise.attachReport).toBe(false);
-    expect(conciseUrl.searchParams.get('template')).toBe('playtest-feedback.md');
+    expect(conciseUrl.searchParams.get('template')).toBe('playtest-feedback.yml');
     expect(conciseUrl.searchParams.get('title')).toContain('Short failure');
-    expect(conciseUrl.searchParams.get('body')).toContain('Short failure');
+    expect(conciseUrl.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened)).toBe(
+      ['````text', 'Short failure\nstack ``` text', '````'].join('\n'),
+    );
 
     const long = feedbackUrlForError('x'.repeat(10_000), FEEDBACK_SOURCE);
     expect(long.attachReport).toBe(true);

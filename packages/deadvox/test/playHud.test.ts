@@ -122,7 +122,6 @@ it('shows every pain component on two adjacent lines after needs', () => {
     health: 91,
     blood: 67,
     bleeding: [],
-    sprinting: false,
     lightCharge: undefined,
   } as const;
 
@@ -177,7 +176,6 @@ it("projects blood level and affected regions, with their tier's label, only whi
     health: 91,
     blood: 67,
     bleeding: [{ region: regionLabel, label: tierLabel, warn: true }],
-    sprinting: false,
     lightCharge: undefined,
   } as const;
   const bleeding = playNeedsText(base, text.stats);
@@ -212,7 +210,6 @@ it('gives only a tier content marks to warn the warning sign, while naming every
     painTier: undefined,
     health: 91,
     blood: 67,
-    sprinting: false,
     lightCharge: undefined,
   };
   const warned = playNeedsText({ ...status, bleeding: [{ region, label: 'Warned', warn: true }] }, text.stats);

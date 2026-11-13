@@ -905,7 +905,20 @@ const startPlayWith = (
       closeInventoryScreen: () => closeInventoryScreen(),
       syncMenuState: () => syncMenuState(),
       openInventory: (tab) => openInventory(tab),
-      openFurnitureChoices: (entity, actions) => actionMenu.open('furniture', entity, actions),
+      openFurnitureChoices: (entity, actions) => {
+        const direct = actionMenu.open(
+          'furniture',
+          entity,
+          radialEntries(actions, actionMenuTuning.directions.furniture),
+        );
+        const payload = direct && furnitureChoicePayload(entity, direct);
+        if (payload) {
+          const reason = router.dispatchScreenCommand(payload);
+          if (reason) {
+            showRefusal(reason, sim.time);
+          }
+        }
+      },
       beginSearch: (entity) => playtestObserver?.beginSearch(entity, nameOf(entity)),
       weaponInspected: (item) => guide?.weapons.inspected(item, registry),
       throwVisual: (launch, owner) => itemThrows.spawn(launch, owner),
@@ -1338,7 +1351,7 @@ const startPlayWith = (
   const drawActionMenu = (ringVisible: boolean): void => {
     const entries = openMenuEntries() ?? [];
     const ring = ringVisible || actionMenu.childOpen ? (actionMenu.ring(entries) ?? []) : [];
-    const centre = actionMenu.childOpen ? screenText.actionMenu.back : undefined;
+    const centre = actionMenu.canReturn(entries) ? screenText.actionMenu.back : undefined;
     drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, centre);
   };
   /** Closes the held menu once its item leaves the hands or its child ring has nothing left to offer. */
@@ -1346,8 +1359,8 @@ const startPlayWith = (
     const item = openHeldItem();
     const inHand = item && survival.handOf(item) !== undefined ? item : undefined;
     actionMenu.sync('held', inHand?.uid, paused);
-    if (actionMenu.childOpen && !(inHand && actionMenu.ring(heldMenuEntries(inHand)))) {
-      actionMenu.close();
+    if (actionMenu.childOpen && inHand) {
+      actionMenu.ring(heldMenuEntries(inHand));
     }
   };
   const quickbarBox = $('quickbar');
@@ -2245,11 +2258,7 @@ const startPlayWith = (
     );
   };
 
-  const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
-    const selected = actionMenu.confirm(furnitureMenuEntries(entity));
-    if (!selected) {
-      return undefined;
-    }
+  const furnitureChoicePayload = (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
     if (selected.id === 'repair') {
       quickbarInput.cancel();
       screen.openRepair(entity.uid);
@@ -2266,6 +2275,10 @@ const startPlayWith = (
     return selected.id === 'drag'
       ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
       : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+  };
+  const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
+    const selected = actionMenu.confirm(furnitureMenuEntries(entity));
+    return selected && furnitureChoicePayload(entity, selected);
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
     if (actionMenu.isOpen('furniture', entity.uid)) {
@@ -2420,7 +2433,6 @@ const startPlayWith = (
       health: sim.body.health,
       blood: sim.body.blood,
       bleeding: bleedingStatusRows((region) => sim.body.bleedingTier(region)),
-      sprinting: session.sprinting,
       lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
     };
   };

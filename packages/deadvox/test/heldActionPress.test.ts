@@ -11,7 +11,18 @@ const choices = [
 const entries = radialEntries(choices, { own: 0, sharpen: 90 });
 const treat = [...choices, { id: 'treat', label: 'Treat' }];
 const treatEntries = radialEntries(treat, { own: 0, sharpen: 180, treat: 90 }).map((entry) =>
-  entry.id === 'treat' ? { ...entry, children: radialEntries([{ id: 'arm', label: 'Arm' }], { arm: 0 }) } : entry,
+  entry.id === 'treat'
+    ? {
+        ...entry,
+        children: radialEntries(
+          [
+            { id: 'arm', label: 'Arm' },
+            { id: 'leg', label: 'Leg' },
+          ],
+          { arm: 0, leg: 180 },
+        ),
+      }
+    : entry,
 );
 
 const fixture = (actions: readonly { id: string; label: string }[] = choices, menuEntries = entries) => {
@@ -32,6 +43,16 @@ const fixture = (actions: readonly { id: string; label: string }[] = choices, me
 };
 
 describe('held item action press', () => {
+  it('runs the lone action remaining at hold resolution once, without opening a menu', () => {
+    const { press, menu, acts } = fixture(choices, entries.slice(0, 1));
+    expect(press.press('right', 'dominant', 0)).toBe(true);
+    press.update(HOLD_MS);
+    expect(acts).toEqual(['5:own']);
+    expect(menu.opened).toBeUndefined();
+    press.release('dominant', HOLD_MS * 2);
+    expect(acts).toEqual(['5:own']);
+  });
+
   it('leaves a lone action its own press', () => {
     const { press, menu } = fixture([choices[0]!]);
     expect(press.press('right', 'dominant', 0)).toBe(false);

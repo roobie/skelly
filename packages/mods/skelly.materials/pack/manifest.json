@@ -59,6 +59,10 @@
     },
     {
       "kind": "json",
+      "path": "things/stone_eggshell_shard.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/tape_roll.model.json"
     },
     {
@@ -124,6 +128,10 @@
     {
       "kind": "asset",
       "path": "assets/models/stick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stone_eggshell_shard.glb"
     },
     {
       "kind": "asset",
