@@ -1689,10 +1689,17 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
               !def.vehicle &&
               !def.scenarioGoal &&
               !def.cover &&
-              def.size.some(
-                (cells) =>
-                  cells * r.scale.blockSize > r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-              ),
+              (kind === 'small'
+                ? def.size.every(
+                    (cells) =>
+                      cells * r.scale.blockSize <=
+                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
+                  )
+                : def.size.some(
+                    (cells) =>
+                      cells * r.scale.blockSize >
+                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
+                  )),
         );
         if (!doorDef) {
           throw new Error('Door fixture is missing');
@@ -1833,6 +1840,35 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       true,
       'a tap on movable furniture records a plain interaction that searches it',
     );
+    await page.waitForFunction(
+      () => !globalThis.primaryActionTest.queue.busy && globalThis.primaryActionTest.screen.isOpen,
+    );
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+    });
+    const smallUid = await aimFurnitureFixture('small');
+    const releaseSingle = await holdAction(page, 'world.interact');
+    try {
+      await page.waitForFunction(
+        (uid) => globalThis.primaryActionTest.inventory.entities.carrying()?.uid === uid,
+        smallUid,
+      );
+      assert.equal(await actionRingShown(page), false, 'a sole furniture action lifts directly without a menu');
+    } finally {
+      await releaseSingle();
+    }
+    const singleLifts = await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inputRecorder
+          .copyInputs()
+          .actions.filter(({ payload }) => payload?.kind === 'furniture.lift' && payload.entityUid === uid).length,
+      smallUid,
+    );
+    assert.equal(singleLifts, 1, 'one hold dispatches the sole furniture action once');
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -4299,22 +4335,39 @@ try {
           ) === JSON.stringify(expected),
         ids,
       );
-    // Treat gathers the wounds under one entry, whose child ring offers each one and returns to its parent at the centre.
-    await chooseHeldAction(page, 'treat');
-    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
     const releaseAtCentre = await holdDominantUse(page);
+    await waitForActionRing(page);
+    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    const labelsOverlap = await page.evaluate(() => {
+      const boxes = [...document.querySelectorAll('#action-radial .radial-entry')].map((label) =>
+        label.getBoundingClientRect(),
+      );
+      return boxes.some((box, index) =>
+        boxes
+          .slice(0, index)
+          .some(
+            (other) =>
+              box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top,
+          ),
+      );
+    });
+    assert.equal(labelsOverlap, false, 'the rag ring label boxes do not overlap');
+    await page.screenshot({ path: resolve(projectRoot, 'test-results/primary-action/rag-ring.png') });
+    assert.equal(
+      await page.locator('#action-radial .radial-centre-label').count(),
+      0,
+      'a shortcut-entered wound ring offers no return label when its centre cancels',
+    );
     await releaseAtCentre();
-    await page.waitForSelector('#action-radial .radial-entry[data-action="treat"]', { state: 'attached' });
+    await waitForActionRing(page, false);
     assert.notEqual(
       await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
       'treatment',
-      'the child ring centre returns to the parent ring without treating',
+      'the wound ring centre cancels without offering a sole Treat parent or treating',
     );
     // A wound other than the default proves the choice, not the default, picks what is treated.
     const chosenWound = treatment.wounds.find(({ region }) => region !== treatment.defaultRegion);
     assert(chosenWound, 'the treatment fixture offers a wound besides the default');
-    await chooseHeldAction(page, 'treat');
-    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
     await chooseHeldAction(page, chosenWound.id);
     const selected = chosenWound.region;
     await page.waitForFunction(

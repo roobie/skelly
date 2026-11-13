@@ -47,7 +47,8 @@ export const BlockMaterialSchema = pipe(
     massKg: Positive,
     span: Count,
     fallsTo: Id,
-    breakable: optional(vBoolean()),
+    /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
+    breakable: vBoolean(),
     rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
     blowSound: Id,
     broken: strictObject({ tint: Color, strength: Fraction }),
