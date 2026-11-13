@@ -82,7 +82,7 @@
           "item": "road_flare"
         },
         {
-          "count": 8,
+          "count": 24,
           "destination": {
             "kind": "pocket",
             "parent": "jeans",

@@ -36,8 +36,9 @@
 // Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
 // death is different — packages/engine/src/core/actorSystem.ts's onDeath removes the actor from its store and calls actorDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
-// slot/variant/instance, falls (as a ragdoll, or through the figure's built death clip when it bakes one),
-// holds once lying, sinks, then frees the slot. Corpses are render-only; incapacitated actors remain
+// slot/variant/instance, falls as its type's content selects (`deathFall`: corpse physics, the figure's
+// built death clip when it bakes one, or the pose frozen at death), holds once lying, sinks, then frees
+// the slot. Corpses are render-only; incapacitated actors remain
 // simulation entities, fall once and lie in their existing row, excluded from corpse eviction, until finishing
 // one off makes it an ordinary corpse.
 //
@@ -418,6 +419,9 @@ export const hearingGazeTarget = (
 interface Corpse extends SlotHolder {
   /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
   readonly incapacitated: boolean;
+  /** The death fall its type's content selected, frozen on the corpse: physics admission, pose and
+   * lifecycle all read this one field, never the figure's clips alone. */
+  readonly deathFall: 'ragdoll' | 'baked' | 'frozen';
   /** The pose frozen at the instant of death. */
   readonly basePose: Pose;
   /** The simulation's death point stays separate from render-only limb motion and sinking. */
@@ -1476,6 +1480,7 @@ export class MobActorMeshes implements ActorRenderer {
     const basePose = this.posedFrame(state, actor, this.currentRenderPlacement(actor), { dt: 0 }).pose;
     this.corpses.set(id, {
       incapacitated: true,
+      deathFall: actor.type.deathFall,
       variantIndex: state.variantIndex,
       localSlot: state.localSlot,
       globalRow: state.globalRow,
@@ -1543,6 +1548,7 @@ export class MobActorMeshes implements ActorRenderer {
     this.burst(this.variants[state.variantIndex]!, posed.transforms, posed.placement, actor);
     this.corpses.set(id, {
       incapacitated: false,
+      deathFall: actor.type.deathFall,
       variantIndex: state.variantIndex,
       localSlot: state.localSlot,
       globalRow: state.globalRow,
@@ -1579,30 +1585,30 @@ export class MobActorMeshes implements ActorRenderer {
     });
   }
 
+  /** A corpse physics-falls exactly when its death-fall selection is the ragdoll one; the baked and
+   * frozen selections hold their fall or pose through corpsePose and corpseFallDuration instead. */
   private startRagdoll(corpse: Corpse): void {
-    if (this.ragdolls?.failed) {
+    if (this.ragdolls?.failed || corpse.deathFall !== 'ragdoll') {
       return;
     }
     const variant = this.variants[corpse.variantIndex]!;
-    if (this.options.ragdoll.models.includes(variant.body.model)) {
-      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared, this.options.ragdoll);
-      corpse.ragdoll = this.ragdolls.spawn({
-        body: variant.body,
-        model: variant.body.model,
-        pose: corpse.basePose,
-        position: corpse.worldPos,
-        yaw: corpse.yaw,
-        direction: corpse.direction,
-        seed: this.options.ragdollSeed ?? corpse.poseSeed,
-        scale: variant.scale,
-        ground: this.rigidWorld(),
-        excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed))),
-        ...(corpse.launch ? { launch: corpse.launch } : {}),
-        ...(corpse.incapacitated
-          ? { reach: Math.min(this.options.handlingReachMetres, this.options.ragdoll.downedDriftMetres) }
-          : {}),
-      });
-    }
+    this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared, this.options.ragdoll);
+    corpse.ragdoll = this.ragdolls.spawn({
+      body: variant.body,
+      model: variant.body.model,
+      pose: corpse.basePose,
+      position: corpse.worldPos,
+      yaw: corpse.yaw,
+      direction: corpse.direction,
+      seed: this.options.ragdollSeed ?? corpse.poseSeed,
+      scale: variant.scale,
+      ground: this.rigidWorld(),
+      excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed))),
+      ...(corpse.launch ? { launch: corpse.launch } : {}),
+      ...(corpse.incapacitated
+        ? { reach: Math.min(this.options.handlingReachMetres, this.options.ragdoll.downedDriftMetres) }
+        : {}),
+    });
   }
 
   /** Reports where a dying body's burst bones (the acid sac) were, for the splash. */
@@ -2291,7 +2297,7 @@ export class MobActorMeshes implements ActorRenderer {
     if (corpse.settledPose) {
       return corpse.settledPose;
     }
-    const clip = deathClip(variant.clips, corpse.direction);
+    const clip = corpse.deathFall === 'baked' ? deathClip(variant.clips, corpse.direction) : undefined;
     if (!clip) {
       return corpse.basePose;
     }
@@ -2663,7 +2669,9 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private corpseFallDuration(corpse: Corpse): number {
-    return deathClip(this.variants[corpse.variantIndex]!.clips, corpse.direction)?.durationRealSeconds ?? 0;
+    return corpse.deathFall === 'baked'
+      ? (deathClip(this.variants[corpse.variantIndex]!.clips, corpse.direction)?.durationRealSeconds ?? 0)
+      : 0;
   }
 
   private advanceCorpses(realDt: number): void {
