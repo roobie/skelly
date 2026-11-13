@@ -4,7 +4,7 @@ read_if:
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
   - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
   - you're implementing bear traps, data-driven events or the playtest waves
-  - you're authoring the base-building playtest's site, supplies or wave schedule
+  - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
 ---
 
 # Slice 5 — Holding ground
@@ -16,7 +16,7 @@ open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
-`packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`, `rule`. The bear trap is
+`packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
 built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
 `packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
 defending?**
@@ -197,20 +197,16 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   completion so save/load cannot duplicate the wave. A script language is not
   admitted. Position-trigger permission remains open below and does not block the
   elapsed-time wave.
-- **Wave day:** the first wave arrives after three elapsed scenario days. The bounded
-  preparation window suits the small playable content volume without making
-  participants wait through days with little to do. Raise the content value as
-  content growth warrants a longer preparation loop; this is author tuning, not
-  automatic code-based scaling. Keep the day in scenario content under
-  `PILLARS.md`, "Content forward compatibility" (repo root).
-- **Waves never end:** after the first wave the scenario keeps sending waves, harder
-  in both quantity and quality through the authored list under "Escalation" below and
-  then level, so holding ground is an endurance test rather than one scripted fight.
-  Survival time is still not a pass threshold; see "Playtest questions and exit".
-- **Wave gap:** later waves arrive five scenario days apart, a middle value that
-  leaves room for supply excursions without long waits with little to do. The gap is
-  authored in scenario content, not chosen at game start, so timing has one
-  authority and a mod sets its own; the player gets no pacing choice.
+- **Wave day:** a bounded preparation window gives fortifying a reason without
+  scaling pressure to base wealth. The clock is author tuning, not a player pacing
+  choice; see `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+- **Waves never end:** the intended endurance loop has no victory condition.
+  The expanded schedule is finite; exhausting it is the trigger for adding a repeating
+  event mechanism, not a reason to put a second clock in the session. Survival time
+  is not a pass threshold; see "Playtest questions and exit".
+- **Wave gap:** predictable arrivals leave room to plan excursions. Keep timing in
+  scenario content so a mod changes one authority; see
+  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
 - **Repeat clock:** the gap counts from one arrival to the next, not from the end of
   a fight. The saved scenario run's calendar then fixes the whole schedule, and no
   rule has to decide when a fight with unloaded zombies has ended. Waves may
@@ -218,29 +214,36 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
 - **Wave target:** every wave heads for where the player stands when it fires, as
   the first wave does. No shelter identity is needed, so an unattended base is never
   attacked; unattended shelter defence waits on Slice 4b's region work.
-- **Escalation:** content lists the waves as rows of count, type and strength, and
-  the last row repeats, so an author tunes a wave by editing a row and the end of the
-  list is a plateau rather than endless growth. A formula over the wave index is not
-  admitted; two sources for one value would compete.
+- **Escalation:** Jsonnet expands the authored escalation rows, repeating the last
+  row as a plateau rather than endless growth. Actor content owns strength; selecting
+  actor types avoids a second strength authority in wave effects. The engine receives
+  explicit event rows, never a competing wave-index formula. See
+  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+- **Arrival:** anchors keep placement choices in content while seeded draws let waves
+  probe different approaches. Runtime event rules need no knowledge of anchor kinds;
+  see `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
 
 ### Settled base-building playtest rules
 
 The base-building playtest, the third playtest round, is scoped in #1332.
 
-- **Site:** a new small authored site, built for defence rather than a reused
-  playtest or gauntlet site, so the shelter, its approaches and its supply runs are
-  deliberate. Its size is open under #1332. The mansion stays deferred past this
-  playtest under #1332.
+- **Site:** a composed site lets the base-building playtest grow incrementally
+  without inheriting the gauntlet's city, hatch or map pool. Holdout disables authored
+  population markers so the forcing pressure is the wave schedule, not incidental
+  template occupants; see `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
+  `scenario`. The mansion stays deferred past this playtest under #1332.
 - **Supplies:** the site offers all three sources: rubble and take-apart of what
   stands there, authored stockpiles at a distance, and loot tables. Salvage alone
   starves the loop into dismantling the shelter to fix it, and loot alone makes
   supply random; distant stockpiles give excursions a deliberate target.
-- **Supply sites:** a hardware store, a construction site and a ruin ring by the
-  shelter, each its own template placed by the site layout, so each kind tells the
-  player what to find there and an author changes one without touching the others.
-- **Stockpile distance:** a small starter pile sits by the shelter and bulk stock
-  lies an excursion away, so arrival can start fortifying under "Early session"
-  while bulk still needs the excursion #1332 names.
+- **Supply sites:** #1332 adds independently authored asks for supply affordances,
+  rather than a fixed ring of POIs. Redundant sources keep imperfect seeds playable;
+  guarantee only source counts, not routes or distances. See
+  `packages/engine/src/core/composeLayout.ts`, `guaranteeIssues`.
+- **Stockpile distance:** #1332 gives the starter pile a strong near-start weight
+  and bulk supplies broader distance weights. Distances are preferences, not bands
+  or per-seed certificates, so a distant starter pile is variation rather than a
+  placement failure. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
 - **Bulk stock:** stacks of material are pieces taken apart through work. The
   take-apart command comes first, so no bulk-stock piece is faked by bashing and
   reworked once the command exists.
@@ -320,11 +323,10 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
 7. **Event rules, scenario waves and region integration.** #313's rules and their
-   one-shot state are built; see `DESIGN.md`, "Scenario events". The Holdout pack
-   adopts the first wave with its own arrival point; see
-   `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`, `rule`.
-   Add the recurring, escalating waves under "Settled event and playtest rules", then
-   grow the site's content and supplies under "Settled base-building playtest rules".
+   one-shot state are built; see `DESIGN.md`, "Scenario events". Holdout's expanded
+   wave schedule uses seeded arrival anchors so approaches vary without a runtime
+   placement policy; see `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+   Grow the site's content and supplies under "Settled base-building playtest rules".
    Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
    and nearby/background light attention. Exercise preparation, the waves and recovery
@@ -363,24 +365,12 @@ lane the order is a dependency; across lanes only the joins named here hold.
 - **Built systems.** Appliance controls and processes after placement; brute
   knockback and displacement independently, since nothing above needs it; fire last,
   under "Settled fire and exposure rules".
-- **Playtest pack.** The Holdout pack has adopted the first wave on an empty site, so
-  the other lanes have a shipped scenario to test in; recurrence and escalation next;
-  the site's supplies and later procedural content after, joined to the construction
-  lane's take-apart command because bulk stock and rubble clearing go through it; then
-  the region proofs of package 7. The site starts empty because an existing site's
-  buildings are not useful for the base-building loop, and it grows step by step so
-  each addition is deliberate. The site stays a content value so the later site rounds
-  change content, not the pack's rules.
-
-The next rounds, in dispatch order:
-
-1. **Adopt the first wave in a base-building scenario pack: done.** The committed
-   Holdout pack starts on the empty site the Playtest pack lane names, so the other
-   lanes have a shipped scenario to test in; see `docs/url-mods.md`,
-   "Committed scenarios", and
-   `packages/deadvox/mods/skelly.deadvox.scenario.holdout/holding-wave.libsonnet`,
-   `rule`. No engine code, recurrence, shelter identity or supply authoring: those
-   are the later playtest-pack rounds.
+- **Playtest pack.** Holdout grows from independently authored asks so each addition
+  can be retuned without city-shape constraints. #1332's supply affordances join the
+  construction lane's take-apart command because bulk stock and rubble clearing use
+  it; region proofs follow in package 7. Keep site tuning in content rather than
+  scenario-specific engine rules. See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
+  `scenario`, and `docs/url-mods.md`, "Committed scenarios".
 
 ## State and technical proof
 

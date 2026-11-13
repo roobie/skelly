@@ -2,7 +2,7 @@ import { lotChoices } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { StartDef } from './schema/starts.ts';
-import type { ScenarioDef } from './schema.ts';
+import type { CityScenarioDef } from './schema.ts';
 import {
   templateBodySpace,
   templateClimbCertificate,
@@ -55,7 +55,7 @@ export const startTemplate = (registry: Registry, id: string, seed: number, site
 
 const skylineIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   start: StartPlacementDef,
   template: CompiledTemplate,
 ): [string, string][] => {
@@ -92,7 +92,7 @@ const skylineIssues = (
 
 export const scenarioStartIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   start: StartPlacementDef,
 ): [string, string][] => {
   const issues: [string, string][] = [];

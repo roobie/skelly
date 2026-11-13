@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
@@ -772,6 +773,12 @@ around structures, routes, and spawn so shaped ground does not look like a flat
 platform or cut-out tree border. Site-generation controls belong in content,
 not in authored layout geometry. See `AuthoredSite` in
 `packages/engine/src/core/authoredSite.ts` and the site-generation schema.
+
+Composed scenarios add a seeded placement layer before the authored layout, rather
+than extending the city planner with terrain-specific cases. The layout is the shared
+output format that grows, so future city cores can become asks instead of keeping two
+site systems. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`, and
+`docs/decisions/0010-composed-sites.md`, "Decision".
 
 Small structures use authored templates because they are reviewable and
 content validation can check them. Keep template representation and import

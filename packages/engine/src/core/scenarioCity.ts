@@ -5,7 +5,7 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { StartPlacementDef } from './scenarioStart.ts';
-import type { ScenarioDef } from './schema.ts';
+import type { CityScenarioDef } from './schema.ts';
 import { ordinarySpawnWeights, settlementActorSpawns, settlementHordeSpawn } from './settlementSpawns.ts';
 import { type ActorSpawn, type HordeSpawn, rectDistance } from './site.ts';
 import { terrainShapeOf } from './sitePalette.ts';
@@ -13,7 +13,7 @@ import { footprint, type Placement, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
 export class ScenarioCitySite extends CitySite {
-  readonly scenario: ScenarioDef;
+  readonly scenario: CityScenarioDef;
   private readonly population = new Map<string, ActorSpawn[]>();
   private readonly hordes = new Map<string, HordeSpawn[]>();
 
@@ -27,7 +27,7 @@ export class ScenarioCitySite extends CitySite {
     seed: number;
     registry: Registry;
     scale: Scale;
-    scenario: ScenarioDef;
+    scenario: CityScenarioDef;
     /** The selected start's placement; omitted, the scenario builds city-only. */
     start?: StartPlacementDef | undefined;
   }) {
@@ -100,7 +100,7 @@ const ordinaryBuildings = (site: CitySite): Placement[] => {
 };
 const authoredHordeSpawns = (
   site: CitySite,
-  population: ScenarioDef['population'],
+  population: CityScenarioDef['population'],
   scenarioId: string,
 ): HordeSpawn[] => {
   if (!(population.settlementPressure && population.hordeAreas)) {
@@ -113,7 +113,7 @@ const authoredHordeSpawns = (
     }),
   );
 };
-const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDef['population']): Set<number> => {
+const hordeGroupStarts = (seed: number, starts: number[], population: CityScenarioDef['population']): Set<number> => {
   const { hordes, hordeAreas, settlementPressure } = population;
   const capacity = hordeAreas?.length ?? starts.length;
   if (settlementPressure && hordes > capacity) {
@@ -124,7 +124,7 @@ const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDe
   );
 };
 
-export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
+export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, population }: CityScenarioDef) => {
   const actors = new Map<string, ActorSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
