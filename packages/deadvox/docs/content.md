@@ -227,7 +227,7 @@ Two nearby values stay out of the sense tuning on purpose. The stride-phase orig
 
 ## Death falls
 
-Each actor type's content selects how its body falls when it dies, and when a destroyed torso downs it instead: corpse physics, the figure's baked fall, or the pose frozen at death. One body type cannot fall well every way — a fused mass of bodies collapses badly as a physics corpse — so the selection belongs to the type, not the renderer. Every type states it, and the renderer keeps the choice on the corpse, honoring it in physics admission, pose and sink timing alike. A baked selection needs a figure that bakes a death pair, and admission rejects a type that selects one without; see `packages/engine/src/core/schema/actors.ts`, `ActorSchema`, and `packages/engine/src/core/content.ts`, `actorFigureFileIssues`. Physics admission is `packages/presentation/src/render/mobActors.ts`, `startRagdoll`; the baked fall is authored once in skelly-assets and plays through `packages/presentation/src/render/corpsePose.ts`, `corpseFallPose` (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Canonical baked fall").
+Each actor type's content selects how its body falls, in death and in a downed collapse alike, because one body type cannot fall well every way: a fused mass of bodies collapses badly as a physics corpse. The selection, its admitted values and its rejection of a baked fall without a baked figure to play: `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `packages/engine/src/core/content.ts`, `actorFigureFileIssues`; and `packages/presentation/src/render/mobActors.ts`, `startRagdoll`.
 
 ## Content test registries
 
