@@ -178,7 +178,7 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
   }
   const warmUp = modelMaterialWarmUp({
     instanced: false,
-    skyAnchored: false,
+    skyAnchored: true,
     finishedVariants: finishes.warmUpVariants,
   });
   patches.apply(warmUp);

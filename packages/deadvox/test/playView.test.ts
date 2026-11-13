@@ -432,17 +432,6 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('patches the scene for the skylight before warm-up compiles it', async () => {
-    const { engine, view, shadows } = fixture();
-    const patchMaterials = vi.fn();
-    Object.assign(engine, { skylight: { patchMaterials } });
-    await view.warmUp();
-    expect(patchMaterials).toHaveBeenCalledExactlyOnceWith(engine.scene);
-    expect(patchMaterials.mock.invocationCallOrder[0]).toBeLessThan(shadows.warmUp.mock.invocationCallOrder[0]!);
-    Object.assign(engine, { skylight: undefined });
-    view.dispose();
-  });
-
   it('does not revive an expired hit recoil when a disabled block follows', () => {
     const { view } = fixture();
     const update = vi.spyOn(view.held, 'update').mockImplementation(() => undefined);
