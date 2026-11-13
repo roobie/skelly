@@ -209,6 +209,12 @@ space and drive-out routes clear rather than making the parked vehicle occupy ev
 bay. Bays and parked placements share a content owner so moving a bay moves what stands
 in it. See `mods/skelly.deadvox.scenario.test-house/layouts-test-house.jsonnet`, `bays`.
 
+The vehicle finishes site is a separate fixture, so judging paint, glass and sky reflection
+does not crowd the garage. Its opt-in start mod gives the site a start of its own because
+a start mod must hold exactly one start row, which the amalgam look's mod already uses; open it with
+`?start-mod=skelly.deadvox.scenario.test-house.finishes`. See
+`mods/skelly.deadvox.scenario.test-house.finishes/starts.jsonnet`, `starts`.
+
 The building and its ordinary furnishings stay in normal mode. Shared house power makes
 its lighting part of the same home, and roof access must not cross a vehicle bay. See
 `mods/skelly.deadvox.scenario.test-house/templates-test-house.jsonnet`, `test_house_garage_ladder`.
