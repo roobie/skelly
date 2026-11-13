@@ -1,5 +1,14 @@
 {
-  "dependencies": ["skelly.deadvox.scenario.gauntlet.debug"],
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.scenario.gauntlet.debug",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
   "files": [
     {
       "kind": "content",
