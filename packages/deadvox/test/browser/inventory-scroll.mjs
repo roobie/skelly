@@ -1930,6 +1930,39 @@ try {
     assert.deepEqual(errors.slice(pageErrorsBeforeLoad), [], 'loading does not raise a page error');
     logPhase('battery slot drag');
 
+    // The fitted battery is dragged back out of the same slot, as an item leaves an inventory slot.
+    const pageErrorsBeforeUnload = errors.length;
+    const pocket = page.locator('#inventory .inv-grid[data-target^="pocket:"]').first();
+    await pocket.scrollIntoViewIfNeeded();
+    await moveMenuCursorTo(`#inventory [data-target="battery:${lightUid}"] [data-uid="${spareUid}"]`);
+    await page.mouse.down();
+    await moveMenuCursorTo(pocket);
+    assert.equal(await pocket.getAttribute('data-drop-shape'), 'will-land', 'a pocket accepts the dragged-out battery');
+    await page.mouse.up();
+    const unloaded = await page.evaluate(
+      ({ light, spare }) => {
+        const { session, dispatches } = globalThis.foregripFitTest;
+        session.frame(0.1);
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        return {
+          unloads: dispatches.filter((action) => action.kind === 'light.battery.unload').length,
+          fittedUid: session.inventory.itemByUid(light)?.slots?.battery?.uid,
+          where: session.inventory.locate(session.inventory.itemByUid(spare))?.kind,
+        };
+      },
+      { light: lightUid, spare: spareUid },
+    );
+    assert.equal(unloaded.unloads, 1, 'the drag out dispatches one battery unload');
+    assert.equal(unloaded.fittedUid, undefined, 'the light is left empty');
+    assert.equal(unloaded.where, 'pocket', 'the battery lands in the pocket it was dropped on');
+    assert.deepEqual(errors.slice(pageErrorsBeforeUnload), [], 'unloading does not raise a page error');
+    logPhase('battery slot drag out');
+
     const pourStart = await page.evaluate(() => {
       const { session, screen, dispatches } = globalThis.foregripFitTest;
       const inv = session.inventory;

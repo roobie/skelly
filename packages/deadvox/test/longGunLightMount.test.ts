@@ -296,4 +296,26 @@ describe('a light mount on a long gun', () => {
     expect(saved.slots!.battery!.uid).toBe(replacement.uid);
     expect(chargeOf(registry, saved)).toBe(chargeOf(registry, replacement));
   });
+
+  it('takes a fitted battery out through the slot on its card to the chosen place, leaving the light empty and off', () => {
+    const { registry, inventory, queue, handling, survival, sim } = setup();
+    const { gun, mount } = fitted(inventory);
+    expect(handling.fit(gun.uid, LIGHT_MOUNT_SLOT, mount.uid)).toBeUndefined();
+    queue.tick(60);
+    expect(toggleLight(registry, mount)).toBeUndefined();
+    sim.scheduler.advance(1);
+    const battery = mount.slots!.battery!;
+    const charge = chargeOf(registry, battery)!;
+    expect(survival.unloadBatteryTo(mount.uid, { kind: 'pile', pos: [0, 0, 0] })).toBeUndefined();
+    expect(mount.slots!.battery).toBe(battery);
+    queue.tick(60);
+    expect(mount.slots!.battery).toBeUndefined();
+    expect(mount.on).toBe(false);
+    expect(inventory.locate(battery)?.kind).toBe('pile');
+    expect(chargeOf(registry, battery)).toBe(charge);
+    expect(gun.slots![LIGHT_MOUNT_SLOT]).toBe(mount);
+    const restored = Inventory.restoreState(registry, structuredClone(inventory.snapshotState()) as never);
+    expect(restored.itemByUid(gun.uid)!.slots![LIGHT_MOUNT_SLOT]!.slots?.battery).toBeUndefined();
+    expect(survival.unloadBatteryTo(mount.uid, { kind: 'pile', pos: [0, 0, 0] })).toBeTypeOf('string');
+  });
 });

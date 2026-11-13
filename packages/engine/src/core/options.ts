@@ -359,6 +359,24 @@ export const batterySlotRefusal = (view: ReachSnapshot, light: Item, battery: It
   return fitsLight(inv.registry, light, battery) ? undefined : coreMessage(inv.registry, 'wrongBattery');
 };
 
+/**
+ * Whether the battery fitted to `light` can be taken out from the light's battery slot on its item card:
+ * the light within reach, a fitted light through the item it is fitted to. Returns why not, or undefined.
+ */
+export const batterySlotUnloadRefusal = (view: ReachSnapshot, light: Item): string | undefined => {
+  const inv = view.player.inventory;
+  if (!inv.locate(light)) {
+    return coreMessage(inv.registry, 'gone');
+  }
+  if (!view.entries.some((entry) => entry.item === slotRoot(inv, light))) {
+    return coreMessage(inv.registry, 'tooFar');
+  }
+  if (inv.locate(light)?.kind === 'worn') {
+    return coreMessage(inv.registry, 'headlampOnHead');
+  }
+  return light.slots?.battery ? undefined : coreMessage(inv.registry, 'batteryGone');
+};
+
 /** Loading from the item card's battery slot (`packages/deadvox/DESIGN.md`, "Light"). */
 export const batterySlotOption = (view: ReachSnapshot, light: Item, battery: Item): UseOption => {
   const inv = view.player.inventory;

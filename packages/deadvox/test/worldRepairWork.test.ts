@@ -318,6 +318,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     work: (uid, operation) => r.commands.act(uid, operation),
     vehicleWork: unused,
     loadBattery: unused,
+    unloadBattery: unused,
     toHands: unused,
     pickup: unused,
     interact: unused,
