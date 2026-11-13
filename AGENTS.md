@@ -1,7 +1,8 @@
 ---
 read_if:
   - you're an agent starting any task in this repository (always)
-  - you check whether the framework refactor gate permits a new PR
+  - you add or upgrade a dependency, including the pinned Rapier f64 build
+  - you rename, move or re-import TypeScript symbols
 ---
 
 # Notes for coding agents
@@ -16,15 +17,27 @@ At pre-pre-alpha, preserving old formats and behavior can obstruct simpler
 changes, so we owe no backwards compatibility. Change formats, exports and
 contracts freely when that makes the code simpler; don't add legacy paths, opt-in
 flags, compat shims or migrations to keep old output or old data working, and
-don't require byte-identical exports. What must still work: gungen exports a model
-that deadvox validates and loads. Migration, especially of save games, starts
-mattering at v1.0 beta (#1023).
+don't require byte-identical exports. What must still work: the gun and thing
+authoring tools, in the `packages/skelly-assets` submodule, export models that deadvox
+validates and loads. Those models reach deadvox only through an asset pin bump PR, which
+proves that; see `docs/git-workflow.md`, "Shared asset pin bumps". Migration, especially
+of save games, starts mattering at v1.0 beta (#1023).
 
 Before writing or changing player-visible text, apply `packages/deadvox/INTERFACE.md`, "Text".
 
 ## Jsonnet
 
 The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
+
+## Look fixtures
+
+When work needs BR to eyeball or test something, ship a fixture start mod that sets up the whole check.
+The tester's time goes to the check, not to setup or waiting; see
+`docs/PROCESS.md`, "Reviews by eye and by play" for details.
+
+## TypeScript symbolic edits
+
+Rename, move or re-import TypeScript symbols through the TypeScript language service (an LSP client, or `tsc`'s language-service API), not by text edits. It resolves each reference by symbol, so it neither misses an aliased or destructured use nor touches a same-named symbol elsewhere, and one call replaces a long run of hand edits. Prose, Jsonnet, JSON, CSS and string keys stay text edits, and the result is still reviewed as a diff.
 
 ## No host-specific information in tracked files
 
@@ -86,10 +99,11 @@ Private tooling may cite GitHub issues,
 PRs and commits. A clone or contributor using only git and GitHub must be able to read every
 GitHub artifact without private tooling, so references point only from the private side.
 
-- **Feature:** `<subproject><number>` (`g` gungen, `d` deadvox, `m` mobgen, `r` repo-wide
-  or docs), one PR on one branch; engine work uses the `g` prefix because gungen is the
-  engine's only consumer. Numbers count up per subproject; new work always gets a new
-  number, even when it grows out of another feature.
+- **Feature:** `<area><number>`, one PR on one branch. An area is a work area, not
+  necessarily a subproject in this repo: `g` the gun authoring tool wherever its code
+  lives, `d` deadvox, `r` repo-wide or docs. One prefix per tool keeps its history in one
+  namespace, wherever the tool's code lives. Numbers count up per area; new work always
+  gets a new number, even when it grows out of another feature.
 - **Round:** each dispatched piece of work on a feature is a round and its mail item
   (`g26-1`, `g26-2`, …). The first round is `-1`; BR's feedback, review fixes or a
   main merge start the next round.
@@ -97,11 +111,6 @@ GitHub artifact without private tooling, so references point only from the priva
   so each review has one target. Existing letter-suffix IDs remain unchanged.
 
 ## Git workflow and worktrees
-
-The #1532 freeze overrides instructions to open a new PR until the framework refactor
-is executed. Work may use an existing PR. See
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate", for the in-flight
-closure trigger and its reason.
 
 One topic branch per feature, in a worktree at `.claude/worktrees/<name>` from
 `origin/main`, merged through a reviewed PR. Run the full install under "Installing check
@@ -115,7 +124,7 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 ## Dependency age
 
-- For the vehicle feasibility spike, deterministic Rapier is exempt from the one-month rule and tracks the latest release because the spike evaluates upstream's current deterministic build.
+- Rapier f64 is pinned and upgraded only on maintainer demand under the same age rule; see `packages/deadvox/docs/decisions/0009-rapier-f64-build.md`, "Decision". Explicit demand avoids silently changing physics results and binary identity.
 - Covers adding or upgrading any project dependency or tool: npm packages in
   `package.json` or lockfiles, Python packages, project-work CLIs, and GitHub
   Actions versions in workflows.
@@ -128,12 +137,17 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 Run `npm run setup` in each fresh worktree before its first push. The shared setup keeps
 root lint from misreading missing dependencies as unresolved imports and installs the
-pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`.
+pinned compiler required by `tools/jsonnet/compile.mjs`, `compileJsonnetSources`, and the
+pinned skelly-assets release every reader of its built files needs; see
+`tools/skelly-assets/setup.mjs`, `ensureSkellyAssets`.
 
 The projects are npm workspaces (`package.json`, `workspaces`), so one lockfile keeps
-shared packages, `three` above all, on one version and one instance. Add a dependency
-with `npm install <pkg> --workspace <name>`. `packages/deadvox/tools/lit-check` stays a separate
-install because its analyzer pins its own TypeScript.
+shared packages, `three` above all, on one version and one instance. Some workspaces live
+in the `packages/skelly-assets` submodule, so setup checks it out before installing. Add a dependency
+with `npm install <pkg> --workspace <name>`. `tools/lit-check` stays a separate install
+because its analyzer pins its own TypeScript. It lives at the repository root, where any
+package can use it, because it checks more than one package's UI once the presentation
+package leaves deadvox (#1532).
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
 
@@ -144,8 +158,8 @@ More tests is not better QA; a test earns its place by catching a bug no other t
 So:
 
 - Test behaviour and contracts that are costly to rediscover or that BR has ruled on:
-  simulation rules, inventory and handling, save round-trip, and gungen exports that
-  deadvox validates and loads. A bug fix gets a test that fails before the fix.
+  simulation rules, inventory and handling, save round-trip, and gun and thing authoring
+  tool exports that deadvox validates and loads. A bug fix gets a test that fails before the fix.
 - **Never assert data that can drift during development.** That means content counts and
   lists, ids beyond the test's own fixture, exact coordinates or seeded outputs, hashes,
   fingerprints, tuning numbers and UI wording. Assert the property instead (validate
@@ -179,13 +193,11 @@ So:
   over full cartesian products and long seed loops.
 - **Slow tests run only on demand.** Tests that build whole worlds or city plans, walk
   scenarios, or sweep seeds and variants stay out of the default run, the pre-push hook and
-  per-PR CI. They run under the project's sweep flag in the manually triggered workflow
+  per-PR CI. They run under Deadvox's sweep flag in the manually triggered workflow
   `.github/workflows/slow-tests.yml`, without wall-clock budgets. At pre-pre-alpha they
   cost too much to pay on every change, and a seed that blocks a route is a bug to file
   from the manual run, not a gate on every PR. See `packages/deadvox/vite.config.ts`,
-  `SLOW_TEST_FILES`; `packages/deadvox/test/sweeps.ts`, `sweepGroup`; and
-  `packages/gun-authoring-tool/test/sweeps.ts`, `sweepGroup`; and
-  `packages/mobgen/test/sweeps.ts`, `sweepGroup`.
+  `SLOW_TEST_FILES`; and `packages/deadvox/test/sweeps.ts`, `sweepGroup`.
 - Measure before adding or cutting: coverage classes show which cases exercise the same
   code; mutation testing (inject small bugs, see which tests catch them) shows which
   tests actually detect anything. A removal states what the test protected and which
@@ -193,8 +205,6 @@ So:
   `docs/deferred-assertions.md`.
 - Keep the default run fast and deterministic. A slow test gets split or gated as above,
   never a flat generous timeout.
-
-Detailed guidance: `packages/gun-authoring-tool/PROJECT.md`, "Testing".
 
 ## Further docs
 
@@ -215,7 +225,7 @@ push to a PR, so don't repeat it locally.
   - `validate` if content or schema changed;
   - Lit if UI changed;
   - only the browser stage(s) that exercise the behaviour you changed, once each.
-  - Build only if build config changed; a project's `test:sweeps` only if the change is in a
+  - Build only if build config changed; Deadvox's `test:sweeps` only if the change is in a
     gated test's path.
   - The pre-push hook runs root `npm run ci:checks` and `npm run test:site`; CI runs
     `content:check` before those shared checks. Content drift is caught at CI so the hook

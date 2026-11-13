@@ -1,7 +1,7 @@
+import { offHandUse } from '@skelly/engine/internal/core/lights.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { Character, dominantSide, offSide } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { offHandUse } from '../src/core/lights.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry, issues } = buildRegistry([

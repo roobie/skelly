@@ -1,17 +1,16 @@
-import { describe, expect, it } from 'vitest';
-import { Body } from '../src/core/body.ts';
-import type { Registry } from '../src/core/content.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { dropSpots, Inventory, type Target } from '../src/core/inventory.ts';
-import { playerPockets } from '../src/core/options.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import { itemActionsFor } from '../src/game/itemActions.ts';
-import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import type { Registry } from '@skelly/engine/content';
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { playerPockets } from '@skelly/engine/internal/core/options.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { itemActionsFor } from '@skelly/engine/internal/game/itemActions.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
+import { ReloadInput } from '@skelly/engine/internal/game/reloadInput.ts';
+import { HandlingQueue, Inventory, type Target } from '@skelly/engine/inventory';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { Body, selectPrimaryAction } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
 import {
   createMagazineLoadFrame,
   createMagazinePress,
@@ -20,7 +19,9 @@ import {
   magazinePress,
   readMagazineLoadFrame,
   stepMagazineRaise,
-} from '../src/render/magazineLoadPose.ts';
+} from '@skelly/presentation/internal/render/magazineLoadPose.ts';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -274,6 +275,7 @@ describe('magazines loaded round by round', () => {
     const loaded = [...f.magazine.cartridges!];
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

@@ -1,0 +1,24 @@
+{
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.hand-tools",
+    "skelly.inventory",
+    "skelly.materials",
+    "skelly.medicine",
+    "skelly.natural-world",
+    "skelly.readables",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "basic-recipes-items.json"
+    }
+  ],
+  "id": "skelly.basic-recipes",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

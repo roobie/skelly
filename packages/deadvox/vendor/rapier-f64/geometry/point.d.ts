@@ -7,7 +7,7 @@ export declare class PointProjection {
     point: Vector;
     isInside: boolean;
     constructor(point: Vector, isInside: boolean);
-    static fromRaw(raw: RawPointProjection): PointProjection;
+    static fromBuffer(raw: RawPointProjection, target?: PointProjection): PointProjection;
 }
 export declare class PointColliderProjection {
     collider: Collider;
@@ -16,5 +16,5 @@ export declare class PointColliderProjection {
     featureType: FeatureType;
     featureId: number | undefined;
     constructor(collider: Collider, point: Vector, isInside: boolean, featureType?: FeatureType, featureId?: number);
-    static fromRaw(colliderSet: ColliderSet, raw: RawPointColliderProjection): PointColliderProjection;
+    static fromBuffer(colliderSet: ColliderSet, raw: RawPointColliderProjection, target?: PointColliderProjection): PointColliderProjection;
 }

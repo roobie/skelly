@@ -1,24 +1,24 @@
+import { requireDayCycle } from '@skelly/engine/content';
+import { type IlluminationScene, litEnoughToRead } from '@skelly/engine/internal/core/illumination.ts';
+import { chargeOf, drainLight } from '@skelly/engine/internal/core/lights.ts';
+import type { DayCycleDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { reachTuning } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { requireDayCycle } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { type IlluminationScene, litEnoughToRead } from '../src/core/illumination.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { chargeOf, drainLight, toggleLight } from '../src/core/lights.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { DayCycleDef } from '../src/core/schema.ts';
-import { gameSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const base = baseRegistry();
 // The fixture owns the threshold and every light level, far apart, so each case turns on its own rule, not on tuning.
 const THRESHOLD = 1;
 const BRIGHT = THRESHOLD * 1000;
-const player = base.senses.get(CORE_CONTENT_IDS.player)!;
+const player = base.senses.get(fixtureIds.player)!;
 const flashlight = base.items.get('flashlight')!;
 const registry = {
   ...base,
-  senses: new Map(base.senses).set(CORE_CONTENT_IDS.player, {
+  senses: new Map(base.senses).set(fixtureIds.player, {
     ...player,
     light: { ...player.light, illumination: { ...player.light.illumination, readingThreshold: THRESHOLD } },
   }),
@@ -96,6 +96,19 @@ describe('illumination', () => {
     expect(toggleLight(base, candle, 0)).toBeUndefined();
     const page: Vec3 = [READER[0] + 1, READER[1], READER[2]];
     expect(litEnoughToRead({ ...sceneWith(inventory), cycle: baseCycle }, page)).toBe(true);
+  });
+
+  it('a lit worn headlamp reads a sign at full reach at night with base tuning', () => {
+    const inventory = new Inventory(base);
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(toggleLight(base, headlamp, 0)).toBeUndefined();
+    // A sign is measured at its cell centre (`readFurniture`, `lightAt`): half a block past the origin cell at reach.
+    const { blockSize } = makeScale(0.5);
+    const { reachMetres } = reachTuning(base);
+    const reachBlocks = reachMetres / blockSize;
+    const sign: Vec3 = [READER[0] + reachBlocks + 0.5, READER[1], READER[2]];
+    expect(litEnoughToRead({ ...sceneWith(inventory), cycle: baseCycle }, sign)).toBe(true);
   });
 
   it('open sky reads at noon and not at midnight', () => {

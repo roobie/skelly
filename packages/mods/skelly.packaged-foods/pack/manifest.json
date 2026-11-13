@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.basic-foods", "skelly.hand-tools", "skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "packaged-foods-items.json"
+    }
+  ],
+  "id": "skelly.packaged-foods",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

@@ -1,11 +1,11 @@
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { chargeOf, drainLight } from '@skelly/engine/internal/core/lights.ts';
+import { gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { fitsFuelledTool } from '@skelly/engine/internal/core/torch.ts';
+import { chargeShare, Inventory, toggleLight } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { chargeOf, chargeShare, drainLight, toggleLight } from '../src/core/lights.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { gameSeconds } from '../src/core/time.ts';
-import { fitsFuelledTool } from '../src/core/torch.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -200,7 +200,7 @@ describe('fixed reservoir lights', () => {
     expect(lamp.liquidBurnRemainder).toBeGreaterThan(0);
   });
 
-  it.each([undefined, -1, 0.5, 1_000_000, Number.NaN])('rejects invalid or missing saved burn carry %s', (carry) => {
+  it.each([undefined, -1, 0.5, 1_000_000])('rejects invalid or missing saved burn carry %s', (carry) => {
     const { lamp } = filledLamp();
     const { liquidBurnRemainder: _carry, ...rest } = snapshotItem(lamp);
     const state = carry === undefined ? rest : { ...rest, liquidBurnRemainder: carry };

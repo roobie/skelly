@@ -1,5 +1,5 @@
+import { buildRegistry } from '@skelly/engine/content';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
 
 describe('scenario admission', () => {

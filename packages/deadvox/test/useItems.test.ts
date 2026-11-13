@@ -1,15 +1,21 @@
+import type { Registry } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { chargeOf } from '@skelly/engine/internal/core/lights.ts';
+import { slotsReason } from '@skelly/engine/internal/core/magazine.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import type { SurvivalHooks } from '@skelly/engine/internal/game/survival.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
+import {
+  HandlingQueue,
+  Inventory,
+  type Item,
+  type ItemAction,
+  toggleLight,
+  typeWeightGrams,
+} from '@skelly/engine/inventory';
+import { bindReach, Survival } from '@skelly/engine/sim';
+import { coreLabel } from '@skelly/engine/text';
 import { describe, expect, it, vi } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { coreLabel, coreMessage } from '../src/core/coreText.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { type Item, typeWeightGrams } from '../src/core/items.ts';
-import { chargeOf, toggleLight } from '../src/core/lights.ts';
-import { slotsReason } from '../src/core/magazine.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
@@ -26,8 +32,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_opened_can_contents', {
     id: 'fixture_opened_can_contents',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture can contents',
     category: 'food',
     weight: 1,
@@ -37,8 +41,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_sealed_can', {
     id: 'fixture_sealed_can',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture sealed can',
     category: 'food',
     weight: 1,
@@ -53,8 +55,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_can_tool', {
     id: 'fixture_can_tool',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture can tool',
     category: 'tool',
     weight: 1,
@@ -64,8 +64,6 @@ const sealedCanRegistry = (): Registry => {
   items.set('fixture_tool_belt', {
     id: 'fixture_tool_belt',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     name: 'Fixture tool belt',
     category: 'clothing',
     weight: 1,
@@ -154,7 +152,7 @@ const setup = (
   return { sim, inventory, queue, survival, notices, hold, reach, player };
 };
 
-describe('a paused craft in held-item actions', () => {
+describe('a paused craft in the held-item list', () => {
   const heldWork = (t: ReturnType<typeof setup>, where: 'hand' | 'pile') => {
     const item = t.inventory.create('work_in_progress');
     item.work = { kind: 'craft', recipe: 'torch', elapsed: 1, duration: 120, components: [] };
@@ -228,7 +226,7 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
   });
 
-  it('uses an explicit region once, then quickbar activation returns to the worst wound', () => {
+  it('treats the default wound on a plain use and another wound when it is chosen for that use', () => {
     const t = setup();
     t.sim.body.impact(1, 'leftArm', { bleeding: fixtureTier('serious') });
     t.sim.body.impact(3, 'rightArm', { bleeding: fixtureTier('serious') });
@@ -240,12 +238,10 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
     expect(beginTreatment.mock.calls[0]?.[0]).toBe(initial?.treatment?.region);
     expect(beginTreatment.mock.calls[0]?.[1]).toBe(rag.uid);
-    const other = t.survival.availableItemActions(rag).find((action) => action.id !== initial?.id && action.treatment);
-    expect(other).toBeDefined();
+    const other = t.survival.availableItemActions(rag).find((action) => action.id !== initial?.id);
+    expect(other?.treatment).toBeDefined();
     expect(t.survival.withItemAction(rag, other!.id, () => t.survival.use(rag))).toBeUndefined();
     expect(beginTreatment.mock.calls[1]?.[0]).toBe(other?.treatment?.region);
-    expect(t.survival.useFromQuickbar(rag)).toBeUndefined();
-    expect(beginTreatment.mock.calls[2]?.[0]).toBe(initial?.treatment?.region);
   });
 
   it('passes the read item type to the read hook', () => {
@@ -446,7 +442,7 @@ describe('using what you hold', () => {
     const spare = t.inventory.create('aa_battery');
     t.inventory.add(spare, { kind: 'pocket', owner: bag, pocket: 0 });
 
-    expect(t.survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
+    expect(t.survival.use(light)).toBe(coreMessage(registry, 'noBattery'));
 
     expect(t.queue.jobs).toEqual([]);
     expect(t.inventory.locate(spare)).toMatchObject({ kind: 'pocket', owner: bag });
@@ -522,32 +518,27 @@ describe('using what you hold', () => {
     expect(chargeOf(registry, spent)).toBeCloseTo(0.1, 9);
   });
 
-  it.each([
-    { side: 'right', state: 'empty', route: 'tap' },
-    { side: 'left', state: 'dead', route: 'tap' },
-    { side: 'left', state: 'empty', route: 'slot' },
-    { side: 'right', state: 'dead', route: 'radial' },
-  ] as const)('loads the other-hand battery through $route on an $state light in $side', ({ side, state, route }) => {
+  it('a dead light used with a charged battery in the other hand refuses and loads nothing', () => {
     const { inventory, queue, survival, hold } = setup();
-    const light = inventory.createRolled({ type: 'flashlight', count: 1, condition: 1, charge: 0 });
-    expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
-    const other = side === 'left' ? 'right' : 'left';
-    const battery = hold('aa_battery', other);
-    if (state === 'empty') {
-      const removed = inventory.fitSlot(light, 'battery', undefined)!;
-      expect(inventory.add(removed, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
-    }
-    const use = {
-      tap: () => survival.use(light),
-      slot: () => survival.loadBattery(light.uid, battery.uid),
-      radial: () => survival.withItemAction(light, 'own', () => survival.use(light)),
-    };
-    expect(use[route]()).toBeUndefined();
-    expect(queue.busy).toBe(true);
-    expect(queue.tick(queue.remaining).failed).toEqual([]);
-    expect(light.slots?.battery).toBe(battery);
-    expect(inventory.hands[other]).toBeUndefined();
-    expect(light.on).not.toBe(true);
+    const light = hold('flashlight');
+    const original = batteryOf(light);
+    original.charges = 0;
+    const missingBattery = survival.use(light);
+    const battery = hold('aa_battery', 'left');
+    expect(missingBattery).toBe(coreMessage(registry, 'noBattery'));
+    expect(survival.use(light)).toBe(missingBattery);
+    expect(queue.jobs).toEqual([]);
+    expect(light.slots?.battery).toBe(original);
+    expect(inventory.locate(battery)?.kind).toBe('hand');
+  });
+
+  it('refuses a dead light with an unusable held battery as missing a battery', () => {
+    const { survival, hold } = setup();
+    const light = hold('flashlight');
+    const battery = hold('aa_battery', 'left');
+    batteryOf(light).charges = 0;
+    battery.charges = 0;
+    expect(survival.use(light)).toBe(coreMessage(registry, 'noBattery'));
   });
 
   it('a hand load refuses once an earlier queued move has put the light down', () => {
@@ -566,12 +557,17 @@ describe('using what you hold', () => {
 });
 
 describe('taking the battery out of a held light', () => {
+  // The player chooses taking the battery out for one use of the light.
   const unload = (t: ReturnType<typeof setup>, light: Item) => {
-    const selected = t.survival.availableItemActions(light).find((action) => action.battery)?.battery;
-    if (!selected) {
-      throw new Error('Fixture light has no battery-removal action');
+    const unloadAction = t.survival.availableItemActions(light).find((action) => action.battery === 'unload');
+    if (!unloadAction) {
+      throw new Error('a loaded held light offers taking the battery out');
     }
-    const refusal = t.survival.withItemAction(light, 'battery:unload', () => t.survival.use(light));
+    let selected: ItemAction['battery'];
+    const refusal = t.survival.withItemAction(light, unloadAction.id, () => {
+      selected = t.survival.selectedItemAction(light)?.battery;
+      return t.survival.use(light);
+    });
     const ticked = t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);
     return { selected, refusal, failed: ticked.failed };
   };
@@ -626,12 +622,25 @@ describe('taking the battery out of a held light', () => {
     expect(t.survival.availableItemActions(light).some((action) => action.battery === 'unload')).toBe(false);
   });
 
+  it('keeps the missing-battery refusal unchanged with a held spare and loads nothing', () => {
+    const t = setup();
+    const light = t.hold('flashlight');
+    unload(t, light);
+    const missingBattery = t.survival.use(light);
+    const spare = t.hold('aa_battery', 'left');
+    expect(missingBattery).toBe(coreMessage(registry, 'noBattery'));
+    expect(t.survival.use(light)).toBe(missingBattery);
+    expect(t.queue.jobs).toEqual([]);
+    expect(light.slots?.battery).toBeUndefined();
+    expect(t.inventory.locate(spare)).toMatchObject({ kind: 'hand' });
+  });
+
   it('leaves the light empty: it says so, and a battery goes back in through the slot', () => {
     const t = setup();
     const light = t.hold('flashlight');
     const battery = batteryOf(light);
     unload(t, light);
-    expect(t.survival.use(light)).toBe(coreMessage(registry, 'noBatteryNoSpare'));
+    expect(t.survival.use(light)).toBe(coreMessage(registry, 'noBattery'));
 
     expect(t.survival.loadBattery(light.uid, battery.uid)).toBeUndefined();
     t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);

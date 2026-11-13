@@ -1,6 +1,7 @@
 // biome-ignore-all lint/correctness/noUnresolvedImports: this helper runs inside the Vite-served browser page.
-import { doorPlan } from '/src/core/options.ts';
-import { DOOR_ACTION } from '/src/game/doorAction.ts';
+
+import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
+import { doorPlan } from '@skelly/engine/inventory';
 
 export const routeDoorOpener = (engine, session) => {
   const queued = new Set();

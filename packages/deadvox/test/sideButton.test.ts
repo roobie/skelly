@@ -1,5 +1,7 @@
+import { ForwardReleaseWatch, isForwardButton, PressDedupe } from '@skelly/engine/input';
+import type { Item } from '@skelly/engine/inventory';
+import { ActionMenu, HeldActionPress, radialEntries } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { isForwardButton, PressDedupe } from '../src/core/sideButton.ts';
 import { formatMouseDiag } from '../src/debug/mouseDiag.ts';
 
 describe('isForwardButton', () => {
@@ -23,6 +25,41 @@ describe('PressDedupe', () => {
     expect(d.accept(1000)).toBe(true);
     expect(d.accept(1001)).toBe(false);
     expect(d.accept(1200)).toBe(true);
+  });
+});
+
+describe('ForwardReleaseWatch', () => {
+  it('releases a held forward press made while Left is down, once, so the next press is taken', () => {
+    const choices = [
+      { id: 'own', label: 'Use' },
+      { id: 'unload', label: 'Unload' },
+    ];
+    const taps: string[] = [];
+    const press = new HeldActionPress({
+      menu: new ActionMenu(),
+      item: () => ({ uid: 1 }) as Item,
+      actions: () => choices,
+      menuActions: () => radialEntries(choices, { own: 0, unload: 180 }),
+      holdRealMs: Number.POSITIVE_INFINITY,
+      tap: (hand) => taps.push(hand),
+      act: () => undefined,
+    });
+    const watch = new ForwardReleaseWatch();
+    const feed = (button: number, buttons: number) => {
+      if (watch.released({ button, buttons })) {
+        press.release('forward', 0);
+      }
+    };
+    // Chromium's events for Forward down, Left down, a move, Forward up, Left up.
+    feed(4, 16);
+    expect(press.press('left', 'forward', 0)).toBe(true);
+    feed(0, 17);
+    feed(-1, 17);
+    expect(taps).toEqual([]);
+    feed(4, 1);
+    feed(0, 0);
+    expect(taps).toEqual(['left']);
+    expect(press.press('left', 'forward', 0)).toBe(true);
   });
 });
 

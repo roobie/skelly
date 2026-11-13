@@ -1,0 +1,39 @@
+{
+  "sources": [
+    {
+      "author": "Björn Roberg",
+      "changes": null,
+      "download": null,
+      "files": [
+        "assets/models/adjustable_pliers.glb",
+        "assets/models/blowtorch.glb",
+        "assets/models/bottle_jack.glb",
+        "assets/models/compass.glb",
+        "assets/models/crowbar.glb",
+        "assets/models/engine_hoist.glb",
+        "assets/models/hammer.glb",
+        "assets/models/hand_saw.glb",
+        "assets/models/repair_kit.glb",
+        "assets/models/scissor_jack.glb",
+        "assets/models/screwdriver.glb",
+        "assets/models/sewing_repair_kit.glb",
+        "assets/models/sledgehammer.glb",
+        "assets/models/whetstone.glb",
+        "assets/models/wire_strippers.glb",
+        "assets/models/wrench.glb"
+      ],
+      "licence": "CC-BY-NC-SA-4.0",
+      "title": "skelly-assets built models",
+      "url": "https://github.com/roobie/skelly-assets"
+    },
+    {
+      "author": "Skelly contributors",
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used.",
+      "download": null,
+      "files": ["assets/models/sewing_kit.glb"],
+      "licence": "CC0-1.0",
+      "title": "Project-built low-poly hand-tool and content stand-ins",
+      "url": "https://github.com/roobie/skelly"
+    }
+  ]
+}

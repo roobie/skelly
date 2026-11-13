@@ -1,5 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { Registry } from '@skelly/engine/content';
+import { magazineWellCalibre } from '@skelly/engine/internal/core/magazine.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
+import { actionCycleSeconds, firearmHandlingFor, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { compassBearing } from '@skelly/engine/world';
+import type { HeldHandlingFrame } from '@skelly/presentation/internal/render/hands.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { RUMMAGE_POSE, rummageFrame } from '@skelly/presentation/internal/render/rummagePose.ts';
+import { HeldItems, type ModelLibrary } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   CircleGeometry,
@@ -11,29 +19,15 @@ import {
   Vector3,
 } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import type { Registry } from '../src/core/content.ts';
-import { compassBearing } from '../src/core/coords.ts';
-import { actionCycleSeconds } from '../src/core/firearmAction.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { magazineWellCalibre } from '../src/core/magazine.ts';
-import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
-import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
-import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
-import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
-const base = 'src/content/base';
 const { registry, issues } = buildRegistry([
-  ...readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
+  ...baseContentSources(),
   {
     source: 'rummage-fixture.json',
     data: {

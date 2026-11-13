@@ -1,5 +1,5 @@
+import { PainCue } from '@skelly/presentation/internal/presentation/painCue.ts';
 import { expect, it } from 'vitest';
-import { PainCue } from '../src/game/painCue.ts';
 import { PAIN_CUE_TUNING_FIXTURE } from './presentationFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 

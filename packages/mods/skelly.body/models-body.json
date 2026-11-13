@@ -1,0 +1,433 @@
+{
+  "models": [
+    {
+      "anchors": {
+        "brow": [2.0475168932230421e-16, 0.84600000000000009, -0.0059999999999999915],
+        "eye_left": [0.036000000000000199, 0.81600000000000006, 0.096000000000000002],
+        "eye_right": [-0.035999999999999803, 0.81600000000000006, 0.096000000000000002],
+        "head": [8.5970205300144202e-17, 0.70200000000000007, 0],
+        "hip_left": [0.083999999999999991, 0.02015999999999999, 0],
+        "hip_right": [-0.084000000000000005, 0.020160000000000011, 0],
+        "neck": [7.4948384107818011e-17, 0.61199999999999999, 0],
+        "shoulder_left": [0.23100000000000001, 0.54000000000000004, 0],
+        "shoulder_right": [-0.23100000000000001, 0.54000000000000004, 0],
+        "spine": [0, 0.19870588235294118, 0]
+      },
+      "file": "assets/models/player_bust.glb",
+      "id": "player_bust",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "organic", "organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "head": {
+          "centreOfMass": [7.2830617658404951e-5, 0.82083433118605531, -0.0074325881015536331],
+          "massKg": 5,
+          "node": "head:head"
+        },
+        "neck": {
+          "centreOfMass": [8.0459294703981112e-17, 0.65700000000000003, 0],
+          "massKg": 1,
+          "node": "neck:neck"
+        },
+        "pelvis": {
+          "centreOfMass": [1.0287033112837767e-17, 0.084000000000000005, 3.8119440914867744e-6],
+          "massKg": 7,
+          "node": "pelvis:pelvis"
+        },
+        "torso": {
+          "centreOfMass": [1.511555734053448e-6, 0.42282159261017205, 0.0016719339880974114],
+          "massKg": 25,
+          "node": "torso:torso"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "elbow": [0, -0.29999999999999999, 0],
+        "grip": [-1.4694604652876579e-16, -0.60000000000000009, 0],
+        "knuckles": [-1.601722319595572e-16, -0.65400000000000003, 0],
+        "shoulder": [0, 0, 0],
+        "thumb_root": [0.0059999999999997842, -0.58200000000000007, 0.036000000000000004],
+        "wrist": [-6.9025015810003063e-17, -0.55200000000000005, 0]
+      },
+      "file": "assets/models/player_arm.glb",
+      "id": "player_arm",
+      "itemPresentation": {
+        "materials": ["organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "fore": {
+          "centreOfMass": [-4.9725131304133162e-17, -0.40856957547169814, 0],
+          "massKg": 1.1000000000000001,
+          "node": "fore:fore"
+        },
+        "index": {
+          "centreOfMass": [0.0059999999999997564, -0.66300000000000003, 0.027],
+          "massKg": 0.012499999999999999,
+          "node": "index:index"
+        },
+        "index2": {
+          "centreOfMass": [0.005999999999999661, -0.69300000000000006, 0.027],
+          "massKg": 0.012499999999999999,
+          "node": "index2:index2"
+        },
+        "index3": {
+          "centreOfMass": [0.005999999999999563, -0.71400000000000008, 0.029999999999999999],
+          "massKg": 0.012499999999999999,
+          "node": "index3:index3"
+        },
+        "little": {
+          "centreOfMass": [0.0059999999999997616, -0.64800000000000002, -0.033000000000000002],
+          "massKg": 0.012499999999999999,
+          "node": "little:little"
+        },
+        "little2": {
+          "centreOfMass": [0.0059999999999996705, -0.67200000000000004, -0.033000000000000002],
+          "massKg": 0.012499999999999999,
+          "node": "little2:little2"
+        },
+        "little3": {
+          "centreOfMass": [0.0059999999999995777, -0.69000000000000006, -0.033000000000000002],
+          "massKg": 0.012499999999999999,
+          "node": "little3:little3"
+        },
+        "middle": {
+          "centreOfMass": [0.0059999999999997573, -0.66300000000000003, 0.0090000000000000011],
+          "massKg": 0.012499999999999999,
+          "node": "middle:middle"
+        },
+        "middle2": {
+          "centreOfMass": [0.005999999999999661, -0.69300000000000006, 0.0090000000000000011],
+          "massKg": 0.012499999999999999,
+          "node": "middle2:middle2"
+        },
+        "middle3": {
+          "centreOfMass": [0.005999999999999563, -0.71399999999999997, 0.0090000000000000011],
+          "massKg": 0.012499999999999999,
+          "node": "middle3:middle3"
+        },
+        "palm": {
+          "centreOfMass": [-0.00025751072961387997, -0.59674248927038631, 0.0010429184549356218],
+          "massKg": 0.29999999999999999,
+          "node": "palm:palm"
+        },
+        "ring": {
+          "centreOfMass": [0.0059999999999997581, -0.65700000000000003, -0.014999999999999999],
+          "massKg": 0.012499999999999999,
+          "node": "ring:ring"
+        },
+        "ring2": {
+          "centreOfMass": [0.0059999999999996636, -0.68700000000000006, -0.014999999999999999],
+          "massKg": 0.012499999999999999,
+          "node": "ring2:ring2"
+        },
+        "ring3": {
+          "centreOfMass": [0.0059999999999995664, -0.70800000000000007, -0.012],
+          "massKg": 0.012499999999999999,
+          "node": "ring3:ring3"
+        },
+        "thumb": {
+          "centreOfMass": [0.0059999999999997807, -0.59700000000000009, 0.045000000000000005],
+          "massKg": 0.016666666666666666,
+          "node": "thumb:thumb"
+        },
+        "thumb2": {
+          "centreOfMass": [0.0089999999999996957, -0.624, 0.048000000000000001],
+          "massKg": 0.016666666666666666,
+          "node": "thumb2:thumb2"
+        },
+        "thumb3": {
+          "centreOfMass": [0.0089999999999996003, -0.65100000000000002, 0.048000000000000001],
+          "massKg": 0.016666666666666666,
+          "node": "thumb3:thumb3"
+        },
+        "upper": {
+          "centreOfMass": [4.8076923076923011e-6, -0.14877010489510484, 4.8076923076923256e-6],
+          "massKg": 1.8999999999999999,
+          "node": "upper:upper"
+        }
+      }
+    },
+    {
+      "anchors": {
+        "ankle": [-8.6305786350490807e-17, -0.72811764705882354, 0],
+        "hip": [0, 0, 0],
+        "knee": [0, -0.41999999999999998, 0]
+      },
+      "file": "assets/models/player_leg.glb",
+      "id": "player_leg",
+      "itemPresentation": {
+        "materials": ["organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "foot": {
+          "centreOfMass": [0.00027078384798080875, -0.7728445877163217, 0.030606718696979972],
+          "massKg": 1,
+          "node": "foot:foot"
+        },
+        "shin": {
+          "centreOfMass": [-6.6419464532370479e-17, -0.54448586810228805, -0.0020853297442799457],
+          "massKg": 3,
+          "node": "shin:shin"
+        },
+        "thigh": {
+          "centreOfMass": [8.5923856095005955e-6, -0.2066875305623472, 1.2574222843171619e-6],
+          "massKg": 7,
+          "node": "thigh:thigh"
+        }
+      }
+    },
+    {
+      "file": "assets/models/flesh_chunk_small.glb",
+      "grip": {
+        "at": [0, 0.01, 0.0020000000000000018],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_small",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-0.00016974169741697419, 0.010059040590405905, 8.1180811808118225e-5],
+          "massKg": 0.029999999999999999,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_medium.glb",
+      "grip": {
+        "at": [0, 0.014, 0.0019999999999999983],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_medium",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-0.00014285714285714281, 0.012657142857142853, 0.00010952380952380949],
+          "massKg": 0.10000000000000001,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_large.glb",
+      "grip": {
+        "at": [0, 0.018000000000000002, 0.0020000000000000018],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_large",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-2.337662337662336e-5, 0.016772727272727272, 4.1558441558441643e-5],
+          "massKg": 0.29999999999999999,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/flesh_chunk_strip.glb",
+      "grip": {
+        "at": [0, 0.01, 0.0020000000000000018],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "flesh_chunk_strip",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "lump": {
+          "centreOfMass": [-0.0010171428571428571, 0.010251428571428571, 0.00020571428571428542],
+          "massKg": 0.10000000000000001,
+          "node": "lump:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_torso.glb",
+      "grip": {
+        "at": [0, 0.37, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "shambler_torso",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth", "organic", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "part": {
+          "centreOfMass": [0, 0.28319970656770505, 0.00059549495123845672],
+          "massKg": 12,
+          "node": "part:torso"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_head.glb",
+      "grip": {
+        "at": [0, 0.15000000000000002, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "upright",
+      "id": "shambler_head",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "organic", "organic", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "part": {
+          "centreOfMass": [0, 0.1429883062305865, -0.010154394299287411],
+          "massKg": 5,
+          "node": "part:head"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_left_arm.glb",
+      "grip": {
+        "at": [0, 0.085000000000000006, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_left_arm",
+      "itemPresentation": {
+        "materials": ["organic", "cloth", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "part": {
+          "centreOfMass": [0, 0.40269491525423723, 0],
+          "massKg": 2.5,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_right_arm.glb",
+      "grip": {
+        "at": [0, 0.085000000000000006, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_right_arm",
+      "itemPresentation": {
+        "materials": ["organic", "cloth", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "part": {
+          "centreOfMass": [0, 0.40269491525423723, 0],
+          "massKg": 2.5,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_left_leg.glb",
+      "grip": {
+        "at": [0, 0.14999999999999999, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_left_leg",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "part": {
+          "centreOfMass": [0, 0.45882863649302591, 0.0074010816965556512],
+          "massKg": 4,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/shambler_right_leg.glb",
+      "grip": {
+        "at": [0, 0.14999999999999999, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "shambler_right_leg",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "part": {
+          "centreOfMass": [0, 0.45882863649302591, 0.0074010816965556512],
+          "massKg": 4,
+          "node": "part:limb"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

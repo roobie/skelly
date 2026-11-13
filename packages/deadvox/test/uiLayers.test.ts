@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const style = readFileSync('src/ui/style.css', 'utf8');
+const style = readFileSync('../presentation/src/ui/style.css', 'utf8');
 const UI_LAYER_REFERENCE = /^var\((--ui-layer-[\w-]+)\)$/;
 const INLINE_LAYER_STYLE = /\b(?:z-index|zIndex)\s*:\s*(?:"([^"]+)"|'([^']+)'|([^,\s;}]+))/g;
 const root = style.match(/:root\s*\{([^}]*)\}/)?.[1];
@@ -55,7 +55,7 @@ describe('UI layer order', () => {
       expect(layerPositions.has(layer!)).toBe(true);
     }
 
-    const inlineDeclarations = typescriptFiles('src').flatMap((file) =>
+    const inlineDeclarations = ['src', '../presentation/src'].flatMap(typescriptFiles).flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(INLINE_LAYER_STYLE)].map(([, doubleQuoted, singleQuoted, bare]) => ({
         file,
         value: doubleQuoted ?? singleQuoted ?? bare!,
@@ -82,6 +82,7 @@ describe('UI layer order', () => {
         name !== '--ui-layer-error-report' &&
         name !== '--ui-layer-startup-screen' &&
         name !== '--ui-layer-world-loading' &&
+        name !== '--ui-layer-error-log' &&
         name !== '--ui-layer-review-map'
       ) {
         expect(layerPositions.get(name)).toBeLessThan(cursorPosition);

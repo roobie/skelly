@@ -1,22 +1,15 @@
+import type { BodyTuningDef } from '@skelly/engine/content';
+import { SECONDS_PER_DAY, simSecondsPerHour, skipTarget } from '@skelly/engine/internal/core/clock.ts';
+import { SKIP_COMPRESSION } from '@skelly/engine/internal/core/compression.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { awakeRates } from '@skelly/engine/internal/core/needs.ts';
+import { SCHEDULER_TIME_EPSILON } from '@skelly/engine/internal/core/scheduler.ts';
+import type { TreatmentDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameSeconds, gameToSimSeconds } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { BODY_REGIONS, calendarAt, dayPhaseAt, nextTimeOfDay, parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
-import { BODY_REGIONS } from '../src/core/body.ts';
-import {
-  calendarAt,
-  nextTimeOfDay,
-  parseTimeOfDay,
-  SECONDS_PER_DAY,
-  simSecondsPerHour,
-  skipTarget,
-} from '../src/core/clock.ts';
-import { SKIP_COMPRESSION } from '../src/core/compression.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { awakeRates } from '../src/core/needs.ts';
-import { SCHEDULER_TIME_EPSILON } from '../src/core/scheduler.ts';
-import type { BodyTuningDef, TreatmentDef } from '../src/core/schema.ts';
-import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+import coreDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
@@ -508,7 +501,7 @@ describe('Simulation', () => {
         },
       });
       sim.scheduler.register({
-        id: 'zombies',
+        id: 'actors',
         rate: 20,
         tick: () => {
           ticks += 1;
@@ -558,8 +551,8 @@ describe('Simulation', () => {
     const b = new Simulation({ seed: 7 });
     const draw = (sim: Simulation, id: string) => Array.from({ length: 5 }, () => sim.rng(id).next());
     expect(draw(a, 'zombies')).toEqual(draw(b, 'zombies'));
-    const zombies = a.rng('zombies');
+    const actors = a.rng('zombies');
     const loot = a.rng('loot');
-    expect(zombies.next()).not.toBe(loot.next());
+    expect(actors.next()).not.toBe(loot.next());
   });
 });

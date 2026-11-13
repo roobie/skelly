@@ -1,16 +1,13 @@
+import { AimController } from '@skelly/engine/internal/core/aim.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { adsCameraEye, heldFirearmTransform, playerLookPose, sightedFirearmModel } from '@skelly/engine/pose';
+import { firearmsCombatTuning } from '@skelly/engine/sim';
 import { Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { adsCameraEye } from '../src/core/adsView.ts';
-import { AimController } from '../src/core/aim.ts';
-import { sightedFirearmModel } from '../src/core/firearmSight.ts';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { playerLookPose } from '../src/core/playerLookPose.ts';
-import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
-import { PLAYER } from './playerFixture.ts';
+import { AIM } from './playerFixture.ts';
 
 it('allows skill-dependent unity optic parallax and adds walking misalignment', () => {
   const { registry } = withDefaultAttachment(baseRegistry(), 'rifle_assault', 'optic_mini_reflex');
@@ -28,7 +25,7 @@ it('allows skill-dependent unity optic parallax and adds walking misalignment', 
   const offset = (level: number, moving: boolean) => {
     const effects = firearmsSkillEffects(level, tuning);
     const aim = new AimController({
-      tuning: PLAYER.aim,
+      tuning: AIM,
       wobbleLimitRadians: 0.2,
       wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
       wobbleSeed: 7,

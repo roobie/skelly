@@ -1,5 +1,5 @@
 import { RawPidController } from "../raw";
-import { RotationOps, VectorOps } from "../math";
+import { RotationOps, scratchBuffer, VectorOps } from "../math";
 export var PidAxesMask;
 (function (PidAxesMask) {
     PidAxesMask[PidAxesMask["None"] = 0] = "None";
@@ -54,20 +54,20 @@ export class PidController {
         rawPos.free();
         rawVel.free();
     }
-    linearCorrection(body, targetPosition, targetLinvel) {
+    linearCorrection(body, targetPosition, targetLinvel, target) {
         let rawPos = VectorOps.intoRaw(targetPosition);
         let rawVel = VectorOps.intoRaw(targetLinvel);
-        let correction = this.raw.linear_correction(this.params.dt, this.bodies.raw, body.handle, rawPos, rawVel);
+        this.raw.linear_correction(this.params.dt, this.bodies.raw, body.handle, rawPos, rawVel, scratchBuffer);
         rawPos.free();
         rawVel.free();
-        return VectorOps.fromRaw(correction);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    angularCorrection(body, targetRotation, targetAngVel) {
+    angularCorrection(body, targetRotation, targetAngVel, target) {
         let rawPos = RotationOps.intoRaw(targetRotation);
         let rawVel = VectorOps.intoRaw(targetAngVel);
-        let correction = this.raw.angular_correction(this.params.dt, this.bodies.raw, body.handle, rawPos, rawVel);
+        this.raw.angular_correction(this.params.dt, this.bodies.raw, body.handle, rawPos, rawVel, scratchBuffer);
         rawPos.free();
         rawVel.free();
-        return VectorOps.fromRaw(correction);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
 }

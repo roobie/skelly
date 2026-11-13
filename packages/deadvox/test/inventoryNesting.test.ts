@@ -1,8 +1,7 @@
+import type { ItemDef } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, type Item, weightOf } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import type { ItemDef } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { type Item, weightOf } from '../src/core/items.ts';
-import { simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
@@ -16,9 +15,7 @@ const fixture = () => {
     category: 'material',
     weight: 3,
     size: [1, 1],
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   };
   for (const [id, size, grid, rigid] of [
     ['fixture_bag', [2, 2], [4, 4], false],

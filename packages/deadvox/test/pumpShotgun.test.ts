@@ -1,34 +1,34 @@
-import { describe, expect, it } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { blockId } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { ejectSeconds } from '../src/core/firearmAction.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { dropSpots, Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { defOf, type Item, typeWeightGrams, weightOf } from '../src/core/items.ts';
-import { type PelletShot, pelletSpreadRadians } from '../src/core/pellets.ts';
-import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundId } from '../src/core/soundEvents.ts';
-import { World } from '../src/core/world.ts';
-import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
-import { firearmBoreRay } from '../src/game/firearmAim.ts';
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { ejectSeconds } from '@skelly/engine/internal/core/firearmAction.ts';
+import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { type PelletShot, pelletSpreadRadians } from '@skelly/engine/internal/core/pellets.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
+import { FirearmMechanics, type FirearmTrajectory } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';
 import {
-  FirearmMechanics,
+  defOf,
   type FirearmShotEffect,
-  type FirearmTrajectory,
   firearmHandlingFor,
-} from '../src/game/firearmHandling.ts';
-import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+  HandlingQueue,
+  Inventory,
+  type Item,
+  PILE_GRID,
+  typeWeightGrams,
+  weightOf,
+} from '@skelly/engine/inventory';
+import { decodeSave, encodeSave, type SaveVersionComponents } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dominantSide, firearmBoreRay } from '@skelly/engine/sim';
+import type { SoundId } from '@skelly/engine/sound';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { pumpStart } from './fixtures/debugStarts.ts';
 
 const registry = baseRegistry();
 const SHELL_LOAD_SECONDS = registry.items.get('pump_shotgun')!.firearm!.roundLoadSimSeconds!;
@@ -131,6 +131,7 @@ const fixture = (
 const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = () => undefined) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,
@@ -153,100 +154,6 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
-  it('drops a fired hull on supported ground at wall contact when the ejection port is clipped', () => {
-    const scale = makeScale(0.5);
-    const wallX = 2;
-    const world = new World();
-    const rock = blockId(registry, 'rock');
-    for (let x = -4; x <= 4; x++) {
-      for (let z = -4; z <= 4; z++) {
-        world.setBlock(x, 0, z, rock);
-      }
-    }
-    for (let y = 1; y <= 7; y++) {
-      for (let z = -4; z <= 4; z++) {
-        world.setBlock(wallX, y, z, rock);
-      }
-    }
-    const isSolid = worldSolid(world, registry, new BlockEntities(registry));
-    const yaw = -Math.PI / 2;
-    const body = createPlayerBody(scale, 0.9, 1.01, 0);
-    for (let frame = 0; frame < 30; frame++) {
-      steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
-      stepBody(body, 1 / 60, isSolid, physicsFor(scale));
-    }
-    expect(bodyOverlapsTerrain(body, isSolid)).toBe(false);
-    expect(body.onGround).toBe(true);
-    const ejectionPose = {
-      ...pose,
-      feet: [...body.pos] as Vec3,
-      eye: [body.pos[0], body.pos[1] + PLAYER.eye / scale.blockSize, body.pos[2]] as Vec3,
-      yaw,
-      pitch: 0,
-      aimFrame: NEUTRAL_AIM,
-    };
-    const f = fixture(registry, () => 0, ejectionPose, isSolid);
-    const port = heldEjectionPose({
-      holds: registry.figures.get('player')!.holds,
-      model: firearmHandlingFor(f.gun, f.inventory.registry).model,
-      side: 'right',
-      twoHanded: defOf(registry, 'pump_shotgun').twoHanded === true,
-      eye: ejectionPose.eye.map((value) => value * scale.blockSize) as Vec3,
-      yaw,
-      pitch: 0,
-    }).origin;
-    expect(isSolid(...(port.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(true);
-    f.load(0);
-    f.rack(1);
-    expect(f.fire(3)).toBe(true);
-    f.rack(4);
-    f.mechanics.advanceTo(8);
-    expect(f.effects).toHaveLength(1);
-    expect(isSolid(...(f.effects[0]!.origin.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
-
-    const casePiles = [...f.inventory.piles.values()].filter((pile) =>
-      pile.items.some(({ item }) => item.type === hullType),
-    );
-    expect(casePiles).toHaveLength(1);
-    const [casePile] = casePiles;
-    expect(casePile!.pos[0]).toBeLessThan(wallX);
-    expect(casePile!.pos[1]).toBe(1);
-    expect(isSolid(...casePile!.pos)).toBe(false);
-    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
-  });
-
-  it('lands at the foot of a wall that blocks the outward case path', () => {
-    const open = fixture();
-    open.load(0);
-    open.rack(1);
-    expect(open.fire(3)).toBe(true);
-    open.rack(4);
-    const endpoint = open.effects[0]!.landingPosition;
-    const world = new World();
-    for (let x = -8; x <= 8; x += 1) {
-      for (let z = -8; z <= 8; z += 1) {
-        world.setBlock(x, -1, z, 1);
-      }
-    }
-    for (let y = 0; y <= 8; y += 1) {
-      world.setBlock(endpoint[0], y, endpoint[2], 1);
-    }
-    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
-    const f = fixture(registry, () => 0, pose, isSolid);
-    f.load(0);
-    f.rack(1);
-    expect(f.fire(3)).toBe(true);
-    f.rack(4);
-
-    const casePile = [...f.inventory.piles.values()].find((pile) =>
-      pile.items.some(({ item }) => item.type === hullType),
-    );
-    expect(f.effects).toHaveLength(1);
-    expect(casePile).toBeDefined();
-    expect(isSolid(casePile!.pos[0], casePile!.pos[1] - 1, casePile!.pos[2])).toBe(true);
-    expect(isSolid(...casePile!.pos)).toBe(false);
-  });
-
   it('chooses a free supported spill cell when the first neighbor is solid terrain', () => {
     const probe = fixture();
     probe.load(0);
@@ -478,13 +385,13 @@ describe('real pump ammunition', () => {
     expect(f.inventory.itemByUid(f.box.uid)).toBe(f.box);
   });
 
-  it('gives the pump loadout one stack of loose shells, which the pump loads from', () => {
+  it('loads loose ammunition from an authored pump start', () => {
     const inventory = new Inventory(registry);
-    expect(equipDebugLoadout(inventory, true, true, '?loadout=pump')).toBe(true);
+    applyStartKit(inventory, pumpStart());
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
-    expect(looseShells()).toHaveLength(1);
     const [stack] = looseShells();
+    expect(stack).toBeDefined();
     expect(stack!.count).toBeGreaterThan(1);
     const carried = stack!.count;
     const queue = new HandlingQueue(inventory);
@@ -819,7 +726,7 @@ describe('real pump ammunition', () => {
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
-    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(registry);
     const bore = firearmBoreRay({
       holds: registry.figures.get('player')!.holds,
       model: firearmHandlingFor(f.gun, registry).model,
@@ -947,6 +854,7 @@ describe('real pump ammunition', () => {
     const open = runtime();
     const blocked = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: (_x, _y, z) => z === -4,
       isOpaque: () => false,
@@ -967,10 +875,11 @@ describe('real pump ammunition', () => {
       notice: () => undefined,
       onRead: () => undefined,
     });
-    const type = registry.zombies.get('shambler')!;
-    const a = open.zombies.add(type, [0, 0, -8]);
-    const b = blocked.zombies.add(type, [0, 0, -8]);
+    const type = registry.actors.get('shambler')!;
+    const a = open.actors.add(type, [0, 0, -8]);
+    const b = blocked.actors.add(type, [0, 0, -8]);
     const shot: PelletShot = {
+      damageKind: 'pierce',
       origin: [0, 2, 0],
       directions: [[0, 0, -1]],
       damage: 20,
@@ -978,11 +887,11 @@ describe('real pump ammunition', () => {
       diameterMm: 8.38,
       rangeMetres: 50,
     };
-    const before = structuredClone(open.zombieStore.get(a)!.regions);
-    expect(open.zombies.firePellets(shot).hits).toBe(1);
-    expect(blocked.zombies.firePellets(shot).hits).toBe(0);
-    expect(open.zombieStore.get(a)!.regions).not.toEqual(before);
-    expect(blocked.zombieStore.get(b)!.regions).toEqual(before);
+    const before = structuredClone(open.actorStore.get(a)!.regions);
+    expect(open.actors.firePellets(shot).hits).toBe(1);
+    expect(blocked.actors.firePellets(shot).hits).toBe(0);
+    expect(open.actorStore.get(a)!.regions).not.toEqual(before);
+    expect(blocked.actorStore.get(b)!.regions).toEqual(before);
     expect(open.playerCombat.activeMeleeAction).toBeUndefined();
   });
 });

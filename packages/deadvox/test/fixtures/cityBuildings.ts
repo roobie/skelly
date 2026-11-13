@@ -1,12 +1,12 @@
-import type { CityGrid, CityPlan } from '../../src/core/cityPlan.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { admittedCandidates, lootSpawnPoint } from '../../src/core/loot.ts';
-import { Rng } from '../../src/core/random.ts';
-import type { MapAssemblyDef } from '../../src/core/schema.ts';
-import { lootSourcesOf } from '../../src/core/site.ts';
-import { STAIR_BODY_HALF_WIDTH } from '../../src/core/stairFlight.ts';
-import { templateReachableStandingPositions } from '../../src/core/templateSpatial.ts';
-import { type CompiledTemplate, compileAssembly, kitSlotChoices } from '../../src/core/templates.ts';
+import type { Registry } from '@skelly/engine/content';
+import type { CityGrid, CityPlan } from '@skelly/engine/internal/core/cityPlan.ts';
+import { admittedCandidates, lootSpawnPoint } from '@skelly/engine/internal/core/loot.ts';
+import type { MapAssemblyDef } from '@skelly/engine/internal/core/schema.ts';
+import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
+import { STAIR_BODY_HALF_WIDTH } from '@skelly/engine/internal/core/stairFlight.ts';
+import { templateReachableStandingPositions } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { type CompiledTemplate, compileAssembly, kitSlotChoices } from '@skelly/engine/internal/core/templates.ts';
+import { Rng } from '@skelly/engine/math';
 
 export const cityBuildingDraws = (plan: CityPlan, grid: CityGrid, seed: number) => {
   const ordinals = new Map<string, number>();

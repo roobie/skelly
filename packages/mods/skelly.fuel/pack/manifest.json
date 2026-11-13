@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.inventory", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "fuel-items.json"
+    }
+  ],
+  "id": "skelly.fuel",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

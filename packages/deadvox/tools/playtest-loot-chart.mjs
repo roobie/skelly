@@ -1,20 +1,16 @@
 // biome-ignore-all lint/correctness/noNodejsModules: This report is a Node-only command-line tool.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from '../src/core/settlementSpawns.ts';
-import { footprint } from '../src/core/templates.ts';
+import { buildRegistry } from '@skelly/engine/content';
+import { claimedId } from '@skelly/engine/inventory';
+import { compareCodeUnits } from '@skelly/engine/packs';
+import { footprint, HORDE_MEMBERS, placementOf, TEMPLATE_BLOCK_SIZE } from '@skelly/engine/world';
+import { readStackContentSources } from './readBundledPacks.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
-const contentDirectory = resolve(projectRoot, 'src/content/base');
-const sources = readdirSync(contentDirectory)
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: readJson(resolve(contentDirectory, file)) }));
-const { registry, issues } = buildRegistry(sources);
+const { registry, issues } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));
 if (issues.length > 0) {
   throw new Error(issues.map(({ source, path, message }) => `${source} ${path}: ${message}`).join('\n'));
 }
@@ -77,7 +73,7 @@ const nearestBeat = (building) =>
 const rangeText = ([min, max]) => (min === max ? String(min) : `${min}–${max}`);
 const itemName = (id) => registry.items.get(id)?.name ?? id;
 const weightText = (weight, total) => `${weight}/${total} (${((100 * weight) / total).toFixed(1)}%)`;
-const sortedTables = (tableCounts) => [...tableCounts].sort(([a], [b]) => a.localeCompare(b));
+const sortedTables = (tableCounts) => [...tableCounts].sort(([a], [b]) => compareCodeUnits(a, b));
 
 const describeTable = (tableId, indent = '    ', seen = new Set()) => {
   const table = registry.loot.get(tableId);
@@ -135,12 +131,12 @@ const fixedLootLines = (building) =>
 function groupSpawns(spawns) {
   const groups = new Map();
   for (const spawn of spawns) {
-    const key = `${spawn.zombie}\u0000${spawn.chance}`;
-    const group = groups.get(key) ?? { zombie: spawn.zombie, chance: spawn.chance, count: 0 };
+    const key = `${spawn.actor}\u0000${spawn.chance}`;
+    const group = groups.get(key) ?? { actor: spawn.actor, chance: spawn.chance, count: 0 };
     group.count += 1;
     groups.set(key, group);
   }
-  return [...groups.values()].sort((a, b) => a.zombie.localeCompare(b.zombie) || a.chance - b.chance);
+  return [...groups.values()].sort((a, b) => compareCodeUnits(a.actor, b.actor) || a.chance - b.chance);
 }
 
 const furnitureLootLines = (placement) => {
@@ -169,11 +165,11 @@ const templateZombieLines = (spawns) => {
   return [
     '    Template zombies:',
     ...spawns.map((spawn) => {
-      const zombie = registry.zombies.get(spawn.zombie);
+      const zombie = registry.actors.get(spawn.actor);
       const chance = `${(spawn.chance * 100).toFixed(1)}%`;
       const markerWord = spawn.count === 1 ? 'marker' : 'markers';
       const drop = zombie?.loot === undefined ? 'no drop table' : `drops via \`${zombie.loot}\` (see Zombie drops)`;
-      return `    - ${zombie?.name ?? spawn.zombie}: ${spawn.count} ${markerWord}, ${chance} chance each; ${drop}`;
+      return `    - ${zombie?.name ?? spawn.actor}: ${spawn.count} ${markerWord}, ${chance} chance each; ${drop}`;
     }),
   ];
 };
@@ -204,16 +200,16 @@ const sourceForZombie = (id) => {
 };
 const addSpawnCounts = (counts, chance, count = 1) => counts.set(chance, (counts.get(chance) ?? 0) + count);
 
-for (const spawn of playtest.shamblers) {
+for (const spawn of playtest.actors) {
   addSpawnCounts(sourceForZombie(spawn.type).map, spawn.chance ?? 1);
 }
 for (const { spawns } of buildings) {
   for (const spawn of spawns) {
-    addSpawnCounts(sourceForZombie(spawn.zombie).templates, spawn.chance, spawn.count);
+    addSpawnCounts(sourceForZombie(spawn.actor).templates, spawn.chance, spawn.count);
   }
 }
 for (const _horde of playtest.hordes ?? []) {
-  const hordeSource = sourceForZombie(HORDE_TYPE);
+  const hordeSource = sourceForZombie(claimedId(registry.actors, 'settlementHorde'));
   hordeSource.hordes += 1;
 }
 
@@ -238,8 +234,8 @@ const outsideLootLines = () => {
     'Map and template spawns can drop these tables on death; route tracks do not place loot.',
   ];
   const tableUsers = new Map();
-  for (const [typeId, source] of [...zombieSources].sort(([a], [b]) => a.localeCompare(b))) {
-    const zombie = registry.zombies.get(typeId);
+  for (const [typeId, source] of [...zombieSources].sort(([a], [b]) => compareCodeUnits(a, b))) {
+    const zombie = registry.actors.get(typeId);
     const tableId = zombie?.loot;
     const loot = tableId === undefined ? 'no drop table' : `\`${tableId}\``;
     lines.push(`- ${zombie?.name ?? typeId} (${zombieSourceText(source)}): ${loot}`);
@@ -249,7 +245,7 @@ const outsideLootLines = () => {
       tableUsers.set(tableId, users);
     }
   }
-  for (const [tableId, users] of [...tableUsers].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [tableId, users] of [...tableUsers].sort(([a], [b]) => compareCodeUnits(a, b))) {
     lines.push('', `### \`${tableId}\``, `Used by: ${users.join(', ')}`);
     lines.push(...describeTable(tableId, '  '));
   }
@@ -260,7 +256,7 @@ const lines = [
   '# Playtest loot progression',
   '',
   'Buildings are grouped under their nearest beat area by building-center distance; ties follow Beats layer order.',
-  'Fixed container items are furnished before rolled filler; a full container can crowd it out (see `src/core/inventory.ts`, `Inventory.furnish`).',
+  'Fixed container items are furnished before rolled filler; a full container can crowd it out (see `packages/engine/src/core/inventory.ts`, `Inventory.furnish`).',
   'Fixed items are authored placements. Weighted table choices are per roll; roll and item counts are inclusive ranges.',
   '',
 ];

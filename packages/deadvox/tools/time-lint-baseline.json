@@ -23,11 +23,10 @@
       "sprintMetresPerSecond": 1,
       "sprintSeconds": 1,
       "startedAt": 1,
-      "time": 2
+      "time": 1
     },
     "bench/shamblers.ts": {
-      "startedAt": 1,
-      "time": 2
+      "startedAt": 1
     },
     "bench/stats.ts": {
       "msMax": 2,
@@ -48,10 +47,6 @@
     "core/disassembly.ts": {
       "duration": 2
     },
-    "core/firearmsSkill.ts": {
-      "rackDuration": 2,
-      "reloadDuration": 2
-    },
     "core/firearmState.ts": {
       "duration": 2,
       "elapsed": 2,
@@ -65,8 +60,8 @@
       "elapsed": 3
     },
     "core/inventory.ts": {
-      "duration": 2,
-      "elapsed": 2,
+      "duration": 1,
+      "elapsed": 1,
       "time": 10
     },
     "core/items.ts": {
@@ -98,8 +93,8 @@
     "core/saveFormat.ts": {
       "attackWindup": 1,
       "cooldown": 2,
-      "duration": 5,
-      "elapsed": 6,
+      "duration": 4,
+      "elapsed": 5,
       "expiresAt": 1,
       "hitFlinchTime": 1,
       "idleSoundTimer": 1,
@@ -137,31 +132,62 @@
       "lastPlayedAt": 5,
       "time": 1
     },
-    "core/zombiePose.ts": {
+    "core/actorSense.ts": {
+      "expiresAt": 1
+    },
+    "core/actorTickScratch.ts": {
+      "time": 2
+    },
+    "core/actorPose.ts": {
       "attackCooldown": 2,
       "attackWindup": 2,
       "attackWindupSeconds": 2,
       "hitFlinchTime": 2,
       "idleTime": 2
     },
-    "core/zombies.ts": {
-      "attackWindup": 3,
-      "cooldown": 2,
-      "expiresAt": 1,
+    "core/actorState.ts": {
+      "attackWindup": 2,
       "hitFlinchTime": 2,
-      "idleSoundTimer": 3,
-      "lookTimer": 3,
-      "lurchDuration": 3,
-      "lurchElapsed": 3,
-      "modeTimer": 3,
-      "roamTimer": 4,
-      "searchTimer": 3,
-      "spitWindup": 3,
-      "stumbleDuration": 3,
-      "stumbleElapsed": 3,
-      "swayDuration": 3,
-      "swayElapsed": 3,
-      "time": 4
+      "idleSoundTimer": 1,
+      "lookTimer": 1,
+      "lurchDuration": 2,
+      "lurchElapsed": 2,
+      "modeTimer": 1,
+      "searchTimer": 1,
+      "spitWindup": 2,
+      "stumbleDuration": 2,
+      "stumbleElapsed": 2,
+      "swayDuration": 2,
+      "swayElapsed": 2,
+      "time": 1
+    },
+    "core/actorSystem.ts": {
+      "attackWindup": 1,
+      "cooldown": 2,
+      "idleSoundTimer": 1,
+      "lookTimer": 1,
+      "lurchDuration": 1,
+      "lurchElapsed": 1,
+      "modeTimer": 1,
+      "roamTimer": 2,
+      "searchTimer": 1,
+      "spitWindup": 1,
+      "stumbleDuration": 1,
+      "stumbleElapsed": 1,
+      "swayDuration": 1,
+      "swayElapsed": 1
+    },
+    "core/agentHorde.ts": {
+      "roamTimer": 2
+    },
+    "core/agentPerception.ts": {
+      "time": 1
+    },
+    "core/agentSave.ts": {
+      "idleSoundTimer": 1,
+      "lookTimer": 1,
+      "modeTimer": 1,
+      "searchTimer": 1
     },
     "debug/index.ts": {
       "gameTime": 1,
@@ -179,16 +205,23 @@
       "gameTime": 2,
       "timestamp": 1
     },
+    "debug/snapshotMeasurement.ts": {
+      "batchMeanDurationsMs": 1,
+      "batchMeanP50Ms": 2,
+      "batchMeanP95Ms": 2,
+      "calibrationBatchMs": 1,
+      "individualCaptureMaxMs": 1,
+      "individualCaptureMaxUpperBoundMs": 1,
+      "individualCaptureP95Ms": 1,
+      "individualCaptureP95UpperBoundMs": 1,
+      "observedTimerTickMs": 1,
+      "quantumMs": 2,
+      "targetBatchMs": 1,
+      "timerQuantum": 2,
+      "timerQuantumCrossCheckPassed": 1
+    },
     "debug/vehicleSpike.ts": {
       "ms": 1
-    },
-    "game/debugInterface.ts": {
-      "meshingQueueMs": 1,
-      "renderMs": 1,
-      "setTimeOfDay": 1,
-      "simulationMs": 1,
-      "snapshotLastMs": 1,
-      "snapshotP95Ms": 1
     },
     "game/firearmHandling.ts": {
       "duration": 5,
@@ -196,7 +229,7 @@
       "simTime": 2,
       "startedAt": 3
     },
-    "game/inputBindings.ts": {
+    "core/inputActions.ts": {
       "holdMs": 2
     },
     "game/inputReplay.ts": {
@@ -207,59 +240,12 @@
     "game/melee.ts": {
       "cooldown": 4
     },
-    "game/play.ts": {
-      "recordSnapshotDuration": 1,
-      "setTimeOfDay": 1,
-      "snapshotLastMs": 1,
-      "snapshotP95Ms": 1,
-      "time": 2
-    },
-    "game/playtestObserver.ts": {
-      "batchMeanDurationsMs": 1,
-      "batchMeanP50Ms": 1,
-      "batchMeanP95Ms": 1,
-      "calibrationBatchMs": 1,
-      "handlingSeconds": 3,
-      "individualCaptureMaxMs": 1,
-      "individualCaptureMaxUpperBoundMs": 1,
-      "individualCaptureP95Ms": 1,
-      "individualCaptureP95UpperBoundMs": 1,
-      "observedTimerTickMs": 1,
-      "targetBatchMs": 1,
-      "timerQuantum": 2,
-      "timerQuantumCrossCheckPassed": 1,
-      "uiSeconds": 3
-    },
-    "game/playtestTools.ts": {
-      "batchMeanDurationsMs": 1,
-      "batchMeanP50Ms": 2,
-      "batchMeanP95Ms": 2,
-      "calibrationBatchMs": 1,
-      "compressedSeconds": 3,
-      "durationMs": 1,
-      "handlingSeconds": 1,
-      "individualCaptureMaxMs": 1,
-      "individualCaptureMaxUpperBoundMs": 1,
-      "individualCaptureP95Ms": 1,
-      "individualCaptureP95UpperBoundMs": 1,
-      "lastMs": 1,
-      "observedTimerTickMs": 1,
-      "p95Ms": 1,
-      "quantumMs": 3,
-      "survivedSeconds": 1,
-      "targetBatchMs": 1,
-      "timerQuantum": 2,
-      "timerQuantumCrossCheckPassed": 1,
-      "uiSeconds": 1
+    "game/mesherProtocol.ts": {
+      "ms": 1
     },
     "game/pressHoldInput.ts": {
       "holdDuration": 1,
       "startedAt": 2
-    },
-    "game/saveStorage.ts": {
-      "requestTimeoutMs": 1,
-      "timeoutMs": 1,
-      "timer": 1
     },
     "game/session.ts": {
       "simTime": 1
@@ -271,6 +257,52 @@
     "main.ts": {
       "genMs": 1,
       "meshMs": 1
+    },
+    "presentation/debugInterface.ts": {
+      "meshingQueueMs": 1,
+      "renderMs": 1,
+      "setTimeOfDay": 1,
+      "simulationMs": 1,
+      "snapshotLastMs": 1,
+      "snapshotP95Ms": 1
+    },
+    "presentation/play.ts": {
+      "recordSnapshotDuration": 1,
+      "setTimeOfDay": 1,
+      "snapshotLastMs": 1,
+      "snapshotP95Ms": 1,
+      "time": 2
+    },
+    "presentation/playtestObserver.ts": {
+      "handlingSeconds": 3,
+      "uiSeconds": 3
+    },
+    "presentation/playtestTools.ts": {
+      "batchMeanDurationsMs": 1,
+      "batchMeanP50Ms": 1,
+      "batchMeanP95Ms": 1,
+      "calibrationBatchMs": 1,
+      "compressedSeconds": 3,
+      "durationMs": 1,
+      "handlingSeconds": 1,
+      "individualCaptureMaxMs": 1,
+      "individualCaptureMaxUpperBoundMs": 1,
+      "individualCaptureP95Ms": 1,
+      "individualCaptureP95UpperBoundMs": 1,
+      "lastMs": 1,
+      "observedTimerTickMs": 1,
+      "p95Ms": 1,
+      "quantumMs": 1,
+      "survivedSeconds": 1,
+      "targetBatchMs": 1,
+      "timerQuantum": 2,
+      "timerQuantumCrossCheckPassed": 1,
+      "uiSeconds": 1
+    },
+    "presentation/saveStorage.ts": {
+      "requestTimeoutMs": 1,
+      "timeoutMs": 1,
+      "timer": 1
     },
     "render/actorAnimator.ts": {
       "duration": 1,
@@ -316,9 +348,6 @@
       "simTime": 1
     },
     "worker/mesh.worker.ts": {
-      "ms": 1
-    },
-    "worker/protocol.ts": {
       "ms": 1
     }
   }

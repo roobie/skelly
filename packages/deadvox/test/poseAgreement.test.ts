@@ -1,35 +1,42 @@
-import { clampJointAngles, jointAngles } from '@mobgen/core/joints.ts';
-import { IDENTITY_M } from '@mobgen/core/math.ts';
-import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { type ActorBody, actorFigure } from '@skelly/engine/content';
 import {
+  actorHitFlinchDuration,
   advanceStanceWeight,
-  HIT_FLINCH_DURATION,
-  posedShambler,
   targetStanceWeight,
-  zombiePoseInputFor,
-} from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
-import type { Zombie } from '../src/core/zombies.ts';
+} from '@skelly/engine/internal/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '@skelly/engine/internal/core/actorRegions.ts';
+import {
+  actorPoseInputFor,
+  clampJointAngles,
+  type HumanoidHitRegion,
+  IDENTITY_M,
+  jointAngles,
+  posedActor,
+} from '@skelly/engine/pose';
+import type { Actor } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
+const FIGURES = stackActorFigureFiles(registry);
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
+const POSE_SCENE = { blockSize: BLOCK_SIZE, actorFigureFiles: FIGURES };
 const FLOOR = (_x: number, y: number) => y === 0;
 
-const livePoseZombie = (type = SHAMBLER) => {
+const livePoseActor = (type = SHAMBLER) => {
   let target: Vec3 = [100, 1, 100];
   let damage = 0;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     tuning: TEST_SENSE_TUNING,
     isOpaque: FLOOR,
     player: () => ({
@@ -47,31 +54,33 @@ const livePoseZombie = (type = SHAMBLER) => {
     hurtPlayer: (amount) => {
       damage += amount;
     },
+    actorFigureFiles: FIGURES,
   });
   const id = system.add(type, [2, 1, 3], [0, 0, -1]);
-  const zombie = system.store.get(id)!;
+  const actor = system.store.get(id)!;
   return {
     system,
     id,
-    zombie,
+    actor,
     damage: () => damage,
     approach: (distance = 1.2) => {
-      target = [zombie.body.pos[0] + zombie.facing[0] * distance, 2, zombie.body.pos[2] + zombie.facing[2] * distance];
+      target = [actor.body.pos[0] + actor.facing[0] * distance, 2, actor.body.pos[2] + actor.facing[2] * distance];
     },
   };
 };
 
 const startTurnedAttack = () => {
-  const live = livePoseZombie();
+  const live = livePoseActor();
   live.system.tick(1 / 20);
   live.approach();
   live.system.tick(1 / 6000);
   return live;
 };
 
-const rendererFor = (zombie: Zombie) =>
+const rendererFor = (actor: Actor) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
-    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
+    actors: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
+    actorFigureFiles: FIGURES,
   });
 
 const offsetForBox = ({
@@ -79,16 +88,16 @@ const offsetForBox = ({
   id,
   region,
   box,
-  figure,
+  body,
 }: {
   renderer: MobActorMeshes;
   id: number;
-  region: ZombieRegion;
+  region: HumanoidHitRegion;
   box: { bone: string; center: Vec3; rotation: readonly number[] };
-  figure: ReturnType<typeof posedShambler>['figure'];
+  body: ActorBody;
 }) => {
   const matrix = renderer.boneMatrix(id, box.bone)!;
-  const local = figure.boxes[region].find((candidate) => candidate.bone === box.bone)!.center;
+  const local = body.boxes![region]!.find((candidate) => candidate.bone === box.bone)!.center;
   const world = [0, 1, 2].map(
     (axis) =>
       matrix[axis * 4]! * local[0]! +
@@ -120,10 +129,10 @@ const offsetForBox = ({
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
-const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
-  const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
-  const { figure } = posedShambler(input);
-  const hit = posedShamblerRegionBoxes(input);
+const maxOffset = (renderer: MobActorMeshes, id: number, actor: Actor) => {
+  const input = actorPoseInputFor(actor, id, POSE_SCENE);
+  const { body } = input.figure;
+  const hit = posedHumanoidRegionBoxes(input);
   let worst = {
     bone: '',
     centreCm: 0,
@@ -135,9 +144,9 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
   let worstRotation = { ...worst };
   let worstHeadRotation = { ...worst };
   for (const [regionName, boxes] of Object.entries(hit)) {
-    const region = regionName as ZombieRegion;
+    const region = regionName as HumanoidHitRegion;
     for (const box of boxes) {
-      const current = offsetForBox({ renderer, id, region, box, figure });
+      const current = offsetForBox({ renderer, id, region, box, body });
       if (current.centreCm > worst.centreCm) {
         worst = current;
       }
@@ -157,22 +166,22 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
 
 describe('rendered and hit shambler poses', () => {
   it('matches a frozen lunge pose after windup cancellation', () => {
-    const { system, id, zombie, damage } = startTurnedAttack();
-    expect(zombie.attackWindup).toBeGreaterThan(0);
-    expect(zombie.attackWait).toBeGreaterThan(0);
-    const renderer = rendererFor(zombie);
+    const { system, id, actor, damage } = startTurnedAttack();
+    expect(actor.attackWindup).toBeGreaterThan(0);
+    expect(actor.attackWait).toBeGreaterThan(0);
+    const renderer = rendererFor(actor);
     try {
       renderer.sync(system.store, 0, 1);
-      const wait = zombie.attackWait;
+      const wait = actor.attackWait;
       system.setFrozen(true);
-      expect(zombie.attackWindup).toBe(0);
-      expect(zombie.attackWait).toBe(wait);
+      expect(actor.attackWindup).toBe(0);
+      expect(actor.attackWait).toBe(wait);
       const frozen = system.snapshotState();
-      system.tick(SHAMBLER.attack.windupSimSeconds + SHAMBLER.attack.cooldownSimSeconds);
+      system.tick(SHAMBLER.attack!.windupSimSeconds + SHAMBLER.attack!.cooldownSimSeconds);
       expect(system.snapshotState()).toEqual(frozen);
       expect(damage()).toBe(0);
       renderer.sync(system.store, 0, 1, true);
-      const mismatch = maxOffset(renderer, id, zombie);
+      const mismatch = maxOffset(renderer, id, actor);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
       expect(mismatch.worstRotation.rotationDeltaDeg).toBeLessThan(0.1);
       expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
@@ -183,33 +192,38 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it.each(['runner', 'crawler'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
-    const { system, id, zombie, approach } = livePoseZombie(registry.zombies.get(model)!);
+    const { system, id, actor, approach } = livePoseActor(registry.actors.get(model)!);
     approach(10);
-    for (let tick = 0; tick < 60 && zombie.gaitPhase === 0; tick++) {
+    for (let tick = 0; tick < 60 && actor.gaitPhase === 0; tick++) {
       system.tick(1 / 60);
     }
-    expect(zombie.mode).toBe('chase');
-    const head = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
+    expect(actor.agent!.mode).toBe('chase');
+    const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, POSE_SCENE)).head.find(
       (box) => box.bone === 'head',
     )!.center;
     expect(system.swing([head[0], head[1] + 1, head[2] - 1.5], [0, -1, 1.5], { ...FISTS_MELEE, damage: 1 })).toBe(id);
-    expect(zombie.hitFlinchTime).toBe(0);
-    system.tick(HIT_FLINCH_DURATION / 4);
-    expect(zombie.gaitPhase).toBeGreaterThan(0);
-    expect(zombie.hitFlinchTime).toBeGreaterThan(0);
+    expect(actor.hitFlinchTime).toBe(0);
+    const struck = actorPoseInputFor(actor, id, POSE_SCENE);
+    const flinchDuration = actorHitFlinchDuration(struck.crawling ? 'legless-humanoid' : struck.model!, struck.figure);
+    system.tick(flinchDuration / 4);
+    expect(actor.gaitPhase).toBeGreaterThan(0);
+    expect(actor.hitFlinchTime).toBeGreaterThan(0);
     system.setFrozen(true);
-    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(actor, id, POSE_SCENE);
     const { hitFlinchTime: _flinch, ...baseInput } = input;
-    const flinched = posedShambler(input);
-    const basePose = posedShambler(baseInput);
-    const recovered = posedShambler({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
+    const flinched = posedActor(input);
+    const basePose = posedActor(baseInput);
+    const recovered = posedActor({ ...input, hitFlinchTime: flinchDuration });
     expect(flinched.pose.rotations.head).not.toEqual(basePose.pose.rotations.head);
-    expect(recovered.transforms).toEqual(basePose.transforms);
+    // A recovered flinch may leave a zero angle signed by its side; -0 turns a bone exactly as 0 does.
+    const unsigned = (transforms: typeof basePose.transforms) =>
+      new Map([...transforms].map(([bone, { r, t }]) => [bone, { r: r.map((v) => v + 0), t: t.map((v) => v + 0) }]));
+    expect(unsigned(recovered.transforms)).toEqual(unsigned(basePose.transforms));
 
-    const renderer = rendererFor(zombie);
+    const renderer = rendererFor(actor);
     try {
       renderer.sync(system.store, 0, 1, true);
-      const mismatch = maxOffset(renderer, id, zombie);
+      const mismatch = maxOffset(renderer, id, actor);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
       expect(mismatch.worstRotation.rotationDeltaDeg).toBeLessThan(0.1);
       expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
@@ -220,7 +234,7 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it('targets aggravated stance while chasing, winding up, and during the attack clip', () => {
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({
@@ -236,9 +250,10 @@ describe('rendered and hit shambler poses', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const input = zombiePoseInputFor(system.store.get(id)!, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(system.store.get(id)!, id, POSE_SCENE);
     expect(targetStanceWeight({ ...input, chasing: true })).toBe(1);
     expect(targetStanceWeight({ ...input, chasing: false, attackWindup: 0.2 })).toBe(1);
     expect(targetStanceWeight({ ...input, chasing: false, attackWait: 0.8 })).toBe(1);
@@ -256,7 +271,7 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it('blends slack and aggravated idle poses and initializes a newly tracked chase as aggravated', () => {
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({
@@ -272,21 +287,22 @@ describe('rendered and hit shambler poses', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const zombie = system.store.get(id)!;
-    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const actor = system.store.get(id)!;
+    const input = actorPoseInputFor(actor, id, POSE_SCENE);
     const { stanceWeight: _savedStanceWeight, ...legacyInput } = input;
-    const untrackedChase = posedShambler({ ...legacyInput, chasing: true });
-    const trackedChase = posedShambler({ ...input, chasing: true, stanceWeight: 1 });
+    const untrackedChase = posedActor({ ...legacyInput, chasing: true });
+    const trackedChase = posedActor({ ...input, chasing: true, stanceWeight: 1 });
     expect(untrackedChase.pose).toEqual(trackedChase.pose);
-    const slack = posedShambler({ ...input, stanceWeight: 0 }).pose;
-    const midpoint = posedShambler({ ...input, stanceWeight: 0.5 }).pose;
-    const aggravated = posedShambler({ ...input, stanceWeight: 1 }).pose;
+    const slack = posedActor({ ...input, stanceWeight: 0 }).pose;
+    const midpoint = posedActor({ ...input, stanceWeight: 0.5 }).pose;
+    const aggravated = posedActor({ ...input, stanceWeight: 1 }).pose;
     expect(midpoint.rotations.chest).not.toEqual(slack.rotations.chest);
     expect(midpoint.rotations.chest).not.toEqual(aggravated.rotations.chest);
 
-    const freshSystem = new ZombieSystem({
+    const freshSystem = new ActorSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({
@@ -302,66 +318,26 @@ describe('rendered and hit shambler poses', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       hurtPlayer: () => undefined,
+      actorFigureFiles: FIGURES,
     });
     const freshId = freshSystem.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const freshZombie = freshSystem.store.get(freshId)!;
-    expect(freshZombie.stanceWeight).toBeUndefined();
+    const freshActor = freshSystem.store.get(freshId)!;
+    expect(freshActor.stanceWeight).toBeUndefined();
     freshSystem.tick(1 / 20);
-    expect(freshZombie.mode).toBe('chase');
-    expect(freshZombie.stanceWeight).toBe(1);
-  });
-
-  it('aimAt hits the rendered head centre during a frozen lunge and turned head-look', () => {
-    const { system, id, zombie } = startTurnedAttack();
-    expect(zombie.attackWindup).toBeGreaterThan(0);
-    expect(zombie.attackWait).toBeGreaterThan(0);
-    expect(Math.abs(zombie.headYaw)).toBeGreaterThan(0);
-    system.setFrozen(true);
-
-    const renderer = rendererFor(zombie);
-    try {
-      renderer.sync(system.store, 0, 1, true);
-      const headBox = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
-        (box) => box.bone === 'head',
-      )!;
-      const local = shamblerRegionBoxes(zombie.figureSeed).head.find((box) => box.bone === 'head')!.center;
-      const matrix = renderer.boneMatrix(id, 'head')!;
-      const center = [0, 1, 2].map(
-        (axis) =>
-          matrix[axis * 4]! * local[0]! +
-          matrix[axis * 4 + 1]! * local[1]! +
-          matrix[axis * 4 + 2]! * local[2]! +
-          matrix[axis * 4 + 3]!,
-      );
-      expect(center.map((value) => value / BLOCK_SIZE)).toEqual(
-        headBox.center.map((value) => expect.closeTo(value, 6)),
-      );
-      const aim = system.aimAt(
-        [center[0]! / BLOCK_SIZE, center[1]! / BLOCK_SIZE, center[2]! / BLOCK_SIZE - 0.6 / BLOCK_SIZE],
-        [0, 0, 1],
-        {
-          damage: 8,
-          reach: 0.1,
-          cooldown: 0.8,
-          impulse: 0,
-        },
-      );
-      expect(aim?.region).toBe('head');
-      expect(aim?.inReach).toBe(true);
-    } finally {
-      renderer.dispose();
-    }
+    expect(freshActor.agent!.mode).toBe('chase');
+    expect(freshActor.stanceWeight).toBe(1);
   });
 });
 
 describe('shared acid pose', () => {
   it('keeps a wandering head turn inside every framed joint limit without a hit reaction', () => {
-    const acid = registry.zombies.get('acid_zombie')!;
+    const acid = registry.actors.get('acid_zombie')!;
     // Just inside the half-arc a wandering acid zombie can pick for its head.
-    const reachable = ((acid.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
+    const reachable = ((acid.agent!.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
     for (const headYaw of [reachable, -reachable]) {
-      const posed = posedShambler({
+      const posed = posedActor({
         seed: 1,
+        figure: actorFigure(FIGURES, acid, 1),
         model: 'acid',
         position: [0, 0, 0],
         facing: [0, 0, -1],
@@ -370,7 +346,7 @@ describe('shared acid pose', () => {
         speed: 0,
         chasing: false,
         attackWindup: 0,
-        attackWindupSeconds: acid.attack.windupSimSeconds,
+        attackWindupSeconds: acid.attack!.windupSimSeconds,
         severed: [],
         blockSize: BLOCK_SIZE,
       });

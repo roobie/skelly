@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.electric-power", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "furniture.json"
+    }
+  ],
+  "id": "skelly.deadvox.labs.underground",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

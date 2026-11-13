@@ -1,0 +1,130 @@
+{
+  "dependencies": ["skelly.melee-classes", "skelly.sound-families"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "block-materials.json"
+    },
+    {
+      "kind": "content",
+      "path": "natural-blocks.json"
+    },
+    {
+      "kind": "content",
+      "path": "vegetation.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture-materials.json"
+    },
+    {
+      "kind": "content",
+      "path": "natural-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-furniture.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door_blocked_close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-leaves-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/item_drop_wood-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/item_drop_wood-02.ogg"
+    }
+  ],
+  "id": "skelly.natural-world",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

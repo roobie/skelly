@@ -1,0 +1,30 @@
+{
+  "assets/models/flesh_chunk_large.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/flesh_chunk_medium.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/flesh_chunk_small.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/flesh_chunk_strip.glb": { "materials": ["body-skin-sickly", "body-gore"] },
+  "assets/models/float_bladders.glb": { "materials": ["jelly-pale", "body-gore"] },
+  "assets/models/player_arm.glb": { "materials": ["body-skin-player"] },
+  "assets/models/player_bust.glb": {
+    "materials": ["body-skin-player", "body-hair", "body-eye-white", "body-eye", "body-mouth", "cloth-pants-player"]
+  },
+  "assets/models/player_leg.glb": { "materials": ["body-skin-player"] },
+  "assets/models/shambler_head.glb": {
+    "materials": ["body-skin-sickly", "body-hair", "body-eye", "body-mouth", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_left_arm.glb": {
+    "materials": ["body-skin-sickly", "cloth-shirt-faded", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_left_leg.glb": {
+    "materials": ["cloth-pants-grey", "rubber-black", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_right_arm.glb": {
+    "materials": ["body-skin-sickly", "cloth-shirt-faded", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_right_leg.glb": {
+    "materials": ["cloth-pants-grey", "rubber-black", "body-gore", "body-bone"]
+  },
+  "assets/models/shambler_torso.glb": {
+    "materials": ["cloth-pants-grey", "cloth-shirt-faded", "body-skin-sickly", "body-gore", "body-bone"]
+  }
+}

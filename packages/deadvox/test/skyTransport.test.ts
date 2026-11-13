@@ -1,10 +1,7 @@
+import { captureSky, growSky, SKY_HALO, type SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { buildSkyResult, containsSky, skyIndex } from '@skelly/engine/sky';
+import { BlockEntities, toChunk, type Vec3, worldOpaque } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldOpaque } from '../src/core/collision.ts';
-import { toChunk, type Vec3 } from '../src/core/coords.ts';
-import { skyIndex } from '../src/core/skylight.ts';
-import { captureSky, containsSky, growSky, SKY_HALO, type SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { buildSkylight } from './fixtures/skyOracle.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
@@ -89,6 +86,38 @@ it('matches generous-domain transport and opaque-column heights with foliage and
   }
   const blockOpaque = worldOpaque(fixture.world, fixture.registry, new BlockEntities(fixture.registry));
   expect(result.heights).toEqual(referenceHeights(captured.input, fixture.knownOpaque, blockOpaque));
+});
+
+it("lets light through a partly shading blocker's cells, which still roof the air under them", () => {
+  const { input } = skyFixture().capture();
+  const open = buildSkyResult(input).volume!;
+  const at = (volume: typeof open, [x, y, z]: Vec3) =>
+    volume.light[skyIndex(volume.size, x - volume.min[0], y - volume.min[1], z - volume.min[2])]!;
+  // A canopy cell over a cell the sky reaches unhindered, both inside the volume.
+  const lit: Vec3[] = [];
+  const [[x0, y0, z0], [x1, y1, z1]] = [open.min, open.max];
+  for (let y = y0; y < y1 - 1; y++) {
+    for (let z = z0; z < z1; z++) {
+      for (let x = x0; x < x1; x++) {
+        if (at(open, [x, y, z]) === 255 && at(open, [x, y + 1, z]) === 255) {
+          lit.push([x, y, z]);
+        }
+      }
+    }
+  }
+  const below = lit[0]!;
+  const canopy: Vec3 = [below[0], below[1] + 1, below[2]];
+  const covered = (shade: number) =>
+    buildSkyResult({
+      ...input,
+      furniture: [...input.furniture, { min: canopy, max: [canopy[0] + 1, canopy[1] + 1, canopy[2] + 1], shade }],
+    }).volume!;
+  const opaque = covered(1);
+  const partial = covered(0.5);
+  expect(at(opaque, canopy)).toBe(0);
+  expect(at(partial, canopy)).toBeGreaterThan(0);
+  expect(at(partial, canopy)).toBeLessThan(255);
+  expect(at(partial, below)).toBeLessThan(255);
 });
 
 it('copies transfer buffers and rejects a revision change between continuation steps', () => {

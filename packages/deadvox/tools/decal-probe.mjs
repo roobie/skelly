@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 // biome-ignore lint/correctness/noUnresolvedImports: Playwright re-exports Chromium from playwright-core at runtime
 import { chromium } from 'playwright';
+import { readHash, writeHash } from '../src/hashState.ts';
 
 const [headUrl, output, baselineUrl, mode] = process.argv.slice(2);
 if (!(headUrl && output && baselineUrl)) {
@@ -112,10 +113,11 @@ try {
     });
     await page.addInitScript(installTiming);
     const url = new URL(variant === 'main' ? baselineUrl : headUrl);
-    url.searchParams.set('freeze', '1');
-    if (variant === 'off') {
-      url.searchParams.set('decals', '0');
-    }
+    url.hash = writeHash({
+      ...readHash(url.hash).hash,
+      freeze: true,
+      ...(variant === 'off' ? { decals: false } : {}),
+    });
     await page.goto(url.href);
     await page.getByRole('button', { name: 'New world', exact: true }).click({ timeout: 90_000 });
     await page.waitForFunction(

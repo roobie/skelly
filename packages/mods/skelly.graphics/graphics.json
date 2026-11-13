@@ -1,0 +1,122 @@
+{
+  "graphics": [
+    {
+      "bloomScale": {
+        "default": 1,
+        "label": "Bloom render scale",
+        "max": 1,
+        "min": 0.25
+      },
+      "cachedSurfaceNoise": {
+        "default": true,
+        "label": "Cached surface noise",
+        "options": [false, true]
+      },
+      "capability": "graphics",
+      "coarseWeathering": {
+        "default": false,
+        "label": "Coarse weathering grid",
+        "options": [false, true]
+      },
+      "columnsPerFrame": 2,
+      "drugVignette": {
+        "default": 1,
+        "label": "Painkiller vignette",
+        "max": 1,
+        "min": 0
+      },
+      "fastCamo": {
+        "default": false,
+        "label": "Fast camouflage pattern",
+        "options": [false, true]
+      },
+      "fogCurveExponent": 2,
+      "fogFarPlaneScale": 1.5,
+      "furnitureSectorChunks": 4,
+      "gore": {
+        "dripSourceCap": 6,
+        "dropletCap": 128,
+        "dropletSpawnsPerFrame": 48,
+        "splatCap": 256
+      },
+      "id": "core",
+      "itemPicture": {
+        "framing": 1.1000000000000001
+      },
+      "itemPictureCacheCapacity": 128,
+      "itemViewer": {
+        "degreesPerPixel": 0.5,
+        "framing": 1.1000000000000001,
+        "pitchLimitDegrees": 85,
+        "startPitchDegrees": 26,
+        "startYawDegrees": 45,
+        "zoomMax": 4,
+        "zoomMin": 0.5,
+        "zoomPerWheelPixel": 0.002
+      },
+      "mobActors": {
+        "maxCorpses": 16
+      },
+      "modelFetchRetry": {
+        "backoffRealSeconds": 0.5,
+        "retries": 3
+      },
+      "modelLoadConcurrency": 8,
+      "msaaSamples": {
+        "choices": [
+          {
+            "label": "Off",
+            "value": 0
+          },
+          {
+            "label": "4x",
+            "value": 4
+          }
+        ],
+        "default": 4,
+        "label": "Edge smoothing"
+      },
+      "nearPlaneMetres": 0.01,
+      "opticLens": {
+        "reticleAntiAliasWidth": 0.5,
+        "rimSoftness": 0.040000000000000001
+      },
+      "playerViewFovDegrees": 75,
+      "readyRadiusM": 64,
+      "renderScale": {
+        "adaptive": {
+          "enabled": true,
+          "hysteresisRealMs": 2,
+          "max": 1,
+          "min": 0.5,
+          "sampleWindow": 20,
+          "step": 0.050000000000000003,
+          "targetRealMs": 15
+        },
+        "default": 1,
+        "label": "Scene render scale",
+        "max": 1,
+        "min": 0.5
+      },
+      "skyJobsInFlight": 3,
+      "skyPreloadRings": 1,
+      "smallSunMap": {
+        "default": false,
+        "label": "Smaller sun shadow map",
+        "options": [false, true]
+      },
+      "streamHysteresisM": 16,
+      "sunShadow": {
+        "debugReachMetres": [12, 16, 24, 36, 40, 64],
+        "defaultReachMetres": 36
+      },
+      "terrainWorkers": {
+        "count": 1,
+        "lookaheadColumns": 8,
+        "maxOutstandingColumns": 12
+      },
+      "unbuiltSkyCap": 0.5,
+      "viewRadiusM": 128
+    }
+  ]
+}

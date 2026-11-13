@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { gameHours } from '@skelly/engine/internal/core/time.ts';
+import { percentile } from '@skelly/engine/math';
+import { actorRendererFromUrl } from '@skelly/engine/session';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   type BenchRecord,
   DEFAULT_PLAN,
   DEFAULT_SHAMBLER_COUNTS,
-  formatPlan,
   parsePlan,
   parseShamblerCounts,
   parseShamblerSeed,
@@ -19,10 +21,23 @@ import {
   shamblerResultRow,
   shamblerSummary,
 } from '../src/bench/report.ts';
-import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
+import { benchRunFromUrl, loadNextRun } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { frameStats, percentile } from '../src/bench/stats.ts';
-import { gameHours } from '../src/core/time.ts';
+import { frameStats } from '../src/bench/stats.ts';
+import { readPageUrl } from '../src/pageUrl.ts';
+
+/** A bench run read the way the bench page reads it, from its query and hash. */
+const benchPage = (address: string) => {
+  const url = new URL(address, 'https://example.test/');
+  const page = readPageUrl(url.search, url.hash);
+  if (page.refused !== undefined) {
+    throw new Error(`the bench page refuses ${page.refused} in ${address}`);
+  }
+  return page;
+};
+afterEach(() => vi.unstubAllGlobals());
+const worldRun = (address: string) => benchRunFromUrl(benchPage(address).hash);
+const shamblerRun = (address: string) => shamblerRunFromUrl(benchPage(address).hash);
 
 describe('bench stats', () => {
   it('takes nearest-rank percentiles', () => {
@@ -41,70 +56,99 @@ describe('bench stats', () => {
 });
 
 describe('bench plan', () => {
-  it('defaults and validates shambler benchmark counts, seed, and time', () => {
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers'))).toEqual({
+  it('defaults and validates shambler benchmark counts and seed', () => {
+    const defaults = shamblerRun('?bench=shamblers')!;
+    expect(defaults).toMatchObject({
       counts: [...DEFAULT_SHAMBLER_COUNTS],
       index: 0,
-      seed: 1,
-      time: '23:30',
-      actors: 'detailed',
+      actors: actorRendererFromUrl(undefined),
       post: false,
     });
-    expect(
-      shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10,25&seed=77&time=21:15&i=1&actors=detailed')),
-    ).toEqual({
+    expect(Number.isInteger(defaults.seed)).toBe(true);
+    expect(shamblerRun(`?bench=shamblers#{seed:${defaults.seed}}`)).toEqual(defaults);
+    // The count cap: every count up to the largest accepted one parses, and one more is refused.
+    let low = Math.max(...DEFAULT_SHAMBLER_COUNTS);
+    let high = Number.MAX_SAFE_INTEGER;
+    expect(parseShamblerCounts([low])).toEqual([low]);
+    expect(parseShamblerCounts([high])).toBeUndefined();
+    while (high - low > 1) {
+      const middle = Math.floor((low + high) / 2);
+      if (parseShamblerCounts([middle])) {
+        low = middle;
+      } else {
+        high = middle;
+      }
+    }
+    const max = low;
+    expect(parseShamblerCounts([1, max])).toEqual([1, max]);
+    expect(parseShamblerCounts([max + 1])).toBeUndefined();
+    expect(shamblerRun(`?bench=shamblers#{shamblers:[${max + 1}]}`)).toBeUndefined();
+    expect(shamblerRun('?bench=shamblers#{seed:77,actors:detailed,shamblers:[10,25],i:1}')).toEqual({
       counts: [10, 25],
       index: 1,
       seed: 77,
-      time: '21:15',
       actors: 'detailed',
       post: false,
     });
-    expect(parseShamblerCounts('1,500')).toEqual([1, 500]);
     expect(parseShamblerSeed('-2147483648')).toBe(-2_147_483_648);
     expect(parseShamblerSeed('2147483647')).toBe(2_147_483_647);
     for (const nonsense of ['', '1.5', '2147483648', '-2147483649', '0x10', 'nope']) {
       expect(parseShamblerSeed(nonsense), nonsense).toBeUndefined();
     }
-    for (const nonsense of ['', '0', '-1', '1.5', '501', '10,nope', '10,10']) {
-      expect(parseShamblerCounts(nonsense), nonsense).toBeUndefined();
+    for (const nonsense of [[], [0], [-1], [1.5], [10, 10]]) {
+      expect(parseShamblerCounts(nonsense), String(nonsense)).toBeUndefined();
     }
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=501'))).toBeUndefined();
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&n=10&i=1'))).toBeUndefined();
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&seed=nope'))).toBeUndefined();
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&seed=2147483648'))).toBeUndefined();
-    expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&time=25:99'))).toBeUndefined();
+    expect(shamblerRun('?bench=shamblers#{shamblers:[10],i:1}')).toBeUndefined();
+    expect(shamblerRun('?bench=shamblers#{seed:2147483648}')).toBeUndefined();
   });
 
-  it('keeps a valid time and carries the detailed population through each full phase run', () => {
-    const registry = { layouts: new Map(), scenarios: new Map() };
-    const run = benchRunFromUrl(new URLSearchParams('bench=1&time=23:30&shamblers=7&actors=detailed'), registry);
-    expect(run).toMatchObject({ time: '23:30', shamblers: 7 });
-    expect(benchRunFromUrl(new URLSearchParams('bench=1&time=25:00'), registry).time).toBeUndefined();
-    const lightsOnly = benchRunFromUrl(new URLSearchParams('bench=1'), registry);
-    expect(lightsOnly.time).toBeUndefined();
-    expect(benchRunFromUrl(new URLSearchParams(nextUrl(lightsOnly, 73)), registry).shamblers).toBe(0);
-    expect(new URLSearchParams(nextUrl(run, 73)).get('shamblers')).toBe('7');
-    expect(benchRunFromUrl(new URLSearchParams('bench=1&shamblers=7,8'), registry).shamblers).toBeUndefined();
+  it('carries the detailed population through each full phase run', () => {
+    expect(worldRun('?bench=1#{actors:detailed,shamblers:[7]}').shamblers).toBe(7);
+    expect(worldRun('?bench=1').shamblers).toBe(0);
+    expect(worldRun('?bench=1#{shamblers:[7,8]}').shamblers).toBeUndefined();
   });
 
-  it('selects a scale-independent default scene for non-template benchmark plans', () => {
-    const registry = { layouts: new Map(), scenarios: new Map() };
-    const run = benchRunFromUrl(new URLSearchParams('bench=1&plan=1:64,0.25:64'), registry);
-    expect(run.site).toBe('forest');
-    expect(benchRunFromUrl(new URLSearchParams(nextUrl(run, 73)), registry).site).toBe(run.site);
+  it('reloads the next run with its query and hash, bar the run index, and shows the report after the last', () => {
+    const start = new URL(
+      '?bench=1&start-mod=fixture.bench.start#{seed:7,post:true,plan:[1,64,0.25,64],shamblers:[7]}',
+      'https://example.test/deadvox/',
+    );
+    const written: string[] = [];
+    const navigation: string[] = [];
+    vi.stubGlobal('location', {
+      href: start.href,
+      search: start.search,
+      hash: start.hash,
+      reload: () => navigation.push('reload'),
+      replace: (url: string) => navigation.push(`replace ${url}`),
+    });
+    vi.stubGlobal('history', {
+      state: null,
+      replaceState: (_state: unknown, _title: string, url: string) => written.push(url),
+    });
+    const first = benchPage(start.href);
+    const run = benchRunFromUrl(first.hash);
+    expect(run).toMatchObject({ seed: 7, post: true, shamblers: 7 });
+    loadNextRun(run.index, run.plan.length);
+    expect(navigation).toEqual(['reload']);
+    expect(written).toHaveLength(1);
+    const next = benchPage(written[0]!);
+    expect([...next.query]).toEqual([...first.query]);
+    expect(next.hash).toEqual({ ...first.hash, i: 1 });
+    expect(benchRunFromUrl(next.hash)).toEqual({ ...run, index: 1 });
+    navigation.length = 0;
+    loadNextRun(1, run.plan.length);
+    expect(navigation).toEqual(['replace ?bench=report']);
+    expect(written).toHaveLength(1);
   });
 
-  it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {
-    expect(formatPlan(DEFAULT_PLAN)).toBe('0.5:64,0.5:96,0.5:128');
-  });
-
-  it('round-trips through the URL and rejects nonsense', () => {
-    expect(parsePlan(formatPlan(DEFAULT_PLAN))).toEqual(DEFAULT_PLAN);
-    expect(parsePlan('0.5:96')).toEqual([{ blockSize: 0.5, radiusM: 96 }]);
-    expect(parsePlan('0.3:96')).toBeUndefined();
-    expect(parsePlan('1:9999')).toBeUndefined();
-    expect(parsePlan('')).toBeUndefined();
+  it('reads a plan as block size and radius pairs and rejects nonsense', () => {
+    expect(parsePlan(DEFAULT_PLAN.flatMap(({ blockSize, radiusM }) => [blockSize, radiusM]))).toEqual(DEFAULT_PLAN);
+    expect(parsePlan([0.5, 96])).toEqual([{ blockSize: 0.5, radiusM: 96 }]);
+    expect(parsePlan([0.3, 96])).toBeUndefined();
+    expect(parsePlan([1, 9999])).toBeUndefined();
+    expect(parsePlan([0.5, 96, 0.5])).toBeUndefined();
+    expect(parsePlan([])).toBeUndefined();
   });
 });
 
@@ -152,7 +196,7 @@ describe('bench report', () => {
       seed: 12,
       actors: 'boxes',
       frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
-      zombieTick: { count: 300, median: 0.4, p95: 0.8 },
+      actorTick: { count: 300, median: 0.4, p95: 0.8 },
       actorSync: { count: 900, median: 2.3, p95: 4.1 },
       renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
       draws: 12,
@@ -187,28 +231,6 @@ describe('bench report', () => {
     });
     expect(report).toContain('Shambler summary: N=25 active/background=–/– seed=12 actors=boxes');
     expect(report.split('\n')[2]).toMatch(SHAMBLER_ROW_START);
-  });
-
-  it('shows actors, actor sync ms, and draws/triangles when a run recorded them', () => {
-    const shambler: ShamblerRunResult = {
-      n: 25,
-      seed: 12,
-      actors: 'detailed',
-      frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
-      zombieTick: { count: 300, median: 0.4, p95: 0.8 },
-      actorSync: { count: 900, median: 2.3, p95: 4.1 },
-      renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
-      draws: 12,
-      triangles: 365_000,
-      holesMax: 3,
-      holeFraction: 0.1,
-      interrupted: false,
-    };
-    const row = shamblerResultRow(shambler);
-    expect(row[3]).toBe('detailed');
-    expect(row[7]).toBe('2.3 / 4.1');
-    expect(row[9]).toBe('12 / 365');
-    expect(shamblerSummary([shambler])).toContain('actors=detailed');
   });
 
   it('includes the light workload and content-owned values in a full-scene report', () => {

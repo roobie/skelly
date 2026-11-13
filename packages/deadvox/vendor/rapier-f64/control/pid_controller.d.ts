@@ -25,6 +25,6 @@ export declare class PidController {
     resetIntegrals(): void;
     applyLinearCorrection(body: RigidBody, targetPosition: Vector, targetLinvel: Vector): void;
     applyAngularCorrection(body: RigidBody, targetRotation: Rotation, targetAngVel: Vector): void;
-    linearCorrection(body: RigidBody, targetPosition: Vector, targetLinvel: Vector): Vector;
-    angularCorrection(body: RigidBody, targetRotation: Rotation, targetAngVel: Vector): Vector;
+    linearCorrection(body: RigidBody, targetPosition: Vector, targetLinvel: Vector, target?: Vector): Vector;
+    angularCorrection(body: RigidBody, targetRotation: Rotation, targetAngVel: Vector, target?: Vector): Vector;
 }

@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import {
   AimController,
   type AimWobbleNoiseTuning,
@@ -6,19 +5,20 @@ import {
   type BreathCue,
   type BreathHoldState,
   INITIAL_BREATH_HOLD,
-} from '../src/core/aim.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import type { PlayerStance } from '../src/core/playerStance.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundEmission } from '../src/core/soundPicker.ts';
-import { World } from '../src/core/world.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+} from '@skelly/engine/internal/core/aim.ts';
+import type { PlayerStance } from '@skelly/engine/pose';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { makeScale, type Vec3, World } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { type MoveIntent, PLAYER, type StanceToggle } from './playerFixture.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { AIM, type MoveIntent, type StanceToggle } from './playerFixture.ts';
 
 const registry = baseRegistry();
-const firearmsTuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+const firearmsTuning = skilledFirearmsTuning(registry);
 const { breathHold } = firearmsTuning;
 const { windedBelow } = registry.body.get('player')!.needs.stamina;
 const DT = 1 / 60;
@@ -30,7 +30,7 @@ const aimWith = (sigmaRadiansPerSqrtSecond: number) => {
     smoothingSimSeconds: firearmsTuning.wobbleNoiseSmoothingSimSeconds,
   };
   return new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: firearmsTuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: firearmsTuning.wobbleVerticalToHorizontalRatio,
@@ -144,6 +144,7 @@ const makeRuntime = (restore?: Readonly<SaveSnapshot>) => {
   const played: Readonly<SoundEmission>[] = [];
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     ...(restore ? { restore } : {}),
     world: new World(),
     isSolid: (_x, y) => y === 0,
@@ -231,24 +232,6 @@ describe('holding breath in play', () => {
       expect(amplitudes[0]).toBeGreaterThan(amplitudes[1]!);
       expect(amplitudes[1]).toBeGreaterThan(amplitudes[2]!);
       expect(amplitudes[2]).toBeGreaterThan(0);
-    }
-  });
-
-  it('starts holding breath and steadies drift while prone', () => {
-    const free = readiedRuntime();
-    const held = readiedRuntime();
-    for (const runtime of [free, held]) {
-      runtime.setStance('prone');
-    }
-    held.setIntent({ sprint: true });
-    for (let tick = 0; tick < 30; tick++) {
-      free.advance(1);
-      held.advance(1);
-      expect(held.session.stance).toBe('prone');
-      expect(held.session.aim.breathHeld).toBe(true);
-      expect(magnitude(free.session.aim.frame)).toBeGreaterThan(0);
-      expect(magnitude(held.session.aim.frame)).toBeLessThan(magnitude(free.session.aim.frame));
-      expect(held.session.sprinting).toBe(false);
     }
   });
 

@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "canister": {
+        "capacity": 3
+      },
+      "category": "misc",
+      "description": "Fuel for a blowtorch.",
+      "id": "gas_canister",
+      "model": "gas_canister",
+      "name": "Gas cartridge",
+      "size": [1, 2],
+      "stack": 2,
+      "workInProgress": false
+    }
+  ],
+  "liquids": [
+    {
+      "densityGramsPerMillilitre": 0.80000000000000004,
+      "id": "lamp_fuel",
+      "name": "Lamp oil"
+    },
+    {
+      "densityGramsPerMillilitre": 0.755,
+      "id": "gasoline",
+      "name": "Gasoline"
+    }
+  ]
+}

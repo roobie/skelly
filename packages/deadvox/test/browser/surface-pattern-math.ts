@@ -1,6 +1,6 @@
+import { SURFACE_PATTERN_GLSL } from '@skelly/presentation/internal/render/surfacePatterns.ts';
 import { GLSL3, RawShaderMaterial, WebGLRenderer, WebGLRenderTarget } from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
-import { SURFACE_PATTERN_GLSL } from '../../src/render/surfacePatterns.ts';
 
 export function surfacePatternMathProof(): void {
   const renderer = new WebGLRenderer();

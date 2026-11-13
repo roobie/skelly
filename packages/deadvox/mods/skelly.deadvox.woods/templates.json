@@ -1,0 +1,133 @@
+{
+  "templates": [
+    {
+      "access": {
+        "entrance": [4, 1, 2],
+        "ground": "ground",
+        "stairs": [],
+        "storeys": [
+          {
+            "floor": 1,
+            "id": "ground"
+          }
+        ]
+      },
+      "id": "woodshed",
+      "layers": [
+        [
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp",
+          "pppppppp"
+        ],
+        [
+          "pppDDppp",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "pCC....p",
+          "pCC....p",
+          "p......p",
+          "pppppppp"
+        ],
+        [
+          "pppDDppp",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "pCC....p",
+          "pCC....p",
+          "p......p",
+          "pppppppp"
+        ],
+        [
+          "pppDDppp",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "pCC....p",
+          "pCC....p",
+          "p......p",
+          "pppppppp"
+        ],
+        [
+          "pppDDppp",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "pCC....p",
+          "pCC....p",
+          "p......p",
+          "pppppppp"
+        ],
+        [
+          "pppppppp",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "p......p",
+          "pppppppp"
+        ],
+        [
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg"
+        ],
+        [
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg",
+          "gggggggg"
+        ]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Industrial"]
+      },
+      "palette": {
+        ".": "air",
+        "C": {
+          "furniture": "crate",
+          "loot": "d41_empty"
+        },
+        "D": {
+          "furniture": "wood_door"
+        },
+        "g": "galvanized",
+        "p": "planks"
+      },
+      "size": [8, 8, 10]
+    }
+  ]
+}

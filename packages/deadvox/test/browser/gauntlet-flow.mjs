@@ -3,9 +3,18 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract.
 // biome-ignore-all lint/performance/noAwaitInLoops: route segments and save boundaries run in order.
 import assert from 'node:assert/strict';
+import { readHash, writeHash } from '../../src/hashState.ts';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { installSaveStatusTrace, saveLockSnapshot } from './save-lock-diagnostics.mjs';
 import { installWorldMeshControl } from './world-mesh-fixture.mjs';
+
+// Each flow drops the base address's start mod, which would win over this scenario's default start.
+const GAUNTLET_PLAY = 'skelly.deadvox.scenario.gauntlet.play';
+
+/** Turns on the scenario population fixture that `save-controller-fixture.mjs` injects. */
+const useRouteFixture = () => {
+  globalThis.skellyRouteFixture = true;
+};
 
 const gauntletLoading = async (browser, baseUrl) => {
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
@@ -15,11 +24,9 @@ const gauntletLoading = async (browser, baseUrl) => {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     const url = new URL(baseUrl);
-    url.searchParams.set('site', 'gauntlet');
-    url.searchParams.set('debug', '1');
-    url.searchParams.set('save', '1');
-    url.searchParams.set('time', '12:00');
-    url.searchParams.delete('actors');
+    url.searchParams.delete('start-mod');
+    url.searchParams.set('mods', GAUNTLET_PLAY);
+    url.hash = writeHash({ ...readHash(url.hash).hash, debug: true, save: true, actors: undefined });
     await page.goto(url.href);
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.evaluate(() => {
@@ -77,15 +84,14 @@ export const gauntletFlow = async (browser, baseUrl) => {
   const context = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   try {
     await context.addInitScript(installSaveStatusTrace);
+    await context.addInitScript(useRouteFixture);
     const page = await context.newPage();
     const url = new URL(baseUrl);
-    url.searchParams.set('site', 'gauntlet');
-    url.searchParams.set('route-fixture', '1');
-    url.searchParams.set('debug', '1');
-    url.searchParams.set('save', '1');
-    url.searchParams.delete('actors');
+    url.searchParams.delete('start-mod');
+    url.searchParams.set('mods', GAUNTLET_PLAY);
+    url.hash = writeHash({ ...readHash(url.hash).hash, debug: true, save: true, actors: undefined });
     await page.goto(url.href);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#go');
     await page.waitForFunction(
       () =>
@@ -160,37 +166,37 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
-      const { placedPieces } = await import('/src/core/templates.ts');
-      const { furnitureSurfacePosition } = await import('/src/core/furnitureSurface.ts');
-      const { scenarioCertificate } = await import('/src/core/scenarioCertificate.ts');
+      const { placedPieces } = await import('/@stage/@skelly/engine/internal/core/templates.ts');
+      const { furnitureSurfacePosition } = await import('/@stage/@skelly/engine/internal/core/furnitureSurface.ts');
+      const { scenarioCertificate } = await import('/@stage/@skelly/engine/internal/core/scenarioCertificate.ts');
       const { routeDoorOpener } = await import('/test/browser/gauntlet-doors.mjs');
       const openDoors = routeDoorOpener(engine, session);
       const { leaveRoof } = await import('/test/fixtures/scenarioStart.ts');
       const certificate = scenarioCertificate(engine.site);
       let foot;
-      const { IDLE } = await import('/src/game/session.ts');
+      const { IDLE } = await import('/@stage/@skelly/engine/session');
       const [clue] = placedPieces(engine.site.plan.composition.leads[0]);
       if (!clue) {
         throw new Error('No public clue');
       }
       w.manual = true;
-      const oldIntent = input.intent;
-      input.intent = () => IDLE;
+      const oldIntent = input.controls.intent;
+      input.controls.intent = () => IDLE;
       const walkPoint = async (point) => {
         const distance = () => Math.hypot(point[0] - session.body.pos[0], point[2] - session.body.pos[2]);
         const frames = Math.ceil((distance() / 2 + 3) * 60);
-        input.intent = () => ({ ...IDLE, forward: 1, walk: true });
+        input.controls.intent = () => ({ ...IDLE, forward: 1, walk: true });
         for (let n = 0; n < frames && distance() >= 0.04; n++) {
           engine.streamer.update(session.body.pos[0], session.body.pos[2]);
           openDoors();
-          input.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
-          input.pitch = 0;
+          input.controls.yaw = Math.atan2(session.body.pos[0] - point[0], session.body.pos[2] - point[2]);
+          input.controls.pitch = 0;
           session.frame(1 / 60);
           if (n % 120 === 0) {
             await new Promise(requestAnimationFrame);
           }
         }
-        input.intent = () => IDLE;
+        input.controls.intent = () => IDLE;
         if (distance() >= 0.04) {
           throw new Error('Could not walk beside the public-paper support');
         }
@@ -208,13 +214,13 @@ export const gauntletFlow = async (browser, baseUrl) => {
         for (let n = 0; n < 60; n++) {
           session.frame(1 / 60);
         }
-        input.pitch = 0;
+        input.controls.pitch = 0;
         foot = leaveRoof(session, certificate.space, engine.site.plan.composition.start, {
           intent: (value) => {
-            input.intent = () => value;
+            input.controls.intent = () => value;
           },
           yaw: (value) => {
-            input.yaw = value;
+            input.controls.yaw = value;
           },
           frame: () => session.frame(1 / 60),
           blockSize: engine.config.scale.blockSize,
@@ -242,7 +248,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         }
         session.quickbar.assign(0, paper);
       } finally {
-        input.intent = oldIntent;
+        input.controls.intent = oldIntent;
         w.manual = false;
       }
     });
@@ -250,7 +256,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session } = w;
-      const lightsModule = '/src/core/lights.ts';
+      const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
       const { registry } = engine;
       const roll = (type) => session.inventory.createRolled({ type, count: 1, condition: 1, charge: 1 });
@@ -291,13 +297,13 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.ok((await page.locator('.reading-text').innerText()).trim().length > 0);
     const before = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
     assert.notEqual(before.discovery.clueRead, null);
-    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(() => {
-      const c = globalThis.deadvoxSaveTest.controller;
+      const c = globalThis.skellySaveTest.controller;
       return c.savedGeneration > 0 && !c.writing && !c.queued;
     });
     await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#continue');
     await page.waitForFunction(() => globalThis.gauntletWitness?.session.scenarioRun);
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), false);
@@ -319,12 +325,12 @@ export const gauntletFlow = async (browser, baseUrl) => {
     const journey = await page.evaluate(async () => {
       const w = globalThis.gauntletWitness;
       const { engine, session, input } = w;
-      const { scenarioCertificate } = await import('/src/core/scenarioCertificate.ts');
-      const { doorPlan } = await import('/src/core/options.ts');
-      const { DOOR_ACTION } = await import('/src/game/doorAction.ts');
-      const { ladderOutward } = await import('/src/core/ladders.ts');
+      const { scenarioCertificate } = await import('/@stage/@skelly/engine/internal/core/scenarioCertificate.ts');
+      const { doorPlan } = await import('/@stage/@skelly/engine/internal/core/options.ts');
+      const { DOOR_ACTION } = await import('/@stage/@skelly/engine/internal/game/doorAction.ts');
+      const { ladderOutward } = await import('/@stage/@skelly/engine/internal/core/ladders.ts');
       const { descentLid, queueDescentLidOpening } = await import('/test/fixtures/descentLid.ts');
-      const { IDLE } = await import('/src/game/session.ts');
+      const { IDLE } = await import('/@stage/@skelly/engine/session');
       const { plan } = engine.site;
       const certificate = scenarioCertificate(engine.site);
       if (certificate.issues.length > 0) {
@@ -332,8 +338,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
       }
       const { space } = certificate;
       let intent = { ...IDLE };
-      const originalIntent = input.intent;
-      input.intent = () => intent;
+      const originalIntent = input.controls.intent;
+      input.controls.intent = () => intent;
       w.manual = true;
       const { routeDoorOpener } = await import('/test/browser/gauntlet-doors.mjs');
       const openDoors = routeDoorOpener(engine, session);
@@ -376,8 +382,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
               openDoors();
               const dx = target[0] - session.body.pos[0];
               const dz = target[2] - session.body.pos[2];
-              input.yaw = Math.atan2(-dx, -dz);
-              input.pitch = 0;
+              input.controls.yaw = Math.atan2(-dx, -dz);
+              input.controls.pitch = 0;
               const remaining = Math.hypot(dx, dz);
               const sprint = target[1] === plan.floor + 1 && remaining > 2;
               intent = { ...IDLE, forward: 1, sprint, walk: !sprint };
@@ -542,7 +548,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         if (refusal) {
           throw new Error(refusal);
         }
-        input.yaw = Math.atan2(-ox, -oz);
+        input.controls.yaw = Math.atan2(-ox, -oz);
         intent = { ...IDLE, forward: 1, walk: true };
         const travel =
           ((descent.upper[1] - descent.lower[1]) * engine.config.scale.blockSize) /
@@ -566,8 +572,8 @@ export const gauntletFlow = async (browser, baseUrl) => {
         const at = goal.pos.map((v, axis) => v + goal.size[axis] / 2);
         const origin = w.eye();
         const [dx, dy, dz] = at.map((v, axis) => v - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
         if (w.lookedAt() !== goal) {
           throw new Error('Goal not visible');
         }
@@ -590,7 +596,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
         aimGoal();
         return { resourceTypes, run: session.scenarioRun };
       } finally {
-        input.intent = originalIntent;
+        input.controls.intent = originalIntent;
         w.manual = false;
       }
     });
@@ -602,12 +608,12 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.notEqual(journey.run.discovery.entranceTravel, null);
     await page.locator('#death').waitFor({ state: 'visible' });
     try {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest.controller.winCheckpointStatus === 'saved');
+      await page.waitForFunction(() => globalThis.skellySaveTest.controller.winCheckpointStatus === 'saved');
     } catch (error) {
       // #749: a bare timeout hides whether the win capture is queued behind a stalled write.
       const state = await page
         .evaluate(() => {
-          const c = globalThis.deadvoxSaveTest.controller;
+          const c = globalThis.skellySaveTest.controller;
           return {
             status: c.winCheckpointStatus,
             writing: c.writing,
@@ -625,17 +631,18 @@ export const gauntletFlow = async (browser, baseUrl) => {
       );
     }
     await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#continue');
     await page.locator('#death').waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), true);
     assert.deepEqual(await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun), journey.run);
     // A separate fresh attempt exercises the ordinary dead-survivor barrier, not a won-to-dead mutation.
     const deadContext = await browser.newContext();
+    await deadContext.addInitScript(useRouteFixture);
     try {
       const deadPage = await deadContext.newPage();
       await deadPage.goto(url.href);
-      await deadPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       await deadPage.click('#go');
       await deadPage.waitForFunction(
         () =>
@@ -648,10 +655,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
       );
       await deadPage.locator('#death').waitFor({ state: 'visible' });
       await deadPage.waitForFunction(
-        () => !(globalThis.deadvoxSaveTest.controller.writing || globalThis.deadvoxSaveTest.controller.queued),
+        () => !(globalThis.skellySaveTest.controller.writing || globalThis.skellySaveTest.controller.queued),
       );
       await deadPage.reload();
-      await deadPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       assert.equal(await deadPage.locator('#continue').isEnabled(), false);
     } finally {
       await deadContext.close();

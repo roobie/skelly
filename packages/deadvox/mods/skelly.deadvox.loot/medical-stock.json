@@ -1,0 +1,40 @@
+{
+  "loot": [
+    {
+      "entries": [
+        {
+          "count": [1, 2],
+          "item": "bandage",
+          "weight": 4
+        },
+        {
+          "item": "antiseptic",
+          "weight": 2
+        },
+        {
+          "item": "antibiotics",
+          "weight": 1
+        },
+        {
+          "count": [2, 8],
+          "item": "codeine",
+          "weight": 0.5
+        },
+        {
+          "item": "morphine",
+          "weight": 0.25
+        },
+        {
+          "table": "medical_filler",
+          "weight": 2
+        },
+        {
+          "nothing": true,
+          "weight": 3
+        }
+      ],
+      "id": "medical_stock",
+      "rolls": [1, 3]
+    }
+  ]
+}

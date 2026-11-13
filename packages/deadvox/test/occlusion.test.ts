@@ -1,7 +1,4 @@
-import { describe, expect, it } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import { buildMesh, type MeshData } from '../src/core/mesher.ts';
-import { PADDED, paddedIndex } from '../src/core/meshInput.ts';
+import { PADDED, paddedIndex } from '@skelly/engine/internal/core/meshInput.ts';
 import {
   BOX_VOLUME,
   boxSum,
@@ -15,8 +12,11 @@ import {
   occlusionLevel,
   WIDE,
   wideIndex,
-} from '../src/core/occlusion.ts';
-import { hash3 } from '../src/core/random.ts';
+} from '@skelly/engine/internal/core/occlusion.ts';
+import { hash3 } from '@skelly/engine/math';
+import { buildMesh, type MeshData } from '@skelly/engine/mesh';
+import { CHUNK } from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { unitFaces } from './meshFaces.ts';
 
 const R = OCCLUSION_RADIUS;

@@ -1,0 +1,15 @@
+{
+  "dependencies": ["skelly.deadvox.scenario.tutorial"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "catalogue.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.tutorial.debug",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

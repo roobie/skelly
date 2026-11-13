@@ -1,32 +1,36 @@
-import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { ladderOutward } from '../src/core/ladders.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { MapAssemblyDef } from '../src/core/schema.ts';
-import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
-import { templateReachableStandingPositions, templateWalkingRoute } from '../src/core/templateSpatial.ts';
+import type { Registry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import { ladderOutward } from '@skelly/engine/internal/core/ladders.ts';
+import type { MapAssemblyDef } from '@skelly/engine/internal/core/schema.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '@skelly/engine/internal/core/stairFlight.ts';
+import {
+  templateReachableStandingPositions,
+  templateWalkingRoute,
+} from '@skelly/engine/internal/core/templateSpatial.ts';
 import {
   type CompiledTemplate,
   cellsOf,
   compileAssembly,
   compileTemplate,
   type PlacedPiece,
-} from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { BlockEntities, makeScale, type Vec3, World } from '@skelly/engine/world';
+import { expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
+import { authoredCityScenarios, defaultStartOf } from './fixtures/scenario.ts';
 
 const content = startupContent();
 const authoredAssemblies = (registry: Registry): MapAssemblyDef[] =>
-  [...registry.scenarios.values()].flatMap(({ city }) =>
-    (city.lots ?? []).flatMap(({ source }) =>
-      source?.kind === 'assembly' ? [registry.mapAssemblies.get(source.id)!] : [],
-    ),
-  );
+  [...registry.scenarios.values()]
+    .filter((scenario) => scenario.kind === 'assembledCity')
+    .flatMap(({ city }) =>
+      (city.lots ?? []).flatMap(({ source }) =>
+        source?.kind === 'assembly' ? [registry.mapAssemblies.get(source.id)!] : [],
+      ),
+    );
 const near = (positions: Vec3[], piece: PlacedPiece) =>
   positions.some(
     ([x, y, z]) =>
@@ -168,10 +172,17 @@ it('places exactly one police armoury in each gauntlet plan', () => {
   expect(station).toBeDefined();
   const locks = new Set(station.pieces.flatMap(({ lock }) => (lock ? [lock.id] : [])));
   expect(locks.size).toBeGreaterThan(0);
-  const scenarios = [...registry.scenarios.values()];
+  const scenarios = authoredCityScenarios(registry);
   expect(scenarios.length).toBeGreaterThan(0);
   for (const scenario of scenarios) {
-    const plan = buildCityPlan({ seed: 1, registry, floor: 0, grid: cityGridOf(registry, scenario.city), scenario });
+    const plan = buildCityPlan({
+      seed: 1,
+      registry,
+      floor: 0,
+      grid: cityGridOf(registry, scenario.city),
+      scenario,
+      start: defaultStartOf(registry, scenario),
+    });
     expect(
       plan.placements.filter(({ template }) => template.pieces.some(({ lock }) => lock && locks.has(lock.id))),
     ).toHaveLength(1);
@@ -295,6 +306,7 @@ it('lets a player climb to the fixed matching key beside the roof corpse in the 
       const scale = makeScale(0.5);
       const session = createSession({
         registry,
+        actorFigureFiles: stackActorFigureFiles(registry),
         world: new World(),
         entities,
         isSolid: solid,

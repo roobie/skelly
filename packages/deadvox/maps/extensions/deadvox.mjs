@@ -1,16 +1,10 @@
 // Tiled 1.11 / Qt 5 ES module (ES6, not object spread). No Node/npm runtime dependency.
-import {
-  buildingBounds,
-  defaultFoundation,
-  hasSegment,
-  lotOf,
-  standingHeight,
-} from '../../src/core/authoredTerrain.mjs';
+import { buildingBounds, defaultFoundation, hasSegment, lotOf, standingHeight } from '../../../engine/src/terrain.mjs';
 
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CLASSES = ['building', 'player_spawn', 'shambler', 'horde', 'woodland', 'track', 'ridge', 'hill', 'beat'];
-const ENUM_TYPES = { template: 'template_id', zombie: 'zombie_type' };
+const ENUM_TYPES = { template: 'template_id', actor: 'actor_type' };
 
 function readJson(path) {
   const file = new TextFile(path, TextFile.ReadOnly);
@@ -36,25 +30,26 @@ function writeJson(path, value) {
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
 function content() {
-  const base = `${root}/../src/content/base`;
+  const mods = `${root}/../mods`;
   const templateFiles = [
-    'templates.json',
-    'templates-cabins.json',
-    'templates-stairs.json',
-    'templates-playtest.json',
-    'templates-medical.json',
-    'templates-workshop.json',
-    'camp.json',
-    'ladders.json',
+    'skelly.deadvox.buildings/templates.json',
+    'skelly.deadvox.scenario.cabins/templates-cabins.json',
+    'skelly.deadvox.woods/templates.json',
+    'skelly.deadvox.scenario.stairs/templates-stairs.json',
+    'skelly.deadvox.scenario.playtest/templates-playtest.json',
+    'skelly.deadvox.rural-sites/templates-medical.json',
+    'skelly.deadvox.buildings/templates-workshop.json',
+    'skelly.deadvox.camp/camp.json',
+    'skelly.deadvox.scenario.playtest/ladders.json',
   ];
   const templates = [];
   for (const file of templateFiles) {
-    const entries = readJson(`${base}/${file}`).templates || [];
+    const entries = readJson(`${mods}/${file}`).templates || [];
     for (const entry of entries) {
       templates.push(entry);
     }
   }
-  return { templates, zombies: readJson(`${base}/zombies.json`).zombies };
+  return { templates, actors: readJson(`${mods}/skelly.deadvox.actors/enemies.json`).actors };
 }
 function scalar(object, name, fallback) {
   const property = object.property(name);
@@ -206,8 +201,8 @@ function addSpawn(object, info, context) {
     layout.player = { position, bearing: finite(scalar(object, 'bearing', 0), `${name}.bearing`) };
     return;
   }
-  const type = scalar(object, 'zombie');
-  if (!pack.zombies.some((t) => t.id === type)) {
+  const type = scalar(object, 'actor');
+  if (!pack.actors.some((t) => t.id === type)) {
     throw new Error(`${name}: unknown zombie type ${type}`);
   }
   const chance = finite(scalar(object, 'chance', 1), `${name}.chance`);
@@ -223,7 +218,7 @@ function addSpawn(object, info, context) {
     fromGameTimeOfDay === undefined
       ? undefined
       : Object.assign({ fromGameTimeOfDay }, toGameTimeOfDay === undefined ? {} : { toGameTimeOfDay });
-  layout.shamblers.push(Object.assign({ type, position, chance }, window ? { window } : {}));
+  layout.actors.push(Object.assign({ type, position, chance }, window ? { window } : {}));
 }
 function addHorde(object, info, { layout, pack }) {
   const { name, x, z } = info;
@@ -361,11 +356,15 @@ export function exportLayout(map) {
     woodlands: [],
     tracks: [],
   };
+  const attemptPolicy = optionalString(map, 'attempt_policy');
+  if (attemptPolicy !== undefined) {
+    layout.attemptPolicy = JSON.parse(attemptPolicy);
+  }
   const startTimeGameTimeOfDay = scalar(map, 'startTime', '');
   if (startTimeGameTimeOfDay) {
     layout.startTimeGameTimeOfDay = startTimeGameTimeOfDay;
   }
-  layout.shamblers = [];
+  layout.actors = [];
   layout.hordes = [];
   const context = { layout, pack: content(), footprints: [], beats: [] };
   const writers = {
@@ -432,10 +431,10 @@ export function generatePropertyTypes() {
       valuesAsFlags: false,
     },
     {
-      name: 'zombie_type',
+      name: 'actor_type',
       type: 'enum',
       storageType: 'string',
-      values: pack.zombies.map((t) => t.id).sort(),
+      values: pack.actors.map((t) => t.id).sort(),
       valuesAsFlags: false,
     },
     {
@@ -450,7 +449,7 @@ export function generatePropertyTypes() {
     {
       name: 'shambler',
       members: [
-        member('zombie', 'string', '', 'zombie_type'),
+        member('actor', 'string', '', 'actor_type'),
         member('chance', 'float', 1),
         member('window_from', 'string', ''),
         member('window_to', 'string', ''),

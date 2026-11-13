@@ -1,14 +1,12 @@
+import { BatteryChargers } from '@skelly/engine/internal/core/batteryChargers.ts';
+import { ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { chargeOf, drainLight, fitsLight, swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import type { PowerState } from '@skelly/engine/internal/core/power.ts';
+import { gameSeconds, simTimestamp } from '@skelly/engine/internal/core/time.ts';
+import { batteryEnergy, Inventory, toggleLight } from '@skelly/engine/inventory';
+import { decodeSave, encodeSave } from '@skelly/engine/save';
 import { describe, expect, it } from 'vitest';
-import { batteryEnergy } from '../src/core/battery.ts';
-import { BatteryChargers } from '../src/core/batteryChargers.ts';
-import { ruinFurniture } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { chargeOf, drainLight, fitsLight, swapBattery, toggleLight } from '../src/core/lights.ts';
-import type { PowerState } from '../src/core/power.ts';
-import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import { gameSeconds, simTimestamp } from '../src/core/time.ts';
-import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 import { deviceState, powerCycle } from './powerFixture.ts';
@@ -26,6 +24,20 @@ const content = () => ({
       battery: { capacity: 7, rechargeable: { microjoulesPerCharge: 1001 } },
     },
     { id: 'primary', name: 'Primary', category: 'battery', size: [2, 2], weight: 0.1, battery: { capacity: 7 } },
+    {
+      id: 'lamp',
+      name: 'Lamp',
+      category: 'misc',
+      size: [1, 1],
+      weight: 0.1,
+      light: {
+        intensity: 1,
+        radius: 1,
+        seenFrom: 1,
+        color: '#ffffff',
+        power: { battery: 'cell', compatibleBatteries: ['primary'], chargePerGameHour: 1, swapSimSeconds: 1 },
+      },
+    },
   ],
   furniture: [
     {
@@ -69,13 +81,13 @@ const initial = (): PowerState => ({
     { from: 'generator', to: 'store', itemUid: 2 },
   ],
 });
-const setup = () => {
+const setup = (count = 2, condition = 0.6) => {
   const inventory = new Inventory(registry);
   const entity = inventory.furnish({ type: 'charger', pos: [0, 1, 0], size: [1, 1, 1], facing: 'n' }, [])!;
   inventory.entities.markSearched(entity);
   const endpoints = [{ consumerId: 'charger', entityUid: entity.uid }];
   const owner = new BatteryChargers(inventory, environment, initial(), endpoints);
-  const cell = inventory.create('cell', 2, 0.6);
+  const cell = inventory.create('cell', count, condition);
   cell.charges = 0;
   if (!inventory.add(cell, { kind: 'hand', side: 'right' })) {
     throw new Error('Fixture cell did not fit');
@@ -214,48 +226,30 @@ describe('portable battery charging owner', () => {
     expect(f.owner.remainingGameMilliseconds('charger')).toBe(0);
   });
 
-  it('returns a charged content-selected cell to an existing flashlight and retains a spent rechargeable cell', () => {
-    const base = baseRegistry();
-    const inventory = new Inventory(base);
-    const entity = inventory.furnish({ type: 'battery_charger', pos: [0, 1, 0], size: [1, 1, 1], facing: 'n' }, [])!;
-    inventory.entities.markSearched(entity);
-    const power: PowerState = {
-      ...initial(),
-      devices: initial().devices.map((d) => (d.id === 'charger' ? { ...d, type: 'portable_battery_charger' } : d)),
-    };
-    const powerDevices = new Map([
-      ...base.powerDevices,
-      [
-        'generator',
-        { id: 'generator', kind: 'generator' as const, priority: 0, outputWatts: 4, burnLitresPerGameHour: 1 },
-      ],
-      ['store', registry.powerDevices.get('store')!],
-    ]);
-    const owner = new BatteryChargers(inventory, { ...environment, registry: { powerDevices } }, power, [
-      { consumerId: 'charger', entityUid: entity.uid },
-    ]);
-    const cell = inventory.create('rechargeable_aa_battery', 1, 0.4);
-    cell.charges = 0;
-    expect(inventory.add(cell, { kind: 'hand', side: 'right' })).toBe(true);
+  it('returns a charged cell to an existing light and retains a spent rechargeable cell', () => {
+    const condition = 0.4;
+    const f = setup(1, condition);
+    const { inventory, owner, cell } = f;
     expect(owner.start(at(0), 'charger', cell).ok).toBe(true);
-    expect(owner.stop(at(1000), 'charger')).toBe(true);
-    expect(owner.collect(at(1000), 'charger', { kind: 'hand', side: 'right' }).ok).toBe(true);
-    const flashlight = inventory.create('flashlight');
-    expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
-    expect(fitsLight(base, flashlight, cell)).toBe(true);
-    expect(swapBattery(inventory, flashlight, cell, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
-    expect(flashlight.slots!.battery).toBe(cell);
-    expect(toggleLight(base, flashlight)).toBeUndefined();
-    expect(chargeOf(base, flashlight)).toBeGreaterThan(0);
-    expect(drainLight(base, flashlight, gameSeconds(0.01))).toBeUndefined();
-    expect(cell.condition).toBe(0.4);
-    expect(restoreItem(base, snapshotItem(flashlight))).toEqual(flashlight);
-    drainLight(base, flashlight, gameSeconds(1e9));
-    expect(chargeOf(base, cell)).toBe(0);
-    const replacement = inventory.create('aa_battery');
+    owner.network.advance(at(3000));
+    const charged = owned(f);
+    expect(owner.collect(at(3000), 'charger', { kind: 'hand', side: 'right' }).ok).toBe(true);
+    const lamp = inventory.create('lamp');
+    expect(inventory.add(lamp, { kind: 'hand', side: 'left' })).toBe(true);
+    expect(fitsLight(registry, lamp, charged)).toBe(true);
+    expect(swapBattery(inventory, lamp, charged, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
+    expect(lamp.slots!.battery).toBe(charged);
+    expect(toggleLight(registry, lamp)).toBeUndefined();
+    expect(chargeOf(registry, lamp)).toBeGreaterThan(0);
+    expect(drainLight(registry, lamp, gameSeconds(0.01))).toBeUndefined();
+    expect(charged.condition).toBe(condition);
+    expect(restoreItem(registry, snapshotItem(lamp))).toEqual(lamp);
+    drainLight(registry, lamp, gameSeconds(1e9));
+    expect(chargeOf(registry, charged)).toBe(0);
+    const replacement = inventory.create('primary');
     expect(inventory.add(replacement, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(swapBattery(inventory, flashlight, replacement, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
-    expect(inventory.locate(cell)?.kind).toBe('pile');
+    expect(swapBattery(inventory, lamp, replacement, () => ({ kind: 'pile', pos: [1, 1, 0] }))).toBeUndefined();
+    expect(inventory.locate(charged)?.kind).toBe('pile');
   });
 });
 
@@ -306,7 +300,7 @@ it('validates rechargeability, exact energy bounds, compatibility and a fitting 
       data.furniture[0]!.charger.efficiency = 0.000_01;
     },
     (data: ReturnType<typeof content>) => {
-      data.items[0]!.battery.capacity = Number.MAX_SAFE_INTEGER;
+      data.items[0]!.battery!.capacity = Number.MAX_SAFE_INTEGER;
     },
   ];
   for (const mutate of mutations) {

@@ -1,18 +1,22 @@
+import type { FurnitureDef } from '@skelly/engine/content';
+import { workInProgressItem } from '@skelly/engine/internal/core/inventory.ts';
+import {
+  pocketGroundItem,
+  quickbarTake,
+  quickMove,
+  toHands,
+  wieldOrPocket,
+} from '@skelly/engine/internal/core/options.ts';
+import type { ReachPlayer } from '@skelly/engine/internal/core/reach.ts';
+import { downedBodyPlan } from '@skelly/engine/internal/game/downedBody.ts';
+import { HandlingQueue, Inventory, options, SLING_SLOT } from '@skelly/engine/inventory';
+import { type Actor, bindReach, Character, dominantSide, offSide, type ReachSnapshot } from '@skelly/engine/sim';
+import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, workInProgressItem } from '../src/core/inventory.ts';
-import { options, pocketGroundItem, quickbarTake, quickMove, toHands, wieldOrPocket } from '../src/core/options.ts';
-import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/reach.ts';
-import type { FurnitureDef } from '../src/core/schema.ts';
-import type { Zombie } from '../src/core/zombies.ts';
-import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const registry = baseRegistry();
@@ -199,12 +203,12 @@ const reachTargets = {
     return (_player, view) => [inventory.canReach(pos), view().entries.some((entry) => entry.item === item)];
   },
   body: (_inventory, pos) => {
-    const zombie = {
+    const actor = {
       incapacitated: true,
-      type: [...registry.zombies.values()].find((definition) => definition.downed)!,
+      type: [...registry.actors.values()].find((definition) => definition.downed)!,
       body: { pos: [pos[0] + 0.5, pos[1], pos[2] + 0.5], halfWidth: 0.4, height: 0.5 },
-    } as Zombie;
-    return (player) => [downedBodyPlan(player, zombie, 'finish-off').ok];
+    } as Actor;
+    return (player) => [downedBodyPlan(player, actor, 'finish-off').ok];
   },
 } satisfies Record<
   string,
@@ -331,7 +335,7 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
 });
 
 it('hides an obvious refusal by its key, so rewording it in content keeps it hidden', () => {
-  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const core = registry.ui.get(fixtureIds.ui)!;
   const reworded = { ...core, coreMessages: { ...core.coreMessages, alreadyInHand: 'fixture reworded' } };
   const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, reworded) });
   const knife = t.add('kabar', { kind: 'hand', side: 'right' });
@@ -342,7 +346,7 @@ it('hides an obvious refusal by its key, so rewording it in content keeps it hid
 });
 
 it('shows a refusal that content words like an obvious one, since only the key hides it', () => {
-  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const core = registry.ui.get(fixtureIds.ui)!;
   const shared = core.coreMessages.alreadyInHand;
   const sameWords = { ...core, coreMessages: { ...core.coreMessages, tooFar: shared } };
   const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, sameWords) });

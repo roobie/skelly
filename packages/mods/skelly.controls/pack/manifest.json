@@ -1,0 +1,14 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "controls.json"
+    }
+  ],
+  "id": "skelly.controls",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

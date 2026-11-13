@@ -1,5 +1,5 @@
-import type { ItemDef, Registry } from '../src/core/content.ts';
-import { gameSeconds, simSeconds } from '../src/core/time.ts';
+import type { ItemDef, Registry } from '@skelly/engine/content';
+import { gameSeconds, simSeconds } from '@skelly/engine/internal/core/time.ts';
 
 export const fixtureFood: ItemDef = {
   id: 'fixture_food',
@@ -9,8 +9,6 @@ export const fixtureFood: ItemDef = {
   size: [1, 1],
   stack: 10,
   workInProgress: false,
-  notLoot: false,
-  economy: { usage: [], tiers: [] },
   food: {
     calories: 10,
     water: 2,

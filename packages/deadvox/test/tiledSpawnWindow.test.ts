@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
+import { buildRegistry } from '@skelly/engine/content';
+import type { LootContext } from '@skelly/engine/internal/core/loot.ts';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { placementOf } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import type { LootContext } from '../src/core/loot.ts';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
+import { makeAttemptPolicy } from './fixtures/attemptPolicy.ts';
 
 const mapsPath = join(process.cwd(), 'maps');
 const projectPath = join(mapsPath, 'deadvox.tiled-project');
@@ -24,6 +25,7 @@ const READ_ONLY = 'ReadOnly';
 const WINDOW_FROM = 'window_from';
 const WINDOW_TO = 'window_to';
 const LOOT_CONTEXT = 'loot_context';
+const ATTEMPT_POLICY = 'attempt_policy';
 const TiledTextFile = class {
   private readonly path: string;
   constructor(path: string) {
@@ -153,6 +155,35 @@ describe('Tiled spawn-window export', () => {
     }
   });
 
+  it('exports an authored recording policy and leaves recording absent when the map has no policy', () => {
+    const policy = makeAttemptPolicy();
+    const properties: Record<string, unknown> = {
+      id: 'fixture_recording_map',
+      ground: 0,
+      [LOOT_CONTEXT]: '{"usage":["Residential"],"tier":"Tier1"}',
+      [ATTEMPT_POLICY]: JSON.stringify(policy),
+    };
+    const map = {
+      tileWidth: 1,
+      tileHeight: 1,
+      infinite: false,
+      orientation: 'orthogonal',
+      width: 10,
+      height: 10,
+      layerCount: 1,
+      layerAt: () => ({
+        offset: { x: 0, y: 0 },
+        isGroupLayer: false,
+        isObjectLayer: true,
+        objects: [object('player_spawn', 5, 5, { elevation: 0.5 })],
+      }),
+      property: (name: string) => properties[name],
+    };
+    expect(exportLayout(map).layouts[0].attemptPolicy).toEqual(policy);
+    properties[ATTEMPT_POLICY] = undefined;
+    expect(exportLayout(map).layouts[0]).not.toHaveProperty('attemptPolicy');
+  });
+
   it('exports optional marker windows as authored-layout window objects', () => {
     const layer = {
       offset: { x: 0, y: 0 },
@@ -161,7 +192,7 @@ describe('Tiled spawn-window export', () => {
       objects: [
         object('player_spawn', 5, 5, { elevation: 0.5, bearing: 0 }),
         object('shambler', 8, 8, {
-          zombie: 'shambler',
+          actor: 'shambler',
           chance: 1,
           elevation: 0.5,
           [WINDOW_FROM]: 'dusk',
@@ -187,7 +218,7 @@ describe('Tiled spawn-window export', () => {
       layouts: [layout],
     } = exportLayout(map);
     const {
-      shamblers: [shambler],
+      actors: [shambler],
     } = layout;
     expect(shambler.window).toEqual({ fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' });
   });
@@ -261,7 +292,7 @@ describe('Tiled spawn-window export', () => {
       'horde_id',
     );
     const committed = JSON.parse(
-      readFileSync(join(mapsPath, '../src/content/base/layouts-playtest.json'), 'utf8'),
+      readFileSync(join(mapsPath, '../mods/skelly.deadvox.scenario.playtest/layouts-playtest.json'), 'utf8'),
     ) as unknown;
     expect(exported).toEqual(committed);
   });
@@ -273,7 +304,7 @@ describe('Tiled spawn-window export', () => {
       isObjectLayer: true,
       objects: [
         object('player_spawn', 5, 5, { elevation: 0.5, bearing: 0 }),
-        object('shambler', 8, 8, { zombie: 'shambler', elevation: 0.5, [WINDOW_TO]: 'dawn' }),
+        object('shambler', 8, 8, { actor: 'shambler', elevation: 0.5, [WINDOW_TO]: 'dawn' }),
       ],
     };
     const map = {

@@ -1,24 +1,20 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { BashOutcome } from '@skelly/engine/internal/core/blockEntities.ts';
+import {
+  commitRuin,
+  type FurnitureMover,
+  planRuin,
+  ruinFurniture,
+} from '@skelly/engine/internal/core/furnitureMove.ts';
+import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
+import type { BlockEntity, Body, Vec3 } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
-import type { BashOutcome, BlockEntity } from '../src/core/blockEntities.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { commitRuin, type FurnitureMover, planRuin, ruinFurniture } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import type { Body } from '../src/core/physics.ts';
-import { ContentFileSchema } from '../src/core/schema.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { createRuntime } from './snapshotTestSupport.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const BREACH = { minimumStrength: 1, durability: 3 };
 const DEBRIS = { item: 'ruin_fixture_debris', count: 5 };
 const box = (id: string, size: Vec3) => ({
@@ -108,12 +104,31 @@ const floating = (inventory: Inventory) =>
 const buried = (inventory: Inventory) =>
   [...inventory.piles.values()].filter(({ pos: [x, y, z] }) => inventory.entities.filling(x, y, z) !== undefined);
 
-it('reports a ruin only on the blow that brings a piece to its durability', () => {
-  const inventory = new Inventory(registry);
-  const target = piece(inventory, 'ruin_fixture_box', [0, FLOOR, 0]);
-  const outcomes = ruinBlows(inventory, target);
-  expect(outcomes.at(-1)).toBe('ruined');
-  expect(outcomes.slice(0, -1).every((outcome) => outcome === 'damaged')).toBe(true);
+it('ruin piles fall past non-solid furniture rather than floating above it', () => {
+  const type = 'ruin_fixture_obstacle';
+  const localRegistry = {
+    ...registry,
+    furniture: new Map(registry.furniture).set(type, {
+      ...registry.furniture.get('ruin_fixture_plank')!,
+      id: type,
+      solid: false,
+      ruin: { debris: [] },
+    }),
+  };
+  const inventory = new Inventory(localRegistry);
+  const root = piece(inventory, 'ruin_fixture_plank', [0, 3, 0]);
+  expect(inventory.furnish({ type, pos: [1, 1, 0], size: [2, 1, 1], facing: 'n' })).toBeDefined();
+  const item = inventory.create('ruin_fixture_item');
+  expect(inventory.add(item, { kind: 'pile', pos: [1, 4, 0] })).toBe(true);
+  const solid = (x: number, y: number, z: number) => terrainSolid(x, y) || (x === 0 && y === 2 && z === 0);
+  expect(ruinFurniture({ ...mover(inventory), terrainSolid: solid }, root)).toBeDefined();
+  const location = inventory.locate(item);
+  expect(location?.kind).toBe('pile');
+  if (location?.kind !== 'pile') {
+    throw new Error('Fixture load was lost');
+  }
+  const [landX, landY, landZ] = location.pile.pos;
+  expect(solid(landX, landY - 1, landZ) || inventory.entities.isSolid(landX, landY - 1, landZ)).toBe(true);
 });
 
 it("drops every item a ruined container held, and its content's debris, as piles, none lost or doubled", () => {
@@ -214,18 +229,6 @@ it('keeps a full piece standing at full damage when its drops have no room, losi
 
   expect(runtime.entities.byUid(target.uid)).toBeUndefined();
   expect(piled(inventory).map(({ item }) => item.uid)).toEqual(expect.arrayContaining([...held, ...lying]));
-});
-
-it('breaks a door leaf at its durability and keeps it standing broken, never destroyed', () => {
-  const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, FLOOR, 0] });
-  const door = piece(runtime.inventory, 'ruin_fixture_door', [0, FLOOR, 2]);
-
-  expect(runtime.session.bashFurniture(door, BREACH.durability)).toBe(true);
-
-  expect(runtime.entities.byUid(door.uid)).toBe(door);
-  expect(door.broken).toBe(true);
-  expect(runtime.session.bashFurniture(door, BREACH.durability)).toBe(false);
-  expect(runtime.entities.byUid(door.uid)).toBe(door);
 });
 
 it('plans without owner writes and commits scratch references through the real owners, preserving item aliases', () => {

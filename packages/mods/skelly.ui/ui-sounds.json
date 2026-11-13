@@ -1,0 +1,18 @@
+{
+  "sounds": [
+    {
+      "category": "body",
+      "description": "Try an action the character cannot complete.",
+      "gain": 0.5,
+      "gainJitter": [1, 1],
+      "id": "player_nope",
+      "minIntervalSimSeconds": 0.75,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1, 1],
+      "variants": ["assets/audio/player-nope-01.ogg"]
+    }
+  ]
+}

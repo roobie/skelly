@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { deserialize } from 'node:v8';
+import { CONTENT_SECTION_KEYS, type ContentSource, type Registry, type ScreenText } from '@skelly/engine/content';
+import { schemaIssues } from '@skelly/engine/internal/core/content.ts';
+import { ContentFileSchema } from '@skelly/engine/internal/core/schema.ts';
+import type { TerrainShape } from '@skelly/engine/internal/core/worldgen.ts';
+import type { StartupContent } from '@skelly/engine/packs';
+import { terrainShapeOf } from '@skelly/engine/world';
 import { safeParse } from 'valibot';
 import { inject } from 'vitest';
-import baseUi from '../src/content/base/ui.json' with { type: 'json' };
-import { type ContentSource, type Registry, schemaIssues } from '../src/core/content.ts';
-import { CONTENT_SECTION_KEYS, ContentFileSchema, type ScreenText } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import type { TerrainShape } from '../src/core/worldgen.ts';
-import type { StartupContent } from '../src/game/bundledContent.ts';
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 
 declare module 'vitest' {
   export interface ProvidedContext {

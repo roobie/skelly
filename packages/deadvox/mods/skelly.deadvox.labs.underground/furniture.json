@@ -1,0 +1,38 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#a5b8ba",
+      "id": "lab_fixture",
+      "massKg": 4,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Strip light",
+      "power": {
+        "device": "lab_light",
+        "enabled": true,
+        "fuelLitres": 0,
+        "light": {
+          "color": "#d9eee8",
+          "intensity": 40,
+          "offset": [0.5, 0.14999999999999999, 0],
+          "radius": 8
+        }
+      },
+      "shape": [
+        {
+          "position": [0, 0.69999999999999996, 0],
+          "size": [2, 0.29999999999999999, 1]
+        }
+      ],
+      "size": [2, 1, 1],
+      "solid": false
+    }
+  ]
+}

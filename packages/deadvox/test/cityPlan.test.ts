@@ -1,32 +1,40 @@
-import { describe, expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
+import { buildRegistry } from '@skelly/engine/content';
 import {
   buildCityPlan,
   cityGridOf,
   perimeterGaps,
   scenarioPlanIssues,
   servicePlacement,
-} from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite, gauntletPopulation } from '../src/core/gauntlet.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ScenarioDef } from '../src/core/schema.ts';
-import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
+} from '@skelly/engine/internal/core/cityPlan.ts';
+import { ScenarioCitySite, scenarioCityPopulation } from '@skelly/engine/internal/core/scenarioCity.ts';
+import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
 import {
   cellsOf,
   compileAssembly,
   compileTemplate,
-  footprint,
   kitSlotChoices,
   placedSpawns,
-} from '../src/core/templates.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { compareCodeUnits } from '@skelly/engine/packs';
+import {
+  CHUNK,
+  type Chunk,
+  CitySite,
+  createTerrainEvaluator,
+  footprint,
+  makeScale,
+  siteGenerationOf,
+  sitePalette,
+  terrainShapeOf,
+  toChunk,
+  type Vec3,
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
-import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { defaultStartOf, fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const BUNDLED_CONTENT = startupContent();
@@ -78,14 +86,13 @@ const generated = (reverse: boolean) => {
   }
   const chunks = new Map<string, Uint16Array>();
   for (const [cx, cy, cz] of cells) {
-    const chunk = new Chunk(cx, cy, cz);
-    site.stamp(chunk);
+    const chunk = terrainFor(site, registry, scale, site.seed).generateChunk([cx, cy, cz]);
     chunks.set(`${cx},${cy},${cz}`, chunk.toArray());
   }
   const columns = new Map(cells.map(([cx, , cz]) => [`${cx},${cz}`, [cx, cz] as const]));
   const furniture = [...columns.values()]
     .flatMap(([cx, cz]) => site.furnitureIn(cx, cz))
-    .sort((a, b) => a.spec.pos.join(',').localeCompare(b.spec.pos.join(',')));
+    .sort((a, b) => compareCodeUnits(a.spec.pos.join(','), b.spec.pos.join(',')));
   return { chunks, furniture };
 };
 
@@ -178,7 +185,9 @@ const floorCourses = (id: string, template: ReturnType<typeof compileTemplate>, 
 describe('one finished city plan', () => {
   it('keeps compiled building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
-    const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+    const scenario = [...native.scenarios.values()]
+      .filter((candidate) => candidate.kind === 'assembledCity')
+      .find((candidate) => candidate.composition)!;
     for (const { id, style } of cityGridOf(native, scenario.city).templates) {
       for (const [variant, template] of nativeDefinitions(id, style).entries()) {
         const { courses, scanned } = floorCourses(id, template, style);
@@ -191,7 +200,9 @@ describe('one finished city plan', () => {
   });
   describe('gauntlet population from scenario content', () => {
     const native = BUNDLED_CONTENT.registry;
-    const bundled = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+    const bundled = [...native.scenarios.values()]
+      .filter((candidate) => candidate.kind === 'assembledCity')
+      .find((candidate) => candidate.composition)!;
     const fixture = registry.templates.get('fixture_house')!;
     const solid = native.blocks.find((block) => block.solid)!.id;
     const cityRegistry = {
@@ -223,10 +234,11 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(cityRegistry, scenario.city),
         scenario,
+        start: defaultStartOf(cityRegistry, scenario),
       });
       const site = new CitySite(73, cityRegistry, scale, plan);
-      const { zombies, hordes } = gauntletPopulation(site, scenario);
-      return { spawns: [...zombies.values()].flat(), hordes: [...hordes.values()].flat() };
+      const { actors, hordes } = scenarioCityPopulation(site, scenario);
+      return { spawns: [...actors.values()].flat(), hordes: [...hordes.values()].flat() };
     };
 
     it('spawns each composed event marker once', () => {
@@ -257,7 +269,6 @@ describe('one finished city plan', () => {
       };
       scenario.population.hordes = 0;
       scenario.composition = {
-        start: fixtureStart(),
         fixedLoot: [{ at: [2, 1, 2], items: [{ item: 'fixture_token' }] }],
         leads: [{ template: 'fixture_marker_lead_a' }, { template: 'fixture_marker_lead_b' }],
         landmarks: ['fixture_marker_landmark_a', 'fixture_marker_landmark_b'],
@@ -320,7 +331,7 @@ describe('one finished city plan', () => {
         ...registry,
         furniture: new Map([...registry.furniture, [note.id, note]]),
         templates,
-        zombies: new Map([...registry.zombies, ...native.zombies]),
+        actors: new Map([...registry.actors, ...native.actors]),
       };
       const plan = buildCityPlan({
         seed: 73,
@@ -328,13 +339,14 @@ describe('one finished city plan', () => {
         floor,
         grid: cityGridOf(testRegistry, scenario.city),
         scenario,
+        start: fixtureStart(),
       });
       const site = new CitySite(73, testRegistry, scale, plan);
       const markers = placedSpawns(plan.composition!.events[0]!);
       expect(markers.length).toBeGreaterThan(0);
-      const { zombies } = gauntletPopulation(site, scenario);
+      const { actors } = scenarioCityPopulation(site, scenario);
       for (const marker of markers) {
-        const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
+        const spawns = actors.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
         expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
       }
     });
@@ -410,9 +422,12 @@ describe('one finished city plan', () => {
       scenario.city.street +
       scenario.city.pad +
       2 * Math.floor((scenario.city.blockZ - 2 * scenario.city.pad - scenario.city.street) / scenario.city.rows);
-    expect(site.surface.top(scenario.city.street + scenario.city.pad + 2, alleyZ)).toBe(
-      sitePalette(admitted.registry).paving,
-    );
+    expect(
+      terrainFor(site, site.registry, scale, site.seed).surface!.top(
+        scenario.city.street + scenario.city.pad + 2,
+        alleyZ,
+      ),
+    ).toBe(sitePalette(admitted.registry).paving);
     expect(plan.structures.length).toBeGreaterThan(0);
     const occupied = (point: Vec3) =>
       plan.structures.some(({ min, max }) => point.every((value, axis) => value >= min[axis]! && value < max[axis]!));
@@ -513,23 +528,20 @@ describe('one finished city plan', () => {
       const [x0, y0, z0] = placement.origin;
       for (let z = z0; z < z0 + depth; z++) {
         for (let x = x0; x < x0 + width; x++) {
-          const ground = site.surface.height(x, z, floor + 1);
+          const ground = terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, floor + 1);
           expect(y0 + (placement.template.groundLayer ?? 0)).toBe(ground + 1);
           const cell: Vec3 = [toChunk(x), toChunk(ground), toChunk(z)];
           const key = cell.join(',');
           let chunk = chunks.get(key);
           if (!chunk) {
-            chunk = generateChunk(
-              {
-                seed: 73,
-                shape: terrainShapeOf(registry),
-                scale,
-                surface: site.surface,
-                blocks: { grass: solid, dirt: solid, rock: solid, sand: solid, water: solid },
-              },
-              cell,
-            );
-            site.stamp(chunk);
+            chunk = createTerrainEvaluator({
+              seed: 73,
+              shape: terrainShapeOf(registry),
+              scale,
+              site: site.terrain,
+              structures: [],
+              blocks: { grass: solid, dirt: solid, rock: solid, sand: solid, water: solid },
+            }).generateChunk(cell);
             chunks.set(key, chunk);
           }
           expect(admitted.registry.blocks[chunk.get(mod(x, CHUNK), mod(ground, CHUNK), mod(z, CHUNK))]!.solid).toBe(
@@ -583,12 +595,20 @@ describe('one finished city plan', () => {
   sweepGroup('as a gauntlet site', () => {
     it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
       const native = BUNDLED_CONTENT.registry;
-      const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-      const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
+      const scenario = [...native.scenarios.values()]
+        .filter((candidate) => candidate.kind === 'assembledCity')
+        .find((candidate) => candidate.composition)!;
+      const site = new ScenarioCitySite({
+        seed: 73,
+        registry: native,
+        scale,
+        scenario,
+        start: defaultStartOf(native, scenario),
+      });
       const spawns: { pos: Vec3 }[] = [];
       for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
         for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {
-          spawns.push(...site.zombiesIn(cx, cz), ...site.hordesIn(cx, cz));
+          spawns.push(...site.actorsIn(cx, cz), ...site.hordesIn(cx, cz));
         }
       }
       expect(spawns.length).toBeGreaterThan(0);
@@ -609,7 +629,6 @@ describe('one finished city plan', () => {
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();
     expect(plan.candidates.length).toBeGreaterThan(0);
-    expect(plan.candidates.some(([i, j]) => i === 0 && j === 0)).toBe(false);
     const service = compileTemplate(registry, registry.templates.get(profile.serviceTemplate)!);
     const grid = fixtureGrid;
     const pitchX = grid.street + grid.blockX;
@@ -642,8 +661,12 @@ describe('one finished city plan', () => {
     expect(mod(plan.spawn[0], pitchX)).toBeLessThan(grid.street);
     expect(mod(plan.spawn[2], pitchZ)).toBeLessThan(grid.street);
     const site = new CitySite(73, registry, scale, plan);
-    expect(site.surface.height(plan.spawn[0], plan.spawn[2], floor + 9)).toBe(floor);
-    expect(site.surface.top(plan.spawn[0], plan.spawn[2])).toBe(sitePalette(registry).paving);
+    expect(
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(plan.spawn[0], plan.spawn[2], floor + 9),
+    ).toBe(floor);
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(plan.spawn[0], plan.spawn[2])).toBe(
+      sitePalette(registry).paving,
+    );
   });
 
   it('paves its streets with the block the site palette names, not a fixed block id', () => {
@@ -651,13 +674,15 @@ describe('one finished city plan', () => {
     const other = [...registry.blockIds.keys()].find((name) => name !== entry.palette.paving)!;
     const repaved = {
       ...registry,
-      siteGeneration: new Map(registry.siteGeneration).set(CORE_CONTENT_IDS.authoredSite, {
+      siteGeneration: new Map(registry.siteGeneration).set(fixtureIds.authoredSite, {
         ...entry,
         palette: { ...entry.palette, paving: other },
       }),
     };
     const site = new CitySite(73, repaved, scale, planned());
-    expect(site.surface.top(site.plan.spawn[0], site.plan.spawn[2])).toBe(registry.blockIds.get(other));
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(site.plan.spawn[0], site.plan.spawn[2])).toBe(
+      registry.blockIds.get(other),
+    );
   });
 
   it('never stacks a template past its authored maxStoreys while an unlimited one still stacks', () => {

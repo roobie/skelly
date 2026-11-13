@@ -1,5 +1,5 @@
 import { RawNarrowPhase } from "../raw";
-import { VectorOps } from "../math";
+import { VectorOps, scratchBuffer } from "../math";
 export class NarrowPhase {
     free() {
         if (!!this.raw) {
@@ -17,12 +17,13 @@ export class NarrowPhase {
     intersectionPairsWith(collider1, f) {
         this.raw.intersection_pairs_with(collider1, f);
     }
-    contactPair(collider1, collider2, f) {
+    contactPair(collider1, collider2, bodies, f) {
         const rawPair = this.raw.contact_pair(collider1, collider2);
         if (!!rawPair) {
             const flipped = rawPair.collider1() != collider1;
             let i;
             for (i = 0; i < rawPair.numContactManifolds(); ++i) {
+                this.tempManifold.bodies = bodies;
                 this.tempManifold.raw = rawPair.contactManifold(i);
                 if (!!this.tempManifold.raw) {
                     f(this.tempManifold, flipped);
@@ -43,17 +44,21 @@ export class TempContactManifold {
         }
         this.raw = undefined;
     }
-    constructor(raw) {
+    constructor(raw, bodies) {
         this.raw = raw;
+        this.bodies = bodies;
     }
-    normal() {
-        return VectorOps.fromRaw(this.raw.normal());
+    normal(target) {
+        this.raw.normal(scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    localNormal1() {
-        return VectorOps.fromRaw(this.raw.local_n1());
+    localNormal1(target) {
+        this.raw.local_n1(scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    localNormal2() {
-        return VectorOps.fromRaw(this.raw.local_n2());
+    localNormal2(target) {
+        this.raw.local_n2(scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
     subshape1() {
         return this.raw.subshape1();
@@ -64,11 +69,13 @@ export class TempContactManifold {
     numContacts() {
         return this.raw.num_contacts();
     }
-    localContactPoint1(i) {
-        return VectorOps.fromRaw(this.raw.contact_local_p1(i));
+    localContactPoint1(i, target) {
+        const exists = this.raw.contact_local_p1(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
-    localContactPoint2(i) {
-        return VectorOps.fromRaw(this.raw.contact_local_p2(i));
+    localContactPoint2(i, target) {
+        const exists = this.raw.contact_local_p2(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     contactDist(i) {
         return this.raw.contact_dist(i);
@@ -91,19 +98,21 @@ export class TempContactManifold {
     numSolverContacts() {
         return this.raw.num_solver_contacts();
     }
-    solverContactPoint(i) {
-        return VectorOps.fromRaw(this.raw.solver_contact_point(i));
+    solverContactPoint(i, target) {
+        const exists = this.raw.solver_contact_point(this.bodies.raw, i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     solverContactDist(i) {
         return this.raw.solver_contact_dist(i);
     }
-    solverContactFriction(i) {
-        return this.raw.solver_contact_friction(i);
+    friction() {
+        return this.raw.friction();
     }
-    solverContactRestitution(i) {
-        return this.raw.solver_contact_restitution(i);
+    restitution() {
+        return this.raw.restitution();
     }
-    solverContactTangentVelocity(i) {
-        return VectorOps.fromRaw(this.raw.solver_contact_tangent_velocity(i));
+    solverContactTangentVelocity(i, target) {
+        this.raw.solver_contact_tangent_velocity(i, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
 }

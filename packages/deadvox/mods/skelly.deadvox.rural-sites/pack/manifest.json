@@ -1,0 +1,59 @@
+{
+  "dependencies": [
+    "skelly.body",
+    "skelly.crafting",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.buildings",
+    "skelly.deadvox.loot",
+    "skelly.deadvox.site-generation",
+    "skelly.household-electrical",
+    "skelly.inventory",
+    "skelly.keys",
+    "skelly.manufactured-blocks",
+    "skelly.natural-world",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "furniture-medical.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-medical-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-medical.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-police-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-police.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-substation-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-substation.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-medical.json"
+    }
+  ],
+  "id": "skelly.deadvox.rural-sites",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

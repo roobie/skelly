@@ -16,8 +16,8 @@ The suite keeps its worker policy and timeout rules; reductions target repeated 
 ## Retained coverage
 
 - Narrower mesher samples retain `test/mesher.test.ts`, "draws the same faces as plain face culling (random mixed-density chunk)"; narrower occlusion samples retain `test/occlusion.test.ts`, "gives every merged-quad corner the per-vertex value (random terrain)".
-- Idle/stroll timing needs a sustained sample rather than an exhaustive horizon; see `test/zombies.test.ts`, "uses seeded idle and straight stroll intervals during a sustained sample". Dismemberment needs both impulse-ordered flight and bounded launch energy: monotonic but unbounded motion would still throw limbs implausibly far. See `test/zombies.test.ts`, "scales launch distance monotonically through fixture impulses", and `test/severedEnergy.test.ts`, "clamps application points and spin for region, random-roll, head-cut and off-ray debris".
-- Content admission is guarded by `test/content.test.ts`, "base content has no issues". Save continuation is covered by `test/snapshot-continuation.test.ts`, "deeply matches N steps with K/save/load/N−K (active rest)"; `test/snapshot-continuation.test.ts`, "preserves an active-sleep interruption emitted between frames across save/load"; `test/snapshot-continuation.test.ts`, "preserves a pending sleep interruption across a paused snapshot and load". Edited-world format coverage remains in `test/snapshot-format.test.ts`, "round-trips an edited fixture column byte-exactly and continues deterministically from restored bytes".
+- Idle/stroll timing needs a sustained sample rather than an exhaustive horizon; see `test/actorSystem.test.ts`, "uses seeded idle and straight stroll intervals during a sustained sample". Dismemberment needs both impulse-ordered flight and bounded launch energy: monotonic but unbounded motion would still throw limbs implausibly far. See `test/actorSystem.test.ts`, "scales launch distance monotonically through fixture impulses", and `test/severedEnergy.test.ts`, "clamps application points and spin for region, random-roll, head-cut and off-ray debris".
+- Content admission is guarded by `test/content.test.ts`, "base content has no issues". Save continuation is covered by `test/snapshot-continuation.test.ts`, "deeply matches N steps with K/save/load/N−K (active rest)"; `test/snapshot-continuation.test.ts`, "preserves an active-sleep interruption emitted between frames across save/load". Edited-world format coverage remains in `test/snapshot-format.test.ts`, "round-trips an edited fixture column byte-exactly and continues deterministically from restored bytes".
 - Save/scheduler fixture reductions also retain `test/snapshot-continuation.test.ts`, "detects omission of simulation, world, scheduler, inventory, and audio state". These named tests protect the properties for which incidental full-world fixture coverage was removed.
 
 Revisit a cut only when an issue reports a related defect or suite overrun; restore the case that protects that property and link the trigger. Do not broaden fixtures or assert drifting content to compensate.
@@ -33,9 +33,9 @@ maps: selected choices cannot exceed their declared envelope. Quota admission li
 needs fitting references, not another compilation of every building in the city. Routes
 sharing a roof origin share one static flood rather than repeating the same search for
 each exit. These avoid multiplying validation work by content size without caching
-mutable registries. See `src/core/templates.ts`, `templateEnvelope`;
-`src/core/cityLots.ts`, `cityLotQuotaIssues`; `src/core/scenarioStart.ts`,
-`skylineIssues`; and `src/core/templateSpatial.ts`, `templateWalkingRoutes`.
+mutable registries. See `packages/engine/src/core/templates.ts`, `templateEnvelope`;
+`packages/engine/src/core/cityLots.ts`, `cityLotQuotaIssues`; `packages/engine/src/core/scenarioStart.ts`,
+`skylineIssues`; and `packages/engine/src/core/templateSpatial.ts`, `templateWalkingRoutes`.
 
 Start-only admission and obstruction cases must not repeatedly certify unrelated lab
 routes. Keep full-composition coverage at the integration boundary: valid exits alone
@@ -45,13 +45,13 @@ authored whole, with no furnishing alternatives to substitute. Focused obstructi
 use the same start-proof owner. A shared read-only compiled plan is safe only
 when each obstruction probe owns fresh route-space and entity state; a clear probe
 must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.test.ts`,
-`certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
+`certificate`; and `packages/engine/src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
 `scenarioCertificate`.
 
 Queued lock operations exercise runtime placement and key ownership, not whole-pack
 admission. Their fixture patches an admitted registry so unrelated scenario certification
 cannot consume the test's deadline; content admission stays at its own boundary. See
-`test/locks.test.ts`, "carries independent locks through explicit bedroom and cellar placements into native queued door operations".
+`test/locks.test.ts`, "carries independent locks through placements on two storeys into native queued door operations".
 Origin-map equality uses native deep comparison so diagnostic matcher traversal does not
 dominate a rejected-mod check. See `test/browserMods.test.ts`,
 "refuses a missing mod id without admitting its definitions".

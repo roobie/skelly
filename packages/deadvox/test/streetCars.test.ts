@@ -1,22 +1,27 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { BLUEPRINTS } from '@skelly/engine/vehicles';
+import {
+  CHUNK,
+  type Chunk,
+  CitySite,
+  createTerrainEvaluator,
+  footprint,
+  makeScale,
+  terrainShapeOf,
+  toChunk,
+} from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Chunk } from '../src/core/chunk.ts';
-import { buildCityPlan, cityGridOf } from '../src/core/cityPlan.ts';
-import { CitySite } from '../src/core/citySite.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ContentFile } from '../src/core/schema.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { footprint } from '../src/core/templates.ts';
-import { generateChunk } from '../src/core/worldgen.ts';
-import { BLUEPRINTS } from '../src/vehicles/catalogue.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry, issues } = startupContent();
+const cityScenarios = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
 
 const streetCars = (seed: number) => {
-  const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
+  const scenario = cityScenarios.find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
   const pool = new Set(grid.streetProps!.flatMap((id) => registry.mapPools.get(id)!.choices.map(({ ref }) => ref.id)));
   const plan = buildCityPlan({ seed, registry, grid, floor: 0 });
@@ -49,7 +54,7 @@ const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, n
 
 it('street car procedural variants', () => {
   expect(issues).toEqual([]);
-  const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
+  const scenario = cityScenarios.find(({ city }) => city.streetProps?.length)!;
   const poolIds = scenario.city.streetProps!.flatMap((id) =>
     registry.mapPools.get(id)!.choices.map(({ ref }) => ref.id),
   );
@@ -71,18 +76,26 @@ it('street car procedural variants', () => {
 
 // An item template is a floor pad plus furniture; a pad that stamps its own block shows as a patch on the street.
 it('keeps the street surface under every placed item standing on a street cell', () => {
-  const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
+  const scenario = cityScenarios.find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
-  const plan = buildCityPlan({ seed: 1, registry, grid, floor: 0, scenario });
+  const plan = buildCityPlan({
+    seed: 1,
+    registry,
+    grid,
+    floor: 0,
+    scenario,
+    start: defaultStartOf(registry, scenario),
+  });
   const scale = makeScale(0.5);
   const site = new CitySite(1, registry, scale, plan);
-  const terrain = {
+  const terrain = createTerrainEvaluator({
     seed: 1,
     shape: terrainShapeOf(registry),
     scale,
-    surface: site.surface,
+    site: site.terrain,
+    structures: [],
     blocks: { grass: 1000, dirt: 1001, rock: 1002, sand: 1003, water: 1004 },
-  };
+  });
   const mismatches: string[] = [];
   let checked = 0;
   for (const placement of plan.placements) {
@@ -93,7 +106,7 @@ it('keeps the street surface under every placed item standing on a street cell',
       (_, i) => [origin[0] + (i % w), origin[2] + Math.floor(i / w)] as const,
     );
     const padOnly = !template.blocks.slice(template.size[0] * template.size[2]).some((block) => block !== 0);
-    if (!padOnly || template.pieces.length === 0 || !cells.every(([x, z]) => site.surface.top(x, z) !== undefined)) {
+    if (!padOnly || template.pieces.length === 0 || !cells.every(([x, z]) => terrain.top(x, z) !== undefined)) {
       continue;
     }
     const chunks = new Map<string, Chunk>();
@@ -101,13 +114,12 @@ it('keeps the street surface under every placed item standing on a street cell',
       const [cx, cy, cz] = [toChunk(x), toChunk(origin[1]), toChunk(z)];
       const key = `${cx},${cy},${cz}`;
       if (!chunks.has(key)) {
-        const chunk = generateChunk(terrain, [cx, cy, cz]);
-        site.stamp(chunk);
+        const chunk = terrain.generateChunk([cx, cy, cz]);
         chunks.set(key, chunk);
       }
       const chunk = chunks.get(key)!;
       checked += 1;
-      if (chunk.get(mod(x, CHUNK), mod(origin[1], CHUNK), mod(z, CHUNK)) !== site.surface.top(x, z)) {
+      if (chunk.get(mod(x, CHUNK), mod(origin[1], CHUNK), mod(z, CHUNK)) !== terrain.top(x, z)) {
         mismatches.push(template.id);
       }
     }

@@ -1,18 +1,17 @@
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import type { FromMesher, ToMesher } from '@skelly/engine/mesh';
+import { realTimestamp } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
+import { workerMesherPort } from '@skelly/presentation/internal/worker/mesherPort.ts';
+import { type Engine, WorldLoading } from '@skelly/presentation/play';
 import { afterEach, beforeAll, expect, it, vi } from 'vitest';
-import { makeScale } from '../src/core/scale.ts';
-import { realTimestamp } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import type { Engine } from '../src/game/engine.ts';
-import { Streamer } from '../src/game/streamer.ts';
-import { WorldLoading } from '../src/game/worldLoading.ts';
-import type { FromMesher, ToMesher } from '../src/worker/protocol.ts';
-import { baseTerrainShape } from './baseRegistry.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
 const replies: FromMesher[] = [];
 let workerHandler: (event: { data: ToMesher }) => void;
 
 beforeAll(async () => {
-  await import('../src/worker/mesh.worker.ts');
+  await import('@skelly/presentation/internal/worker/mesh.worker.ts');
   workerHandler = globalThis.onmessage as never;
 });
 
@@ -46,26 +45,23 @@ afterEach(() => {
 
 /** A streamer whose world loading has turned ready, with its one worker. */
 const loadedStreamer = () => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', RelayWorker);
   vi.stubGlobal('postMessage', (reply: FromMesher) => replies.push(reply));
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const world = new World();
   const streamer = new Streamer({
     world,
     meshes: { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() } as never,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    // The browser adapter around the relay, so its failure strings are the ones streaming reports.
+    mesher: { count: 1, create: () => workerMesherPort(new RelayWorker() as unknown as Worker) },
+    terrain: fixtureTerrain({ scale, floor: 4 }),
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 4, top: () => undefined },
   });
   const engine = { streamer, skylight: undefined, config: { readyRadiusChunks: 1, scale } };
   const loading = new WorldLoading(engine as unknown as Engine);
@@ -93,7 +89,7 @@ it('returns the key of a mesh build that throws in the worker and fails streamin
   streamer.update(0, 0);
   const waiting = streamer.pending;
   worker.run((message) =>
-    message.type === 'mesh' && message.key === '0,0,0' ? { ...message, padded: undefined as never } : message,
+    message.type === 'mesh' && message.key === '0,0,0' ? { ...message, neighbourhood: undefined as never } : message,
   );
   expect(streamer.pending).toBe(waiting + 1);
   expect(() => streamer.update(0, 0)).toThrow('World mesh worker failed on chunk 0,0,0');

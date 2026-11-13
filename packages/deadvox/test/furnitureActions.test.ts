@@ -1,250 +1,223 @@
-import { describe, expect, it } from 'vitest';
-import { reachTuning } from '../src/core/reach.ts';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
 import {
-  FurnitureActionSelection,
+  ActionMenu,
   furnitureActionsFor,
-  heldMenuActions,
+  heldRadialEntries,
   radialEntries,
   radialEntryIndex,
-} from '../src/game/furnitureActions.ts';
+  reachTuning,
+} from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
 import { baseRegistryWith } from './baseRegistry.ts';
-import {
-  AMOUNT,
-  DURABILITY,
-  OTHER_PIECE,
-  PIECE,
-  RECIPE,
-  worldRepairFixture,
-  worldRepairSources,
-} from './worldRepairFixture.ts';
+import { AMOUNT, DURABILITY, PIECE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
 
 const piece = { uid: 7 };
-const actions = radialEntries(
+const directions = { push: 0, drag: 180, lift: 270 };
+const tuning = { radiusPixels: 100, deadZonePixels: 20, selectionHalfAngleDegrees: 30 };
+const entries = radialEntries(
   [
-    { id: 'use', label: 'Use' },
     { id: 'push', label: 'Push' },
+    { id: 'drag', label: 'Drag' },
   ],
-  { use: 0, push: 180 },
+  directions,
 );
-
-it('does not open a radial for a single held action', () => {
-  const selection = new FurnitureActionSelection();
-  selection.open(piece, [actions[0]!], 'held');
-  expect(selection.isOpen(piece)).toBe(false);
-});
-
-it('leaves an empty side unselected but accepts a pull toward an available option', () => {
-  const selection = new FurnitureActionSelection();
-  const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4, selectionHalfAngleDegrees: 30 };
-  selection.open(piece, actions);
-  selection.point(piece, actions, { x: 20, y: 0 }, tuning);
-  expect(selection.choice(piece, actions)).toBeUndefined();
-  expect(selection.confirm(piece, actions)).toBeUndefined();
-  selection.open(piece, actions);
-  selection.point(piece, actions, { x: 0, y: -20 }, tuning);
-  expect(selection.confirm(piece, actions)?.id).toBe(actions[0]!.id);
-});
-
-it('groups treatment regions behind one operation without dropping direct held actions', () => {
-  const direct = [{ id: 'fixture-direct', label: 'Direct' }];
-  const regions = [
-    {
-      id: 'fixture-treatment:head',
-      label: 'Head',
-      treatment: { itemType: 'fixture-treatment', region: 'head' as const },
-    },
-    {
-      id: 'fixture-treatment:torso',
-      label: 'Torso',
-      treatment: { itemType: 'fixture-treatment', region: 'torso' as const },
-    },
-  ];
-  expect(heldMenuActions(direct, 'Fixture treat')).toEqual(direct);
-  expect(heldMenuActions([...regions, ...direct], 'Fixture treat')).toEqual([
-    ...direct,
-    { id: 'treat', label: 'Fixture treat' },
-  ]);
-});
-
-it('returns from held-region choices to a neutral first-level menu using the shared owner', () => {
-  const selection = new FurnitureActionSelection();
-  const entries = radialEntries(
-    [
-      { id: 'treat', label: 'Fixture treat' },
-      { id: 'other', label: 'Other' },
-    ],
-    { treat: 0, other: 180 },
-  );
-  selection.open(piece, entries, 'held');
-  selection.point(
-    piece,
-    entries,
-    { x: 0, y: -20 },
-    { radiusPixels: 50, deadZonePixels: 5, entryCap: 8, selectionHalfAngleDegrees: 30 },
-  );
-  expect(selection.choice(piece, entries)?.id).toBe('treat');
-  selection.showRegions();
-  expect(selection.regionsOpen).toBe(true);
-  expect(selection.choice(piece, entries)).toBeUndefined();
-  selection.open(piece, entries, 'held');
-  expect(selection.regionsOpen).toBe(false);
-  expect(selection.source).toBe('held');
-  expect(selection.confirm(piece, entries)).toBeUndefined();
-});
-
-it('keeps content-authored action slots when another action appears or order changes', () => {
-  const pair = [
-    { id: 'fixture_a', label: 'A' },
-    { id: 'fixture_b', label: 'B' },
-  ];
-  const third = { id: 'fixture_c', label: 'C' };
-  const slots = Object.fromEntries([
-    ['fixture_a', 25],
-    ['fixture_b', 180],
-    ['fixture_c', 270],
-  ]);
-  const original = radialEntries(pair, slots);
-  const extended = radialEntries([third, ...pair.toReversed()], slots);
-  for (const action of original) {
-    expect(extended.find(({ id }) => id === action.id)?.angleRadians).toBe(action.angleRadians);
-  }
-  const radius = 50;
-  const deadZone = 5;
-  for (const entries of [original, extended]) {
-    entries.forEach((action, index) => {
-      const angle = action.angleRadians;
-      expect(
-        radialEntryIndex(Math.sin(angle) * radius, -Math.cos(angle) * radius, entries, {
-          deadZonePixels: deadZone,
-          selectionHalfAngleDegrees: 30,
-        }),
-      ).toBe(index);
-    });
-  }
-  expect(radialEntryIndex(0, 0, extended, { deadZonePixels: deadZone, selectionHalfAngleDegrees: 30 })).toBeUndefined();
-  expect(
-    radialEntryIndex(deadZone, 0, extended, { deadZonePixels: deadZone, selectionHalfAngleDegrees: 30 }),
-  ).toBeUndefined();
-  expect(radialEntryIndex(0, -radius, [], { deadZonePixels: deadZone, selectionHalfAngleDegrees: 30 })).toBeUndefined();
-});
-
-it('release runs only the visibly chosen action, never a remembered action in the dead zone', () => {
-  const selection = new FurnitureActionSelection();
-  const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4, selectionHalfAngleDegrees: 30 };
-  selection.open(piece, actions);
-  expect(selection.choice(piece, actions)).toBeUndefined();
-  expect(selection.confirm(piece, actions)).toBeUndefined();
-
-  selection.open(piece, actions);
-  selection.point(piece, actions, { x: 0, y: -20 }, tuning);
-  expect(selection.choice(piece, actions)?.id).toBe(actions[0]!.id);
-  expect(selection.confirm(piece, actions)?.id).toBe(actions[0]!.id);
-
-  selection.open(piece, actions);
-  selection.step(piece, actions, 1);
-  expect(selection.choice(piece, actions)?.id).toBe(actions[1]!.id);
-  selection.point(piece, actions, { x: 0, y: -20 }, tuning);
-  selection.point(piece, actions, { x: 0, y: 20 }, tuning);
-  expect(selection.choice(piece, actions)).toBeUndefined();
-  expect(selection.confirm(piece, actions)).toBeUndefined();
-});
+const up = { x: 0, y: -tuning.radiusPixels };
+const baseTuning = baseUi.ui[0]!;
 
 describe('furniture service choices', () => {
   const registry = baseRegistryWith(worldRepairSources());
 
-  it.each(['damaged', 'intact', 'ruined', 'unknown'] as const)(
-    'offers repair only for a damaged target with an admitted recipe: %s',
-    (state) => {
-      const { inventory, target } = worldRepairFixture(registry);
-      if (state === 'intact') {
-        expect(inventory.entities.repair(target, DURABILITY)).toBe(true);
-      } else if (state === 'ruined') {
-        expect(inventory.entities.bash(target, DURABILITY)).toBe('ruined');
-      }
-      const knownRecipes = state === 'unknown' ? [] : [RECIPE];
-      const choices = furnitureActionsFor(inventory, target, 0.5, knownRecipes);
-      expect(choices.some(({ id }) => id === 'repair')).toBe(state === 'damaged');
-    },
-  );
-
-  it('does not offer a known repair recipe on a different furniture type', () => {
-    const { inventory, character } = worldRepairFixture(registry);
-    const target = inventory.entities.add({ type: OTHER_PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
-    expect(inventory.entities.bash(target, AMOUNT)).toBe('damaged');
-    expect(character.knownRecipes.has(RECIPE)).toBe(true);
-    expect(furnitureActionsFor(inventory, target, 0.5, character.knownRecipes).some(({ id }) => id === 'repair')).toBe(
-      false,
-    );
+  it.each(['damaged', 'intact'] as const)('keeps lift in the held list on a small movable piece: %s', (state) => {
+    const { inventory, target } = worldRepairFixture(registry);
+    if (state === 'intact') {
+      expect(inventory.entities.repair(target, DURABILITY)).toBe(true);
+    }
+    const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
+    const choices = furnitureActionsFor(inventory, target, blockSize);
+    expect(choices.some(({ id }) => id === 'lift')).toBe(true);
   });
 
-  it.each(['damaged', 'intact', 'debug-off'] as const)(
-    'keeps lift in the held list on a small movable piece: %s',
-    (state) => {
-      const { inventory, target } = worldRepairFixture(registry);
-      if (state === 'intact') {
-        expect(inventory.entities.repair(target, DURABILITY)).toBe(true);
-      }
-      const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-      const choices = furnitureActionsFor(inventory, target, blockSize, state === 'debug-off' ? undefined : [RECIPE]);
-      expect(choices.some(({ id }) => id === 'lift')).toBe(true);
-    },
-  );
-
-  it('keeps fitted small-piece controls available so movement can explain its refusal', () => {
-    const { inventory } = worldRepairFixture(registry);
-    const target = inventory.entities.add({ type: PIECE, pos: [5, 1, 0], size: [1, 1, 1], facing: 'n', fixed: true })!;
-    expect(furnitureActionsFor(inventory, target, 0.5).some(({ id }) => id === 'lift')).toBe(true);
-  });
-
-  it('offers repair alongside drag in the same target-bound choice list', () => {
+  it('offers push and drag instead of lift for a wide movable piece', () => {
     const { inventory } = worldRepairFixture(registry);
     const target = inventory.entities.add({ type: PIECE, pos: [8, 1, 0], size: [4, 1, 1], facing: 'n' })!;
     expect(inventory.entities.bash(target, AMOUNT)).toBe('damaged');
     const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-    const choices = furnitureActionsFor(inventory, target, blockSize, [RECIPE]);
+    const choices = furnitureActionsFor(inventory, target, blockSize);
+    expect(choices.some(({ id }) => id === 'push')).toBe(true);
     expect(choices.some(({ id }) => id === 'drag')).toBe(true);
-    expect(choices.some(({ id }) => id === 'repair')).toBe(true);
-    const selection = new FurnitureActionSelection();
-    selection.open(target, choices);
-    const repairIndex = choices.findIndex(({ id }) => id === 'repair');
-    for (const _choice of choices.slice(0, repairIndex)) {
-      selection.step(target, choices, 1);
-    }
-    expect(selection.confirm(target, choices)?.id).toBe('repair');
-    expect(selection.isOpen(target)).toBe(false);
+    expect(choices.some(({ id }) => id === 'lift')).toBe(false);
   });
 });
 
-describe('furniture action menu lifetime', () => {
+describe('radial entry geometry', () => {
+  it('points at nothing inside the dead zone, however it leans', () => {
+    expect(radialEntryIndex(0, -tuning.deadZonePixels / 2, entries, tuning)).toBeUndefined();
+    expect(radialEntryIndex(0, -tuning.deadZonePixels * 2, entries, tuning)).toBe(0);
+  });
+
+  it('points at an entry only within its half-angle', () => {
+    const at = (degrees: number) => {
+      const radians = (degrees * Math.PI) / 180;
+      return radialEntryIndex(Math.sin(radians) * 50, -Math.cos(radians) * 50, entries, tuning);
+    };
+    expect(at(tuning.selectionHalfAngleDegrees - 1)).toBe(0);
+    expect(at(tuning.selectionHalfAngleDegrees + 1)).toBeUndefined();
+    expect(at(180 - tuning.selectionHalfAngleDegrees + 1)).toBe(1);
+  });
+
+  it('keeps every entry at its authored direction when another action joins', () => {
+    const grown = radialEntries([...entries, { id: 'lift', label: 'Lift' }], directions);
+    expect(grown.slice(0, entries.length).map(({ angleRadians }) => angleRadians)).toEqual(
+      entries.map(({ angleRadians }) => angleRadians),
+    );
+  });
+
+  it('refuses an action with no authored direction', () => {
+    expect(() => radialEntries([{ id: 'unplaced', label: 'Unplaced' }], directions)).toThrow('unplaced');
+  });
+});
+
+describe('action menu directions in content', () => {
+  const withActionMenu = (actionMenu: object) =>
+    validateContent({ source: 'action-menu-fixture.json', data: { ui: [{ ...baseTuning, actionMenu }] } }).map(
+      ({ path }) => path,
+    );
+
+  it('refuses two directions in one menu within two selection half-angles', () => {
+    const { held } = baseTuning.actionMenu.directions;
+    const crowded = { ...held, sharpen: held.own + baseTuning.actionMenu.selectionHalfAngleDegrees };
+    expect(
+      withActionMenu({ ...baseTuning.actionMenu, directions: { ...baseTuning.actionMenu.directions, held: crowded } }),
+    ).toContain('ui[0].actionMenu.directions.held.sharpen');
+  });
+
+  it('refuses a dead zone that reaches the entry radius, which would leave every entry unreachable', () => {
+    const { radiusPixels } = baseTuning.actionMenu;
+    expect(withActionMenu({ ...baseTuning.actionMenu, deadZonePixels: radiusPixels })).toContain(
+      'ui[0].actionMenu.deadZonePixels',
+    );
+  });
+
+  it('refuses a menu action with no direction', () => {
+    const { push: _, ...furniture } = baseTuning.actionMenu.directions.furniture;
+    expect(
+      withActionMenu({ ...baseTuning.actionMenu, directions: { ...baseTuning.actionMenu.directions, furniture } }),
+    ).toContain('ui[0].actionMenu.directions.furniture.push');
+  });
+});
+
+describe('action menu lifetime', () => {
+  it('returns a lone furniture action to run directly without opening a menu', () => {
+    const menu = new ActionMenu();
+    const lone = entries.slice(0, 1);
+    expect(menu.open('furniture', piece, lone)).toBe(lone[0]);
+    expect(menu.opened).toBeUndefined();
+    expect(menu.confirm(lone)).toBeUndefined();
+  });
+
+  it('cancels an open choice when its alternatives disappear instead of silently running the survivor', () => {
+    const menu = new ActionMenu();
+    menu.open('furniture', piece, entries);
+    menu.step(entries, 1);
+    expect(menu.ring(entries.slice(0, 1))).toBeUndefined();
+    expect(menu.opened).toBeUndefined();
+  });
+
+  it('chooses nothing until the player points past the dead zone', () => {
+    const menu = new ActionMenu();
+    menu.open('furniture', piece, entries);
+    menu.point(entries, { x: 0, y: -tuning.deadZonePixels / 2 }, tuning);
+    expect(menu.choice(entries)).toBeUndefined();
+    menu.point(entries, up, tuning);
+    expect(menu.choice(entries)?.id).toBe('push');
+    expect(Math.hypot(menu.pull.x, menu.pull.y)).toBeLessThanOrEqual(tuning.radiusPixels);
+  });
+
   it('requires reopening after confirming an action', () => {
-    const selection = new FurnitureActionSelection();
-    selection.open(piece, actions);
-    selection.step(piece, actions, 1);
-    expect(selection.confirm(piece, actions)?.id).toBe('push');
-    expect(selection.isOpen(piece)).toBe(false);
-    expect(selection.confirm(piece, actions)).toBeUndefined();
-    selection.open(piece, actions);
-    expect(selection.isOpen(piece)).toBe(true);
+    const menu = new ActionMenu();
+    menu.open('furniture', piece, entries);
+    menu.step(entries, 1);
+    expect(menu.confirm(entries)?.id).toBe('push');
+    expect(menu.isOpen('furniture', piece.uid)).toBe(false);
+    expect(menu.confirm(entries)).toBeUndefined();
+    menu.open('furniture', piece, entries);
+    expect(menu.isOpen('furniture', piece.uid)).toBe(true);
   });
 
   it('does not preserve an open menu across pause even if aim never changes', () => {
-    const selection = new FurnitureActionSelection();
-    selection.open(piece, actions);
-    selection.sync(piece.uid);
-    expect(selection.isOpen(piece)).toBe(true);
-    selection.sync(piece.uid, true);
-    selection.sync(piece.uid, false);
-    expect(selection.confirm(piece, actions)).toBeUndefined();
+    const menu = new ActionMenu();
+    menu.open('furniture', piece, entries);
+    menu.step(entries, 1);
+    menu.sync('furniture', piece.uid);
+    expect(menu.isOpen('furniture', piece.uid)).toBe(true);
+    menu.sync('furniture', piece.uid, true);
+    menu.sync('furniture', piece.uid, false);
+    expect(menu.confirm(entries)).toBeUndefined();
   });
 
   it('does not preserve an open menu when aim leaves the piece', () => {
-    const selection = new FurnitureActionSelection();
-    selection.open(piece, actions);
-    selection.sync(piece.uid + 1);
-    selection.sync(piece.uid);
-    expect(selection.confirm(piece, actions)).toBeUndefined();
-    selection.open(piece, actions);
-    selection.sync(undefined);
-    expect(selection.isOpen(piece)).toBe(false);
+    const menu = new ActionMenu();
+    menu.open('furniture', piece, entries);
+    menu.step(entries, 1);
+    menu.sync('furniture', piece.uid + 1);
+    menu.sync('furniture', piece.uid);
+    expect(menu.confirm(entries)).toBeUndefined();
+    menu.open('furniture', piece, entries);
+    menu.sync('furniture', undefined);
+    expect(menu.isOpen('furniture', piece.uid)).toBe(false);
+  });
+});
+
+describe('held treatment child ring', () => {
+  const content = baseTuning.actionMenu;
+  const treatments = [
+    { id: 'bandage:leftArm', label: 'Left arm', treatment: { region: 'leftArm', itemType: 'bandage' } },
+    { id: 'bandage:leftLeg', label: 'Left leg', treatment: { region: 'leftLeg', itemType: 'bandage' } },
+  ] as const;
+  const held = heldRadialEntries([{ id: 'own', label: 'Use' }, ...treatments], 'Treat', content.directions);
+  const toward = (degrees: number) => {
+    const radians = (degrees * Math.PI) / 180;
+    return { x: Math.sin(radians) * content.radiusPixels, y: -Math.cos(radians) * content.radiusPixels };
+  };
+  const confirmTreat = (menu: ActionMenu) => {
+    menu.point(held, toward(content.directions.held.treat), content);
+    return menu.confirm(held);
+  };
+
+  it('skips a sole Treat parent and opens only the wound choices, cancelling at their centre', () => {
+    const menu = new ActionMenu();
+    const onlyTreat = held.filter((action) => action.id === 'treat');
+    expect(menu.open('held', { uid: 3 }, onlyTreat)).toBeUndefined();
+    expect(menu.childOpen).toBe(true);
+    expect(menu.ring(onlyTreat)).toHaveLength(treatments.length);
+    expect(menu.confirm(onlyTreat)).toBeUndefined();
+    expect(menu.opened).toBeUndefined();
+  });
+
+  it('returns a sole wound directly instead of opening a one-entry child ring', () => {
+    const menu = new ActionMenu();
+    const oneWound = heldRadialEntries([{ id: 'own', label: 'Use' }, treatments[0]], 'Treat', content.directions);
+    menu.open('held', { uid: 3 }, oneWound);
+    menu.point(oneWound, toward(content.directions.held.treat), content);
+    expect(menu.confirm(oneWound)?.id).toBe(treatments[0].id);
+    expect(menu.opened).toBeUndefined();
+  });
+
+  it('chooses the wound pointed at by its region, and goes back to the parent ring at the centre', () => {
+    const menu = new ActionMenu();
+    menu.open('held', { uid: 3 }, held);
+    expect(confirmTreat(menu)).toBeUndefined();
+    expect(menu.childOpen).toBe(true);
+    expect(menu.confirm(held)).toBeUndefined();
+    expect(menu.childOpen).toBe(false);
+    expect(menu.isOpen('held', 3)).toBe(true);
+    expect(menu.choice(held)).toBeUndefined();
+
+    expect(confirmTreat(menu)).toBeUndefined();
+    const [, wound] = treatments;
+    menu.point(held, toward(content.directions.treat[wound.treatment.region]), content);
+    expect(menu.confirm(held)?.id).toBe(wound.id);
+    expect(menu.opened).toBeUndefined();
   });
 });

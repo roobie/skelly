@@ -1,8 +1,7 @@
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { HeldItems } from '@skelly/presentation/render';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { HeldItems } from '../src/render/hands.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 

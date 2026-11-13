@@ -1,0 +1,618 @@
+{
+  "dependencies": ["skelly.hand-tools", "skelly.inventory", "skelly.natural-world"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "vehicles.json"
+    },
+    {
+      "kind": "content",
+      "path": "ground-vehicles-items.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/battery_tray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_front.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_roof.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_side.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/car_battery.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/car_headlamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cargo_space.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/door_mirror.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/front_seat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gear_lever.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_bonnet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_engine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_exhaust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_strut.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_wing.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_fuel_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_gearbox.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_radiator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_seat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_shell.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_tailgate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_a_post.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_bench.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_boom.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_boom_extension.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_boom_rest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_cab_back.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_cab_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_cab_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_crane_base.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_crane_column.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_crossmember.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_deck_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_engine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_engine_cover.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_exhaust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_frame_rail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_front_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_front_panel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_fuel_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_gearbox.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_headboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_hook_block.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_luff_ram.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_mudguard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_prop_shaft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_radiator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_rear_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_rear_underrun.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_roof.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_stabiliser.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_winch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mounting_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_battery_tray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_bed_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_bed_front.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_bed_side.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steering_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wheel_205_55r16.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/battery_tray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_front.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_roof.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_side.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/car_battery.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/car_headlamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cargo_space.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/door_mirror.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/front_seat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gear_lever.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_bonnet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_engine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_exhaust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_strut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_wing.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_fuel_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_gearbox.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_radiator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_seat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_shell.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_tailgate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_a_post.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_bench.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_boom.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_boom_extension.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_boom_rest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_cab_back.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_cab_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_cab_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_crane_base.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_crane_column.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_crossmember.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_deck_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_engine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_engine_cover.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_exhaust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_frame_rail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_front_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_front_panel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_fuel_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_gearbox.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_headboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_hook_block.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_luff_ram.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_mudguard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_prop_shaft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_radiator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_rear_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_rear_underrun.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_roof.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_stabiliser.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_winch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mounting_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_battery_tray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_bed_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_bed_front.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_bed_side.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steering_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wheel_205_55r16.glb"
+    }
+  ],
+  "id": "skelly.ground-vehicles",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

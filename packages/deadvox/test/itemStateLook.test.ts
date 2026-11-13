@@ -1,16 +1,24 @@
+import { buildRegistry, modelPresentationAssetIssues } from '@skelly/engine/content';
+import { itemPresentationIssues } from '@skelly/engine/internal/core/itemPresentation.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import {
+  chargeShare,
+  Inventory,
+  ItemFactory,
+  LIGHT_MOUNT_SLOT,
+  supplyShare,
+  toggleLight,
+} from '@skelly/engine/inventory';
+import { type ItemLook, itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { ItemPictures } from '@skelly/presentation/internal/render/itemPictures.ts';
+import {
+  applyItemStateLook,
+  disposeItemStateMaterials,
+  fittedStateGroup,
+} from '@skelly/presentation/internal/render/itemStateLook.ts';
+import { type ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import { LIGHT_MOUNT_SLOT } from '../src/core/firearmFitting.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { itemPresentationIssues, modelPresentationAssetIssues } from '../src/core/itemPresentation.ts';
-import { ItemFactory, snapshotItem } from '../src/core/items.ts';
-import { chargeShare, supplyShare, toggleLight } from '../src/core/lights.ts';
-import { type ItemLook, itemLook } from '../src/render/itemLook.ts';
-import { ItemPictures } from '../src/render/itemPictures.ts';
-import { applyItemStateLook, disposeItemStateMaterials, fittedStateGroup } from '../src/render/itemStateLook.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const fixture = () => {
@@ -24,8 +32,6 @@ const fixture = () => {
     name: 'fixture',
     category: 'misc',
     workInProgress: false,
-    notLoot: false,
-    economy: { usage: [], tiers: [] },
     weight: 1,
     size: [1, 1],
   };

@@ -11,7 +11,7 @@ tags: [deadvox, loot, content, mods, validation]
 # Loot plan rulings
 
 Rulings on the loot work for the playtest scenarios and the default tables. Each states what
-was ruled and why. How loot rolls and is checked is in `src/core/loot.ts`, `economyEligible`
+was ruled and why. How loot rolls and is checked is in `packages/engine/src/core/loot.ts`, `economyEligible`
 and `admissionIssue`; the economy description is in `content.md`, "Loot economy descriptions".
 
 ## Default tables and how a scenario enables them

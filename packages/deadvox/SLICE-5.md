@@ -2,19 +2,23 @@
 read_if:
   - you're planning or implementing Holding ground construction, electricity or fire
   - you're deciding Slice 5 scope, BR gates, technical spikes or play acceptance
-  - you're integrating base appliances, door bashing or unattended simulation
-  - you're implementing bear traps, data-driven events or the playtest wave
+  - you're integrating base appliances, door bashing, its decision-code ownership or unattended simulation
+  - you're implementing bear traps, data-driven events or the playtest waves
+  - you're authoring the base-building playtest's composed site, supply asks, distance weights or anchored wave schedule
 ---
 
 # Slice 5 — Holding ground
 
-**Status: the power network core is built; construction, fire and exposure,
-appliance controls and processes, and the integration proofs are open.** The wire
-graph, its cache invalidation, saved identity, closed-form away-time balance and
-refuelling exist; see `src/core/powerGraph.ts`, `PowerGraph`, and `src/core/power.ts`,
-`PowerNetwork`. The bear trap is built (`INTERACTIONS.md`, "Traps"). No player
-construction, placed-entity store, fire or smoke model, or appliance process exists in
-`src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
+**Status: the power network core, the placed-entity store, the first appliance
+process, world repair work and the first wave rule are built; player placement,
+take-apart, structural collapse, fire and exposure, and the integration proofs are
+open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+`packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
+`BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
+`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
+`packages/deadvox/mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`. The bear trap is
+built (`INTERACTIONS.md`, "Traps"). No fire or smoke model exists in
+`packages/engine/src/core`. The question from `EPIC.md`, "Slices", is: **Is a base worth building and
 defending?**
 This plan separates settled intent from choices that must precede dependent work.
 The slice process is in `EPIC.md`, "How each slice runs".
@@ -25,12 +29,14 @@ The candidate loop is to claim a shelter, scavenge construction and electrical
 supplies, improve its defences, connect useful appliances, and choose how much
 light to expose at night. Leave it working, return to consequential resource use,
 and decide whether to defend, repair or abandon it after a breach or fire.
-The playtest is a scenario with a scripted wave after three elapsed scenario days,
-so preparation and defence receive a deliberate pressure test. Data-driven event
-rules author the wave; this does not select an authored shelter-and-supply route.
-The day is a content tunable, not an engine constant. The value of staying must
-compete with the cost of attracting attention, supplying machines and risking
-stored goods.
+The playtest is a scenario whose first wave arrives after three elapsed scenario
+days and whose later waves never stop coming, growing harder through an authored
+list and then holding at its last row, so preparation and defence receive a
+deliberate and then an enduring pressure test.
+Data-driven event rules author the waves; this does not select an authored
+shelter-and-supply route. Every wave day is a content tunable, not an engine
+constant. The value of staying must compete with the cost of attracting attention,
+supplying machines and risking stored goods.
 
 ## Scope and boundaries
 
@@ -45,7 +51,7 @@ terrain blocks use cells and entities allow finer placement.
 Construction is crafting that places blocks and block entities; taking it apart
 is disassembly. Existing reach, escrow, completion revalidation and single item
 ownership apply, rather than a parallel building inventory. See
-`INTERACTIONS.md`, "Crafting", and `src/core/crafting.ts`, `planCraft`.
+`INTERACTIONS.md`, "Crafting", and `packages/engine/src/core/crafting.ts`, `planCraft`.
 Appliances derive behaviour from components, not content identity. Player crafting
 and appliance-owned processes stay distinct: a process runs without occupying
 hands or requiring compression. See `INTERACTIONS.md`, "Appliances".
@@ -67,10 +73,10 @@ Bashing needs actor and obstacle strength, not an inference from movement or the
 brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
-`src/core/zombies.ts`, `ZombieSystem.updateObstacleContact`.
+`packages/engine/src/core/agent.ts`, `AgentController.updateObstacleContact`.
 Boarding already has directional opening semantics; player-built boarding must
 not silently turn an inside-openable leaf into an immovable wall. See
-`docs/aftermath.md`, "Door variants", and `src/core/blockEntities.ts`, `doorRefusal`.
+`docs/aftermath.md`, "Door variants", and `packages/engine/src/core/blockEntities.ts`, `doorRefusal`.
 
 ### Related issues and admission
 
@@ -129,7 +135,7 @@ unbuilt. Unanswered gates block only their dependent work.
 
 Power policy reasons live with the power implementation, not in a second set of
 Slice 5 cards, so allocation and catch-up cannot acquire conflicting authorities; see
-`src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
+`packages/engine/src/core/power.ts`, `PowerNetwork`. The integration proofs below use the policies that
 implementation selects; this plan retains only the cross-system obligations.
 
 ### Settled fire and exposure rules
@@ -191,12 +197,73 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   completion so save/load cannot duplicate the wave. A script language is not
   admitted. Position-trigger permission remains open below and does not block the
   elapsed-time wave.
-- **Wave day:** ship the wave after three elapsed scenario days. The bounded
-  preparation window suits the small playable content volume without making
-  participants wait through days with little to do. Raise the content value as
-  content growth warrants a longer preparation loop; this is author tuning, not
-  automatic code-based scaling. Keep the day in scenario content under
+- **Wave day:** a bounded preparation window gives fortifying a reason without
+  scaling pressure to base wealth. The clock is author tuning, not a player pacing
+  choice; see `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
+- **Waves never end:** the intended endurance loop has no victory condition.
+  The expanded schedule is finite; exhausting it is the trigger for adding a repeating
+  event mechanism, not a reason to put a second clock in the session. Survival time
+  is not a pass threshold; see "Playtest questions and exit".
+- **Wave gap:** predictable arrivals leave room to plan excursions. Keep timing in
+  scenario content so a mod changes one authority; see
+  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+- **Repeat clock:** the gap counts from one arrival to the next, not from the end of
+  a fight. The saved scenario run's calendar then fixes the whole schedule, and no
+  rule has to decide when a fight with unloaded zombies has ended. Waves may
+  overlap; that is accepted pressure, not a defect.
+- **Wave target:** every wave heads for where the player stands when it fires, as
+  the first wave does. No shelter identity is needed, so an unattended base is never
+  attacked; unattended shelter defence waits on Slice 4b's region work.
+- **Escalation:** Jsonnet expands the authored escalation rows, repeating the last
+  row as a plateau rather than endless growth. Actor content owns strength; selecting
+  actor types avoids a second strength authority in wave effects. The engine receives
+  explicit event rows, never a competing wave-index formula. See
+  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+- **Arrival:** anchors keep placement choices in content while seeded draws let waves
+  probe different approaches. Runtime event rules need no knowledge of anchor kinds;
+  see `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
+
+### Settled base-building playtest rules
+
+The base-building playtest, the third playtest round, is scoped in #1332.
+
+- **Site:** a composed site lets the base-building playtest grow incrementally
+  without inheriting the gauntlet's city, hatch or map pool. Holdout disables authored
+  population markers so the forcing pressure is the wave schedule, not incidental
+  template occupants; see `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
+  `scenario`. The mansion stays deferred past this playtest under #1332.
+- **Supplies:** the site offers all three sources: rubble and take-apart of what
+  stands there, authored stockpiles at a distance, and loot tables. Salvage alone
+  starves the loop into dismantling the shelter to fix it, and loot alone makes
+  supply random; distant stockpiles give excursions a deliberate target.
+- **Supply sites:** #1332 adds independently authored asks for supply affordances,
+  rather than a fixed ring of POIs. Redundant sources keep imperfect seeds playable;
+  guarantee only source counts, not routes or distances. See
+  `packages/engine/src/core/composeLayout.ts`, `guaranteeIssues`.
+- **Stockpile distance:** #1332 gives the starter pile a strong near-start weight
+  and bulk supplies broader distance weights. Distances are preferences, not bands
+  or per-seed certificates, so a distant starter pile is variation rather than a
+  placement failure. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`.
+- **Bulk stock:** stacks of material are pieces taken apart through work. The
+  take-apart command comes first, so no bulk-stock piece is faked by bashing and
+  reworked once the command exists.
+- **Break yields:** every block material and piece yields materials when broken,
+  but breaking costs far more time per unit than looting stock, so looting stays
+  the efficient path and tearing down walls a slow fallback. The yields per
+  material and the time they cost are content under
   `PILLARS.md`, "Content forward compatibility" (repo root).
+- **Material loot usage:** building materials get a loot usage of their own, so a
+  hardware store or construction site keeps a place-specific promise and the stock
+  does not drift into workshop crates.
+- **Rubble:** fallen material stays solid until cleared, and clearing is the
+  take-apart command applied to rubble, so it waits on that command and adds no
+  second destruction verb; see
+  `DESIGN.md`, "Damage, destruction and dismemberment".
+- **Early session:** a first base-building session runs once world repair,
+  take-apart and the first wave work, before fire, power controls and the brute
+  land, because the building UI is what blocks this playtest and early feedback on
+  it is cheaper than a long wait. Slice exit still needs the whole slice; see
+  "Playtest questions and exit".
 
 ### Remaining event gate — issue #313
 
@@ -216,15 +283,14 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
 These are work packages, not new work-item IDs. Every stateful package includes
 validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
 
-1. **Readiness and decisions.** Run or explicitly reuse the slice-start consolidation
-   surveys from `EPIC.md`, "How each slice runs"; give findings owners and revisit
-   dates in the owning tracker. Close dependent gates and run the small spikes below.
-   Done when the implementation briefs can distinguish settled rules from blocked
-   choices and each performance claim has an owning benchmark.
+1. **Readiness and decisions: closed, except position triggers.** The construction,
+   destruction, wave and playtest choices this slice waited on are ruled; only
+   "Remaining event gate — issue #313" stays open, and it blocks no package. Run the
+   small spikes below where a package's claim has no owning benchmark yet.
 2. **Power network core: built.** Topology, cache invalidation, saved identity,
    split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
-   solar by time of day exist; see `src/core/powerGraph.ts`, `PowerGraph`,
-   `src/core/power.ts`, `PowerNetwork`, and `test/power.test.ts`. Graph mechanics stay
+   solar by time of day exist; see `packages/engine/src/core/powerGraph.ts`, `PowerGraph`,
+   `packages/engine/src/core/power.ts`, `PowerNetwork`, and `test/power.test.ts`. Graph mechanics stay
    separate from wire presentation and appliance content. Topology edits settle
    old-network time before reassignment so energy cannot be created by rewiring.
 3. **Construction and persistent placement.** Extend crafting/disassembly to world
@@ -256,16 +322,55 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
    lamps expose light consistently to rendering and attention. Show a window cover
    changing source visibility through the opening. BR approves flame/smoke readability and
    what the player can do about a burning shelter.
-7. **Event rules, scenario wave and region integration.** #313's rules and their
-   one-shot state are in `DESIGN.md`, "Scenario events". The playtest scenario
-   adopts the wave from `src/content/base/holding-wave.libsonnet`, `rule`, with its
-   own arrival point. Cross the catch-up horizon with a working and
+7. **Event rules, scenario waves and region integration.** #313's rules and their
+   one-shot state are built; see `DESIGN.md`, "Scenario events". Holdout's expanded
+   wave schedule uses seeded arrival anchors so approaches vary without a runtime
+   placement policy; see `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+   Grow the site's content and supplies under "Settled base-building playtest rules".
+   Cross the catch-up horizon with a working and
    a burning base. Prove canonical coarse outcomes, persisted damage, traps, processes
-   and nearby/background light attention. Exercise preparation, the wave and recovery
+   and nearby/background light attention. Exercise preparation, the waves and recovery
    with charged attacks and stagger available; ordinary ambient attention remains
    active but is not the scenario's pressure substitute. Run cross-browser replay
    and the owning weak-GPU performance benchmarks, then the playtest and slice-exit consolidation/deep docs
    pass. Passing a debug fixture is not completion.
+
+### Lanes and the next rounds
+
+The open packages run as four lanes, each one PR per round from main. Within a
+lane the order is a dependency; across lanes only the joins named here hold.
+
+- **Destruction.** No BR gate remains, so it starts now. Zombies bash terrain by
+  material strength first, so the brute wrecks walls through its strength rather than
+  an identity flag and ordinary types break doors only because door pieces sit below
+  their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
+  support with surface ground follows, and until collapse lands live play refuses a
+  blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
+  in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
+  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies to
+  be dug out by ordinary strikes and hurts every body, generating terrain on demand
+  wherever it reaches, so no region departure-and-return work precedes it; its PR
+  reports collapse time at the largest authored roof rather than gating on it. Blast
+  by share and breach charges follow, then furniture knock-out and push-off, which
+  replace the fall refusal with landing crush; see
+  `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
+- **Construction.** The radial action menu is built (`INTERFACE.md`, "HUD"); every
+  hold job (Repair, Take apart, Continue, Fortify) enters through it, on building parts
+  as on movable pieces (`DESIGN.md`, "Moving furniture"). Player-facing
+  world work, repair and take apart alike, is one design and queues behind the #1469
+  crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
+  bulk-stock pieces and rubble clearing under "Settled base-building playtest rules",
+  over the take-apart command (`packages/engine/src/core/craftCommands.ts`,
+  `CraftCommands.takeApartEntity`), then cell repair, placement and the kit content.
+- **Built systems.** Appliance controls and processes after placement; brute
+  knockback and displacement independently, since nothing above needs it; fire last,
+  under "Settled fire and exposure rules".
+- **Playtest pack.** Holdout grows from independently authored asks so each addition
+  can be retuned without city-shape constraints. #1332's supply affordances join the
+  construction lane's take-apart command because bulk stock and rubble clearing use
+  it; region proofs follow in package 7. Keep site tuning in content rather than
+  scenario-specific engine rules. See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
+  `scenario`, and `docs/url-mods.md`, "Committed scenarios".
 
 ## State and technical proof
 
@@ -275,8 +380,8 @@ boundaries, authoritative fire/smoke/attention state, trap armed/restraint/injur
 state, charged-action and stagger timing, and event rules' authoritative one-shot
 state. Disarm progress is not resumable after interruption.
 Derived connected components, occupancy and rendered lighting are rebuilt from
-truth, not independently editable saved totals. Extend `src/core/blockEntities.ts`,
-`BlockEntityState`, and `src/core/saveState.ts`, `SaveSnapshot`, at their ownership
+truth, not independently editable saved totals. Extend `packages/engine/src/core/blockEntities.ts`,
+`BlockEntityState`, and `packages/engine/src/core/saveState.ts`, `SaveSnapshot`, at their ownership
 boundaries. Do not invent migration promises.
 
 Unloaded is not synonymous with outside the simulation horizon. Follow
@@ -291,8 +396,8 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
 - **Coupled power/process catch-up:** use a tiny generator, battery, solar and load
   fixture with a mid-run rate change and wire split. Compare partitioned ticking,
   one catch-up and save/resume through depletion. Include the chosen deficit policy.
-  `src/core/needs.ts`, `stepNeeds`, demonstrates boundary splitting;
-  `src/core/food.ts`, `spoilage`, does not establish refrigeration history. Failure
+  `packages/engine/src/core/needs.ts`, `stepNeeds`, demonstrates boundary splitting;
+  `packages/engine/src/core/food.ts`, `spoilage`, does not establish refrigeration history. Failure
   blocks appliance integration, not a relaxation of the deterministic contract.
 - **Fire cost and light invalidation:** burn a small material boundary beside a
   doorway and then a connected larger surface, with smoke and lamps visible.
@@ -308,15 +413,15 @@ at rate changes so refrigeration or a blackout cannot rewrite earlier time.
   canonical coarse rule back to BR rather than using stream timing as an input.
 - **Construction and breach occupancy:** place and remove a door beside a populated
   container and a moving actor. Check movement, picking, sight and light after each
-  operation and restore. See `src/core/blockEntities.ts`, `BlockEntities`, and
-  `src/core/prying.ts`, `pryPlan`. The smallest proof catches stale occupancy before
+  operation and restore. See `packages/engine/src/core/blockEntities.ts`, `BlockEntities`, and
+  `packages/engine/src/core/prying.ts`, `pryPlan`. The smallest proof catches stale occupancy before
   a full building palette multiplies it.
 - **Lit-base crowd readability:** compare the same room with open, covered and
   breached windows at night and in daylight. Observe both rendered exposure and
-  zombie attention; neither can stand in for the other. See `src/core/lights.ts`,
-  `lightSenseSourceFor`, and `src/render/skylight.ts`, `Skylight`. Existing consumable
-  light depletion (`src/core/lights.ts`, `drainBurnLight`) and torch gas spending
-  (`src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
+  zombie attention; neither can stand in for the other. See `packages/engine/src/core/lights.ts`,
+  `lightSenseSourceFor`, and `packages/presentation/src/render/skylight.ts`, `Skylight`. Existing consumable
+  light depletion (`packages/engine/src/core/lights.ts`, `drainBurnLight`) and torch gas spending
+  (`packages/engine/src/core/torch.ts`, `spendFuel`) are not a world fire or smoke model.
 
 ## Playtest questions and exit
 

@@ -42,6 +42,13 @@ export class ImpulseJointSet {
     unmap(handle) {
         this.map.delete(handle);
     }
+    unmapRemovedJoints() {
+        for (let joint of this.map.getAll()) {
+            if (!this.raw.contains(joint.handle)) {
+                this.map.delete(joint.handle);
+            }
+        }
+    }
     len() {
         return this.map.len();
     }

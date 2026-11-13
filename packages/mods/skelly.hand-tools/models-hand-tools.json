@@ -1,0 +1,416 @@
+{
+  "models": [
+    {
+      "file": "assets/models/sewing_kit.glb",
+      "id": "sewing_kit",
+      "itemPresentation": {
+        "materials": ["polymer", "cloth", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/blowtorch.glb",
+      "grip": {
+        "at": [0, 0.065000000000000002, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "blowtorch",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [-1.3123359580052496e-5, 0.078412073490813652, 0.0038188976377952761],
+          "massKg": 0.90000000000000002,
+          "node": "equipment:blowtorch"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/repair_kit.glb",
+      "grip": {
+        "at": [-0.095000000000000001, 0.02, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "repair_kit",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [-0.0025266272189349115, 0.014928994082840237, 0.0015917159763313604],
+          "massKg": 1.25,
+          "node": "equipment:repairKit"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/wire_strippers.glb",
+      "grip": {
+        "at": [0.02, 0.0050000000000000001, 0.050000000000000003],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "wire_strippers",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [1.3234889800848438e-19, 0.0018, 0.1144],
+          "massKg": 0.17999999999999999,
+          "node": "equipment:pliers"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/adjustable_pliers.glb",
+      "grip": {
+        "at": [0.02, 0, 0.060000000000000005],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "adjustable_pliers",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [7.5462090969749902e-19, 0.0016666666666666674, 0.10464912280701757],
+          "massKg": 0.29999999999999999,
+          "node": "equipment:pliers"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/sewing_repair_kit.glb",
+      "grip": {
+        "at": [-0.084999999999999992, 0.014999999999999999, 0],
+        "turn": [0, -90, 0]
+      },
+      "hold": "forward",
+      "id": "sewing_repair_kit",
+      "itemPresentation": {
+        "materials": ["metal", "cloth", "polymer", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "equipment": {
+          "centreOfMass": [-0.0010357142857142856, 0.013035714285714286, -9.4534927148917416e-20],
+          "massKg": 0.41999999999999998,
+          "node": "equipment:repairKit"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/hand_saw.glb",
+      "grip": {
+        "at": [0, 0, 0.016],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "hand_saw",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hand_saw": {
+          "centreOfMass": [0, 0, 0.14269000000000001],
+          "massKg": 0.65000000000000002,
+          "node": "hand_saw:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "file": "assets/models/screwdriver.glb",
+      "grip": {
+        "at": [0, 0, 0.052999999999999999],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "screwdriver",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "screwdriver": {
+          "centreOfMass": [0, 0, 0.062938864628820965],
+          "massKg": 0.16,
+          "node": "screwdriver:compound"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
+        "claw": [0, -0.129, 0.10499999999996801],
+        "strike": [0, 8.0074835651089415e-15, 0.23060000000002401]
+      },
+      "file": "assets/models/crowbar.glb",
+      "grip": {
+        "at": [0, 0, -0.30000000000010002],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "crowbar",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "crowbar": {
+          "centreOfMass": [0, -0.01135251798561151, -0.079688987271721093],
+          "massKg": 1.5,
+          "node": "crowbar:crowbar"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
+        "claw": [0, 0.10000000000000001, 0.064235294117664002],
+        "face": [-0.0021818181818400034, -0.10000000000000001, 0.048352941176496009],
+        "strike": [0, 0.0021333333333120041, 0.096000000000000002]
+      },
+      "file": "assets/models/hammer.glb",
+      "grip": {
+        "at": [0, 0, -0.184999999999856],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "hammer",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hammer": {
+          "centreOfMass": [0, -0.0094473645573337223, -0.0012870356775803926],
+          "massKg": 0.69999999999999996,
+          "node": "hammer:hammer"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
+        "face": [0, -0.095000000000064005, 0.036142857142840004],
+        "strike": [0, 0, 0.064000000000000001]
+      },
+      "file": "assets/models/sledgehammer.glb",
+      "grip": {
+        "at": [0, 0, -0.45000000000020796],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "sledgehammer",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "sledgehammer": {
+          "centreOfMass": [0, 0, -0.20403808128890519],
+          "massKg": 4.5,
+          "node": "sledgehammer:sledgehammer"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
+        "strike": [0, 0.012, 0.10400000000000001]
+      },
+      "file": "assets/models/wrench.glb",
+      "grip": {
+        "at": [0, 0, -0.074999999999872002],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "wrench",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "wrench": {
+          "centreOfMass": [0, 0.0079310344827586195, 0.0033004926108374435],
+          "massKg": 0.5,
+          "node": "wrench:wrench"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
+        "needle_mount": [0, 0.01, 0]
+      },
+      "dial": {
+        "face": "paint-cream",
+        "ink": "plastic-black",
+        "markHeight": 0.29999999999999999,
+        "marks": ["N", "E", "S", "W"],
+        "needleLength": 0.59999999999999998,
+        "needleWidth": 0.20000000000000001,
+        "north": "plastic-red",
+        "south": "plastic-black"
+      },
+      "display": {
+        "at": [0, 0.01, 0],
+        "normal": [0, 1, 0],
+        "size": [0.040000000000000001, 0.040000000000000001],
+        "up": [0, 0, -1]
+      },
+      "file": "assets/models/compass.glb",
+      "grip": {
+        "at": [0, 0.0050000000000000001, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "compass",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "compass": {
+          "centreOfMass": [0, 0.0055882352941176465, -0.001764705882352941],
+          "massKg": 0.12,
+          "node": "compass:compass"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/scissor_jack.glb",
+      "id": "scissor_jack",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jack": {
+          "centreOfMass": [0.004713114754098361, 0.040204918032786884, 0.0017213114754098368],
+          "massKg": 3.2000000000000002,
+          "node": "jack:scissorJack"
+        }
+      }
+    },
+    {
+      "file": "assets/models/bottle_jack.glb",
+      "id": "bottle_jack",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jack": {
+          "centreOfMass": [0.00026387009472259813, 0.077354533152909341, 0],
+          "massKg": 5.5,
+          "node": "jack:bottleJack"
+        }
+      }
+    },
+    {
+      "file": "assets/models/engine_hoist.glb",
+      "id": "engine_hoist",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jack": {
+          "centreOfMass": [0.30318332001065817, 0.73679802824407159, 4.3333420163289549e-18],
+          "massKg": 48,
+          "node": "jack:engineHoist"
+        }
+      }
+    },
+    {
+      "file": "assets/models/whetstone.glb",
+      "grip": {
+        "at": [0, 0.014999999999999999, 0],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "whetstone",
+      "itemPresentation": {
+        "materials": ["mineral"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "material": {
+          "centreOfMass": [0, 0.014999999999999998, 0],
+          "massKg": 0.25,
+          "node": "material:cutStock"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

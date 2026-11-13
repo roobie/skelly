@@ -1,15 +1,10 @@
 import { readFileSync } from 'node:fs';
+import { paperMapAt } from '@skelly/engine/internal/core/paperMap.ts';
+import { ignitionTargetForHand } from '@skelly/engine/internal/game/primaryAction.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character, dominantSide, offSide, Survival, selectPrimaryAction } from '@skelly/engine/sim';
+import { primaryActionHint } from '@skelly/presentation/internal/ui/primaryActionHint.ts';
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide } from '../src/core/character.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { paperMapAt } from '../src/core/paperMap.ts';
-import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { meleeWeaponFromContent } from '../src/game/melee.ts';
-import { ignitionTargetForHand, repeatSingleAction, selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { Survival } from '../src/game/survival.ts';
-import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -30,6 +25,8 @@ const capabilities = [
     kind: 'melee',
     weapon: {
       melee: {
+        swingSound: 'gunshot',
+        hitSound: 'gunshot',
         motion: 'swing',
         damage: 1,
         reach: 1,
@@ -57,6 +54,7 @@ const capabilities = [
       dispersionRadians: 0.01,
       pelletSpreadScale: 1,
       shotSound: 'gunshot',
+      rackSound: 'gunshot',
       handling: {},
     },
     twoHanded: true,
@@ -103,10 +101,17 @@ const capabilities = [
 const { registry, issues } = buildRegistry([
   playerInventorySource(),
   {
-    source: '../content/base/sounds.json',
-    data: JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown,
+    source: '../../mods/skelly.deadvox.actors/actors-sounds.json',
+    data: JSON.parse(readFileSync('mods/skelly.deadvox.actors/actors-sounds.json', 'utf8')) as unknown,
   },
-  { source: '../content/base/ui.json', data: JSON.parse(readFileSync('src/content/base/ui.json', 'utf8')) as unknown },
+  {
+    source: '../../../mods/skelly.firearms/sounds-firearms.json',
+    data: JSON.parse(readFileSync('../mods/skelly.firearms/sounds-firearms.json', 'utf8')) as unknown,
+  },
+  {
+    source: '../../../mods/skelly.ui/ui.json',
+    data: JSON.parse(readFileSync('../mods/skelly.ui/ui.json', 'utf8')) as unknown,
+  },
   {
     source: 'hand-action-fixture',
     data: {
@@ -188,51 +193,6 @@ const survivalFor = (inventory: Inventory) => {
     },
   });
 };
-
-describe('single-action repetition', () => {
-  const combatOwner = () =>
-    new PlayerCombat({
-      resolvePlayerMelee: () => false,
-      playPlayerMeleeSwing: () => undefined,
-    });
-  const weapon = meleeWeaponFromContent(registry.items.get(capabilities[0].id)!.weapon!.melee!);
-  const hands = { right: 1, left: null };
-  const startSwing = (combat: PlayerCombat): boolean =>
-    combat.beginMeleeSwing({
-      origin: [0, 0, 0],
-      direction: [0, 0, -1],
-      weapon,
-      profile: 'blunt',
-      twoHanded: false,
-      hands,
-    });
-
-  it('waits for the melee owner before dispatching another recorded action', () => {
-    const combat = combatOwner();
-    const recorded: string[] = [];
-    expect(startSwing(combat)).toBe(true);
-    repeatSingleAction({}, { kind: 'melee' }, combat, () => recorded.push('hand.action'));
-    expect(recorded).toEqual([]);
-    combat.tick(weapon.cooldown, hands);
-    expect(combat.activeMeleeAction).toBeUndefined();
-    repeatSingleAction({}, { kind: 'melee' }, combat, () => recorded.push('hand.action'));
-    expect(recorded).toEqual(['hand.action']);
-  });
-
-  it('does not make an unrelated action owner wait for a melee swing', () => {
-    const combat = combatOwner();
-    const recorded: string[] = [];
-    expect(startSwing(combat)).toBe(true);
-    repeatSingleAction({}, { kind: 'magazine' }, combat, () => recorded.push('hand.action'));
-    expect(recorded).toEqual(['hand.action']);
-  });
-
-  it('suppresses an authored holdRepeat false even when the owner is ready', () => {
-    const recorded: string[] = [];
-    repeatSingleAction({ holdRepeat: false }, { kind: 'melee' }, combatOwner(), () => recorded.push('hand.action'));
-    expect(recorded).toEqual([]);
-  });
-});
 
 describe('held-item hand action', () => {
   it.each([

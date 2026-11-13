@@ -8,12 +8,62 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installScopedGun } from './scoped-gun.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const sharedKit = [
+  { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+  { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+  { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+  { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+  { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+  { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+];
+const sharedRecipes = [
+  'torch',
+  'candle',
+  'repair_kit',
+  'repair_crowbar',
+  'sawn_plank',
+  'door_bar',
+  'make_rope',
+  'grind_kitchen_knife',
+  'hone_kitchen_knife',
+  'grind_kabar',
+  'hone_kabar',
+  'grind_machete',
+  'hone_machete',
+];
+// The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle.
+const houseNightMod = inlineStartMod('fixture.primary-action-pixel.house-night', {
+  density: null,
+  id: 'primary_action_pixel_house_night_start',
+  kit: sharedKit,
+  recipes: sharedRecipes,
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '23:30',
+  storeys: 1,
+  wounds: [],
+});
+const lakeNoonMod = inlineStartMod('fixture.primary-action-pixel.lake', {
+  density: null,
+  id: 'primary_action_pixel_lake_start',
+  kit: sharedKit,
+  recipes: sharedRecipes,
+  seed: 1,
+  site: 'lake_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+});
 const [, , group] = process.argv;
 assert.ok(['held', 'optic-zoom', 'optic-sights', 'lake'].includes(group), 'choose a pixel contract group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
@@ -48,7 +98,8 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
       await decoded.decode();
       const x = Math.round(((point.x + 1) / 2) * decoded.naturalWidth);
       const y = Math.round(((1 - point.y) / 2) * decoded.naturalHeight);
-      const radius = 6;
+      // Sized for the test house's 640x360 viewport: a software-rendered frame costs time in proportion to its pixels.
+      const radius = 3;
       if (x < radius || y < radius || x + radius >= decoded.naturalWidth || y + radius >= decoded.naturalHeight) {
         throw new Error(`Floor sample projects outside the canvas: ${x},${y}`);
       }
@@ -72,14 +123,17 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
 // Puts a compass in the dominant hand by daylight and counts how many pixels of the square around
 // its card differ visibly between the first frame that shows the card and the next frame, drawn
 // with only the card hidden. A page screenshot costs seconds per frame on the software renderer in
-// CI, so this reads the drawing buffer after the optical adapter, the frame's last draw, in one
-// page call. The shown window also comes back as a PNG for the artifact.
+// CI, so this reads the drawing buffer in one page call, each image once its frame's draws have
+// finished; on the held layer's stack the frame is not complete below render scale 1
+// (render/screenScale.ts, ScreenScale.render), and the unrendered strips' artifacts would count as
+// card changes, letting a missing card pass. The shown window also comes back as a PNG for the
+// artifact.
 const heldCompassCardChange = (page) =>
   page.evaluate((noon) => {
     const r = globalThis.primaryActionTest;
     const { sim } = r.session;
     sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
-    r.input.pitch = 0;
+    r.input.controls.pitch = 0;
     r.setHand(r.dominant, r.inventory.create('compass'));
     const { held } = r.view;
     const { scene, camera } = r.engine;
@@ -136,11 +190,17 @@ const heldCompassCardChange = (page) =>
           held.render = render;
           failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
         } else if (dial?.visible === true && !shown) {
-          shown = read(dial);
-          dial.visible = false;
+          // A microtask, not this stack: it runs once the frame callback (the upscale included)
+          // has returned, and still before the next frame can change the buffer.
+          queueMicrotask(() => {
+            shown = read(dial);
+            dial.visible = false;
+          });
         } else if (dial?.visible === false && shown) {
           held.render = render;
-          drawn(compare(shown, read(dial)));
+          queueMicrotask(() => {
+            drawn(compare(shown, read(dial)));
+          });
         }
       };
     });
@@ -150,7 +210,7 @@ const heldCompassCardChange = (page) =>
 const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
-  r.input.pitch = 0;
+  r.input.controls.pitch = 0;
   const { sim } = r.session;
   sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
   if (withGear) {
@@ -158,22 +218,17 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       inventory.add(inventory.create(wear), { kind: 'worn' });
     }
   }
-  const rifle = rifleUid === undefined ? inventory.create(gunType) : inventory.itemByUid(rifleUid);
-  const scope = inventory.create(opticType);
-  const definition = inventory.registry.items.get(gunType);
-  const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
-  const fitOptic = () => {
-    for (const slot of stations) {
-      try {
-        inventory.fitSlot(rifle, slot, scope);
-        return;
-      } catch {
-        // Another station may fit.
-      }
-    }
-    throw new Error(`Could not fit ${opticType}`);
-  };
-  fitOptic();
+  // The first optic is fitted with its gun, stripped of its sights; later ones replace their predecessor.
+  let rifle;
+  let scope;
+  if (rifleUid === undefined) {
+    rifle = r.scopedGunAtAnyStation(gunType, opticType);
+    scope = Object.values(rifle.slots).find((child) => child?.type === opticType);
+  } else {
+    rifle = inventory.itemByUid(rifleUid);
+    scope = inventory.create(opticType);
+    r.fitAtAnyStation(rifle, scope);
+  }
   r.setHand(r.dominant, rifle);
   if (r.debugGunPose.mode !== 'ads') {
     r.debugGunPose.toggle('ads');
@@ -372,40 +427,76 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
   });
 };
 
-const visorRatio = (page, shot) =>
-  page.evaluate(async (base64) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${base64}`;
-    await image.decode();
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width;
-    canvas.height = image.height;
-    const context = canvas.getContext('2d');
-    context.drawImage(image, 0, 0);
-    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    let edge = 0;
-    let edgeCount = 0;
-    let centre = 0;
-    let centreCount = 0;
-    const inCentre = (value) => value > 0.4 && value < 0.6;
-    for (let offset = 0; offset < data.length; offset += 4) {
-      const pixel = offset / 4;
-      const nx = (pixel % canvas.width) / canvas.width;
-      const ny = Math.floor(pixel / canvas.width) / canvas.height;
-      const light = data[offset] + data[offset + 1] + data[offset + 2];
+// Puts a helmet on and takes it off, reading the edge/centre ratio of the frames either side. The reads sit a few
+// frames apart because reads seconds apart can see a different daylit scene, and they use the drawing buffer because
+// a page screenshot costs seconds on CI's software renderer. Each read runs once the frame's draws have finished:
+// below render scale 1 the scene is drawn into a sub-viewport that only a later upscale covers
+// (render/screenScale.ts, ScreenScale.render), so a read on the held layer's stack would measure the unrendered
+// strips, and the adaptive scale's step changes between reads would pass for a scene change.
+const visorRatios = (page) =>
+  page.evaluate(async () => {
+    const r = globalThis.primaryActionTest;
+    const { held } = r.view;
+    const visorParent = held.warmUpTarget.camera;
+    const gl = r.engine.renderer.getContext();
+    const bandOf = (nx, ny) => {
       if (nx < 0.06 || nx > 0.94 || ny < 0.06) {
-        edge += light;
-        edgeCount += 1;
-      } else if (inCentre(nx) && inCentre(ny)) {
-        centre += light;
-        centreCount += 1;
+        return 'edge';
       }
+      return nx > 0.4 && nx < 0.6 && ny > 0.4 && ny < 0.6 ? 'centre' : undefined;
+    };
+    const ratio = () => {
+      const width = gl.drawingBufferWidth;
+      const height = gl.drawingBufferHeight;
+      const data = new Uint8Array(width * height * 4);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      const sums = { edge: { light: 0, count: 0 }, centre: { light: 0, count: 0 } };
+      for (let offset = 0; offset < data.length; offset += 4) {
+        const pixel = offset / 4;
+        // The buffer's rows run bottom to top.
+        const band = bandOf((pixel % width) / width, 1 - Math.floor(pixel / width) / height);
+        if (band) {
+          sums[band].light += data[offset] + data[offset + 1] + data[offset + 2];
+          sums[band].count += 1;
+        }
+      }
+      return sums.edge.light / sums.edge.count / (sums.centre.light / sums.centre.count);
+    };
+    const nextFrame = () =>
+      new Promise((drawn) => {
+        const { render } = held;
+        held.render = (...args) => {
+          render.apply(held, args);
+          held.render = render;
+          // A microtask, not this stack: it runs once the frame callback (the upscale included)
+          // has returned, and still before any other task can touch the buffer.
+          queueMicrotask(() => {
+            drawn(ratio());
+          });
+        };
+      });
+    // The frame after the visor's state is seen, so the read cannot land before it is drawn.
+    const onceVisor = async (count) => {
+      for (let frames = 0; frames < 30; frames += 1) {
+        if (visorParent.children.length === count) {
+          return nextFrame();
+        }
+        await nextFrame();
+      }
+      throw new Error(`The held camera did not reach ${count} visor children within 30 frames`);
+    };
+    const baseline = await nextFrame();
+    const helmet = r.inventory.create('riot_helmet');
+    if (!r.inventory.add(helmet, { kind: 'worn' })) {
+      throw new Error('Could not wear helmet fixture');
     }
-    if (!(centre > 0 && edge > 0)) {
-      throw new Error('Visor comparison needs a visible scene');
+    const worn = await onceVisor(1);
+    const removed = r.inventory.move(helmet, { kind: 'pile', pos: r.feet() });
+    if (!removed.ok) {
+      throw new Error(removed.reason);
     }
-    return edge / edgeCount / (centre / centreCount);
-  }, shot.toString('base64'));
+    return { baseline, worn, restored: await onceVisor(0) };
+  });
 
 const fakePointerLock = () => {
   let locked = false;
@@ -424,11 +515,20 @@ const fakePointerLock = () => {
   };
 };
 
-// Returns the parts of world readiness once all hold or loading has failed, or always when asked,
-// so a failed or timed-out wait names the part that stayed false.
-const worldReadiness = (always) => {
+// Every wait in this stage follows a page load or a software-rendered frame, whose duration scales with machine
+// load, so a Playwright timer only turns a busy runner into a failure. A hung wait ends at the CI step's
+// `timeout-minutes` (`.github/workflows/deadvox-browser.yml`) or, run through `test:ui-browser`, at its `timeout`
+// (`packages/deadvox/package.json`, "test:ui-browser"). `timePhase` logs each phase's start and `enterWorld` each
+// readiness change, so the last lines before a kill name the stuck phase and the part that stayed false.
+const newStagePage = async (chromium, viewport) => {
+  const page = await chromium.newPage({ viewport });
+  page.setDefaultTimeout(0);
+  return page;
+};
+
+const readinessParts = () => {
   const mask = document.querySelector('#world-loading');
-  const parts = {
+  return {
     testHook: Boolean(globalThis.primaryActionTest),
     overlayHidden: document.querySelector('#overlay')?.hidden === true,
     pointerLocked: Boolean(document.pointerLockElement),
@@ -436,44 +536,67 @@ const worldReadiness = (always) => {
     loadingMessage: mask?.querySelector('#world-loading-message')?.textContent,
     maskHidden: mask?.hidden === true,
   };
-  const ready =
-    parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
-  return always || ready || parts.worldLoading === 'failed' ? parts : false;
 };
 
+const isEntered = (parts) =>
+  parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.worldLoading === 'ready' && parts.maskHidden;
+
+const READINESS_POLL_MS = 250;
+
+// Polls until the world is entered or its load has failed, logging each change of the parts.
 const enterWorld = async (page) => {
   await page.locator('#go').click();
   let parts;
-  try {
-    parts = await (await page.waitForFunction(worldReadiness, false)).jsonValue();
-  } catch (error) {
-    if (error.name !== 'TimeoutError') {
-      throw error;
+  let logged;
+  do {
+    parts = await page.evaluate(readinessParts);
+    const line = JSON.stringify(parts);
+    if (line !== logged) {
+      process.stdout.write(`WORLD_READINESS ${line}\n`);
+      logged = line;
     }
-    parts = await page.evaluate(worldReadiness, true);
-  }
+    if (!isEntered(parts) && parts.worldLoading !== 'failed') {
+      await new Promise((done) => setTimeout(done, READINESS_POLL_MS));
+    }
+  } while (!isEntered(parts) && parts.worldLoading !== 'failed');
   assert.equal(parts.worldLoading, 'ready', `the world becomes ready: ${JSON.stringify(parts)}`);
-  assert.ok(
-    parts.testHook && parts.overlayHidden && parts.pointerLocked && parts.maskHidden,
-    `the ready world is entered: ${JSON.stringify(parts)}`,
-  );
+  assert.ok(isEntered(parts), `the ready world is entered: ${JSON.stringify(parts)}`);
 };
 
 const enterTestHouse = async (chromium, port) => {
-  const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
+  const page = await newStagePage(chromium, { width: 640, height: 360 });
   const pageErrors = [];
   page.on('pageerror', (error) => {
     pageErrors.push(error.message);
     process.stdout.write(`PAGE_ERROR ${error.stack}\n`);
   });
   await page.addInitScript(fakePointerLock);
+  // At this viewport the HUD's quickbar covers the floor sample, and its pixels would drown the glow.
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const hudless = document.createElement('style');
+      hudless.textContent = '#hud, #quickbar, #prompt { visibility: hidden }';
+      document.head.append(hudless);
+    });
+  });
   await timePhase('testHouse-pixel-boot', async () => {
     await page.goto(
       browserStageUrl(
         'primary-action-pixel',
-        // The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle. It starts on the path's
-        // open ground facing east, away from the showroom deck and its props, so the floor sample sees bare ground.
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=23:30&at=-4,-0.5,-90&post=0&sunshadow=0&torchshadow=0`,
+        // The view starts on the path's open ground facing east, away from the showroom deck and its props, so the
+        // floor sample sees bare ground.
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNightMod,
+          hash: {
+            debug: true,
+            seed: 73,
+            radius: 32,
+            at: [-4, -0.5, -90],
+            post: false,
+            sunshadow: false,
+            torchshadow: false,
+          },
+        }),
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -489,10 +612,10 @@ const enterTestHouse = async (chromium, port) => {
 
 const heldItemChecks = async (chromium, port) => {
   const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
-  const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
+  await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.pitch = -0.55;
+      r.input.controls.pitch = -0.55;
       const item = r.inventory.create('glowstick');
       if (!r.inventory.add(item, { kind: 'pile', pos: r.feet() })) {
         throw new Error('Could not place dropped-glowstick pixel fixture');
@@ -517,7 +640,7 @@ const heldItemChecks = async (chromium, port) => {
       return r.frames;
     }, fixture.uid);
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
-    const { measurement: on, screenshot } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
+    const { measurement: on } = await measureGlowstickFloor(page, fixture.uid, 'on', capture);
     assert.equal(on.on, true);
     process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
     assert.ok(
@@ -525,10 +648,21 @@ const heldItemChecks = async (chromium, port) => {
       'a dropped lit glowstick visibly brightens nearby floor pixels at night',
     );
     assert.deepEqual(pageErrors, []);
-    return screenshot;
   });
   await timePhase('worn-helmet-assertions', async () => {
-    const baseline = await visorRatio(page, baselineShot);
+    // A visor paints its own tint, which outshines a night scene: only a band with daylight on it can be darkened.
+    const noonFrame = await page.evaluate((noon) => {
+      const r = globalThis.primaryActionTest;
+      const { sim } = r.session;
+      sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
+      return r.frames;
+    }, 12 * 3600);
+    await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, noonFrame);
+    const { baseline, worn, restored } = await visorRatios(page);
+    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
+    assert.ok(baseline > 0 && Number.isFinite(baseline), 'the visor comparison needs a visible scene');
+    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
+    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     const uid = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const item = r.inventory.create('riot_helmet');
@@ -541,8 +675,6 @@ const heldItemChecks = async (chromium, port) => {
       const r = globalThis.primaryActionTest;
       return r.view.held.warmUpTarget.camera.children.length > 0;
     });
-    const worn = await visorRatio(page, await capture());
-    assert.ok(worn < baseline * 0.9, 'wearing the visor darkens the outer band relative to the centre');
     await page.evaluate(() => globalThis.primaryActionTest.thirdPerson.toggle());
     await page.waitForFunction(() => {
       const attachment = globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-head');
@@ -562,9 +694,6 @@ const heldItemChecks = async (chromium, port) => {
         !r.view.playerMeshes.group.getObjectByName('worn-head') && r.view.held.warmUpTarget.camera.children.length === 0
       );
     });
-    const restored = await visorRatio(page, await capture());
-    process.stdout.write(`Visor edge/centre ratios: ${JSON.stringify({ baseline, worn, restored })}\n`);
-    assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
   await timePhase('own-head-mask-assertions', async () => {
@@ -600,7 +729,7 @@ const heldItemChecks = async (chromium, port) => {
           };
         });
       }
-      r.input.pitch = -1.3;
+      r.input.controls.pitch = -1.3;
       return r.frames;
     });
     await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, frame);
@@ -610,7 +739,7 @@ const heldItemChecks = async (chromium, port) => {
     assert.ok(own.body > 0, 'looking down draws the canonical world legs');
     const externalFrame = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.input.pitch = 0;
+      r.input.controls.pitch = 0;
       r.thirdPerson.toggle();
       return r.frames;
     });
@@ -624,7 +753,7 @@ const heldItemChecks = async (chromium, port) => {
         throw new Error(result.reason);
       }
       r.thirdPerson.toggle();
-      r.input.pitch = -0.55;
+      r.input.controls.pitch = -0.55;
     }, uid);
   });
   await timePhase('held-compass-pixel-assertion', async () => {
@@ -650,25 +779,10 @@ const heldItemChecks = async (chromium, port) => {
 // back and samples until the acquisition completes. Runs inside the page.
 const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
-  const { inventory, session } = r;
-  r.input.pitch = 0;
-  const rifle = inventory.create('rifle_assault');
+  const { session } = r;
+  r.input.controls.pitch = 0;
+  const rifle = r.scopedGunAtAnyStation('rifle_assault', 'optic_fixed_prism_4x');
   r.setHand(r.dominant, rifle);
-  const scope = inventory.create('optic_fixed_prism_4x');
-  const stations = inventory.registry.models
-    .get(inventory.registry.items.get(rifle.type).model)
-    .gun.attachmentSlots.map(({ id }) => id);
-  const fitted = stations.some((slot) => {
-    try {
-      return inventory.fitSlot(rifle, slot, scope);
-    } catch {
-      // Another station may fit.
-      return false;
-    }
-  });
-  if (!fitted) {
-    throw new Error('Could not fit the acquisition fixture optic');
-  }
   if (r.debugGunPose.mode !== 'hip') {
     r.debugGunPose.toggle('hip');
   }
@@ -783,6 +897,7 @@ const opticZoomCheck = async (chromium, port) => {
   // One session also exercises clearing masks when switching between optic presentations.
   // The short-relief prism also protects the world camera's near-plane boundary.
   const { page } = await enterTestHouse(chromium, port);
+  await installScopedGun(page);
   // The optic's sight picture must arrive with the acquisition motion, not on the toggle's frame.
   await timePhase('ads-acquisition-motion', async () => {
     const acquisition = await page.evaluate(adsAcquisitionMotionRecord);
@@ -908,103 +1023,263 @@ const opticZoomCheck = async (chromium, port) => {
   await page.close();
 };
 
+// Opens the lake scenario with the camera over the basin centre, so the small startup ring is the lake, and
+// enters the world. `hash` adds to the stage's own settings.
+const openLake = async (chromium, port, hash) => {
+  const page = await newStagePage(chromium, { width: 640, height: 400 });
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.addInitScript(fakePointerLock);
+  const { layouts } = JSON.parse(
+    await readFile(resolve(projectRoot, 'mods/skelly.deadvox.scenario.water/layouts-water.json'), 'utf8'),
+  );
+  const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
+  const [centreX, centreZ] = lakeLayout.terrain[0].centre;
+  const cam = [centreX, lakeLayout.water[0].level + 2, centreZ, 0, 89, 0];
+  await timePhase('lake-menu', async () => {
+    await page.goto(
+      browserStageUrl(
+        'primary-action-pixel',
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: lakeNoonMod,
+          hash: { debug: true, seed: 1, radius: 16, cam, freeze: true, sunshadow: false, torchshadow: false, ...hash },
+        }),
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  });
+  await timePhase('lake-enter', () => enterWorld(page));
+  return { page, errors };
+};
+
+// Installs `globalThis.lakeLook(eyeAt, pitch, yaw)` in the page: puts the camera at a height over the basin centre,
+// looking at a pitch (and a yaw, when given), and resolves with the centre pixel, the pixel `BESIDE_PIXELS` to its
+// right and the chunk depth of the second frame after the move
+// (so the camera has followed the body). The game is frozen, so a placed body stays put. The software renderer
+// draws a frame or two a second, so every view is read inside one render hook, not awaited. It reads the drawing
+// buffer right after the mood pass, the frame's last draw, so post on and off are both read as the player sees
+// them; the HUD is DOM, not in it.
+const installLakeLook = async (beside) => {
+  // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
+  const { centreDepth } = await import('/test/browser/water-depth.ts');
+  const r = globalThis.primaryActionTest;
+  const { engine } = r;
+  const { body } = r.session;
+  const s = r.scale.blockSize;
+  const layout = engine.registry.layouts.get('lake_demo');
+  const [x, z] = layout.terrain[0].centre;
+  const eye = engine.camera.position.y - body.pos[1] * s;
+  const gl = engine.renderer.getContext();
+  const pixelAt = (dx) => {
+    const pixel = new Uint8Array(4);
+    gl.readPixels(
+      (gl.drawingBufferWidth >> 1) + dx,
+      gl.drawingBufferHeight >> 1,
+      1,
+      1,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      pixel,
+    );
+    return { r: pixel[0], g: pixel[1], b: pixel[2] };
+  };
+  globalThis.lakeLook = (eyeAt, pitch, yaw) =>
+    new Promise((done) => {
+      body.pos = [x / s, (eyeAt - eye) / s, z / s];
+      body.vel = [0, 0, 0];
+      r.input.controls.pitch = pitch;
+      if (yaw !== undefined) {
+        r.input.controls.yaw = yaw;
+      }
+      const { mood } = engine;
+      const { render } = mood;
+      let renders = 0;
+      mood.render = (...args) => {
+        render.apply(mood, args);
+        renders += 1;
+        if (renders < 2) {
+          return;
+        }
+        mood.render = render;
+        done({
+          cameraY: engine.camera.position.y,
+          colour: pixelAt(0),
+          beside: pixelAt(beside),
+          depth: centreDepth(engine),
+        });
+      };
+    });
+  return layout.water[0].level;
+};
+
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
 // a pixel magenta, so a camera under the water looking straight up sees magenta exactly when the
 // surface's underside is missing or wound away from it. Looking down or level would pass on the bed.
-const lakeSurfaceCheck = (chromium, port) =>
-  timePhase('underwater-surface-pixels', async () => {
-    const lake = await chromium.newPage({ viewport: { width: 640, height: 400 } });
-    try {
-      const lakeErrors = [];
-      lake.on('pageerror', (error) => lakeErrors.push(error.message));
-      await lake.addInitScript(fakePointerLock);
-      // Start over the basin centre, so the small startup ring is the lake.
-      const { layouts } = JSON.parse(
-        await readFile(resolve(projectRoot, 'src/content/base/layouts-water.json'), 'utf8'),
-      );
-      const lakeLayout = layouts.find(({ id }) => id === 'lake_demo');
-      const [centreX, centreZ] = lakeLayout.terrain[0].centre;
-      const cam = `${centreX},${lakeLayout.water[0].level + 2},${centreZ},0,89,0`;
-      await timePhase('lake-menu', async () => {
-        await lake.goto(
-          browserStageUrl(
-            'primary-action-pixel',
-            `http://127.0.0.1:${port}/?debug=1&seed=1&site=lake_demo&radius=16&time=12:00&freeze=1&crackcheck=1&post=0&sunshadow=0&torchshadow=0&cam=${cam}`,
-          ),
-        );
-        await lake.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-      });
-      await timePhase('lake-enter', () => enterWorld(lake));
-      // The game is frozen, so a placed body stays put while the camera keeps following it. The software
-      // renderer draws a frame or two a second, so every view is read inside one render hook, not awaited.
-      const { level, sky, under, above } = await lake.evaluate(async () => {
-        // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
-        const { centreDepth } = await import('/test/browser/water-depth.ts');
-        const r = globalThis.primaryActionTest;
-        const { engine } = r;
-        const { body } = r.session;
-        const s = r.scale.blockSize;
-        const layout = engine.registry.layouts.get('lake_demo');
-        const [x, z] = layout.terrain[0].centre;
-        const eye = engine.camera.position.y - body.pos[1] * s;
-        const gl = engine.renderer.getContext();
-        // Reads the drawing buffer right after the held layer, the frame's last draw; the HUD is DOM, not in it.
-        // The second frame after the move is read, so the camera has followed the body.
-        const look = (eyeAt, pitch) =>
-          new Promise((done) => {
-            body.pos = [x / s, (eyeAt - eye) / s, z / s];
-            body.vel = [0, 0, 0];
-            r.input.pitch = pitch;
-            const { held } = r.view;
-            const { render } = held;
-            let renders = 0;
-            held.render = (...args) => {
-              render.apply(held, args);
-              renders += 1;
-              if (renders < 2) {
-                return;
-              }
-              held.render = render;
-              const pixel = new Uint8Array(4);
-              gl.readPixels(
-                gl.drawingBufferWidth >> 1,
-                gl.drawingBufferHeight >> 1,
-                1,
-                1,
-                gl.RGBA,
-                gl.UNSIGNED_BYTE,
-                pixel,
-              );
-              const colour = { r: pixel[0], g: pixel[1], b: pixel[2] };
-              done({ cameraY: engine.camera.position.y, colour, depth: centreDepth(engine) });
-            };
-          });
-        const surface = layout.water[0].level;
-        return {
-          level: surface,
-          sky: await look(surface + 2, 1.55),
-          under: await look(surface - s, 1.55),
-          // Straight down, the player's own body covers the centre; a radian down meets the water just ahead.
-          above: await look(surface + 2, -1),
+const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
+  const { sky, under, above } = await lake.evaluate(async (surface) => {
+    const s = globalThis.primaryActionTest.scale.blockSize;
+    return {
+      sky: await globalThis.lakeLook(surface + 2, 1.55),
+      under: await globalThis.lakeLook(surface - s, 1.55),
+      // Straight down, the player's own body covers the centre; a radian down meets the water just ahead.
+      above: await globalThis.lakeLook(surface + 2, -1),
+    };
+  }, level);
+  const magenta = ({ r, g, b }) => r > 150 && b > 150 && g < 0.5 * Math.min(r, b);
+  process.stdout.write(`Underwater surface views: ${JSON.stringify({ level, sky, under, above })}\n`);
+  assert.ok(magenta(sky.colour) && sky.depth === 1, 'the control looks up at open sky and both oracles see it');
+  assert.ok(under.cameraY < level && above.cameraY > level, 'the views sit under and above the surface');
+  assert.ok(!magenta(under.colour), 'looking up from under the water, the centre pixel is the surface, not the sky');
+  assert.ok(under.depth < 1, 'looking up from under the water, a chunk face covers the centre');
+  assert.ok(above.colour.b > above.colour.r && above.depth < 1, 'looking down from above, the centre is water');
+  assert.deepEqual(lakeErrors, []);
+};
+
+// The sky dome stands in for the flat background, so where nothing covers the horizon it must read as the flat
+// background, which is the fog colour, with post on and off. The reference is the same view with the dome's
+// material hidden. Higher up the dome must differ from it, or the horizon match could pass with no dome drawn.
+// The page runs a tone mapper at an exposure other than 1 with bloom, so the post chain's colour scale and the
+// sky's bloom rule are in play: a dome left unscaled, or bright enough to bloom, would not meet the fog colour.
+const HORIZON_PITCH = 0;
+const HIGH_PITCH = 0.7;
+const horizonTolerance = 3;
+const apart = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.g - b.g), Math.abs(a.b - b.b));
+const skyHorizonCheck = async (lake, level, lakeErrors) => {
+  const views = await lake.evaluate(
+    async ({ surface, horizonPitch, highPitch }) => {
+      const { engine } = globalThis.primaryActionTest;
+      engine.mood.setCrackCheck(false);
+      // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
+      engine.mood.setFilm(false);
+      const dome = engine.scene.getObjectByName('skyDome');
+      const byMode = {};
+      for (const post of [false, true]) {
+        engine.mood.setPost(post);
+        const view = {};
+        for (const [name, visible] of [
+          ['dome', true],
+          ['flat', false],
+        ]) {
+          dome.material.visible = visible;
+          view[name] = {
+            horizon: await globalThis.lakeLook(surface + 2, horizonPitch),
+            high: await globalThis.lakeLook(surface + 2, highPitch),
+          };
+        }
+        dome.material.visible = true;
+        byMode[post ? 'post' : 'direct'] = view;
+      }
+      return byMode;
+    },
+    { surface: level, horizonPitch: HORIZON_PITCH, highPitch: HIGH_PITCH },
+  );
+  process.stdout.write(`Sky dome horizon views: ${JSON.stringify(views)}\n`);
+  for (const [mode, { dome, flat }] of Object.entries(views)) {
+    assert.equal(dome.horizon.depth, 1, `${mode}: nothing covers the horizon pixel, so it shows the sky`);
+    assert.ok(
+      apart(dome.horizon.colour, flat.horizon.colour) <= horizonTolerance,
+      `${mode}: the dome meets the fog colour at the horizon`,
+    );
+    assert.ok(
+      apart(dome.high.colour, flat.high.colour) > horizonTolerance,
+      `${mode}: higher up the dome differs from the flat background`,
+    );
+  }
+  assert.deepEqual(lakeErrors, []);
+};
+
+// The sun's disc is in frame, brighter than the sky beside it, or the checks below prove nothing.
+//
+// The sky stays out of bloom through `toDisplay`, whatever radiance it has. Only a small bright body against a sky
+// with headroom can show that: a saturated pixel reads the same with bloom on and off, and radiance past half-float
+// range blacks the frame instead of glowing. So the test-owned look, drawn only inside this page, is a clear keyed
+// sky with no painted glow and a disc far past the bloom threshold, and the sky beside it reads the same either way.
+//
+// Bloom cannot light the sky, so the painted glow is all the glow the sun has. Every view is of that look, with only
+// the glow varied, so tuning a shipped look cannot fail the check. A glow far past display range still has headroom
+// only if it went through `toDisplay` with the rest of the sky.
+const BRIGHT_SUN = 100;
+const OVERDRIVEN_GLOW = 100;
+const BESIDE_PIXELS = 24;
+const skySunGlowCheck = async (lake, level, lakeErrors) => {
+  const views = await lake.evaluate(
+    async ({ surface, sunBrightness, overdrivenGlow }) => {
+      const { engine } = globalThis.primaryActionTest;
+      engine.mood.setCrackCheck(false);
+      engine.mood.setFilm(false);
+      engine.mood.setPost(true);
+      const dome = engine.scene.getObjectByName('skyDome');
+      const { uniforms } = dome.material;
+      const [x, y, z] = uniforms.uSunDir.value.toArray();
+      // The camera looks down its own -z, with the yaw about y applied after the pitch about x.
+      const pitch = Math.asin(y);
+      const yaw = Math.atan2(-x, -z);
+      const look = () => globalThis.lakeLook(surface + 2, pitch, yaw);
+      const { onBeforeRender } = dome;
+      const lookWith = async (overrides) => {
+        // Runs at the draw, after the frame's own update has set the uniforms.
+        dome.onBeforeRender = () => {
+          for (const [name, value] of Object.entries(overrides)) {
+            uniforms[name].value = value;
+          }
         };
-      });
-      const magenta = ({ r, g, b }) => r > 150 && b > 150 && g < 0.5 * Math.min(r, b);
-      process.stdout.write(`Underwater surface views: ${JSON.stringify({ level, sky, under, above })}\n`);
-      assert.ok(magenta(sky.colour) && sky.depth === 1, 'the control looks up at open sky and both oracles see it');
-      assert.ok(under.cameraY < level && above.cameraY > level, 'the views sit under and above the surface');
-      assert.ok(
-        !magenta(under.colour),
-        'looking up from under the water, the centre pixel is the surface, not the sky',
-      );
-      assert.ok(under.depth < 1, 'looking up from under the water, a chunk face covers the centre');
-      assert.ok(above.colour.b > above.colour.r && above.depth < 1, 'looking down from above, the centre is water');
-      assert.deepEqual(lakeErrors, []);
+        const view = await look();
+        dome.onBeforeRender = onBeforeRender;
+        return view;
+      };
+      const brightSun = { uPhysicalWeight: 0, uCloudOpacity: 0, uSunGlow: 0, uSunBrightness: sunBrightness };
+      engine.mood.setBloom(false);
+      const plain = await lookWith(brightSun);
+      const glowing = await lookWith({ ...brightSun, uSunGlow: 1 });
+      const overdriven = await lookWith({ ...brightSun, uSunGlow: overdrivenGlow });
+      engine.mood.setBloom(true);
+      const bloom = await lookWith(brightSun);
+      return { plain, glowing, overdriven, bloom, bloomRan: engine.mood.bloomPass.enabled };
+    },
+    { surface: level, sunBrightness: BRIGHT_SUN, overdrivenGlow: OVERDRIVEN_GLOW },
+  );
+  process.stdout.write(`Sky sun glow views: ${JSON.stringify(views)}\n`);
+  const brightness = ({ r, g, b }) => r + g + b;
+  const visiblyBrighter = (lit, dim) => brightness(lit) > brightness(dim) + 3 * horizonTolerance;
+  assert.ok(views.bloomRan, 'the bloom pass runs for the view that compares the sky with bloom on');
+  assert.ok(
+    visiblyBrighter(views.plain.colour, views.plain.beside),
+    'the sun disc is in frame, brighter than the sky beside it',
+  );
+  const hasHeadroom = (colour) => Math.max(...Object.values(colour)) + horizonTolerance < 255;
+  assert.ok(hasHeadroom(views.plain.beside), 'the sky beside the sun has headroom for bloom to show');
+  assert.ok(
+    apart(views.bloom.beside, views.plain.beside) <= horizonTolerance,
+    'the sky beside a very bright sun gains no glow from bloom',
+  );
+  assert.ok(
+    visiblyBrighter(views.glowing.beside, views.plain.beside),
+    'the painted glow brightens the sky beside the sun',
+  );
+  assert.ok(hasHeadroom(views.overdriven.beside), 'a glow far past display range is brought into it with the sky');
+  assert.deepEqual(lakeErrors, []);
+};
+
+const lakeChecks = (chromium, port) =>
+  timePhase('lake-pixels', async () => {
+    const { page: lake, errors } = await openLake(chromium, port, {
+      post: false,
+      crackcheck: true,
+      tone: 'aces',
+      exposure: 0.5,
+      bloom: true,
+    });
+    try {
+      const level = await lake.evaluate(installLakeLook, BESIDE_PIXELS);
+      await timePhase('underwater-surface-pixels', () => lakeSurfaceCheck(lake, level, errors));
+      await timePhase('sky-dome-horizon-pixels', () => skyHorizonCheck(lake, level, errors));
+      await timePhase('sky-sun-glow-pixels', () => skySunGlowCheck(lake, level, errors));
     } finally {
       await lake.close();
     }
   });
 
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'error',
@@ -1027,7 +1302,7 @@ try {
     held: heldItemChecks,
     'optic-zoom': opticZoomCheck,
     'optic-sights': opticZoomCheck,
-    lake: lakeSurfaceCheck,
+    lake: lakeChecks,
   };
   await checks[group](browser, address.port);
 } finally {

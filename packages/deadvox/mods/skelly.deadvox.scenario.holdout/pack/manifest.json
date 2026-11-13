@@ -1,0 +1,23 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.body",
+    "skelly.deadvox.buildings",
+    "skelly.deadvox.site-generation",
+    "skelly.flame-tools",
+    "skelly.light-sources",
+    "skelly.melee"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "holdout.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.holdout",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

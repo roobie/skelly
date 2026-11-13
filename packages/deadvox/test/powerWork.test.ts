@@ -1,8 +1,13 @@
+import {
+  PowerNetwork,
+  type PowerState,
+  type PowerTransition,
+  type PowerWork,
+} from '@skelly/engine/internal/core/power.ts';
+import type { PowerDeviceDef } from '@skelly/engine/internal/core/powerContent.ts';
+import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
+import { dayPhaseAt } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import { PowerNetwork, type PowerState, type PowerTransition, type PowerWork } from '../src/core/power.ts';
-import type { PowerDeviceDef } from '../src/core/powerContent.ts';
-import { simTimestamp } from '../src/core/time.ts';
 import { deviceState, powerCycle } from './powerFixture.ts';
 
 const definitions: PowerDeviceDef[] = [

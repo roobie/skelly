@@ -3,8 +3,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { PressHoldInput } from '../src/game/pressHoldInput.ts';
-import { QuickbarInput } from '../src/game/quickbarInput.ts';
+import { PressHoldInput } from '@skelly/engine/input';
+import { QuickbarInput } from '@skelly/presentation/internal/presentation/quickbarInput.ts';
 
 const fixture = () => {
   const taps: number[] = [];
@@ -49,34 +49,6 @@ describe('quickbar gesture admission', () => {
     input.update(holdMs * 2 + 10);
     input.keyUp('player.throw', holdMs * 2 + 10);
     expect(actions).toEqual(['stance-toggle', 'drop']);
-  });
-
-  it('repeats a one-action hold on later player ticks, but a tap acts once and release stops repetition', () => {
-    const uses: string[] = [];
-    const holdMs = 10;
-    const input = new PressHoldInput<string>({
-      holdRealMs: () => holdMs,
-      tap: (action) => uses.push(action),
-      hold: (action) => uses.push(action),
-      repeat: (action) => uses.push(action),
-    });
-    input.keyDown('held.use', 0);
-    input.repeat();
-    input.keyUp('held.use', holdMs - 1);
-    input.repeat();
-    expect(uses).toEqual(['held.use']);
-
-    input.keyDown('held.use', holdMs);
-    input.update(holdMs * 2);
-    expect(input.isHeld('held.use')).toBe(true);
-    input.repeat();
-    expect(uses).toEqual(['held.use', 'held.use']);
-    input.repeat();
-    expect(uses).toEqual(['held.use', 'held.use', 'held.use']);
-    input.keyUp('held.use', holdMs * 3);
-    input.repeat();
-    expect(input.isHeld('held.use')).toBe(false);
-    expect(uses).toEqual(['held.use', 'held.use', 'held.use']);
   });
 
   it('cancels a held gesture without dispatching when input is lost', () => {

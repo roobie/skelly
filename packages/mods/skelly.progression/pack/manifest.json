@@ -1,0 +1,14 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "progression.json"
+    }
+  ],
+  "id": "skelly.progression",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

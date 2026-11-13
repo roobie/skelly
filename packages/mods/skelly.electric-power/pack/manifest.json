@@ -1,0 +1,29 @@
+{
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.electronics",
+    "skelly.inventory",
+    "skelly.light-sources",
+    "skelly.materials",
+    "skelly.natural-world"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "electric-power-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "electric-power-furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "power.json"
+    }
+  ],
+  "id": "skelly.electric-power",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

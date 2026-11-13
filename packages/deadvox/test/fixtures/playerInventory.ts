@@ -1,39 +1,52 @@
 import { readFileSync } from 'node:fs';
-import type { ContentSource } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
+import type { ContentSource } from '@skelly/engine/content';
+import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
+import { fixtureIds } from './capabilityIds.ts';
 
-const baseJson = (name: string) =>
-  JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as {
-    skills?: { id: string; combat?: { firearms?: { longGunSteadinessSkill: string } } }[];
-    ui?: { id: string; refusalSound: string }[];
-    sounds?: { id: string }[];
-  };
+const combatPolicyJson = () =>
+  JSON.parse(readFileSync('mods/skelly.deadvox.combat-policy/combat-policy.json', 'utf8')) as ContentFile;
+const firearmsJson = (name: string) =>
+  JSON.parse(readFileSync(`../mods/skelly.firearms/${name}`, 'utf8')) as ContentFile;
+const uiJson = (name: string) => JSON.parse(readFileSync(`../mods/skelly.ui/${name}`, 'utf8')) as ContentFile;
+const inventoryJson = () => JSON.parse(readFileSync('../mods/skelly.inventory/inventory.json', 'utf8')) as ContentFile;
 
-const baseSkill = (id: string) => {
-  const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);
+const progressionJson = () =>
+  JSON.parse(readFileSync('../mods/skelly.progression/progression.json', 'utf8')) as ContentFile;
+
+const skillIn = (file: ContentFile, id: string) => {
+  const skill = file.skills?.find((candidate) => candidate.id === id);
   if (!skill) {
     throw new Error(`Base content lacks skill ${id}`);
   }
   return structuredClone(skill);
 };
 
-const coreUi = () => {
-  const ui = baseJson('ui.json').ui!.filter(({ id }) => id === CORE_CONTENT_IDS.coreUi);
-  const sounds = baseJson('sounds.json').sounds!.filter(({ id }) => ui.some((tuning) => tuning.refusalSound === id));
+const fixtureUi = () => {
+  const ui = uiJson('ui.json').ui!.filter(({ id }) => id === fixtureIds.ui);
+  const sounds = uiJson('ui-sounds.json').sounds!.filter(({ id }) => ui.some((tuning) => tuning.refusalSound === id));
   return { ui, sounds };
 };
 
-/** The core player inventory row, the inventory skill's handling tuning and the core UI text its refusals read, which every registry needs for the reach and handling rules; taken from base content so no test restates their values. */
+/** Share authored tuning so fixtures do not pin product values. */
 export const playerInventorySource = (): ContentSource => ({
   source: 'player-inventory-fixture.json',
-  data: { ...baseJson('inventory.json'), ...coreUi(), skills: [baseSkill(CORE_CONTENT_IDS.inventoryManagement)] },
+  data: { ...inventoryJson(), ...fixtureUi(), skills: [skillIn(progressionJson(), fixtureIds.inventoryManagement)] },
 });
 
-/** The firearms skill's tuning, which held-item rendering needs; taken from base content so no test restates its values. */
+/** Rendering fixtures need baseline policy even when their skill set changes. */
 export const firearmsSkillSource = (): ContentSource => {
-  const combat = baseSkill(CORE_CONTENT_IDS.firearmsCombat);
+  const combat = skillIn(firearmsJson('firearms-skills.json'), fixtureIds.firearmsCombat);
   return {
     source: 'firearms-skill-fixture.json',
-    data: { skills: [combat, baseSkill(combat.combat!.firearms!.longGunSteadinessSkill)] },
+    data: {
+      ...combatPolicyJson(),
+      ...firearmsJson('ranged-tuning.json'),
+      skills: [
+        combat,
+        firearmsJson('firearms-skills.json').skills!.find(
+          (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
+        )!,
+      ],
+    },
   };
 };

@@ -1,0 +1,131 @@
+{
+  "type": "fixture",
+  "model": "fixture",
+  "seed": 7,
+  "bodyPlan": "humanoid",
+  "scale": 1,
+  "height": 1.6,
+  "voxelSize": 0.1,
+  "bones": [
+    {
+      "id": "root",
+      "parent": null,
+      "head": [0, 0.5, 0],
+      "tail": [0, 1, 0],
+      "frame": {
+        "x": [1, 0, 0],
+        "y": [0, 1, 0],
+        "z": [0, 0, 1]
+      },
+      "limits": {
+        "flex": [-45, 45],
+        "abduct": [-45, 45],
+        "twist": [-45, 45]
+      },
+      "voxels": [[0, 0.05, 0], [0.1, 0.05, 0], [0, 0.5, 0], [0, 0.95, 0]],
+      "hull": [[0, 0.95, 0]]
+    },
+    {
+      "id": "chest",
+      "parent": "root",
+      "head": [0, 1, 0],
+      "tail": [0, 1.4, 0],
+      "frame": {
+        "x": [1, 0, 0],
+        "y": [0, 1, 0],
+        "z": [0, 0, 1]
+      },
+      "limits": {
+        "flex": [-70, 70],
+        "abduct": [-45, 45],
+        "twist": [-45, 45]
+      },
+      "voxels": [[0, 1.05, 0], [0, 1.2, 0], [0, 1.35, 0]],
+      "hull": [[0, 1.05, 0], [0, 1.35, 0]]
+    },
+    {
+      "id": "head",
+      "parent": "chest",
+      "head": [0, 1.4, 0],
+      "tail": [0, 1.6, 0],
+      "frame": {
+        "x": [1, 0, 0],
+        "y": [0, 1, 0],
+        "z": [0, 0, 1]
+      },
+      "limits": {
+        "flex": [-45, 45],
+        "abduct": [-45, 45],
+        "twist": [-45, 45]
+      },
+      "voxels": [[0, 1.45, 0], [0, 1.55, 0]],
+      "hull": [[0, 1.55, 0]]
+    },
+    {
+      "id": "upperArm.L",
+      "parent": "chest",
+      "head": [0.2, 1.35, 0],
+      "tail": [0.2, 1.05, 0],
+      "frame": {
+        "x": [1, 0, 0],
+        "y": [0, 1, 0],
+        "z": [0, 0, 1]
+      },
+      "limits": {
+        "flex": [-45, 45],
+        "abduct": [-45, 45],
+        "twist": [-45, 45]
+      },
+      "voxels": [[0.2, 1.3, 0], [0.2, 1.1, 0]],
+      "hull": [[0.2, 1.3, 0], [0.2, 1.1, 0]]
+    },
+    {
+      "id": "upperArm.R",
+      "parent": "chest",
+      "head": [-0.2, 1.35, 0],
+      "tail": [-0.2, 1.05, 0],
+      "frame": {
+        "x": [1, 0, 0],
+        "y": [0, 1, 0],
+        "z": [0, 0, 1]
+      },
+      "limits": {
+        "flex": [-45, 45],
+        "abduct": [-45, 45],
+        "twist": [-45, 45]
+      },
+      "voxels": [[-0.2, 1.3, 0], [-0.2, 1.1, 0]],
+      "hull": [[-0.2, 1.1, 0]]
+    }
+  ],
+  "anchors": {},
+  "burstBones": [],
+  "extents": {
+    "root": {
+      "min": [-0.15, 0, -0.1],
+      "max": [0.15, 1, 0.1]
+    }
+  },
+  "groundContactBones": ["root", "upperArm.L", "upperArm.R"],
+  "bodyMassKg": 70,
+  "massFractions": {
+    "arm.L": 0.06
+  },
+  "lookAt": {
+    "headBone": "head",
+    "neck": {
+      "yawDeg": 30,
+      "pitchDeg": 20
+    },
+    "head": {
+      "yawDeg": 40,
+      "pitchDeg": 30
+    },
+    "turnRateDegPerRealSecond": 180
+  },
+  "animation": {
+    "attackPeakAtSimSeconds": 0.3,
+    "attackDurationSimSeconds": 0.6,
+    "hitDurationSimSeconds": 0.4
+  }
+}

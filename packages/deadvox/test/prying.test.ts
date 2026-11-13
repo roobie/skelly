@@ -1,10 +1,8 @@
+import { SKILL_LEVEL_MAX, skillSaturation } from '@skelly/engine/internal/core/character.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { Character, practiceForNextLevel, pryPlan } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions } from '../src/core/options.ts';
-import { pryPlan } from '../src/core/prying.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import {
@@ -126,7 +124,15 @@ it('scales prying by the authored skill curve, not a code constant', () => {
       {
         source: 'steep-mechanics-curve.json',
         data: {
-          skills: [{ id: 'mechanics', name: 'Mechanics', curve: steepCurve }],
+          skills: [
+            {
+              id: 'mechanics',
+              capability: 'mechanics',
+              name: 'Mechanics',
+              curve: steepCurve,
+              training: { craftingTierOffset: 1 },
+            },
+          ],
         },
       },
     ]),
@@ -256,29 +262,6 @@ it('losing the carried tool stops prying without an input latch and leaves movem
   ).toBeGreaterThan(0);
 });
 
-it('the matching key still unlocks a pryable door silently', () => {
-  const runtime = makePryRuntime();
-  const door = makeDoor(runtime);
-  const light = runtime.inventory.hands.left;
-  if (!(light && runtime.inventory.consume(light))) {
-    throw new Error('Could not free a hand for the fixture key');
-  }
-  if (!runtime.inventory.add(runtime.inventory.create('shed_key'), { kind: 'hand', side: 'left' })) {
-    throw new Error('Could not hold the fixture key');
-  }
-  const unlock = doorOptions(runtime.inventory, door)[1]!;
-  if (!unlock.plan.ok) {
-    throw new Error(unlock.plan.reason);
-  }
-  runtime.session.queue.enqueueAction(DOOR_ACTION, unlock.label, unlock.plan.time, {
-    entityUid: door.uid,
-    locked: false,
-  });
-  expect(runtime.session.queue.tick(unlock.plan.time).failed).toEqual([]);
-  expect(door.lock).toEqual({ id: 'test_shed', locked: false });
-  expect(runtime.heardSounds).toEqual([]);
-});
-
 it('refuses a carried tool below the content quality threshold', () => {
   const { level } = doorDef.door!.methods.pry!;
   const weakRegistry = baseRegistryWith(
@@ -317,12 +300,51 @@ it('refuses a carried tool below the content quality threshold', () => {
   }
 });
 
+it('picks the carried tool of the lowest id and lists tool names in name order, whatever the names say', () => {
+  const { quality, level } = doorDef.door!.methods.pry!;
+  const tool = (id: string, name: string) => ({
+    id,
+    name,
+    category: 'tool',
+    weight: 1,
+    size: [1, 1],
+    tool: { qualities: { [quality]: level } },
+  });
+  const content = baseRegistryWith(
+    fixtureSources([
+      {
+        source: 'pry-order-tools.json',
+        data: { items: [tool('pry_order_a', 'Zed bar'), tool('pry_order_b', 'Alpha bar')] },
+      },
+    ]),
+  );
+  const inventory = new Inventory(content);
+  const door = inventory.furnish({
+    type: doorDef.id,
+    pos: [0, 1, 1],
+    size: doorDef.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  expect(inventory.add(inventory.create('pry_order_b'), { kind: 'hand', side: 'left' })).toBe(true);
+  expect(inventory.add(inventory.create('pry_order_a'), { kind: 'hand', side: 'right' })).toBe(true);
+  const plan = pryPlan(inventory, door);
+  expect(plan.ok && plan.tool.type).toBe('pry_order_a');
+  const refused = pryPlan(inventory, door, { toolUid: -1 });
+  const listed = refused.ok ? [] : refused.toolNames.filter((name) => name === 'Alpha bar' || name === 'Zed bar');
+  expect(listed).toEqual(['Alpha bar', 'Zed bar']);
+});
+
 it('a prying strike travels through the sound-hearing path and draws a shambler', () => {
   const runtime = makePryRuntime();
   const door = makeDoor(runtime);
   const crowbar = carryCrowbar(runtime);
-  const shamblerType = registry.zombies.get('shambler')!;
-  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shamblerType = registry.actors.get('shambler')!;
+  const id = runtime.zombies.add(
+    { ...shamblerType, agent: { ...shamblerType.agent!, sight: 0, nightSight: 0 } },
+    [0, 1, 5],
+    [1, 0, 0],
+  );
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.forceDoor(door, crowbar.uid)).toBeUndefined();
 
@@ -336,7 +358,7 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   expect(runtime.heardSounds.filter(({ event }) => event === 'lock_pry')).toHaveLength(
     Math.floor(action.elapsed / strikeInterval),
   );
-  expect(shambler.mode).toBe('investigate');
+  expect(shambler.agent!.mode).toBe('investigate');
 });
 
 it('a sledgehammer forces a door by hammering and its blows reach the sound-hearing path', () => {
@@ -344,15 +366,19 @@ it('a sledgehammer forces a door by hammering and its blows reach the sound-hear
   const door = makeDoor(runtime);
   const hammer = doorDef.door!.methods.hammer!;
   const sledgehammer = carryTool(runtime, 'sledgehammer');
-  const shamblerType = registry.zombies.get('shambler')!;
-  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shamblerType = registry.actors.get('shambler')!;
+  const id = runtime.zombies.add(
+    { ...shamblerType, agent: { ...shamblerType.agent!, sight: 0, nightSight: 0 } },
+    [0, 1, 5],
+    [1, 0, 0],
+  );
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.forceDoor(door, sledgehammer.uid)).toBeUndefined();
 
   runtime.sim.scheduler.advance(hammer.strikeIntervalSimSeconds + 2);
 
   expect(runtime.heardSounds.some(({ event }) => event === hammer.strikeSound)).toBe(true);
-  expect(shambler.mode).toBe('investigate');
+  expect(shambler.agent!.mode).toBe('investigate');
 });
 
 it('a sledgehammer breaks a flimsy wood door faster than a wood door', () => {

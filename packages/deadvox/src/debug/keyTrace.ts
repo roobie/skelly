@@ -1,4 +1,4 @@
-import type { KeyTraceEntry } from '../game/inputBindings.ts';
+import type { KeyTraceEntry } from '@skelly/presentation/input';
 
 const KEY_TRACE_LIMIT = 2048;
 

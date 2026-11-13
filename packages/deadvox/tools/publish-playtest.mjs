@@ -4,14 +4,29 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { addPagesAnalytics } from '../../../tools/pages-analytics/index.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+// Each round plays a committed scenario picked by id, and practice plays the tutorial the same way.
 const ROUNDS = {
-  1: { url: 'https://deadvox-playtest-round1.surge.sh/', playPath: 'play/', playQuery: 'site=playtest' },
-  2: { url: 'https://deadvox-playtest-round2.surge.sh/', playPath: 'play/', playQuery: 'site=gauntlet' },
+  1: {
+    url: 'https://deadvox-playtest-round1.surge.sh/',
+    playPath: 'play/',
+    scenario: 'skelly.deadvox.scenario.playtest.play',
+  },
+  2: {
+    url: 'https://deadvox-playtest-round2.surge.sh/',
+    playPath: 'play/',
+    scenario: 'skelly.deadvox.scenario.gauntlet.play',
+  },
 };
+const PRACTICE_MOD = 'skelly.deadvox.scenario.tutorial.play';
+const BEGINNER_MOD = 'skelly.deadvox.beginner';
+
+/** A round page's game link: the frozen game with these mods, in load order. */
+export const playHref = (config, ...mods) => `${config.playPath}?mods=${mods.join(',')}`;
 const FULL_SHA_PATTERN = /^[a-f\d]{40}$/;
-const DEPENDENCY_ROOTS = ['', 'packages/deadvox/tools/lit-check'];
+const DEPENDENCY_ROOTS = ['', 'tools/lit-check'];
 
 export const playtestRound = (round) => {
   const config = ROUNDS[round];
@@ -121,8 +136,10 @@ export const publishPlaytest = ({ round, gameSha, dryRun = false, root = ROOT })
     const source = readFileSync(path, 'utf8')
       .replaceAll('../../../../site/', './')
       .replaceAll('{{ROUND_URL}}', config.url)
-      .replaceAll('{{PLAY_URL}}', `${config.playPath}?${config.playQuery}`);
-    writeFileSync(path, source);
+      .replaceAll('{{PLAY_URL}}', playHref(config, config.scenario))
+      .replaceAll('{{BEGINNER_URL}}', playHref(config, config.scenario, BEGINNER_MOD))
+      .replaceAll('{{PRACTICE_URL}}', playHref(config, PRACTICE_MOD));
+    writeFileSync(path, file.endsWith('.html') ? addPagesAnalytics(source) : source);
   }
   buildGame(root, gameSha, join(output, config.playPath));
   writeFileSync(join(output, 'robots.txt'), 'User-agent: *\nDisallow: /\n');

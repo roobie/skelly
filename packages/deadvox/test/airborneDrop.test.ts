@@ -1,12 +1,10 @@
+import { planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
+import { playerPockets, quickMove, toHands } from '@skelly/engine/internal/core/options.ts';
+import { dropTarget, type Item, type Target } from '@skelly/engine/inventory';
+import { IDLE } from '@skelly/engine/session';
+import { dominantSide } from '@skelly/engine/sim';
+import { CHUNK, type Vec3, worldSolid } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { dominantSide } from '../src/core/character.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { planDisassembly } from '../src/core/disassembly.ts';
-import type { Target } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import { dropTarget, playerPockets, quickMove, toHands } from '../src/core/options.ts';
-import { IDLE } from '../src/game/session.ts';
 import type { MoveIntent } from './playerFixture.ts';
 import { advance, createRuntime, fixtureZombieColumn, type Runtime, registry, scale } from './snapshotTestSupport.ts';
 
@@ -71,7 +69,7 @@ const onSurface = (runtime: Runtime, item: Item): [open: boolean, supported: boo
 };
 
 /** An item that can be taken apart, put in a pocket of a bag the player wears. */
-const pocketedForDisassembly = ({ inventory }: Runtime): Item => {
+const pocketedForDisassembly = ({ inventory, session }: Runtime): Item => {
   const bag = [...registry.items.values()].find((def) => def.wearable && def.container?.pockets.length)!;
   if (!inventory.add(inventory.create(bag.id), { kind: 'worn' })) {
     throw new Error('The player could not put on a bag');
@@ -79,7 +77,11 @@ const pocketedForDisassembly = ({ inventory }: Runtime): Item => {
   const pockets = playerPockets(inventory).map(({ owner, pocket }): Target => ({ kind: 'pocket', owner, pocket }));
   for (const def of registry.items.values()) {
     const candidate = def.disassembly && !def.container ? inventory.create(def.id) : undefined;
-    if (candidate && pockets.some((pocket) => inventory.add(candidate, pocket))) {
+    if (
+      candidate &&
+      pockets.some((pocket) => inventory.add(candidate, pocket)) &&
+      planDisassembly(candidate, session.reach(), session.character)
+    ) {
       return candidate;
     }
   }

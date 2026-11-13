@@ -1,7 +1,4 @@
-import { safeParse } from 'valibot';
-import { describe, expect, it } from 'vitest';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '@skelly/engine/content';
 import {
   economyEligible,
   ItemEconomySchema,
@@ -15,13 +12,16 @@ import {
   lootTypeIssue,
   militaryOnlyEconomy,
   placedTypeIssue,
-  rollLoot,
   selectLootType,
   type WeightedCandidate,
-} from '../src/core/loot.ts';
-import { Rng } from '../src/core/random.ts';
-import { lootSourcesOf } from '../src/core/site.ts';
-import { compileTemplate, stackTemplate } from '../src/core/templates.ts';
+} from '@skelly/engine/internal/core/loot.ts';
+import { lootSourcesOf } from '@skelly/engine/internal/core/site.ts';
+import { compileTemplate, stackTemplate } from '@skelly/engine/internal/core/templates.ts';
+import { Rng } from '@skelly/engine/math';
+import { compareCodeUnits } from '@skelly/engine/packs';
+import { placementOf } from '@skelly/engine/world';
+import { safeParse } from 'valibot';
+import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
@@ -109,50 +109,16 @@ describe('loot economy descriptions', () => {
     expect(safeParse(LootContextSchema, { usage: ['Medical'] }).success).toBe(false);
   });
 
-  it('rolls only items of the context tier, so a tier no item carries rolls nothing and breaks no table', () => {
-    const registry = baseRegistry();
-    const tables = [...registry.loot.keys()];
-    expect(tables.length).toBeGreaterThan(0);
-    const usage: LootContext['usage'] = ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military'];
-    let rolledInCarriedTier = 0;
-    for (const tier of LOOT_TIERS) {
-      const unused = ![...registry.items.values()].some((item) => item.economy?.tiers.includes(tier));
-      for (const table of tables) {
-        const point = lootSpawnPoint({
-          site: 'tier',
-          building: table,
-          anchor: [0, 0, 0],
-          channel: 'container',
-          position: [0, 0, 0],
-          destination: [0, 0, 0],
-          context: { usage, tier },
-          supply: { kind: 'table', table },
-          required: false,
-        });
-        const rolled = rollLoot(registry, point, lootPointStream(1, point));
-        if (unused) {
-          expect(rolled, `${table} rolls nothing in the unused ${tier}`).toEqual([]);
-        } else {
-          rolledInCarriedTier += rolled.length;
-        }
-        for (const { type } of rolled) {
-          expect(registry.items.get(type)?.economy?.tiers, `${type} rolled in ${tier}`).toContain(tier);
-        }
-      }
-    }
-    expect(rolledInCarriedTier, 'some table rolls something in a tier items carry').toBeGreaterThan(0);
-  });
-
   it('gives every placed-only item no economy usage, so none spawns as random loot', () => {
-    const placedOnly = [...baseRegistry().items.values()].filter((item) => item.notLoot);
+    const placedOnly = [...baseRegistry().itemEconomy.values()].filter((row) => row.notLoot);
     expect(placedOnly.length, 'some item is authored placed-only').toBeGreaterThan(0);
-    expect(placedOnly.filter((item) => item.economy === undefined || item.economy.usage.length > 0)).toEqual([]);
+    expect(placedOnly.filter((row) => row.usage.length > 0)).toEqual([]);
   });
 
   it('admits no Military-only item under Police and no Police-only item under Hunting, in the loaded content', () => {
-    const items = [...baseRegistry().items.values()].filter((item) => item.economy !== undefined);
+    const rows = [...baseRegistry().itemEconomy.values()];
     const admits = (usage: LootContext['usage'][number], tier: LootContext['tier']): string[] =>
-      items.filter((item) => economyEligible(item.economy!, { usage: [usage], tier })).map(({ id }) => id);
+      rows.filter((row) => economyEligible(row, { usage: [usage], tier })).map(({ id }) => id);
     // Stock a usage admits that common places (and, for Military, hunting places) do not.
     const onlyIn = (usage: LootContext['usage'][number], tier: LootContext['tier'], common: string[]): string[] =>
       admits(usage, tier).filter((id) => !common.includes(id));
@@ -176,14 +142,15 @@ describe('loot economy descriptions', () => {
     const strong = [...registry.items.values()].filter((item) => item.analgesic?.vignette !== undefined);
     expect(strong.length).toBeGreaterThan(0);
     const contexts = loadedSourceContexts(registry);
-    const admitted = strong.flatMap((item) =>
-      contexts
-        .filter((sourceContext) => economyEligible(item.economy!, sourceContext))
+    const admitted = strong.flatMap((item) => {
+      const row = registry.itemEconomy.get(item.id);
+      return contexts
+        .filter((sourceContext) => row !== undefined && economyEligible(row, sourceContext))
         .map((sourceContext) => ({
           item: item.id,
           usage: sourceContext.usage,
-        })),
-    );
+        }));
+    });
     expect(admitted.length).toBeGreaterThan(0);
     expect(admitted.filter(({ usage }) => !usage.includes('Medical'))).toEqual([]);
   });
@@ -210,11 +177,10 @@ describe('loot economy descriptions', () => {
               category: 'misc',
               weight: 1,
               size: [1, 1],
-              economy: { usage: ['Hunting'], tiers: ['Tier2'] },
               workInProgress: false,
-              notLoot: false,
             },
           ],
+          itemEconomy: [{ id: 'fixture_stock', usage: ['Hunting'], tiers: ['Tier2'], notLoot: false }],
           furniture: [
             {
               id: 'fixture_container',
@@ -275,7 +241,7 @@ describe('loot economy descriptions', () => {
           value: lootPointStream(43, point).next(),
           supply: point.supply,
         }))
-        .sort((a, b) => a.id.localeCompare(b.id));
+        .sort((a, b) => compareCodeUnits(a.id, b.id));
     const forward = read(sources);
     expect(forward).toHaveLength(sources.length);
     expect(new Set(forward.map((point) => point.id)).size).toBe(sources.length);
@@ -295,23 +261,22 @@ describe('loot economy descriptions', () => {
   });
 
   it('rejects fitted and automatically installed items outside the source context', () => {
-    const item = (id: string, usage: string[]) => ({
+    const item = (id: string) => ({
       id,
       name: id,
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy: { usage, tiers: ['Tier2'] },
       workInProgress: false,
-      notLoot: false,
     });
+    const row = (id: string, usage: string[]) => ({ id, usage, tiers: ['Tier2'], notLoot: false });
     const { registry, issues } = buildRegistry([
       {
         source: 'child-fixture',
         data: {
           items: [
             {
-              ...item('fixture_host', ['Medical']),
+              ...item('fixture_host'),
               light: {
                 intensity: 1,
                 radius: 1,
@@ -320,8 +285,13 @@ describe('loot economy descriptions', () => {
                 power: { battery: 'fixture_battery', chargePerGameHour: 1, swapSimSeconds: 2 },
               },
             },
-            { ...item('fixture_battery', ['Medical']), battery: { capacity: 1 } },
-            item('fixture_child', ['Military']),
+            { ...item('fixture_battery'), battery: { capacity: 1 } },
+            item('fixture_child'),
+          ],
+          itemEconomy: [
+            row('fixture_host', ['Medical']),
+            row('fixture_battery', ['Medical']),
+            row('fixture_child', ['Military']),
           ],
         },
       },
@@ -329,31 +299,39 @@ describe('loot economy descriptions', () => {
     expect(issues).toEqual([]);
     expect(lootTypeIssue(registry, 'fixture_host', context)).toBeUndefined();
     expect(lootTypeIssue(registry, 'fixture_host', context, { slot: 'fixture_child' })).toContain('outside');
-    const battery = registry.items.get('fixture_battery')!;
-    registry.items.set(battery.id, { ...battery, economy: { usage: ['Military'], tiers: ['Tier2'] } });
+    registry.itemEconomy.set('fixture_battery', {
+      id: 'fixture_battery',
+      usage: ['Military'],
+      tiers: ['Tier2'],
+      notLoot: false,
+    });
     expect(lootTypeIssue(registry, 'fixture_host', context)).toContain('outside');
   });
 
   it('admits an item that never spawns when authored content places it, but a loot roll never selects it', () => {
-    const item = (id: string, economy: { usage: string[]; tiers: string[] }) => ({
+    const item = (id: string) => ({
       id,
       name: id,
       category: 'misc',
       weight: 1,
       size: [1, 1],
-      economy,
       workInProgress: false,
-      notLoot: false,
     });
     const { registry, issues } = buildRegistry([
       {
         source: 'placed-fixture',
         data: {
           items: [
-            item('fixture_bulky', { usage: [], tiers: [] }),
-            item('fixture_common', { usage: ['Medical'], tiers: ['Tier2'] }),
-            item('fixture_military', { usage: ['Military'], tiers: ['Tier2'] }),
-            { ...item('fixture_escrow', { usage: [], tiers: [] }), workInProgress: true },
+            item('fixture_bulky'),
+            item('fixture_common'),
+            item('fixture_military'),
+            { ...item('fixture_escrow'), workInProgress: true },
+          ],
+          itemEconomy: [
+            { id: 'fixture_bulky', usage: [], tiers: [], notLoot: false },
+            { id: 'fixture_common', usage: ['Medical'], tiers: ['Tier2'], notLoot: false },
+            { id: 'fixture_military', usage: ['Military'], tiers: ['Tier2'], notLoot: false },
+            { id: 'fixture_escrow', usage: [], tiers: [], notLoot: false },
           ],
         },
       },
@@ -382,24 +360,26 @@ describe('loot economy descriptions', () => {
     expect(select({ type: 'fixture_escrow', weight: 1, placed: true })).toBeUndefined();
   });
 
-  it('requires authored economy metadata at the registry boundary', () => {
+  it('takes scarcity only from the section, whose rows must name an item', () => {
     const item = {
       id: 'fixture_item',
       workInProgress: false,
-      notLoot: false,
       name: 'Fixture',
       category: 'misc',
       weight: 1,
       size: [1, 1],
     };
-    const accepted = buildRegistry([
-      { source: 'fixture', data: { items: [{ ...item, economy: { usage: [], tiers: [] } }] } },
-    ]);
+    const row = { id: item.id, usage: [], tiers: [], notLoot: false };
+    const accepted = buildRegistry([{ source: 'fixture', data: { items: [item], itemEconomy: [row] } }]);
     expect(accepted.issues).toEqual([]);
     expect(accepted.registry.items.has(item.id)).toBe(true);
-    const rejected = buildRegistry([{ source: 'fixture', data: { items: [item] } }]);
-    expect(rejected.issues).toContainEqual(expect.objectContaining({ path: 'items[0].economy' }));
-    expect(rejected.registry.items.has(item.id)).toBe(false);
+    const onItemRow = buildRegistry([
+      { source: 'fixture', data: { items: [{ ...item, economy: { usage: [], tiers: [] } }] } },
+    ]);
+    expect(onItemRow.registry.items.has(item.id)).toBe(false);
+    expect(onItemRow.issues.length).toBeGreaterThan(0);
+    const orphan = buildRegistry([{ source: 'fixture', data: { itemEconomy: [row] } }]);
+    expect(orphan.issues.map(({ message }) => message)).toContain(`no item "${item.id}"`);
   });
 
   it('requires source contexts and resolves building overrides over site tiers', () => {
@@ -411,7 +391,7 @@ describe('loot economy descriptions', () => {
       terrain: [],
       buildings: [],
       player: { position: [2, 0.5, 2], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     };

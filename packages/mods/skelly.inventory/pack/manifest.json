@@ -1,0 +1,26 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "compression.json"
+    },
+    {
+      "kind": "content",
+      "path": "inventory.json"
+    },
+    {
+      "kind": "content",
+      "path": "inventory-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-wear.json"
+    }
+  ],
+  "id": "skelly.inventory",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

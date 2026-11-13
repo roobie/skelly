@@ -3,10 +3,9 @@ read_if:
   - you build, review or merge a change and need its steps or merge checks
   - you create or maintain a slice checklist, including surveys and milestone records
   - you record a maintainer's decision and need to know where it goes
-  - you schedule delivery under the framework refactor PR gate (#1532)
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you apply the standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
-  - you prepare a feature for a maintainer look and need its placement and spawn-link rules
+  - you prepare a feature for a maintainer look and need its fixture-start and look-link rules
 ---
 
 # How work gets done in skelly
@@ -26,11 +25,6 @@ because that is local and changes on its own schedule.
 - **Reviewers** review each change and advise whoever merges it.
 
 ## The life of a change
-
-Opening a new PR is subject to the #1532 freeze in
-`docs/decisions/0009-content-defined-products.md`, "Refactor gate". Work uses an
-existing PR or waits until the refactor is executed; the steps below grant no
-exception to that gate.
 
 1. **Spec:** one self-contained item. Its proof uses independent bounds, not values derived
    from the tuning under test.
@@ -113,11 +107,20 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
 
 - **Review references use page paths, never LAN addresses.** The maintainer reviews from
   another machine, so the review origin is supplied outside tracked work.
-- **gungen:** give a page path per design with a `camera=` view (side, rear, rear-¾), from a
-  stable review server pinned to the reviewed commit, not a contributor's live worktree.
-- **deadvox:** put a feature sent to the maintainer for a look in the test house, and use a
-  look link that spawns them beside it (`/?site=testHouse&seed=<n>&debug=1`). The maintainer
-  has no time to travel to the feature. Anything that saves needs HTTPS (a secure context).
+- **Tool-specific look rules** sit beside the pages they describe, so they change with them.
+- **deadvox:** every look runs from a fixture start: a debug-only start row whose site spawns the
+  maintainer beside the target, with the gear and world state the check needs, such as time of day
+  and weather. The look link names it as its start mod, by the id of a mod whose one start row it is
+  or inline, and names any debug mods its scene needs
+  (`/?start-mod=<fixture mod>&mods=<debug mods>#{debug:true}`); see
+  `packages/deadvox/docs/url-mods.md`, "Start mod". Reason: a look spends the tester's time
+  on the check, not on setup or waiting. A start cannot hand over a loaded weapon until #1570, so a look
+  that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
+- **deadvox debug, review and test starts give every skill its top level.** Each builds on
+  the start kit's fixture row, which sets every content skill there; see
+  `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, and `packages/engine/src/core/startState.ts`,
+  `startSkills`. Reason: low skill adds spread and failure, which hides what the look is
+  checking. A start that tests skills opts out in its own row with `allSkills: null`.
 - **Quote the maintainer's verdict verbatim.** A verdict on one item never counts for another.
 
 ## Slice decision rules

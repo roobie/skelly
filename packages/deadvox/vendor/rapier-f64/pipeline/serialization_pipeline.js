@@ -11,9 +11,9 @@ export class SerializationPipeline {
     constructor(raw) {
         this.raw = raw || new RawSerializationPipeline();
     }
-    serializeAll(gravity, integrationParameters, islands, broadPhase, narrowPhase, bodies, colliders, impulseJoints, multibodyJoints) {
+    serializeAll(gravity, integrationParameters, islands, broadPhase, narrowPhase, bodies, colliders, softBodies, impulseJoints, multibodyJoints) {
         let rawGra = VectorOps.intoRaw(gravity);
-        const res = this.raw.serializeAll(rawGra, integrationParameters.raw, islands.raw, broadPhase.raw, narrowPhase.raw, bodies.raw, colliders.raw, impulseJoints.raw, multibodyJoints.raw);
+        const res = this.raw.serializeAll(rawGra, integrationParameters.raw, islands.raw, broadPhase.raw, narrowPhase.raw, bodies.raw, colliders.raw, softBodies.raw, impulseJoints.raw, multibodyJoints.raw);
         rawGra.free();
         return res;
     }

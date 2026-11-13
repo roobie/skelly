@@ -11,7 +11,7 @@ base + {
     solid: false, climbable: { speedMetresPerSimSecond: 1.5 },
     breach: { minimumStrength: 1, durability: 1 }, material: 'fixture_material',
   }],
-  furnitureMaterials: [{ id: 'fixture_material', blowSound: 'fixture_blow' }],
+  furnitureMaterials: [{ id: 'fixture_material', blowSound: 'fixture_blow', drops: { default: 'fixture_blow' } }],
   sounds: [{
     id: 'fixture_blow', description: 'fixture blow', variants: ['assets/audio/fixture-blow.ogg'], gain: 1,
     pitchJitter: [1, 1], gainJitter: [1, 1], minIntervalSimSeconds: 0, category: 'world',

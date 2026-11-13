@@ -7,12 +7,59 @@
 import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
+import { build as viteBuild, preview as vitePreview } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
+const BUSY_LOCK_START = inlineStartMod('fixture.save-storage.busy-lock', {
+  density: null,
+  id: 'save_storage_busy_lock_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  placement: {
+    cell: [0, 0],
+    descents: [
+      { kind: 'ladder', ladder: [39, 1, 10], lower: [41, 1, 11], upper: [36, 41, 11] },
+      { hatch: [10, 40, 5], kind: 'stairs', lower: [14, 1, 1], upper: [18, 41, 6] },
+      { edge: [5, 41, 8], kind: 'drop', landing: [5, 3, 8], lower: [5, 1, 14], upper: [6, 41, 8] },
+    ],
+    fixedLoot: [{ at: [35, 17, 6], items: [{ condition: 0.7, item: 'revolver_357', key: true }] }],
+    minimumOpenDescents: 2,
+    spawn: [22, 41, 4],
+    template: 'gauntlet_start',
+  },
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'gauntlet',
+  skills: {},
+  startTimeGameTimeOfDay: '18:30',
+  storeys: 1,
+  wounds: [],
+});
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
 const browserName = process.argv[2] ?? 'chromium';
@@ -57,7 +104,7 @@ const startWebServer = async () => {
     });
     return vite.httpServer.address();
   }
-  vite = await createServer({
+  vite = await createStageServer({
     configFile: viteConfig,
     root: projectRoot,
     logLevel: 'error',
@@ -126,7 +173,7 @@ try {
       // biome-ignore lint/suspicious/noConsole: browser test captures the required product diagnostics.
       const originalWarn = console.warn.bind(console);
       console.warn = (...args) => {
-        if (String(args[0]).startsWith('Deadvox save')) {
+        if (String(args[0]).startsWith('Skelly save')) {
           globalThis.__lifecycleLockWarnings.push(args);
         }
         originalWarn(...args);
@@ -168,7 +215,7 @@ try {
       const request = navigator.locks.request.bind(navigator.locks);
       navigator.locks.request = (name, options, callback) => {
         if (
-          name === 'deadvox-save-storage' &&
+          name === 'skelly-save-storage' &&
           options?.mode === 'exclusive' &&
           globalThis.__lifecycleHoldNextSave === true
         ) {
@@ -200,7 +247,7 @@ try {
         }
       });
       globalThis.addEventListener('DOMContentLoaded', () => {
-        if (!new URLSearchParams(location.search).has('loadout')) {
+        if (!location.pathname.endsWith('/index.html')) {
           return;
         }
         let frames = 0;
@@ -209,9 +256,9 @@ try {
         };
         const captureLocks = async () => {
           const locks = await navigator.locks.query();
-          const held = locks.held.filter((lock) => lock.name === 'deadvox-save-storage');
-          const pending = locks.pending.filter((lock) => lock.name === 'deadvox-save-storage');
-          const ready = globalThis.deadvoxSaveTest?.controller.ready === true;
+          const held = locks.held.filter((lock) => lock.name === 'skelly-save-storage');
+          const pending = locks.pending.filter((lock) => lock.name === 'skelly-save-storage');
+          const ready = globalThis.skellySaveTest?.controller.ready === true;
           const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
           if (writerWaiting || ready || frames >= 120) {
             sessionStorage.setItem('lifecycle-lock-snapshot', JSON.stringify({ held, pending, ready, writerWaiting }));
@@ -270,8 +317,8 @@ try {
     const state = navigationDiagnostics.get(page);
     const readSource = () =>
       page.evaluate(() => {
-        const controller = globalThis.deadvoxSaveTest?.controller;
-        const save = globalThis.deadvoxSaveTest?.saveState?.();
+        const controller = globalThis.skellySaveTest?.controller;
+        const save = globalThis.skellySaveTest?.saveState?.();
         return {
           url: location.href,
           readyState: document.readyState,
@@ -326,9 +373,9 @@ try {
     expect.poll(() => page.evaluate(predicate), { timeout: STAGE_TIMEOUT_MS }).toBe(true);
   const waitForNavigationIdle = () =>
     pollNavigation(async () => {
-      const { controller } = globalThis.deadvoxSaveTest;
+      const { controller } = globalThis.skellySaveTest;
       const locks = await navigator.locks.query();
-      const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
+      const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'skelly-save-storage');
       const idle = !controller.writing && controller.queued === undefined && !activeSaveLock;
       if (idle) {
         globalThis.__saveNavigationTiming({
@@ -342,7 +389,7 @@ try {
     });
   const instrumentNavigationSave = () =>
     page.evaluate(() => {
-      const { controller, storage } = globalThis.deadvoxSaveTest;
+      const { controller, storage } = globalThis.skellySaveTest;
       const report = (operation, event, startedRealMs, detail) => {
         globalThis.__saveNavigationTiming({
           operation,
@@ -387,7 +434,7 @@ try {
       'overall browser storage contract',
       page.evaluate(async (stageTimeoutMs) => {
         // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this project-root source path.
-        const { SaveStorage } = await import('/src/game/saveStorage.ts');
+        const { SaveStorage } = await import('/@stage/@skelly/presentation/internal/presentation/saveStorage.ts');
         const encoder = new TextEncoder();
         const decoder = new TextDecoder();
         const stage = async (label, task) => {
@@ -652,12 +699,12 @@ try {
   const testTitleAndAutosave = async (backend) => {
     const appUrl = browserStageUrl(
       stageId,
-      `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}&save-test=1`,
+      `http://127.0.0.1:${address.port}/?save-backend=${backend}&save-test=1#{seed:73}`,
     );
     const readGeneration = async (step) => {
       try {
         const generation = await page.evaluate(
-          async () => (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
+          async () => (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
         );
         if (!Number.isInteger(generation)) {
           throw new Error('no committed generation was returned');
@@ -678,7 +725,7 @@ try {
               return { error: String(error) };
             }
           };
-          const test = globalThis.deadvoxSaveTest;
+          const test = globalThis.skellySaveTest;
           return {
             databases: await attempt(() => indexedDB.databases()),
             namespace: test?.namespace ?? null,
@@ -697,7 +744,7 @@ try {
       try {
         const result = await page.waitForFunction(
           ({ minimum }) => {
-            const state = globalThis.deadvoxSaveTest?.saveState?.();
+            const state = globalThis.skellySaveTest?.saveState?.();
             if (!state) {
               return false;
             }
@@ -727,11 +774,11 @@ try {
       }
     };
     await navigatePage('autosave initial goto', () => page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS }));
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.saveState !== undefined, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState !== undefined, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     try {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     } catch (error) {
@@ -742,17 +789,17 @@ try {
     }
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     assert.equal(
-      await page.evaluate(() => globalThis.deadvoxSaveTest.controller.currentRecord),
+      await page.evaluate(() => globalThis.skellySaveTest.controller.currentRecord),
       undefined,
       `${backend} fresh storage must have no saved world`,
     );
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.isEntered, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
-    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     const periodicGeneration = await waitForGeneration(undefined, 'periodic');
-    await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
+    await page.evaluate(() => globalThis.skellySaveTest.controller.beforeSleep());
     const sleepGeneration = await waitForGeneration(periodicGeneration, 'before-sleep');
     await page.evaluate(() => {
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
@@ -766,7 +813,7 @@ try {
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
     try {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     } catch (error) {
@@ -779,7 +826,7 @@ try {
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.waitForFunction(
       () => {
-        const controller = globalThis.deadvoxSaveTest?.controller;
+        const controller = globalThis.skellySaveTest?.controller;
         return controller?.ready && controller.restored !== undefined;
       },
       undefined,
@@ -792,7 +839,7 @@ try {
     if (restoreMenu.disabled !== false) {
       throw new Error(`${backend} saved generation was not Continue-compatible: ${restoreMenu.status}`);
     }
-    const savedWorldId = await page.evaluate(() => globalThis.deadvoxSaveTest.controller.restored.world.id);
+    const savedWorldId = await page.evaluate(() => globalThis.skellySaveTest.controller.restored.world.id);
     const originalViewport = page.viewportSize();
     await page.setViewportSize({ width: 1159, height: 414 });
     const choice = await page.evaluate(() => {
@@ -834,7 +881,7 @@ try {
     }
     await page.evaluate(() => {
       globalThis.dispatchEvent(new Event('pagehide'));
-      const { controller } = globalThis.deadvoxSaveTest;
+      const { controller } = globalThis.skellySaveTest;
       if (controller.writing || controller.queued !== undefined) {
         throw new Error('title-screen pagehide queued a save');
       }
@@ -845,7 +892,7 @@ try {
     await navigatePage('reload after title-pagehide check', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
@@ -857,7 +904,7 @@ try {
         ]),
       );
       try {
-        await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+        await page.waitForFunction(() => globalThis.skellySaveTest?.controller.isEntered, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
       } catch (error) {
@@ -874,7 +921,7 @@ try {
         throw new Error(`${backend} Continue did not start paused: ${JSON.stringify(restoredMenu)}`);
       }
       assert.equal(
-        await page.evaluate(() => globalThis.deadvoxSaveTest.controller.restored.world.id),
+        await page.evaluate(() => globalThis.skellySaveTest.controller.restored.world.id),
         savedWorldId,
         `${backend} Continue must restore the chosen world`,
       );
@@ -891,11 +938,11 @@ try {
     }
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#save-replace-confirm', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.isEntered, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     assert.notEqual(
-      await page.evaluate(() => globalThis.deadvoxSaveTest.controller.snapshot().world.id),
+      await page.evaluate(() => globalThis.skellySaveTest.controller.snapshot().world.id),
       savedWorldId,
       `${backend} replacement must start a different world`,
     );
@@ -903,7 +950,7 @@ try {
       throw new Error(`${backend} replaced the prior A/B generation before a new snapshot`);
     }
     await page.evaluate(() => {
-      const { storage } = globalThis.deadvoxSaveTest;
+      const { storage } = globalThis.skellySaveTest;
       const save = storage.save.bind(storage);
       storage.save = () => {
         storage.save = save;
@@ -921,16 +968,16 @@ try {
       throw new Error(`${backend} failed replacement write damaged the previous generation`);
     }
     await page.evaluate(() => {
-      globalThis.deadvoxSaveTest.controller.halt();
+      globalThis.skellySaveTest.controller.halt();
     });
     await navigatePage('reload after failed replacement write', () =>
       page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
     );
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready === true, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready === true, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.saveState !== undefined, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.saveState !== undefined, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     const failureRecovery = await page.evaluate(() => ({
@@ -943,7 +990,7 @@ try {
     ) {
       throw new Error(`${backend} failed write hid the previous valid Continue generation: ${failureRecovery.status}`);
     }
-    await page.evaluate(() => globalThis.deadvoxSaveTest.storage.close());
+    await page.evaluate(() => globalThis.skellySaveTest.storage.close());
     return { backend, replacementConfirmed: true, failedWriteRetainedContinue: true };
   };
   const autosaveResults = [];
@@ -952,14 +999,13 @@ try {
     const appUrl = new URL(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${address.port}/?seed=73&debug=1&save=1&save-backend=indexeddb&save-test=1`,
+        `http://127.0.0.1:${address.port}/?save-backend=indexeddb&save-test=1#{debug:true,save:true,seed:73,freeze:true}`,
       ),
     );
-    appUrl.searchParams.set('freeze', '1');
     await navigatePage('navigation-only initial goto', () =>
       page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
     );
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.evaluate(() => {
@@ -981,11 +1027,11 @@ try {
     });
     await navigationPhase('checkpoint instrumentation', instrumentNavigationSave);
     await navigationPhase('checkpoint capture', () =>
-      page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep()),
+      page.evaluate(() => globalThis.skellySaveTest.controller.beforeSleep()),
     );
     await navigationPhase('checkpoint commit and quiescence', async () => {
       await pollNavigation(async () => {
-        const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
+        const { storage, namespace, controller } = globalThis.skellySaveTest;
         const record = await storage.load(namespace);
         if (record) {
           sessionStorage.setItem('lifecycle-generation-before-reload', String(record.generation));
@@ -1000,8 +1046,8 @@ try {
       );
       await page.waitForFunction(
         () =>
-          globalThis.deadvoxSaveTest?.controller.ready &&
-          globalThis.deadvoxSaveTest.controller.restored !== undefined &&
+          globalThis.skellySaveTest?.controller.ready &&
+          globalThis.skellySaveTest.controller.restored !== undefined &&
           document.querySelector('#continue')?.disabled === false,
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
@@ -1009,7 +1055,7 @@ try {
     });
     await navigationPhase('Continue entry', async () => {
       await page.click('#continue', { timeout: STAGE_TIMEOUT_MS });
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.isEntered, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     });
@@ -1017,23 +1063,23 @@ try {
     await navigationPhase('restored-world instrumentation', instrumentNavigationSave);
     const beforeNavigation = await navigationPhase('pre-navigation lock query', () =>
       page.evaluate(async () => ({
-        writing: globalThis.deadvoxSaveTest.controller.writing,
+        writing: globalThis.skellySaveTest.controller.writing,
         locks: await navigator.locks.query(),
-        namespace: globalThis.deadvoxSaveTest.controller.namespace,
-        generation: globalThis.deadvoxSaveTest.controller.currentRecord?.generation,
-        savedGeneration: globalThis.deadvoxSaveTest.controller.savedGeneration,
+        namespace: globalThis.skellySaveTest.controller.namespace,
+        generation: globalThis.skellySaveTest.controller.currentRecord?.generation,
+        savedGeneration: globalThis.skellySaveTest.controller.savedGeneration,
       })),
     );
     process.stdout.write(`${browserName}: pre-navigation save state ${JSON.stringify(beforeNavigation)}\n`);
     assert.equal(beforeNavigation.writing, false);
     assert.equal(
-      beforeNavigation.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
+      beforeNavigation.locks.held.some((lock) => lock.name === 'skelly-save-storage'),
       false,
       'the page enters navigation without already holding a lock that would disqualify bfcache',
     );
     assert.equal(beforeNavigation.locks.pending.length, 0);
     await page.evaluate(() => {
-      const { controller, storage } = globalThis.deadvoxSaveTest;
+      const { controller, storage } = globalThis.skellySaveTest;
       const captures = controller.capture.bind(controller);
       controller.capture = (reason) => {
         const events = JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]');
@@ -1063,11 +1109,12 @@ try {
         globalThis.__lifecycleHoldNextSave = true;
       });
     }
-    const pumpUrl = new URL(appUrl);
-    pumpUrl.searchParams.set('loadout', 'pump');
+    // Only the path differs, so the destination is a new document on the same content and save namespace.
+    const freshStartUrl = new URL(appUrl);
+    freshStartUrl.pathname += 'index.html';
     await navigationPhase('destination save discovery', async () => {
-      await navigatePage('navigation-only goto pump loadout', () =>
-        page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
+      await navigatePage('navigation-only goto normal start', () =>
+        page.goto(freshStartUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
       );
       await page.waitForFunction(() => sessionStorage.getItem('lifecycle-lock-snapshot') !== null, undefined, {
         timeout: STAGE_TIMEOUT_MS,
@@ -1076,7 +1123,7 @@ try {
     const result = await navigationPhase('destination lock snapshot', () =>
       page.evaluate(async () => {
         const locks = await navigator.locks.query();
-        const controller = globalThis.deadvoxSaveTest?.controller;
+        const controller = globalThis.skellySaveTest?.controller;
         return {
           pagehide: JSON.parse(sessionStorage.getItem('lifecycle-pagehide') ?? 'null'),
           writerRequested: sessionStorage.getItem('lifecycle-writer-requested'),
@@ -1087,8 +1134,8 @@ try {
           hasSavedWorld: controller ? controller.restored !== undefined : null,
           storageUnavailable: controller?.storageUnavailable ?? null,
           continueDisabled: document.querySelector('#continue')?.disabled,
-          held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
-          pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
+          held: locks.held.filter((lock) => lock.name === 'skelly-save-storage'),
+          pending: locks.pending.filter((lock) => lock.name === 'skelly-save-storage'),
           warnings: globalThis.__lifecycleLockWarnings ?? [],
           namespace: controller?.namespace,
           generation: controller?.currentRecord?.generation,
@@ -1129,10 +1176,10 @@ try {
           pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
           saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
           notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
-          controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
-          pageIsLeaving: globalThis.deadvoxSaveTest?.controller?.pageIsLeaving ?? null,
+          controllerEntered: globalThis.skellySaveTest?.controller?.isEntered ?? null,
+          pageIsLeaving: globalThis.skellySaveTest?.controller?.pageIsLeaving ?? null,
           visibilityState: document.visibilityState,
-          generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
+          generation: (await globalThis.skellySaveTest.storage.load(globalThis.skellySaveTest.namespace))?.generation,
         })),
       );
       process.stdout.write(`${browserName}: restored after navigation ${JSON.stringify(restored)}\n`);
@@ -1154,7 +1201,7 @@ try {
       assert.equal(restored?.pageshowPersisted, true, 'Back restores the original world from bfcache');
       assert.equal(restored?.controllerEntered, true, 'Back restores the running world');
       assert.equal(
-        restored?.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
+        restored?.locks.held.some((lock) => lock.name === 'skelly-save-storage'),
         false,
         'restoring a cached page does not leave a save lock held',
       );
@@ -1168,7 +1215,7 @@ try {
       await navigationPhase('post-Back commit and quiescence', waitForNavigationIdle);
       const postBackSave = await navigationPhase('post-Back committed record read', () =>
         page.evaluate(async () => {
-          const { controller, storage, namespace } = globalThis.deadvoxSaveTest;
+          const { controller, storage, namespace } = globalThis.skellySaveTest;
           const record = await storage.load(namespace);
           return {
             pageIsLeaving: controller.pageIsLeaving,
@@ -1187,7 +1234,7 @@ try {
       assert.equal(restored.pageIsLeaving, false, 'pageshow clears the leaving state');
       assert.equal(postBackSave.pageIsLeaving, false, 'the restored page remains eligible for lifecycle saves');
       assert.equal(postBackSave.captures.length, 1, 'Back produces only the intended lifecycle capture');
-      assert.equal(postBackSave.captures[0].reason, 'visibilitychange');
+      assert.equal(postBackSave.captures[0].visibilityState, 'hidden');
       assert.equal(postBackSave.captures[0].pageIsLeaving, false);
       assert.equal(postBackSave.generation > restored.generation, true);
     } else {
@@ -1200,7 +1247,7 @@ try {
         page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
         page.click('#continue', { timeout: STAGE_TIMEOUT_MS }),
       ]);
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.isEntered, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     }
@@ -1224,34 +1271,38 @@ try {
   if (busyLockOnly) {
     const appUrl = browserStageUrl(
       stageId,
-      `http://127.0.0.1:${address.port}/?seed=73&time=18%3A30&save-backend=indexeddb&save-test=1`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: BUSY_LOCK_START,
+        harness: { 'save-backend': 'indexeddb', 'save-test': 1 },
+        hash: { seed: 73 },
+      }),
     );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.isEntered, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
-    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(
       async () => {
-        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        const { storage, namespace } = globalThis.skellySaveTest;
         return Boolean(await storage.load(namespace));
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
     const originalSlots = await page.evaluate(async () => {
-      const { storage, namespace } = globalThis.deadvoxSaveTest;
+      const { storage, namespace } = globalThis.skellySaveTest;
       const slots = await storage.readRawSlots(namespace);
       return { a: slots.a ? Array.from(slots.a) : null, b: slots.b ? Array.from(slots.b) : null };
     });
     const holder = await withTimeout('busy-lock holder page creation', context.newPage());
     holder.on('pageerror', (error) => pageErrors.push(error.message));
     // The lock owner needs a same-origin document, not another renderer/world/worker.
-    const holderUrl = `http://127.0.0.1:${address.port}/?save-lock-holder=1`;
+    const holderUrl = `http://127.0.0.1:${address.port}/save-lock-holder.html`;
     await holder.route(holderUrl, (route) =>
       route.fulfill({ contentType: 'text/html', body: '<title>Save writer holder</title>' }),
     );
@@ -1261,10 +1312,10 @@ try {
       const ready = new Promise((resolve) => {
         acquired = resolve;
       });
-      globalThis.deadvoxHeldSaveLock = navigator.locks.request('deadvox-save-storage', { mode: 'exclusive' }, () => {
+      globalThis.skellyHeldSaveLock = navigator.locks.request('skelly-save-storage', { mode: 'exclusive' }, () => {
         acquired();
         return new Promise((resolve) => {
-          globalThis.deadvoxReleaseSaveLock = resolve;
+          globalThis.skellyReleaseSaveLock = resolve;
         });
       });
       await ready;
@@ -1280,8 +1331,8 @@ try {
           const status = document.querySelector('#startup-screen #save-status');
           return Boolean(
             status?.textContent.trim() &&
-              globalThis.deadvoxSaveTest?.controller &&
-              !globalThis.deadvoxSaveTest.controller.ready,
+              globalThis.skellySaveTest?.controller &&
+              !globalThis.skellySaveTest.controller.ready,
           );
         },
         undefined,
@@ -1293,7 +1344,7 @@ try {
         'save discovery status is visible on the startup screen while the busy lock is checked',
       );
       try {
-        await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
       } catch (error) {
@@ -1305,9 +1356,9 @@ try {
       const busy = await page.evaluate(async () => ({
         status: document.querySelector('#save-status').textContent,
         newWorldLabel: document.querySelector('#go').textContent,
-        expectedNewWorldLabel: globalThis.deadvoxSaveTest.controller.titleNewWorldLabel,
-        failure: globalThis.deadvoxSaveTest.controller.failure,
-        storageUnavailable: globalThis.deadvoxSaveTest.controller.storageUnavailable,
+        expectedNewWorldLabel: globalThis.skellySaveTest.controller.titleNewWorldLabel,
+        failure: globalThis.skellySaveTest.controller.failure,
+        storageUnavailable: globalThis.skellySaveTest.controller.storageUnavailable,
         retryVisible: document.querySelector('#save-rescan').checkVisibility(),
         continueDisabled: document.querySelector('#continue').disabled,
         locks: await navigator.locks.query(),
@@ -1322,15 +1373,15 @@ try {
       assert.equal(busy.locks.held.length, 1);
       assert.equal(busy.locks.held[0].mode, 'exclusive');
       assert.equal(busy.locks.pending.length, 0);
-      const lockWarning = busy.warnings.find(([message]) => message === 'Deadvox save lock request timed out');
+      const lockWarning = busy.warnings.find(([message]) => message === 'Skelly save lock request timed out');
       assert.ok(lockWarning, 'lock timeout is reported to the browser console');
       assert.equal(lockWarning[1].requestedMode, 'shared');
       assert.ok(lockWarning[1].held.some((lock) => lock.mode === 'exclusive'));
       assert.ok(lockWarning[1].pending.some((lock) => lock.mode === 'shared'));
       assert.equal(lockWarning[1].holderIsAnotherClient, true);
       await holder.evaluate(async () => {
-        globalThis.deadvoxReleaseSaveLock();
-        await globalThis.deadvoxHeldSaveLock;
+        globalThis.skellyReleaseSaveLock();
+        await globalThis.skellyHeldSaveLock;
       });
       await navigatePage('busy-lock rescan reload', () =>
         Promise.all([
@@ -1338,21 +1389,21 @@ try {
           page.click('#save-rescan', { timeout: STAGE_TIMEOUT_MS }),
         ]),
       );
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
       await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
       assert.equal(await page.locator('#continue').isEnabled(), true);
       assert.equal(await page.locator('#save-rescan').isVisible(), false);
       const recoveredSlots = await page.evaluate(async () => {
-        const { storage, namespace } = globalThis.deadvoxSaveTest;
+        const { storage, namespace } = globalThis.skellySaveTest;
         const slots = await storage.readRawSlots(namespace);
         return { a: slots.a ? Array.from(slots.a) : null, b: slots.b ? Array.from(slots.b) : null };
       });
       assert.deepEqual(recoveredSlots, originalSlots);
       process.stdout.write(`${browserName}: busy-lock diagnostics passed\n`);
     } finally {
-      await holder.evaluate(() => globalThis.deadvoxReleaseSaveLock());
+      await holder.evaluate(() => globalThis.skellyReleaseSaveLock());
       await holder.close();
     }
   }

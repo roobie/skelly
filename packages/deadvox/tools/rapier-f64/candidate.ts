@@ -1,4 +1,4 @@
-import type { Candidate, Tier } from '../../src/vehicles/feasibility/contract.ts';
+import type { Candidate, Tier } from '../../src/feasibility/contract.ts';
 import type * as Rapier from '../../vendor/rapier-f64/rapier.js';
 
 export function rapierCandidate(api: typeof Rapier, precision: string): Candidate {

@@ -1,13 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { parse } from 'valibot';
-import { describe, expect, it } from 'vitest';
-import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
-import type { ModelDef } from '../src/core/content.ts';
-import { heldEjectionPose, heldGripOffset } from '../src/core/heldPose.ts';
-import { ModelSchema } from '../src/core/schema.ts';
-import { simPerMinute, simSeconds } from '../src/core/time.ts';
+import { type ModelDef, ModelSchema } from '@skelly/engine/content';
+import { heldEjectionPose } from '@skelly/engine/internal/core/heldPose.ts';
+import { simPerMinute, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { heldGripOffset } from '@skelly/engine/pose';
 import {
   actionPartPaths,
   cloneHeldModel,
@@ -16,9 +10,15 @@ import {
   poseActionParts,
   sampleActionStroke,
   sampleActionTurn,
-} from '../src/render/firearmModel.ts';
-import { prepareModel } from '../src/render/models.ts';
+} from '@skelly/presentation/internal/render/firearmModel.ts';
+import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { parse } from 'valibot';
+import { describe, expect, it } from 'vitest';
+import firearmContent from '../../mods/skelly.firearms/models-firearms.json' with { type: 'json' };
 import { baseRegistry } from './baseRegistry.ts';
+import { modFileBytes } from './modFile.ts';
 
 const { holds } = baseRegistry().figures.get('player')!;
 
@@ -31,7 +31,7 @@ const ak = parse(
   firearmContent.models.find((model) => model.id === 'rifle_ak'),
 );
 const load = (model: ModelDef = ar) => {
-  const bytes = readFileSync(`src/content/base/${model.file}`);
+  const bytes = modFileBytes(model.file);
   return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
 };
 
@@ -66,7 +66,7 @@ describe('exported firearm presentation', () => {
       const top = topHits[0]!.point.y;
       const bottom = bottomHits[0]!.point.y;
       const palm = model.hands!.firing.at;
-      expect(palm[0], type).toBeCloseTo(x);
+      expect(palm[2], type).toBeCloseTo(z);
       expect(palm[1], type).toBeGreaterThanOrEqual(bottom);
       expect(palm[1], type).toBeLessThanOrEqual(bottom + (top - bottom) / 3);
     },

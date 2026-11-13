@@ -4,13 +4,21 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { build, preview } from 'vite';
+import { readHash, writeHash } from '../src/hashState.ts';
+import { gameUrl, inlineStartMod } from '../test/browser/gameUrl.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { traceCapture } from './perf-baseline-trace.mjs';
 
 const { chromium } = await import('playwright');
-const leadingSlash = /^\//;
 const softwareRenderer = /swiftshader|llvmpipe|software|lavapipe/i;
+
+const routeUrl = (pageOrigin, route) =>
+  gameUrl(pageOrigin, {
+    startMod: inlineStartMod(`fixture.perf-baseline.${route.id}`, route.start),
+    harness: route.harness,
+    hash: route.hash,
+  });
 
 async function captureLook(page, directory, { route, mode, repeat }) {
   if (mode !== 'whole' || repeat !== 1) {
@@ -23,26 +31,25 @@ async function captureLook(page, directory, { route, mode, repeat }) {
     const seed = mood.frame;
     const url = new URL(location.href);
     url.searchParams.delete('skyRoute');
-    url.searchParams.set('freeze', '1');
-    url.searchParams.set(
-      'cam',
-      [
-        ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
-        (perf.input.yaw * 180) / Math.PI,
-        (perf.input.pitch * 180) / Math.PI,
-        0,
-      ].join(','),
-    );
+    const cam = [
+      ...perf.session.body.pos.map((value) => value * config.scale.blockSize),
+      (perf.input.controls.yaw * 180) / Math.PI,
+      (perf.input.controls.pitch * 180) / Math.PI,
+      0,
+    ];
     const images = [mood.graphicsTuning.renderScale.max, settled].map((scale) => {
       mood.setRenderScale(scale);
       mood.frame = seed;
       perf.view.render();
-      url.searchParams.set('renderscale', String(scale));
       return { scale, url: url.pathname + url.search, png: renderer.domElement.toDataURL('image/png').split(',')[1] };
     });
-    return { images, position: perf.engine.camera.position.toArray() };
+    return { images, hash: location.hash, cam, position: perf.engine.camera.position.toArray() };
   });
+  const hash = `#${writeHash({ ...readHash(look.hash).hash, cam: look.cam, freeze: true })}`;
+  look.hash = undefined;
+  look.cam = undefined;
   for (const [index, image] of look.images.entries()) {
+    image.url += hash;
     const path = `${route.id}-look-${index === 0 ? 'full' : 'settled'}.png`;
     await writeFile(resolve(directory, path), Buffer.from(image.png, 'base64'));
     image.png = undefined;
@@ -102,7 +109,7 @@ await build({
       name: 'perf-baseline',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/game/engine.ts')) {
+        if (id.endsWith('/src/presentation/engine.ts')) {
           return `import { install as installPerfBaseline } from ${JSON.stringify(runtime)};\n${once(code, '  const resize = () => {', '  if (renderer) installPerfBaseline({ renderer, scene, camera, meshes, shadows });\n  const resize = () => {')}`;
         }
         if (id.endsWith('/src/render/mood.ts')) {
@@ -112,11 +119,11 @@ await build({
             '    this.composer = composer;\n    globalThis.perfBaseline.wrapPasses(composer);',
           );
         }
-        if (id.endsWith('/src/game/play.ts')) {
+        if (id.endsWith('/src/presentation/play.ts')) {
           return once(
             code,
             '  startRealFrames(frame);',
-            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, zombieStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
+            '  globalThis.perfBaseline.attach({ engine, session, input, view, worldLoading, debug: debugTools, actorStore });\n  startRealFrames((now) => globalThis.perfBaseline.frame(frame, now));',
           );
         }
         if (id.endsWith('/src/debug/skyRoute.ts')) {
@@ -183,14 +190,14 @@ try {
     await page.addInitScript((count) => {
       globalThis.addEventListener('mousemove', (event) => event.stopImmediatePropagation(), true);
       if (count) {
-        localStorage.setItem('deadvox.shambler-spawn-count', String(count));
+        localStorage.setItem('skelly.shambler-spawn-count', String(count));
       }
     }, route.spawnCount);
     let cdp;
     const tracePath = traceSession ? `${route.id}-${mode}-${repeat}.trace.json` : null;
     const trace = traceCapture(traceSession, resolve(out, tracePath ?? 'unused'), config.traceCategories);
     try {
-      await page.goto(new URL(route.path.replace(leadingSlash, ''), origin).href);
+      await page.goto(routeUrl(origin, route));
       await waitFor(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
         timeout: config.timeoutMs,
       });
@@ -215,11 +222,11 @@ try {
           }
           if (workload.driver !== 'sky') {
             if (workload.spawnCount) {
-              perf.debug.handleAction('debug.spawn-shamblers');
+              perf.debug.handleAction('debug.spawn-actors');
             }
             perf.session.body.pos[1] += (workload.liftMetres ?? 0) / perf.engine.config.scale.blockSize;
           }
-          const { yaw } = perf.input;
+          const { yaw } = perf.input.controls;
           let frame = 0;
           perf.resetPath = () => {
             frame = 0;
@@ -229,7 +236,7 @@ try {
               perf.debug.handleAction('debug.freeze-game');
             }
             if (workload.driver === 'orbit') {
-              perf.input.yaw =
+              perf.input.controls.yaw =
                 yaw +
                 ((workload.yawAmplitudeDegrees * Math.PI) / 180) *
                   Math.sin((2 * Math.PI * workload.yawCycles * frame) / sampling.sampleFrames);
@@ -289,7 +296,7 @@ try {
           records: perf.records,
           visibility: document.visibilityState,
           position: perf.engine.camera.position.toArray(),
-          zombieCount: perf.zombieStore.size,
+          zombieCount: perf.actorStore.size,
           drawingBuffer: [perf.engine.renderer.domElement.width, perf.engine.renderer.domElement.height],
           renderScale: perf.engine.mood.renderScale,
           sky: document.querySelector('[data-sky-route] textarea')?.value,

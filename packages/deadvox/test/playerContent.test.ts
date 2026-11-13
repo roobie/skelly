@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { buildRegistry } from '@skelly/engine/content';
 import { expect, it } from 'vitest';
 import { validate } from '../src/cli/validate.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { PLAYER } from './playerFixture.ts';
 
 const numericPaths = (value: object, prefix: string[] = []): string[][] =>
@@ -18,19 +18,36 @@ const numericPaths = (value: object, prefix: string[] = []): string[][] =>
   });
 
 it('validate rejects every missing or negative player tuning field and a missing player row', () => {
-  const valid = buildRegistry([{ source: 'fixture', data: { player: [PLAYER] } }]);
+  const valid = buildRegistry([
+    {
+      source: 'fixture',
+      data: { damageKinds: [{ id: PLAYER.debugBlockTool.damageKind, class: 'melee' }], player: [PLAYER] },
+    },
+  ]);
   expect(valid.issues).toEqual([]);
   expect(valid.registry.player.get('player')).toEqual(PLAYER);
   const root = mkdtempSync(join(tmpdir(), 'deadvox-player-content-'));
-  const base = join(root, 'src/content/base');
-  mkdirSync(base, { recursive: true });
+  const base = join(root, 'mods/fixture.player');
+  mkdirSync(join(base, 'pack'), { recursive: true });
   const run = () => {
+    writeFileSync(
+      join(base, 'pack/manifest.json'),
+      JSON.stringify({
+        id: 'fixture.player',
+        version: '1',
+        tier: 'core',
+        product: false,
+        dependencies: [],
+        overrides: [],
+        files: existsSync(join(base, 'player.json')) ? [{ path: 'player.json', kind: 'content' }] : [],
+      }),
+    );
     const output: string[] = [];
-    const status = validate([], (line) => output.push(line), root);
+    const status = validate(['--stack', 'fixture.player'], (line) => output.push(line), root);
     return { status, output: output.join('\n') };
   };
   try {
-    expect(run().output).toContain('core content player: missing required content "player"');
+    expect(run().output).toContain('core content player: missing required capability "player"');
     const paths = numericPaths(PLAYER);
     expect(paths.length).toBeGreaterThan(0);
     for (const path of paths) {

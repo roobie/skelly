@@ -2,6 +2,7 @@
 read_if:
   - you build the acid zombie, the `acidSpit` ability, its glob or its puddle
   - you add a ranged zombie attack, a zombie projectile or acid damage
+  - you change content-declared damage kinds or actor resistance
   - you add a later tier of the acid evolution line
   - you change how the acid zombie sounds, or scramble another type's voice
   - you decide how the player counters an enemy that attacks from a distance
@@ -15,35 +16,35 @@ It is the first tier of an evolution line of acid enemies, and the line lives in
 
 ## Ability, not type
 
-`acidSpit` is a general ability component, not acid-zombie code. Any type that lists it in `abilities` spits, and its tunables live in that type's content: range band, wind-up, cooldown, the cooldown fraction a cancel costs, spread, glob speed, hit moves and puddle. Later tiers of the line reuse it by data alone, with harder numbers. Validation rejects a type that lists `acidSpit` without its tunables, and tunables on a type that doesn't list it. See `DESIGN.md`, "Types are data"; `PILLARS.md`, "Content forward compatibility"; and `src/core/schema.ts`, `ZombieSchema` and `ZOMBIE_ABILITIES`.
+Acid spit is a reusable ability rather than a type-specific mechanism, so later tiers can change its tuning through content alone. Admission must reject incomplete ability declarations rather than silently disabling them. See `DESIGN.md`, "Types are data"; `PILLARS.md`, "Content forward compatibility"; and `packages/engine/src/core/schema/actors.ts`, `ActorSchema` and `ACTOR_ABILITIES`.
 
 The spitter still has an ordinary `attack` for when the player reaches it. A spitter with no melee would make closing in risk-free, and the counter would collapse into "run up and hit it".
 
 ## The spit
 
-**Telegraph before damage.** The spit has a wind-up the player can see and hear, like the amalgam's tentacle and every melee swing: the head pulls back, the chest sac glows brighter and a wet sound plays from the zombie's position. Without a telegraph, a ranged hit reads as random damage from off-screen. The wind-up sound is the type's attack sound. See `DESIGN.md`, "Amalgam body and damage", and `src/core/schema.ts`, `ZombieSchema`.
+**Telegraph before damage.** The spit has a wind-up the player can see and hear, like the amalgam's tentacle and every melee swing: the head pulls back, the chest sac glows brighter and a wet sound plays from the zombie's position. Without a telegraph, a ranged hit reads as random damage from off-screen. The wind-up sound is the type's attack sound. See `DESIGN.md`, "Amalgam body and damage", and `packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
 
 **A hit during the wind-up cancels the spit.** A cancelled spit costs part of the cooldown, as a fraction in content, because that fraction decides how often a harassing spitter can fire while the player fights back. Cancelling makes fighting back an answer in itself, which suits an enemy meant to harass rather than to kill.
 
-**Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `src/core/zombies.ts`, `seesPlayer`.
+**Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `packages/engine/src/core/agentPerception.ts`, `seesPlayer`.
 
-**Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit and the cooldown is not spent. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `src/core/zombies.ts`, `withinAttackReach`, and `src/core/explosive.ts`, `inSight`.
+**Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit and the cooldown is not spent. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `packages/engine/src/core/actorMotion.ts`, `withinAttackReach`, and `packages/engine/src/core/explosive.ts`, `inSight`.
 
-**The glob is simulated.** Flight gives the player a second chance after the wind-up: sidestepping matters because the spit is a thing in the world, not delayed unavoidable damage. See `src/core/acidGlob.ts`, `advanceAcidGlob`, and `src/core/zombies.ts`, `ZombieSystem.acidGlobContact`. Flight and splash appearance remain presentation only; see `src/render/acidEffects.ts`, `AcidEffects`.
+**The glob is simulated.** Flight gives the player a second chance after the wind-up: sidestepping matters because the spit is a thing in the world, not delayed unavoidable damage. See `packages/engine/src/core/acidGlob.ts`, `advanceAcidGlob`, and `packages/engine/src/core/actorSystem.ts`, `ActorSystem.acidGlobContact`. Flight and splash appearance remain presentation only; see `packages/presentation/src/render/acidEffects.ts`, `AcidEffects`.
 
-**Aim is seeded.** A far spit can miss, but saving or replaying must not change its chance to land. Release captures the attack rather than following the player, so moving after release remains a counter. See `DESIGN.md`, "Determinism"; `src/core/zombies.ts`, `AcidSpitRelease` and `ZombieSystem.resolveAcidSpit`; and `src/core/acidGlob.ts`, `AcidGlobState`.
+**Aim is seeded.** A far spit can miss, but saving or replaying must not change its chance to land. Release captures the attack rather than following the player, so moving after release remains a counter. See `DESIGN.md`, "Determinism"; `packages/engine/src/core/actorSystem.ts`, `AcidSpitRelease` and `ActorSystem.resolveAcidSpit`; and `packages/engine/src/core/acidGlob.ts`, `AcidGlobState`.
 
-**A zombie in the way takes the acid.** A crowd shields the player and takes the burn, so "use the crowd" stays a tactic. Acid zombies are immune; shamblers are not. Content owns immunity so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.resolveAcidGlobImpact` and `acidDamageToZombie`, and `src/core/schema.ts`, `ZombieSchema`.
+**A zombie in the way takes the acid.** A crowd shields the player and takes the burn, so "use the crowd" stays a tactic. Acid zombies are immune; shamblers are not. Content owns immunity so later tiers and other types choose it by data. See `packages/engine/src/core/actorSystem.ts`, `ActorSystem.resolveAcidGlobImpact` and `damageToActor`, and `packages/engine/src/core/schema/actors.ts`, `ActorSchema`.
 
-**The player is hit through the existing path.** The glob ignores the melee block, which stays a melee answer. Localized hits keep pain, shock, bleeding and worn-item wear with their existing owners rather than creating a second injury system. Hits are light and the cooldown long, so one spit hurts but rarely opens a serious wound. See `DESIGN.md`, "Landing injuries", and `DESIGN.md`, "Bleeding"; `src/game/zombiePlayerHit.ts`, `applyZombiePlayerHit`; and `src/core/sim.ts`, `Simulation.hit`.
+**The player is hit through the existing path.** The glob ignores the melee block, which stays a melee answer. Localized hits keep pain, shock, bleeding and worn-item wear with their existing owners rather than creating a second injury system. Hits are light and the cooldown long, so one spit hurts but rarely opens a serious wound. See `DESIGN.md`, "Landing injuries", and `DESIGN.md`, "Bleeding"; `packages/engine/src/game/actorPlayerHit.ts`, `applyActorPlayerHit`; and `packages/engine/src/core/sim.ts`, `Simulation.hit`.
 
-**Acid is a damage kind.** Acid sits beside the melee kinds, not among them: weapons, melee classes and per-region melee resistance take only melee kinds, while zombie attack moves, injury and wear content take every kind. So bleeding chance, wound depth, pain and shock are authored for acid in content, not special-cased in code. The aim is a burn: content gives acid a low bleeding chance and high pain. Hazmat's "resists acid" gets a key to resist. See `src/core/body.ts`, `MELEE_DAMAGE_KINDS` and `DAMAGE_KINDS`.
+**Acid is a damage kind.** Burns need their own authored injury and wear responses, not an acid branch in the injury mechanism. Class admission separates weapon melee kinds from non-melee kinds, while actor resistance is keyed by the selected kind and region so immunity is not a privileged field. See `packages/engine/src/core/damageContent.ts`, `checkDamageKinds`, and `packages/engine/src/core/actorSystem.ts`, `damageToActor`.
 
-**Acid eats the outer worn layer.** A hit wears the worn item it meets first on the struck region harder than melee does, so clothing and armour become a consumable against spitters and a reason to carry spares. Worn armour takes wear but doesn't change damage unless it is impervious to acid (`DESIGN.md`, "Worn coverage"), so this costs gear, not health. The multiplier is per damage kind in content, not an acid check in the wear code. See `src/core/wear.ts`, `wearOnPlayerHit`.
+**Acid eats the outer worn layer.** A hit wears the worn item it meets first on the struck region harder than melee does, so clothing and armour become a consumable against spitters and a reason to carry spares. Worn armour takes wear but doesn't change damage unless it is impervious to acid (`DESIGN.md`, "Worn coverage"), so this costs gear, not health. The multiplier is per damage kind in content, not an acid check in the wear code. See `packages/engine/src/core/wear.ts`, `wearOnPlayerHit`.
 
 ## Puddles
 
-A missed spit still denies space, making ground terrain to read. Contact is not a series of blows: stepping the same burn more often must not multiply wounds, clothing loss or dismemberment. Player contact uses the shared exposure owner so injury, wear and action refusal stay consistent with other burns; zombie contact bypasses blow presentation and severing. A puddle meets footwear first, so boots impervious to acid let the player stand in one unharmed (`DESIGN.md`, "Worn coverage"). See `src/core/zombies.ts`, `ZombieSystem.tickAcidPuddles`, `ZombieSystem.burnZombieFeet` and `ZombieSystem.resolveRegionDamage`; `src/core/damageExposure.ts`, `DamageExposures`; and `src/core/acidPuddle.ts`, `feetInAcidPuddle`. Content owns the footprint and burn tuning; see `src/core/schema.ts`, `AcidSpitSchema`. The release strength and contact identity survive saves so loading cannot change the threat or restart its threshold draws; see `src/core/zombies.ts`, `ZombieSystemState`.
+A missed spit still denies space, making ground terrain to read. Contact is not a series of blows: stepping the same burn more often must not multiply wounds, clothing loss or dismemberment. Player contact uses the shared exposure owner so injury, wear and action refusal stay consistent with other burns; zombie contact bypasses blow presentation and severing. A puddle meets footwear first, so boots impervious to acid let the player stand in one unharmed (`DESIGN.md`, "Worn coverage"). See `packages/engine/src/core/actorSystem.ts`, `ActorSystem.tickAcidPuddles`, `ActorSystem.burnActorFeet` and `ActorSystem.resolveRegionDamage`; `packages/engine/src/core/damageExposure.ts`, `DamageExposures`; and `packages/engine/src/core/acidPuddle.ts`, `feetInAcidPuddle`. Content owns the footprint and burn tuning; see `packages/engine/src/core/schema/actors.ts`, `AcidSpitSchema`. The release strength and contact identity survive saves so loading cannot change the threat or restart its threshold draws; see `packages/engine/src/core/actorSystem.ts`, `ActorSystemState`.
 
 ## Movement
 
@@ -68,19 +69,19 @@ These must all work, because each is the reason the fight reads as more than tra
 
 ## Spawning
 
-Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab level holds as many acid zombies as its depth below the hatch, so the deepest level holds the most; places outside the lab's numbered depth, such as the sewer, hold none. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the acid zombies take fixed marker cells beside those rows. See `src/content/base/gauntlet-lab-threat.libsonnet`, `acidCounts`, and `src/content/base/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
+Acid zombies spawn only in labs, where `DESIGN.md`, "Evolution" puts weird types. Each lab level holds as many acid zombies as its depth below the hatch, so the deepest level holds the most; places outside the lab's numbered depth, such as the sewer, hold none. Lab threat is authored per storey as weighted marker rows, which gives chances, not counts, so the acid zombies take fixed marker cells beside those rows. See `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab-threat.libsonnet`, `acidCounts`, and `mods/skelly.deadvox.scenario.gauntlet.city/gauntlet-lab.libsonnet`, `storeys`. The type is otherwise `authoredOnly`, so ordinary settlement selection cannot place it.
 
 ## Voice
 
 The acid zombie must be recognisable by ear, so a player who hears it before seeing it knows to look for a spitter and a line of sight to break. Pitch alone is easy to confuse with the runner or the crawler, so the timbre is scrambled as well.
 
-The scramble is data on the type's own sound rows, and a zombie's voice sounds are content references rather than a code list, so a new or changed voice needs content only and the other types' voices stay untouched. See `PILLARS.md`, "Content forward compatibility"; `src/content/base/sounds.jsonnet`, `zombieVoices`; `src/core/schema.ts`, `SoundSchema` and `ZombieSchema`; and `src/game/audio.ts`, `connectSample`.
+The scramble is data on the type's own sound rows, and a zombie's voice sounds are content references rather than a code list, so a new or changed voice needs content only and the other types' voices stay untouched. See `PILLARS.md`, "Content forward compatibility"; `mods/skelly.deadvox.actors/actors-sounds.jsonnet`, `zombieVoices`; `packages/engine/src/core/schema/models.ts`, `SoundSchema`; `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; and `packages/presentation/src/presentation/audio.ts`, `connectSample`.
 
 Hear it with the debug spawn action for acid zombies, or from the sounds page.
 
 ## Saves and determinism
 
-A save must not erase an incoming threat or change its outcome. See `src/core/zombies.ts`, `ZombieSystemState`, and `src/core/saveFormat.ts`, `encodeSave` and `decodeSave`. Presentation never decides whether a hit landed; see `DESIGN.md`, "Damage, destruction and dismemberment".
+A save must not erase an incoming threat or change its outcome. See `packages/engine/src/core/actorSystem.ts`, `ActorSystemState`, and `packages/engine/src/core/saveFormat.ts`, `encodeSave` and `decodeSave`. Presentation never decides whether a hit landed; see `DESIGN.md`, "Damage, destruction and dismemberment".
 
 ## Model
 
@@ -91,8 +92,8 @@ The acid zombie gets its own mobgen body, built from the ground up, not a recolo
 - glowing green eyes;
 - acid drooling from the mouth, with drips that fall to the ground.
 
-The body is mobgen's `acid` model; its bone rules and how Deadvox consumes them are in `packages/mobgen/docs/acid-zombie-integration.md`. See `src/core/schema.ts`, `ZombieSchema` and `ZOMBIE_MODEL`.
+The body is the built `acid` model: Deadvox poses it from its built body and clips, as for every actor. See `packages/engine/src/core/schema/actors.ts`, `ActorSchema`, `BODY_PLAN` and `ActorBodySchema`.
 
-The sac, eyes, drips and splash are presentation only, so no simulation outcome or save depends on them. Their tuning is the type's `acidBody` content, which validation requires exactly for the acid model; see `src/core/schema.ts`, `AcidBodySchema`. The sac and eyes glow through their material's emission, and the wind-up brightens only the sac through the crowd data texture. The nearest acid zombies also light their surroundings through item-light slots that lights leave free; see `src/render/lightPool.ts`, `acidGlows`. Drips fall from the drawn mouth, and on death the sac's voxels vanish as a splash thrown from the glow anchor; see `src/render/acidEffects.ts`, `AcidEffects`, and `src/render/mobActors.ts`, `onBurst`.
+The sac, eyes, drips and splash are presentation only, so no simulation outcome or save depends on them. Their tuning is the type's `acidBody` content, which validation requires exactly for the acid model; see `packages/engine/src/core/schema/actors.ts`, `AcidBodySchema`. The sac and eyes glow through their material's emission, and the wind-up brightens only the sac through the crowd data texture. The nearest acid zombies also light their surroundings through item-light slots that lights leave free; see `packages/presentation/src/render/lightPool.ts`, `acidGlows`. Drips fall from the drawn mouth, and on death the sac's voxels vanish as a splash thrown from the glow anchor; see `packages/presentation/src/render/acidEffects.ts`, `AcidEffects`, and `packages/presentation/src/render/mobActors.ts`, `onBurst`.
 
 Player-visible text follows `INTERFACE.md`, "Text": the type's name is a label, and the burn shows through bodily cues and the body panel, never as narration.

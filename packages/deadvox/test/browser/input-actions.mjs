@@ -1,16 +1,16 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: gate/modifier down edges precede the primary key; releases must reverse that order.
 // biome-ignore-all lint/style/useNamingConvention: native metadata retains exact DOM code spelling.
 // Native keyboard drivers resolve the running page's effective bindings, including its hold gate.
-export const actionSnapshotExpression = (id) => `import('/src/game/inputBindings.ts').then(({ inputBindings }) => {
+export const actionSnapshotExpression = (id) => `import('/src/product/input.ts').then(({ inputBindings }) => {
   const binding = inputBindings.binding(${JSON.stringify(id)});
   if (!binding) throw new Error('Unknown input action');
   return { primary: inputBindings.chords(binding.id)[0], gate: binding.gate ? inputBindings.chords(binding.gate)[0] : null };
 })`;
 const modifierKey = { shift: 'ShiftLeft', alt: 'AltLeft', ctrl: 'ControlLeft', meta: 'MetaLeft' };
-export const holdAction = async (page, id, { includeGate = true } = {}) => {
+const heldCodes = async (page, id, includeGate) => {
   const { primary, gate: effectiveGate } = await page.evaluate(actionSnapshotExpression(id));
   const gate = includeGate ? effectiveGate : null;
-  const held = [
+  return [
     ...new Set(
       [
         gate?.modifier && modifierKey[gate.modifier],
@@ -20,6 +20,10 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
       ].filter(Boolean),
     ),
   ];
+};
+const keyUpsOf = (codes) => codes.toReversed().map((code) => ({ code, key: cdpKey(code).key }));
+export const holdAction = async (page, id, { includeGate = true } = {}) => {
+  const held = await heldCodes(page, id, includeGate);
   const pressed = [];
   try {
     for (const code of held) {
@@ -43,13 +47,16 @@ export const holdAction = async (page, id, { includeGate = true } = {}) => {
     }
   };
   // waitForSimulation dispatches these in the page when the hold is its stop; see simulation-wait.mjs.
-  release.keyUps = pressed.toReversed().map((code) => ({ code, key: cdpKey(code).key }));
+  release.keyUps = keyUpsOf(pressed);
   return release;
 };
 export const pressAction = async (page, id, options) => {
   const release = await holdAction(page, id, options);
   await release();
 };
+// The keyup events that release a hold of the action, known before the hold is pressed.
+export const keyUpsForHold = async (page, id, { includeGate = true } = {}) =>
+  keyUpsOf(await heldCodes(page, id, includeGate));
 
 // CDP needs native virtual-key metadata for browser default actions; this is a platform adapter,
 // not a game binding table. Defaults and gates above always come from the running registry.

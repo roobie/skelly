@@ -1,25 +1,25 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '@skelly/engine/internal/core/loot.ts';
+import { magazineSpec } from '@skelly/engine/internal/core/magazine.ts';
+import { gamePerHour, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { chargeShare, Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { chargeShare } from '../src/core/lights.ts';
-import { corpseLootPoint, type LootSpawnPoint, rollLoot, selectLootType } from '../src/core/loot.ts';
-import { Rng } from '../src/core/random.ts';
-import { gamePerHour, simSeconds } from '../src/core/time.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const context = { usage: ['Medical'], tier: 'Tier2' } as const;
-const itemDefinition = (id: string, usage: string[], tiers: string[]) => ({
+const itemDefinition = (id: string) => ({
   id,
   name: id,
   category: 'misc',
   size: [1, 1],
   weight: 1,
   stack: 10,
-  economy: { usage, tiers },
   workInProgress: false,
-  notLoot: false,
 });
+const scarcity = (id: string, usage: string[], tiers: string[]) => ({ id, usage, tiers, notLoot: false });
 const fixture = () => {
   const result = buildRegistry([
     playerInventorySource(),
@@ -28,10 +28,11 @@ const fixture = () => {
       data: {
         furnitureMaterials: fixtureMaterials(),
         sounds: fixtureSounds(),
-        items: [
-          itemDefinition('stock', ['Medical'], ['Tier2']),
-          itemDefinition('wrong_usage', ['Military'], ['Tier2']),
-          itemDefinition('wrong_tier', ['Medical'], ['Tier1', 'Tier3']),
+        items: [itemDefinition('stock'), itemDefinition('wrong_usage'), itemDefinition('wrong_tier')],
+        itemEconomy: [
+          scarcity('stock', ['Medical'], ['Tier2']),
+          scarcity('wrong_usage', ['Military'], ['Tier2']),
+          scarcity('wrong_tier', ['Medical'], ['Tier1', 'Tier3']),
         ],
         furniture: [
           {
@@ -80,7 +81,7 @@ describe('central loot selection', () => {
     const rolled = rollLoot(registry, source, Rng.stream(19, 'selection'));
     expect(rolled).not.toHaveLength(0);
     for (const entry of rolled) {
-      const { economy } = registry.items.get(entry.type)!;
+      const economy = registry.itemEconomy.get(entry.type)!;
       expect(economy.usage.some((usage) => source.context.usage.includes(usage))).toBe(true);
       expect(economy.tiers).toContain(source.context.tier);
     }
@@ -166,5 +167,137 @@ describe('central loot selection', () => {
     };
     const [rolled] = rollLoot(registry, source, Rng.stream(1, 'charge'));
     expect(chargeShare(registry, inventory.createRolled(rolled!))).toBe(0.25);
+  });
+});
+
+describe('magazines dropped as loot', () => {
+  const stackSources = baseContentSources().filter(
+    ({ source }) => !source.startsWith('layouts') && source !== 'starts.json',
+  );
+  const stack = buildRegistry(stackSources);
+  const placeEverywhere = {
+    usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military'],
+    tier: 'Tier4',
+    lowerTiers: true,
+  } as const;
+  const magazineTypes = [...stack.registry.items.keys()].filter((type) => magazineSpec(stack.registry, type));
+  const cartridgeTypes = [...stack.registry.items.values()]
+    .filter(({ ammo }) => ammo !== undefined)
+    .map(({ id }) => id);
+  const allCartridges = cartridgeTypes.map((item) => ({ item, weight: 1 }));
+
+  type Odds = { item: string; weight: number }[];
+  /** The stack's registry with one table dropping the given magazines, and a magazine-load policy of the given spread. */
+  const dropping = (types: readonly string[], odds: Odds | undefined, spread: [number, number] | undefined) => {
+    const registry = {
+      ...stack.registry,
+      loot: new Map(stack.registry.loot),
+      lootPolicy: new Map(
+        spread === undefined ? [] : [['p', { id: 'p', capability: 'magazines', magazineLoad: spread }]],
+      ),
+    } as typeof stack.registry;
+    registry.loot.set('drop', {
+      id: 'drop',
+      rolls: [1, 1],
+      entries: types.map((item) => ({ item, weight: 1 })),
+      ...(odds === undefined ? {} : { cartridgeOdds: odds }),
+    });
+    return registry;
+  };
+  const dropPoint = (id: string): LootSpawnPoint => ({
+    ...point(id),
+    context: { usage: [...placeEverywhere.usage], tier: placeEverywhere.tier, lowerTiers: true },
+    supply: { kind: 'table', table: 'drop' },
+  });
+  const magazinesRolled = (registry: typeof stack.registry, type: string, seeds: number) =>
+    Array.from({ length: seeds }, (_, seed) => rollLoot(registry, dropPoint(`p${seed}`), Rng.stream(seed, 'magazine')))
+      .flat()
+      .filter((rolled) => rolled.type === type);
+
+  it('fills every dropped magazine with 0 to capacity cartridges of one type fitting its calibre', () => {
+    const registry = dropping(magazineTypes, allCartridges, [0, 1]);
+    let seen = 0;
+    for (const type of magazineTypes) {
+      const { calibre, capacity } = magazineSpec(registry, type)!;
+      for (const { cartridges = [] } of magazinesRolled(registry, type, 6)) {
+        seen += cartridges.length;
+        expect(cartridges.length).toBeLessThanOrEqual(capacity);
+        expect(new Set(cartridges).size).toBeLessThanOrEqual(1);
+        expect(cartridges.every((round) => registry.items.get(round)?.ammo?.calibre === calibre)).toBe(true);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it('takes the cartridge type from the dropping table list and reproduces for a fixed seed', () => {
+    const [magazine] = magazineTypes;
+    const { calibre } = magazineSpec(stack.registry, magazine!)!;
+    const fitting = cartridgeTypes.filter((type) => stack.registry.items.get(type)?.ammo?.calibre === calibre);
+    expect(fitting.length).toBeGreaterThan(0);
+    const registry = dropping([magazine!], [{ item: fitting[0]!, weight: 1 }], [1, 1]);
+    const rolled = magazinesRolled(registry, magazine!, 1);
+    expect(rolled).toHaveLength(1);
+    expect(rolled[0]!.cartridges!.length).toBeGreaterThan(0);
+    expect(new Set(rolled[0]!.cartridges)).toEqual(new Set([fitting[0]]));
+    expect(magazinesRolled(registry, magazine!, 1)).toEqual(rolled);
+  });
+
+  it('fills a magazine to capacity when the policy spread is forced to full', () => {
+    const [magazine] = magazineTypes;
+    const registry = dropping([magazine!], allCartridges, [1, 1]);
+    const [rolled] = magazinesRolled(registry, magazine!, 1);
+    expect(rolled!.cartridges).toHaveLength(magazineSpec(registry, magazine!)!.capacity);
+  });
+
+  it('drops an empty magazine when the table has no cartridge list, or none of its types fits', () => {
+    const [magazine] = magazineTypes;
+    const { calibre } = magazineSpec(stack.registry, magazine!)!;
+    const other = cartridgeTypes.find((type) => stack.registry.items.get(type)?.ammo?.calibre !== calibre)!;
+    const full = magazinesRolled(dropping([magazine!], allCartridges, [1, 1]), magazine!, 1);
+    expect(full[0]!.cartridges!.length).toBeGreaterThan(0);
+    for (const odds of [undefined, [{ item: other, weight: 1 }]]) {
+      const [rolled] = magazinesRolled(dropping([magazine!], odds, [1, 1]), magazine!, 1);
+      expect(rolled!.cartridges ?? []).toEqual([]);
+    }
+  });
+
+  it('drops an empty magazine when the product has no loot policy row', () => {
+    const [magazine] = magazineTypes;
+    expect(
+      magazinesRolled(dropping([magazine!], allCartridges, [1, 1]), magazine!, 1)[0]!.cartridges!.length,
+    ).toBeGreaterThan(0);
+    const [rolled] = magazinesRolled(dropping([magazine!], allCartridges, undefined), magazine!, 1);
+    expect(rolled!.cartridges ?? []).toEqual([]);
+  });
+
+  it('never lets a magazine load shift what the table rolls after it', () => {
+    const [magazine] = magazineTypes;
+    const [first, second] = [...stack.registry.itemEconomy.values()].filter(
+      ({ id, usage, tiers }) => id !== magazine && usage.includes('Residential') && tiers.length > 0,
+    );
+    const rollsAround = (odds: Odds | undefined, spread: [number, number] | undefined) => {
+      const registry = dropping([], odds, spread);
+      registry.loot.set('drop', {
+        id: 'drop',
+        rolls: [6, 6],
+        entries: [
+          { item: magazine!, weight: 1 },
+          { item: first!.id, weight: 1, count: [1, 9], condition: [0, 1] },
+          { item: second!.id, weight: 1, count: [1, 9], condition: [0, 1] },
+        ],
+        ...(odds === undefined ? {} : { cartridgeOdds: odds }),
+      });
+      return rollLoot(registry, dropPoint('shift'), Rng.stream(3, 'shift')).filter(({ type }) => type !== magazine);
+    };
+    const loadless = rollsAround(undefined, undefined);
+    expect(loadless.length).toBeGreaterThan(0);
+    expect(rollsAround(allCartridges, [0, 1])).toEqual(loadless);
+  });
+
+  it('carries a rolled magazine load onto the item it creates', () => {
+    const [magazine] = magazineTypes;
+    const registry = dropping([magazine!], allCartridges, [1, 1]);
+    const [rolled] = magazinesRolled(registry, magazine!, 1);
+    expect(new Inventory(registry).createRolled(rolled!).cartridges).toEqual(rolled!.cartridges);
   });
 });

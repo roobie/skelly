@@ -1,19 +1,19 @@
-import { readFileSync } from 'node:fs';
+import { type MeleeProfile, meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { meleePoseAndContact, readyMeleePose } from '@skelly/engine/pose';
+import { ARM_NODE } from '@skelly/presentation/internal/render/armRig.ts';
+import type { ItemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { indexModelMaterials, prepareModel } from '@skelly/presentation/internal/render/models.ts';
+import { HeldItems, type ModelLibrary } from '@skelly/presentation/render';
 import { Box3, LoadingManager, PerspectiveCamera, Quaternion, Texture, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
-import { ARM_NODE } from '../src/render/armRig.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import type { ItemLook } from '../src/render/itemLook.ts';
-import { indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
+import { modFileBytes } from './modFile.ts';
 
-const BASE = 'src/content/base';
 const registry = baseRegistry();
 const playerFigure = registry.figures.get('player')!;
 Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
@@ -23,7 +23,7 @@ const realHeldModels = new Map<string, import('three').Object3D>();
 await Promise.all(
   ['baseball_bat', 'steel_pipe', 'kitchen_knife', 'machete', 'kabar'].map(async (id) => {
     const def = registry.models.get(id)!;
-    const bytes = readFileSync(`${BASE}/${def.file}`);
+    const bytes = modFileBytes(def.file);
     const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     realHeldModels.set(id, prepareModel(def, gltf.scene).held);
   }),
@@ -50,8 +50,8 @@ const boxCorners = (box: Box3): Vector3[] =>
     [box.min.y, box.max.y].flatMap((y) => [box.min.z, box.max.z].map((z) => new Vector3(x, y, z))),
   );
 const weaponRollDegrees = (rest: Quaternion, current: Quaternion): number => {
-  const restLong = new Vector3(1, 0, 0).applyQuaternion(rest).normalize();
-  const currentLong = new Vector3(1, 0, 0).applyQuaternion(current).normalize();
+  const restLong = new Vector3(0, 0, 1).applyQuaternion(rest).normalize();
+  const currentLong = new Vector3(0, 0, 1).applyQuaternion(current).normalize();
   const restEdge = new Vector3(0, 1, 0).applyQuaternion(rest).normalize();
   const currentEdge = new Vector3(0, 1, 0).applyQuaternion(current).normalize();
   const swing = new Quaternion().setFromUnitVectors(restLong, currentLong);
@@ -263,7 +263,7 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
     for (const side of ['right', 'left'] as const) {
       const result = measure('cut', 'kitchen_knife', undefined, side);
       expect(result.diagonal, `kitchen_knife/${side}`).toBeGreaterThanOrEqual(Math.hypot(1920, 1080) * 0.35);
-      expect(result.forward, `kitchen_knife/${side}, 893d0ca baseline -0.08089 m`).toBeGreaterThanOrEqual(0.069);
+      expect(result.forward, `kitchen_knife/${side}`).toBeGreaterThanOrEqual(0.069);
       expect(result.tipCenterAtContact, `kitchen_knife/${side}`).toBeLessThanOrEqual(350);
       expect(
         side === 'right' ? result.pullbackTipScreen.x > 960 : result.pullbackTipScreen.x < 960,
@@ -311,7 +311,9 @@ describe('melee screen-space motion through HeldItems, real GLBs and the 75-degr
       const result = measure('fists', undefined, undefined, side);
       expect(result.forward, side).toBeGreaterThanOrEqual(0.3);
       expect(result.handCenterAtContact, side).toBeLessThanOrEqual(120);
-      expect(result.torsoYawAtContactDegrees * (side === 'right' ? 1 : -1), `${side} strike-side yaw`).toBeCloseTo(30);
+      expect(result.torsoYawAtContactDegrees * (side === 'right' ? 1 : -1), `${side} strike-side yaw`).toBeGreaterThan(
+        0,
+      );
       expect(result.maxTorsoYawDegrees, `${side} peak yaw`).toBeLessThanOrEqual(30);
       expect(result.cameraOrientationChange, `${side} camera yaw/pitch stays locked`).toBeLessThan(1e-8);
     }

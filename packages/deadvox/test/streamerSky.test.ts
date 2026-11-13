@@ -1,40 +1,46 @@
+import type { MesherHandlers } from '@skelly/engine/internal/game/mesherProtocol.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import type {
+  FromMesher,
+  MesherInit,
+  MesherPort,
+  MesherSource,
+  ReceivedMeshRequest,
+  ToMesher,
+} from '@skelly/engine/mesh';
+import { buildRequestedMesh, HeldChunks } from '@skelly/engine/mesh';
+import { buildSkyResult } from '@skelly/engine/sky';
+import { CHUNK, makeScale, World } from '@skelly/engine/world';
+import { FurnitureMeshes } from '@skelly/presentation/internal/render/furniture.ts';
+import { ChunkMeshes, PileMeshes } from '@skelly/presentation/render';
 import { DoubleSide, type Group, InstancedMesh, Mesh, OrthographicCamera } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { buildMesh } from '../src/core/mesher.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { buildSkyResult } from '../src/core/skyTransport.ts';
-import { World } from '../src/core/world.ts';
-import { Streamer } from '../src/game/streamer.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { FurnitureMeshes } from '../src/render/furniture.ts';
-import { PileMeshes } from '../src/render/piles.ts';
-import type { ToMesher } from '../src/worker/protocol.ts';
-import { baseRegistry, baseTerrainShape } from './baseRegistry.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 import { skyFixture } from './fixtures/sky.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
-class OwnedWorker {
+class OwnedWorker implements MesherPort {
   static instances: OwnedWorker[] = [];
-  onmessage: ((event: { data: unknown }) => void) | undefined;
-  readonly waiting: Exclude<ToMesher, { type: 'init' }>[] = [];
+  handlers: MesherHandlers | undefined;
+  readonly waiting: (Exclude<ToMesher, { type: 'init' | 'mesh' }> | ReceivedMeshRequest)[] = [];
   readonly posted: string[] = [];
-  colors: Uint8Array = new Uint8Array();
-  patterns: Uint8Array = new Uint8Array();
-  weatherable: Uint8Array = new Uint8Array();
+  init: MesherInit | undefined;
+  private readonly held = new HeldChunks();
   constructor() {
     OwnedWorker.instances.push(this);
   }
-  postMessage(message: ToMesher, transfer: ArrayBuffer[]) {
-    const copy = structuredClone(message, { transfer });
+  listen(handlers: MesherHandlers) {
+    this.handlers = handlers;
+  }
+  post(message: ToMesher, transfer: readonly ArrayBuffer[]) {
+    const copy = structuredClone(message, { transfer: [...transfer] });
     if (copy.type === 'init') {
-      this.colors = copy.colors;
-      this.patterns = copy.patterns;
-      this.weatherable = copy.weatherable;
+      this.init = copy;
       return;
     }
-    this.waiting.push(copy);
+    this.waiting.push(copy.type === 'mesh' ? this.held.receive(copy) : copy);
     this.posted.push(copy.type);
   }
   replyNext(index = 0) {
@@ -49,42 +55,35 @@ class OwnedWorker {
             key: message.key,
             version: message.version,
             ms: 0,
-            mesh: buildMesh(message.padded, this.colors, {
-              patterns: this.patterns,
-              wide: message.wide,
-              weatherable: this.weatherable,
-            }),
+            mesh: buildRequestedMesh(this.init!, message),
           }
         : { type: 'sky', id: message.id, result: buildSkyResult(message.input), workerRealMs: 0 };
-    this.onmessage?.({ data });
+    this.handlers?.message(data as FromMesher);
   }
 }
 
+const ownedMeshers = (count: number): MesherSource => ({ count, create: () => new OwnedWorker() });
+
 afterEach(() => {
-  vi.unstubAllGlobals();
   OwnedWorker.instances = [];
 });
 
 it('meshes a partial recorded ring without generating extra columns and repairs it when a neighbour arrives', () => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    mesher: ownedMeshers(1),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const beforeReveal = vi.fn((cx: number, cz: number) => {
     const published = meshes.setRevealedColumns.mock.calls.at(-1)![0] as Set<string>;
@@ -122,8 +121,6 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
 });
 
 it.each([0, 1])('blocks sight past an incomplete column (height %i), even after moving', (missingCy) => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
-  vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 1 };
   const world = new World();
   const registry = baseRegistry();
@@ -141,9 +138,7 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     size: [1, 1],
     weight: 1,
     category: 'misc',
-    economy: registry.items.values().next().value!.economy,
     workInProgress: false,
-    notLoot: false,
   });
   const inventory = new Inventory(registry);
   const contentPosition: [number, number, number] = [2 * CHUNK + 1, 1, 1];
@@ -170,19 +165,26 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   const streamer = new Streamer({
     world,
     meshes,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    mesher: ownedMeshers(1),
+    terrain: {
+      ...fixtureTerrain({ scale, floor: -1 }),
+      generateColumn: (cx, cz) =>
+        fixtureTerrain({ scale, floor: -1 })
+          .generateColumn(cx, cz)
+          .map((chunk) => {
+            chunk.set(1, 1, 1, 1);
+            chunk.compact();
+            return chunk;
+          }),
+    },
     colors: new Uint8Array(256 * 3).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 2,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => -1, top: () => undefined },
-    stamp: (chunk) => chunk.set(1, 1, 1, 1),
   });
   streamer.setReplayControlled();
   streamer.update(0, 0);
@@ -222,16 +224,14 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     }
     expect(inventory.snapshotState()).toEqual(snapshot);
     meshes.selectShadowCasters(() => true, DoubleSide);
-    const shadows = meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray());
+    const shadows = meshes.origins('shadow');
     const camera = new OrthographicCamera(-200, 200, 200, -200, 0.1, 1000);
     camera.position.set(0, 100, 100);
     camera.lookAt(0, 0, 0);
     camera.updateMatrixWorld();
     meshes.cull(camera);
-    expect(meshes.group.children.filter((mesh) => mesh.visible).map((mesh) => mesh.position.toArray())).toEqual(
-      shadows,
-    );
-    return shadows.map(([x, , z]) => `${x! / CHUNK},${z! / CHUNK}`);
+    expect(meshes.origins('main')).toEqual(shadows);
+    return shadows.map(([x, , z]) => `${x / CHUNK},${z / CHUNK}`);
   };
   drain(missing);
   expect(worker.waiting.some((message) => message.type === 'mesh' && message.key === missing)).toBe(true);
@@ -251,32 +251,28 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   expect(visible()).toEqual([]);
 });
 
-function skyStreamer(hardwareConcurrency: number) {
-  vi.stubGlobal('navigator', { hardwareConcurrency });
-  vi.stubGlobal('Worker', OwnedWorker);
+function skyStreamer(meshers: number) {
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world: new World(),
     meshes: meshes as never,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    mesher: ownedMeshers(meshers),
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4).fill(255),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 1,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   return { streamer, meshes };
 }
 
 it('delivers the first mesh before sky and admits queued sky at the next completion despite mesh backlog', () => {
-  const { streamer, meshes } = skyStreamer(2);
+  const { streamer, meshes } = skyStreamer(1);
   const receive = vi.fn();
   const secondReceive = vi.fn();
   expect(streamer.requestSky(skyFixture().capture().input, receive)).toBe(true);
@@ -310,7 +306,7 @@ it('delivers the first mesh before sky and admits queued sky at the next complet
 });
 
 it('routes concurrent sky replies to their owners when different workers finish in reverse order', () => {
-  const { streamer } = skyStreamer(8);
+  const { streamer } = skyStreamer(3);
   for (let step = 0; step < 32; step++) {
     streamer.update(0, 0);
   }

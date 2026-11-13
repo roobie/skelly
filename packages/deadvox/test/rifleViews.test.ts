@@ -1,7 +1,19 @@
 // A rifle as the player sees it: drawn with the magazine it really has in every view (`DESIGN.md`, "Piles and item models"), and its handling played on it from the job alone.
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { Registry } from '@skelly/engine/content';
+import { AimController } from '@skelly/engine/internal/core/aim.ts';
+import { crosshairAimPoint } from '@skelly/engine/internal/core/crosshairTarget.ts';
+import type { FirearmBoreRay } from '@skelly/engine/internal/game/firearmAim.ts';
+import { FirearmMechanics } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { firearmHandlingFor, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { Rng } from '@skelly/engine/math';
+import { heldFirearmTransform, NEUTRAL_AIM } from '@skelly/engine/pose';
+import { dominantSide, firearmBoreRay, firearmsCombatTuning } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { handlingRotation } from '@skelly/presentation/internal/render/handlingTurn.ts';
+import type { HeldHandlingFrame } from '@skelly/presentation/internal/render/hands.ts';
+import { itemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { HeldItems, ModelLibrary, PileMeshes, PlayerMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   type BufferGeometry,
@@ -14,30 +26,11 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { AimController, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { dominantSide } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { Rng } from '../src/core/random.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
-import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
-import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
-import { handlingRotation } from '../src/render/handlingTurn.ts';
-import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
-import { itemLook } from '../src/render/itemLook.ts';
-import { ModelLibrary } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { createPlayerBody, PLAYER } from './playerFixture.ts';
+import { modFileBytes } from './modFile.ts';
+import { AIM, createPlayerBody } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
-const BASE = 'src/content/base';
 const BLOCK = 0.5;
 const RIFLE = 'rifle_assault';
 const PUMP = 'pump_shotgun';
@@ -73,14 +66,14 @@ const library = async (ids: readonly string[]): Promise<ModelLibrary> => {
   const defs = ids.map((id) => content.models.get(id)!);
   const loads: Promise<void>[] = [];
   const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad, _onProgress, onError) => {
-    loads.push(new GLTFLoader().parseAsync(Uint8Array.from(readFileSync(path)).buffer, '').then(onLoad, onError));
+    loads.push(new GLTFLoader().parseAsync(Uint8Array.from(modFileBytes(path)).buffer, '').then(onLoad, onError));
   });
   const errors: string[] = [];
   const models = new ModelLibrary(
     { ...content, models: new Map(defs.map((def) => [def.id, def])) },
     (message) => errors.push(message),
-    Object.fromEntries(defs.map(({ file }) => [file, join(BASE, file)])),
-    defs.length,
+    Object.fromEntries(defs.map(({ file }) => [file, file])),
+    { modelLoadConcurrency: defs.length, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
   );
   spy.mockRestore();
   await Promise.all(loads);
@@ -395,9 +388,9 @@ const heldGun = async (type: string) => {
 
 it('keeps over-limit view pitch changes in ADS while the held pose takes the recoil frame', async () => {
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
-  const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+  const tuning = firearmsCombatTuning(registry);
   const aim = new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
@@ -447,7 +440,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
 it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack, turned mid-rack', async (type) => {
   const { queue, mechanics, gun, side, camera, heldFrame, dispose } = await heldGun(type);
   const model = content.models.get(modelOf(type))!;
-  const { loweredPitchRadians } = content.skills.get('firearms_combat')!.combat!.firearms!;
+  const { loweredPitchRadians } = firearmsCombatTuning(content);
   const viewpoint = { eye: [0, 0, 0] as Vec3, yaw: 0, pitch: 0 };
   // The unturned bore shots use, and the crosshair's as play.ts turns it.
   const unturned = (): FirearmBoreRay =>

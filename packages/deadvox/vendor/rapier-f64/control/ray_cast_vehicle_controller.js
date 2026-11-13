@@ -1,5 +1,5 @@
 import { RawDynamicRayCastVehicleController } from "../raw";
-import { VectorOps } from "../math";
+import { scratchBuffer, VectorOps } from "../math";
 export class DynamicRayCastVehicleController {
     constructor(chassis, broadPhase, narrowPhase, bodies, colliders) {
         this.raw = new RawDynamicRayCastVehicleController(chassis.handle);
@@ -48,8 +48,9 @@ export class DynamicRayCastVehicleController {
     numWheels() {
         return this.raw.num_wheels();
     }
-    wheelChassisConnectionPointCs(i) {
-        return VectorOps.fromRaw(this.raw.wheel_chassis_connection_point_cs(i));
+    wheelChassisConnectionPointCs(i, target) {
+        const exists = this.raw.wheel_chassis_connection_point_cs(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     setWheelChassisConnectionPointCs(i, value) {
         let rawValue = VectorOps.intoRaw(value);
@@ -116,16 +117,18 @@ export class DynamicRayCastVehicleController {
     setWheelEngineForce(i, value) {
         this.raw.set_wheel_engine_force(i, value);
     }
-    wheelDirectionCs(i) {
-        return VectorOps.fromRaw(this.raw.wheel_direction_cs(i));
+    wheelDirectionCs(i, target) {
+        const exists = this.raw.wheel_direction_cs(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     setWheelDirectionCs(i, value) {
         let rawValue = VectorOps.intoRaw(value);
         this.raw.set_wheel_direction_cs(i, rawValue);
         rawValue.free();
     }
-    wheelAxleCs(i) {
-        return VectorOps.fromRaw(this.raw.wheel_axle_cs(i));
+    wheelAxleCs(i, target) {
+        const exists = this.raw.wheel_axle_cs(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     setWheelAxleCs(i, value) {
         let rawValue = VectorOps.intoRaw(value);
@@ -156,17 +159,20 @@ export class DynamicRayCastVehicleController {
     wheelSuspensionForce(i) {
         return this.raw.wheel_suspension_force(i);
     }
-    wheelContactNormal(i) {
-        return VectorOps.fromRaw(this.raw.wheel_contact_normal_ws(i));
+    wheelContactNormal(i, target) {
+        const exists = this.raw.wheel_contact_normal_ws(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
-    wheelContactPoint(i) {
-        return VectorOps.fromRaw(this.raw.wheel_contact_point_ws(i));
+    wheelContactPoint(i, target) {
+        const exists = this.raw.wheel_contact_point_ws(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     wheelSuspensionLength(i) {
         return this.raw.wheel_suspension_length(i);
     }
-    wheelHardPoint(i) {
-        return VectorOps.fromRaw(this.raw.wheel_hard_point_ws(i));
+    wheelHardPoint(i, target) {
+        const exists = this.raw.wheel_hard_point_ws(i, scratchBuffer);
+        return exists ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     wheelIsInContact(i) {
         return this.raw.wheel_is_in_contact(i);

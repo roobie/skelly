@@ -5,11 +5,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const stageStarted = performance.now();
 let phaseStarted = stageStarted;
@@ -23,9 +24,42 @@ const logPhase = (name) => {
 const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const itemPicturesModule = '/src/render/itemPictures.ts';
-const modelsModule = '/src/render/models.ts';
-const itemLookModule = '/src/render/itemLook.ts';
+const houseStart = {
+  density: null,
+  id: 'inventory_scroll_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '10:00',
+  storeys: 1,
+  wounds: [],
+};
+const itemPicturesModule = '/@stage/@skelly/presentation/internal/render/itemPictures.ts';
+const modelsModule = '/@stage/@skelly/presentation/render';
+const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
@@ -33,11 +67,11 @@ assert.ok(['chromium', 'firefox'].includes(engine));
 const RACK_GRID = [5, 6];
 const {
   inventory: [baseInventoryRow],
-} = JSON.parse(readFileSync(resolve(root, 'src/content/base/inventory.json'), 'utf8'));
+} = JSON.parse(readFileSync(resolve(root, '../mods/skelly.inventory/inventory.json'), 'utf8'));
 // The fixture's material takes its blow sound from the shipped materials, with that sound's shipped definition, so a
 // newly required material or sound field is met by the content rather than by this file.
-const baseContent = (file) => JSON.parse(readFileSync(resolve(root, 'src/content/base', file), 'utf8'));
-const { blowSound } = baseContent('furniture.json').furnitureMaterials[0];
+const baseContent = (file) => JSON.parse(readFileSync(resolve(root, '../mods/skelly.natural-world', file), 'utf8'));
+const { blowSound } = baseContent('furniture-materials.json').furnitureMaterials[0];
 const blowSoundDefinition = baseContent('sounds-furniture.json').sounds.find(({ id }) => id === blowSound);
 if (!blowSoundDefinition) {
   throw new Error(`Base content lacks the blow sound ${blowSound}`);
@@ -68,7 +102,7 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
-      furnitureMaterials: [{ id: 'scroll_material', blowSound }],
+      furnitureMaterials: [{ id: 'scroll_material', blowSound, drops: { default: blowSound } }],
       furniture: [
         {
           id: 'scroll_rack',
@@ -117,39 +151,43 @@ const content = [
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
         { id: 'scroll_wide_token', name: 'Scroll wide token', category: 'tool', weight: 1, size: [3, 1] },
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
-      ].map((item) => ({ economy: { usage: [], tiers: [] }, workInProgress: false, notLoot: false, ...item })),
+      ].map((item) => ({ workInProgress: false, ...item })),
     },
   },
 ];
 const fixture = `
-import '/src/ui/style.css';
-import uiFile from '/src/content/base/ui.json';
-import recipesFile from '/src/content/base/recipes.json';
-import { CORE_CONTENT_IDS } from '/src/core/contentIds.ts';
-import { buildRegistry } from '/src/core/content.ts';
-import { Inventory } from '/src/core/inventory.ts';
-import { BODY_REGIONS, Body } from '/src/core/body.ts';
-import { HandlingQueue } from '/src/core/handling.ts';
-import { visibleGridName } from '/src/core/inventoryGridName.ts';
-import { buildBundledContent } from '/src/game/bundledContent.ts';
+import '@skelly/presentation/style.css';
+import uiFile from '/@fs${resolve(root, '../mods/skelly.ui/ui.json')}';
+import cursorFile from '/@fs${resolve(root, '../mods/skelly.ui/cursor.json')}';
+import progressionFile from '/@fs${resolve(root, '../mods/skelly.progression/progression.json')}';
+import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
+import { buildRegistry } from '/@stage/@skelly/engine/internal/core/content.ts';
+import { Inventory } from '/@stage/@skelly/engine/internal/core/inventory.ts';
+import { BODY_REGIONS, Body } from '/@stage/@skelly/engine/internal/core/body.ts';
+import { HandlingQueue } from '/@stage/@skelly/engine/internal/core/handling.ts';
+import { visibleGridName } from '/@stage/@skelly/engine/internal/core/inventoryGridName.ts';
+import { buildBundledContent } from '/src/product/content.ts';
 const BUNDLED_CONTENT = buildBundledContent();
-import { requireDayCycle } from '/src/core/content.ts';
-import { bindReach } from '/src/core/reach.ts';
-import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
-import { mountMenuPointer } from '/src/ui/menuPointer.ts';
-import { applyUiTokens } from '/src/ui/uiTokens.ts';
-import { factDetail } from '/src/ui/factDetail.ts';
+import { requireDayCycle } from '/@stage/@skelly/engine/internal/core/content.ts';
+import { bindReach } from '/@stage/@skelly/engine/internal/core/reach.ts';
+import { InventoryScreen } from '/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts';
+import { inputBindings } from '/src/product/input.ts';
+import { mountMenuPointer } from '/@stage/@skelly/presentation/internal/ui/menuPointer.ts';
+import { applyUiTokens } from '/@stage/@skelly/presentation/ui';
+import { productAssets } from '/src/product/assets.ts';
+import { factDetail } from '/@stage/@skelly/presentation/internal/ui/factDetail.ts';
 import { render } from 'lit-html';
-const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement)
+const handlingSkills = progressionFile.skills.filter((skill) => skill.id === fixtureIds.inventoryManagement)
   .map((skill) => ({ ...skill, detail: 'Fixture handling effect.' }));
 if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
   { source: 'ui.json', data: uiFile },
-  { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: recipesFile.skillProgression } },
+  { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
+  { source: 'inventory-skill-fixture', data: { skills: handlingSkills, skillProgression: progressionFile.skillProgression } },
 ]);
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
-applyUiTokens(registry, document.documentElement);
+applyUiTokens(registry, document.documentElement, { report: (message) => { throw Error(message); }, files: productAssets.cursors });
 const inventory = new Inventory(registry);
 const body = new Body({
   id: 'scroll-fixture',
@@ -219,11 +257,12 @@ let needsText = 'health 100% · stamina 100%';
 const dispatches = [];
 let capToken;
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
+  bindings: inputBindings,
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: { ratio: requireDayCycle(BUNDLED_CONTENT.registry).clockRatio, start: 0 } }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
-  body: () => body, character: () => ({ skills: {}, practice: { [CORE_CONTENT_IDS.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
+  body: () => body, character: () => ({ skills: {}, practice: { [fixtureIds.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
   slotLabels: Object.fromEntries(['head', 'eyes', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
@@ -268,10 +307,11 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   useUiTuning(tuning) {
     const ui = buildRegistry([
       ${JSON.stringify(refusalSound)},
+      { source: '../../../mods/skelly.ui/cursor.json', data: cursorFile },
       { source: 'ui-tuning-fixture', data: { ui: [{ ...BUNDLED_CONTENT.registry.ui.get('core'), refusalSound: 'player_nope', ...tuning }] } },
     ]);
     if (ui.issues.length) throw Error('Invalid UI tuning fixture: ' + JSON.stringify(ui.issues));
-    applyUiTokens(ui.registry, document.documentElement);
+    applyUiTokens(ui.registry, document.documentElement, { report: (message) => { throw Error(message); }, files: productAssets.cursors });
     screen.update();
   },
   addCapRack() {
@@ -325,7 +365,7 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
   },
 };
 `;
-const vite = await createServer({
+const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',
@@ -361,8 +401,8 @@ const vite = await createServer({
       name: 'foregrip-fit-game-observer',
       enforce: 'pre',
       transform(code, id) {
-        if (id.split('?')[0].endsWith('/src/game/bundledContent.ts')) {
-          const marker = 'const bundle = await BundleAdmission.prepare(';
+        if (id.split('?')[0].endsWith('/engine/src/game/bundledContent.ts')) {
+          const marker = 'const admission = admitPacks(packs);';
           assert.ok(code.includes(marker), 'content admission marker still exists');
           // Retain live UI/material content rather than the standalone fixture's support source.
           return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
@@ -370,11 +410,20 @@ import { fixtureSources } from '/test/economyFixtures.ts';
 ${code.replace(
   marker,
   `const workFixture = liquidRecoveryData(60);
-sources.push(...fixtureSources([{ source: 'inventory-work-fixture', data: { items: workFixture.items, skills: workFixture.skills, liquids: workFixture.liquids } }]).slice(1));
+const fixtureFiles = fixtureSources([{ source: 'inventory-work-fixture.json', data: { items: workFixture.items, skills: workFixture.skills, liquids: workFixture.liquids } }]).slice(1);
+packs.push({
+  source: 'inventory-work-fixture',
+  manifest: {
+    id: 'fixture.inventory-work', version: '1', tier: 'theme', product: false,
+    dependencies: [...packs.map(({ manifest }) => manifest.id), ...(globalThis.skellyRefuseFixture === true ? ['fixture.missing'] : [])],
+    overrides: [], files: fixtureFiles.map(({ source }) => ({ path: source, kind: 'content' })),
+  },
+  files: fixtureFiles,
+});
 ${marker}`,
 )}`;
         }
-        if (!id.split('?')[0].endsWith('/src/game/play.ts')) {
+        if (!id.split('?')[0].endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -401,9 +450,58 @@ try {
           ignoreDefaultArgs: ['--hide-scrollbars'],
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
+  const resizeViewport = async (viewport) => {
+    const current = page.viewportSize();
+    if (current.width === viewport.width && current.height === viewport.height) {
+      return;
+    }
+    // Layout can change before the native resize event refits facts. Observe it after the product's
+    // synchronous placement listener, registered when the fixture first renders a fact.
+    const resize = await page.evaluateHandle(({ width, height }) => {
+      const state = { observed: false };
+      window.addEventListener(
+        'resize',
+        () => {
+          state.observed = innerWidth === width && innerHeight === height;
+        },
+        { once: true },
+      );
+      return state;
+    }, viewport);
+    try {
+      await page.setViewportSize(viewport);
+      await page.waitForFunction((state) => state.observed, resize);
+    } finally {
+      await resize.dispose();
+    }
+  };
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
+  // Its own page, because the fixture switch stays on for every navigation of the page it is added to.
+  const refusal = await browser.newPage();
+  const refusalErrors = [];
+  refusal.on('pageerror', (error) => refusalErrors.push(error.message));
+  await refusal.addInitScript(() => {
+    globalThis.skellyRefuseFixture = true;
+  });
+  const startupError = refusal.waitForEvent('pageerror').then((error) => {
+    throw error;
+  });
+  await refusal.goto(`http://127.0.0.1:${address.port}/?mods=1`);
+  await Promise.race([
+    startupError,
+    refusal.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
+  ]);
+  assert.ok(
+    (await refusal.locator('#errors').textContent()).includes('fixture.inventory-work'),
+    'refused pack is named',
+  );
+  assert.equal(await refusal.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
+  assert.equal(await refusal.locator('#startup-screen').isVisible(), false, 'refusal retires the startup screen');
+  assert.equal(await refusal.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
+  assert.deepEqual(refusalErrors, [], 'refusal displays admission diagnostics without a page exception');
+  await refusal.close();
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   try {
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
@@ -480,14 +578,14 @@ try {
   assert.equal(await cardCopy.isVisible(), true, 'card-host keyboard focus exposes the copy');
   await assertCopyInScrollport('card-host keyboard focus keeps the copy in the scrollport');
   // Resizing keeps focus on the fact, so the copy it shows is refitted to the new viewport.
-  await page.setViewportSize({ width: 320, height: 480 });
+  await resizeViewport({ width: 320, height: 480 });
   assert.equal(await cardFact.evaluate((owner) => owner === document.activeElement), true, 'resize keeps focus');
   assert.equal(await cardCopy.isVisible(), true, 'resize keeps the focused copy shown');
   await assertCopyInScrollport('resize with focus retained keeps the copy in the scrollport');
   await page.evaluate(() => {
     document.querySelector('#overlay').hidden = true;
   });
-  await page.setViewportSize({ width: 800, height: 400 });
+  await resizeViewport({ width: 800, height: 400 });
   await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
   // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
   const EDGE = 0.5;
@@ -847,7 +945,7 @@ try {
   assert.deepEqual(nameFit.failures, [], 'every grid name fills its lines to the border and stays inside it');
   assert.ok(nameFit.filledLines > 0 && nameFit.clippedNames > 0, `names wrap and clip: ${JSON.stringify(nameFit)}`);
   // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await resizeViewport({ width: 1280, height: 400 });
   await dragSplitter(0);
   const splitAtLeftClamp = await splitState();
   assert.ok(
@@ -864,7 +962,7 @@ try {
     `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
   );
   // The chosen split is a preference: a narrower window clamps only what it applies, and widening restores it.
-  await page.setViewportSize({ width: 800, height: 400 });
+  await resizeViewport({ width: 800, height: 400 });
   await nextFrames();
   const narrowedSplit = await splitState();
   assert.ok(
@@ -873,7 +971,7 @@ try {
         1,
     `a narrower window applies its own clamp: ${JSON.stringify({ splitAtRightClamp, narrowedSplit })}`,
   );
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await resizeViewport({ width: 1280, height: 400 });
   await nextFrames();
   const restoredSplit = await splitState();
   assert.ok(
@@ -883,7 +981,7 @@ try {
   // A clamp can land a sub-pixel past a floor, depending on how the details width rounds. Five consecutive widths
   // cover every rounding residue of a 20% details column; past either clamp, the split must hold and fill the body.
   for (let width = 1280; width < 1285; width++) {
-    await page.setViewportSize({ width, height: 400 });
+    await resizeViewport({ width, height: 400 });
     for (const pastClamp of [-0.2, 1.2]) {
       await dragSplitter(pastClamp);
       await nextFrames();
@@ -895,7 +993,7 @@ try {
       );
     }
   }
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await resizeViewport({ width: 1280, height: 400 });
   await dragSplitter(0.5);
   const middleSplit = await splitState();
   assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
@@ -984,7 +1082,7 @@ try {
     balancedLayout.pileState,
     'responsive floor packing leaves saved pile positions unchanged',
   );
-  await page.setViewportSize({ width: 800, height: 540 });
+  await resizeViewport({ width: 800, height: 540 });
   await nextFrames();
   await dragSplitter(1);
   await page.evaluate(() => globalThis.scrollFixture.populateFloorWrapPiles());
@@ -1033,13 +1131,13 @@ try {
     await page.locator(`#inventory [data-target="${floorWrapLayout.targets[0]}"]`).scrollIntoViewIfNeeded();
     await page.locator('#inventory [data-pane="around"]').screenshot({ path: process.argv[3] });
   }
-  await page.setViewportSize({ width: 960, height: 540 });
+  await resizeViewport({ width: 960, height: 540 });
   const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
   assert.ok(
     fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
     `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
   );
-  await page.setViewportSize({ width: 480, height: 400 });
+  await resizeViewport({ width: 480, height: 400 });
   const narrowLayout = await page.evaluate(() => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const you = body?.querySelector('[data-pane="you"]');
@@ -1079,7 +1177,7 @@ try {
     true,
     `narrow detail actions stay inside their panel: ${JSON.stringify(narrowLayout)}`,
   );
-  await page.setViewportSize({ width: 1280, height: 480 });
+  await resizeViewport({ width: 1280, height: 480 });
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const failures = [];
   let activeTab;
@@ -1203,7 +1301,7 @@ try {
   // A HUD scale other than 1 changes the root size the UI is measured in, so a drag and the drawn cursor are right
   // only if their maths use rendered sizes. The target cell is far enough from the origin that a base-size cell
   // would round to a neighbour.
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await resizeViewport({ width: 1280, height: 900 });
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
   const baseRootSize = await page.evaluate(() =>
     Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
@@ -1290,7 +1388,7 @@ try {
   );
   logPhase('render-free scroll contracts');
   if (engine === 'chromium') {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       let locked = null;
       Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
@@ -1307,7 +1405,10 @@ try {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32`,
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: inlineStartMod('fixture.inventory-scroll.house', houseStart),
+          hash: { debug: true, seed: 73, radius: 32 },
+        }),
         // Only the isolated item still needs WebGL, not the world or attachment handling.
         'render-free',
       ),
@@ -1403,8 +1504,6 @@ try {
       await page.locator('#handling [role="progressbar"]').waitFor({ state: 'visible' });
       await pressAction(page, 'handling.stop');
       await page.waitForFunction(() => globalThis.foregripFitTest.session.sim.actions.job?.stopped);
-      // Stopped work may still be ramping down compression, which blocks the inventory key.
-      await page.waitForFunction(() => !globalThis.foregripFitTest.session.sim.compression.locksInput);
       await pressAction(page, 'ui.inventory-toggle');
       await clickThroughMenuCursor(`#inventory [data-uid="${startedWork.uid}"]`);
     }
@@ -1478,6 +1577,7 @@ try {
         const { ItemPictures } = await import(moduleUrls.itemPictures);
         const { ModelLibrary } = await import(moduleUrls.models);
         const { itemLook } = await import(moduleUrls.itemLook);
+        const { productAssets } = await import(moduleUrls.productAssets);
         const { session, screen } = globalThis.foregripFitTest;
         if (screen.hooks.pictures) {
           throw new Error('Live handling must remain render-free');
@@ -1493,14 +1593,19 @@ try {
           (message) => {
             throw new Error(message);
           },
-          undefined,
-          ids.size,
+          { packAssets: productAssets.models },
+          { modelLoadConcurrency: ids.size, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
         );
         screen.hooks.pictures = new ItemPictures(registry, models, 1);
       },
       {
         uid: rifleUid,
-        moduleUrls: { itemPictures: itemPicturesModule, models: modelsModule, itemLook: itemLookModule },
+        moduleUrls: {
+          itemPictures: itemPicturesModule,
+          models: modelsModule,
+          itemLook: itemLookModule,
+          productAssets: '/src/product/assets.ts',
+        },
       },
     );
     await page.waitForFunction((uid) => {
@@ -1568,7 +1673,7 @@ try {
       const [chord] = inputBindings.chords('inventory.view-item');
       const mouse = chord.code.startsWith('Mouse') && !chord.modifier;
       return mouse ? ['left', 'middle', 'right'][Number(chord.code.slice('Mouse'.length))] : undefined;
-    }, '/src/game/inputBindings.ts');
+    }, '/src/product/input.ts');
     assert.ok(viewButton, 'the default view binding is a mouse button Playwright can press');
     // A focused covered control must not take keys while the viewer is open: the fit button dispatches on activation.
     const coveredFit = page
@@ -1920,7 +2025,7 @@ try {
           start: 0,
         });
       },
-      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/game/bundledContent.ts' },
+      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/product/content.ts' },
     );
     const recoveryRoot = page.locator('[data-recovery-probe]');
     const startButton = recoveryRoot.locator('button[data-work-operation="disassemble"]');
@@ -2043,9 +2148,12 @@ try {
       globalThis.scrollFixture.screen.close();
       const { mountChargerFlow } = await import(chargerModule);
       const { buildBundledContent } = await import(contentModule);
-      globalThis.chargerFlow = mountChargerFlow(buildBundledContent().registry, document.querySelector('#inventory'));
+      globalThis.chargerFlow = await mountChargerFlow(
+        buildBundledContent().registry,
+        document.querySelector('#inventory'),
+      );
     },
-    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/game/bundledContent.ts' },
+    { chargerModule: '/test/browser/charger-flow.ts', contentModule: '/src/product/content.ts' },
   );
   const chargerButton = (kind) => page.locator(`[data-charger-action="${kind}"]`);
   await chargerButton('inventory.move').click();

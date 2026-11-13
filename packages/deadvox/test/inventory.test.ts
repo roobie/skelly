@@ -1,10 +1,8 @@
+import { coreMessage, coreRefusal } from '@skelly/engine/internal/core/coreText.ts';
+import { handlingWeights } from '@skelly/engine/internal/core/inventory.ts';
+import { fitsAt } from '@skelly/engine/internal/core/items.ts';
+import { conditionWord, HandlingQueue, Inventory, PILE_GRID, SLING_SLOT, weightOf } from '@skelly/engine/inventory';
 import { describe, expect, it } from 'vitest';
-import { coreRefusal } from '../src/core/coreText.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { handlingWeights, Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { conditionWord, fitsAt, weightOf } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -26,6 +24,10 @@ const declared = (() => {
   };
   const overrides = new Map<string, object>([
     ['rag', { size: [1, 1], stack: 6 }],
+    ['chocolate_bar', { size: [2, 1] }],
+    ['baseball_bat', { size: [1, 4] }],
+    ['nails', { size: [1, 1], stack: 50 }],
+    ['aa_battery', { size: [1, 1], stack: 7 }],
     ['canned_beans', { size: [1, 2] }],
     ['canned_soup', { size: [1, 2] }],
     ['kabar', { size: [1, 3] }],
@@ -109,7 +111,7 @@ describe('grid placement', () => {
   });
 
   it('lets an item move within its own grid', () => {
-    const { inv, backpack } = dressed();
+    const { inv, backpack } = dressed(declared);
     const water = onFloor(inv, 'water_bottle');
     const main = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
     inv.move(water, { ...main, at: { x: 0, y: 0, rotated: false } });
@@ -118,7 +120,7 @@ describe('grid placement', () => {
   });
 
   it('refuses a same-grid swap when the final footprints overlap', () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const small = onFloor(inv, 'rag');
     const large = onFloor(inv, 'chocolate_bar');
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
@@ -132,7 +134,7 @@ describe('grid placement', () => {
     const after = inv.snapshotState();
     expect(moved.ok).toBe(false);
     expect(after).toEqual(before);
-    expect(() => Inventory.restoreState(registry, after)).not.toThrow();
+    expect(() => Inventory.restoreState(declared, after)).not.toThrow();
   });
 
   it('refuses overlapping same-pile swaps with owned non-stackable footprints', () => {
@@ -188,7 +190,7 @@ describe('grid placement', () => {
   });
 
   it('swaps a hand item with a container item in either drag direction', () => {
-    const { inv, backpack } = dressed();
+    const { inv, backpack } = dressed(declared);
     const inHand = onFloor(inv, 'rag', 1, 1);
     const inPocket = onFloor(inv, 'rag', 1, 0.4);
     const pocketSpot = { kind: 'pocket', owner: backpack, pocket: 0, at: { x: 3, y: 0, rotated: false } } as const;
@@ -230,7 +232,7 @@ describe('grid placement', () => {
   });
 
   it('refuses a swap when the displaced item cannot fit the source place', () => {
-    const { inv, jeans } = dressed();
+    const { inv, jeans } = dressed(declared);
     const small = onFloor(inv, 'rag');
     const jeansSpot = { kind: 'pocket', owner: jeans, pocket: 0, at: { x: 0, y: 0, rotated: false } } as const;
     expect(inv.move(small, jeansSpot).ok).toBe(true);
@@ -251,15 +253,8 @@ describe('grid placement', () => {
 
 describe('stacking', () => {
   it('joins identical items up to the stack limit', () => {
-    const limit = 7;
-    const content = {
-      ...registry,
-      items: new Map(registry.items).set('aa_battery', {
-        ...registry.items.get('aa_battery')!,
-        stack: limit,
-      }),
-    };
-    const { inv, hoodie } = dressed(content);
+    const limit = declared.items.get('aa_battery')!.stack!;
+    const { inv, hoodie } = dressed(declared);
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
     const a = onFloor(inv, 'aa_battery', limit - 2);
     const b = onFloor(inv, 'aa_battery', 2);
@@ -289,7 +284,7 @@ describe('stacking', () => {
   });
 
   it('splits a stack when moving part of it', () => {
-    const { inv, hoodie } = dressed();
+    const { inv, hoodie } = dressed(declared);
     const nails = onFloor(inv, 'nails', 40);
     expect(inv.move(nails, { kind: 'pocket', owner: hoodie, pocket: 0 }, 15).ok).toBe(true);
     expect(nails.count).toBe(25);
@@ -299,17 +294,15 @@ describe('stacking', () => {
 });
 
 describe('hands and wearing', () => {
-  it('needs both hands for a two-handed item', () => {
+  it('refuses the off hand while a held two-handed item fills both', () => {
     const inv = new Inventory(registry);
     const bat = onFloor(inv, 'baseball_bat');
     const torch = onFloor(inv, 'flashlight');
-    inv.move(torch, { kind: 'hand', side: 'left' });
-    expect(inv.plan(bat, { kind: 'hand', side: 'right' })).toEqual({ ok: false, reason: 'It needs both hands' });
-    inv.move(torch, { kind: 'pile', pos: [3, 0, 0] });
-    inv.move(bat, { kind: 'hand', side: 'right' });
+    expect(inv.plan(torch, { kind: 'hand', side: 'left' }).ok).toBe(true);
+    expect(inv.move(bat, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(inv.plan(torch, { kind: 'hand', side: 'left' })).toEqual({
       ok: false,
-      reason: 'The baseball bat needs both hands',
+      reason: coreMessage(registry, 'otherNeedsBothHands', { item: inv.name(bat).toLowerCase() }),
     });
   });
 
@@ -340,7 +333,7 @@ describe('hands and wearing', () => {
     const crowbar = onFloor(inv, 'crowbar');
     const before = inv.carriedWeight();
     inv.move(shotgun, { kind: 'hand', side: 'right' });
-    expect(inv.plan(shotgun, { kind: 'worn' })).toMatchObject({ ok: true, time: HANDLING.wear });
+    expect(inv.plan(shotgun, { kind: 'worn' })).toMatchObject({ ok: true, time: HANDLING.wearSimSeconds });
     inv.move(shotgun, { kind: 'worn' });
 
     expect(inv.move(crowbar, { kind: 'hand', side: 'right' }).ok).toBe(true);
@@ -356,13 +349,13 @@ describe('handling time', () => {
     const beans = onFloor(inv, 'canned_beans');
     const footprint = (type: string) => {
       const [w, h] = registry.items.get(type)!.size;
-      return w * h * HANDLING.perCell;
+      return w * h * HANDLING.perCellSimSeconds;
     };
     const cells = footprint(beans.type);
     const backpackHandling = registry.items.get(backpack.type)!.container!.pockets[0]!.handlingSimSeconds;
     const jeansHandling = registry.items.get(jeans.type)!.container!.pockets[0]!.handlingSimSeconds;
     expect(inv.plan(beans, { kind: 'pocket', owner: backpack, pocket: 0 })).toMatchObject({
-      time: HANDLING.ground + cells + backpackHandling + cells,
+      time: HANDLING.groundSimSeconds + cells + backpackHandling + cells,
     });
     expect(inv.move(beans, { kind: 'pocket', owner: jeans, pocket: 0 }).ok).toBe(true);
     expect(inv.plan(beans, { kind: 'hand', side: 'right' })).toMatchObject({ time: jeansHandling + cells });
@@ -370,7 +363,7 @@ describe('handling time', () => {
       time: jeansHandling + cells + backpackHandling + cells,
     });
     expect(inv.plan(inv.worn.torso!, { kind: 'pile', pos: [2, 0, 0] })).toMatchObject({
-      time: HANDLING.wear + HANDLING.ground + footprint(inv.worn.torso!.type),
+      time: HANDLING.wearSimSeconds + HANDLING.groundSimSeconds + footprint(inv.worn.torso!.type),
     });
   });
 

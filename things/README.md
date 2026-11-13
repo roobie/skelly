@@ -1,31 +1,36 @@
 ---
 read_if:
   - you work in `things/`
-  - you wonder why gungen is being replaced, or where a modeling primitive belongs
+  - you wonder where a modeling primitive belongs
   - you decide which tool or package a new model-authoring feature goes in
   - you decide where mass, export or model-entry writing code goes
   - you decide whether an item's mass is authored or summed from its parts
-  - you decide whether a gun is a real-gun look-alike, an invented gun or a gungen archetype
+  - you decide whether a gun is a real-gun look-alike, an invented gun or an inherited archetype
 ---
 
 # things
 
-Authoring tools for every model deadvox draws, built on one shared core.
+Authoring tools for the item and gun models deadvox draws, built on one shared core.
 
 ## Packages
 
-The suite's packages live in the repository's top-level `packages/` directory, as workspaces
-of the root package.
+The suite's packages live in the asset submodule, `packages/skelly-assets/tools/packages/`.
+Skelly's root package takes as workspaces only thing-core, which Deadvox imports, and
+construct, which thing-core depends on; see `package.json`, `workspaces`. Skelly content
+reads the other tools' output from the pinned asset release, so it carries no install of
+them (`docs/decisions/0010-asset-pipelines-in-skelly-assets.md`, "Decision").
 
-- `packages/thing-core`: the shared modeling core, with no knowledge of any kind of thing.
-- `packages/thing-authoring-tool`: authors and curates the non-gun things (tools, containers,
-  food, the compass and so on) on top of the core.
-- `packages/gun-authoring-tool`: authors and curates guns on top of the shared packages.
-  It owns the authored firearm sources and consumption recipe.
-- An export package above the core: writes the GLB, the model entry and each part's mass
-  and centre of mass for both tools. Placing a centre of mass needs the engine's shapes, and
-  deadvox loads the core, so this code needs a home deadvox doesn't load. With one writer,
-  every tool's exports load the same way, and a second format has an obvious home.
+- `packages/skelly-assets/tools/packages/thing-core/`: the shared modeling core, with no
+  knowledge of any kind of thing.
+- `packages/skelly-assets/tools/packages/thing-authoring-tool/`: authors and curates the
+  non-gun things (tools, containers, food, the compass and so on) on top of the core.
+- `packages/skelly-assets/tools/packages/gun-authoring-tool/`: authors and curates guns on
+  top of the shared packages. It owns the authored firearm sources and consumption recipe.
+- `packages/skelly-assets/tools/packages/thing-export/`: writes the GLB, the model entry and
+  each part's mass and centre of mass for both tools. Placing a centre of mass needs
+  construct's shapes, and deadvox loads the core, so this code needs a home deadvox doesn't
+  load. With one writer, every tool's exports load the same way, and a second format has an
+  obvious home.
 
 Both tools depend on the core and the export package, and never on each other.
 `WORK.md`, "Phases" orders the work that creates and integrates them.
@@ -37,8 +42,8 @@ binary or a fallback box. Shared mechanisms let the tools use one model contract
 gun rules stay out of tools that do not need them. Separate authoring tools keep that
 domain ownership explicit.
 
-Retiring residual gungen names must not lose a consumer export or a pending feature's
-reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
+Retiring the gun tool's residual old names must not lose a consumer export or a pending
+feature's reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
 
 ## Rules
 
@@ -59,6 +64,6 @@ reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers
   and so on) are such items.
 - An assembly's model entry carries each part's mass and centre of mass. The tools place each
-  centre from the part's shapes, and deadvox sums the entries and never loads shapes, so the
-  engine stays out of the game.
+  centre from the part's shapes, and deadvox sums the entries and never loads shapes, so
+  `packages/skelly-assets/tools/packages/construct` stays out of the game.
 - Every export must validate and load in deadvox; `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility" names the contract.

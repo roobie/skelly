@@ -7,12 +7,24 @@ export class ShapeCastHit {
         this.normal1 = normal1;
         this.normal2 = normal2;
     }
-    static fromRaw(colliderSet, raw) {
-        if (!raw)
+    static fromBuffer(collider, buffer, target) {
+        if (!buffer)
             return null;
-        const result = new ShapeCastHit(raw.time_of_impact(), VectorOps.fromRaw(raw.witness1()), VectorOps.fromRaw(raw.witness2()), VectorOps.fromRaw(raw.normal1()), VectorOps.fromRaw(raw.normal2()));
-        raw.free();
-        return result;
+        target ?? (target = new ShapeCastHit(0, VectorOps.zeros(), VectorOps.zeros(), VectorOps.zeros(), VectorOps.zeros()));
+        target.time_of_impact = buffer[0];
+        target.witness1.x = buffer[1];
+        target.witness1.y = buffer[2];
+        target.witness1.z = buffer[3];
+        target.witness2.x = buffer[4];
+        target.witness2.y = buffer[5];
+        target.witness2.z = buffer[6];
+        target.normal1.x = buffer[7];
+        target.normal1.y = buffer[8];
+        target.normal1.z = buffer[9];
+        target.normal2.x = buffer[10];
+        target.normal2.y = buffer[11];
+        target.normal2.z = buffer[12];
+        return target;
     }
 }
 export class ColliderShapeCastHit extends ShapeCastHit {
@@ -20,11 +32,24 @@ export class ColliderShapeCastHit extends ShapeCastHit {
         super(time_of_impact, witness1, witness2, normal1, normal2);
         this.collider = collider;
     }
-    static fromRaw(colliderSet, raw) {
-        if (!raw)
+    static fromBuffer(collider, buffer, target) {
+        if (!buffer)
             return null;
-        const result = new ColliderShapeCastHit(colliderSet.get(raw.colliderHandle()), raw.time_of_impact(), VectorOps.fromRaw(raw.witness1()), VectorOps.fromRaw(raw.witness2()), VectorOps.fromRaw(raw.normal1()), VectorOps.fromRaw(raw.normal2()));
-        raw.free();
-        return result;
+        target ?? (target = new ColliderShapeCastHit(null, 0, VectorOps.zeros(), VectorOps.zeros(), VectorOps.zeros(), VectorOps.zeros()));
+        target.collider = collider;
+        target.time_of_impact = buffer[0];
+        target.witness1.x = buffer[1];
+        target.witness1.y = buffer[2];
+        target.witness1.z = buffer[3];
+        target.witness2.x = buffer[4];
+        target.witness2.y = buffer[5];
+        target.witness2.z = buffer[6];
+        target.normal1.x = buffer[7];
+        target.normal1.y = buffer[8];
+        target.normal1.z = buffer[9];
+        target.normal2.x = buffer[10];
+        target.normal2.y = buffer[11];
+        target.normal2.z = buffer[12];
+        return target;
     }
 }

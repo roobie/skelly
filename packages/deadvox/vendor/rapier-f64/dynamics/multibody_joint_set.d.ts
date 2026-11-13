@@ -10,6 +10,7 @@ export declare class MultibodyJointSet {
     createJoint(desc: JointData, parent1: RigidBodyHandle, parent2: RigidBodyHandle, wakeUp: boolean): MultibodyJoint;
     remove(handle: MultibodyJointHandle, wake_up: boolean): void;
     unmap(handle: MultibodyJointHandle): void;
+    unmapRemovedJoints(): void;
     len(): number;
     contains(handle: MultibodyJointHandle): boolean;
     get(handle: MultibodyJointHandle): MultibodyJoint | null;

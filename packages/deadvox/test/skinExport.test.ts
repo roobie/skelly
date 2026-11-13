@@ -1,9 +1,9 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared skin assertions are called only by tests.
 import { readFileSync } from 'node:fs';
+import { ModelLibrary } from '@skelly/presentation/render';
 import { Bone, Matrix4, type Object3D, SkinnedMesh, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ModelLibrary } from '../src/render/models.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 import modelEntry from './fixtures/skin/things/bend_strip.model.json' with { type: 'json' };
 
@@ -37,7 +37,15 @@ const load = async () => {
   const { registry, issues } = buildFixtureRegistry([{ source: 'skin-fixture', data: { models: [modelEntry] } }]);
   expect(issues).toEqual([]);
   const report = vi.fn();
-  const library = new ModelLibrary(registry, report, { [modelEntry.file]: 'fixture.glb' }, 1);
+  const library = new ModelLibrary(
+    registry,
+    report,
+    { [modelEntry.file]: 'fixture.glb' },
+    {
+      modelLoadConcurrency: 1,
+      modelFetchRetry: { retries: 0, backoffRealSeconds: 0 },
+    },
+  );
   expect(report).not.toHaveBeenCalled();
   expect(library.has(modelEntry.id)).toBe(true);
   expect(library.groundParts(modelEntry.id)).toBeUndefined();

@@ -1,7 +1,12 @@
-import type { LookDefaults } from '../src/core/mood.ts';
+import type { LookDefaults, SunShadowTuning } from '@skelly/engine/look';
 
 // A default look of the test's own, with every switch on and the tone mapper non-trivial, so the
 // URL tests exercise both directions of each switch without depending on the content's look.
+export const SUN_SHADOW_FIXTURE: SunShadowTuning = {
+  defaultReachMetres: 20,
+  debugReachMetres: [12, 20, 64],
+};
+
 export const LOOK_FIXTURE: LookDefaults = {
   tone: 'auto',
   exposure: 3,

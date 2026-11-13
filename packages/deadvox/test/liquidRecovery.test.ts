@@ -1,29 +1,28 @@
-import { describe, expect, it } from 'vitest';
-import { Character, practiceForNextLevel } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { disassemblyLiquidOutputs, planDisassembly } from '../src/core/disassembly.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { restoreItem, snapshotItem } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
+import type { ReplayActionPayload } from '@skelly/engine/input';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { disassemblyLiquidOutputs, planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
-  type ReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import { CraftCommands, claimed, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, practiceForNextLevel } from '@skelly/engine/sim';
+import { contentLookup } from '@skelly/presentation/ui';
+import { describe, expect, it } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { BURN_RESULT, FULL, OTHER, RESULT, STOCK, VESSEL } from './liquidCraftFixture.ts';
-import { liquidRecoveryData, RECOVERY_SKILL, SALVAGE_SKILL } from './liquidRecoveryFixture.ts';
+import { liquidRecoveryData, RECOVERY_ROLE, SALVAGE_ROLE } from './liquidRecoveryFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const registry = baseRegistryWith(fixtureSources([{ source: 'fixture-liquid-recovery', data: liquidRecoveryData() }]));
+const recoverySkill = claimed(registry.skills, RECOVERY_ROLE)!.id;
+const salvageSkill = claimed(registry.skills, SALVAGE_ROLE)!.id;
 const origin: [number, number, number] = [0, 0, 0];
 const stage = (ok: boolean): void => {
   if (!ok) {
@@ -247,16 +246,16 @@ describe('recorded liquid recovery', () => {
   it('snapshots salvage using its own skill while leaving solid salvage fixed', () => {
     const r = setup();
     const source = r.source();
-    r.character.awardPractice(RECOVERY_SKILL, practiceForNextLevel(registry, 0), 1);
+    r.character.awardPractice(recoverySkill, practiceForNextLevel(registry, 0), 1);
     const low = planDisassembly(source, r.reach(), r.character, { operation: 'salvage' })!;
-    expect(low.skillLevel).toBe(r.character.skills[SALVAGE_SKILL]);
-    expect(low.skillLevel).not.toBe(r.character.skills[RECOVERY_SKILL]);
+    expect(low.skillLevel).toBe(r.character.skills[salvageSkill]);
+    expect(low.skillLevel).not.toBe(r.character.skills[recoverySkill]);
     expect(
       r.commands.act(source.uid, 'disassemble', { recoveryOperation: 'salvage', spillApproval: low.liquids }),
     ).toBeUndefined();
     const { item, work } = payload(r);
-    r.character.awardPractice(SALVAGE_SKILL, practiceForNextLevel(registry, 0), 1);
-    const high = disassemblyLiquidOutputs(registry, source, r.character.skills[SALVAGE_SKILL]!, {
+    r.character.awardPractice(salvageSkill, practiceForNextLevel(registry, 0), 1);
+    const high = disassemblyLiquidOutputs(registry, source, r.character.skills[salvageSkill]!, {
       operation: 'salvage',
     });
     expect(high[0]!.volumeMicrolitres).toBeGreaterThan(low.liquids[0]!.volumeMicrolitres);
@@ -339,7 +338,7 @@ describe('recorded liquid recovery', () => {
     const { item, work } = payload(r);
     expect(work.outputs.length).toBeGreaterThan(0);
     r.inventory.landing = () => undefined;
-    expect(() => r.inventory.releaseWork(item, true, origin)).toThrow();
+    expect(() => r.inventory.releaseWork(item, true, { feet: origin })).toThrow();
     expect(volume(receiver)).toBe(0);
     expect(item.work).toBe(work);
   });

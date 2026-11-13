@@ -1,18 +1,24 @@
-import { Box3, Color, Mesh, type MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
+import { type ContentSource, FIGURE_LIMBS, type FurnitureDef } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { rotatedSize } from '@skelly/engine/internal/core/orientation.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { reachTuning } from '@skelly/engine/sim';
+import { type BlockEntity, type Facing, makeScale, rotationOf } from '@skelly/engine/world';
+import { CarriedPiece } from '@skelly/presentation/internal/render/carriedPiece.ts';
+import { CorpseFigures } from '@skelly/presentation/internal/render/corpseFigures.ts';
+import { type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
+import {
+  Box3,
+  type BufferGeometry,
+  Color,
+  Mesh,
+  type MeshStandardMaterial,
+  type Object3D,
+  Quaternion,
+  Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
-import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { type ContentSource, validateContent } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { rotatedSize, rotationOf } from '../src/core/orientation.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
-import type { Facing } from '../src/core/templates.ts';
-import { baseSources } from '../src/game/bundledContent.ts';
-import { CarriedPiece } from '../src/render/carriedPiece.ts';
-import { CorpseFigures } from '../src/render/corpseFigures.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
+import { baseSources } from '../src/product/content.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -53,6 +59,26 @@ const slotColours = (root: Object3D): { part: string; slot: string; colour: stri
     });
   });
   return found;
+};
+
+const shownMeshes = (root: Object3D): Mesh[] => {
+  root.updateMatrixWorld(true);
+  const meshes: Mesh[] = [];
+  root.traverseVisible((object) => (object instanceof Mesh ? meshes.push(object) : undefined));
+  return meshes;
+};
+
+/** The world box of every drawn vertex, so differently split meshes compare by what they draw. */
+const vertexBounds = (meshes: readonly Mesh[]): Box3 => {
+  const box = new Box3();
+  const point = new Vector3();
+  for (const mesh of meshes) {
+    const position = mesh.geometry.getAttribute('position');
+    for (let vertex = 0; vertex < position.count; vertex++) {
+      box.expandByPoint(point.fromBufferAttribute(position, vertex).applyMatrix4(mesh.matrixWorld));
+    }
+  }
+  return box;
 };
 
 /** The undressed colour of every slot across the player figure's models. */
@@ -163,6 +189,51 @@ describe('dead human bodies', () => {
     expect(shownSize()).toBeCloseTo(tuning.sizeMetres, 6);
   });
 
+  it('draws a dead human in the world merged, exactly where its figure lies, once late models load and as it moves', () => {
+    let loaded = false;
+    const loading = {
+      version: 0,
+      has: (id: string) => loaded && models.has(id),
+      part: (id: string) => (loaded ? models.part(id) : undefined),
+    } as unknown as ModelLibrary;
+    const inventory = new Inventory(registry);
+    const def = deadHumans[0]!;
+    const entity = inventory.furnish({ type: def.id, pos: [10, 3, 20], size: def.size, facing: 'e' })!;
+    const corpses = new CorpseFigures(BLOCK_SIZE, registry, loading);
+    const unbaked = new CorpseFigures(BLOCK_SIZE, registry, models);
+    corpses.sync(inventory.entities);
+    expect(shownMeshes(corpses.group), 'nothing to show before the models load').toEqual([]);
+    loaded = true;
+    loading.version += 1;
+    const expectLiesAsFigure = (): void => {
+      corpses.sync(inventory.entities);
+      const figure = shownMeshes(unbaked.figure(entity, def));
+      const drawn = shownMeshes(corpses.group);
+      expect(drawn.length, 'merged into fewer meshes').toBeLessThan(figure.length);
+      const want = vertexBounds(figure);
+      const got = vertexBounds(drawn);
+      for (const corner of ['min', 'max'] as const) {
+        for (const axis of ['x', 'y', 'z'] as const) {
+          expect(got[corner][axis], `${corner}.${axis}`).toBeCloseTo(want[corner][axis], 5);
+        }
+      }
+    };
+    expectLiesAsFigure();
+    inventory.entities.slide(entity, [14, 5, 17]);
+    expectLiesAsFigure();
+    const owned = shownMeshes(corpses.group).map((mesh) => mesh.geometry);
+    const freed = new Set<BufferGeometry>();
+    for (const geometry of owned) {
+      geometry.addEventListener('dispose', () => freed.add(geometry));
+    }
+    inventory.entities.destroy(entity);
+    corpses.sync(inventory.entities);
+    expect(
+      owned.every((geometry) => freed.has(geometry)),
+      'a removed body frees its merged geometry',
+    ).toBe(true);
+  });
+
   it('names only part slots the figure models carry in every outfit', () => {
     for (const figure of registry.figures.values()) {
       for (const [id, outfit] of Object.entries(figure.outfits)) {
@@ -181,11 +252,15 @@ describe('the content check for dead humans', () => {
   const baseSource = (name: string) => baseSources.find(({ source }) => source.endsWith(name))!;
   /** The figure and its own models only, so the check runs without building the whole pack. */
   const figureSources = (): ContentSource[] => {
-    const modelRows = (baseSource('models-items.json').data as { models: { id: string }[] }).models;
+    const modelRows = (baseSource('models-body.json').data as { models: { id: string }[] }).models;
     const figure = registry.figures.get(body.corpse!.figure)!;
     const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
     return [
       baseSource('figures-player.json'),
+      {
+        source: 'corpse-sounds',
+        data: { sounds: Object.values(body.moveSounds!).map((id) => registry.sounds.get(id)!) },
+      },
       { source: 'corpse-models.json', data: { models: modelRows.filter(({ id }) => ids.has(id)) } },
     ];
   };

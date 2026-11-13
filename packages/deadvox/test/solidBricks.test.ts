@@ -1,9 +1,6 @@
+import { type BrickOut, brickHas, type SolidBricks } from '@skelly/engine/internal/core/solidBricks.ts';
+import { BlockEntities, type SolidAt, World, worldBricks, worldSolid } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { worldSolid } from '../src/core/collision.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { type BrickOut, brickHas, type SolidBricks, worldBricks } from '../src/core/solidBricks.ts';
-import { World } from '../src/core/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();

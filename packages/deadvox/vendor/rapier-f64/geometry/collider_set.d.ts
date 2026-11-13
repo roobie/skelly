@@ -1,7 +1,6 @@
 import { RawColliderSet } from "../raw";
 import { Collider, ColliderDesc, ColliderHandle } from "./collider";
-import { ImpulseJointHandle, IslandManager, RigidBodyHandle } from "../dynamics";
-import { RigidBodySet } from "../dynamics";
+import { ImpulseJointHandle, IslandManager, RigidBodyHandle, RigidBodySet, SoftBodySet, SoftMeshBinding } from "../dynamics";
 export declare class ColliderSet {
     raw: RawColliderSet;
     private map;
@@ -10,7 +9,10 @@ export declare class ColliderSet {
     castClosure<Res>(f?: (collider: Collider) => Res): (handle: ColliderHandle) => Res | undefined;
     finalizeDeserialization(bodies: RigidBodySet): void;
     createCollider(bodies: RigidBodySet, desc: ColliderDesc, parentHandle: RigidBodyHandle): Collider;
-    remove(handle: ColliderHandle, islands: IslandManager, bodies: RigidBodySet, wakeUp: boolean): void;
+    createDeformableCollider(bodies: RigidBodySet, softBodies: SoftBodySet, desc: ColliderDesc, binding: SoftMeshBinding, parentHandle: RigidBodyHandle): Collider | null;
+    mapNewColliders(bodies: RigidBodySet): void;
+    unmapRemovedColliders(): void;
+    remove(handle: ColliderHandle, islands: IslandManager, bodies: RigidBodySet, softBodies: SoftBodySet, wakeUp: boolean): void;
     unmap(handle: ImpulseJointHandle): void;
     get(handle: ColliderHandle): Collider | null;
     len(): number;

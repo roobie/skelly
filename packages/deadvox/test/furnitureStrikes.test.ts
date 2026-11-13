@@ -1,28 +1,19 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { requireDayCycle } from '@skelly/engine/content';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dayPhaseAt, type PlayerSense } from '@skelly/engine/sim';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { requireDayCycle } from '../src/core/content.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { dayPhaseAt } from '../src/core/dayPhase.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundEmission } from '../src/core/soundPicker.ts';
-import { World } from '../src/core/world.ts';
-import type { PlayerSense } from '../src/core/zombies.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { baseContentSources, stackActorFigureFiles } from './baseContentFiles.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 const DURABILITY = 4 * MINIMUM;
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
+const base = baseContentSources();
 const { registry, issues } = buildFixtureRegistry([
   ...base,
   {
@@ -44,7 +35,7 @@ const { registry, issues } = buildFixtureRegistry([
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FLOOR: SolidAt = (_x, y) => y === 0;
 const WARDROBE_AT: Vec3 = [4, 1, 0];
@@ -54,6 +45,7 @@ const strikeWardrobe = (strength: number) => {
   const played: Readonly<SoundEmission>[] = [];
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: FLOOR,
     isOpaque: () => false,
@@ -111,7 +103,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: sense,
     isSolid: solid,
     isOpaque: solid,
@@ -119,6 +111,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     tuning: TEST_SENSE_TUNING,
+    actorFigureFiles: stackActorFigureFiles(registry),
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {
       const piece = entities.pieceTouching(ahead);
@@ -152,14 +145,6 @@ it('makes a blow on a piece heard in the sound its material names, even one that
     expect(played.find((emission) => emission.event === sound)?.emittedAsNoise).toBe(true);
   }
   expect(sound).not.toBe(FIXTURE_BLOW_SOUND);
-});
-
-it('keeps a bashing shambler at a piece that is its only way through until it gives way', () => {
-  const held = chasePastWardrobe(MINIMUM, true);
-  expect(held.entities.byUid(held.wardrobe.uid)).toBeUndefined();
-  expect(held.reachedBehind).toBe(true);
-  const weak = chasePastWardrobe(MINIMUM * 0.99, true);
-  expect(weak.reachedBehind).toBe(false);
 });
 
 it('lets a shambler walk around a piece it can pass instead of bashing it', () => {

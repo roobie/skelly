@@ -1,0 +1,3030 @@
+// The simulation half of a play session, without the DOM: the clock and scheduler, the
+// player's body, inventory, needs, rest, the actors and their spawns. `startPlay`
+// (the game) and the snapshot tests build the same object from here, so what a save
+// captures is what the game runs. Sounds, notices and debug tools reach in through
+// callbacks; nothing here draws or listens.
+
+import { actionText, fillText } from '../core/actionText.ts';
+import { type ActorFigureFiles, actorFigure } from '../core/actorFigureFiles.ts';
+import type { PlayerMovement, VocalNoise } from '../core/actorSense.ts';
+import { ActorSpawner } from '../core/actorSpawns.ts';
+import { type Actor, PLAYER_ARM_REACH_M } from '../core/actorState.ts';
+import {
+  type AcidGroundImpact,
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+  type HitImpulse,
+  type MeleeResult,
+  type MeleeWeapon,
+} from '../core/actorSystem.ts';
+import { loweredStanceTuning } from '../core/agentPerception.ts';
+import {
+  AimController,
+  type AimWobbleNoiseTuning,
+  aimDirection,
+  breathSteadying,
+  NEUTRAL_AIM,
+  playerAimTuning,
+} from '../core/aim.ts';
+import { BearTraps } from '../core/bearTrap.ts';
+import type { BlockBlow } from '../core/blockDamage.ts';
+import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { bookReadingHooks } from '../core/bookReading.ts';
+import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
+import { claimed, claimedId } from '../core/capabilities.ts';
+import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
+import { hourOfDay } from '../core/clock.ts';
+import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
+import { createColumnSupply } from '../core/columnSupply.ts';
+import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { coreMessage } from '../core/coreText.ts';
+import { CraftCommands } from '../core/craftCommands.ts';
+import { type CraftPreference, planCraft } from '../core/crafting.ts';
+import { craftActionHooks } from '../core/craftWork.ts';
+import { dayPhaseAt } from '../core/dayPhase.ts';
+import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { advanceEventRules } from '../core/eventRules.ts';
+import { blastShare, bodyCentre, Fuses, fragmentDirections, fragmentHitsOnBody, inSight } from '../core/explosive.ts';
+import {
+  type FirearmsCombatTuning,
+  type FirearmsSkillShotKind,
+  type FirearmsSkillZeroHandling,
+  firearmsSkillEffects,
+  sameFirearmsSkillZeroHandling,
+  steadinessTuning,
+} from '../core/firearmsSkill.ts';
+import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
+import { foodMillisecondsAt } from '../core/food.ts';
+import { advanceFootsteps, footstepEventAt, initialFootstepClock, isHardLanding } from '../core/footsteps.ts';
+import {
+  advanceFloorLockedPlacement,
+  type FurnitureMover,
+  type FurnitureSlideWay,
+  floorLockedPlacement,
+  furnitureMoveStamina,
+  liftFurniture,
+  placeFurniture,
+  placement,
+  removalRefusal,
+  removeFurniture,
+  ruinFurniture,
+  slideDestination,
+  slideFurniture,
+  spreadActorDrop,
+  tipCarried,
+  turnCarried,
+} from '../core/furnitureMove.ts';
+import { pickFurniture } from '../core/furniturePick.ts';
+import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
+import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
+import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
+import { defOf, type Item } from '../core/items.ts';
+import { settleCell } from '../core/itemThrow.ts';
+import { climb, LadderHold } from '../core/ladders.ts';
+import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
+import { playerLeanBoxes } from '../core/leanCollision.ts';
+import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
+import { corpseLootPoint, rollLoot } from '../core/loot.ts';
+import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
+import { modified } from '../core/modifiers.ts';
+import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
+import { freshDropTarget } from '../core/options.ts';
+import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import { playerAdsPose } from '../core/playerAdsPose.ts';
+import { PlayerCombat } from '../core/playerCombat.ts';
+import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
+import type { PlayerStance } from '../core/playerStance.ts';
+import { pryPlan } from '../core/prying.ts';
+import { Rng } from '../core/random.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
+import {
+  bindReach,
+  pileDistance as distanceToPile,
+  furnitureDistance,
+  reachTuning,
+  vehicleDistance,
+} from '../core/reach.ts';
+import type { ReadRequest } from '../core/readable.ts';
+import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
+import type { Scale } from '../core/scale.ts';
+import { nearDiscoveryBox, type ScenarioDiscovery } from '../core/scenarioDiscovery.ts';
+import { assertScenarioRun, ScenarioRun } from '../core/scenarioRun.ts';
+import type { ActorBody } from '../core/schema/actors.ts';
+import type { EventRuleDef } from '../core/schema.ts';
+import { type ShotTrace, traceShot } from '../core/shotTrace.ts';
+import { Simulation } from '../core/sim.ts';
+import type { ColumnSource } from '../core/site.ts';
+import { siteGenerationOf } from '../core/sitePalette.ts';
+import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
+import {
+  firearmShotPracticeSkill,
+  firearmSteadinessSkill,
+  firearmsCombatTuning as readFirearmsCombatTuning,
+  meleeCombatTuning as readMeleeCombatTuning,
+  skillActivityPractice,
+  skillActivityPracticeRate,
+} from '../core/skillTraining.ts';
+import { type SkyFieldOwner, SkyFields } from '../core/skyField.ts';
+import { freezeSnapshot } from '../core/snapshotData.ts';
+import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
+import type { SoundId } from '../core/soundEvents.ts';
+import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { strikeTerrain } from '../core/terrainStrike.ts';
+import { simTimestamp } from '../core/time.ts';
+import { spendFuel } from '../core/torch.ts';
+import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
+import { VehicleParts } from '../core/vehicleParts.ts';
+import { VehicleOccupancy } from '../core/vehicleProjection.ts';
+import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
+import { vehicleWorkHooks } from '../core/vehicleWork.ts';
+import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
+import type { World } from '../core/world.ts';
+import { actorVoiceLaw, type VoicePitchOverrides } from './actorAudio.ts';
+import { applyActorPlayerHit } from './actorPlayerHit.ts';
+import { firearmShotSound } from './audioPresentation.ts';
+import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
+import type { DebugNoclipStep } from './debugNoclipStep.ts';
+import { registerDoorAction } from './doorAction.ts';
+import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
+import { FirearmAttachmentHandling, isAttachmentWorkAction } from './firearmAttachmentHandling.ts';
+import {
+  FirearmMechanics,
+  type FirearmOutcome,
+  type FirearmPoseInput,
+  type FirearmShotEffect,
+  type FirearmShotInput,
+  type FirearmTrajectory,
+  isFirearmTrainingAction,
+} from './firearmHandling.ts';
+import { MagazineHandling } from './magazineHandling.ts';
+import {
+  createPlayerBody,
+  type MoveIntent,
+  movementPace,
+  nextStance,
+  physicsFor,
+  playerTuning,
+  restorePlayer,
+  type StanceToggle,
+  snapshotPlayer,
+  steer,
+} from './player.ts';
+import { Quickbar } from './quickbar.ts';
+import { RestController } from './rest.ts';
+import { Sharpening } from './sharpening.ts';
+import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
+import { Survival } from './survival.ts';
+import { ThrowCharge } from './throwCharge.ts';
+import { UNPACK_ACTION, Unpacking } from './unpacking.ts';
+
+export const PHYSICS_RATE = 60;
+export const HANDLING_RATE = 20;
+const sessionFirearmsTuning = (
+  mechanics: FirearmMechanics,
+  tuning: FirearmsCombatTuning,
+  firearmUid: number | undefined,
+): FirearmsCombatTuning =>
+  firearmUid === undefined ? tuning : { ...tuning, skillZeroHandling: mechanics.skillZeroHandlingFor(firearmUid) };
+const sessionFirearmsSkillZeroHandling = (
+  mechanics: FirearmMechanics,
+  firearmUid: number | undefined,
+  shared: FirearmsSkillZeroHandling,
+): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingSettingFor(firearmUid));
+const sessionFirearmsShotKind = (
+  mechanics: FirearmMechanics,
+  firearmUid: number | undefined,
+  timeSimSeconds: number,
+): FirearmsSkillShotKind =>
+  firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
+const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
+  firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
+const isInventoryPracticeAction = (job: Job): boolean =>
+  job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
+const sessionSteadiness = (
+  registry: Registry,
+  character: Character,
+  tuning: FirearmsCombatTuning,
+  firearm: Item | undefined,
+) => {
+  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
+  return {
+    level: skillEffectLevel(skillId === undefined ? SKILL_LEVEL_MIN : character.skills[skillId]!),
+    tuning:
+      skillId === undefined || skillId === claimed(registry.skills, 'firearmsCombat')?.id
+        ? tuning
+        : steadinessTuning(tuning, registry.skills.get(skillId)!),
+  };
+};
+
+const initialAimVariance = (
+  registry: Registry,
+  character: Character,
+  tuning: FirearmsCombatTuning,
+  firearm: Item | undefined,
+): number => {
+  const steady = sessionSteadiness(registry, character, tuning, firearm);
+  return firearmsSkillEffects(steady.level, {
+    ...steady.tuning,
+    skillZeroHandling: firearm
+      ? (defOf(registry, firearm.type).firearm?.skillZeroHandling ?? tuning.skillZeroHandling)
+      : tuning.skillZeroHandling,
+  }).variance;
+};
+
+const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined, uid: number | undefined): void => {
+  if (
+    uid !== undefined &&
+    (!firearm ||
+      firearm.uid !== uid ||
+      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) ===
+        claimed(registry.skills, 'firearmsCombat')?.id)
+  ) {
+    throw new Error('Invalid saved Sniping acquisition firearm');
+  }
+};
+
+const advanceSnipingPractice = ({
+  registry,
+  character,
+  firearms,
+  firearm,
+  ready,
+  aiming,
+  previousUid,
+  dt,
+}: {
+  registry: Registry;
+  character: Character;
+  firearms: FirearmMechanics;
+  firearm: Item | undefined;
+  ready: boolean;
+  aiming: boolean;
+  previousUid: number | undefined;
+  dt: number;
+}): number | undefined => {
+  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
+  if (
+    skillId === undefined ||
+    !(ready && aiming && firearm && firearms.isReady(firearm.uid)) ||
+    skillId === claimed(registry.skills, 'firearmsCombat')?.id
+  ) {
+    return undefined;
+  }
+  if (firearm.uid !== previousUid) {
+    const training = skillActivityPractice(registry, skillId, 'acquisition');
+    character.awardPractice(skillId, training.practice, training.tier);
+  }
+  const training = skillActivityPracticeRate(registry, skillId, 'ads');
+  character.awardPractice(skillId, dt * training.practicePerSecond, training.tier);
+  return firearm.uid;
+};
+
+const createSessionAim = ({
+  registry,
+  tuning,
+  seed,
+  restored,
+  variance,
+  wobbleFlatOverride,
+  wobbleNoiseScaleOverride,
+}: {
+  registry: Registry;
+  tuning: FirearmsCombatTuning;
+  seed: number;
+  restored: SaveSnapshot | undefined;
+  variance: number;
+  wobbleFlatOverride: number | undefined;
+  wobbleNoiseScaleOverride: number | undefined;
+}): AimController => {
+  const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
+  const wobbleSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
+  return new AimController({
+    tuning: playerAimTuning(registry),
+    wobbleLimitRadians: tuning.wobbleLimitRadians,
+    wobbleShape: {
+      verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
+      archPower: tuning.wobbleLuneArchPower,
+      phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
+    },
+    wobbleSeed,
+    wobbleNoise: {
+      reversionRatePerSimSecond: tuning.wobbleNoiseReversionRatePerSimSecond,
+      sigmaRadiansPerSqrtSecond: tuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+      smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
+    } satisfies AimWobbleNoiseTuning,
+    wobbleNoiseStrengthScale: wobbleNoiseScaleOverride ?? 1,
+    breathHold: tuning.breathHold,
+    ...(restored
+      ? {
+          state: restored.character.aim,
+          wobbleNoiseState: restored.character.aim.wobbleNoise,
+          breathHoldState: restored.character.aim.breath,
+        }
+      : {}),
+    variance,
+    stridePhase: footstepClock.stridePhase,
+  });
+};
+
+const advanceSessionAim = ({
+  aim,
+  firearms,
+  tuning,
+  skillLevel,
+  steadinessLevel,
+  steadiness,
+  firearmUid,
+  timeSimSeconds,
+  dt,
+  velocity,
+  blockSize,
+  yaw,
+  pitch,
+  aimSway,
+  stance,
+  firing,
+  stridePhase,
+  breath,
+}: {
+  aim: AimController;
+  firearms: FirearmMechanics;
+  tuning: FirearmsCombatTuning;
+  skillLevel: number;
+  steadinessLevel: number;
+  steadiness: FirearmsCombatTuning;
+  firearmUid: number | undefined;
+  timeSimSeconds: number;
+  dt: number;
+  velocity: Vec3;
+  blockSize: number;
+  yaw: number;
+  pitch: number;
+  aimSway: number;
+  stance: PlayerStance;
+  firing: boolean;
+  stridePhase: number;
+  breath: {
+    readonly wanted: boolean;
+    readonly stamina: number;
+    readonly windedBelow: number;
+    readonly painRatio: number;
+  };
+}): void => {
+  const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
+  const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
+  const steady = firearmsSkillEffects(
+    steadinessLevel,
+    sessionFirearmsTuning(firearms, steadiness, firearmUid),
+    shotKind,
+  );
+  aim.advance({
+    breath: {
+      wanted: breath.wanted,
+      stamina: breath.stamina,
+      windedBelow: breath.windedBelow,
+      steadying: breathSteadying(skillEffectLevel(steadinessLevel), breath.painRatio, steadiness.breathHold),
+    },
+    dt,
+    velocity,
+    blockSize,
+    yaw,
+    pitch,
+    variance: steady.variance * aimSway,
+    stanceDriftScale: tuning.wobbleStanceDriftScale[stance],
+    firing,
+    recoilRecoveryRate: skill.recoilRecoveryRate,
+    stridePhase,
+  });
+};
+const setSessionFirearmsSkillZeroHandling = (
+  mechanics: FirearmMechanics,
+  firearmUid: number | undefined,
+  value: FirearmsSkillZeroHandling,
+): void => {
+  if (firearmUid !== undefined) {
+    mechanics.setSkillZeroHandlingFor(firearmUid, value);
+  }
+};
+export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
+
+/** A look direction as yaw and pitch. */
+export interface PlayerLook {
+  readonly yaw: number;
+  readonly pitch: number;
+}
+
+/** What the player is doing with the keyboard and mouse, read each tick. */
+export interface PlayerInputSample {
+  readonly freeLooking?: boolean;
+  readonly active: boolean;
+  readonly inputLocked: boolean;
+  readonly intent: MoveIntent;
+  readonly yaw: number;
+  readonly pitch: number;
+  readonly walking: boolean;
+  readonly descending: boolean;
+  readonly worldReady: boolean;
+}
+
+export interface SessionControls {
+  freeLooking?: () => boolean;
+  /** True when input reaches the world: the pointer is locked and no menu has it. */
+  active: () => boolean;
+  intent: () => MoveIntent;
+  /** Recording and replay meet at the fixed player-tick boundary, never at a DOM timestamp. */
+  sampleAtPlayerTick?: (tick: number, live: PlayerInputSample, time: number, compression: number) => PlayerInputSample;
+  /** Clears edge-triggered intents after the player tick samples them. */
+  consumeDominantUse?: () => void;
+  consumeOffUse?: () => void;
+  consumeStanceToggle?: () => StanceToggle | undefined;
+  /** Runs dominant use on the player-tick boundary, with that tick's aim/state. */
+  useDominant?: () => void;
+  /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
+  heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
+  /** Right mouse requests firearm readiness; input gates this while a menu or lock owns the pointer. */
+  readyHeld?: () => boolean;
+  /** Whether this firearm may fire now: raised, and input reaches the world. Absent, a raised gun is ready. */
+  firearmReady?: (uid: number) => boolean;
+  /** True only while the player is in the melee en-garde stance. */
+  blocking?: () => boolean;
+  /** Sights are toggled on; the session still requires a ready firearm. */
+  aimingDownSights?: () => boolean;
+  /** True only while an automatic firearm is selected and its trigger is held. */
+  automaticFireHeld?: () => boolean;
+  /** Applies a requested camera-pitch shift and returns the amount accepted by its pitch limits. */
+  adjustPitch?: (delta: number) => number;
+  /** Runs off-hand use on the player-tick boundary, with that tick's aim/state. */
+  useOff?: () => void;
+  /** Radians; 0 looks down -z. */
+  yaw: () => number;
+  pitch: () => number;
+  /** Walk instead of jog (the Z toggle). */
+  walking: () => boolean;
+  /** R held: descend while in noclip. */
+  descending: () => boolean;
+}
+
+/** Sound output. Positions are in blocks; the game converts to metres for playback. */
+export interface SessionAudio {
+  /** One-way playback of an admitted choice; unavailable output cannot undo hearing or picker state. */
+  play: (sound: Readonly<SoundEmission>) => void;
+  /** Presentation cue selectors; selected cues use the session picker without adding vocal noise. */
+  onMoveStart?: (move: MoveStart, ownerLocation: Location | undefined, chest: Vec3, time: number) => void;
+  onMoveComplete?: (move: MoveStart, time: number) => void;
+}
+
+/** The part of the debug tools that changes what the simulation does. */
+interface SessionDebug {
+  readonly noclip: boolean;
+  stepNoclip: (step: DebugNoclipStep) => void;
+}
+
+/** A committed round with its segments traced against the world its hits resolve in (`packages/deadvox/DESIGN.md`, "Shot impacts"). */
+export interface ResolvedFirearmTrajectory extends FirearmTrajectory {
+  readonly traces: readonly ShotTrace[];
+}
+
+export interface SessionOptions {
+  powerDevices?: readonly PlacedPowerDevice[];
+  registry: Registry;
+  /** The registry's figure rows decoded, every one resolved before the first tick. */
+  actorFigureFiles: ActorFigureFiles;
+  scenario?:
+    | Readonly<{ id: string; body: string; compression: string; eventRules?: readonly EventRuleDef[] }>
+    | undefined;
+  objective?: Readonly<Vec3> | undefined;
+  discovery?: Readonly<ScenarioDiscovery> | undefined;
+  world: World;
+  terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
+  isSolid: SolidAt;
+  isOpaque: SolidAt;
+  scale: Scale;
+  /** Immutable choice for a new actor; saved progression wins on restore. */
+  handedness?: Character['handedness'] | undefined;
+  /** The world's seed. */
+  seed: number;
+  /** Calendar seconds at the start of day 1. */
+  start: number;
+  /** Player feet, in blocks, when starting fresh. Ignored when restoring. */
+  spawn: Vec3;
+  /** The game's shared block entities; restore populates this same object in place. */
+  entities?: Inventory['entities'];
+  /** The site's sky field cache over this world and these entities, shared with the renderer; none leaves every point open. */
+  skyFields?: SkyFields;
+  /** Deterministic scenario registrations run after restore, before world consumers. */
+  registerVehicles?: ((inventory: Inventory) => void) | undefined;
+  terrainFloor?: (x: number, z: number) => number;
+  /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
+  ready: (x: number, z: number) => boolean;
+  /** Optional replayed terrain readiness used only to classify actor tiers. */
+  actorReady?: ((x: number, z: number) => boolean) | undefined;
+  controls: SessionControls;
+  audio: SessionAudio;
+  /** A message that isn't an interruption, such as a completion notice. */
+  notice: (text: string) => void;
+  /** Presentation cue for an action the handling queue refused. */
+  refusal?: ((text: string) => void) | undefined;
+  /** A held paper request selected by a live domain command; presentation owns its view. */
+  onRead: (request: ReadRequest) => void;
+  /** Invalid saved overlay entries are discarded before simulation resumes. */
+  onRestoreIssue?: (issue: string) => void;
+  /** Observational hook for actual handling completion/failure outcomes. */
+  onHandlingOutcomes?: (result: TickResult) => void;
+  onConsumed?: ((type: string) => void) | undefined;
+  onHandlingOutcome?: (item: Item, outcome: FirearmOutcome) => void;
+  onDischarge?: (item: Item, sighted: boolean) => void;
+  onCompletedSwing?: (isFist: boolean) => void;
+  onBatterySwapped?: ((lightType: string) => void) | undefined;
+  /** An unpack opened a container in place; called with the container's type. */
+  onOpened?: ((type: string) => void) | undefined;
+  /** An unpack delivered its contents; called with their item type. */
+  onUnpacked?: ((type: string) => void) | undefined;
+  /** Output only, called after the simulation has committed the case transition. */
+  onFirearmEjection?: (effect: FirearmShotEffect) => void;
+  /** Output only, after the simulation inserts an ejected item into its landing pile. */
+  onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
+  /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
+  onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
+  /** Output only, after admitted terrain removal; includes neighbouring chunks whose meshes read the edited cells. */
+  onTerrainEdited?: (chunks: Vec3[]) => void;
+  /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
+  onDetonation?: (at: Vec3, radiusMetres: number) => void;
+  /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
+  onFuseLit?: (item: Item) => void;
+  /** Presentation-only: a melee block absorbed damage. */
+  onBlock?: (jolt: BlockJolt, full: boolean) => void;
+  onAcidImpact?: (position: Vec3, type: Actor['type']) => void;
+  onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
+  /** Presentation hooks for what the actors' rules decide; they only draw, and change no state. */
+  actorEffects?: {
+    /** A hit drew blood: where it struck, along which line, and how hard. */
+    onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
+    /** A part was cut off (the actor's `severed` already lists it). Fires before onDeath on a killing blow. */
+    onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
+    /** A hit knocked flesh out of a fused-mass body (its `carved` already lists `cells`). */
+    onCarve?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
+    /** An actor became incapacitated but remains in the store and may be revived later. */
+    onIncapacitated?: (id: EntityId, actor: Actor) => void;
+    /** An actor died: it is already out of the store, and its loot is already dropped. */
+    onDeath?: (id: EntityId, actor: Actor) => void;
+    /** The actual result of the player's last swing, for debug-only presentation. */
+    onMeleeResult?: (result: MeleeResult) => void;
+    /** Presentation-only first-person recoil for a confirmed hit. */
+    onMeleeContact?: (impulse: number) => void;
+  };
+  /** Debug tools, once attached; read each time they matter. */
+  debug?: () => SessionDebug | undefined;
+  /** The voice-size probe's actor voice-pitch overrides; a headless caller omits them and gets none. */
+  voicePitchOverrides?: VoicePitchOverrides | undefined;
+  /** Debug-only vertical/horizontal ratio override for the walking lune. */
+  wobbleFlatOverride?: number | undefined;
+  /** Debug-only multiplier for authored OU noise strength. */
+  wobbleNoiseScaleOverride?: number | undefined;
+  /**
+   * Continue from a save. Inventory and block-entity state are restored into the
+   * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
+   * the actor-spawn ledger prevent resetting existing furniture or respawning actors.
+   */
+  restore?: Readonly<SaveSnapshot>;
+}
+
+export interface SessionSnapshotIds {
+  worldId: string;
+  characterId: string;
+}
+
+/** Where the player was looking when a save was taken; the caller applies it to its input. */
+interface RestoredLook {
+  yaw: number;
+  pitch: number;
+  walk: boolean;
+}
+
+const firearmsSkillLevel = (character: Character): number => {
+  const id = character.skillForCapability('firearmsCombat');
+  return skillEffectLevel((id === undefined ? undefined : character.skills[id]) ?? SKILL_LEVEL_MIN);
+};
+
+interface StanceBody {
+  readonly body: Body;
+  readonly heights: Readonly<Record<PlayerStance, number>>;
+  readonly isSolid: SolidAt;
+  readonly text: Pick<ReturnType<typeof actionText>, 'play'>;
+}
+
+const setStanceHeight = (stance: StanceBody, current: PlayerStance): void => {
+  stance.body.height = stance.heights[current];
+};
+
+/** A lower stance shrinks the collision body; rising is refused, keeping the stance, without room overhead. */
+const settleStance = (
+  stance: StanceBody,
+  current: PlayerStance,
+  wanted: PlayerStance,
+  refuse: (text: string) => void,
+): PlayerStance => {
+  if (wanted === current) {
+    return current;
+  }
+  const height = stance.heights[wanted];
+  if (height > stance.body.height && bodyOverlapsTerrain({ ...stance.body, height }, stance.isSolid)) {
+    refuse(wanted === 'standing' ? stance.text.play.noRoomToStand : stance.text.play.noRoomToCrouch);
+    return current;
+  }
+  setStanceHeight(stance, wanted);
+  return wanted;
+};
+
+const resolvePlayerEyeHeight = (
+  unconscious: boolean,
+  proneHeight: number,
+  eyeDrop: number | undefined,
+  eye: number,
+): number => (unconscious ? proneHeight : eye - (eyeDrop ?? 0));
+
+const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
+
+const playerMovementForIntent = (moving: MoveIntent, stance: PlayerStance, sprinting: boolean): PlayerMovement => {
+  if (moving.forward === 0 && moving.right === 0) {
+    return 'still';
+  }
+  if (stance !== 'standing') {
+    return 'walking';
+  }
+  if (sprinting) {
+    return 'sprinting';
+  }
+  return moving.walk ? 'walking' : 'jogging';
+};
+
+const createSessionCharacter = (
+  registry: Registry,
+  handedness: SessionOptions['handedness'],
+  restored: Readonly<SaveSnapshot> | undefined,
+): Character =>
+  restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
+
+const playerBodyTuning = (registry: Registry, id: string = claimedId(registry.body, 'player')) => {
+  const tuning = registry.body.get(id);
+  if (!tuning) {
+    throw new Error('Missing player body tuning');
+  }
+  return tuning;
+};
+
+const playerCompressionCaps = (registry: Registry, id: string = claimedId(registry.compression, 'player')) => {
+  const tuning = registry.compression.get(id);
+  if (!tuning) {
+    throw new Error('Missing player compression tuning');
+  }
+  return tuning.caps;
+};
+
+const playerSenseTuning = (registry: Registry) => {
+  const tuning = claimed(registry.senses, 'player');
+  if (!tuning) {
+    throw new Error('Missing player sense tuning');
+  }
+  return tuning;
+};
+
+const playerTreatmentHooks = (
+  inventory: Inventory,
+  sim: Simulation,
+): NonNullable<Simulation['actions']['treatment']> => ({
+  validate: (region, itemUid, itemType) => {
+    const text = actionText(inventory.registry).treatment;
+    const item = inventory.itemByUid(itemUid);
+    const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
+    if (!treatment) {
+      return text.gone;
+    }
+    return sim.body.canTreat(region, treatment) ? undefined : text.doesNotApply;
+  },
+  finish: (region, itemUid, itemType) => {
+    const text = actionText(inventory.registry).treatment;
+    const item = inventory.itemByUid(itemUid);
+    const treatment = item?.type === itemType ? defOf(inventory.registry, itemType).treatment : undefined;
+    if (!(item && treatment)) {
+      return text.gone;
+    }
+    if (!sim.body.canTreat(region, treatment)) {
+      return text.doesNotApply;
+    }
+    if (!inventory.consume(item)) {
+      return text.gone;
+    }
+    const roll = sim.rng(`treatment:${region}:${itemUid}:${sim.time}`);
+    if (!sim.body.treat(region, treatment, () => roll.next())) {
+      throw new Error('Body treatment changed during completion');
+    }
+    return true;
+  },
+});
+
+const restoreSessionAudio = (restored: Readonly<SaveSnapshot> | undefined, soundPicker: SoundPicker) => {
+  if (!restored) {
+    return {
+      playerAudio: { vocalNoiseId: 0, vocalNoise: undefined as VocalNoise | undefined },
+      footstepClock: initialFootstepClock(),
+      rustleClock: initialRustleClock(),
+      airbornePeakY: undefined as number | undefined,
+    };
+  }
+  const saved = restorePlayerAudioState(restored.character.playerAudio);
+  soundPicker.restoreState(structuredClone(saved.soundPicker));
+  return {
+    playerAudio: {
+      vocalNoiseId: saved.vocalNoiseId,
+      vocalNoise:
+        saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] as Vec3 },
+    },
+    footstepClock: saved.footstepClock,
+    rustleClock: { cells: new Set(saved.rustleClock.cells), nextSimTimestamp: saved.rustleClock.nextSimTimestamp },
+    airbornePeakY: saved.airbornePeakY ?? undefined,
+  };
+};
+
+const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | undefined) => ({
+  sprinting: player?.sprinting ?? false,
+  firearmReadyWalking: player?.firearmReadyWalking ?? false,
+  handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
+});
+
+const actorReadinessFor = (options: SessionOptions) => options.actorReady ?? options.ready;
+
+/** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
+const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
+  worldBricks(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize });
+
+const scenarioRunSnapshot = (run: ScenarioRun | undefined) => run?.snapshot() ?? null;
+const scenarioRunWon = (run: ScenarioRun | undefined): boolean => run?.won ?? false;
+
+const restoreScenarioRun = (options: SessionOptions, sim: Simulation): ScenarioRun | undefined => {
+  const restored = options.restore;
+  assertScenarioRun(restored?.character.scenarioRun ?? null, {
+    calendar: sim.calendar,
+    dead: sim.dead !== undefined,
+    ...(restored && options.scenario ? { scenario: options.scenario.id } : {}),
+  });
+  if (restored?.character.scenarioRun && !options.scenario) {
+    throw new Error('Unexpected scenario run');
+  }
+  const run = options.scenario
+    ? new ScenarioRun(options.scenario.id, sim.calendar, restored?.character.scenarioRun ?? undefined)
+    : undefined;
+  if (run?.won) {
+    sim.paused = true;
+  }
+  return run;
+};
+
+const observeScenarioMovement = (
+  run: ScenarioRun | undefined,
+  {
+    before,
+    after,
+    blockSize,
+    climbing,
+    calendar,
+  }: {
+    before: Vec3;
+    after: Vec3;
+    blockSize: number;
+    climbing: boolean;
+    calendar: number;
+  },
+): void => {
+  run?.moved(before, after, blockSize);
+  if (climbing) {
+    run?.entered(calendar);
+  }
+};
+
+const createSessionPower = (options: SessionOptions, sim: Simulation, inventory: Inventory): SitePower | undefined => {
+  const saved = options.restore?.world.power;
+  if (!options.powerDevices?.length) {
+    if (saved) {
+      throw new Error('Saved power has no authored devices');
+    }
+    return undefined;
+  }
+  if (options.restore && !saved) {
+    throw new Error('Save is missing authored power state');
+  }
+  const power = new SitePower({
+    registry: options.registry,
+    inventory,
+    devices: options.powerDevices,
+    clock: sim.clock,
+    cycle: requireDayCycle(options.registry),
+    ...(saved ? { saved } : {}),
+  });
+  sim.scheduler.register({
+    id: 'power',
+    rate: 1 / claimed(options.registry.powerTuning, 'power')!.tickSimSeconds,
+    tick: (_dt, time) => power.advance(simTimestamp(time)),
+  });
+  return power;
+};
+
+/** The shared cache, or one with no fields, which answers open sky everywhere. */
+const sessionSkyFields = (shared: SkyFields | undefined, owner: SkyFieldOwner, scale: Scale, top: number) =>
+  shared ?? new SkyFields(owner, { bottom: scale.minCy * CHUNK, top });
+
+export const createSession = (options: SessionOptions) => {
+  const { registry, world, isSolid, scale, seed, controls, audio, debug, actorFigureFiles } = options;
+  const text = actionText(registry);
+  const dayCycle = requireDayCycle(registry);
+  // Built on the first actor voice, so a stack without humanoid figures can run a session that voices no actor.
+  let actorVoice: ReturnType<typeof actorVoiceLaw> | undefined;
+  const actorVoiceFor = () => {
+    actorVoice ??= actorVoiceLaw(
+      [...actorFigureFiles.values()].flatMap((figure) => (figure.body.model === 'humanoid' ? [figure.body] : [])),
+      claimed(registry.senses, 'player')!.actorVoice,
+    );
+    return actorVoice;
+  };
+  const actorBody = (actor: Actor): ActorBody => actorFigure(actorFigureFiles, actor.type, actor.figureSeed).body;
+  const s = scale.blockSize;
+  const skyTop = (scale.maxCy + 1) * CHUNK - 1;
+  const Player = playerTuning(registry);
+  const physics = physicsFor(scale, Player);
+  const restored = options.restore;
+  const rolledColumns = new Set(restored?.world.rolledColumns);
+
+  let physicalSolid = isSolid;
+  const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
+  const senseTuning = playerSenseTuning(registry);
+  let playerStance: PlayerStance = restoredPlayer?.stance ?? 'standing';
+  const body: Body = restoredPlayer?.body ?? createPlayerBody(scale, options.spawn, Player);
+  // The stance sets the collision height, so a lowered save loads lowered and retuned content applies.
+  const stanceBody: StanceBody = {
+    body,
+    heights: {
+      standing: Player.height / s,
+      crouching: Player.crouch.bodyHeightMetres / s,
+      prone: Player.prone.bodyHeightMetres / s,
+    },
+    isSolid: (x, y, z) => physicalSolid(x, y, z),
+    text,
+  };
+  setStanceHeight(stanceBody, playerStance);
+  const updateStance = (): void => {
+    const toggle = controls.consumeStanceToggle?.();
+    const wanted = debug?.()?.noclip ? playerStance : nextStance(playerStance, toggle);
+    playerStance = settleStance(stanceBody, playerStance, wanted, options.refusal ?? options.notice);
+  };
+  const loweredStance = () => loweredStanceTuning(Player, playerStance);
+  const restoredLook: RestoredLook | undefined = restoredPlayer && {
+    yaw: restoredPlayer.yaw,
+    pitch: restoredPlayer.pitch,
+    walk: restoredPlayer.walk,
+  };
+
+  const character = createSessionCharacter(registry, options.handedness, restored);
+  const firearmsCombatTuning = readFirearmsCombatTuning(registry);
+  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
+  const meleeCombatTuning = readMeleeCombatTuning(registry);
+  const firearmsSkillId = claimed(registry.skills, 'firearmsCombat')?.id;
+  const meleeSkillId = claimed(registry.skills, 'meleeCombat')?.id;
+  const inventorySkillId = claimed(registry.skills, 'inventoryManagement')?.id;
+  const inventory = restored
+    ? Inventory.restoreState(registry, restored.character.inventory, options.entities, {
+        character,
+        vehicles: restored.world.vehicles,
+      })
+    : new Inventory(registry, undefined, options.entities, character);
+  options.registerVehicles?.(inventory);
+  const vehicleOccupancy = new VehicleOccupancy(registry, inventory.vehicles, s);
+  const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
+  const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
+  physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
+  const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
+  const isLightBlocking = (x: number, y: number, z: number) =>
+    options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
+  const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
+  const fuses = new Fuses(
+    registry,
+    Array.from(inventory.items(), ({ item }) => item),
+    () => {
+      inventory.version += 1; // The item now draws with or without its pin.
+    },
+  );
+  const firearmInHands = () =>
+    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
+      (item) => item && registry.items.get(item.type)?.firearm,
+    );
+  const aim = createSessionAim({
+    registry,
+    tuning: currentFirearmsCombatTuning(),
+    seed,
+    restored,
+    variance: initialAimVariance(registry, character, currentFirearmsCombatTuning(), firearmInHands()),
+    wobbleFlatOverride: options.wobbleFlatOverride,
+    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
+  });
+  const { entities } = inventory;
+  // Actor ticks share vertical block geometry; revisions keep edits visible to every caller.
+  const sunExposureCache = new SunExposureCache(skyTop, scale.minCy * CHUNK, isLightBlocking);
+  // Rebuilt from restored world state and never saved, so a reload answers the same at the same position.
+  const skyFields = sessionSkyFields(options.skyFields, { world, entities, registry }, scale, skyTop);
+  skyFields.setOccluders(vehicleLight);
+  let cachedWorldVersion = world.version;
+  let cachedEntityVersion = entities.version;
+  let cachedVehicleVersion = inventory.vehicles.version;
+  const clearSunExposureCache = (): void => {
+    sunExposureCache.clear();
+    cachedWorldVersion = world.version;
+    cachedEntityVersion = entities.version;
+    cachedVehicleVersion = inventory.vehicles.version;
+  };
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean => {
+    if (
+      cachedWorldVersion !== world.version ||
+      cachedEntityVersion !== entities.version ||
+      cachedVehicleVersion !== inventory.vehicles.version
+    ) {
+      clearSunExposureCache();
+    }
+    return sunExposureCache.isExposedAt(pos, hour, dayCycle);
+  };
+  const quickbar = new Quickbar();
+  const spawner = new ActorSpawner();
+  const actorStore = new MapEntityStore<Actor>();
+
+  /** The air block at the player's feet, where drops land. */
+  const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
+  const reachPlayer = {
+    inventory,
+    blockSize: s,
+    get position() {
+      return body.pos;
+    },
+    get clock() {
+      return sim.clock;
+    },
+    obstacles: {
+      isSolid: (x: number, y: number, z: number) => physicalSolid(x, y, z),
+      isSolidExceptVehicle: (vehicleId: number, x: number, y: number, z: number) =>
+        isSolid(x, y, z) || vehicleOccupancy.isSolidExcept(vehicleId, x, y, z),
+      get version() {
+        return world.version + inventory.vehicles.version;
+      },
+    },
+  };
+  const vehicleParts = new VehicleParts(registry, inventory.vehicles, s);
+  const reach = bindReach(reachPlayer, vehicleParts);
+  inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
+  inventory.dropFeet = feet;
+  inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
+  const pileDistance = (pos: Vec3) => distanceToPile(body.pos, pos, s);
+  const chest = (): Vec3 => [
+    body.pos[0],
+    body.pos[1] + reachTuning(inventory.registry).chestHeightMetres / s,
+    body.pos[2],
+  ];
+  const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
+
+  const bodyTuning = playerBodyTuning(registry, options.scenario?.body);
+  const sim = new Simulation({
+    seed,
+    registry,
+    bodyTuning,
+    ...playerWearHooks(inventory, bodyTuning),
+    analgesics: (item) => registry.items.get(item)?.analgesic,
+    compressionCaps: playerCompressionCaps(registry, options.scenario?.compression),
+    clock: { ratio: dayCycle.clockRatio, start: options.start },
+  });
+  const { compression } = sim;
+  let scenarioRun: ScenarioRun | undefined;
+  const audioEvents = sim.events.reader();
+  const trapInterrupts = sim.events.reader();
+  const soundPicker = new SoundPicker(seed, registry.sounds);
+
+  // The player's own noise, which actors can hear. Saved with the character.
+  const {
+    playerAudio,
+    footstepClock: savedFootstepClock,
+    rustleClock: restoredRustleClock,
+    airbornePeakY: restoredAirbornePeakY,
+  } = restoreSessionAudio(restored, soundPicker);
+
+  const admitSound = (
+    event: SoundId,
+    position: Vec3,
+    time: number,
+    {
+      player,
+      sourceLabel = null,
+      listenerRelative = false,
+      noiseRadiusScale = 1,
+      body: mobBody,
+      noiseRadiusMetres,
+      soundPitchMultiplier,
+    }: SoundEmissionMeta & {
+      player: boolean;
+      body?: ActorBody;
+    },
+  ): boolean => {
+    const selected = soundPicker.pick(event, time);
+    if (!selected) {
+      return false;
+    }
+    const definition = registry.sounds.get(event)!;
+    const bodyPitch =
+      soundPitchMultiplier ?? (mobBody ? actorVoiceFor().bodyPitch(mobBody, options.voicePitchOverrides) : 1);
+    const pitch = selected.pitch * bodyPitch;
+    const pick = { ...selected, pitch };
+    const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
+    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale;
+    const sound = freezeSnapshot({
+      event,
+      position: [...position] as Vec3,
+      time,
+      pick,
+      emittedAsNoise,
+      sourceLabel,
+      listenerRelative,
+    });
+    // Commit gameplay before calling the output adapter, regardless of device/assets/volume.
+    let noiseId: number | undefined;
+    if (emittedAsNoise) {
+      playerAudio.vocalNoiseId += 1;
+      noiseId = playerAudio.vocalNoiseId;
+    }
+    const noisePosition = [...position] as Vec3;
+    const expiresAt = time + senseTuning.vocalNoiseLifetimeSimSeconds;
+    if (emittedAsNoise) {
+      playerAudio.vocalNoise = {
+        id: noiseId!,
+        pos: noisePosition,
+        radiusMetres: emittedNoiseRadius,
+        expiresAt,
+      };
+    }
+    sim.events.emit({ kind: 'sound', ...sound });
+    if (emittedAsNoise) {
+      sim.events.emit({
+        kind: 'noise',
+        event,
+        position: noisePosition,
+        time,
+        id: noiseId!,
+        radiusMetres: emittedNoiseRadius,
+        expiresAt,
+      });
+    }
+    audio.play(sound);
+    return true;
+  };
+  const playWorldSound = (
+    event: SoundId,
+    position: Vec3,
+    time = sim.time,
+    meta: SoundEmissionMeta & { body?: ActorBody } = {},
+  ): boolean => admitSound(event, position, time, { ...meta, player: false });
+  const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
+    admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
+  const awardInventoryPractice = (): void => {
+    if (inventorySkillId !== undefined) {
+      const training = skillActivityPractice(registry, inventorySkillId, 'handling');
+      character.awardPractice(inventorySkillId, training.practice, training.tier);
+    }
+  };
+  /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
+  const blockedDamage = (damage: number, attacker: EntityId): number => {
+    if (!controls.blocking?.() || meleeCombatTuning === undefined) {
+      return damage;
+    }
+    const block = meleeBlock(
+      {
+        level: meleeSkillId === undefined ? SKILL_LEVEL_MIN : character.skills[meleeSkillId]!,
+        damage,
+        roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
+        stamina: sim.needs.stamina,
+        windedBelow: sim.body.staminaRules.windedBelow,
+      },
+      meleeCombatTuning,
+    );
+    if (block.absorbed <= 0) {
+      return damage;
+    }
+    spendStamina(sim.needs, block.staminaCost, bodyTuning.staminaRegenDelaySimSeconds);
+    if (meleeSkillId !== undefined) {
+      const training = skillActivityPractice(registry, meleeSkillId, 'block');
+      character.awardPractice(meleeSkillId, training.practice * block.absorbed, training.tier);
+    }
+    playPlayerSound(bodyTuning.sounds.block[block.full ? 'full' : 'partial']);
+    options.onBlock?.(blockJolt(block.absorbed, meleeCombatTuning), block.full);
+    return damage - block.absorbed;
+  };
+  const queue = new HandlingQueue(
+    inventory,
+    (move) =>
+      options.audio.onMoveStart?.(
+        move,
+        move.from.kind === 'pocket' ? inventory.locate(move.from.owner) : undefined,
+        chest(),
+        sim.time,
+      ),
+    (move) => {
+      awardInventoryPractice();
+      let source: Readonly<Vec3> | undefined;
+      if (move.from.kind === 'pile') {
+        source = move.from.pile.pos;
+      } else if (move.from.kind === 'furniture') {
+        source = move.from.entity.pos;
+      }
+      const { target } = move;
+      const carriedPocket =
+        target.kind === 'pocket' && [...inventory.carriedTree()].some(({ item }) => item === target.owner);
+      const acquired = target.kind === 'hand' || target.kind === 'worn' || carriedPocket;
+      if (
+        source &&
+        registry.items.get(move.item.type)?.readable &&
+        acquired &&
+        options.discovery?.clues.some((at) => at.every((value, axis) => value === source[axis]))
+      ) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
+      options.audio.onMoveComplete?.(move, sim.time);
+    },
+  );
+
+  // Where bodies stopped the committed shot's pellets: `onShot` resolves them just before `onTrajectory` traces.
+  let bodyStops: readonly (number | undefined)[] = [];
+  const firearms = new FirearmMechanics(inventory, queue, {
+    blockSize: s,
+    isSolid: physicalSolid,
+    pose: (uid) => firearmPose(uid),
+    shotInput: (uid, atSimSeconds) => firearmShotInput(uid, atSimSeconds),
+    onEjection: (effect) => options.onFirearmEjection?.(effect),
+    onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
+    onTrajectory: (trajectory, time) => {
+      const stops = bodyStops;
+      bodyStops = [];
+      const range = currentFirearmsCombatTuning().shotTraceRangeBlocks;
+      options.onFirearmTrajectory?.(
+        {
+          ...trajectory,
+          // A pellet a body stopped ends at that body, so no wall behind it is marked.
+          traces: trajectory.directions.flatMap((direction, index) =>
+            traceShot(trajectory.origin, [direction], Math.min(stops[index] ?? range, range), physicalSolid),
+          ),
+        },
+        time,
+      );
+    },
+    firearmsSkillLevel: () => firearmsSkillLevel(character),
+    firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
+    handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
+    onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
+      const tuning = sessionFirearmsTuning(firearms, currentFirearmsCombatTuning(), firearmUid);
+      aim.recordShot(
+        shotSeed,
+        recoilKickRadians,
+        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale *
+          firearms.recoilScaleFor(firearmUid),
+      );
+    },
+    onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
+    onShot: (shot, time, firearm, sighted) => {
+      options.onDischarge?.(firearm, sighted);
+      const skillId = firearmShotPracticeSkill(registry, defOf(registry, firearm.type), sighted);
+      if (skillId !== undefined) {
+        const shotTraining = skillActivityPractice(registry, skillId, 'shot');
+        character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
+      }
+      const { hits, stops } = actorSystem.firePellets(shot);
+      bodyStops = stops;
+      if (skillId !== undefined && hits > 0 && (skillId !== firearmsSkillId || firearmReadyWalking)) {
+        const training = skillActivityPractice(registry, skillId, 'hit');
+        character.awardPractice(skillId, training.practice, training.tier);
+      }
+      const sound = firearmShotSound(registry, firearm);
+      playPlayerSound(sound.event, time, {
+        sourceLabel: sound.sourceLabel,
+        noiseRadiusScale: firearms.noiseFactorFor(firearm),
+      });
+      if (sound.bodyEvent !== undefined) {
+        playPlayerSound(sound.bodyEvent, time, { sourceLabel: sound.sourceLabel });
+      }
+    },
+    onSound: (event, position, time) =>
+      position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
+  });
+
+  const firearmAttachments = new FirearmAttachmentHandling(inventory, queue, feet);
+
+  const magazines = new MagazineHandling(inventory, queue, {
+    feet,
+    reloadFactor: () =>
+      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadFactor *
+      sim.body.pain.effects.handlingSlowdown,
+    onSound: (event, time) => playPlayerSound(event, time),
+  });
+
+  const survival = new Survival(sim, inventory, queue, {
+    reach,
+    feet: (item) => freshDropTarget(inventory, item, feet()),
+    notice: options.notice,
+    read: options.onRead,
+    readingLight: () => readingLight(),
+    consumed: options.onConsumed,
+    batterySwapped: options.onBatterySwapped,
+    bookRead: (bookUid) => {
+      const item = inventory.itemByUid(bookUid);
+      const book = item && registry.items.get(item.type)?.book;
+      return Boolean(book?.recipes.every((recipe) => character.knownRecipes.has(recipe)));
+    },
+  });
+  const unpacking = new Unpacking(inventory, queue, feet, {
+    calendar: () => sim.calendar,
+    opened: (type) => options.onOpened?.(type),
+    unpacked: (type) => options.onUnpacked?.(type),
+  });
+  const sharpening = new Sharpening(inventory, queue, {
+    character,
+    reach: () => reach(),
+    clockRatio: sim.clock.ratio,
+  });
+  sim.actions.craft = craftActionHooks(inventory, character, reach, {
+    feet,
+    calendar: () => sim.calendar,
+    pieces: {
+      removalRefusal: (entity) => removalRefusal(furnitureMover(), entity),
+      remove: (entity) => removePiece(entity),
+    },
+  });
+  sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
+  sim.actions.treatment = playerTreatmentHooks(inventory, sim);
+  sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    transfer: (request) => {
+      const context = options.terrainDestruction;
+      return request.kind === 'remove' && context
+        ? completeVehicleRemoval(
+            {
+              terrain: context.terrain,
+              supply: columnSupply.project(context.source),
+              blockSize: s,
+              feet: inventory.dropFeet()!,
+            },
+            request,
+          )
+        : inventory.vehicleTransfer(request);
+    },
+    output: () => ({ kind: 'pile', pos: feet() }),
+    quality: (quality) =>
+      Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
+  });
+  const rest = new RestController(sim, {
+    furniture: (uid) => {
+      const entity = entities.byUid(uid);
+      const restDef = entity && !entities.useRefusal(entity) && entities.defOf(entity).rest;
+      return restDef ? { quality: restDef.quality, sleepable: restDef.sleep === true } : undefined;
+    },
+    withinReach: (uid) => {
+      const entity = entities.byUid(uid);
+      return entity !== undefined && inventory.canReachEntity(entity);
+    },
+    notice: options.notice,
+    hasAlarm: () => [...inventory.carriedTree()].some(({ item }) => registry.items.get(item.type)?.alarm === true),
+    text,
+  });
+
+  const {
+    sprinting: restoredSprinting,
+    firearmReadyWalking: restoredFirearmReadyWalking,
+    handlingPausedForKnockout: restoredHandlingPause,
+  } = restorePlayerSessionLatches(restoredPlayer);
+  let sprinting = restoredSprinting;
+  let leanAmount = 0;
+  const currentLean = () => leanFrame(leanAmount, Player.lean);
+  let firearmReadyWalking = restoredFirearmReadyWalking;
+  let snipingAdsUid = restoredPlayer?.snipingAdsUid;
+  validateSnipingAdsFirearm(registry, firearmInHands(), snipingAdsUid);
+  /**
+   * Effective ADS: the sights are wanted and a held long gun's acquisition has completed. Other
+   * firearms aim as soon as they are ready, so acquisition never delays them (`packages/deadvox/DESIGN.md`, "Combat and noise").
+   */
+  const aimingDownSights = (): boolean => {
+    const held = firearmInHands();
+    return held !== undefined && Boolean(controls.aimingDownSights?.()) && firearms.isAdsAcquired(held.uid);
+  };
+  const playerEyeHeightMetres = (): number =>
+    resolvePlayerEyeHeight(
+      sim.body.unconscious,
+      sim.body.tuning.proneEyeHeightMetres,
+      loweredStance()?.eyeDropMetres,
+      Player.eye,
+    );
+  /** The sampled input's look at the player tick. */
+  const playerLook = (): PlayerLook => {
+    const { yaw, pitch } = sampledInput();
+    return { yaw, pitch };
+  };
+  const playerLookDirection = (look: PlayerLook = playerLook()): Vec3 =>
+    aimDirection(look.yaw, look.pitch, NEUTRAL_AIM);
+  /** The eye the simulation aims and picks from; the drawn view's ADS blend never moves it. */
+  const playerEye = (look: PlayerLook = playerLook()): Vec3 =>
+    playerEyePosition({
+      feet: body.pos,
+      blockSize: s,
+      yaw: look.yaw,
+      pitch: look.pitch,
+      stance: playerStance,
+      lean: currentLean(),
+      figure: claimed(registry.figures, 'player')!,
+      models: registry.models,
+      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
+    });
+  let footstepClock = savedFootstepClock;
+  let rustleClock = restoredRustleClock;
+  let airbornePeakY = restoredAirbornePeakY;
+  /** `packages/deadvox/DESIGN.md`, "Ladders and hatches". */
+  const ladderHold = new LadderHold({
+    entities,
+    body,
+    inventory,
+    reachBelow: physics.stepHeight,
+    reach: Player.reach / s,
+    restored: restoredPlayer?.ladder,
+  });
+  inventory.handHold = ladderHold;
+  const throwCharge = new ThrowCharge(inventory, ladderHold);
+  // A throw held when the ladder takes its hand ends there, so it is never released from the hand on the ladder.
+  const refuseThrowForLadder = (): void => {
+    const reason = throwCharge.refuseForLadder();
+    if (reason) {
+      (options.refusal ?? options.notice)(reason);
+    }
+  };
+  const currentIntent = (): MoveIntent => {
+    const input = sampledInput();
+    return input.active && !input.inputLocked ? input.intent : IDLE;
+  };
+  const playerMovement = (): PlayerMovement =>
+    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
+  const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
+    const firearm = firearmInHands();
+    const steady = sessionSteadiness(registry, character, currentFirearmsCombatTuning(), firearm);
+    advanceSessionAim({
+      aim,
+      firearms,
+      tuning: currentFirearmsCombatTuning(),
+      skillLevel: firearmsSkillLevel(character),
+      steadinessLevel: steady.level,
+      steadiness: steady.tuning,
+      firearmUid: firearmInHands()?.uid,
+      timeSimSeconds: sim.time,
+      dt,
+      velocity: body.vel,
+      blockSize: s,
+      yaw: sampledInput().yaw,
+      pitch: sampledInput().pitch,
+      aimSway: sim.body.consequences.aimSway * sim.body.pain.effects.aimSway,
+      stance: playerStance,
+      firing,
+      stridePhase: footstepClock.stridePhase,
+      breath: {
+        wanted: breathWanted,
+        stamina: sim.needs.stamina,
+        windedBelow: sim.body.staminaRules.windedBelow,
+        painRatio: sim.body.pain.ratio,
+      },
+    });
+    const cue = aim.breathCue;
+    if (cue) {
+      playPlayerSound(bodyTuning.sounds.breath[cue]);
+    }
+  };
+  /** `packages/deadvox/DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
+  const breathHoldWanted = (intent: MoveIntent, readyGait: boolean): boolean => {
+    const heldFirearm = firearmInHands();
+    return (
+      readyGait &&
+      intent.sprint &&
+      heldFirearm !== undefined &&
+      firearms.isReady(heldFirearm.uid) &&
+      aimingDownSights() &&
+      !ladderHold.on &&
+      body.onGround &&
+      intent.forward === 0 &&
+      intent.right === 0 &&
+      !intent.jump
+    );
+  };
+  const applyAimViewPitchShift = (): void => {
+    const requested = aim.pendingViewPitchShift;
+    if (requested !== 0) {
+      aim.applyViewPitchShift(requested, controls.adjustPitch?.(requested) ?? 0);
+    }
+  };
+  const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
+    if (body.onGround) {
+      if (
+        !wasGrounded &&
+        airbornePeakY !== undefined &&
+        isHardLanding((airbornePeakY - body.pos[1]) * s, senseTuning.footsteps)
+      ) {
+        playPlayerSound(bodyTuning.sounds.landing, time);
+      }
+      airbornePeakY = undefined;
+    } else {
+      airbornePeakY = Math.max(airbornePeakY ?? previousPosition[1], body.pos[1]);
+    }
+    const travelled =
+      wasGrounded && body.onGround
+        ? Math.hypot(body.pos[0] - previousPosition[0], body.pos[2] - previousPosition[2]) * s
+        : 0;
+    const footsteps = advanceFootsteps(
+      footstepClock,
+      travelled > 0 ? playerMovement() : 'still',
+      travelled,
+      senseTuning.footsteps,
+    );
+    footstepClock = footsteps.clock;
+    for (let i = 0; i < footsteps.steps; i++) {
+      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), {
+        blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
+        family: senseTuning.footsteps.family,
+      });
+      if (event) {
+        playPlayerSound(event, time);
+      }
+    }
+  };
+  const playerSense = () => {
+    const { yaw } = sampledInput();
+    const eyeHeightMetres = playerEyeHeightMetres();
+    const hour = hourOfDay(sim.calendar);
+    const lightSources = inventoryLightSources(inventory, body.pos, eyeHeightMetres).map((source) => ({
+      ...source,
+      sunlit: isSunExposedAt([source.pos[0], source.pos[1] + source.heightMetres / s, source.pos[2]], hour),
+    }));
+    const playerLightHeight: Vec3 = [body.pos[0], body.pos[1] + eyeHeightMetres / s, body.pos[2]];
+    const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
+    return {
+      pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
+      body: debug?.()?.noclip ? undefined : body,
+      facing: [-Math.sin(yaw), 0, -Math.cos(yaw)] as Vec3,
+      movement: playerMovement(),
+      stance: playerStance,
+      vocalNoise:
+        playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
+      lit: carriedLight !== undefined,
+      lightSeenFrom: carriedLight?.seenFrom ?? 40,
+      eyeHeightMetres,
+      sunlit: isSunExposedAt(playerLightHeight, hour),
+      lightSources,
+    };
+  };
+  const heldItemUids = () => ({
+    right: inventory.hands.right?.uid ?? null,
+    left: inventory.hands.left?.uid ?? null,
+  });
+  /** The one body pose a held firearm's shot, strike and ejection are placed from, read at the player tick. */
+  const firearmPose = (uid: number): FirearmPoseInput | undefined => {
+    if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
+      return;
+    }
+    const { yaw, pitch } = sampledInput();
+    const look = playerLookPose({
+      figure: claimed(registry.figures, 'player')!,
+      models: registry.models,
+      pitch,
+      stance: playerStance,
+      lean: currentLean(),
+      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
+    });
+    return {
+      feet: feet(),
+      eye: playerEye(),
+      stockSeat: look.stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
+      seatFrame: playerHeldSeatFrame(look, pitch),
+      leanRollRadians: currentLean().rollRadians,
+      adsEyes: look.eyes,
+      yaw,
+      pitch,
+      blockSize: s,
+    };
+  };
+  const firearmShotInput = (uid: number, atSimSeconds: number): FirearmShotInput | undefined => {
+    const item = inventory.itemByUid(uid);
+    const pose = firearmPose(uid);
+    if (!(item && pose)) {
+      return;
+    }
+    return {
+      ...pose,
+      aimFrame: aim.frame,
+      aimingDownSights: aimingDownSights(),
+      ready: controls.firearmReady ? controls.firearmReady(uid) : firearms.isReady(uid),
+      sprinting,
+      item,
+      seed,
+      simTime: atSimSeconds,
+    };
+  };
+  const meleeBlocker = worldMeleeBlocker(world, registry, {
+    entities: inventory.entities,
+    physical: physicalSolid,
+    vehicles: inventory.vehicles,
+    blockSize: s,
+  });
+  /**
+   * One blow on a piece, an actor's bash or the player's strike; every blow is heard, whatever it does, in the sound
+   * its material names. A blow that ruins a piece destroys it, and whatever came down with it, with the work that
+   * names them; where what it held has no room to fall, the piece stands until a blow finds room.
+   */
+  const bashPiece = (target: BlockEntity | undefined, strength: number): boolean => {
+    const outcome = target && entities.bash(target, strength);
+    if (!(target && outcome)) {
+      return false;
+    }
+    playNoisyWorldSound(
+      registry.furnitureMaterials.get(entities.defOf(target).material)!.blowSound,
+      boxCentre(target.pos, target.size),
+    );
+    if (outcome === 'ruined') {
+      for (const piece of ruinFurniture(furnitureMover(), target) ?? []) {
+        forgetPiece(piece);
+      }
+    }
+    return true;
+  };
+  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return false;
+    }
+    const block = registry.blocks[context.terrain.getBlock(...cell)];
+    const result = strikeTerrain(
+      {
+        terrain: context.terrain,
+        supply: columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      cell,
+      blow,
+    );
+    if (!result) {
+      return false;
+    }
+    if (result.outcome === 'broken') {
+      options.onTerrainEdited?.(result.edited);
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+    if (block?.solid) {
+      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
+    }
+    return true;
+  };
+  /** Entity contact takes precedence over a terrain blow. */
+  const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
+    const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
+    const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
+    const piece = hit && entities.at(...hit.block);
+    if (piece && entities.isSolid(...hit.block)) {
+      return bashPiece(piece, weapon.impulse);
+    }
+    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
+  };
+  const traps = new BearTraps(inventory);
+  const actorReady = actorReadinessFor(options);
+  const placeActorDrop = (item: Item, pos: Vec3): 'placed' | 'discarded' => {
+    const landed = freshDropTarget(inventory, item, pos);
+    if (!landed) {
+      return 'discarded';
+    }
+    if (inventory.planAdd(item, landed).ok) {
+      inventory.add(item, landed);
+      return 'placed';
+    }
+    if (!actorReady(pos[0], pos[2])) {
+      return 'discarded';
+    }
+    const landings = dropSpots(pos).flatMap((spot) => {
+      const floor = inventory.landing(spot);
+      return floor ? [floor] : [];
+    });
+    for (const cell of spreadActorDrop(inventory, physicalSolid, pos, landings)) {
+      const target = { kind: 'pile' as const, pos: cell };
+      if (inventory.planAdd(item, target).ok) {
+        inventory.add(item, target);
+        return 'placed';
+      }
+    }
+    return 'discarded';
+  };
+  const actorSystem = new ActorSystem({
+    activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
+    actorFigureFiles,
+    store: actorStore,
+    restrained: (id) => traps.holds(id),
+    seed: sim.seed,
+    isLoaded: actorReady,
+    terrainFloor: options.terrainFloor,
+    isSolid: physicalSolid,
+    solidBricks: solidBricksFor(world, registry, inventory, s),
+    isOpaque,
+    isSoundBlocking: worldSoundBlocking(world, registry, {
+      entities: inventory.entities,
+      physical: physicalSolid,
+      vehicles: inventory.vehicles,
+      blockSize: s,
+    }),
+    meleeBlocker,
+    bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
+    blockSize: s,
+    physics,
+    tuning: senseTuning,
+    player: playerSense,
+    dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
+    isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
+    hurtPlayer: (amount, hitRegions, attacker, kind) => {
+      const source = actorStore.get(attacker);
+      const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
+      if (damage <= 0) {
+        return;
+      }
+      playerCombat.cancelCharge();
+      applyActorPlayerHit(sim, {
+        damage,
+        cause: source?.type.cause ?? text.causes.actor,
+        regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
+        hitRegions,
+        kind,
+      });
+    },
+    onAcidPlayerHit: (hit) => {
+      playerCombat.cancelCharge();
+      applyActorPlayerHit(sim, hit);
+    },
+    onPlayerExposure: (contact) => sim.expose(contact),
+    onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
+    onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
+    onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
+    onSound: (event, position, actor, playerMelee) => {
+      if (playerMelee) {
+        playWorldSound(event, position, sim.time, {
+          listenerRelative: true,
+          sourceLabel: 'player melee',
+          ...(actor ? { body: actorBody(actor) } : {}),
+        });
+        return;
+      }
+      playWorldSound(
+        event,
+        position,
+        sim.time,
+        actor
+          ? {
+              body: actorBody(actor),
+              ...(actor.type.soundPitchMultiplier === undefined
+                ? {}
+                : { soundPitchMultiplier: actor.type.soundPitchMultiplier }),
+            }
+          : {},
+      );
+    },
+    onFootstep: (position, id, actor) => {
+      const family = actor.type.footstepSound;
+      if (family === undefined) {
+        return;
+      }
+      const event = footstepEventAt(position, actor.body, (x, y, z) => world.getBlock(x, y, z), {
+        blocks: registry.blocks,
+        footstepSounds: registry.footstepSounds,
+        family,
+      });
+      if (!event) {
+        return;
+      }
+      playWorldSound(event, position, sim.time, {
+        sourceLabel: `${actor.type.name.toLowerCase()} #${id}${actor.agent ? ` · ${actor.agent.mode}` : ''}`,
+        body: actorBody(actor),
+      });
+    },
+    onSevered: (actor, region) => {
+      const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+      const item = actor.type.severedItems[region];
+      if (item !== null) {
+        placeActorDrop(inventory.create(item!), pos);
+      }
+    },
+    onWound: (id, actor, hit, damage) => options.actorEffects?.onWound?.(id, actor, hit, damage),
+    onSever: (id, actor, part, hit) => options.actorEffects?.onSever?.(id, actor, part, hit),
+    onCarve: (id, actor, cells, hit) => options.actorEffects?.onCarve?.(id, actor, cells, hit),
+    onIncapacitated: (id, actor) => options.actorEffects?.onIncapacitated?.(id, actor),
+    ...(options.actorEffects?.onMeleeResult ? { onMeleeResult: options.actorEffects.onMeleeResult } : {}),
+    ...(options.actorEffects?.onMeleeContact ? { onMeleeContact: options.actorEffects.onMeleeContact } : {}),
+    onDeath: (id, actor) => {
+      const table = actor.type.loot;
+      if (table) {
+        const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+        for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`actor-loot:${id}`))) {
+          placeActorDrop(inventory.createRolled(drop), pos);
+        }
+      }
+      options.actorEffects?.onDeath?.(id, actor);
+    },
+  });
+  const playerCombat = new PlayerCombat(
+    {
+      playPlayerMeleeSwing: (origin, weapon) => actorSystem.playPlayerMeleeSwing(origin, weapon),
+      resolvePlayerMelee: (origin, direction, weapon, isFist) =>
+        actorSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
+    },
+    character,
+    {
+      onWeaponHit: (uid) => wearMeleeWeaponOnHit(inventory, uid),
+      onLandedHit: () => {
+        if (meleeSkillId !== undefined) {
+          const training = skillActivityPractice(registry, meleeSkillId, 'hit');
+          character.awardPractice(meleeSkillId, training.practice, training.tier);
+        }
+      },
+      onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
+      payChargeStamina: (wanted) => {
+        const paid = Math.min(wanted, Math.max(0, sim.needs.stamina));
+        spendStamina(sim.needs, paid, bodyTuning.staminaRegenDelaySimSeconds);
+        return paid;
+      },
+    },
+  );
+  let lastActorStep = 0;
+  let lastBackgroundStep = 0;
+  let backgroundSliceIndex = 0;
+  let lastPlayerStep = 0;
+  let playerTick = 0;
+  let playerInput: PlayerInputSample | undefined;
+  const sampledInput = (): PlayerInputSample =>
+    playerInput ?? {
+      active: controls.active(),
+      inputLocked: compression.locksInput,
+      intent: controls.intent(),
+      yaw: controls.yaw(),
+      pitch: controls.pitch(),
+      walking: controls.walking(),
+      descending: controls.descending(),
+      worldReady: false,
+    };
+  const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
+    // On a ladder, a hand that holds it, or an item that needs it too, refuses its use.
+    const dominantRefusal = ladderHold.refusal(dominantSide(character));
+    const dominantFree = moving && dominantRefusal === undefined;
+    controls.heldDominantUse?.(
+      sim.time,
+      dominantFree && Boolean(intent.useDominant),
+      dominantFree && Boolean(intent.useDominantHeld),
+    );
+    if (!moving) {
+      return;
+    }
+    const use = (refusal: string | undefined, act: (() => void) | undefined): void => {
+      if (refusal) {
+        (options.refusal ?? options.notice)(refusal);
+      } else {
+        act?.();
+      }
+    };
+    if (intent.useDominant) {
+      use(dominantRefusal, controls.useDominant);
+    }
+    if (intent.useOff) {
+      playerCombat.cancelCharge();
+      use(ladderHold.refusal(offSide(character)), controls.useOff);
+    }
+  };
+  /** Where an explosive goes off, in blocks: its pile, its standing furniture, or the player carrying it or its piece. */
+  const detonationPoint = (item: Item): Vec3 | undefined => {
+    let location = inventory.locate(item);
+    while (location?.kind === 'pocket' || location?.kind === 'slot' || location?.kind === 'work') {
+      location = inventory.locate(location.owner);
+    }
+    if (location?.kind === 'pile') {
+      const [x, y, z] = location.pile.pos;
+      return [x + 0.5, y + 0.25, z + 0.5];
+    }
+    if ((location?.kind === 'furniture' || location?.kind === 'pieceWork') && !location.entity.carried) {
+      const [x, y, z] = location.entity.pos;
+      return [x + 0.5, y + 0.5, z + 0.5];
+    }
+    return location ? bodyCentre(body) : undefined;
+  };
+  /** The explosive is used up; the blast and its fragments hurt actors and the player alike (`packages/deadvox/DESIGN.md`, "Hand grenade"). */
+  const detonate = (item: Item): void => {
+    const spec = registry.items.get(item.type)?.explosive;
+    const at = detonationPoint(item);
+    if (!(spec && at)) {
+      return;
+    }
+    const consumed = inventory.consume(item);
+    if (!consumed) {
+      return;
+    }
+    const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
+    const { damage, impulse, rangeMetres } = spec.fragments;
+    actorSystem.detonate({
+      blast: spec.blast,
+      fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
+    });
+    const centre = bodyCentre(body);
+    const blast =
+      spec.blast.damage *
+      blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
+    if (blast > 0 && inSight(at, centre, physicalSolid)) {
+      sim.hit(blast, text.causes.grenade, 'torso', { kind: spec.blast.damageKind });
+    }
+    for (const region of fragmentHitsOnBody({
+      origin: at,
+      directions,
+      rangeBlocks: rangeMetres / s,
+      body,
+      isSolid: physicalSolid,
+      regionHeights: bodyTuning.fragmentRegionHeights,
+    })) {
+      sim.hit(damage, text.causes.grenade, region, { kind: spec.fragments.damageKind });
+    }
+    options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
+    // The blast is the player's doing, so it is heard as their noise, from where it went off.
+    admitSound(spec.sound, at, sim.time, { player: true, sourceLabel: 'grenade' });
+  };
+  sim.scheduler.register({
+    id: 'actors',
+    rate: ACTIVE_ACTOR_RATE,
+    tick: (dt, time) => {
+      const lit = (item: Item): void => {
+        inventory.version += 1; // The item now draws without its lever.
+        options.onFuseLit?.(item);
+      };
+      for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand', lit)) {
+        detonate(item);
+      }
+      spawner.advance({ calendar: sim.calendar, registry, actors: actorSystem });
+      if (scenarioRun) {
+        advanceEventRules({
+          rules: options.scenario?.eventRules ?? [],
+          run: scenarioRun,
+          calendar: sim.calendar,
+          dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
+          player: body.pos,
+          registry,
+          actors: actorSystem,
+        });
+      }
+      actorSystem.tickActive(dt, time, heldItemUids());
+      traps.step(dt, {
+        player: body.pos,
+        actors: [...actorStore.entries()].map(([id, actor]) => [id, actor.body.pos] as const),
+        blockSize: s,
+        alive: (id) => actorStore.get(id) !== undefined,
+        hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, text.causes.bearTrap, region, { kind }),
+        injureActor: (id, damage) => actorSystem.injureLegs(id, damage),
+      });
+      lastActorStep = time;
+    },
+  });
+  sim.scheduler.register({
+    id: 'actor-background',
+    rate: BACKGROUND_ACTOR_SLICE_RATE,
+    tick: (_dt, time) => {
+      const sliceIndex = backgroundSliceIndex;
+      backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
+      actorSystem.tickBackground(1 / BACKGROUND_ACTOR_RATE, time, sliceIndex, BACKGROUND_ACTOR_SLICE_COUNT);
+      if (sliceIndex === 0) {
+        lastBackgroundStep = time;
+      }
+    },
+  });
+
+  /** A downed body lies on the floor: the player walks over it and a door closes on it, as actors already do. */
+  const standingActorBodies = (): Body[] =>
+    [...actorStore.entries()].filter(([, actor]) => !actor.incapacitated).map(([, actor]) => actor.body);
+
+  /** A world sound that actors hear when its content gives it a noise. */
+  const playNoisyWorldSound = (event: SoundId, position: Vec3): void => {
+    const noise = registry.sounds.get(event)?.noise;
+    playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
+  };
+
+  // ---- moving furniture (`packages/deadvox/DESIGN.md`, "Moving furniture") ----
+
+  const moveTerrain = terrainSolid(world, registry);
+  const furnitureMover = (): FurnitureMover => ({
+    inventory,
+    terrainSolid: (x, y, z) => moveTerrain(x, y, z) || vehicleOccupancy.isSolid(x, y, z),
+    blockSize: s,
+    player: body,
+    others: standingActorBodies(),
+    stamina: sim.needs.stamina,
+    beforeRelocate: (entity) => power?.beforeRemove(simTimestamp(sim.time), entity),
+  });
+  const boxCentre = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3 => [
+    pos[0] + size[0] / 2,
+    pos[1] + size[1] / 2,
+    pos[2] + size[2] / 2,
+  ];
+  const liftPiece = (uid: number, floorLocked = false): string | undefined => {
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return text.common.gone;
+    }
+    const centre = boxCentre(entity.pos, entity.size);
+    const reason = liftFurniture(furnitureMover(), entity, floorLocked);
+    if (reason) {
+      return reason;
+    }
+    spendStamina(
+      sim.needs,
+      furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift'),
+      bodyTuning.staminaRegenDelaySimSeconds,
+    );
+    const sound = entities.defOf(entity).moveSounds?.[floorLocked ? 'drag' : 'lift'];
+    if (sound !== undefined) {
+      playNoisyWorldSound(sound, centre);
+    }
+    return undefined;
+  };
+  queue.registerAction('furniture.slide', (params) => {
+    const entity = typeof params.entityUid === 'number' ? entities.byUid(params.entityUid) : undefined;
+    if (!entity) {
+      return coreMessage(registry, 'gone');
+    }
+    if (
+      params.way !== 'push' ||
+      !Array.isArray(params.destination) ||
+      params.destination.length !== 3 ||
+      !params.destination.every(Number.isSafeInteger)
+    ) {
+      throw new Error('Invalid furniture slide');
+    }
+    const reason = slideFurniture(furnitureMover(), entity, params.way, { destination: params.destination as Vec3 });
+    if (!reason) {
+      spendStamina(sim.needs, furnitureMoveStamina(inventory, entity, 'drag'), bodyTuning.staminaRegenDelaySimSeconds);
+      const sound = entities.defOf(entity).moveSounds?.drag;
+      if (sound !== undefined) {
+        playNoisyWorldSound(sound, boxCentre(entity.pos, entity.size));
+      }
+    }
+    return reason;
+  });
+  const slidePiece = (uid: number, way: FurnitureSlideWay): string | undefined => {
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return coreMessage(registry, 'gone');
+    }
+    if (queue.busy) {
+      return coreMessage(registry, 'handsBusy');
+    }
+    const reason = slideFurniture(furnitureMover(), entity, way, { commit: false });
+    if (reason) {
+      return reason;
+    }
+    queue.enqueueAction('furniture.slide', 'Pushing', reachTuning(registry).furnitureMove.slide.stepSimSeconds, {
+      entityUid: uid,
+      way,
+      destination: slideDestination(body, entity),
+    });
+    return undefined;
+  };
+  const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
+    const carried = entities.carrying();
+    if (!carried) {
+      return claimed(registry.ui, 'interface')!.furnitureMoveMessages.emptyHands;
+    }
+    const sound = entities.defOf(carried).moveSounds?.[carried.floorLocked ? 'drag' : 'lift'];
+    const reason = placeFurniture(furnitureMover(), aimed);
+    if (!reason && sound !== undefined) {
+      playNoisyWorldSound(sound, boxCentre(carried.pos, carried.size));
+    }
+    return reason;
+  };
+  /** Worn out, the player sets the piece down in front, or beside, wherever it first fits. */
+  const putDownWornOut = (): void => {
+    const carried = entities.carrying()!;
+    const [fx, , fz] = aimDirection(sampledInput().yaw, 0, NEUTRAL_AIM);
+    const length = Math.hypot(fx, fz) || 1;
+    const clear = body.halfWidth + Math.max(carried.size[0], carried.size[2]) / 2 + 0.5;
+    const [, y] = feet();
+    for (const turn of [0, 1, -1, 2, -2, 3, -3, 4]) {
+      const angle = (turn * Math.PI) / 4;
+      const dx = (fx * Math.cos(angle) - fz * Math.sin(angle)) / length;
+      const dz = (fx * Math.sin(angle) + fz * Math.cos(angle)) / length;
+      const aimed: Vec3 = [Math.floor(body.pos[0] + dx * clear), y, Math.floor(body.pos[2] + dz * clear)];
+      if (!placePiece(aimed)) {
+        (options.refusal ?? options.notice)(claimed(registry.ui, 'interface')!.furnitureMoveMessages.wornOut);
+        return;
+      }
+    }
+  };
+
+  const dragAimedCell = (): Vec3 => {
+    const input = sampledInput();
+    const origin = playerEye();
+    const direction = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
+    const reachBlocks = reachTuning(registry).useReachMetres / s;
+    const hit = raycast(origin, direction, reachBlocks, physicalSolid);
+    const cell = hit
+      ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
+      : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reachBlocks));
+    return [cell[0]!, cell[1]!, cell[2]!];
+  };
+
+  const advanceFloorLockedDrag = (): void => {
+    const carried = entities.carrying();
+    if (!carried?.floorLocked) {
+      return;
+    }
+    const result = advanceFloorLockedPlacement(furnitureMover(), dragAimedCell());
+    if ('pos' in result) {
+      entities.moveCarried(carried, result.pos);
+    }
+  };
+
+  const cancelUnreachableDrag = (): void => {
+    const carried = entities.carrying();
+    if (carried?.floorLocked && !inventory.canReachEntity(carried)) {
+      entities.place(carried, carried.pos);
+    }
+  };
+
+  const observeEntry = (
+    run: ScenarioRun,
+    discovery: ScenarioDiscovery,
+    climbing: boolean,
+    before: Readonly<Vec3>,
+  ): void => {
+    if (!nearDiscoveryBox(body.pos, discovery.entrance, 0)) {
+      return;
+    }
+    // Collision contact correction is not ladder travel.
+    if (climbing && Math.hypot(...body.pos.map((value, axis) => value - before[axis]!)) > 2 * CONTACT_SKIN) {
+      run.discover('entranceTravel', sim.calendar);
+    }
+    for (const entity of entities.near(discovery.entrance.min, discovery.entrance.max)) {
+      if (
+        entities.defOf(entity).door?.hatch &&
+        nearDiscoveryBox(entity.pos, discovery.entrance, 0) &&
+        inventory.canReachEntity(entity)
+      ) {
+        run.discover('hatchEncounter', sim.calendar);
+        if (entity.open) {
+          run.discover('hatchOpened', sim.calendar);
+        }
+      }
+    }
+  };
+  const observeDiscovery = (climbing: boolean, before: Readonly<Vec3>): void => {
+    const { discovery } = options;
+    if (!(scenarioRun && discovery) || sim.dead || debug?.()?.noclip) {
+      return;
+    }
+    if (discovery.landmarks.some((box) => nearDiscoveryBox(body.pos, box, 4 / s))) {
+      scenarioRun.discover('landmarkArrival', sim.calendar);
+    }
+    if (nearDiscoveryBox(body.pos, discovery.building, 2 / s)) {
+      scenarioRun.discover('buildingArrival', sim.calendar);
+    }
+    if (discovery.ports.some((box) => nearDiscoveryBox(body.pos, box, 0))) {
+      scenarioRun.discover('sewerTravel', sim.calendar);
+    }
+    observeEntry(scenarioRun, discovery, climbing, before);
+  };
+
+  const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
+    const wasGrounded = body.onGround;
+    const previousPosition: Vec3 = [...body.pos];
+    const jumpStarted = pacedIntent.jump && wasGrounded;
+    // A climber uses its free hand standing still: the ladder holds it while an item action runs.
+    const acting = queue.busy || firearms.busy || playerCombat.activeMeleeAction !== undefined || throwCharge.active;
+    const steered = ladderHold.on && acting ? { ...pacedIntent, forward: 0, right: 0 } : pacedIntent;
+    const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
+    steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
+    if (jumpStarted) {
+      playPlayerSound(bodyTuning.sounds.strain, time);
+    }
+    refuseThrowForLadder();
+    const climbing =
+      ladder !== undefined &&
+      climb(body, ladder, {
+        speed: entities.defOf(ladder).climbable!.speedMetresPerSimSecond / s,
+        dt,
+        strafing: steered.right !== 0,
+      });
+    const landingSpeed = stepBody(body, dt, physicalSolid, {
+      ...physics,
+      // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
+      ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),
+      obstacles: standingActorBodies(),
+      shapeOf: actorSystem.shapeOf,
+    });
+    sim.land(landingSpeed * s);
+    observeScenarioMovement(scenarioRun, {
+      before: previousPosition,
+      after: body.pos,
+      blockSize: s,
+      climbing,
+      calendar: sim.calendar,
+    });
+    observeDiscovery(climbing, previousPosition);
+    updatePlayerSounds(wasGrounded, previousPosition, time);
+    if (climbing) {
+      // A climb down is not a fall: a drop is measured from where the ladder was let go.
+      [, airbornePeakY] = body.pos;
+    }
+    const rustle = foliageRustle(rustleClock, {
+      body,
+      world,
+      registry,
+      gait: playerMovement(),
+      // Ignore contact-skin correction (even one skin on all three axes), not real brushing.
+      moving:
+        Math.hypot(
+          body.pos[0] - previousPosition[0],
+          body.pos[1] - previousPosition[1],
+          body.pos[2] - previousPosition[2],
+        ) >
+        2 * CONTACT_SKIN,
+      time,
+    });
+    rustleClock = rustle.clock;
+    if (rustle.sound) {
+      admitSound(rustle.sound.event, rustle.sound.position, time, {
+        player: true,
+        listenerRelative: true,
+        sourceLabel: 'brushing foliage',
+      });
+    }
+  };
+
+  const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
+    const heldFirearm = firearmInHands();
+    const firearmHand =
+      inventory.hands[dominantSide(character)] === heldFirearm ? dominantSide(character) : offSide(character);
+    // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it.
+    const readyInput =
+      moving &&
+      Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning) &&
+      ladderHold.refusal(firearmHand) === undefined;
+    const readyGait = readyInput && !queue.busy;
+    const [activeJob] = queue.jobs;
+    const preservingReady =
+      readyInput &&
+      queue.busy &&
+      activeJob !== undefined &&
+      isFirearmTrainingAction(activeJob) &&
+      heldFirearm !== undefined &&
+      firearms.isReady(heldFirearm.uid);
+    const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;
+    const readinessHeld = readyUid !== undefined;
+    firearms.advanceReadiness(dt, readyUid, readinessHeld);
+    firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
+    const going = intent.forward !== 0 || intent.right !== 0;
+    firearmReadyWalking = readyGait && going;
+    if (
+      firearmsSkillId !== undefined &&
+      readyGait &&
+      readyUid !== undefined &&
+      (!firearms.isReady(readyUid) || going)
+    ) {
+      const training = skillActivityPracticeRate(registry, firearmsSkillId, 'readying');
+      character.awardPractice(firearmsSkillId, dt * training.practicePerSecond, training.tier);
+    }
+    snipingAdsUid = advanceSnipingPractice({
+      registry,
+      character,
+      firearms,
+      firearm: heldFirearm,
+      ready: readinessHeld,
+      aiming: aimingDownSights(),
+      previousUid: snipingAdsUid,
+      dt,
+    });
+    return readyGait;
+  };
+
+  const guardPlayerLean = createLeanGuard();
+  const limitLean = (amount: number): number => {
+    if (amount === 0) {
+      return 0;
+    }
+    const { yaw, pitch } = sampledInput();
+    const progress = Object.values(inventory.hands).map((item) => (item ? firearms.readyProgress(item.uid) : 0));
+    const ads = playerAdsPose(inventory, aimingDownSights(), aim.frame);
+    const aiming = ads !== undefined || progress.some((value) => value >= 1);
+    const { loweredPitchRadians } = currentFirearmsCombatTuning();
+    return guardPlayerLean({
+      poseKey: [
+        yaw,
+        pitch,
+        playerStance,
+        inventory.version,
+        dominantSide(character),
+        ...progress,
+        ads !== undefined,
+        aiming ? aim.frame.yaw : 0,
+        aiming ? aim.frame.pitch : 0,
+        loweredPitchRadians,
+      ],
+      spaceKey: [...body.pos, world.version, entities.version, inventory.vehicles.version],
+      offset: body.pos,
+      amount,
+      rollRadians: leanFrame(amount, Player.lean).rollRadians,
+      boxesAt: (at) =>
+        playerLeanBoxes({
+          inventory,
+          pose: playerLookPose({
+            figure: claimed(registry.figures, 'player')!,
+            models: registry.models,
+            pitch,
+            stance: playerStance,
+            ads,
+            lean: leanFrame(at, Player.lean),
+          }),
+          feet: [0, 0, 0],
+          blockSize: s,
+          yaw,
+          pitch,
+          aimFrame: aim.frame,
+          ads: ads !== undefined,
+          progress: (uid) => firearms.readyProgress(uid),
+          loweredPitchRadians,
+        }),
+      isSolid: physicalSolid,
+      marginBlocks: Player.lean.wallMarginMetres / s,
+    });
+  };
+
+  const updateSprinting = (intent: MoveIntent, handling: boolean, readyGait: boolean): void => {
+    const carrying = entities.carrying() !== undefined;
+    sprinting =
+      !(playerStance !== 'standing' || ladderHold.on || carrying) &&
+      intent.sprint &&
+      (intent.forward !== 0 || intent.right !== 0) &&
+      !handling &&
+      !readyGait &&
+      canSprint(sim.needs, sprinting, sim.body.staminaRules);
+  };
+
+  const preparePlayerStep = (dt: number, time: number) => {
+    const live: PlayerInputSample = {
+      freeLooking: controls.freeLooking?.() ?? false,
+      active: controls.active(),
+      inputLocked: compression.locksInput,
+      intent: controls.intent(),
+      yaw: controls.yaw(),
+      pitch: controls.pitch(),
+      walking: controls.walking(),
+      descending: controls.descending(),
+      worldReady: options.ready(body.pos[0], body.pos[2]),
+    };
+    const tick = playerTick;
+    playerTick += 1;
+    playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
+    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal && !traps.holds(undefined);
+    const intent = moving ? playerInput.intent : IDLE;
+    if (
+      trapInterrupts.read().some((event) => event.kind === 'interrupt') ||
+      intent.forward !== 0 ||
+      intent.right !== 0 ||
+      intent.jump
+    ) {
+      interruptDisarm(queue);
+    }
+    const handling = queue.busy || firearms.busy;
+    const readyGait = advancePlayerReadiness(dt, intent, moving);
+    updateSprinting(intent, handling, readyGait);
+    controls.consumeDominantUse?.();
+    controls.consumeOffUse?.();
+    updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()), breathHoldWanted(intent, readyGait));
+    leanAmount = limitLean(
+      advanceLean({
+        amount: leanAmount,
+        wanted: intent.lean ?? 0,
+        stance: playerStance,
+        sprinting,
+        dt,
+        tuning: Player.lean,
+      }),
+    );
+    // Losing control or another hands action drops a held charge rather than releasing a free strike.
+    if (
+      !moving ||
+      handling ||
+      playerInput.freeLooking ||
+      throwCharge.active ||
+      ladderHold.refusal(dominantSide(character)) !== undefined
+    ) {
+      playerCombat.cancelCharge();
+    }
+    playerCombat.tick(dt, heldItemUids(), {
+      held: Boolean(intent.useDominantHeld),
+      aim: {
+        origin: playerEye(),
+        direction: aimDirection(playerInput.yaw, playerInput.pitch, NEUTRAL_AIM),
+        yaw: playerInput.yaw,
+        pitch: playerInput.pitch,
+      },
+    });
+    dispatchPlayerActions(moving, intent);
+    return { intent, moving, handling, readyGait };
+  };
+
+  const advanceCarriedFurnitureStamina = (dt: number, intent: MoveIntent): void => {
+    const carried = entities.carrying();
+    if (carried === undefined || (intent.forward === 0 && intent.right === 0 && !intent.jump)) {
+      return;
+    }
+    spendStamina(
+      sim.needs,
+      furnitureMoveStamina(inventory, carried, 'carry') * dt,
+      bodyTuning.staminaRegenDelaySimSeconds,
+    );
+    if (sim.needs.stamina <= 0) {
+      putDownWornOut();
+    }
+  };
+
+  const advancePlayerMovement = (
+    dt: number,
+    time: number,
+    { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
+  ): void => {
+    const carrying = entities.carrying() !== undefined;
+    survival.setSprinting(sprinting);
+    if (carrying) {
+      advanceCarriedFurnitureStamina(dt, intent);
+    } else if (aim.breathHeld) {
+      spendStamina(
+        sim.needs,
+        currentFirearmsCombatTuning().breathHold.staminaPerSimSecond * dt,
+        bodyTuning.staminaRegenDelaySimSeconds,
+      );
+    } else {
+      stepStamina(sim.needs, dt, sprinting, {
+        ...sim.body.staminaRules,
+        staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
+      });
+    }
+    const readyFirearm = firearmInHands();
+    const readyMovementFactor =
+      readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
+    const pacedIntent = movementPace(
+      { ...intent, sprint: sprinting, jump: intent.jump && playerStance !== 'prone' },
+      {
+        grams: inventory.carriedWeight(),
+        handling,
+        readyMovementFactor,
+        movementSpeed:
+          sim.body.consequences.movementSpeed * (1 - Math.abs(leanAmount) * (1 - Player.lean.movementSpeedScale)),
+        stanceSpeed: loweredStance()?.speedMetresPerSimSecond,
+        directionalSpeed: {
+          sideways: Player.movement.sidewaysSpeedScale,
+          backward: Player.movement.backwardSpeedScale,
+        },
+      },
+      Player,
+    );
+    const tools = debug?.();
+    if (tools?.noclip) {
+      footstepClock = advanceFootsteps(footstepClock, 'still', 0, senseTuning.footsteps).clock;
+      airbornePeakY = undefined;
+      tools.stepNoclip({
+        body,
+        scale,
+        yaw: sampledInput().yaw,
+        pitch: sampledInput().pitch,
+        intent: pacedIntent,
+        descend: sampledInput().descending,
+        dt,
+      });
+      advanceFloorLockedDrag();
+      cancelUnreachableDrag();
+      return;
+    }
+    advancePlayerBody(dt, time, pacedIntent);
+    leanAmount = limitLean(leanAmount);
+    advanceFloorLockedDrag();
+    cancelUnreachableDrag();
+  };
+
+  // The player is held still until there is ground under them. Inputs are locked
+  // while time is compressed. Handling and a heavy load slow them down, and sprinting
+  // spends stamina: once winded, they jog until they've got their breath back.
+  sim.scheduler.register({
+    id: 'player',
+    rate: PHYSICS_RATE,
+    tick: (dt, time) => {
+      lastPlayerStep = time;
+      const step = preparePlayerStep(dt, time);
+      applyAimViewPitchShift();
+      if (!playerInput?.worldReady) {
+        return;
+      }
+      advancePlayerMovement(dt, time, step);
+    },
+  });
+
+  let handlingPausedForKnockout = restoredHandlingPause;
+  const awardCompletedActionPractice = (job: Job): void => {
+    if (isInventoryPracticeAction(job)) {
+      awardInventoryPractice();
+    }
+    if (firearmsSkillId !== undefined && isFirearmTrainingAction(job)) {
+      const training = skillActivityPractice(registry, firearmsSkillId, 'handling');
+      character.awardPractice(firearmsSkillId, training.practice, training.tier);
+    }
+    if (firearmsSkillId !== undefined && isAttachmentWorkAction(job)) {
+      const training = skillActivityPractice(registry, firearmsSkillId, 'attachment');
+      character.awardPractice(firearmsSkillId, training.practice, training.tier);
+    }
+  };
+  const tickHandling = (dt: number) => {
+    // Handling happens in real time; compressed time belongs to long actions.
+    if (sim.body.actionRefusal) {
+      handlingPausedForKnockout = true;
+      return;
+    }
+    if (compression.c > 1 || handlingPausedForKnockout) {
+      handlingPausedForKnockout = false;
+      return;
+    }
+    const result = queue.tick(dt);
+    for (const job of result.done) {
+      awardCompletedActionPractice(job);
+    }
+    options.onHandlingOutcomes?.(result);
+    for (const { job, reason } of result.failed) {
+      (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
+    }
+  };
+  sim.scheduler.register({ id: 'handling', rate: HANDLING_RATE, tick: tickHandling });
+
+  sim.scheduler.register({
+    id: 'firearms',
+    rate: PHYSICS_RATE,
+    tick: (_dt, time) => {
+      if (sim.body.actionRefusal) {
+        firearms.pauseTo(time);
+      } else {
+        firearms.advanceTo(time);
+      }
+    },
+  });
+
+  /** Containers with a search queued, so pressing again doesn't queue another. */
+  const searching = new Set<BlockEntity>();
+  const nameOf = (entity: BlockEntity) => entities.defOf(entity).name.toLowerCase();
+  /** Cancels the work that names a piece leaving the world, so a save never names a missing piece. */
+  const forgetPiece = (entity: BlockEntity): void => {
+    sim.actions.cancelNaming(entity);
+    queue.cancelNaming(entity.uid);
+    searching.delete(entity);
+    ladderHold.releasePiece(entity);
+  };
+  /**
+   * The construction action's removal: it cancels the work that names the piece, then takes the piece out of the
+   * world, so a save never names a missing piece; a refusal cancels nothing (`packages/deadvox/DESIGN.md`, "Edits persist").
+   */
+  const removePiece = (entity: BlockEntity): string | undefined => {
+    if (entities.byUid(entity.uid) !== entity) {
+      return text.common.gone;
+    }
+    const mover = furnitureMover();
+    const refusal = entities.useRefusal(entity) ?? removalRefusal(mover, entity);
+    if (refusal) {
+      return refusal;
+    }
+    forgetPiece(entity);
+    return removeFurniture(mover, entity);
+  };
+  queue.registerAction('furniture.search', (params) => {
+    const uid = params.entityUid;
+    if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
+      throw new Error('Invalid furniture search target');
+    }
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return text.common.gone;
+    }
+    searching.delete(entity);
+    const reserved = entities.useRefusal(entity);
+    if (reserved) {
+      return reserved;
+    }
+    const reached = inventory.canReachEntity(entity);
+    if (reached) {
+      entities.markSearched(entity);
+    }
+    return reached ? undefined : text.common.tooFar;
+  });
+  registerDoorAction({
+    queue,
+    inventory,
+    player: () => body,
+    others: standingActorBodies,
+    playWorldSound: playNoisyWorldSound,
+    closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
+  });
+  registerDownedBodyAction({ queue, player: reachPlayer, actors: actorSystem });
+  registerTrapActions({
+    queue,
+    inventory,
+    reach: () => reach(),
+    setCell: () => {
+      const [fx, , fz] = [-Math.sin(controls.yaw()), 0, -Math.cos(controls.yaw())];
+      const [x, y, z] = feet();
+      return inventory.landing([x + Math.round(fx), y, z + Math.round(fz)]);
+    },
+  });
+  sim.actions.forcing = {
+    validate: (entityUid, toolUid, method) => {
+      const entity = entities.byUid(entityUid);
+      if (!entity) {
+        return text.common.gone;
+      }
+      const reserved = entities.useRefusal(entity);
+      if (reserved) {
+        return reserved;
+      }
+      const plan = pryPlan(inventory, entity, { toolUid, method }, character);
+      return plan.ok ? undefined : plan.reason;
+    },
+    strike: (entityUid, toolUid, method, time) => {
+      const entity = entities.byUid(entityUid);
+      if (entity) {
+        const plan = pryPlan(inventory, entity, { toolUid, method }, character);
+        if (plan.ok) {
+          playPlayerSound(plan.strikeSound, time, { sourceLabel: 'forcing padlock' });
+        }
+      }
+    },
+    finish: (entityUid, toolUid, method) => {
+      const entity = entities.byUid(entityUid);
+      if (!entity) {
+        return text.common.gone;
+      }
+      const plan = pryPlan(inventory, entity, { toolUid, method }, character);
+      if (!plan.ok) {
+        return plan.reason;
+      }
+      const broken = entities.breakLock(entity);
+      if (broken === undefined && plan.fuel !== undefined) {
+        spendFuel(inventory, plan.tool, plan.fuel);
+      }
+      return broken;
+    },
+  };
+
+  const power = createSessionPower(options, sim, inventory);
+  const lightScene = (): IlluminationScene => ({
+    inventory,
+    sky: skyFields,
+    gameHour: hourOfDay(sim.calendar),
+    cycle: dayCycle,
+    fixtures: power?.lights() ?? [],
+    isBlocking: isLightBlocking,
+    blockSize: s,
+    holder: playerEye(),
+  });
+  /** Carried paper is lit at the reader's eyes; a sign passes its own point. */
+  const readingLight = (at?: Vec3): string | undefined => {
+    const scene = lightScene();
+    return readingLightRefusal(scene, at ?? scene.holder);
+  };
+
+  if (restored) {
+    world.restoreColumns(restored.world.columns, (id) => {
+      const found = registry.blockIds.get(id);
+      if (found === undefined) {
+        throw new Error(`Unknown block ${id} in save`);
+      }
+      return found;
+    });
+    world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
+    actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
+    playerCombat.restoreState(restored.character.playerCombat, registry);
+    spawner.restoreState(restored.world.spawned);
+    sim.restoreState(restored.character.simulation);
+    const schedulerState = sim.scheduler.snapshotState();
+    lastActorStep = schedulerState.systems.find(({ id }) => id === 'actors')?.done ?? sim.time;
+    const backgroundState = schedulerState.systems.find(({ id }) => id === 'actor-background');
+    lastBackgroundStep = backgroundState?.done ?? sim.time;
+    backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ACTOR_SLICE_COUNT;
+    lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
+    sim.actions.restoreState(restored.character.longAction);
+    survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
+    quickbar.restoreState(restored.character.quickbar, inventory);
+  }
+
+  scenarioRun = restoreScenarioRun(options, sim);
+  /** Why a held piece can't be used: it is no longer the live piece, or its deconstruction holds it. */
+  const pieceRefusal = (entity: BlockEntity): string | undefined =>
+    entities.byUid(entity.uid) === entity ? entities.useRefusal(entity) : text.common.gone;
+  const isObjective = (entity: BlockEntity): boolean =>
+    Boolean(
+      options.objective &&
+        entity.pos.every((value, axis) => value === options.objective![axis]) &&
+        entities.defOf(entity).scenarioGoal,
+    );
+
+  return {
+    get scenarioRun() {
+      return scenarioRunSnapshot(scenarioRun);
+    },
+    get won() {
+      return scenarioRunWon(scenarioRun);
+    },
+    power,
+    skyFields,
+    /** Light reaching a point in blocks (`packages/engine/src/core/illumination.ts`, `illuminationAt`). */
+    illuminationAt: (point: Vec3): number => illuminationAt(lightScene(), point),
+    /** Why a page can't be read where its light is measured, or undefined when it can. */
+    readingLight,
+    powerControl: (uid: number, enabled: boolean): string | undefined => {
+      const entity = entities.byUid(uid);
+      const control = entity && power?.control(entity);
+      if (!(entity && control && power && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      power.network.setEnabled(simTimestamp(sim.time), control.id, enabled);
+      return undefined;
+    },
+    chargerControl: (uid: number, operation: 'start' | 'stop'): string | undefined => {
+      const entity = entities.byUid(uid);
+      const id = entity && power?.chargerId(entity);
+      const spec = entity && registry.furniture.get(entity.type)?.charger;
+      if (!(entity && id && spec && power?.chargers && inventory.canReachEntity(entity))) {
+        return coreMessage(registry, 'tooFar');
+      }
+      const refusal = entities.useRefusal(entity) ?? sim.body.actionRefusal;
+      if (refusal) {
+        return refusal;
+      }
+      if (operation === 'stop') {
+        power.chargers.stop(simTimestamp(sim.time), id);
+        return undefined;
+      }
+      const battery = entity.pockets?.[spec.pocket]?.[0]?.item;
+      if (!battery) {
+        return coreMessage(registry, 'wrongBattery');
+      }
+      const result = power.chargers.start(simTimestamp(sim.time), id, battery);
+      return result.ok ? undefined : result.reason;
+    },
+    isObjective,
+    activateGoal: (entity: BlockEntity): string | undefined => {
+      if (sim.dead) {
+        return text.objective.survivorDied;
+      }
+      const unusable = pieceRefusal(entity);
+      if (unusable) {
+        return unusable;
+      }
+      if (!(scenarioRun && isObjective(entity))) {
+        return text.objective.notObjective;
+      }
+      if (scenarioRun.won) {
+        return undefined;
+      }
+      if (sim.body.actionRefusal) {
+        return sim.body.actionRefusal;
+      }
+      if (!inventory.canReachEntity(entity)) {
+        return text.common.tooFar;
+      }
+      const yaw = controls.yaw();
+      const pitch = controls.pitch();
+      const selected = pickFurniture({
+        entities,
+        origin: playerEye(),
+        direction: aimDirection(yaw, pitch, NEUTRAL_AIM),
+        maxDistance: reachTuning(inventory.registry).reachMetres / s,
+        blockSize: s,
+        isSolid: isOpaque,
+      });
+      if (selected !== entity) {
+        return text.objective.blocked;
+      }
+      scenarioRun.complete(sim.calendar);
+      sim.paused = true;
+      return undefined;
+    },
+    observeRunFrame: (seconds: number, active: boolean): void => {
+      if (!sim.dead) {
+        scenarioRun?.observeFrame(seconds, active && !sim.paused);
+      }
+    },
+    sim,
+    /** Derived vehicle-aware world queries for presentation and input consumers. */
+    physicalSolid,
+    isOpaque,
+    isSoundBlocking: worldSoundBlocking(world, registry, {
+      entities: inventory.entities,
+      physical: physicalSolid,
+      vehicles: inventory.vehicles,
+      blockSize: s,
+    }),
+    inventory,
+    entities,
+    queue,
+    firearms,
+    firearmShotInput,
+    firearmAttachments,
+    magazines,
+    /** Explosives' pins and burning fuses; a pin is pulled here, and the fuse lights once the item leaves the hand. */
+    fuses,
+    aim,
+    get firearmsSkillZeroHandling() {
+      return sessionFirearmsSkillZeroHandling(
+        firearms,
+        firearmInHands()?.uid,
+        currentFirearmsCombatTuning().skillZeroHandling,
+      );
+    },
+    get firearmsSkillZeroTarget() {
+      return sessionFirearmTargetName(registry, firearmInHands()?.type);
+    },
+    hasFirearmHandlingOverrides: () =>
+      options.wobbleFlatOverride !== undefined ||
+      options.wobbleNoiseScaleOverride !== undefined ||
+      firearms.hasSkillZeroHandlingOverrides() ||
+      !sameFirearmsSkillZeroHandling(
+        firearmsCombatTuning.skillZeroHandling,
+        currentFirearmsCombatTuning().skillZeroHandling,
+      ),
+    setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
+      setSessionFirearmsSkillZeroHandling(firearms, firearmInHands()?.uid, value);
+    },
+    quickbar,
+    character,
+    planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
+    forceDoor: (entity: BlockEntity, toolUid?: number, method?: string) => {
+      const plan = pryPlan(inventory, entity, { toolUid, method }, character);
+      return plan.ok
+        ? sim.actions.beginForcing(entity.uid, plan.tool.uid, {
+            method: plan.method,
+            durationSimSeconds: plan.time,
+            strikeIntervalSimSeconds: plan.strikeInterval,
+          })
+        : plan.reason;
+    },
+    downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
+    /** Queues finishing off or dismembering a downed body; returns why not. */
+    clearDownedBody: (id: EntityId, way: DownedBodyWay) =>
+      queueDownedBody({ queue, player: reachPlayer, actors: actorSystem }, id, way),
+    crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
+    survival,
+    unpacking,
+    sharpening,
+    rest,
+    actors: actorSystem,
+    playerCombat,
+    playerLook,
+    playerLookDirection,
+    playerEye,
+    actorStore,
+    spawner,
+    body,
+    /** Set when the session was restored: the view direction to hand back to the input. */
+    restoredLook,
+    vehicles: inventory.vehicles,
+    /** Occupied part boxes for picking and reach, rebuilt when a build changes. */
+    vehicleParts,
+    /** Metres from the chest to the vehicle's nearest part, the distance its reach is judged by. */
+    vehicleDistance: (vehicleId: number) => vehicleDistance(reachPlayer, vehicleParts.boxesOf(vehicleId)),
+    /** Why the selected part can't be fitted at or removed from the selected site now. */
+    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, target: VehicleWorkTarget, itemUid: number) =>
+      sim.actions.vehicleWork?.validate(kind, vehicleId, target, itemUid),
+    /** Starts, or resumes, service work on one selected site and part; returns why not. */
+    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, target: VehicleWorkTarget, itemUid: number) => {
+      const service = inventory.vehiclePlacementService(vehicleId, target, itemUid);
+      return (
+        sim.actions.vehicleWork?.validate(kind, vehicleId, target, itemUid) ??
+        sim.actions.beginVehicleWork({
+          kind,
+          vehicleId,
+          fittingId: target.id,
+          itemUid,
+          durationSimSeconds: service?.durationSimSeconds ?? 0,
+          placement: target,
+        })
+      );
+    },
+    /** The player's noise state; saved with the character. */
+    playerAudio,
+    worldColumns: () => world.snapshotColumns((id) => registry.blocks[id]!.id),
+    audioState: () => soundPicker.snapshotState(),
+    feet,
+    chest,
+    reach,
+    pileDistance,
+    entityDistance,
+    playWorldSound,
+    playPlayerSound,
+    /** Time of the last actor step, for render interpolation. */
+    get lastActorStep() {
+      return lastActorStep;
+    },
+    get lastBackgroundStep() {
+      return lastBackgroundStep;
+    },
+    get lastPlayerStep() {
+      return lastPlayerStep;
+    },
+    get playerStridePhase() {
+      return footstepClock.stridePhase;
+    },
+    get sprinting() {
+      return sprinting;
+    },
+    get stance() {
+      return playerStance;
+    },
+    get lean() {
+      return currentLean();
+    },
+    get leanAmount() {
+      return leanAmount;
+    },
+    restoreLean(amount: number) {
+      if (!Number.isFinite(amount) || Math.abs(amount) > 1) {
+        throw new Error('Invalid replay lean');
+      }
+      leanAmount = playerStance === 'prone' ? 0 : amount;
+    },
+    /** Whether the player climbs a ladder, so the pick reaches through it, and which hand is on it. */
+    ladderHold,
+    /** A held item's throw from press to release; play throws it and shows its notices. */
+    throwCharge,
+    /** F at a ladder grabs it; returns why not. */
+    grabLadder: (entity: BlockEntity): string | undefined => {
+      if (sim.body.actionRefusal) {
+        return sim.body.actionRefusal;
+      }
+      const refusal = ladderHold.grab(entity);
+      refuseThrowForLadder();
+      return refusal;
+    },
+    get playerEyeHeightMetres() {
+      return playerEyeHeightMetres();
+    },
+    strikeTerrainCell,
+    projectSupply: (source: ColumnSource) => columnSupply.project(source),
+    /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
+    onColumn: (cx: number, cz: number, source: ColumnSource) => {
+      columnSupply.arrive(cx, cz, source);
+      spawner.onColumn({ cx, cz, site: source, registry, actors: actorSystem });
+    },
+    onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
+    /** Queues a search of a container, unless one is queued or done. */
+    search: (entity: BlockEntity): string | undefined => {
+      if (entity.searched || searching.has(entity)) {
+        return undefined;
+      }
+      const reserved = entities.useRefusal(entity);
+      if (reserved) {
+        return reserved;
+      }
+      searching.add(entity);
+      const { searchNoise } = entities.defOf(entity);
+      if (searchNoise) {
+        playPlayerSound(searchNoise.sound, sim.time, { sourceLabel: `searching ${nameOf(entity)}` });
+      }
+      queue.enqueueAction(
+        'furniture.search',
+        fillText(text.play.search, { furniture: nameOf(entity) }),
+        inventory.scaleHandlingTime(searchTime(entities.defOf(entity), reachTuning(inventory.registry))),
+        {
+          entityUid: entity.uid,
+        },
+      );
+      return undefined;
+    },
+    /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */
+    readFurniture: (entity: BlockEntity): string | undefined => {
+      const unusable = pieceRefusal(entity);
+      if (unusable) {
+        return unusable;
+      }
+      if (!inventory.canReachEntity(entity)) {
+        return text.common.tooFar;
+      }
+      const { readable } = entities.defOf(entity);
+      if (!readable) {
+        return text.objective.nothingToRead;
+      }
+      const lightAt: Vec3 = [entity.pos[0] + 0.5, entity.pos[1] + 0.5, entity.pos[2] + 0.5];
+      const dark = readingLight(lightAt);
+      if (dark) {
+        return dark;
+      }
+      scenarioRun?.read(sim.calendar);
+      if (options.discovery?.clues.some((at) => at.every((value, axis) => value === entity.pos[axis]))) {
+        scenarioRun?.discover('clueRead', sim.calendar);
+      }
+      options.onRead({ kind: 'text', readable, lightAt });
+      return undefined;
+    },
+    searching: (entity: BlockEntity): boolean => searching.has(entity),
+    nameOf,
+    liftFurniture: liftPiece,
+    slideFurniture: slidePiece,
+    placeFurniture: placePiece,
+    removeFurniture: removePiece,
+    /** One blow on a piece, landed as an actor's bash or the player's strike lands it. */
+    bashFurniture: bashPiece,
+    turnFurniture: () => turnCarried(inventory),
+    tipFurniture: () => tipCarried(inventory),
+    /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
+    furniturePlacement: (aimed: Readonly<Vec3>) =>
+      entities.carrying()?.floorLocked ? floorLockedPlacement(furnitureMover()) : placement(furnitureMover(), aimed),
+    /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
+    frame: (dt: number, until?: number): void => {
+      if (scenarioRun?.won) {
+        return;
+      }
+      clearSunExposureCache();
+      updateStance();
+      rest.frame(dt, until);
+      for (const event of audioEvents.read()) {
+        if (event.kind === 'damage') {
+          playPlayerSound(
+            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+            event.time,
+          );
+        }
+      }
+    },
+    frameReplay: (realSeconds: number): void => {
+      if (scenarioRun?.won) {
+        return;
+      }
+      clearSunExposureCache();
+      updateStance();
+      rest.frameReplay(realSeconds);
+      for (const event of audioEvents.read()) {
+        if (event.kind === 'damage') {
+          playPlayerSound(
+            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+            event.time,
+          );
+        }
+      }
+    },
+    /** Isolated plain-data copy of everything a save keeps. */
+    snapshot: ({ worldId, characterId }: SessionSnapshotIds): Readonly<SaveSnapshot> =>
+      snapshotSession({
+        worldId,
+        characterId,
+        ...(power ? { power: power.network } : {}),
+        scenarioRun: scenarioRunSnapshot(scenarioRun),
+        world,
+        blockContentId: (id) => registry.blocks[id]!.id,
+        inventory,
+        character,
+        simulation: sim,
+        player: snapshotPlayer(body, {
+          yaw: controls.yaw(),
+          pitch: controls.pitch(),
+          walk: controls.walking(),
+          stance: playerStance,
+          sprinting,
+          firearmReadyWalking,
+          snipingAdsUid: firearmInHands()?.uid === snipingAdsUid ? snipingAdsUid : undefined,
+          handlingPausedForKnockout,
+          ladder: ladderHold.snapshotState(),
+        }),
+        aim,
+        survival,
+        quickbar: quickbar.snapshotState(inventory),
+        actors: actorSystem,
+        playerCombat,
+        spawner,
+        rolledColumns,
+        handling: queue,
+        vocalNoiseId: playerAudio.vocalNoiseId,
+        vocalNoise: playerAudio.vocalNoise,
+        footstepClock,
+        airbornePeakY,
+        rustleClock,
+        audio: soundPicker,
+      }),
+  };
+};
+
+export type Session = ReturnType<typeof createSession>;

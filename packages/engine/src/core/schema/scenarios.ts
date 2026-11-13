@@ -1,0 +1,289 @@
+import {
+  array,
+  check,
+  type InferOutput,
+  literal,
+  maxLength,
+  maxValue,
+  minLength,
+  minValue,
+  nonEmpty,
+  number,
+  optional,
+  picklist,
+  pipe,
+  record,
+  strictObject,
+  tuple,
+  union,
+  variant,
+  boolean as vBoolean,
+} from 'valibot';
+import { DAY_PHASES } from '../dayPhase.ts';
+import { SCENARIO_KINDS } from '../scenarioKinds.ts';
+import { AttemptPolicySchema } from './attemptPolicy.ts';
+import {
+  CityBlockGeometry,
+  CityLotSchema,
+  CityUndergroundSchema,
+  FixedLootOverride,
+  LayoutRect,
+  PerimeterCrossingSchema,
+  SiteLayoutSchema,
+} from './layouts.ts';
+import { Count, Id, PositiveGameHours } from './primitives.ts';
+import { CellCoordinate, CellPosition } from './templates.ts';
+
+const HordeEffectSchema = strictObject({
+  kind: literal('releaseHorde'),
+  actor: Id,
+  count: pipe(Count, minValue(1), maxValue(64)),
+  at: CellPosition,
+});
+
+/** A scenario event: once its trigger has passed and every condition holds, its effects apply once. See `packages/deadvox/SLICE-5.md`, "Settled event and playtest rules". */
+const EventRuleSchema = strictObject({
+  id: Id,
+  trigger: union([strictObject({ kind: literal('elapsed'), afterGameHours: PositiveGameHours })]),
+  conditions: optional(
+    array(union([strictObject({ kind: literal('dayPhase'), phases: pipe(array(picklist(DAY_PHASES)), nonEmpty()) })])),
+    [],
+  ),
+  effects: pipe(array(union([HordeEffectSchema])), nonEmpty('needs an effect')),
+});
+
+export type EventRuleDef = InferOutput<typeof EventRuleSchema>;
+
+const CityScenarioSchema = strictObject({
+  attemptPolicy: optional(AttemptPolicySchema),
+  id: Id,
+  kind: literal(SCENARIO_KINDS.assembledCity),
+  outbreakAgeGameHours: PositiveGameHours,
+  decalLimit: pipe(Count, maxValue(4096)),
+  body: Id,
+  compression: Id,
+  serviceTemplate: Id,
+  composition: optional(
+    strictObject({
+      fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a fixed resource source')),
+      events: optional(
+        array(
+          strictObject({
+            template: Id,
+            lot: Id,
+            at: CellPosition,
+            fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a promised item')),
+          }),
+        ),
+      ),
+      /** Core stock the instance promises in a fixed lot's building; the building's template stays unchanged. */
+      stops: optional(
+        array(
+          strictObject({
+            lot: Id,
+            fixedLoot: pipe(array(FixedLootOverride), nonEmpty('needs a promised item')),
+          }),
+        ),
+      ),
+      leads: tuple([
+        strictObject({
+          template: Id,
+          fixedLoot: optional(array(FixedLootOverride)),
+          lot: optional(Id),
+          at: optional(CellPosition),
+          standing: optional(CellPosition),
+        }),
+        strictObject({
+          template: Id,
+          fixedLoot: optional(array(FixedLootOverride)),
+          lot: optional(Id),
+          at: optional(CellPosition),
+          standing: optional(CellPosition),
+        }),
+      ]),
+      landmarks: tuple([Id, Id]),
+      landmarkPositions: optional(tuple([CellPosition, CellPosition])),
+      incidentalTemplates: pipe(array(Id), minLength(1), maxLength(32)),
+      objective: CellPosition,
+      objectiveFace: CellPosition,
+      retreat: CellPosition,
+      /**
+       * Service-local unless `lot` names a fixed lot, whose stop then holds the stock and whose local frame the poses
+       * use. A `key` route is proved from the start: up its climbs to the holder, back down, then to the resource.
+       */
+      resources: pipe(
+        array(
+          strictObject({
+            at: CellPosition,
+            standing: CellPosition,
+            lot: optional(Id),
+            key: optional(
+              strictObject({
+                at: CellPosition,
+                standing: CellPosition,
+                climbs: optional(
+                  array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
+                  [],
+                ),
+              }),
+            ),
+          }),
+        ),
+        nonEmpty('needs a resource standing pose'),
+      ),
+      storeys: pipe(array(strictObject({ id: Id, standing: CellPosition })), minLength(1), maxLength(16)),
+      seals: optional(
+        array(
+          strictObject({
+            doors: pipe(array(CellPosition), nonEmpty()),
+            key: CellPosition,
+            held: optional(literal(true)),
+            standing: CellPosition,
+          }),
+        ),
+        [],
+      ),
+      stairs: optional(array(strictObject({ upper: CellPosition, lower: CellPosition })), []),
+      descents: pipe(
+        array(strictObject({ ladder: CellPosition, upper: CellPosition, lower: CellPosition })),
+        maxLength(32),
+      ),
+    }),
+  ),
+  portal: strictObject({
+    hatch: CellPosition,
+    ladder: CellPosition,
+    upper: CellPosition,
+    lower: CellPosition,
+  }),
+  eventRules: optional(array(EventRuleSchema), []),
+  /** The ordinary buildings' street pressure; authored markers are separate from it. */
+  population: strictObject({
+    settlementPressure: vBoolean(),
+    authoredMarkers: vBoolean(),
+    /** Ordinary buildings per street group; each group gets roadside stragglers. */
+    groupSize: pipe(Count, minValue(1), maxValue(64)),
+    /** Hordes in the whole city, each on a different seeded street group. */
+    hordes: pipe(Count, maxValue(16)),
+    hordeAreas: optional(array(LayoutRect)),
+    /** Metres each side of a street's centreline where stragglers stand. */
+    roadsideOffset: pipe(Count, minValue(1), maxValue(32)),
+    /** Stragglers added to each group on top of its baseline settlement count. */
+    extraStragglers: pipe(Count, maxValue(16)),
+  }),
+  city: strictObject({
+    settlementKind: Id,
+    blocksX: pipe(Count, minValue(1), maxValue(4)),
+    blocksZ: pipe(Count, minValue(1), maxValue(4)),
+    ...CityBlockGeometry,
+    /** Holds the ground at the city floor beyond the bounds instead of blending to the natural terrain, so a confined playtest site has no relief. */
+    flatSurroundings: optional(vBoolean()),
+    perimeter: optional(
+      strictObject({
+        block: Id,
+        height: pipe(Count, minValue(1), maxValue(32)),
+        thickness: pipe(Count, minValue(2), maxValue(8)),
+        /** Solid wire fence on top of the wall. */
+        wire: optional(strictObject({ block: Id, height: pipe(Count, minValue(1), maxValue(8)) })),
+        /** Assembly set against the wall's inside face every `pitch` blocks, facing inward. */
+        lining: optional(strictObject({ assembly: Id, pitch: pipe(Count, minValue(2), maxValue(64)) })),
+        /** Assembly set against the wall where the central street meets it. */
+        gate: optional(strictObject({ assembly: Id })),
+      }),
+    ),
+    /** One row of buildings around the grid, backs to the wall and fronts to the outermost street. */
+    ring: optional(strictObject({ pool: Id, setback: pipe(Count, minValue(1), maxValue(64)) })),
+    streetProps: optional(pipe(array(Id), maxLength(16))),
+    bounds: optional(LayoutRect),
+    lots: optional(array(CityLotSchema)),
+    underground: optional(array(CityUndergroundSchema)),
+    fillRows: optional(vBoolean()),
+    paving: optional(array(LayoutRect)),
+    service: optional(
+      strictObject({
+        cell: tuple([CellCoordinate, CellCoordinate]),
+        turn: picklist([0, 1, 2, 3]),
+        routes: optional(array(PerimeterCrossingSchema)),
+      }),
+    ),
+    pool: Id,
+  }),
+});
+
+const NonnegativeFinite = pipe(
+  number(),
+  minValue(0),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
+
+const PlaceAskSchema = strictObject({
+  kind: literal('place'),
+  id: Id,
+  template: Id,
+  supplies: optional(array(Id), []),
+  settlementKind: optional(Id),
+  distance: optional(
+    strictObject({
+      from: Id,
+      curve: pipe(
+        array(tuple([NonnegativeFinite, NonnegativeFinite])),
+        minLength(2),
+        check((rows) => rows.every((row, i) => i === 0 || row[0] > rows[i - 1]![0]), 'distances must increase'),
+        check((rows) => rows.some((row) => row[1] > 0), 'needs a positive weight'),
+      ),
+    }),
+  ),
+});
+
+const AnchorFields = {
+  id: Id,
+  minDistance: NonnegativeFinite,
+  clearOf: array(picklist(['woodland', 'building'])),
+  spawnMarginMetres: NonnegativeFinite,
+  woodlandDensityFloor: pipe(NonnegativeFinite, maxValue(1)),
+};
+
+const AnchorSchema = variant('kind', [
+  strictObject({ ...AnchorFields, kind: literal('edge') }),
+  strictObject({ ...AnchorFields, kind: literal('cell'), at: CellPosition }),
+]);
+
+const AnchoredEventRuleSchema = strictObject({
+  ...EventRuleSchema.entries,
+  effects: pipe(
+    array(
+      strictObject({
+        ...HordeEffectSchema.entries,
+        at: union([Id, pipe(array(Id), nonEmpty())]),
+      }),
+    ),
+    nonEmpty(),
+  ),
+});
+
+export const ComposedSiteSchema = strictObject({
+  id: Id,
+  kind: literal(SCENARIO_KINDS.composedSite),
+  attemptPolicy: optional(AttemptPolicySchema),
+  outbreakAgeGameHours: PositiveGameHours,
+  decalLimit: CityScenarioSchema.entries.decalLimit,
+  body: Id,
+  compression: Id,
+  bounds: LayoutRect,
+  ground: SiteLayoutSchema.entries.ground,
+  lootContext: SiteLayoutSchema.entries.lootContext,
+  settlementKind: Id,
+  start: strictObject({ ask: Id }),
+  placement: strictObject({
+    apronMetres: NonnegativeFinite,
+    attempts: pipe(Count, minValue(1)),
+  }),
+  asks: array(variant('kind', [PlaceAskSchema])),
+  guarantee: record(Id, Count),
+  anchors: optional(array(AnchorSchema), []),
+  population: strictObject({ authoredMarkers: vBoolean() }),
+  eventRules: optional(array(AnchoredEventRuleSchema), []),
+});
+
+export const ScenarioSchema = variant('kind', [CityScenarioSchema, ComposedSiteSchema]);
+export type ComposedSiteDef = InferOutput<typeof ComposedSiteSchema>;

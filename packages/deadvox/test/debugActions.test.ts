@@ -1,22 +1,24 @@
+import { BindingRegistry, debugSpawnActorRow } from '@skelly/engine/input';
+import type { Weather } from '@skelly/engine/sky';
+import type { DebugHooks } from '@skelly/presentation/debug';
+import { DebugGunPose } from '@skelly/presentation/internal/presentation/debugGunPose.ts';
+import { TONE_MODES } from '@skelly/presentation/render';
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
-import { GRAPHICS_KEYS, GRAPHICS_KNOBS } from '../src/core/graphics.ts';
-import { SHADOW_DISTANCES } from '../src/core/mood.ts';
-import type { Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
-import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
-import { DebugGunPose } from '../src/game/debugGunPose.ts';
-import type { DebugHooks } from '../src/game/debugInterface.ts';
-import { inputBindings } from '../src/game/inputBindings.ts';
-import { TONE_MODES } from '../src/render/look.ts';
+import { LOOK_KEYS } from '../src/debug/lookUrl.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-import { LOOK_FIXTURE } from './lookFixture.ts';
+import { LOOK_FIXTURE, SUN_SHADOW_FIXTURE } from './lookFixture.ts';
 
-const fixtureZombieTypes = [
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+
+const fixtureActorTypes = [
   { id: 'fixture_roamer', name: 'Fixture roamer', authoredOnly: false },
   { id: 'shamblers', name: 'Fixture authored', authoredOnly: true },
 ];
@@ -30,7 +32,7 @@ describe('debug action dispatch', () => {
     const { actions } = makeActions();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
-      if (fixtureZombieTypes.some((type) => action.id === `debug.spawn-zombie.${type.id}`)) {
+      if (fixtureActorTypes.some((type) => action.id === `debug.spawn-actor.${type.id}`)) {
         expect(action.key).toBe('');
         continue;
       }
@@ -90,10 +92,11 @@ describe('debug action dispatch', () => {
       expect(look.toneKey).toBe(tone);
     }
 
-    const shadowStart = SHADOW_DISTANCES.indexOf(look.shadowState.distance);
+    const shadowDistances = SUN_SHADOW_FIXTURE.debugReachMetres;
+    const shadowStart = shadowDistances.indexOf(look.shadowState.distance);
     expect(shadowStart).toBeGreaterThanOrEqual(0);
-    const distances = SHADOW_DISTANCES.map(
-      (_, index) => SHADOW_DISTANCES[(shadowStart + index + 1) % SHADOW_DISTANCES.length],
+    const distances = shadowDistances.map(
+      (_, index) => shadowDistances[(shadowStart + index + 1) % shadowDistances.length],
     );
     for (const distance of distances) {
       expect(dispatchDebugAction(actions, 'debug.shadow-distance-cycle')).toBe(true);
@@ -106,7 +109,7 @@ describe('debug action dispatch', () => {
       ['debug.exposure-increase', 'debug.exposure-decrease', () => look.exposure],
       ['debug.grade-decrease', 'debug.grade-increase', () => -look.moodState.grade],
       ['debug.torch-increase', 'debug.torch-decrease', () => look.torch],
-      ['debug.fog-increase', 'debug.fog-decrease', () => look.fogginess],
+      ['debug.fog-increase', 'debug.fog-decrease', () => look.weatherState.fogginess],
       ['debug.bloom-clip-increase', 'debug.bloom-clip-decrease', () => look.bloomClip],
     ] as const;
     for (const [increase, decrease, value] of pairs) {
@@ -129,20 +132,30 @@ describe('debug action dispatch', () => {
       dispatchDebugAction(actions, action, true);
       expect(skips).toHaveLength(count);
     }
-    dispatchDebugAction(actions, 'debug.spawn-shamblers');
-    dispatchDebugAction(actions, 'debug.spawn-shamblers', true);
+    dispatchDebugAction(actions, 'debug.spawn-actors');
+    dispatchDebugAction(actions, 'debug.spawn-actors', true);
     expect(spawnCounts).toEqual([25]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
   });
   it('offers and dispatches every supplied zombie type, including authored-only types', () => {
     const { actions, spawnRequests } = makeActions();
-    for (const type of fixtureZombieTypes) {
-      const id = `debug.spawn-zombie.${type.id}`;
+    for (const type of fixtureActorTypes) {
+      const id = `debug.spawn-actor.${type.id}`;
       expect(actions.filter((action) => action.id === id)).toHaveLength(1);
       expect(dispatchDebugAction(actions, id)).toBe(true);
       expect(dispatchDebugAction(actions, id, true)).toBe(true);
     }
-    expect(spawnRequests).toEqual(fixtureZombieTypes.map((type) => ({ typeId: type.id, count: 1 })));
+    expect(spawnRequests).toEqual(fixtureActorTypes.map((type) => ({ typeId: type.id, count: 1 })));
+  });
+  it('offers one spawn row per actor type in shipped content', () => {
+    const shipped = [...baseRegistry().actors.values()];
+    const { actions } = makeActions(1, undefined, shipped);
+    const rows = shipped.map((type) => debugSpawnActorRow(type.id, type.name));
+    for (const { id, description } of rows) {
+      expect(actions.filter((action) => action.id === id).map(({ label }) => label)).toEqual([description]);
+    }
+    const spawnPrefix = debugSpawnActorRow('', '').id;
+    expect(actions.filter((action) => action.id.startsWith(spawnPrefix))).toHaveLength(shipped.length);
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
@@ -152,15 +165,14 @@ describe('debug action dispatch', () => {
         (def.notes ?? []).flatMap((note) => (note.param ? [paramName(note.param)] : [])),
       ),
     ]);
-    expect([...catalogued].sort()).toEqual(
-      [...LOOK_PARAMS, ...GRAPHICS_KEYS.map((key) => GRAPHICS_KNOBS[key].url), 'cam', 'interactionray'].sort(),
-    );
+    expect([...catalogued].sort()).toEqual([...LOOK_KEYS, 'cam', 'interactionray'].sort());
   });
 });
 
 const makeActions = (
   shamblerCount = 1,
   mannequin?: DebugHooks['mannequin'],
+  actorTypes: Iterable<{ id: string; name: string }> = fixtureActorTypes,
 ): {
   actions: Action[];
   spawnCounts: number[];
@@ -175,7 +187,7 @@ const makeActions = (
   let patterns = true;
   let occlusion = true;
   const mood = new FakeMood();
-  const weather: Weather = { fogginess: BASE_DAY_CYCLE.weather.defaultFogginess };
+  const weather: Weather = { ...BASE_DAY_CYCLE.weather.defaults };
   const shadows = new FakeShadows();
   const flashlight = { strength: 1 };
   const look = new LookControls(
@@ -201,7 +213,7 @@ const makeActions = (
       },
     },
     mood,
-    { defaults: LOOK_FIXTURE, weather, shadows, flashlight },
+    { defaults: LOOK_FIXTURE, sunShadow: SUN_SHADOW_FIXTURE, weather, shadows, flashlight },
   );
   const sim = {
     godMode: false,
@@ -226,6 +238,7 @@ const makeActions = (
   const gunPose = new DebugGunPose(true);
   const hooks = {
     sim,
+    keyboard: { registry: inputBindings },
     reviewMap: {
       isOpen: () => reviewMapOpen,
       toggle: () => {
@@ -282,7 +295,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
-    zombieTypes: fixtureZombieTypes,
+    actorTypes,
     look,
     build,
     spawnMenu,
@@ -298,7 +311,7 @@ const makeActions = (
     spawnShambler(count) {
       spawnCounts.push(count);
     },
-    spawnZombie(typeId, count) {
+    spawnActor(typeId, count) {
       spawnRequests.push({ typeId, count });
     },
     isAimEnabled: () => aimEnabled,

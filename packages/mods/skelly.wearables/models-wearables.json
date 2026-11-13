@@ -1,0 +1,691 @@
+{
+  "models": [
+    {
+      "file": "assets/models/stab_vest.glb",
+      "id": "stab_vest",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/riot_helmet_view.glb",
+      "id": "riot_helmet_view",
+      "itemPresentation": {
+        "materials": ["glass", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
+    },
+    {
+      "file": "assets/models/jeans.glb",
+      "grip": {
+        "at": [0, 0.025000000000000001, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "jeans",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jeans": {
+          "centreOfMass": [0, 0.025000000000000001, 0],
+          "massKg": 0.69999999999999996,
+          "node": "jeans:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/rubber_boots.glb",
+      "grip": {
+        "at": [-0.074999999999999997, 0.11499999999999999, 0.089999999999999997],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "rubber_boots",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "rubber_boots": {
+          "centreOfMass": [2.3738880988034334e-18, 0.076198108250131361, 0.023497109826589591],
+          "massKg": 1.8,
+          "node": "rubber_boots:boots"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/sneakers.glb",
+      "grip": {
+        "at": [-0.070000000000000007, 0.065000000000000002, 0.084999999999999992],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "sneakers",
+      "itemPresentation": {
+        "materials": ["polymer", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "sneakers": {
+          "centreOfMass": [6.356720054441276e-18, 0.045037523452157592, 0.029577861163227016],
+          "massKg": 0.80000000000000004,
+          "node": "sneakers:boots"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/cargo_pants.glb",
+      "grip": {
+        "at": [0, 0.025000000000000001, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "cargo_pants",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "cargo_pants": {
+          "centreOfMass": [0, 0.024999999999999994, 0],
+          "massKg": 0.80000000000000004,
+          "node": "cargo_pants:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/hoodie.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [-90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "hoodie",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hoodie": {
+          "centreOfMass": [0, 0.032460179554011009, -0.002856935997683174],
+          "massKg": 0.59999999999999998,
+          "node": "hoodie:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/jacket.glb",
+      "grip": {
+        "at": [0, 0.035000000000000003, 0],
+        "turn": [-90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jacket": {
+          "centreOfMass": [0, 0.034819277108433737, 0.0022289156626506025],
+          "massKg": 1.2,
+          "node": "jacket:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/utility_vest.glb",
+      "grip": {
+        "at": [0, 0.029999999999999999, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "utility_vest",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "utility_vest": {
+          "centreOfMass": [0, 0.030000000000000002, -0.0079734219269102981],
+          "massKg": 0.90000000000000002,
+          "node": "utility_vest:folded-garment"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/baseball_cap.glb",
+      "grip": {
+        "at": [0, 0.040000000000000001, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "baseball_cap",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "baseball_cap": {
+          "centreOfMass": [0, 0.038706871696299855, -0.006067755886592985],
+          "massKg": 0.080000000000000002,
+          "node": "baseball_cap:cap"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "file": "assets/models/riot_helmet.glb",
+      "grip": {
+        "at": [0, 0.15000000000000002, 0],
+        "turn": [90, -90, 0]
+      },
+      "hold": "upright",
+      "id": "riot_helmet",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "helmet": {
+          "centreOfMass": [4.2553191489362219e-5, 0.04448581560283691, 0.0037180851063829809],
+          "massKg": 1.3999999999999999,
+          "node": "helmet:compound"
+        }
+      },
+      "roll": 0
+    },
+    {
+      "covers": ["torso"],
+      "file": "assets/models/jacket_worn_body.glb",
+      "id": "jacket_worn_body",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jacket_worn_body": {
+          "centreOfMass": [0, 0.40157359906071799, 0.00013043498983980411],
+          "massKg": 0.10000000000000001,
+          "node": "jacket_worn_body:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/jacket_worn_upper.glb",
+      "id": "jacket_worn_upper",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jacket_worn_upper": {
+          "centreOfMass": [0, -0.14000000000000004, 0],
+          "massKg": 0.10000000000000001,
+          "node": "jacket_worn_upper:compound"
+        }
+      }
+    },
+    {
+      "covers": ["fore"],
+      "file": "assets/models/jacket_worn_fore.glb",
+      "id": "jacket_worn_fore",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jacket_worn_fore": {
+          "centreOfMass": [0, -0.13053333333333333, 0],
+          "massKg": 0.10000000000000001,
+          "node": "jacket_worn_fore:compound"
+        }
+      }
+    },
+    {
+      "covers": ["torso"],
+      "file": "assets/models/hoodie_worn_body.glb",
+      "id": "hoodie_worn_body",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hoodie_worn_body": {
+          "centreOfMass": [0, 0.39288361998169835, -0.0033662216382364671],
+          "massKg": 0.10000000000000001,
+          "node": "hoodie_worn_body:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hoodie_worn_upper.glb",
+      "id": "hoodie_worn_upper",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hoodie_worn_upper": {
+          "centreOfMass": [0, -0.14000000000000001, 0],
+          "massKg": 0.10000000000000001,
+          "node": "hoodie_worn_upper:compound"
+        }
+      }
+    },
+    {
+      "covers": ["fore"],
+      "file": "assets/models/hoodie_worn_fore.glb",
+      "id": "hoodie_worn_fore",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "hoodie_worn_fore": {
+          "centreOfMass": [0, -0.130606390210741, 0],
+          "massKg": 0.10000000000000001,
+          "node": "hoodie_worn_fore:compound"
+        }
+      }
+    },
+    {
+      "covers": ["pelvis"],
+      "file": "assets/models/jeans_worn_pelvis.glb",
+      "id": "jeans_worn_pelvis",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jeans_worn_pelvis": {
+          "centreOfMass": [0, 0.10122389308930614, 0],
+          "massKg": 0.10000000000000001,
+          "node": "jeans_worn_pelvis:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/jeans_worn_thigh.glb",
+      "id": "jeans_worn_thigh",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jeans_worn_thigh": {
+          "centreOfMass": [0, -0.20800000000000002, 0],
+          "massKg": 0.10000000000000001,
+          "node": "jeans_worn_thigh:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/jeans_worn_shin.glb",
+      "id": "jeans_worn_shin",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "jeans_worn_shin": {
+          "centreOfMass": [-3.6575018241644307e-20, -0.11792996108949412, 1.8287509120822153e-20],
+          "massKg": 0.10000000000000001,
+          "node": "jeans_worn_shin:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/rubber_boots_worn_foot.glb",
+      "id": "rubber_boots_worn_foot",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "rubber_boots_worn_foot": {
+          "centreOfMass": [0, -0.045466402527172455, 0.060267494779675537],
+          "massKg": 0.10000000000000001,
+          "node": "rubber_boots_worn_foot:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/rubber_boots_worn_shaft.glb",
+      "id": "rubber_boots_worn_shaft",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "rubber_boots_worn_shaft": {
+          "centreOfMass": [0, -0.17108633598502571, 0],
+          "massKg": 0.10000000000000001,
+          "node": "rubber_boots_worn_shaft:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/sneakers_worn_foot.glb",
+      "id": "sneakers_worn_foot",
+      "itemPresentation": {
+        "materials": ["polymer", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "sneakers_worn_foot": {
+          "centreOfMass": [0, -0.05304610611231772, 0.060998696866273655],
+          "massKg": 0.10000000000000001,
+          "node": "sneakers_worn_foot:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/sneakers_worn_shaft.glb",
+      "id": "sneakers_worn_shaft",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "sneakers_worn_shaft": {
+          "centreOfMass": [0, -0.28310000000000002, 0],
+          "massKg": 0.10000000000000001,
+          "node": "sneakers_worn_shaft:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/utility_vest_worn.glb",
+      "id": "utility_vest_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shell": {
+          "centreOfMass": [0, 0.44373071798208924, 0.024998853459762632],
+          "massKg": 0.90000000000000002,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stab_vest_worn.glb",
+      "id": "stab_vest_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shell": {
+          "centreOfMass": [0, 0.46968208497119152, 1.4253287169079143e-18],
+          "massKg": 2.5,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/school_backpack_worn.glb",
+      "id": "school_backpack_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.5714296374985628e-17, 0.37361609741768365, -0.24766614147995833],
+          "massKg": 0.59999999999999998,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.52673724368144981, 0.028065808297567961],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hiking_backpack_worn.glb",
+      "id": "hiking_backpack_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.2452375543193857e-17, 0.34697147655865407, -0.29054457227248476],
+          "massKg": 1.3999999999999999,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.52440186697782964, 0.024460676779463252],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fanny_pack_worn.glb",
+      "id": "fanny_pack_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bag": {
+          "centreOfMass": [1.9439711246214923e-17, 0.15714013058764442, 0.17482270215971873],
+          "massKg": 0.14999999999999999,
+          "node": "bag:bag"
+        },
+        "belt": {
+          "centreOfMass": [-3.9389552978715605e-18, 0.152, 9.8473882446789013e-19],
+          "massKg": 0.050000000000000003,
+          "node": "belt:belt"
+        }
+      }
+    },
+    {
+      "file": "assets/models/utility_vest_worn_jacket.glb",
+      "id": "utility_vest_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shell": {
+          "centreOfMass": [0, 0.45797940232262507, 0.020512830456984037],
+          "massKg": 0.90000000000000002,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stab_vest_worn_jacket.glb",
+      "id": "stab_vest_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "shell": {
+          "centreOfMass": [0, 0.48114292858929014, -3.7823426716246028e-18],
+          "massKg": 2.5,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/school_backpack_worn_jacket.glb",
+      "id": "school_backpack_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.5714296374985628e-17, 0.37361609741768365, -0.28366614147995839],
+          "massKg": 0.59999999999999998,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.55338723051409622, 0.030519900497512433],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hiking_backpack_worn_jacket.glb",
+      "id": "hiking_backpack_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.2452375543193857e-17, 0.34697147655865407, -0.32654457227248473],
+          "massKg": 1.3999999999999999,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.55085778229908444, 0.026664903357070203],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fanny_pack_worn_jacket.glb",
+      "id": "fanny_pack_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "bag": {
+          "centreOfMass": [1.9516847384630277e-17, 0.15726112185686655, 0.21668762088974855],
+          "massKg": 0.14999999999999999,
+          "node": "bag:bag"
+        },
+        "belt": {
+          "centreOfMass": [0, 0.152, 3.6600912059868481e-18],
+          "massKg": 0.050000000000000003,
+          "node": "belt:belt"
+        }
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
-import { RawEventQueue } from "../raw";
-import { VectorOps } from "../math";
+import { RawEventQueue, } from "../raw";
+import { SoftBodyTearEvent } from "../dynamics";
+import { VectorOps, scratchBuffer } from "../math";
 export var ActiveEvents;
 (function (ActiveEvents) {
     ActiveEvents[ActiveEvents["NONE"] = 0] = "NONE";
@@ -19,14 +20,16 @@ export class TempContactForceEvent {
     collider2() {
         return this.raw.collider2();
     }
-    totalForce() {
-        return VectorOps.fromRaw(this.raw.total_force());
+    totalForce(target) {
+        this.raw.total_force(scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
     totalForceMagnitude() {
         return this.raw.total_force_magnitude();
     }
-    maxForceDirection() {
-        return VectorOps.fromRaw(this.raw.max_force_direction());
+    maxForceDirection(target) {
+        this.raw.max_force_direction(scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
     maxForceMagnitude() {
         return this.raw.max_force_magnitude();
@@ -48,6 +51,14 @@ export class EventQueue {
     drainContactForceEvents(f) {
         let event = new TempContactForceEvent();
         this.raw.drainContactForceEvents((raw) => {
+            event.raw = raw;
+            f(event);
+            event.free();
+        });
+    }
+    drainSoftBodyTearEvents(f) {
+        let event = new SoftBodyTearEvent();
+        this.raw.drainSoftBodyTearEvents((raw) => {
             event.raw = raw;
             f(event);
             event.free();

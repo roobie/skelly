@@ -1,0 +1,73 @@
+{
+  "layouts": [
+    {
+      "actors": [
+        {
+          "chance": 1,
+          "position": [58, 25, 59.5],
+          "type": "shambler"
+        }
+      ],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bounds": {
+        "x0": 0,
+        "x1": 128,
+        "z0": 0,
+        "z1": 128
+      },
+      "buildings": [
+        {
+          "position": [55, 21, 55],
+          "rotation": 180,
+          "storeys": 2,
+          "template": "small_house"
+        },
+        {
+          "position": [49, 21, 57],
+          "rotation": 90,
+          "storeys": 1,
+          "template": "shed"
+        }
+      ],
+      "ground": 21,
+      "hordes": [],
+      "id": "lone_house",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 300,
+        "position": [72, 21.5, 65]
+      },
+      "terrain": [],
+      "tracks": [
+        {
+          "points": [[72, 22], [72, 96]],
+          "surface": "dirt",
+          "width": 3
+        }
+      ],
+      "woodlands": [
+        {
+          "density": 1,
+          "polygon": [[35, 25], [80, 25], [80, 48], [35, 48]]
+        }
+      ]
+    }
+  ]
+}

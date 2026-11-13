@@ -1,24 +1,26 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: helper assertions run only from the item-hold test.
+
+import { Inventory, toggleLight } from '@skelly/engine/inventory';
+import { readyMeleePose } from '@skelly/engine/pose';
+import { dominantSide } from '@skelly/engine/sim';
+import { makeScale } from '@skelly/engine/world';
+import { createAvatarMannequin } from '@skelly/presentation/internal/render/avatarMannequin.ts';
+import {
+  HeldPresentation,
+  heldItemPoses,
+  type ItemHoldPose,
+} from '@skelly/presentation/internal/render/heldPresentation.ts';
+import { renderMeleePose } from '@skelly/presentation/internal/render/meleePose.ts';
+import { HeldItems, type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { dominantSide } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
-import { readyMeleePose } from '../src/core/meleePose.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { HeldPresentation, heldItemPoses, type ItemHoldPose } from '../src/render/heldPresentation.ts';
-import { renderMeleePose } from '../src/render/meleePose.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 // The compass label's canvas is unrelated to its grip; pixels are checked in the held browser stage.
-vi.mock('../src/render/compass.ts', () => ({
+vi.mock('@skelly/presentation/internal/render/compass.ts', () => ({
   createCompass: ({ root }: { root: Object3D }) => ({ group: root, update: () => undefined, dispose: () => undefined }),
 }));
 
@@ -107,7 +109,7 @@ it('both views resolve registry item holds through one owner, including the mann
       models,
       registry,
     },
-    '?mannequin=',
+    { mannequin: '' },
   )!;
   expect(mannequin.poses.filter((pose) => pose.catalogue).flatMap((pose) => (pose.hold ? [pose.hold] : []))).toEqual(
     catalogue,

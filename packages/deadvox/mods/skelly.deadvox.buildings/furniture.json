@@ -1,0 +1,88 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#786b55",
+      "id": "range_table",
+      "massKg": 32,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Simple wooden table",
+      "shape": [
+        {
+          "position": [0.14000000000000001, 0, 0.14000000000000001],
+          "size": [0.16, 1.6499999999999999, 0.16]
+        },
+        {
+          "position": [3.7000000000000002, 0, 0.14000000000000001],
+          "size": [0.16, 1.6499999999999999, 0.16]
+        },
+        {
+          "position": [0.14000000000000001, 0, 1.7],
+          "size": [0.16, 1.6499999999999999, 0.16]
+        },
+        {
+          "position": [3.7000000000000002, 0, 1.7],
+          "size": [0.16, 1.6499999999999999, 0.16]
+        },
+        {
+          "position": [0.050000000000000003, 1.6499999999999999, 0.050000000000000003],
+          "size": [3.8999999999999999, 0.20000000000000001, 1.8999999999999999]
+        }
+      ],
+      "size": [4, 2, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#e9e3cf",
+      "id": "range_target",
+      "massKg": 5,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Paper target",
+      "shotTarget": true,
+      "size": [1, 4, 5]
+    },
+    {
+      "appearance": {
+        "kind": "rack",
+        "surface": "wood"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#494b4e",
+      "container": {
+        "pockets": [
+          {
+            "grid": [10, 18],
+            "handlingSimSeconds": 1
+          }
+        ]
+      },
+      "id": "range_rack",
+      "massKg": 16,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Gun rack",
+      "size": [2, 4, 1]
+    }
+  ]
+}

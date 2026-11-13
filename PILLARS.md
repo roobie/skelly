@@ -12,17 +12,21 @@ read_if:
 
 Static analysis catches type, style and unused-code defects before they reach a test or a player; see each subproject's `tsconfig.json`, [`biome.jsonc`](biome.jsonc) and [`knip.jsonc`](knip.jsonc).
 
+Rules Biome lacks are GritQL plugins under `tools/lint`. `tools/lint/no-locale-order.grit` bans `localeCompare` and `Intl.Collator`: collation differs between a build machine and a browser, so a locale order reaching a save, a bundle stamp or a tool pick makes the same input produce different output. Use `packages/engine/src/core/codeUnitOrder.ts`, `compareCodeUnits` instead; a display-only order needs a `biome-ignore` that says why.
+
 ## Maintainability
 
 Prefer a maintainable design over minimizing short-term churn, unless the churn is too costly. Record the reason for trade-offs.
 
 ## Content forward compatibility
 
-Content holds values; code holds mechanisms, so a new content ID selecting an existing mechanism must work without a code edit. Content entries explicitly select mechanisms and presentation, such as a block's footstep sound. Validation checks selections, not a whitelist of handled content IDs. Missing required metadata and unsupported selections are errors, never silent runtime fallbacks. Use the shared validation boundary; see `packages/deadvox/src/core/content.ts`, `referenceIssues` and `buildRegistry`. Jsonnet authoring defaults are fine when compiled values remain explicit (`docs/jsonnet.md`, "Jsonnet authoring"). Mechanism dispatch tables own selector keys, with no parallel hand-kept list.
+Content holds values; code holds mechanisms, so a new content ID selecting an existing mechanism must work without a code edit. Content entries explicitly select mechanisms and presentation, such as a block's footstep sound. Validation checks selections, not a whitelist of handled content IDs. Missing required metadata and unsupported selections are errors, never silent runtime fallbacks. Use the shared validation boundary; see `packages/engine/src/core/content.ts`, `referenceIssues` and `buildRegistry`. Jsonnet authoring defaults are fine when compiled values remain explicit (`docs/jsonnet.md`, "Jsonnet authoring"). Mechanism dispatch tables own selector keys, with no parallel hand-kept list.
+
+One named exception to "missing is an error" is a missing scarcity row: an item without one is valid and never spawns randomly, because an item can exist in a stack without the product spawning it, and hand placement needs no row. The accepted cost is that nothing reports a forgotten row; the item just never turns up in loot. See `packages/deadvox/docs/content.md`, "Loot economy descriptions".
 
 Content identity is not a code selector: a new mechanism needs code, a new entry using it does not. Content owns kind-dependent rates, chances, weights and thresholds, including zero; code owns true state impossibilities, physics, geometry and save integrity. Content presentation belongs to content; UI chrome and engine-internal dispatch do not. Apply this rule to added or changed mechanisms across all subprojects, without opt-outs; generators without actor modifiers still follow the content, selection and validation requirements. Older code moves in bounded sweeps tracked by #393. The reason: a silent fallback hides missing content as a correctness risk, an id selector blocks mods, and agents copy the in-code patterns they find.
 
-Actor, body and action values use actor-carried modifiers; see `packages/deadvox/src/core/modifiers.ts`, `modified`. An actor is the source whose effect is being resolved, including an attacking zombie. Apply each modifier once, at the owner resolving the effect; decide subjects, conditions, bounds and persistence with their first consumer rather than building speculative machinery. Tune for the core pack, but never assume a modified value cannot cross a threshold the core numbers do not cross.
+Actor, body and action values use actor-carried modifiers; see `packages/engine/src/core/modifiers.ts`, `modified`. An actor is the source whose effect is being resolved, including an attacking zombie. Apply each modifier once, at the owner resolving the effect; decide subjects, conditions, bounds and persistence with their first consumer rather than building speculative machinery. Tune for the core pack, but never assume a modified value cannot cross a threshold the core numbers do not cross.
 
 ## Moddability
 

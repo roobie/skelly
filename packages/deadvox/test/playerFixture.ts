@@ -1,17 +1,15 @@
-import playerContent from '../src/content/base/player.json' with { type: 'json' };
-import type { PlayerDef } from '../src/core/schema.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
-import {
-  createPlayerBody as bodyFor,
-  movementPace as paceWith,
-  physicsFor as paramsFor,
-  steer as steerWith,
-} from '../src/game/player.ts';
+import type { PlayerDef } from '@skelly/engine/content';
+import { simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { movementPace as paceWith, steer as steerWith } from '@skelly/engine/internal/game/player.ts';
+import { createPlayerBody as bodyFor, physicsFor as paramsFor } from '@skelly/engine/sim';
+import playerContent from '../../mods/skelly.body/player.json' with { type: 'json' };
 
-export type { MoveIntent, StanceToggle } from '../src/game/player.ts';
+export type { StanceToggle } from '@skelly/engine/internal/game/player.ts';
+export type { MoveIntent } from '@skelly/engine/sim';
 
 export const PLAYER: PlayerDef = {
   id: 'player',
+  capability: 'player',
   halfWidth: 0.3,
   height: 1.8,
   eye: 1.62,
@@ -36,14 +34,17 @@ export const PLAYER: PlayerDef = {
   prone: { speedMetresPerSimSecond: simRate(0.5), eyeDropMetres: 1.3, bodyHeightMetres: 0.6 },
   load: { light: 20_000, heavy: 40_000, slowest: 0.6, handlingScale: 0.5 },
   aim: {
-    moveYawPerSpeed: 0.0045,
     lookSensitivityRadiansPerPixel: 0.0022,
     freeLook: { yawLimitRadians: 1, pitchLimitRadians: 0.5, returnRadiansPerRealSecond: 4 },
-    lookLagPerRadian: 0.035,
-    lookSettleSimSeconds: simSeconds(0.22),
-    recoilRecoverySimSeconds: simSeconds(0.34),
-    maxOffsetRadians: 0.12,
   },
+};
+export const AIM = {
+  ...PLAYER.aim,
+  moveYawPerSpeed: 0.0045,
+  lookLagPerRadian: 0.035,
+  lookSettleSimSeconds: simSeconds(0.22),
+  recoilRecoverySimSeconds: simSeconds(0.34),
+  maxOffsetRadians: 0.12,
 };
 export const WORLD_GRAVITY = PLAYER.gravityMetresPerSimSecondSquared;
 

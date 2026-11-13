@@ -1,22 +1,29 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildRegistry, type ItemDef } from '@skelly/engine/content';
+import { disassemblyOutputs, planDisassembly } from '@skelly/engine/internal/core/disassembly.ts';
+import type { MeleeClassDef } from '@skelly/engine/internal/core/schema.ts';
+import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { disassemblyOutputs, planDisassembly } from '../src/core/disassembly.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import type { ItemDef } from '../src/core/schema.ts';
-import { gameMinutes } from '../src/core/time.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
-const base = 'src/content/base';
+const base = 'mods/skelly.deadvox.scenario.gauntlet.city';
 const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
     items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];
+    meleeClasses?: MeleeClassDef[];
+    recipes?: unknown;
   };
   data.items = data.items.filter(({ id }) => ids.includes(id));
+  data.recipes = undefined;
+  const absent = ids.filter((id) => !data.items.some((item) => item.id === id));
+  if (ids.length === 0 || absent.length > 0) {
+    throw new Error(`${file} selects nothing or holds no ${absent.join(', ')}`);
+  }
   for (const item of data.items) {
     if (item.id === 'portable_radio') {
       item.salvage = undefined;
@@ -25,7 +32,7 @@ const itemSource = (file: string, ids: readonly string[]) => {
   }
   return { source: file, data };
 };
-// The kept items' weapons name sounds, so the fixture loads just the rows they name.
+// The retained unarmed provider also selects sounds independently of the kept items.
 const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
   const named = new Set(
     sources.flatMap(({ data }) =>
@@ -36,30 +43,69 @@ const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
       ),
     ),
   );
-  const sounds = readdirSync(base)
-    .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
-    .flatMap((file) => (JSON.parse(readFileSync(join(base, file), 'utf8')) as { sounds: { id: string }[] }).sounds)
+  for (const { data } of sources) {
+    for (const { unarmed } of data.meleeClasses ?? []) {
+      if (unarmed) {
+        named.add(unarmed.swingSound);
+        named.add(unarmed.hitSound);
+      }
+    }
+  }
+  const sounds = baseContentSources()
+    .flatMap(({ data }) => (data as { sounds?: { id: string }[] }).sounds ?? [])
     .filter(({ id }) => named.has(id));
   return { source: 'sounds.json', data: { sounds } };
 };
-const recipes = JSON.parse(readFileSync(join(base, 'recipes.json'), 'utf8')) as {
+const crafting = JSON.parse(readFileSync('../mods/skelly.crafting/crafting.json', 'utf8')) as {
   skills: { id: string; [key: string]: unknown }[];
 };
+const meleeMod = '../mods/skelly.melee-classes';
 const items = [
-  itemSource('items-tools.json', ['kitchen_knife']),
-  itemSource('items-other.json', ['portable_radio', 'scrap_metal']),
+  itemSource('../../../mods/skelly.hand-tools/hand-tools-items.json', ['kitchen_knife']),
+  itemSource('../../../mods/skelly.electric-power/electric-power-items.json', ['portable_radio']),
+  itemSource('../../../mods/skelly.materials/materials-items.json', ['scrap_metal']),
+  {
+    source: 'melee-classes.json',
+    data: {
+      items: [],
+      ...(JSON.parse(readFileSync(join(meleeMod, 'melee-classes.json'), 'utf8')) as {
+        meleeClasses: MeleeClassDef[];
+      }),
+    },
+  },
 ];
 const fixtureBuild = buildRegistry([
   playerInventorySource(),
+  {
+    source: 'damage-kinds.json',
+    data: JSON.parse(readFileSync(join(meleeMod, 'damage-kinds.json'), 'utf8')) as unknown,
+  },
   ...items,
   soundSource(items),
-  { source: 'item-wear.json', data: JSON.parse(readFileSync(join(base, 'item-wear.json'), 'utf8')) as unknown },
-  { source: 'models-melee.json', data: JSON.parse(readFileSync(join(base, 'models-melee.json'), 'utf8')) as unknown },
-  { source: 'models-items.json', data: JSON.parse(readFileSync(join(base, 'models-items.json'), 'utf8')) as unknown },
   {
-    source: 'recipes.json',
+    source: 'item-wear.json',
+    data: JSON.parse(readFileSync('../mods/skelly.inventory/item-wear.json', 'utf8')) as unknown,
+  },
+  {
+    source: 'models-household.json',
+    data: JSON.parse(readFileSync('../mods/skelly.household/models-household.json', 'utf8')) as unknown,
+  },
+  {
+    source: 'models-electronics.json',
+    data: JSON.parse(readFileSync('../mods/skelly.electronics/models-electronics.json', 'utf8')) as unknown,
+  },
+  {
+    source: 'models-hand-tools.json',
+    data: JSON.parse(readFileSync('../mods/skelly.hand-tools/models-hand-tools.json', 'utf8')) as unknown,
+  },
+  {
+    source: 'models-materials.json',
+    data: JSON.parse(readFileSync('../mods/skelly.materials/models-materials.json', 'utf8')) as unknown,
+  },
+  {
+    source: 'crafting.json',
     data: {
-      skills: recipes.skills.filter(({ id }) => id === 'crafting').map(({ startingRecipes: _, ...skill }) => skill),
+      skills: crafting.skills.filter(({ id }) => id === 'crafting'),
     },
   },
 ]);

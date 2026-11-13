@@ -1,13 +1,17 @@
-import { BlockEntities } from '../core/blockEntities.ts';
-import { worldOpaque, worldSolid } from '../core/collision.ts';
-import type { Registry } from '../core/content.ts';
-import { CHUNK, toChunk } from '../core/coords.ts';
-import { Forest } from '../core/forest.ts';
-import { chunksFor, makeScale } from '../core/scale.ts';
-import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
-import { terrainShapeOf } from '../core/sitePalette.ts';
-import { World } from '../core/world.ts';
-import { generateColumn, worldGroundAt } from '../core/worldgen.ts';
+import type { Registry } from '@skelly/engine/content';
+import {
+  BlockEntities,
+  CHUNK,
+  chunksFor,
+  createTerrainEvaluator,
+  Forest,
+  layoutVehicleQueries,
+  makeScale,
+  TEMPLATE_BLOCK_SIZE,
+  terrainShapeOf,
+  toChunk,
+  World,
+} from '@skelly/engine/world';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 
@@ -40,16 +44,20 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
     sand: block('sand'),
     water: block('water'),
   };
-  const { surface } = site;
-  const shape = terrainShapeOf(registry);
-  const stamp = (chunk: Parameters<Forest['stamp']>[0]) => site.stamp(chunk);
+  const terrain = createTerrainEvaluator({
+    seed,
+    blocks,
+    shape: terrainShapeOf(registry),
+    scale,
+    site: site.terrain,
+    structures: [],
+  });
   const engineWorld: HeadlessShamblerWorld = {
     registry,
     config: { scale },
     spawn: site.spawn,
-    groundAt: (xm, zm) => worldGroundAt({ seed, shape, scale, surface, xm, zm }),
-    isSolid: worldSolid(world, registry, entities),
-    isOpaque: worldOpaque(world, registry, entities),
+    groundAt: terrain.groundAt,
+    ...layoutVehicleQueries({ world, registry, entities, site: 'forest', blockSize: scale.blockSize }),
     world,
     entities,
     loadedColumns: 0,
@@ -62,7 +70,7 @@ export const createHeadlessShamblerWorld = (seed: number, registry: Registry): H
   const centerZ = toChunk(Math.floor(site.spawn.pos[2] / scale.blockSize));
   for (let cz = centerZ - radiusChunks; cz <= centerZ + radiusChunks; cz++) {
     for (let cx = centerX - radiusChunks; cx <= centerX + radiusChunks; cx++) {
-      const column = generateColumn({ seed, blocks, shape, scale, surface, stamp }, cx, cz, []);
+      const column = terrain.generateColumn(cx, cz);
       for (const chunk of column) {
         world.addChunk(chunk);
       }

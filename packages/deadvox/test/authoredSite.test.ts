@@ -1,49 +1,52 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: shared rejection assertions called only by tests.
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
-import { placementOf } from '../src/core/authoredPlacement.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
+
+import { readFileSync } from 'node:fs';
+import type { Registry } from '@skelly/engine/content';
+import { authoredLayoutIssues, inPolygon } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import {
-  buildingBounds,
-  defaultFoundation,
   LOT_APRON_M,
   LOT_BLEND_M,
   layoutHeight,
-  lotOf,
   polylineDistance,
   profileHeight,
   rectDistance,
-  standingHeight,
-} from '../src/core/authoredTerrain.mjs';
-import type { Registry } from '../src/core/content.ts';
-import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
-import { couldFit, ItemFactory } from '../src/core/items.ts';
-import { lootTypeIssue } from '../src/core/loot.ts';
-import { militaryLootItems } from '../src/core/magazine.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { HORDE_MEMBERS, HORDE_TYPE } from '../src/core/settlementSpawns.ts';
-import { rectsOverlap } from '../src/core/site.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
-import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+} from '@skelly/engine/internal/core/authoredTerrain.mjs';
+import { couldFit } from '@skelly/engine/internal/core/items.ts';
+import { lootTypeIssue, militaryLootItems } from '@skelly/engine/internal/core/loot.ts';
+import type { SiteLayoutDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
+import { actorBodyDimensions } from '@skelly/engine/internal/core/spawnClearance.ts';
+import { templateSpawnClearanceIssues } from '@skelly/engine/internal/core/templateSpatial.ts';
+import { compileTemplate, placedBlockAt, placedSpawns } from '@skelly/engine/internal/core/templates.ts';
+import { claimedId, ItemFactory } from '@skelly/engine/inventory';
+import { buildingBounds, defaultFoundation, lotOf, standingHeight } from '@skelly/engine/terrain';
+import {
+  CHUNK,
+  compassBearing,
+  footprint,
+  HORDE_MEMBERS,
+  makeScale,
+  placementOf,
+  toChunk,
+  type Vec3,
+  World,
+} from '@skelly/engine/world';
+import { describe, expect, it } from 'vitest';
+import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
-import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
+import { fixtureActorFigures } from './fixtures/actorFigures.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-  .sort()
-  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
-const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')) as { layouts: SiteLayoutDef[] })
-  .layouts[0]!;
+const base = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
+const layout = (
+  JSON.parse(readFileSync('mods/skelly.deadvox.scenario.lone-house/layouts.json', 'utf8')) as {
+    layouts: SiteLayoutDef[];
+  }
+).layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
-const { registry, issues } = load(layout);
+const { registry } = load(layout);
 const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
 const validationLayout = (id: string): SiteLayoutDef => ({
   id,
@@ -53,7 +56,7 @@ const validationLayout = (id: string): SiteLayoutDef => ({
   terrain: [],
   buildings: [],
   player: { position: [5, 0.5, 5], bearing: 0 },
-  shamblers: [],
+  actors: [],
   woodlands: [],
   tracks: [],
 });
@@ -61,9 +64,7 @@ it('admits layout-selected vehicles and rejects missing blueprints or duplicate 
   const data = validationLayout('fixture_parking');
   const blueprint = registry.vehicleBlueprints.keys().next().value!;
   data.vehicles = [{ blueprint, placementKey: 'fixture.parked', position: [1, 0.5, 1], facing: 'e' }];
-  const vehicleSources = base.filter(({ source }) =>
-    ['vehicles.json', 'models-items.json', 'inventory.json'].includes(source),
-  );
+  const vehicleSources = base.filter(({ source }) => ['vehicles.json', 'inventory.json'].includes(source));
   const admit = () => buildRegistry([...vehicleSources, { source: 'fixture-parking.json', data: { layouts: [data] } }]);
   expect(admit().issues).toEqual([]);
   data.vehicles[0]!.blueprint = 'fixture_missing_blueprint';
@@ -75,19 +76,17 @@ it('admits layout-selected vehicles and rejects missing blueprints or duplicate 
   expect(admit().issues.some(({ message }) => message.includes('duplicate vehicle placement key'))).toBe(true);
 });
 
-it('refuses unsupported bays and a repair stock building the site does not place', () => {
-  const data = validationLayout('fixture_repair_stock');
+it('refuses unsupported parking bays', () => {
+  const data = validationLayout('fixture_supported_bay');
   data.bays = [{ position: [2, data.player.position[1], 2], facing: 'e' }];
   expect(authoredLayoutIssues(data, registry)).toEqual([]);
   data.bays[0]!.position[1] += 1;
-  data.repairStock = 'fixture_absent_building';
   const paths = authoredLayoutIssues(data, registry).map(([path]) => path);
   expect(paths).toContain('.bays[0].position');
-  expect(paths).toContain('.repairStock');
 });
 
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
-const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutActorIds = new Set(layout.actors.map(({ type }) => type));
 const layoutValidationBase = [
   // Named spawn windows resolve against a day cycle.
   base.find(({ source }) => source === 'dayCycle.json')!,
@@ -103,12 +102,13 @@ const layoutValidationBase = [
           layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
         };
       }),
-      zombies: [...layoutZombieIds].map((id) => {
-        const zombie = structuredClone(registry.zombies.get(id)!);
-        zombie.loot = undefined;
-        zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
-        return zombie;
+      actors: [...layoutActorIds].map((id) => {
+        const actor = structuredClone(registry.actors.get(id)!);
+        actor.loot = undefined;
+        actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+        return actor;
       }),
+      actorFigures: fixtureActorFigures(...[...layoutActorIds].map((id) => registry.actors.get(id)!)),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
       items: [
         {
@@ -119,19 +119,21 @@ const layoutValidationBase = [
           size: [1, 1],
           tool: {
             qualities: Object.fromEntries(
-              [...layoutZombieIds].flatMap((id) => {
-                const dismember = registry.zombies.get(id)!.downed?.dismember;
+              [...layoutActorIds].flatMap((id) => {
+                const dismember = registry.actors.get(id)!.downed?.dismember;
                 return dismember ? [[dismember.quality, dismember.level]] : [];
               }),
             ),
           },
         },
       ],
-      sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.zombies.get(id)!.sounds)))].map(
+      sounds: [...new Set([...layoutActorIds].flatMap((id) => Object.values(registry.actors.get(id)!.sounds)))].map(
         (id) => structuredClone(registry.sounds.get(id)!),
       ),
       // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
-      blocks: (base.find(({ source }) => source === 'blocks.json')!.data as { blocks: { id: string }[] }).blocks
+      blocks: base
+        .filter(({ source }) => source === 'manufactured-blocks.json' || source === 'natural-blocks.json')
+        .flatMap(({ data }) => (data as { blocks: { id: string }[] }).blocks)
         .filter(({ id }) => layout.tracks.some(({ surface }) => surface === id))
         .map(
           ({ footsteps: _, material: _material, ...block }: { id: string; footsteps?: unknown; material?: unknown }) =>
@@ -158,7 +160,9 @@ const authoredSiteHeight = ({ sourceLayout, lots, natural }: AuthoredTerrainCase
     ) / scale.blockSize,
   );
 const expectAuthoredSiteHeight = (terrain: AuthoredTerrainCase, x: number, z: number): void =>
-  expect(terrain.site.surface.height(x, z, terrain.natural)).toBe(authoredSiteHeight(terrain, x, z));
+  expect(
+    terrainFor(terrain.site, terrain.site.registry, scale, terrain.site.seed).surface!.height(x, z, terrain.natural),
+  ).toBe(authoredSiteHeight(terrain, x, z));
 const expectBuildingApronsUnnoised = (terrain: AuthoredTerrainCase): void => {
   let checked = 0;
   for (const building of terrain.sourceLayout.buildings) {
@@ -214,7 +218,7 @@ const expectSpawnMarginsUnnoised = (terrain: AuthoredTerrainCase): void => {
   const spawnClearanceRadiusMetres = 2;
   const spawnPoints = [
     [terrain.sourceLayout.player.position[0], terrain.sourceLayout.player.position[2]],
-    ...terrain.sourceLayout.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
+    ...terrain.sourceLayout.actors.map((spawn) => [spawn.position[0], spawn.position[2]]),
     ...terrain.site.placements
       .flatMap(placedSpawns)
       .map((marker) => [marker.pos[0] * scale.blockSize, marker.pos[2] * scale.blockSize]),
@@ -247,7 +251,13 @@ const openGroundHasNoise = (terrain: AuthoredTerrainCase): boolean => {
     for (let z = Math.ceil(terrain.sourceLayout.bounds.z0 / 16) * 16; z < terrain.sourceLayout.bounds.z1; z += 16) {
       const cellX = Math.floor(x / scale.blockSize);
       const cellZ = Math.floor(z / scale.blockSize);
-      if (terrain.site.surface.height(cellX, cellZ, terrain.natural) !== authoredSiteHeight(terrain, cellX, cellZ)) {
+      if (
+        terrainFor(terrain.site, terrain.site.registry, scale, terrain.site.seed).surface!.height(
+          cellX,
+          cellZ,
+          terrain.natural,
+        ) !== authoredSiteHeight(terrain, cellX, cellZ)
+      ) {
         return true;
       }
     }
@@ -301,6 +311,35 @@ const invalid = (data: unknown, message: string) => {
 const invalidWithSharedRegistry = (data: SiteLayoutDef, message: string) => {
   expect(authoredLayoutIssues(data, registry).some(([, issue]) => issue.includes(message))).toBe(true);
 };
+// A non-square building from the layout, so a quarter turn changes its footprint.
+const fixtureBuildingSource = layout.buildings.find(({ template }) => {
+  const [width, , depth] = registry.templates.get(template)!.size;
+  return width !== depth;
+})!;
+const fixtureBuildingRect = (building: SiteLayoutDef['buildings'][number]) =>
+  buildingBounds(building, registry.templates.get(building.template)!.size);
+/** One building on flat ground with the player beside it, accepted by both the shared and the minimal registry. */
+const acceptedSiteFixture = (): SiteLayoutDef => {
+  const empty = validationLayout('fixture_site');
+  const { fixedLoot: _, ...source } = fixtureBuildingSource;
+  const unplaced = { ...source, position: [0, empty.ground, 0] as [number, number, number], rotation: 0 as const };
+  const rect = fixtureBuildingRect(unplaced);
+  const span = Math.ceil(Math.max(rect.x1 - rect.x0, rect.z1 - rect.z0));
+  const fixture: SiteLayoutDef = {
+    ...empty,
+    bounds: { x0: 0, z0: 0, x1: span * 4, z1: span * 4 },
+    buildings: [{ ...unplaced, storeys: 1, position: [span, empty.ground, span] }],
+    player: { position: [span / 2, empty.player.position[1], span / 2], bearing: 0 },
+  };
+  expect(authoredLayoutIssues(fixture, registry)).toEqual([]);
+  expect(
+    buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [fixture] } },
+    ]).issues.filter((issue) => issue.source === 'layout-test.json'),
+  ).toEqual([]);
+  return fixture;
+};
 const fixedLootBuilding = layout.buildings[0]!;
 const fixedLootTemplate = compileTemplate(registry, registry.templates.get(fixedLootBuilding.template)!);
 const fixedLootContainer = fixedLootTemplate.pieces.find(
@@ -329,7 +368,7 @@ const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, numbe
       placement.origin[2] + depth - 1,
     );
   }
-  for (const spawn of fixture.shamblers) {
+  for (const spawn of fixture.actors) {
     const x = Math.floor(spawn.position[0] / scale.blockSize);
     const z = Math.floor(spawn.position[2] / scale.blockSize);
     addRange(x, x, z, z);
@@ -340,24 +379,7 @@ const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, numbe
 const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number): World => {
   const world = new World();
   for (const [cx, cz] of columns) {
-    for (const chunk of generateColumn(
-      {
-        seed,
-        shape: terrainShapeOf(registry),
-        scale,
-        blocks: {
-          grass: registry.blockIds.get('grass')!,
-          dirt: registry.blockIds.get('dirt')!,
-          rock: registry.blockIds.get('stone')!,
-          sand: registry.blockIds.get('sand')!,
-          water: registry.blockIds.get('water')!,
-        },
-        surface: site.surface,
-        stamp: (written) => site.stamp(written),
-      },
-      cx,
-      cz,
-    )) {
+    for (const chunk of terrainFor(site, site.registry, scale, seed).generateColumn(cx, cz)) {
       world.addChunk(chunk);
     }
   }
@@ -366,15 +388,17 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
 
 describe('authored layout acceptance', () => {
   it('keeps the fixed camp amalgam clear of authored vehicle routes', () => {
-    const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
+    const playtest = JSON.parse(
+      readFileSync('mods/skelly.deadvox.scenario.playtest/layouts-playtest.json', 'utf8'),
+    ) as {
       layouts: SiteLayoutDef[];
     };
     const camp = playtest.layouts[0]!;
-    const amalgams = camp.shamblers.filter(({ type }) => type === 'amalgam');
+    const amalgams = camp.actors.filter(({ type }) => type === 'amalgam');
     expect(amalgams.length).toBeGreaterThan(0);
     const { blockSize } = makeScale(0.5);
     for (const marker of amalgams) {
-      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
+      const body = actorBodyDimensions(registry.actors.get(marker.type)!, blockSize);
       const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
       const nearestTrackEdge = Math.min(
         ...camp.tracks.map(
@@ -410,7 +434,7 @@ describe('authored layout acceptance', () => {
       const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
       expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
       const site = new AuthoredSite(1, result.registry, scale, admitted);
-      expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
+      expect(site.actorsIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
         type: 'shambler',
         pos: expected.pos,
         window: { fromGameTimeOfDay: 'dusk' },
@@ -419,12 +443,12 @@ describe('authored layout acceptance', () => {
   });
   it('carries a spawn window from an authored marker into its world column', () => {
     const marker = {
-      ...layout.shamblers[0]!,
+      ...layout.actors[0]!,
       position: [5, 0.5, 5] as const,
       chance: 1,
       window: { fromGameTimeOfDay: 'dusk' },
     };
-    const timedLayout = { ...validationLayout('timed_spawn_fixture'), shamblers: [marker] };
+    const timedLayout = { ...validationLayout('timed_spawn_fixture'), actors: [marker] };
     const result = buildRegistry([
       ...layoutValidationBase,
       { source: 'layout-test.json', data: { layouts: [timedLayout] } },
@@ -434,7 +458,7 @@ describe('authored layout acceptance', () => {
     const site = new AuthoredSite(1, registry, scale, admitted);
     const x = marker.position[0] / scale.blockSize;
     const z = marker.position[2] / scale.blockSize;
-    expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
+    expect(site.actorsIn(toChunk(x), toChunk(z))).toContainEqual({
       type: marker.type,
       pos: [x, marker.position[1] / scale.blockSize, z],
       window: { fromGameTimeOfDay: 'dusk' },
@@ -445,7 +469,7 @@ describe('authored layout acceptance', () => {
     const noon = registry.dayCycle!.noonGameTimeOfDay;
     const clockNoon = `${String(Math.floor(noon / 3600)).padStart(2, '0')}:${String(Math.floor((noon % 3600) / 60)).padStart(2, '0')}`;
     const marker = {
-      ...layout.shamblers[0]!,
+      ...layout.actors[0]!,
       position: [5, 0.5, 5] as const,
       window: { fromGameTimeOfDay: 'noon', toGameTimeOfDay: clockNoon },
     };
@@ -453,11 +477,11 @@ describe('authored layout acceptance', () => {
       ...layoutValidationBase,
       {
         source: 'layout-test.json',
-        data: { layouts: [{ ...validationLayout('equal_window_fixture'), shamblers: [marker] }] },
+        data: { layouts: [{ ...validationLayout('equal_window_fixture'), actors: [marker] }] },
       },
     ]);
     expect(result.issues.map(({ path, message }) => [path, message])).toContainEqual([
-      expect.stringContaining('.shamblers[0].window'),
+      expect.stringContaining('.actors[0].window'),
       'from and to must differ',
     ]);
   });
@@ -481,7 +505,7 @@ describe('authored layout acceptance', () => {
         )
         .map(({ id, position }) => ({
           id: `${playtest.id}_${id}`,
-          type: HORDE_TYPE,
+          type: claimedId(registry.actors, 'settlementHorde'),
           pos: position.map((metres) => metres / scale.blockSize),
         }));
     const minX = Math.floor(playtest.bounds.x0 / scale.blockSize / CHUNK) - 1;
@@ -499,14 +523,6 @@ describe('authored layout acceptance', () => {
       }
     }
   });
-  it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
-    expect(issues).toEqual([]);
-    expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    const playtestLayout = BUNDLED_CONTENT.registry.layouts.get('playtest')!;
-    expect(configFromUrl(new URLSearchParams('site=playtest')).site).toBe('playtest');
-    expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(playtestLayout.startTimeGameTimeOfDay);
-    expect(configFromUrl(new URLSearchParams('site=playtest&time=18:30')).start).toBe(18.5 * 60 * 60);
-  });
   it('maps a clockwise east bearing to an east-facing authored spawn', () => {
     const east = new AuthoredSite(1, registry, scale, {
       ...layout,
@@ -515,15 +531,24 @@ describe('authored layout acceptance', () => {
     expect(compassBearing(east.spawn.yaw)).toBeCloseTo(90, 8);
   });
   it('rejects floating foundations and buried interior cells even when footprint corners fit', () => {
-    invalid({ ...layout, buildings: [{ ...layout.buildings[0], position: [55, 23, 55] }] }, 'foundation cut or fill');
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const rect = fixtureBuildingRect(building);
     invalid(
-      { ...layout, terrain: [{ kind: 'hill', centre: [60, 58.5], radii: [1, 1], rise: 2 }] },
+      {
+        ...fixture,
+        buildings: [{ ...building, position: [building.position[0], fixture.ground + 2, building.position[2]] }],
+      },
       'foundation cut or fill',
     );
+    const centre: [number, number] = [(rect.x0 + rect.x1) / 2, (rect.z0 + rect.z1) / 2];
+    invalid({ ...fixture, terrain: [{ kind: 'hill', centre, radii: [1, 1], rise: 2 }] }, 'foundation cut or fill');
   });
   it('rejects a player spawn floating above its terrain floor', () => {
+    const fixture = acceptedSiteFixture();
+    const [x, y, z] = fixture.player.position;
     invalidWithSharedRegistry(
-      { ...layout, player: { ...layout.player, position: [72, 22.5, 65] } },
+      { ...fixture, player: { ...fixture.player, position: [x, y + 1, z] } },
       'supported surface',
     );
   });
@@ -548,25 +573,25 @@ describe('authored layout acceptance', () => {
       ...validationLayout('spawn_clearance_fixture'),
       buildings: [{ template: template.id, position: [4, 0, 4] as [number, number, number], rotation: 0, storeys: 1 }],
       player: { position: [2, 0.5, 2], bearing: 0 },
-      shamblers: [{ type: 'amalgam', position: [4.8, 0.5, 4.5], chance: 1 }],
+      actors: [{ type: 'amalgam', position: [4.8, 0.5, 4.5], chance: 1 }],
     } as SiteLayoutDef;
 
     const amalgamIssues = authoredLayoutIssues(site, fixtureRegistry).map(([path]) => path);
-    const smallZombieSite = {
+    const smallActorSite = {
       ...site,
-      shamblers: [{ ...site.shamblers[0]!, type: 'shambler' }],
+      actors: [{ ...site.actors[0]!, type: 'shambler' }],
     };
 
-    expect(authoredLayoutIssues(smallZombieSite, fixtureRegistry).map(([path]) => path)).not.toContain(
-      '.shamblers[0].position',
+    expect(authoredLayoutIssues(smallActorSite, fixtureRegistry).map(([path]) => path)).not.toContain(
+      '.actors[0].position',
     );
-    expect(amalgamIssues).toContain('.shamblers[0].position');
+    expect(amalgamIssues).toContain('.actors[0].position');
   });
   it('rejects an elevated shambler spawn without support', () => {
     const supported = validationLayout('shambler_support_fixture');
     const unsupported = {
       ...supported,
-      shamblers: [{ ...layout.shamblers[0]!, position: [5, 10.5, 5] as const }],
+      actors: [{ ...layout.actors[0]!, position: [5, 10.5, 5] as const }],
     };
     const accepted = buildRegistry([
       ...layoutValidationBase,
@@ -585,8 +610,34 @@ describe('authored layout acceptance', () => {
     expect([...rejected.registry.layouts.keys()]).toEqual(baseLayoutIds);
   });
   it('rejects a player spawn on an unsupported building cell', () => {
+    const fixture = acceptedSiteFixture();
+    const placement = placementOf(registry, fixture.buildings[0]!, fixture.lootContext);
+    const [width, depth] = footprint(placement);
+    const [x0, y0, z0] = placement.origin;
+    const cells = Array.from(
+      { length: placement.template.size[1] * width * depth },
+      (_, index): Vec3 => [
+        x0 + (index % width),
+        y0 + Math.floor(index / (width * depth)),
+        z0 + (Math.floor(index / width) % depth),
+      ],
+    );
+    const open = cells.find((cell) => {
+      const block = placedBlockAt(placement, cell);
+      return block !== undefined && registry.blocks[block]?.solid !== true;
+    });
+    if (open === undefined) {
+      throw new Error('fixture building needs a non-solid cell');
+    }
+    const [bx, by, bz] = open;
     invalidWithSharedRegistry(
-      { ...layout, player: { ...layout.player, position: [55, 21.5, 55] } },
+      {
+        ...fixture,
+        player: {
+          ...fixture.player,
+          position: [(bx + 0.5) * scale.blockSize, (by + 1) * scale.blockSize, (bz + 0.5) * scale.blockSize],
+        },
+      },
       'supported surface',
     );
   });
@@ -638,17 +689,16 @@ describe('authored layout acceptance', () => {
   it('rejects fixed container loot that fits no pocket of its furniture', () => {
     const { pockets } = registry.furniture.get(fixedLootContainer.furniture)!.container!;
     const factory = new ItemFactory();
-    const oversized = [...registry.items.values()].find(
-      (def) =>
-        def.economy !== undefined &&
-        lootTypeIssue(registry, def.id, { usage: def.economy.usage, tier: def.economy.tiers[0]! }) === undefined &&
-        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, def.id))),
+    const oversized = [...registry.itemEconomy.values()].find(
+      (row) =>
+        lootTypeIssue(registry, row.id, { usage: row.usage, tier: row.tiers[0]! }) === undefined &&
+        !pockets.some(({ grid: [w, h] }) => couldFit(registry, { w, h }, factory.create(registry, row.id))),
     );
-    if (oversized?.economy === undefined) {
+    if (oversized === undefined) {
       throw new Error('fixture needs an economy item larger than the container');
     }
     const fixed = withFixedLoot(fixedLootContainer.pos, oversized.id);
-    fixed.buildings[0]!.lootContext = { usage: oversized.economy.usage, tier: oversized.economy.tiers[0]! };
+    fixed.buildings[0]!.lootContext = { usage: oversized.usage, tier: oversized.tiers[0]! };
     invalidWithSharedRegistry(fixed, 'fits no pocket');
   });
   it('admits fixed stock by building context rather than its container table', () => {
@@ -685,9 +735,9 @@ describe('authored layout acceptance', () => {
   it('validates optional windows on authored shambler markers', () => {
     const timed = {
       ...validationLayout('timed_marker_fixture'),
-      shamblers: [
+      actors: [
         {
-          ...layout.shamblers[0]!,
+          ...layout.actors[0]!,
           position: [5, 0.5, 5],
           window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' },
         },
@@ -696,42 +746,68 @@ describe('authored layout acceptance', () => {
     const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [timed] } }]);
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
+      { ...layout, actors: [{ ...layout.actors[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
       'expected a named game time or HH:MM',
     );
     invalid(
       {
         ...layout,
-        shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }],
+        actors: [{ ...layout.actors[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }],
       },
       'from and to must differ',
     );
   });
   it('rejects an unknown shambler type', () => {
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], type: 'missing' }] }, 'no zombie type');
+    invalid({ ...layout, actors: [{ ...layout.actors[0], type: 'missing' }] }, 'no actor type');
   });
   it('rejects a building whose rotated depth leaves the bounds', () => {
-    invalid({ ...layout, buildings: [{ ...layout.buildings[1], position: [0, 21, 125] }] }, 'outside site bounds');
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const unrotated = fixtureBuildingRect(building);
+    // Flush with both upper bounds unrotated, so the quarter turn's swapped extents overrun one of them.
+    const flush = {
+      ...building,
+      position: [
+        fixture.bounds.x1 - (unrotated.x1 - unrotated.x0),
+        building.position[1],
+        fixture.bounds.z1 - (unrotated.z1 - unrotated.z0),
+      ] as [number, number, number],
+    };
+    expect(
+      authoredLayoutIssues({ ...fixture, buildings: [flush] }, registry).filter(([, issue]) =>
+        issue.includes('outside site bounds'),
+      ),
+    ).toEqual([]);
+    invalid({ ...fixture, buildings: [{ ...flush, rotation: 90 }] }, 'outside site bounds');
   });
   it('rejects a player spawn on the exclusive upper boundary', () => {
-    invalid({ ...layout, player: { ...layout.player, position: [128, 21.5, 65] } }, 'outside site bounds');
+    const fixture = acceptedSiteFixture();
+    const [, y, z] = fixture.player.position;
+    invalid({ ...fixture, player: { ...fixture.player, position: [fixture.bounds.x1, y, z] } }, 'outside site bounds');
   });
   it('rejects an out-of-bounds shambler even when its chance is zero', () => {
+    const fixture = acceptedSiteFixture();
+    const [, y, z] = fixture.player.position;
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [129, 25, 60], chance: 0 }] },
+      {
+        ...fixture,
+        actors: [{ ...layout.actors[0]!, position: [fixture.bounds.x1 + 1, y, z], chance: 0 }],
+      },
       'outside site bounds',
     );
   });
   it('rejects a woodland vertex outside the bounds', () => {
+    const fixture = acceptedSiteFixture();
+    const { x0, z0, x1, z1 } = fixture.bounds;
     invalid(
       {
-        ...layout,
+        ...fixture,
         woodlands: [
           {
             polygon: [
-              [0, 0],
-              [129, 0],
-              [0, 10],
+              [x0, z0],
+              [x1 + 1, z0],
+              [x0, z1],
             ],
             density: 1,
           },
@@ -741,17 +817,22 @@ describe('authored layout acceptance', () => {
     );
   });
   it('checks the track width, not only its centreline, against bounds', () => {
+    const fixture = acceptedSiteFixture();
+    const { x1, z0, z1 } = fixture.bounds;
+    const width = 4;
+    // The centreline sits inside the bounds by less than half the track width.
+    const x = x1 - width / 4;
     invalid(
       {
-        ...layout,
+        ...fixture,
         tracks: [
           {
             points: [
-              [127, 10],
-              [127, 20],
+              [x, z0 + width],
+              [x, z1 - width],
             ],
-            width: 4,
-            surface: 'dirt',
+            width,
+            surface: layout.tracks[0]!.surface,
           },
         ],
       },
@@ -759,13 +840,21 @@ describe('authored layout acceptance', () => {
     );
   });
   it('rejects overlapping rotated building footprints', () => {
-    invalid(
-      { ...layout, buildings: [layout.buildings[0], { ...layout.buildings[1], position: [54, 21, 56] }] },
-      'overlaps buildings[0]',
-    );
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const rect = fixtureBuildingRect(building);
+    const overlapping = {
+      ...building,
+      rotation: 90 as const,
+      position: [(rect.x0 + rect.x1) / 2, building.position[1], (rect.z0 + rect.z1) / 2] as [number, number, number],
+    };
+    invalid({ ...fixture, buildings: [building, overlapping] }, 'overlaps buildings[0]');
   });
   it('rejects building positions between half-metre blocks', () => {
-    invalid({ ...layout, buildings: [{ ...layout.buildings[0], position: [55.25, 21, 55] }] }, 'snapped to 0.5 m');
+    const fixture = acceptedSiteFixture();
+    const building = fixture.buildings[0]!;
+    const [x, y, z] = building.position;
+    invalid({ ...fixture, buildings: [{ ...building, position: [x + 0.25, y, z] }] }, 'snapped to 0.5 m');
   });
   it('rejects a non-quarter-turn building rotation', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], rotation: 45 }] }, 'quarter turn');
@@ -774,7 +863,7 @@ describe('authored layout acceptance', () => {
     invalid({ ...layout, woodlands: [{ ...layout.woodlands[0], density: 1.1 }] }, 'must be 0 to 1');
   });
   it('rejects shambler chance outside 0..1', () => {
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], chance: 1.1 }] }, 'must be 0 to 1');
+    invalid({ ...layout, actors: [{ ...layout.actors[0], chance: 1.1 }] }, 'must be 0 to 1');
   });
   it('rejects a zero-width track', () => {
     invalid({ ...layout, tracks: [{ ...layout.tracks[0], width: 0 }] }, 'Invalid value');
@@ -823,7 +912,7 @@ it('keeps authored trees grounded and clear of buildings, roads and spawn', () =
   });
   const spawnPoints = [
     [ridge.player.position[0], ridge.player.position[2]],
-    ...ridge.shamblers.map((spawn) => [spawn.position[0], spawn.position[2]]),
+    ...ridge.actors.map((spawn) => [spawn.position[0], spawn.position[2]]),
     ...site.placements.flatMap(placedSpawns).map((marker) => [marker.pos[0] * s, marker.pos[2] * s]),
   ];
   const spawnMargin = registry.siteGeneration.get('authored')!.vegetation.obstacleMarginMetres;
@@ -837,7 +926,7 @@ it('keeps authored trees grounded and clear of buildings, roads and spawn', () =
   ).toBe(true);
   for (const tree of site.trees) {
     const [x, y, z] = tree.origin;
-    expect(y).toBe(site.surface.height(x, z, natural) + 1);
+    expect(y).toBe(terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, natural) + 1);
     expect(buildingsInBlocks.some((rect) => rectsOverlap(rect, tree.bounds))).toBe(false);
     const centreX = ((tree.bounds.x0 + tree.bounds.x1) / 2) * s;
     const centreZ = ((tree.bounds.z0 + tree.bounds.z1) / 2) * s;
@@ -859,7 +948,7 @@ it('keeps trees out of an authored building covered by woodland', () => {
     id: 'building-in-woodland-fixture',
     buildings: [],
     tracks: [],
-    shamblers: [],
+    actors: [],
     woodlands: [
       {
         polygon: [
@@ -901,7 +990,9 @@ it('keeps trees out of an authored building covered by woodland', () => {
 
 it('grounds the exported ridge lots, track and slope trees with order-independent overlapping profiles', () => {
   const ridge = (
-    JSON.parse(readFileSync('src/content/base/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+    JSON.parse(readFileSync('mods/skelly.deadvox.scenario.hunting-cabins/hunting-cabins.json', 'utf8')) as {
+      layouts: SiteLayoutDef[];
+    }
   ).layouts[0]!;
   for (const building of ridge.buildings) {
     expect(building.position[1]).toBe(
@@ -938,7 +1029,9 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   const [playerX, , playerZ] = ridge.player.position;
   const [spawnX, spawnZ] = toCell(playerX, playerZ);
   const natural = ridge.ground / scale.blockSize;
-  expect(site.surface.height(ridgeX, ridgeZ, natural)).toBeGreaterThan(site.surface.height(spawnX, spawnZ, natural));
+  expect(terrainFor(site, site.registry, scale, site.seed).surface!.height(ridgeX, ridgeZ, natural)).toBeGreaterThan(
+    terrainFor(site, site.registry, scale, site.seed).surface!.height(spawnX, spawnZ, natural),
+  );
 
   const blendBuilding = ridge.buildings[0]!;
   const blendBounds = buildingBounds(blendBuilding, registry.templates.get(blendBuilding.template)!.size);
@@ -954,7 +1047,9 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   const [, floorHeight] = blendBuilding.position;
   const blendLow = Math.min(floorHeight, authoredProfile);
   const blendHigh = Math.max(floorHeight, authoredProfile);
-  const blendedHeight = blendSite.surface.height(blendX, blendZ, natural) * scale.blockSize;
+  const blendedHeight =
+    terrainFor(blendSite, blendSite.registry, scale, blendSite.seed).surface!.height(blendX, blendZ, natural) *
+    scale.blockSize;
   expect(blendedHeight).toBeGreaterThanOrEqual(blendLow - scale.blockSize / 2);
   expect(blendedHeight).toBeLessThanOrEqual(blendHigh + scale.blockSize / 2);
   const naturalGap = ridge.ground < blendLow ? blendLow - ridge.ground : ridge.ground - blendHigh;
@@ -963,17 +1058,21 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   for (const building of ridge.buildings) {
     const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
     const [x, z] = toCell((bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2);
-    expect(site.surface.height(x, z, natural)).toBe(building.position[1] / scale.blockSize);
+    expect(terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, natural)).toBe(
+      building.position[1] / scale.blockSize,
+    );
   }
   const track = ridge.tracks.find((candidate) => candidate.points.length > 1)!;
   const [start, end] = [track.points[0]!, track.points[1]!];
   const [trackX, trackZ] = toCell((start[0] + end[0]) / 2, (start[1] + end[1]) / 2);
-  expect(site.surface.top(trackX, trackZ)).toBe(registry.blockIds.get(track.surface ?? 'dirt'));
+  expect(terrainFor(site, site.registry, scale, site.seed).surface!.top(trackX, trackZ)).toBe(
+    registry.blockIds.get(track.surface ?? 'dirt'),
+  );
   expect(standingHeight(ridge, [], playerX, playerZ)).toBe(ridge.player.position[1]);
 
   const isGrounded = (tree: (typeof site.trees)[number]) => {
     const [x, y, z] = tree.origin;
-    return y === site.surface.height(x, z, natural) + 1;
+    return y === terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, natural) + 1;
   };
   expect(site.trees.some(isGrounded)).toBe(true);
   for (const tree of site.trees) {
@@ -1025,7 +1124,9 @@ sweepGroup('on a ridge site', () => {
     let witnesses = 0;
     for (const tree of site.trees) {
       const [x, y, z] = tree.origin;
-      expect(y).toBe(site.surface.height(x, z, fixture.ground / scale.blockSize) + 1);
+      expect(y).toBe(
+        terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, fixture.ground / scale.blockSize) + 1,
+      );
       const raw =
         Math.round(profileHeight(fixture, (x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize) / scale.blockSize) +
         1;
@@ -1065,10 +1166,22 @@ it('keeps adjacent lot floors, apron blending and footprint ties independent of 
     const lowerCenter = pointSample([(lowerBounds.x0 + lowerBounds.x1) / 2, centerZ]);
     const upperCenter = pointSample([(upperBounds.x0 + upperBounds.x1) / 2, centerZ]);
     return [
-      site.surface.height(...lowerCenter, lowered.ground / scale.blockSize),
-      site.surface.height(...pointSample(apronPoint), lowered.ground / scale.blockSize),
-      site.surface.height(...pointSample(tiePoint), lowered.ground / scale.blockSize),
-      site.surface.height(...upperCenter, lowered.ground / scale.blockSize),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...lowerCenter,
+        lowered.ground / scale.blockSize,
+      ),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...pointSample(apronPoint),
+        lowered.ground / scale.blockSize,
+      ),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...pointSample(tiePoint),
+        lowered.ground / scale.blockSize,
+      ),
+      terrainFor(site, site.registry, scale, site.seed).surface!.height(
+        ...upperCenter,
+        lowered.ground / scale.blockSize,
+      ),
     ];
   };
   const ordered = new AuthoredSite(1, registry, scale, lowered);
@@ -1106,7 +1219,7 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
     );
   }
 
-  const spawns = columns.flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+  const spawns = columns.flatMap(([cx, cz]) => site.actorsIn(cx, cz));
   const hasFloorAndHeadroom = ({ pos }: (typeof spawns)[number]) =>
     registry.blocks[a.getBlock(pos[0], pos[1] - 1, pos[2])!]?.solid === true &&
     a.getBlock(pos[0], pos[1], pos[2]) === 0;
@@ -1128,9 +1241,9 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
 
   const optionalLayout = {
     ...layout,
-    shamblers: layout.shamblers.map((spawn) => ({ ...spawn, chance: 0 })),
+    actors: layout.actors.map((spawn) => ({ ...spawn, chance: 0 })),
   };
   const optional = new AuthoredSite(1, registry, scale, optionalLayout);
   const optionalColumns = siteColumns(optional, optionalLayout);
-  expect(optionalColumns.flatMap(([cx, cz]) => optional.zombiesIn(cx, cz))).toEqual([]);
+  expect(optionalColumns.flatMap(([cx, cz]) => optional.actorsIn(cx, cz))).toEqual([]);
 });

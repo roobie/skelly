@@ -1,7 +1,7 @@
+import { type RecoveryTarget, selectRecoveryOperation } from '@skelly/engine/internal/core/disassembly.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { type RecoveryTarget, selectRecoveryOperation } from '../src/core/disassembly.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -11,7 +11,6 @@ const built = buildRegistry([
   {
     source: 'recovery-fixture',
     data: {
-      skills: [{ id: 'fixture_connections', name: 'Connections' }],
       items: [
         {
           id: 'fixture_hinged_panel',
@@ -20,7 +19,7 @@ const built = buildRegistry([
           weight: 1,
           size: [1, 1],
           disassembly: {
-            skill: 'fixture_connections',
+            skill: 'crafting',
             timeGameMinutes: 2,
             yields: [{ item: 'fixture_hinge', count: 1, fractions: [0.5, 1], rounding: 'ceil' }],
           },

@@ -1,11 +1,17 @@
+import type { SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import {
+  type CapturedSky,
+  captureSky,
+  growSky,
+  SKY_SHELL,
+  type SkySnapshot,
+} from '@skelly/engine/internal/core/skySnapshot.ts';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
+import type { Vec3 } from '@skelly/engine/world';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
+import { Skylight } from '@skelly/presentation/render';
 import { BoxGeometry, Mesh, MeshLambertMaterial, Scene } from 'three';
-import type { Vec3 } from '../../src/core/coords.ts';
-import { graphicsTuningOf } from '../../src/core/graphicsTuning.ts';
-import { SkyFields } from '../../src/core/skyField.ts';
-import type { SkyBounds } from '../../src/core/skylight.ts';
-import { type CapturedSky, captureSky, growSky, SKY_SHELL, type SkySnapshot } from '../../src/core/skySnapshot.ts';
-import { buildSkyResult, type SkyResult } from '../../src/core/skyTransport.ts';
-import { Skylight } from '../../src/render/skylight.ts';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 
 export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, buildRadiusM = 160) {
@@ -13,11 +19,13 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, b
   const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields(owner, { bottom: 0, top: 31 }, boxes);
   const { unbuiltSkyCap, skyJobsInFlight } = graphicsTuningOf(owner.registry);
+  const patches = new MaterialPatches();
   const sky = new Skylight(
     fields,
     { blockSize: 1, viewRadiusM: 160, buildRadiusM, unbuiltCap: unbuiltSkyCap, skyJobsInFlight },
     {
       clock,
+      patches,
       submit: (input, receive) => {
         pending.push({ input, receive });
         return true;
@@ -27,7 +35,10 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, b
   const scene = new Scene();
   const material = new MeshLambertMaterial();
   scene.add(new Mesh(new BoxGeometry(), material));
-  const update = (position: Vec3 = [8, 4, 8]) => sky.update(scene, position);
+  const update = (position: Vec3 = [8, 4, 8]) => {
+    sky.update(position);
+    patches.apply(scene);
+  };
   const complete = () => {
     const job = pending.shift();
     if (!job) {

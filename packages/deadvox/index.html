@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>deadvox</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <link rel="stylesheet" href="./src/ui/style.css" />
+    <link rel="stylesheet" href="@skelly/presentation/style.css" />
   </head>
   <body>
     <div id="startup-screen" role="status" aria-label="Loading game">
@@ -22,8 +22,7 @@
     <div id="quickbar"></div>
     <div id="handling" hidden></div>
     <div id="prompt" hidden></div>
-    <div id="treatment-choices" data-kind="meta" hidden></div>
-    <div id="furniture-radial" data-kind="meta" hidden></div>
+    <div id="action-radial" data-kind="meta" hidden></div>
     <aside id="save-recovery" hidden aria-live="polite" role="status">
       <span id="save-recovery-message"></span>
       <button id="save-retry" type="button">Retry save</button>
@@ -34,7 +33,10 @@
     <section id="crafting" hidden aria-label="Crafting recipes"></section>
     <section id="reading" hidden></section>
     <div id="inventory-drag-root"></div>
-    <div id="errors"></div>
+    <div id="error-log">
+      <div id="errors"></div>
+      <button id="errors-copy" type="button" hidden>Copy error</button>
+    </div>
     <section id="error-report" hidden role="alertdialog" aria-modal="true" aria-labelledby="error-report-title">
       <div class="error-report-card">
         <h1 id="error-report-title" tabindex="-1">Something went wrong</h1>
@@ -96,10 +98,10 @@
           <div id="fullscreen-options"></div>
           <div id="input-options"></div>
           <p class="scale">
-            View distance: <a href="?radius=64" data-view-distance="64">64 m</a> ·
-            <a href="?radius=96" data-view-distance="96">96 m (default)</a> ·
-            <a href="?radius=128" data-view-distance="128">128 m</a>.
-            <a href="?bench=1">Run the benchmark</a> (about 3 minutes)
+            View distance: <a href="#{radius:64}" data-view-distance="64">64 m</a> ·
+            <a href="#{radius:96}" data-view-distance="96">96 m</a> ·
+            <a href="#{radius:128}" data-view-distance="128">128 m (default)</a>.
+            <a href="?bench=1" id="bench-link">Run the benchmark</a> (about 3 minutes)
           </p>
           <p class="scale"><a href="#credits" id="show-credits">Credits</a> · <a href="./sounds.html" target="_blank" rel="noreferrer">Audio listening sheet</a> · <a href="https://github.com/roobie/skelly" target="_blank" rel="noopener">Project home</a> · <a id="playtest-feedback" href="https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md" target="_blank" rel="noopener">Send feedback</a></p>
           <p id="build-revision" class="scale"></p>

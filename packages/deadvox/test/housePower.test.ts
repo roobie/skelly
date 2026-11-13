@@ -1,26 +1,22 @@
-import { describe, expect, it, vi } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { type PlacedPowerDevice, SitePower } from '../src/core/sitePower.ts';
-import { World } from '../src/core/world.ts';
-import { makeConfig } from '../src/game/config.ts';
+import type { PlacedPowerDevice } from '@skelly/engine/internal/core/sitePower.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { createWorldSetup } from '../src/game/worldSetup.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE, makeConfig } from '@skelly/engine/session';
+import { Chunk, createWorldSetup, makeScale, SitePower, type Vec3, World } from '@skelly/engine/world';
+import { ChunkMeshes } from '@skelly/presentation/render';
+import { describe, expect, it, vi } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK, BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
 import { contentLookup, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
-vi.mock('../src/game/streamer.ts', () => {
+vi.mock('@skelly/engine/internal/game/streamer.ts', () => {
   class Streamer {}
   // biome-ignore lint/style/useNamingConvention: the mocked module exports this class name.
   return { Streamer };
@@ -29,7 +25,7 @@ vi.mock('../src/game/streamer.ts', () => {
 const content = startupContent();
 const base = content.registry;
 const config = { ...makeConfig(7, 16, content), site: 'testHouse' };
-const setup = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, base));
+const setup = createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, base), quietMesherSource());
 const house = setup.powerDevices;
 const kind = (device: PlacedPowerDevice) => base.powerDevices.get(base.furniture.get(device.type)!.power!.device)!.kind;
 const loads = house.filter((device) => kind(device) === 'consumer');
@@ -56,6 +52,7 @@ const fixture = (start = 0, restore?: SaveSnapshot, far = false) => {
   world.addChunk(chunk);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world,
     scale: makeScale(0.5),
     seed: 7,

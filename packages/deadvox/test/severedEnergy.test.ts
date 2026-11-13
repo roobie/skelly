@@ -1,22 +1,24 @@
+import { actorFigure } from '@skelly/engine/content';
+import { posedHumanoidRegionBoxes, posedRegionHitDistance } from '@skelly/engine/internal/core/actorRegions.ts';
+import type { HumanoidHitRegion } from '@skelly/engine/pose';
+import type { HitImpulse } from '@skelly/engine/sim';
+import { makeScale, type Vec3 } from '@skelly/engine/world';
+import { mobFigurePoolSizeThrough } from '@skelly/presentation/internal/render/mobActors.ts';
+import { angularVelocity, type RigidBody } from '@skelly/presentation/internal/render/rigidImpulse.ts';
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
-import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
-import type { HitImpulse } from '../src/core/zombies.ts';
-import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
-import { angularVelocity, type RigidBody } from '../src/render/rigidImpulse.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const BLOCK = 0.5;
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const FIGURES = stackActorFigureFiles(registry);
+const SHAMBLER = registry.actors.get('shambler')!;
 const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
@@ -26,6 +28,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   blockSize: BLOCK,
   physics: physicsFor(makeScale(BLOCK)),
   tuning: TEST_SENSE_TUNING,
+  actorFigureFiles: FIGURES,
   player: () => ({
     pos: [100, 2, 100] as Vec3,
     facing: [0, 0, -1] as Vec3,
@@ -65,7 +68,7 @@ const impactPointIsInside = ({ body, point }: AppliedPoint): boolean => {
   }
   return local.every((coordinate, axis) => Math.abs(coordinate) <= halfExtents[axis]! + 1e-9);
 };
-const zombieTypeForCut = (mode: CutMode) => {
+const actorTypeForCut = (mode: CutMode) => {
   const regions = { ...SHAMBLER.regions };
   if (mode === 'rolled') {
     Object.assign(regions, HEALTHY_REGIONS);
@@ -82,7 +85,9 @@ const zombieTypeForCut = (mode: CutMode) => {
     dismember: { chance: mode === 'rolled' ? 1 : 0, headOnKillChance: mode === 'head' ? 1 : 0 },
   };
 };
-const targetForCut = (mode: CutMode): { region: ZombieRegion; bone: string; direction: Vec3; distanceM: number } => {
+const targetForCut = (
+  mode: CutMode,
+): { region: HumanoidHitRegion; bone: string; direction: Vec3; distanceM: number } => {
   switch (mode) {
     case 'rolled':
     case 'offRay':
@@ -98,17 +103,18 @@ const targetForCut = (mode: CutMode): { region: ZombieRegion; bone: string; dire
 const createSeveredHit = (mode: CutMode) => {
   const isSolid = (_x: number, y: number, _z: number) => y === -1;
   let renderer: MobActorMeshes | undefined;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     ...senses(isSolid),
     seed: 5,
-    onSever: (entityId, source, cut, hit) => renderer?.zombieSevered(entityId, cut, hit, source),
-    onDeath: (entityId, source) => renderer?.zombieDied(entityId, source),
+    onSever: (entityId, source, cut, hit) => renderer?.actorSevered(entityId, cut, hit, source),
+    onDeath: (entityId, source) => renderer?.actorDied(entityId, source),
   });
-  const id = system.add(zombieTypeForCut(mode), [4, 1, 4], [0, 0, -1]);
-  const zombie = system.store.get(id)!;
+  const id = system.add(actorTypeForCut(mode), [4, 1, 4], [0, 0, -1]);
+  const actor = system.store.get(id)!;
   const actorMeshes = new MobActorMeshes(BLOCK, 16, {
-    zombies: new Map([[zombie.type.id, zombie.type]]),
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[zombie.type.id, zombie.type]])), zombie.figureSeed),
+    actors: new Map([[actor.type.id, actor.type]]),
+    actorFigureFiles: FIGURES,
+    poolSize: mobFigurePoolSizeThrough(actor.type.figureSeeds!, actor.figureSeed),
   });
   renderer = actorMeshes;
   actorMeshes.setWorld(isSolid, BLOCK);
@@ -123,16 +129,17 @@ const createSeveredHit = (mode: CutMode) => {
     return point;
   };
   actorMeshes.sync(system.store, 0, 1);
-  const boxes = posedShamblerRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
+  const boxes = posedHumanoidRegionBoxes({
+    figure: actorFigure(FIGURES, actor.type, actor.figureSeed),
+    seed: actor.figureSeed,
+    position: actor.body.pos,
+    facing: actor.facing,
+    headYaw: actor.headYaw,
+    gaitPhase: actor.gaitPhase,
+    speed: actor.horizontalSpeed,
     chasing: false,
     attackWindup: 0,
-    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
+    attackWindupSeconds: actor.type.attack!.windupSimSeconds,
     severed: [],
     blockSize: BLOCK,
   });
@@ -149,14 +156,14 @@ const createSeveredHit = (mode: CutMode) => {
   let part: string;
   if (mode === 'rolled') {
     system.swing(origin, target.direction, BAT);
-    part = zombie.severed[0] ?? '';
+    part = actor.severed[0] ?? '';
   } else {
     part = mode === 'head' ? 'head' : 'upperArm.L';
-    actorMeshes.zombieSevered(
+    actorMeshes.actorSevered(
       id,
       part,
       { point: targetBox.center, direction: target.direction, impulse: BAT.impulse! },
-      zombie,
+      actor,
     );
   }
   const partBox = Object.values(boxes)

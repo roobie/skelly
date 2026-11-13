@@ -1,6 +1,6 @@
+import type { TemplateDef } from '@skelly/engine/internal/core/content.ts';
+import { compileTemplate, findPieces } from '@skelly/engine/internal/core/templates.ts';
 import { expect, it } from 'vitest';
-import type { TemplateDef } from '../src/core/content.ts';
-import { compileTemplate, findPieces } from '../src/core/templates.ts';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

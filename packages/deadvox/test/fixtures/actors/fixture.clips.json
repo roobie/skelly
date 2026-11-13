@@ -1,0 +1,321 @@
+{
+  "standing": {
+    "idle": {
+      "slack": {
+        "base": {
+          "root": [0, 0.008317766166719344, 0],
+          "rotations": {
+            "chest": [0.04361938736533599, 0, 0, 0.9990482215818578],
+            "head": [0, 0.08715574274765817, 0, 0.9961946980917455],
+            "upperArm.L": [0, 0, 0.06975647374412529, 0.9975640502598243],
+            "upperArm.R": [0, 0, -0.06975647374412529, 0.9975640502598243]
+          }
+        },
+        "motion": [
+          {
+            "periodSimSeconds": 3,
+            "amplitudeDeg": 2,
+            "salt": 1,
+            "bones": [
+              {
+                "bone": "chest",
+                "axis": "x",
+                "scale": 1
+              }
+            ]
+          },
+          {
+            "periodSimSeconds": 5,
+            "amplitudeDeg": 4,
+            "salt": 2,
+            "bones": [
+              {
+                "bone": "head",
+                "axis": "y",
+                "scale": 1
+              },
+              {
+                "bone": "chest",
+                "axis": "z",
+                "scale": 0.5
+              }
+            ]
+          }
+        ]
+      },
+      "aggravated": {
+        "base": {
+          "root": [0, 0.013945928877463768, 0],
+          "rotations": {
+            "root": [-0.08715574274765817, 0, 0, 0.9961946980917455],
+            "chest": [0.17364817766693036, 0, 0, 0.984807753012208],
+            "head": [-0.13052619222005157, 0, 0, 0.9914448613738104],
+            "upperArm.L": [-0.25881904510252074, 0, 0, 0.9659258262890683],
+            "upperArm.R": [-0.21643961393810288, 0, 0, 0.9762960071199334]
+          }
+        },
+        "motion": [
+          {
+            "periodSimSeconds": 3,
+            "amplitudeDeg": 2,
+            "salt": 1,
+            "bones": [
+              {
+                "bone": "chest",
+                "axis": "x",
+                "scale": 1
+              }
+            ]
+          },
+          {
+            "periodSimSeconds": 5,
+            "amplitudeDeg": 4,
+            "salt": 2,
+            "bones": [
+              {
+                "bone": "head",
+                "axis": "y",
+                "scale": 1
+              },
+              {
+                "bone": "chest",
+                "axis": "z",
+                "scale": 0.5
+              }
+            ]
+          },
+          {
+            "periodSimSeconds": 0.7,
+            "amplitudeDeg": 3,
+            "salt": 3,
+            "bones": [
+              {
+                "bone": "upperArm.L",
+                "axis": "z",
+                "scale": 1
+              },
+              {
+                "bone": "upperArm.R",
+                "axis": "z",
+                "scale": -1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "walk": {
+      "kind": "pose",
+      "loop": true,
+      "cycles": 1,
+      "strideMetres": 1.2,
+      "idleBlendSpeed": 0.8,
+      "frames": [
+        {
+          "root": [0, 0, 0],
+          "rotations": {
+            "chest": [0.03489949670250097, 0, 0, 0.9993908270190958],
+            "upperArm.L": [0.17364817766693036, 0, 0, 0.984807753012208],
+            "upperArm.R": [-0.17364817766693036, 0, 0, 0.984807753012208]
+          }
+        },
+        {
+          "root": [0, 0, 0],
+          "rotations": {
+            "chest": [-0.01745240643728351, 0, 0, 0.9998476951563913],
+            "upperArm.L": [0.04361938736533599, 0, 0, 0.9990482215818578],
+            "upperArm.R": [-0.04361938736533599, 0, 0, 0.9990482215818578]
+          }
+        },
+        {
+          "root": [0.01, 0.02, 0.05],
+          "rotations": {
+            "chest": [-0.03489949670250097, 0, 0, 0.9993908270190958],
+            "upperArm.L": [-0.17364817766693036, 0, 0, 0.984807753012208],
+            "upperArm.R": [0.17364817766693036, 0, 0, 0.984807753012208]
+          }
+        },
+        {
+          "root": [0.02, -0.01, 0.03],
+          "rotations": {
+            "chest": [0.01745240643728351, 0, 0, 0.9998476951563913],
+            "upperArm.L": [-0.04361938736533599, 0, 0, 0.9990482215818578],
+            "upperArm.R": [0.04361938736533599, 0, 0, 0.9990482215818578]
+          }
+        }
+      ]
+    },
+    "attack": {
+      "kind": "overlay",
+      "durationSimSeconds": 0.6,
+      "hitAtSimSeconds": 0.3,
+      "sideScalesZ": false,
+      "walkBlendBones": ["upperArm.L", "upperArm.R"],
+      "frames": [
+        {
+          "angles": {
+            "upperArm.L": [0, 0, 0],
+            "upperArm.R": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "upperArm.L": [-40, 0, 0],
+            "upperArm.R": [-40, 0, 0]
+          },
+          "walkBlendWeight": 0,
+          "dropMetres": 0.03
+        },
+        {
+          "angles": {
+            "upperArm.L": [0, 0, 0],
+            "upperArm.R": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        }
+      ]
+    },
+    "flinch": {
+      "kind": "overlay",
+      "durationSimSeconds": 0.4,
+      "peakAtSimSeconds": 0.2,
+      "sideScalesZ": true,
+      "walkBlendBones": [],
+      "frames": [
+        {
+          "angles": {
+            "chest": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "chest": [5, 0, 15]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "chest": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        }
+      ]
+    }
+  },
+  "crawling": {
+    "idle": {
+      "kind": "pose",
+      "loop": false,
+      "frames": [
+        {
+          "root": [0, -0.6289440891868415, 0],
+          "rotations": {
+            "root": [0.3420201433256687, 0, 0, 0.9396926207859083],
+            "chest": [0.5, 0, 0, 0.8660254037844386],
+            "head": [-0.25881904510252074, 0, 0, 0.9659258262890683],
+            "upperArm.L": [-0.3420201433256687, 0, 0, 0.9396926207859083],
+            "upperArm.R": [-0.3007057995042731, 0, 0, 0.9537169507482269]
+          }
+        }
+      ]
+    },
+    "walk": {
+      "kind": "pose",
+      "loop": true,
+      "cycles": 1,
+      "strideMetres": 1.5,
+      "frames": [
+        {
+          "root": [0, -0.6208671752982807, 0],
+          "rotations": {
+            "root": [0.3420201433256687, 0, 0, 0.9396926207859083],
+            "chest": [0.5, 0, 0, 0.8660254037844386],
+            "head": [-0.25881904510252074, 0, 0, 0.9659258262890683],
+            "upperArm.L": [-0.25881904510252074, 0, 0, 0.9659258262890683],
+            "upperArm.R": [-0.35836794954530027, 0, 0, 0.9335804264972017]
+          }
+        },
+        {
+          "root": [0, -0.6208671752982807, 0],
+          "rotations": {
+            "root": [0.3420201433256687, 0, 0, 0.9396926207859083],
+            "chest": [0.5, 0, 0, 0.8660254037844386],
+            "head": [-0.25881904510252074, 0, 0, 0.9659258262890683],
+            "upperArm.L": [-0.35836794954530027, 0, 0, 0.9335804264972017],
+            "upperArm.R": [-0.25881904510252074, 0, 0, 0.9659258262890683]
+          }
+        }
+      ]
+    },
+    "attack": {
+      "kind": "overlay",
+      "durationSimSeconds": 0.6,
+      "hitAtSimSeconds": 0.3,
+      "sideScalesZ": false,
+      "walkBlendBones": ["upperArm.L", "upperArm.R"],
+      "frames": [
+        {
+          "angles": {
+            "upperArm.L": [0, 0, 0],
+            "upperArm.R": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "upperArm.L": [-40, 0, 0],
+            "upperArm.R": [-40, 0, 0]
+          },
+          "walkBlendWeight": 0,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "upperArm.L": [0, 0, 0],
+            "upperArm.R": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        }
+      ]
+    },
+    "flinch": {
+      "kind": "overlay",
+      "durationSimSeconds": 0.4,
+      "peakAtSimSeconds": 0.2,
+      "sideScalesZ": true,
+      "walkBlendBones": [],
+      "frames": [
+        {
+          "angles": {
+            "chest": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "chest": [5, 0, 15]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        },
+        {
+          "angles": {
+            "chest": [0, 0, 0]
+          },
+          "walkBlendWeight": 1,
+          "dropMetres": 0
+        }
+      ]
+    }
+  }
+}

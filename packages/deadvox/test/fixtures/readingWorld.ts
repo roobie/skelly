@@ -1,9 +1,8 @@
-import type { EntitySpec } from '../../src/core/blockEntities.ts';
-import { blockId, type Registry } from '../../src/core/content.ts';
-import { toChunk, type Vec3 } from '../../src/core/coords.ts';
-import { type LootPointSource, lootPointsByColumn } from '../../src/core/loot.ts';
-import type { Scale } from '../../src/core/scale.ts';
-import { fillFurnitureLoot, type Site, SupplyFootprints } from '../../src/core/site.ts';
+import { blockId, type Registry } from '@skelly/engine/content';
+import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
+import { type LootPointSource, lootPointsByColumn } from '@skelly/engine/internal/core/loot.ts';
+import { fillFurnitureLoot, type Site, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import { type Scale, toChunk, type Vec3 } from '@skelly/engine/world';
 import fixture from './mods/reading-world.json' with { type: 'json' };
 
 export const readingWorld = (registry: Registry, seed: number, scale: Scale): Site => {
@@ -31,12 +30,26 @@ export const readingWorld = (registry: Registry, seed: number, scale: Scale): Si
   );
   return {
     spawn: { pos: fixture.spawn.pos as Vec3, yaw: fixture.spawn.yaw },
-    surface: {
-      height: () => fixture.floor / scale.blockSize - 1,
-      top: () => blockId(registry, fixture.ground),
-    },
-    stamp: () => {
-      // The authored terrain is the entire walking surface; no structure stamps are needed.
+    terrain: {
+      kind: 'weathering-pad',
+      data: {
+        blockSize: scale.blockSize,
+        padTop: fixture.floor / scale.blockSize - 1,
+        heightPad: {
+          x0: Number.NEGATIVE_INFINITY,
+          x1: Number.POSITIVE_INFINITY,
+          z0: Number.NEGATIVE_INFINITY,
+          z1: Number.POSITIVE_INFINITY,
+        },
+        materialPad: {
+          x0: Number.NEGATIVE_INFINITY,
+          x1: Number.POSITIVE_INFINITY,
+          z0: Number.NEGATIVE_INFINITY,
+          z1: Number.POSITIVE_INFINITY,
+        },
+        concrete: blockId(registry, fixture.ground),
+        structures: [],
+      },
     },
     supplySourcesIn: (area) => new SupplyFootprints(furniture, [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
@@ -49,6 +62,6 @@ export const readingWorld = (registry: Registry, seed: number, scale: Scale): Si
           .map((spec) => ({ spec, loot: [] })),
         points.get(`${cx},${cz}`) ?? [],
       ),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
 };

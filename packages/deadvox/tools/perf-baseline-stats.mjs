@@ -54,7 +54,7 @@ const profileCategories = [
   ['gc', /garbage collector/i],
   ['idle', /\(idle\)/],
   ['unattributed', /\(program\)/],
-  ['ai', /tickActive|tickBackground|stepZombieBody|finishZombieTick/i],
+  ['ai', /tickActive|tickBackground|stepActorBody|finishActorTick/i],
   [
     'streamingMeshing',
     /meshChunk|meshColumn|buildMesh|prepareStreaming|pumpStreaming|ColumnStreamer|generateColumn|pumpMeshing|dispatchMesh/i,

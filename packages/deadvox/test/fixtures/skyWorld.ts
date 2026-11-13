@@ -1,13 +1,9 @@
-import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
-import siteGenerationFile from '../../src/content/base/site-generation.json' with { type: 'json' };
-import { BlockEntities } from '../../src/core/blockEntities.ts';
-import { Chunk } from '../../src/core/chunk.ts';
-import { worldOpaque } from '../../src/core/collision.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
-import { CHUNK, toChunk, type Vec3 } from '../../src/core/coords.ts';
-import { SKY_LOSS, type SkyBounds } from '../../src/core/skylight.ts';
-import { World } from '../../src/core/world.ts';
+import { SKY_LOSS, type SkyBounds } from '@skelly/engine/internal/core/skylight.ts';
+import { BlockEntities, CHUNK, Chunk, toChunk, type Vec3, World, worldOpaque } from '@skelly/engine/world';
+import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
+import siteGenerationFile from '../../mods/skelly.deadvox.site-generation/site-generation.json' with { type: 'json' };
 import { buildFixtureRegistry as buildRegistry } from '../economyFixtures.ts';
+import { fixtureIds } from './capabilityIds.ts';
 
 function room(world: World, box: SkyBounds, wall: number): void {
   const [x0, y0, z0] = box.min;
@@ -37,8 +33,9 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
         ],
         siteGeneration: [
           {
-            id: CORE_CONTENT_IDS.authoredSite,
-            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
+            id: fixtureIds.authoredSite,
+            capability: 'authoredSite',
+            activeActorRadiusMetres: baseSite.activeActorRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,

@@ -1,8 +1,9 @@
 ---
 read_if:
   - you're changing procedural surface weathering or building appearance
-  - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
+  - you're changing the solar-phase look, the kinds of cloud the sky draws, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
   - you're changing sun shadow occlusion in interiors or underground
+  - you're changing how models reflect the sky, how metal draws or when the sky's reflection is rebaked
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
@@ -16,99 +17,116 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 
 ## Look decisions
 
-The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
+The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `packages/engine/src/core/schema/look.ts`, `LookDefaultsSchema`, and `packages/engine/src/core/lookDefaults.ts`, `lookDefaultsOf`.
 
-Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/render/autoTone.ts`.
+Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `packages/presentation/src/render/autoTone.ts`.
 
-Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with held-item lighting. See `src/render/playView.ts`, `prepareLighting`; `src/render/sky.ts`, `applySky`; and `src/render/mood.ts`, `Mood.setSky`.
+At night the main light comes from the drawn moon, not from the sun's bearing below the horizon, because shadows and cloud linings that point away from the moon in the sky read as wrong. One direction rule places the moon for both the dome and the light, so the two cannot disagree, and the light blends from the sun's side to the moon's by the drawn moon's brightness, so it swings across through twilight without a jump. Both sides are raised to the cycle's lowest light height, so the light never grazes the ground. See `packages/engine/src/core/sky.ts`, `moonDirection` and `skyAt`.
 
-A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the actual sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. Keep furniture occlusion in that sky query: unlike ceiling fixtures, beams cast furniture shadows, and ignoring closed doors or hatches suppresses the beam in rooms they shelter. See `src/render/skylight.ts`, `Skylight`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
+The night stays clearly night but light enough that roofs and the skyline read as silhouettes under the moon, because a moon that lights nothing promises light the world never gets. The moon is drawn small and textured so it reads as a moon rather than a second sun. The moon and the stars wash out by the sun's height, not only through the blend between looks, because a linear blend leaves a bright disc and stars on a greying dawn sky; they are gone by full dawn. See `packages/engine/src/core/sky.ts`, `nightSkyShare`, and `packages/presentation/src/render/skyDome.ts`, `moonFace`.
 
-A powered ceiling fixture's light on a surface fades by that surface's sky exposure, because walking across sunlight must not change how a room is lit. That exposure leaves furniture out: glows cast no furniture shadows, so fading by furniture-blocked sky would light the wall behind a workbench brighter than the open wall beside it. See `src/core/skylight.ts`, "SkyVolume". The held-item scene and the fallback without a skylight have no per-surface sky exposure to fade by, so there the camera's daylight scale stands in. See `src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `src/render/lightPool.ts`, `LightPoolContext`.
+Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with surface lighting, which samples the same field. See `packages/presentation/src/render/playView.ts`, `prepareLighting`; `packages/presentation/src/render/sky.ts`, `applySky`; and `packages/presentation/src/render/mood.ts`, `Mood.setSky`.
 
-The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `src/core/schema.ts`, `renderedFixtureLimit`.
+Models reflect the sky, because metal with nothing to reflect draws near black. The reflection is baked from the dome alone, never the world, so it stands for open sky, and sky exposure dims it per surface as it dims the hemisphere light, so metal does not glow indoors. Below the horizon, blending in just above it, the bake shows the ambient light's ground colour, not the fog, so metal facing down reflects the same darker colour the hemisphere light uses for its underside rather than a lower half as bright as the sky; the brightness is the environment's own strength, not the hemisphere light's intensity. Held pieces take it the same way, per surface where they stand: they share the world's materials, so a camera exposure on top would dim them twice, and a piece picked up must look as it did on the floor. See `packages/presentation/src/render/hands.ts`, `HeldItems`. It is reflection only: the hemisphere light already owns the diffuse sky, and the environment would light every surface twice. A bake is too costly for every frame, so it is redone once the drawn sky has moved past a content threshold since the last bake; measuring the change rather than baking at set hours keeps it close behind a fast twilight without rebaking a still noon.
 
-Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `src/core/schema.ts`, `BeamSpillSchema`, `src/content/base/items-tools.libsonnet`, `batteryBeam`, and `src/render/flashlight.ts`, `Flashlight`.
+The sun's direction counts only while the sun is up or its glow is drawn: the wide glow lights the twilight sky from below the horizon, so dusk and dawn follow the sun, while the night, with no glow and a sun disc under the fog, does not rebake as the sun keeps moving. The moon and the main light that follows it at night do not count either, so the reflection can hold a moon and a cloud lining well behind the drawn ones: night lighting is dim and the shipped materials are matte, so the stale bake does not show, and a night of moon-driven bakes would buy nothing visible. Rebaking for the moon waits on #1649, which says when it is due.
 
-Switching a light on or off, or dimming it, changes only uniforms, never which lights exist or cast shadows. three.js keys every lit program on the light and shadow-caster counts, so a changed count rebuilds the program of every visible lit material that warm-up did not compile for it, including those created after warm-up such as held items and mobs, and stalls the frame for up to seconds. Carried point lights are a fixed pool with zero intensity when unused, and every beam casts while beam shadows are on. While it is off or faint its depth pass is skipped and its shadow strength is zero, so a map it no longer refreshes cannot leave stale shadows and a faint beam looks the same whatever it did before. See `src/render/lightPool.ts`, `LightPool`, `src/render/flashlight.ts`, `Flashlight.shadowsAllowed`, and `src/render/shadows.ts`, `beamMapDue`.
+Bakes are also spaced by a content interval of real seconds, so a fast-forwarded clock cannot bake every frame.
 
-Shader warm-up runs before the world is shown, because the first draw of an uncompiled program stalls the frame. It compiles the materials in the scene at that point, a hidden stand-in for each program variant a model material takes, and both the direct screen path and the post chain. Models load after warm-up, so stand-ins carry them: colour and finish are uniforms that share one program, so model count adds no wait. Both output paths are warmed because the look's post setting, goggles and optics switch between them during play. Warm-up can compile only what exists or has a stand-in, for the lights present when it runs. Materials built later with their own program, such as mobs', and every lit program after a light-count change therefore compile on first draw. So does a model material outside the stand-ins' variants, which `test/modelMaterials.test.ts` checks the pack for. See `src/render/mood.ts`, `Mood.warmUp`, and `src/render/modelMaterials.ts`, `modelMaterialWarmUp`.
+The shipped fair sky is the layered kind of cloud, as judged by eye, while a cloudy sky shows the scatter kind: heaped fair-to-cloudy cloud is broken and lumpy, and overcast and rain return to the layered deck. A change of kind crossfades the two kinds' opacity rather than morphing one into the other, because they share no shape to morph; a kind with no share is skipped, so a sky of one kind pays only for that kind. See `packages/presentation/src/render/skyDome.ts`, `createSkyDome`, and `packages/engine/src/core/weather.ts`, `skyInWeather`.
 
-Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `src/content/base/senses.jsonnet`, `nearFieldMetres`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
+Clouds bake as they stand, since their drift between bakes does not show in a blurred reflection. See `packages/presentation/src/render/skyEnvironment.ts`, `createSkyEnvironment`, and `packages/deadvox/docs/content.md`, "Day cycle".
 
-Use `torchspill=1` in the URL to turn on authored spill that content leaves disabled, and `torchspill=0` to force the plain cone, without enabling debug mode. This render-only override neither invents absent spill nor changes simulation awareness. See `src/render/playView.ts`, `createPlayView`. Handheld, head-mounted and weapon-mounted beams share this path; a mounted light takes its lens from the held weapon's model. See `src/render/flashlightCone.ts`, `withFlashlightSpill`.
+A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the actual sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. Keep furniture occlusion in that sky query: unlike ceiling fixtures, beams cast furniture shadows, and ignoring closed doors or hatches suppresses the beam in rooms they shelter. See `packages/presentation/src/render/skylight.ts`, `Skylight`, and `packages/presentation/src/render/flashlight.ts`, `flashlightDaylightScale`.
+
+A powered ceiling fixture's light on a surface fades by that surface's sky exposure, because walking across sunlight must not change how a room is lit. That exposure leaves furniture out: glows cast no furniture shadows, so fading by furniture-blocked sky would light the wall behind a workbench brighter than the open wall beside it. See `packages/engine/src/core/skylight.ts`, "SkyVolume". The held-item scene draws with the world's patches, so it fades a fixture per surface as well. Only the fallback without a skylight has no per-surface sky exposure to fade by, so there the camera's daylight scale stands in. See `packages/presentation/src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `packages/presentation/src/render/lightPool.ts`, `LightPoolContext`.
+
+The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `packages/engine/src/core/schema/senses.ts`, `renderedFixtureLimit`.
+
+Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `packages/engine/src/core/schema.ts`, `BeamSpillSchema`, `tools/jsonnet/lib/lights.libsonnet`, `batteryBeam`, and `packages/presentation/src/render/flashlight.ts`, `Flashlight`.
+
+Switching a light on or off, or dimming it, changes only uniforms, never which lights exist or cast shadows. three.js keys every lit program on the light and shadow-caster counts, so a changed count rebuilds the program of every visible lit material that warm-up did not compile for it, including those created after warm-up such as held items and mobs, and stalls the frame for up to seconds. Carried point lights are a fixed pool with zero intensity when unused, and every beam casts while beam shadows are on. While it is off or faint its depth pass is skipped and its shadow strength is zero, so a map it no longer refreshes cannot leave stale shadows and a faint beam looks the same whatever it did before. See `packages/presentation/src/render/lightPool.ts`, `LightPool`, `packages/presentation/src/render/flashlight.ts`, `Flashlight.shadowsAllowed`, and `packages/presentation/src/render/shadows.ts`, `beamMapDue`.
+
+Shader warm-up runs before the world is shown, because the first draw of an uncompiled program stalls the frame. It compiles the materials in the scene at that point, a hidden stand-in for each program variant a model material takes, and both the direct screen path and the post chain. Models load after warm-up, so stand-ins carry them: colour and finish are uniforms that share one program, so model count adds no wait. Both output paths are warmed because the look's post setting, goggles and optics switch between them during play. Warm-up can compile only what exists or has a stand-in, for the lights present when it runs. Materials built later with their own program, such as mobs', and every lit program after a light-count change therefore compile on first draw. So does a model material outside the stand-ins' variants, which `test/modelMaterials.test.ts` checks the pack for. See `packages/presentation/src/render/mood.ts`, `Mood.warmUp`, and `packages/presentation/src/render/modelMaterials.ts`, `modelMaterialWarmUp`.
+
+Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `packages/mods/skelly.senses/senses.jsonnet`, `nearFieldMetres`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
+
+Use `torchspill:true` in the URL hash to turn on authored spill that content leaves disabled, and `torchspill:false` to force the plain cone, without enabling debug mode. This render-only override neither invents absent spill nor changes simulation awareness. See `packages/presentation/src/render/playView.ts`, `createPlayView`. Handheld, head-mounted and weapon-mounted beams share this path; a mounted light takes its lens from the held weapon's model. See `packages/presentation/src/render/flashlightCone.ts`, `withFlashlightSpill`.
 
 Post-processing and shadows support the intended mood. Compare the same workload on a real GPU before claiming a performance win; SwiftShader cannot establish reference-GPU cost. Keep image changes separate from waste removal so visual quality remains an operator decision. See `src/bench/post.ts`, `benchDraw`.
 
-Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `src/render/moodOutput.ts`, `createMoodOutputPass`, and `src/render/mood.ts`, `Mood`.
+Tone mapping, display transfer and colour grading share a fullscreen draw because storing and sampling an intermediate display-space image adds GPU work without adding an effect. Grade remains after tone mapping and transfer so its controls keep their display-referred meaning; bloom stays before them in linear light. See `packages/presentation/src/render/moodOutput.ts`, `createMoodOutputPass`, and `packages/presentation/src/render/mood.ts`, `Mood`.
 
-A performance change may alter the default look only slightly, and each such change needs the operator's by-eye approval of a before/after comparison (`docs/PROCESS.md`, "Reviews by eye and by play"): a person's eye, not a metric, judges whether a change is small, so a measured cost reduction alone never authorizes it. Reduce scene resolution rather than canvas resolution so DOM/HUD readability and display-space film stay independent of scene sharpness. Resolution policy must not depend on enabling post effects. See `src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`, and `src/render/screenScale.ts`, `ScreenScale`.
+A performance change may alter the default look only slightly, and each such change needs the operator's by-eye approval of a before/after comparison (`docs/PROCESS.md`, "Reviews by eye and by play"): a person's eye, not a metric, judges whether a change is small, so a measured cost reduction alone never authorizes it. Reduce scene resolution rather than canvas resolution so DOM/HUD readability and display-space film stay independent of scene sharpness. Resolution policy must not depend on enabling post effects. See `packages/presentation/src/render/mood.ts`, `Mood.setRenderScale` and `Mood.setBloomScale`, and `packages/presentation/src/render/screenScale.ts`, `ScreenScale`.
 
-Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
+Edge smoothing is a player setting because it costs a measurable slice of GPU time on every frame, the single largest share of the post chain's own cost, and a weak GPU should be able to trade it for frame time. It ships at the smoothest choice so nobody's image changes unasked; a content change can move the default later. Content lists the choices, so a mod can offer others. A choice is read when the renderer is built, because the screen's context and the post chain's target both fix their sample count at creation, so a change takes effect on the next load. Only off and the post target's sample count are offered: the default framebuffer's antialiasing is on or off only, so a middle count would mean drawing through the render target even with post off, which changes the image and adds a pipeline. See `packages/engine/src/core/graphics.ts`, `GRAPHICS_KNOBS`, and `packages/presentation/src/presentation/engine.ts`, `createEngine`.
 
-Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeating lattice. The cell coordinates and smoothing keep world anchoring, but CPU float evaluation, byte quantization and hardware filtering do not promise the arithmetic shader's exact image. It is on by default because it cuts chunk fragment cost substantially while its image differs from the arithmetic shader only imperceptibly, which was approved by eye. The option and the debug URL switch stay so a player or a look review can compare against the arithmetic path. See `src/render/surfaceNoise.ts`, `createSurfaceNoise`; `src/render/surfacePatterns.ts`, `SURFACE_PATTERN_GLSL`; and `src/core/graphics.ts`, `GRAPHICS_KNOBS`.
+Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `packages/presentation/src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `packages/presentation/src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `packages/presentation/src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
-Sun shadows must block buried rooms even when a thick solid's sun-facing surface lies outside the bounded shadow map. Retain its interior-facing surface as an occluder too, without dropping the entry faces that prevent PCF leaks at joined interior corners. See `src/render/shadows.ts`, `Shadows.drawMaps`, and `test/browser/underground-sun.ts`, `undergroundSunProof`.
+Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeating lattice. The cell coordinates and smoothing keep world anchoring, but CPU float evaluation, byte quantization and hardware filtering do not promise the arithmetic shader's exact image. It is on by default because it cuts chunk fragment cost substantially while its image differs from the arithmetic shader only imperceptibly, which was approved by eye. The option stays so a player or a look review can compare against the arithmetic path. See `packages/presentation/src/render/surfaceNoise.ts`, `createSurfaceNoise`; `packages/presentation/src/render/surfacePatterns.ts`, `SURFACE_PATTERN_GLSL`; and `packages/engine/src/core/graphics.ts`, `GRAPHICS_KNOBS`.
 
-Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
+Sun shadows must block buried rooms even when a thick solid's sun-facing surface lies outside the bounded shadow map. Retain its interior-facing surface as an occluder too, without dropping the entry faces that prevent PCF leaks at joined interior corners. See `packages/presentation/src/render/shadows.ts`, `Shadows.drawMaps`, and `test/browser/underground-sun.ts`, `undergroundSunProof`.
+
+Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `packages/engine/src/core/occlusion.ts` and `packages/presentation/src/render/chunks.ts`, `chunkMaterial`.
 
 ## Graphics policy
 
 Keep graphics defaults and permitted choices in the core mod, while the player owns the
-choice for their machine: a content pack cannot know their GPU. Debug URL overrides must
-win over player choices, which must win over content defaults. Explicit false values are
-choices, not absence. See `src/content/base/graphics.jsonnet`,
-`src/core/graphics.ts`, `resolveGraphics`, and `src/game/graphicsSettings.ts`.
+choice for their machine: a content pack cannot know their GPU. Player choices must win over
+content defaults, and no link sets them; see `docs/decisions/0006-url-mods-and-hash-state.md`,
+"Decision". Explicit false values are choices, not absence. See `packages/mods/skelly.graphics/graphics.jsonnet`,
+`packages/engine/src/core/graphics.ts`, `resolveGraphics`, and `packages/presentation/src/presentation/graphicsSettings.ts`.
 
-Benchmarks isolate machine preferences and debug graphics overrides so saved choices cannot
-silently change a comparison workload. Scene scale stays fixed at the content default because
-GPU-dependent adaptation would change the pixel workload during a run. The full-post workload keeps
-an independent look so visual-policy changes cannot redefine it. The goggles comparison instead follows
-play's content-default look and shares its flare update: measuring another look or omitting source
-occlusion would not establish the cost players pay. Source placement belongs to the benchmark query
-so comparisons can vary the workload without changing code. Content-owned benchmark weathering
-lets mods choose that workload without changing benchmark logic. See
-`src/game/engine.ts`, `createEngine`, `src/game/graphicsControls.ts`, `GraphicsControls`,
-`src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`,
-`src/bench/lightFixture.ts`, `benchFlareSourcesFromUrl`, and
-`src/render/nightVisionFlare.ts`, `createNightVisionFlareUpdate`.
+The smaller sun map remains an off-by-default player graphics choice, so the default look keeps
+full-map quality. Sun-shadow reach and its debug cycle are graphics content because they tune the
+look; a new reach needs another look review. See `packages/mods/skelly.graphics/graphics.jsonnet`,
+`sunShadow`, and `packages/engine/src/core/mood.ts`, `defaultShadows`.
+
+Benchmarks isolate machine preferences so saved choices cannot silently change a comparison
+workload. Scene scale stays fixed at the content default because GPU-dependent adaptation would
+change the pixel workload during a run. The full-post workload keeps an independent look so
+visual-policy changes cannot redefine it. The bench has no night-vision or flare-source workload:
+those switches had no home, and one that is needed comes back as a mod. Content-owned benchmark
+weathering lets mods choose that workload without changing benchmark logic. See
+`packages/presentation/src/presentation/engine.ts`, `createEngine`, `packages/presentation/src/presentation/graphicsControls.ts`, `GraphicsControls`,
+and `src/bench/post.ts`, `benchDraw` and `applyBenchWeathering`.
 
 Automatic scene resolution applies with or without post effects, because choosing the plain
 look must not disable the machine's quality trade. It follows GPU execution cost rather than
 frame intervals: reducing pixels cannot fix simulation work, browser scheduling or a slow display. Windowed measurements
 and a dead band suppress transient spikes and visible pumping; recovery reserves headroom for
 the next size instead of immediately undoing a reduction. Unsupported GPU timing leaves the
-content default intact. Explicit player or debug URL scene-scale choices suspend adaptation;
-clearing a player choice returns ownership to content. See `src/render/adaptiveScale.ts`,
-`AdaptiveScale`, `src/render/gpuFrameTime.ts`, `GpuFrameTime`, and
-`src/render/mood.ts`, `Mood.recordGpuTime`. Plain presentation copies already display-encoded
+content default intact. An explicit player scene-scale choice suspends adaptation;
+clearing a player choice returns ownership to content. See `packages/presentation/src/render/adaptiveScale.ts`,
+`AdaptiveScale`, `packages/presentation/src/render/gpuFrameTime.ts`, `GpuFrameTime`, and
+`packages/presentation/src/render/mood.ts`, `Mood.recordGpuTime`. Plain presentation copies already display-encoded
 pixels so scaling cannot apply tone mapping or display transfer twice; see
-`src/render/screenScale.ts`, `ScreenScale`. Abandon scene and post targets when a WebGL context is
+`packages/presentation/src/render/screenScale.ts`, `ScreenScale`. Abandon scene and post targets when a WebGL context is
 lost: the context has already freed their GPU storage, while disposal would try to delete dead
 handles. Rebuilding after restoration also prevents stale disposal listeners from deleting old
 handles on the first resolution change. See
-`src/render/mood.ts`, `Mood.releaseComposer`.
+`packages/presentation/src/render/mood.ts`, `Mood.releaseComposer`.
 
 Persist only explicit player choices, not resolved defaults or debug overrides, so a mod's
 policy can change without stale defaults becoming machine preferences. Validate stored
 choices against the effective content policy before using them; unavailable storage must
-not prevent play. See `src/core/graphics.ts`, `validGraphicsSettings`.
+not prevent play. See `packages/engine/src/core/graphics.ts`, `validGraphicsSettings`.
 
 Graphics options are meta controls because hardware preferences are not character knowledge.
 Clearing a preference returns ownership to content rather than saving its resolved default.
 Debug overrides remain separate from preferences, and unrelated look changes must not promote
-player or mod values into the URL. See `src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
-`src/game/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
+player or mod values into the URL. See `packages/presentation/src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
+`packages/presentation/src/presentation/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
 
 ## Performance diagnostics
 
 Crowd pose transfers must supply only changed texel views: browser IPC can copy skipped
 texels too, so selecting a small destination rectangle from a large source view does not
 bound transfer cost. Shadow and colour passes must consume the same uploaded pose without
-repeating the transfer. See `src/render/poseTextureUpdates.ts`, `PoseTextureUpdates.upload`,
-and `src/render/playView.ts`, `createPlayView`.
+repeating the transfer. See `packages/presentation/src/render/poseTextureUpdates.ts`, `PoseTextureUpdates.upload`,
+and `packages/presentation/src/render/playView.ts`, `createPlayView`.
 
-Debug-only whole-frame CPU submission counters distinguish batching growth from drawing-buffer pixel load alongside frame-time percentiles. Repeated geometry submissions count again; these are not unique geometry counts or GPU timings. GPU cost requires asynchronous timing probes on real hardware. See `src/render/drawCounters.ts`, `DrawCounters`, for frame-scoped collection; `src/debug/index.ts`, `readoutTemplate`, and `src/debug/lookDump.ts`, `lookDump`, for the readout and dump.
+Debug-only whole-frame CPU submission counters distinguish batching growth from drawing-buffer pixel load alongside frame-time percentiles. Repeated geometry submissions count again; these are not unique geometry counts or GPU timings. GPU cost requires asynchronous timing probes on real hardware. See `packages/presentation/src/render/drawCounters.ts`, `DrawCounters`, for frame-scoped collection; `src/debug/index.ts`, `readoutTemplate`, and `src/debug/lookDump.ts`, `lookDump`, for the readout and dump.
 
 ## Unresolved constraints
 

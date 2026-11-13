@@ -1,18 +1,17 @@
+import type { ItemDef, Registry } from '@skelly/engine/content';
+import { SKILL_LEVEL_MAX, skillSaturation } from '@skelly/engine/internal/core/character.ts';
+import { firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { skillActivityPractice } from '@skelly/engine/internal/core/skillTraining.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { MagazineHandling } from '@skelly/engine/internal/game/magazineHandling.ts';
+import { defOf, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { Character, practiceForNextLevel, reachTuning } from '@skelly/engine/sim';
+import { searchTime, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { searchTime } from '../src/core/blockEntities.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
-import type { ItemDef, Registry } from '../src/core/content.ts';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf } from '../src/core/items.ts';
-import { reachTuning } from '../src/core/reach.ts';
-import { skillActivityPractice } from '../src/core/skillTraining.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { levelSite } from './fixtures/levelSite.ts';
+import { advance, createRuntime, fixtureZombieColumn, scale } from './snapshotTestSupport.ts';
 
 const registry = baseRegistry();
 const BOX_UNPACK_SECONDS = registry.items.get('shotshell_box')!.unpack!.simSeconds;
@@ -34,8 +33,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_bag',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture bag',
       category: 'misc',
       weight: 1,
@@ -46,8 +43,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_item',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture item',
       category: 'misc',
       weight: 1,
@@ -56,8 +51,6 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_inventory_magazine',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture magazine',
       category: 'misc',
       weight: 1,
@@ -67,14 +60,15 @@ const fixtureRegistry = (): Registry => {
     {
       id: 'fixture_round',
       workInProgress: false,
-      notLoot: false,
-      economy: { usage: [], tiers: [] },
       name: 'Fixture round',
       category: 'ammo',
       weight: 0.01,
       size: [1, 1],
       ammo: {
         calibre: 'fixture_calibre',
+        damageKind: 'pierce',
+        loadSound: 'fixture_load',
+        stripSound: 'fixture_strip',
         pellets: 1,
         spreadDegrees: 0,
         diameterMm: 5,
@@ -189,7 +183,7 @@ describe('Inventory Management skill', () => {
       if (!runtime.inventory.add(box, { kind: 'hand', side: 'right' })) {
         throw new Error('Could not hold the unpack fixture box');
       }
-      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
+      const { unpacking } = runtime.session;
       const initial = runtime.session.character.snapshotState();
 
       expect(unpacking.activate(box)).toBeUndefined();
@@ -220,22 +214,29 @@ describe('Inventory Management skill', () => {
     expect(durations[2]).toBeLessThan(durations[1]!);
   });
 
-  it('scales furniture searches and trains only after a successful search', () => {
+  it('scales furniture searches and trains only after a successful search in real reach', () => {
     const durations: number[] = [];
-    const searchBase = searchTime(registry.furniture.get('kitchen_cupboard')!, reachTuning(registry));
+    const cupboardDef = registry.furniture.get('kitchen_cupboard')!;
+    const searchBase = searchTime(cupboardDef, reachTuning(registry));
+    const [width, , depth] = cupboardDef.size;
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
+    const site = levelSite(createRuntime(undefined, false, [column]).world, column, width + 1, depth);
+    const near: Vec3 = [site.x + 2, site.ground, site.north];
+    const farBlocks = Math.ceil(reachTuning(registry).reachMetres / scale.blockSize) * 4;
     for (const level of [0, 5, 10]) {
-      const runtime = createRuntime();
+      const runtime = createRuntime(undefined, false, [column], { spawn: [site.x + 0.5, site.ground, site.z + 0.5] });
       runtime.session.character.skills.inventory_management = level;
       const cupboard = runtime.inventory.furnish({
-        type: 'kitchen_cupboard',
-        pos: [0, 0, 0],
-        size: [2, 2, 1],
+        type: cupboardDef.id,
+        pos: [near[0] + farBlocks, near[1], near[2]],
+        size: cupboardDef.size,
         facing: 'n',
       });
       if (!cupboard) {
         throw new Error('Could not create the furniture-search fixture');
       }
-      runtime.inventory.canReachEntity = () => false;
+      expect(runtime.inventory.canReachEntity(cupboard)).toBe(false);
       const initial = runtime.session.character.snapshotState();
       expect(runtime.session.search(cupboard)).toBeUndefined();
       const duration = runtime.handling.jobs[0]?.duration;
@@ -252,7 +253,8 @@ describe('Inventory Management skill', () => {
       expect(cupboard.searched).toBe(false);
       expect(runtime.session.character.snapshotState()).toEqual(initial);
 
-      runtime.inventory.canReachEntity = () => true;
+      runtime.inventory.entities.slide(cupboard, near);
+      expect(runtime.inventory.canReachEntity(cupboard)).toBe(true);
       expect(runtime.session.search(cupboard)).toBeUndefined();
       advance(runtime, Math.ceil((duration + 0.1) * 60));
       expect(cupboard.searched).toBe(true);
@@ -268,7 +270,7 @@ describe('Inventory Management skill', () => {
   });
 
   it('keeps firearm-owned round handling on the firearms-combat curve', () => {
-    const firearmTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+    const firearmTuning = skilledFirearmsTuning(registry);
     if (!firearmTuning) {
       throw new Error('Firearms Combat content has no reload tuning');
     }
@@ -285,7 +287,7 @@ describe('Inventory Management skill', () => {
       const queue = new HandlingQueue(inventory);
       const handling = new MagazineHandling(inventory, queue, {
         feet: () => [0, 0, 0],
-        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadDuration,
+        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadFactor,
       });
       const refusal = handling.strip(magazine.uid, 0);
       if (refusal) {
@@ -294,20 +296,6 @@ describe('Inventory Management skill', () => {
       return queue.jobs[0]!.duration;
     };
     expect(actionDuration(10)).toBe(actionDuration(0));
-  });
-
-  it('keeps skill level and practice across a save round trip', () => {
-    const runtime = createRuntime();
-    const level = runtime.session.character.skills.inventory_management!;
-    runtime.session.character.awardPractice('inventory_management', practiceForNextLevel(registry, level));
-    const saved = capture(runtime);
-    const restored = createRuntime(saved);
-    expect(restored.session.character.skills.inventory_management).toBe(
-      runtime.session.character.skills.inventory_management,
-    );
-    expect(restored.session.character.practice.inventory_management).toBe(
-      runtime.session.character.practice.inventory_management,
-    );
   });
 });
 

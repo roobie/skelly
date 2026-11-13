@@ -1,6 +1,6 @@
-import type { PowerDeviceState, PowerState } from '../src/core/power.ts';
-import { exactUnits, POWER_UNITS, type PowerDeviceDef } from '../src/core/powerContent.ts';
-import { simTimestamp } from '../src/core/time.ts';
+import type { PowerDeviceState, PowerState } from '@skelly/engine/internal/core/power.ts';
+import { exactUnits, POWER_UNITS, type PowerDeviceDef } from '@skelly/engine/internal/core/powerContent.ts';
+import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
 
 export const powerDefinitions: PowerDeviceDef[] = [
   { id: 'generator', kind: 'generator', priority: 0, outputWatts: 47, burnLitresPerGameHour: 1.3 },

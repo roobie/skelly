@@ -1,6 +1,4 @@
-import { expect, it } from 'vitest';
-import { Chunk } from '../src/core/chunk.ts';
-import type { MapPieceDef } from '../src/core/schema.ts';
+import type { MapPieceDef } from '@skelly/engine/internal/core/schema.ts';
 import {
   type AssemblyContext,
   compileAssembly,
@@ -9,7 +7,9 @@ import {
   stampPlacement,
   type TemplateAssembly,
   type TemplateSlot,
-} from '../src/core/templates.ts';
+} from '@skelly/engine/internal/core/templates.ts';
+import { Chunk } from '@skelly/engine/world';
+import { expect, it } from 'vitest';
 import {
   buildFixtureRegistry as buildRegistry,
   FIXTURE_MATERIAL,

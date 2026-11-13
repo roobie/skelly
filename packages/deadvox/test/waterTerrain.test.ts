@@ -1,14 +1,12 @@
+import { authoredLayoutIssues, inPolygon } from '@skelly/engine/internal/core/authoredLayout.ts';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import { profileHeight } from '@skelly/engine/internal/core/authoredTerrain.mjs';
+import type { SiteLayoutDef } from '@skelly/engine/internal/core/schema.ts';
+import { generateChunk } from '@skelly/engine/internal/core/worldgen.ts';
+import { CHUNK, makeScale, sitePalette, terrainShapeOf, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { authoredLayoutIssues, inPolygon } from '../src/core/authoredLayout.ts';
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { profileHeight } from '../src/core/authoredTerrain.mjs';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { World } from '../src/core/world.ts';
-import { generateChunk, generateColumn, terrainHeight } from '../src/core/worldgen.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 
 const scale = makeScale(0.5);
 const registry = baseRegistry();
@@ -36,7 +34,7 @@ const lakeLayout = (overrides: Partial<SiteLayoutDef> = {}): SiteLayoutDef => ({
   ],
   buildings: [],
   player: { position: [24, 20.5, 42], bearing: 0 },
-  shamblers: [],
+  actors: [],
   woodlands: [],
   tracks: [],
   ...overrides,
@@ -107,11 +105,12 @@ describe('water fill rule', () => {
 describe('authored water', () => {
   const layout = lakeLayout();
   const site = new AuthoredSite(5, registry, scale, layout);
+  const terrain = terrainFor(site, registry, scale, 5);
   const s = scale.blockSize;
   const world = new World();
   for (const cx of [0, 1, 2]) {
     for (const cz of [0, 1, 2]) {
-      for (const chunk of generateColumn({ seed: 5, blocks, shape, scale, surface: site.surface }, cx, cz)) {
+      for (const chunk of terrain.generateColumn(cx, cz)) {
         world.addChunk(chunk);
       }
     }
@@ -126,7 +125,7 @@ describe('authored water', () => {
     expect(found.length).toBeGreaterThan(0);
     for (const { x, y, z } of found) {
       expect(inPolygon([(x + 0.5) * s, (z + 0.5) * s], layout.water![0]!.polygon)).toBe(true);
-      const bedTop = site.surface.height(x, z, terrainHeight(5, shape, scale, x, z));
+      const bedTop = terrain.height(x, z);
       expect(y).toBeGreaterThanOrEqual(bedTop + 1);
       expect(y).toBeLessThan(level);
     }

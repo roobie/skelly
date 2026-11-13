@@ -1,12 +1,13 @@
 // The player figure's exported models, loaded from their files, behind the `ModelLibrary` calls the world figure
 // and the first-person arms make. Tests spread it into their library fakes so the view arms rig the real arm model.
-import { readFileSync } from 'node:fs';
+
+import { FIGURE_LIMBS, type Registry } from '@skelly/engine/content';
+import type { ItemLook } from '@skelly/presentation/internal/render/itemLook.ts';
+import { indexModelMaterials } from '@skelly/presentation/internal/render/models.ts';
+import type { ModelLibrary } from '@skelly/presentation/render';
 import { Group, type Object3D } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { Registry } from '../src/core/content.ts';
-import { FIGURE_LIMBS } from '../src/core/schema.ts';
-import type { ItemLook } from '../src/render/itemLook.ts';
-import { indexModelMaterials, type ModelLibrary } from '../src/render/models.ts';
+import { modFileBytes } from './modFile.ts';
 
 export type FigureModels = Pick<ModelLibrary, 'has' | 'part' | 'partLook' | 'heldLook'>;
 
@@ -21,7 +22,7 @@ export const loadFigureModels = async (
   const ids = [...new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model), ...worn])];
   const parsed = await Promise.all(
     ids.map((id) => {
-      const bytes = readFileSync(new URL(`../src/content/base/${registry.models.get(id)!.file}`, import.meta.url));
+      const bytes = modFileBytes(registry.models.get(id)!.file);
       return loader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     }),
   );

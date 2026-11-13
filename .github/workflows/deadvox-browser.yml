@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          submodules: true
       - name: Trust the checked-out repository
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Cache go-jsonnet
@@ -28,18 +29,30 @@ jobs:
         with:
           path: tools/jsonnet/bin
           key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - name: Cache submodule go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: packages/skelly-assets/tools/jsonnet/bin
+          key: jsonnet-assets-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/skelly-assets/tools/jsonnet/runtime.json') }}
+      - name: Cache pinned skelly-assets release
+        uses: actions/cache@v4
+        with:
+          path: tools/skelly-assets/archives
+          key: skelly-assets-${{ runner.os }}-${{ hashFiles('tools/skelly-assets/release.json') }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            packages/deadvox/tools/lit-check/package-lock.json
+            tools/lit-check/package-lock.json
       # Registry-free install, same reason as the fast job in deadvox.yml.
       - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Install pinned go-jsonnet
         run: npm --prefix ../.. run jsonnet:setup
+      - name: Install pinned skelly-assets release
+        run: npm --prefix ../.. run assets:setup
       - name: Cache Playwright Chromium
         if: ${{ inputs.shard != 'firefox' }}
         uses: actions/cache@v4
@@ -62,10 +75,14 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs flow
-      - name: Primary-action replay contract
+      - name: Primary-action search and look replay contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
-        run: node test/browser/primary-action.mjs replays
+        run: node test/browser/primary-action.mjs replays-search-look
+      - name: Primary-action motion and fire replay contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action.mjs replays-motion-fire
       - name: Primary-action glowstick pixel contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
@@ -86,6 +103,10 @@ jobs:
         if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 4
         run: node test/browser/save-controller-regressions.mjs
+      - name: Gauntlet save browser regressions
+        if: ${{ inputs.shard == 'save-other' }}
+        timeout-minutes: 4
+        run: node test/browser/gauntlet-save-regressions.mjs
       - name: Save-storage browser contract (Chromium)
         if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 1
@@ -147,10 +168,6 @@ jobs:
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
         run: node test/browser/vehicle-feasibility.mjs
-      - name: Isolated expression Wasm cross-engine contract
-        if: ${{ inputs.shard == 'firefox' }}
-        timeout-minutes: 1
-        run: node tools/probe-wasm-expressions.mjs
       # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'firefox' }}
@@ -224,6 +241,11 @@ jobs:
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3
         run: node test/browser/stairs.mjs lighting-atlas
+      - name: Main first-mesh reference browser contract
+        if: ${{ inputs.shard == 'main-reference' }}
+        # Boots main's startup beside the branch and waits for delivered geometry, not pixels.
+        timeout-minutes: 5
+        run: node test/browser/main-first-mesh.mjs
       - name: Reading consumer browser contract
         if: ${{ inputs.shard == 'stages' }}
         timeout-minutes: 3

@@ -1,0 +1,54 @@
+{
+  "dependencies": [
+    "skelly.body",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.loot",
+    "skelly.household-electrical",
+    "skelly.manufactured-blocks",
+    "skelly.natural-world",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "buildings-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture-hunting.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture-workshop.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "map-kits.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-workshop.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-03.ogg"
+    }
+  ],
+  "id": "skelly.deadvox.buildings",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

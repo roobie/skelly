@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
 
+import { defOf } from '@skelly/engine/inventory';
+import { type DeathSummary, deathViewModel, lootedText, showDeath } from '@skelly/presentation/internal/ui/death.ts';
 import { describe, expect, it } from 'vitest';
-import baseSounds from '../src/content/base/sounds.json' with { type: 'json' };
-import baseUi from '../src/content/base/ui.json' with { type: 'json' };
-import { defOf } from '../src/core/items.ts';
-import { type DeathSummary, deathViewModel, lootedText, newWorldQuery, showDeath } from '../src/ui/death.ts';
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
+import baseSounds from '../mods/skelly.deadvox.actors/actors-sounds.json' with { type: 'json' };
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 const { registry } = buildRegistry([
-  { source: '../content/base/ui.json', data: baseUi },
-  { source: '../content/base/sounds.json', data: baseSounds },
+  { source: '../../../mods/skelly.ui/ui.json', data: baseUi },
+  { source: '../../mods/skelly.deadvox.actors/actors-sounds.json', data: baseSounds },
   {
     source: 'fixture.json',
     data: {
@@ -51,7 +51,7 @@ describe('death card', () => {
     document.body.append(feedback, root);
 
     try {
-      showDeath(root, registry, summary({ worldSeed }), () => undefined);
+      showDeath(root, registry, summary({ worldSeed }), { act: () => undefined });
       expect(root.textContent).toContain(String(worldSeed));
     } finally {
       feedback.remove();
@@ -106,14 +106,5 @@ describe('lootedText', () => {
     expect(text).toContain('can of beans');
     expect(text).toContain('flashlight');
     expect(text.indexOf('can of beans')).toBeLessThan(text.indexOf('flashlight'));
-  });
-});
-
-describe('newWorldQuery', () => {
-  it('bumps the seed and drops the start time, keeping other params', () => {
-    const query = new URLSearchParams(newWorldQuery('?seed=3&radius=64&time=120', 3));
-    expect(query.get('seed')).toBe('4');
-    expect(query.get('radius')).toBe('64');
-    expect(query.has('time')).toBe(false);
   });
 });

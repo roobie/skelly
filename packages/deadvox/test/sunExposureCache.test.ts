@@ -1,13 +1,12 @@
+import { SunExposureCache } from '@skelly/engine/internal/core/lights.ts';
+import { terrainHeight } from '@skelly/engine/internal/core/worldgen.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { parseTimeOfDay, realSeconds } from '@skelly/engine/sim';
+import { CHUNK, terrainShapeOf } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { parseTimeOfDay } from '../src/core/clock.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { SunExposureCache } from '../src/core/lights.ts';
-import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { realSeconds } from '../src/core/time.ts';
-import { terrainHeight } from '../src/core/worldgen.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { sunExposedAt } from './fixtures/sunOracle.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { createRuntime, fixtureColumns, fixtureSite, registry, scale, seed, startRest } from './snapshotTestSupport.ts';
 
 const DAYTIME = parseTimeOfDay('10:00')!;
@@ -43,7 +42,7 @@ it('matches vertical ray exposure above and below the top blocker in a column', 
 it('bounds daytime opacity queries to one column scan per source in a compressed frame', () => {
   const quietColumn = fixtureColumns.find(
     ([columnX, columnZ]) =>
-      fixtureSite.zombiesIn(columnX, columnZ).length === 0 &&
+      fixtureSite.actorsIn(columnX, columnZ).length === 0 &&
       (fixtureSite.hordesIn?.(columnX, columnZ).length ?? 0) === 0,
   );
   if (!quietColumn) {
@@ -67,7 +66,11 @@ it('bounds daytime opacity queries to one column scan per source in a compressed
   }
   const x = cx * CHUNK + clearCell[0];
   const z = cz * CHUNK + clearCell[1];
-  const ground = fixtureSite.surface.height(x, z, terrainHeight(seed, terrainShapeOf(registry), scale, x, z));
+  const ground = terrainFor(fixtureSite, registry, scale, seed).surface!.height(
+    x,
+    z,
+    terrainHeight(seed, terrainShapeOf(registry), scale, x, z),
+  );
   const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, z + 0.5];
 
   let opaqueCalls = 0;

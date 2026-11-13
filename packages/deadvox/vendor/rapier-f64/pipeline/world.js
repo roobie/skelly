@@ -1,5 +1,5 @@
 import { BroadPhase, ColliderSet, NarrowPhase, } from "../geometry";
-import { CCDSolver, IntegrationParameters, IslandManager, ImpulseJointSet, MultibodyJointSet, RigidBodySet, } from "../dynamics";
+import { CCDSolver, IntegrationParameters, IslandManager, ImpulseJointSet, MultibodyJointSet, RigidBodySet, SoftBodySet, } from "../dynamics";
 import { VectorOps } from "../math";
 import { PhysicsPipeline } from "./physics_pipeline";
 import { SerializationPipeline } from "./serialization_pipeline";
@@ -16,6 +16,7 @@ export class World {
         this.colliders.free();
         this.impulseJoints.free();
         this.multibodyJoints.free();
+        this.softBodies.free();
         this.ccdSolver.free();
         this.physicsPipeline.free();
         this.serializationPipeline.free();
@@ -32,6 +33,7 @@ export class World {
         this.ccdSolver = undefined;
         this.impulseJoints = undefined;
         this.multibodyJoints = undefined;
+        this.softBodies = undefined;
         this.physicsPipeline = undefined;
         this.serializationPipeline = undefined;
         this.debugRenderPipeline = undefined;
@@ -39,7 +41,7 @@ export class World {
         this.pidControllers = undefined;
         this.vehicleControllers = undefined;
     }
-    constructor(gravity, rawIntegrationParameters, rawIslands, rawBroadPhase, rawNarrowPhase, rawBodies, rawColliders, rawImpulseJoints, rawMultibodyJoints, rawCCDSolver, rawPhysicsPipeline, rawSerializationPipeline, rawDebugRenderPipeline) {
+    constructor(gravity, rawIntegrationParameters, rawIslands, rawBroadPhase, rawNarrowPhase, rawBodies, rawColliders, rawSoftBodies, rawImpulseJoints, rawMultibodyJoints, rawCCDSolver, rawPhysicsPipeline, rawSerializationPipeline, rawDebugRenderPipeline) {
         this.gravity = gravity;
         this.integrationParameters = new IntegrationParameters(rawIntegrationParameters);
         this.islands = new IslandManager(rawIslands);
@@ -49,6 +51,7 @@ export class World {
         this.colliders = new ColliderSet(rawColliders);
         this.impulseJoints = new ImpulseJointSet(rawImpulseJoints);
         this.multibodyJoints = new MultibodyJointSet(rawMultibodyJoints);
+        this.softBodies = new SoftBodySet(rawSoftBodies);
         this.ccdSolver = new CCDSolver(rawCCDSolver);
         this.physicsPipeline = new PhysicsPipeline(rawPhysicsPipeline);
         this.serializationPipeline = new SerializationPipeline(rawSerializationPipeline);
@@ -59,25 +62,36 @@ export class World {
         this.impulseJoints.finalizeDeserialization(this.bodies);
         this.bodies.finalizeDeserialization(this.colliders);
         this.colliders.finalizeDeserialization(this.bodies);
+        this.softBodies.finalizeDeserialization(this.bodies, this.colliders);
     }
     static fromRaw(raw) {
         if (!raw)
             return null;
-        return new World(VectorOps.fromRaw(raw.takeGravity()), raw.takeIntegrationParameters(), raw.takeIslandManager(), raw.takeBroadPhase(), raw.takeNarrowPhase(), raw.takeBodies(), raw.takeColliders(), raw.takeImpulseJoints(), raw.takeMultibodyJoints());
+        return new World(VectorOps.fromRaw(raw.takeGravity()), raw.takeIntegrationParameters(), raw.takeIslandManager(), raw.takeBroadPhase(), raw.takeNarrowPhase(), raw.takeBodies(), raw.takeColliders(), raw.takeSoftBodies(), raw.takeImpulseJoints(), raw.takeMultibodyJoints());
     }
     takeSnapshot() {
-        return this.serializationPipeline.serializeAll(this.gravity, this.integrationParameters, this.islands, this.broadPhase, this.narrowPhase, this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints);
+        return this.serializationPipeline.serializeAll(this.gravity, this.integrationParameters, this.islands, this.broadPhase, this.narrowPhase, this.bodies, this.colliders, this.softBodies, this.impulseJoints, this.multibodyJoints);
     }
     static restoreSnapshot(data) {
         let deser = new SerializationPipeline();
         return deser.deserializeAll(data);
     }
     debugRender(filterFlags, filterPredicate) {
-        this.debugRenderPipeline.render(this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints, this.narrowPhase, filterFlags, filterPredicate);
+        this.debugRenderPipeline.render(this.bodies, this.colliders, this.softBodies, this.impulseJoints, this.multibodyJoints, this.narrowPhase, filterFlags, filterPredicate);
         return new DebugRenderBuffers(this.debugRenderPipeline.vertices, this.debugRenderPipeline.colors);
     }
     step(eventQueue, hooks) {
-        this.physicsPipeline.step(this.gravity, this.integrationParameters, this.islands, this.broadPhase, this.narrowPhase, this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints, this.ccdSolver, eventQueue, hooks);
+        this.physicsPipeline.step(this.gravity, this.integrationParameters, this.islands, this.broadPhase, this.narrowPhase, this.bodies, this.colliders, this.softBodies, this.impulseJoints, this.multibodyJoints, this.ccdSolver, eventQueue, hooks);
+        this.mapNewSoftBodies();
+    }
+    mapNewSoftBodies() {
+        this.softBodies.mapNewSoftBodies(this.bodies, this.colliders);
+        this.bodies.mapNewBodies(this.colliders);
+        this.colliders.mapNewColliders(this.bodies);
+        this.bodies.unmapRemovedBodies();
+        this.colliders.unmapRemovedColliders();
+        this.impulseJoints.unmapRemovedJoints();
+        this.multibodyJoints.unmapRemovedJoints();
     }
     propagateModifiedBodyPositionsToColliders() {
         this.bodies.raw.propagateModifiedBodyPositionsToColliders(this.colliders.raw);
@@ -146,6 +160,27 @@ export class World {
         let parentHandle = parent ? parent.handle : undefined;
         return this.colliders.createCollider(this.bodies, desc, parentHandle);
     }
+    createSoftBody(desc) {
+        return this.softBodies.createSoftBody(this.bodies, this.colliders, desc);
+    }
+    createDeformableCollider(desc, binding, parent) {
+        return this.colliders.createDeformableCollider(this.bodies, this.softBodies, desc, binding, parent.handle);
+    }
+    addSoftBodyCluster(body, particles) {
+        return this.softBodies.addCluster(body.handle, particles, this.bodies, this.colliders);
+    }
+    removeSoftBodyCluster(body, cluster) {
+        return this.softBodies.removeCluster(body.handle, cluster, this.islands, this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints);
+    }
+    tearSoftBody(body, edges, cells) {
+        return this.softBodies.tear(body.handle, edges, cells, this.islands, this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints);
+    }
+    cutSoftBody(body, blade) {
+        return this.softBodies.cut(body.handle, blade, this.islands, this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints);
+    }
+    wakeUpSoftBody(body, strong) {
+        this.softBodies.wakeUp(body.handle, this.bodies, strong);
+    }
     createImpulseJoint(params, parent1, parent2, wakeUp) {
         return this.impulseJoints.createJoint(this.bodies, params, parent1.handle, parent2.handle, wakeUp);
     }
@@ -164,14 +199,22 @@ export class World {
     getMultibodyJoint(handle) {
         return this.multibodyJoints.get(handle);
     }
+    getSoftBody(handle) {
+        return this.softBodies.get(handle);
+    }
     removeRigidBody(body) {
         if (this.bodies) {
-            this.bodies.remove(body.handle, this.islands, this.colliders, this.impulseJoints, this.multibodyJoints);
+            this.bodies.remove(body.handle, this.islands, this.colliders, this.softBodies, this.impulseJoints, this.multibodyJoints);
+        }
+    }
+    removeSoftBody(body) {
+        if (this.softBodies) {
+            this.softBodies.remove(body.handle, this.islands, this.bodies, this.colliders, this.impulseJoints, this.multibodyJoints);
         }
     }
     removeCollider(collider, wakeUp) {
         if (this.colliders) {
-            this.colliders.remove(collider.handle, this.islands, this.bodies, wakeUp);
+            this.colliders.remove(collider.handle, this.islands, this.bodies, this.softBodies, wakeUp);
         }
     }
     removeImpulseJoint(joint, wakeUp) {
@@ -192,6 +235,9 @@ export class World {
     }
     forEachActiveRigidBody(f) {
         this.bodies.forEachActiveRigidBody(this.islands, f);
+    }
+    forEachSoftBody(f) {
+        this.softBodies.forEach(f);
     }
     castRay(ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider, filterExcludeRigidBody, filterPredicate) {
         return this.broadPhase.castRay(this.narrowPhase, this.bodies, this.colliders, ray, maxToi, solid, filterFlags, filterGroups, filterExcludeCollider ? filterExcludeCollider.handle : null, filterExcludeRigidBody ? filterExcludeRigidBody.handle : null, this.colliders.castClosure(filterPredicate));
@@ -231,7 +277,7 @@ export class World {
         this.narrowPhase.intersectionPairsWith(collider1.handle, this.colliders.castClosure(f));
     }
     contactPair(collider1, collider2, f) {
-        this.narrowPhase.contactPair(collider1.handle, collider2.handle, f);
+        this.narrowPhase.contactPair(collider1.handle, collider2.handle, this.bodies, f);
     }
     intersectionPair(collider1, collider2) {
         return this.narrowPhase.intersectionPair(collider1.handle, collider2.handle);

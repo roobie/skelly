@@ -15,7 +15,7 @@ export declare class RayIntersection {
     featureType: FeatureType;
     featureId: number | undefined;
     constructor(timeOfImpact: number, normal: Vector, featureType?: FeatureType, featureId?: number);
-    static fromRaw(raw: RawRayIntersection): RayIntersection;
+    static fromBuffer(raw: RawRayIntersection, target?: RayIntersection): RayIntersection;
 }
 export declare class RayColliderIntersection {
     collider: Collider;
@@ -24,7 +24,7 @@ export declare class RayColliderIntersection {
     featureType: FeatureType;
     featureId: number | undefined;
     constructor(collider: Collider, timeOfImpact: number, normal: Vector, featureType?: FeatureType, featureId?: number);
-    static fromRaw(colliderSet: ColliderSet, raw: RawRayColliderIntersection): RayColliderIntersection;
+    static fromBuffer(colliderSet: ColliderSet, raw: RawRayColliderIntersection, target?: RayColliderIntersection): RayColliderIntersection;
 }
 export declare class RayColliderHit {
     collider: Collider;

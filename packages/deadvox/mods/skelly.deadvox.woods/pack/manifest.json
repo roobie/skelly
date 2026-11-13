@@ -1,0 +1,18 @@
+{
+  "dependencies": ["skelly.deadvox.loot", "skelly.manufactured-blocks", "skelly.natural-world", "skelly.structures"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates.json"
+    }
+  ],
+  "id": "skelly.deadvox.woods",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

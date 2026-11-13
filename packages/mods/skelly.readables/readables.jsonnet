@@ -1,0 +1,1 @@
+(import 'tools/jsonnet/lib/item-policy.libsonnet').itemPack((import 'tools/jsonnet/lib/furniture-breach.libsonnet').breaking((import 'tools/jsonnet/lib/furniture-shape.libsonnet').colliding(import 'readables.libsonnet')))

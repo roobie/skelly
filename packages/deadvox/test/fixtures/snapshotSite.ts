@@ -1,12 +1,12 @@
-import { AuthoredSite } from '../../src/core/authoredSite.ts';
-import type { Chunk } from '../../src/core/chunk.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { CHUNK } from '../../src/core/coords.ts';
-import type { Scale } from '../../src/core/scale.ts';
-import { type BlockBox, stampChunk } from '../../src/core/structure.ts';
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import type { BlockBox } from '@skelly/engine/internal/core/structure.ts';
+import { CHUNK, type Scale, type SiteTerrainPlan } from '@skelly/engine/world';
+import { withTerrainBoxes } from './terrain.ts';
 
 /** A small authored world with independent furniture, zombie and foliage columns. */
 export class SnapshotSite extends AuthoredSite {
+  declare readonly terrain: SiteTerrainPlan;
   readonly bounds = { x0: 192, z0: -32, x1: 448, z1: 96 };
   readonly hedges: readonly BlockBox[];
   constructor(seed: number, registry: Registry, scale: Scale) {
@@ -23,19 +23,16 @@ export class SnapshotSite extends AuthoredSite {
         { template: 'shed', position: [144, 20, -8], rotation: 0 },
       ],
       player: { position: [112, 20.5, 0], bearing: 0 },
-      shamblers: [],
+      actors: [],
       woodlands: [],
       tracks: [],
     });
     this.hedges = [{ min: [224, 41, 0], max: [225, 44, 1], block: registry.blockIds.get('leaves')! }];
+    this.terrain = withTerrainBoxes(this, this.hedges).terrain;
   }
-  override zombiesIn(cx: number, cz: number) {
+  override actorsIn(cx: number, cz: number) {
     return cz === 0 && (cx === 8 || cx === 9)
       ? [{ type: 'shambler', pos: [cx * CHUNK + 12, 41, 8] as [number, number, number] }]
       : [];
-  }
-  override stamp(chunk: Chunk): void {
-    super.stamp(chunk);
-    stampChunk(chunk, this.hedges);
   }
 }

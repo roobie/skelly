@@ -1,16 +1,19 @@
+import { bookReadingHooks } from '@skelly/engine/internal/core/bookReading.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { Character, practiceForNextLevel } from '@skelly/engine/sim';
 import { expect, it } from 'vitest';
-import { bookReadingHooks } from '../src/core/bookReading.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
 
-const fixture = (skill = 'fixture_skill', level = 2, taughtRecipe = 'fixture_recipe') =>
+const fixture = (skill = 'crafting', level = 2, taughtRecipe = 'fixture_recipe') =>
   buildFixtureRegistry([
     {
       source: 'recipe-knowledge-fixture.json',
       data: {
-        skillProgression: [{ id: 'core', practicePerLevel: 10 }],
-        skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+        skillProgression: [{ id: 'fixture_progression', capability: 'progression', practicePerLevel: 10 }],
+        skills: [
+          { id: 'fixture_skill', capability: 'crafting', name: 'Fixture skill', training: { craftingTierOffset: 1 } },
+        ],
         items: [
           {
             id: 'fixture_result',
@@ -20,7 +23,7 @@ const fixture = (skill = 'fixture_skill', level = 2, taughtRecipe = 'fixture_rec
             size: [1, 1],
             disassembly: {
               timeGameMinutes: 1,
-              skill: 'fixture_skill',
+              skill: 'crafting',
               yields: [{ item: 'fixture_material_item', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
             },
           },
@@ -82,7 +85,7 @@ it('learns the same recipe from a book below its skill threshold', () => {
 });
 
 it('learns level-zero unlocks on creation and crossed unlocks in a multi-level award', () => {
-  const { registry, issues } = fixture('fixture_skill', 0);
+  const { registry, issues } = fixture('crafting', 0);
   expect(issues).toEqual([]);
   expect(new Character(registry).knownRecipes.has('fixture_recipe')).toBe(true);
   const runtime = make();
@@ -95,13 +98,13 @@ it('learns level-zero unlocks on creation and crossed unlocks in a multi-level a
   expect(runtime.character.knownRecipes.has('fixture_recipe')).toBe(true);
 });
 
-it('rejects unknown unlock skills, missing taught recipes, and out-of-range unlock levels', () => {
-  expect(fixture('missing_skill').issues.some((issue) => issue.message.includes('no skill'))).toBe(true);
-  expect(
-    fixture('fixture_skill', 2, 'missing_recipe').issues.some((issue) => issue.message.includes('no recipe')),
-  ).toBe(true);
+it('rejects unknown unlock roles, missing taught recipes, and out-of-range unlock levels', () => {
+  expect(fixture('missing_role').issues.some((issue) => issue.path === 'recipes[0].skillUnlock.skill')).toBe(true);
+  expect(fixture('crafting', 2, 'missing_recipe').issues.some((issue) => issue.message.includes('no recipe'))).toBe(
+    true,
+  );
   for (const level of [-1, 0.5, SKILL_LEVEL_LEGENDARY + 1]) {
-    expect(fixture('fixture_skill', level).issues.length).toBeGreaterThan(0);
+    expect(fixture('crafting', level).issues.length).toBeGreaterThan(0);
   }
-  expect(fixture('fixture_skill', SKILL_LEVEL_LEGENDARY).issues).toEqual([]);
+  expect(fixture('crafting', SKILL_LEVEL_LEGENDARY).issues).toEqual([]);
 });

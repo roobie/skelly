@@ -1,0 +1,530 @@
+{
+  "soundFamilies": [
+    {
+      "id": "shambler"
+    }
+  ],
+  "sounds": [
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over grass; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_step_grass",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over dirt or mud; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_step_mud",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": [
+        "assets/audio/footstep-mud-01.ogg",
+        "assets/audio/footstep-mud-02.ogg",
+        "assets/audio/footstep-mud-03.ogg",
+        "assets/audio/footstep-mud-04.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over sand; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_step_sand",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": [
+        "assets/audio/footstep-grass-sand-01.ogg",
+        "assets/audio/footstep-grass-sand-02.ogg",
+        "assets/audio/footstep-grass-sand-03.ogg",
+        "assets/audio/footstep-grass-sand-04.ogg",
+        "assets/audio/footstep-grass-sand-05.ogg",
+        "assets/audio/footstep-grass-sand-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over hard ground; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_step_stone",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": [
+        "assets/audio/footstep-stone-01.ogg",
+        "assets/audio/footstep-stone-02.ogg",
+        "assets/audio/footstep-stone-03.ogg",
+        "assets/audio/footstep-stone-04.ogg",
+        "assets/audio/footstep-stone-05.ogg",
+        "assets/audio/footstep-stone-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over planks; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_step_wood",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": [
+        "assets/audio/footstep-wood-01.ogg",
+        "assets/audio/footstep-wood-02.ogg",
+        "assets/audio/footstep-wood-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A nearby shambler walks or chases over fabric or carpet; only the nearest moving shamblers are voiced.",
+      "gain": 0.34000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_step_leaves",
+      "minIntervalSimSeconds": 0.12,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.81999999999999995],
+      "variants": ["assets/audio/footstep-leaves-01.ogg"]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A shambler idles or strolls within hearing range and groans now and then.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A shambler notices you and starts investigating.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "shambler_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A shambler reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's spawn action to spawn shamblers nearby.",
+      "description": "A melee attack hits a shambler.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "shambler_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam idles nearby.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "amalgam_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.94999999999999996, 1.05],
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam notices you.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "amalgam_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "amalgam_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's amalgam action to spawn amalgams nearby.",
+      "description": "An amalgam is hit by a melee attack.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "amalgam_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.93999999999999995, 1.0600000000000001],
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner idles nearby.",
+      "gain": 0.41999999999999998,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "runner_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1799999999999999, 1.3],
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner notices you.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "runner_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1499999999999999, 1.25],
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "runner_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1200000000000001, 1.22],
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's runner action to spawn runners nearby.",
+      "description": "A runner is hit by a melee attack.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "runner_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.1499999999999999, 1.25],
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler idles nearby.",
+      "gain": 0.52000000000000002,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "crawler_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.68000000000000005, 0.78000000000000003],
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler notices you.",
+      "gain": 0.62,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "crawler_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.69999999999999996, 0.80000000000000004],
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler reaches you and attacks.",
+      "gain": 0.69999999999999996,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "crawler_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.65000000000000002, 0.75],
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's crawler action to spawn crawlers nearby.",
+      "description": "A crawler is hit by a melee attack.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "crawler_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [0.65000000000000002, 0.75],
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie idles nearby.",
+      "gain": 0.45000000000000001,
+      "gainJitter": [0.90000000000000002, 1.1000000000000001],
+      "id": "acid_zombie_idle",
+      "minIntervalSimSeconds": 0.10000000000000001,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0800000000000001, 1.1599999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie notices you.",
+      "gain": 0.71999999999999997,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "acid_zombie_alert",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0600000000000001, 1.1399999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie reaches you and attacks.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "acid_zombie_attack",
+      "minIntervalSimSeconds": 0.25,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0600000000000001, 1.1399999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ]
+    },
+    {
+      "category": "world",
+      "debugHint": "#{debug:true}: Use the debug panel's acid zombie action to spawn acid zombies nearby.",
+      "description": "An acid zombie is hit by a melee attack.",
+      "gain": 0.80000000000000004,
+      "gainJitter": [0.90000000000000002, 1.1200000000000001],
+      "id": "acid_zombie_hurt",
+      "minIntervalSimSeconds": 0.080000000000000002,
+      "noise": {
+        "enabled": false,
+        "radiusMetres": 1
+      },
+      "pitchJitter": [1.0600000000000001, 1.1399999999999999],
+      "ringMod": {
+        "depth": 0.69999999999999996,
+        "frequencyHz": 70
+      },
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ]
+    }
+  ]
+}

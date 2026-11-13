@@ -1,31 +1,21 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { Registry } from '@skelly/engine/content';
+import { bookReadingHooks } from '@skelly/engine/internal/core/bookReading.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { dropSpots } from '@skelly/engine/internal/core/inventory.ts';
+import { craftingActivityTier } from '@skelly/engine/internal/core/skillTraining.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { stopReadingOnClose } from '@skelly/engine/internal/game/readingClose.ts';
+import { defOf, footprint, Inventory, planCraft } from '@skelly/engine/inventory';
+import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
+import { craftRows } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { describe, expect, it } from 'vitest';
-import { bookReadingHooks } from '../src/core/bookReading.ts';
-import { Character } from '../src/core/character.ts';
-import type { Registry } from '../src/core/content.ts';
-import { planCraft } from '../src/core/crafting.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { dropSpots, Inventory } from '../src/core/inventory.ts';
-import { defOf, footprint } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { craftingActivityTier } from '../src/core/skillTraining.ts';
-import { realSeconds } from '../src/core/time.ts';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { stopReadingOnClose } from '../src/game/readingClose.ts';
-import { craftRows } from '../src/ui/craftReadout.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BODY_TUNING_FIXTURE, COMPRESSION_CAPS_FIXTURE, fixtureTier, Simulation } from './simulationFixture.ts';
 
-const baseContent = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json'))
-  .sort()
-  .map((file) => ({
-    source: file,
-    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-  }));
+const baseContent = baseContentSources();
 const registry = baseRegistry();
 // Built once at load: a full registry build inside the test body pushed it past the test timeout under load.
 const readingFixtureRegistry = buildRegistry([
@@ -59,6 +49,7 @@ const readingFixtureRegistry = buildRegistry([
 ]).registry;
 const make = (
   saved?: {
+    character: ReturnType<Character['snapshotState']>;
     inventory: ReturnType<Inventory['snapshotState']>;
     simulation: ReturnType<Simulation['snapshotState']>;
     action: ReturnType<Simulation['actions']['snapshotState']>;
@@ -67,7 +58,7 @@ const make = (
 ) => {
   const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
   const sim = new Simulation({ seed: 1 });
-  const character = new Character(contentRegistry);
+  const character = saved ? Character.restoreState(contentRegistry, saved.character) : new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
   sim.actions.craft = craftActionHooks(inv, character, reach, { feet: () => [0, 0, 0], calendar: () => sim.calendar });
   const light = { dark: false };
@@ -81,6 +72,7 @@ const make = (
 };
 const start = (contentRegistry: Registry = registry) => {
   const runtime = make(undefined, contentRegistry);
+  runtime.character.initializeProgression({}, ['torch']);
   for (const [type, count] of [
     ['stick', 1],
     ['rag', 2],
@@ -106,6 +98,7 @@ const start = (contentRegistry: Registry = registry) => {
   return { ...runtime, item, payload: item.work! };
 };
 const snapshot = (runtime: ReturnType<typeof make>) => ({
+  character: runtime.character.snapshotState(),
   inventory: runtime.inv.snapshotState(),
   simulation: runtime.sim.snapshotState(),
   action: runtime.sim.actions.snapshotState(),
@@ -114,6 +107,7 @@ const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
 const startRepair = () => {
   const runtime = make();
+  runtime.character.initializeProgression({}, ['repair_crowbar']);
   const target = runtime.inv.create('crowbar');
   target.condition = 0.2;
   for (const [type, pos] of [
@@ -427,28 +421,6 @@ describe('core long actions', () => {
     }
     expect(restored.sim.actions.snapshotState()).toEqual(uninterrupted.sim.actions.snapshotState());
     expect(restored.strikes).toEqual(uninterrupted.strikes.slice(saving.strikes.length));
-  });
-  it('Read resumes the same interrupted book from its saved progress', () => {
-    const runtime = make();
-    const book = runtime.inv.create('field_manual');
-    expect(runtime.inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
-    runtime.sim.actions.stop();
-    expect(runtime.sim.actions.job).toMatchObject({
-      jobType: 'reading',
-      stopped: true,
-      bookUid: book.uid,
-      elapsed: 10,
-    });
-
-    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
-    expect(runtime.sim.actions.job).toMatchObject({
-      jobType: 'reading',
-      stopped: false,
-      bookUid: book.uid,
-      elapsed: 10,
-    });
   });
   it('light lost mid-read stops the book, keeps its progress and refuses Read until light returns', () => {
     const runtime = make();

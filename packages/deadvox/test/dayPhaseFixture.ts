@@ -1,8 +1,9 @@
+import { type ClockSettings, SECONDS_PER_DAY } from '@skelly/engine/internal/core/clock.ts';
+import type { DayCycle, DayPhase } from '@skelly/engine/internal/core/dayPhase.ts';
+import { type DayCycleDef, DayCycleSchema } from '@skelly/engine/internal/core/schema.ts';
+import { dayPhaseAt, parseTimeOfDay } from '@skelly/engine/sim';
 import { parse } from 'valibot';
-import coreDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
-import { type ClockSettings, parseTimeOfDay, SECONDS_PER_DAY } from '../src/core/clock.ts';
-import { type DayCycle, type DayPhase, dayPhaseAt } from '../src/core/dayPhase.ts';
-import { type DayCycleDef, DayCycleSchema } from '../src/core/schema.ts';
+import coreDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
 
 /** Base content's day cycle row as the registry holds it, for tests that need a cycle without loading one. */
 export const BASE_DAY_CYCLE: DayCycleDef = parse(DayCycleSchema, coreDayCycle.dayCycle);

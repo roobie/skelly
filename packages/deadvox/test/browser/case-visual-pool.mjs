@@ -4,23 +4,30 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const probePath = resolve(root, '__casePoolProbe.js');
 const probeSource = `
 import { Scene, PerspectiveCamera, WebGLRenderer } from 'three';
-import { buildRegistry } from '/src/core/content.ts';
-import { Inventory } from '/src/core/inventory.ts';
-import { playerTuning } from '/src/game/player.ts';
-import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
-import { PileMeshes } from '/src/render/piles.ts';
-import { ModelLibrary } from '/src/render/models.ts';
-import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
-const raw = import.meta.glob('./src/content/base/*.json', { eager: true, import: 'default' });
-const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({ source, data })));
+import { buildRegistry } from '@skelly/engine/content';
+import { Inventory } from '@skelly/engine/inventory';
+import { playerTuning } from '@skelly/engine/sim';
+import { CaseEffects, FLYING_CASE_CAP } from '@skelly/presentation/internal/render/caseEffects.ts';
+import { ModelLibrary, PileMeshes } from '@skelly/presentation/render';
+import { productAssets } from '/src/product/assets.ts';
+import { SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
+const raw = {
+  ...import.meta.glob('./mods/*/*.json', { eager: true, import: 'default' }),
+  ...import.meta.glob('../mods/*/*.json', { eager: true, import: 'default' }),
+};
+const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({
+  // Asset ownership uses bundled intake's roots, not this root-level probe's module URL.
+  source: source.startsWith('../') ? source.replace('../mods/', '../../../mods/') : source.replace('./mods/', '../../mods/'),
+  data,
+})));
 if (issues.length) throw new Error(JSON.stringify(issues));
 const caseItem = [...registry.items.values()].find((item) => {
   const model = registry.models.get(item.model);
@@ -34,8 +41,8 @@ const modelErrors = [];
 const models = new ModelLibrary(
   { ...registry, models: new Map([[modelDef.id, modelDef]]) },
   (message) => modelErrors.push(message),
-  undefined,
-  1,
+  { packAssets: productAssets.models },
+  { modelLoadConcurrency: 1, modelFetchRetry: { retries: 0, backoffRealSeconds: 0 } },
 );
 const waitFor = async (condition) => {
   const deadline = performance.now() + 20000;
@@ -154,7 +161,7 @@ renderer.dispose();
 globalThis.__casePoolResult = result;
 `;
 
-const server = await createServer({
+const server = await createStageServer({
   configFile: resolve(root, 'vite.config.ts'),
   root,
   logLevel: 'error',
@@ -219,7 +226,11 @@ const measure = async (launchedBrowser, address, mode) => {
       await page.waitForFunction(() => globalThis.__casePoolWaiting, undefined, { timeout: 20_000 });
       releaseRequest();
     }
-    await page.waitForFunction(() => globalThis.__casePoolResult, undefined, { timeout: 30_000 });
+    await page
+      .waitForFunction(() => globalThis.__casePoolResult, undefined, { timeout: 30_000 })
+      .catch((error) => {
+        throw new Error(`Case probe did not finish; browser errors: ${errors.join('; ')}`, { cause: error });
+      });
     const result = await page.evaluate(() => globalThis.__casePoolResult);
     process.stdout.write(`case visual pool (${mode}): ${JSON.stringify(result)}\n`);
     assert.deepEqual(errors, [], `browser errors: ${errors.join('; ')}`);

@@ -6,11 +6,11 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { verifyAltRelease } from './alt-release.mjs';
 import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -18,7 +18,7 @@ const observation = {
   name: 'native-firefox-time-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -29,7 +29,7 @@ const observation = {
     );
   },
 };
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   root: projectRoot,
   logLevel: 'error',
@@ -59,7 +59,7 @@ try {
     }
   });
   await page.addInitScript(() => {
-    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
+    localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
     const describe = (element) =>
       element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${typeof element.className === 'string' && element.className ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`
@@ -127,7 +127,9 @@ try {
       }
     };
   });
-  await page.goto(browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64`));
+  await page.goto(
+    browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/#{debug:true,seed:1,radius:64}`),
+  );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
   });
@@ -158,7 +160,7 @@ try {
   await verifyAltRelease(page);
   process.stdout.write(`Native Alt release browser: ${browser.version()}\n`);
   const gateCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
   await page.evaluate((code) => {
     globalThis.firefoxNativeGateEvents = [];

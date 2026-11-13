@@ -2,8 +2,6 @@ local item(id, name) = {
   id: id,
   name: name,
   workInProgress: false,
-  notLoot: false,
-  economy: { usage: [], tiers: [] },
   category: 'material',
   weight: 1,
   size: [1, 1],

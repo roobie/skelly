@@ -1,4 +1,28 @@
 import { readFileSync } from 'node:fs';
+import { adsLimits } from '@skelly/engine/internal/core/adsView.ts';
+import { applyStartKit } from '@skelly/engine/internal/core/startState.ts';
+import { LOOK_PITCH_LIMIT } from '@skelly/engine/internal/game/playerControls.ts';
+import { HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import {
+  adsCameraEye,
+  figureStancePose,
+  heldHoldFrame,
+  modelToView,
+  mountedOptic,
+  NEUTRAL_AIM,
+  playerAdsPose,
+  playerEyePosition,
+  playerLookPose,
+  readyMeleePose,
+} from '@skelly/engine/pose';
+import { makeScale } from '@skelly/engine/world';
+import { ARM_NODE, solveArmRig } from '@skelly/presentation/internal/render/armRig.ts';
+import { HeldPresentation } from '@skelly/presentation/internal/render/heldPresentation.ts';
+import { createHeldViews } from '@skelly/presentation/internal/render/heldViews.ts';
+import { stepMagazineRaise } from '@skelly/presentation/internal/render/magazineLoadPose.ts';
+import { OpticLensRenderer } from '@skelly/presentation/internal/render/opticLens.ts';
+import { OPTIC_BODY_LAYER, PLAYER_SELF_MASK_LAYER } from '@skelly/presentation/internal/render/shadowFlags.ts';
+import { HeldItems, type ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import {
   Box3,
   BoxGeometry,
@@ -17,57 +41,30 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
-import { adsCameraEye, adsLimits } from '../src/core/adsView.ts';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { readyMeleePose } from '../src/core/meleePose.ts';
-import { mountedOptic } from '../src/core/opticView.ts';
-import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { figureStancePose, playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
-import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
-import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { HeldPresentation } from '../src/render/heldPresentation.ts';
-import { createHeldViews } from '../src/render/heldViews.ts';
-import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { OpticLensRenderer } from '../src/render/opticLens.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
-import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
-vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
-vi.mock('../src/render/armRig.ts', { spy: true });
+vi.mock('@skelly/presentation/internal/render/magazineLoadPose.ts', { spy: true });
+vi.mock('@skelly/presentation/internal/render/armRig.ts', { spy: true });
+
+// The scoped default is a rifle whose rail takes the 1-6x scope once its iron sights come off.
+const SCOPED_RIFLE = 'rifle_assault';
+const SCOPE = 'optic_lpvo_1_6x';
 
 const fixture = async (
   firearm = true,
   firearmType?: string,
-  { preview, heldLook }: { preview?: string; heldLook?: ModelLibrary['heldLook'] } = {},
+  { optic: requestedOptic, heldLook }: { optic?: string; heldLook?: ModelLibrary['heldLook'] } = {},
 ) => {
   const base = baseRegistry();
-  const gun = firearmType
-    ? base.items.get(firearmType)
-    : [...base.items.values()].find(
-        (def) =>
-          def.firearm &&
-          base.models.get(def.model!)?.hands?.butt &&
-          base.models
-            .get(def.model!)
-            ?.gun?.attachments?.some((attachment) =>
-              [...base.models.values()].some(
-                (model) => model.gun?.attachment?.id === attachment.id && model.gun.attachment.kind === 'optic',
-              ),
-            ),
-      );
+  const optic = requestedOptic ?? (firearm && !firearmType ? SCOPE : undefined);
+  const gun = base.items.get(firearmType ?? SCOPED_RIFLE);
   if (!gun) {
-    throw new Error('Need an optic-equipped firearm source');
+    throw new Error('Need a firearm source');
   }
   const itemDef = firearm
     ? { ...gun, id: 'actor-fixture-item' }
@@ -76,22 +73,24 @@ const fixture = async (
         name: 'Fixture item',
         category: 'misc' as const,
         weight: 100,
-        economy: { usage: [], tiers: [] },
         workInProgress: false,
-        notLoot: false,
         size: [2, 2] as [number, number],
         twoHanded: true,
       };
   const registry = { ...base, items: new Map(base.items).set(itemDef.id, itemDef) };
   const inventory = new Inventory(registry);
-  if (preview && !equipDebugLoadout(inventory, true, true, preview)) {
-    throw new Error('Preview loadout was not applied');
+  if (optic) {
+    applyStartKit(
+      inventory,
+      fixtureStart([{ id: 'firearm', item: gun.id, destination: { kind: 'hand', role: 'dominant' } }]),
+    );
+    fitFixtureOptic(inventory, inventory.hands.right!, optic);
   }
-  const item = preview ? inventory.hands.right : inventory.create(itemDef.id);
+  const item = optic ? inventory.hands.right : inventory.create(itemDef.id);
   if (!item) {
     throw new Error('Preview did not equip a right-hand firearm');
   }
-  if (!(preview || inventory.add(item, { kind: 'hand', side: 'right' }))) {
+  if (!(optic || inventory.add(item, { kind: 'hand', side: 'right' }))) {
     throw new Error('Cannot hold fixture item');
   }
   const figure = registry.figures.get('player')!;
@@ -215,8 +214,9 @@ const bodySamples = (world: Group, camera: PerspectiveCamera) => {
   const ray = new Raycaster();
   ray.layers.mask = camera.layers.mask;
   const samples: NonNullable<ReturnType<typeof bodySurfaceSample>>[] = [];
-  for (const x of [-1, -0.5, 0, 0.5, 1]) {
-    for (const y of [-1, -0.5, 0, 0.5, 1]) {
+  const grid = Array.from({ length: 9 }, (_, index) => (index - 4) / 4);
+  for (const x of grid) {
+    for (const y of grid) {
       ray.setFromCamera(new Vector2(x, y), camera);
       for (const hit of ray.intersectObject(world, true)) {
         const sample = bodySurfaceSample(hit, camera);
@@ -235,7 +235,7 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
     const f = await fixture(true, type);
     const figure = f.registry.figures.get('player')!;
     const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
-    const amplitude = f.registry.skills.get('firearms_combat')!.combat!.firearms!.wobbleLimitRadians;
+    const amplitude = skilledFirearmsTuning(f.registry).wobbleLimitRadians;
     // Walking's vertical arch, look sway and noise share one vector cap, not independently additive maxima.
     const envelope = [
       NEUTRAL_AIM,
@@ -287,6 +287,9 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
       const distance = bounds.getSize(new Vector3()).length();
       camera.position.copy(centre).addScalar(distance);
       camera.lookAt(centre);
+      // Zoomed so the ray grid spans the figure instead of the empty space around it.
+      camera.zoom = 4;
+      camera.updateProjectionMatrix();
       camera.updateMatrixWorld(true);
       const external = bodySamples(f.world.group, camera);
       expect(external.length).toBeGreaterThan(0);
@@ -347,7 +350,7 @@ it('orbit and spectator orientation cannot change world handling transforms for 
 });
 
 it('the play frame poses overlay and world held views from this frame rather than the previous view', async () => {
-  const source = readFileSync(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../presentation/src/presentation/play.ts', import.meta.url), 'utf8');
   const start = source.indexOf('const updateFrame =');
   const end = source.indexOf('const skyRoute =', start);
   expect(start).toBeGreaterThan(0);
@@ -619,7 +622,7 @@ it.each(unityOpticTypes())(
     // Both the world figure and the hidden optics animator compose the gun; the test checks the world's.
     const fitted: { slot: string; fit: Object3D }[] = [];
     const f = await fixture(true, undefined, {
-      preview: `?loadout=ar&optic=${opticType}`,
+      optic: opticType,
       heldLook: (look) => {
         const parts = new Group().add(new Mesh(geometry, material), new Mesh(geometry, material));
         const slots = Object.fromEntries(

@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parents[4]
 HERE = Path(__file__).resolve().parent
 PRECISION = 'f32' if '--f32' in sys.argv else 'f64'
 OUT = ROOT / f'test-results/rapier-{PRECISION}'
-REVISION = '0fd32c1cbbc7018af36f09b190c16ce72fbb9301'
+REVISION = 'b716d375efc0201003f0cd9ef7168eee0b62c177'
 TOOLCHAIN = '1.90.0'
-BINDGEN = '0.2.100'
+BINDGEN = '0.2.112'
 VENDOR = ROOT / 'packages/deadvox/vendor/rapier-f64'
 
 
@@ -34,12 +34,16 @@ def run(*args, cwd=OUT):
 
 def materialize(source, destination, revision=REVISION):
     archive = subprocess.check_output(
-        ['git', 'archive', revision, 'src', 'src.ts', 'LICENSE'], cwd=source, env=environment())
+        ['git', 'archive', revision, 'bindings/typescript/src', 'bindings/typescript/src.ts', 'LICENSE'], cwd=source, env=environment())
     if destination.exists():
         shutil.rmtree(destination)
     destination.mkdir(parents=True)
     with tarfile.open(fileobj=io.BytesIO(archive)) as tree:
         tree.extractall(destination, filter='data')
+    bindings = destination / 'bindings/typescript'
+    for name in ['src', 'src.ts']:
+        shutil.move(str(bindings / name), destination / name)
+    shutil.rmtree(destination / 'bindings')
 
 
 def digest(path):
@@ -62,7 +66,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     source = OUT / 'upstream'
     if not source.exists():
-        run('git', 'clone', 'https://github.com/dimforge/rapier.js.git', str(source))
+        run('git', 'clone', '--filter=blob:none', '--no-checkout', 'https://github.com/dimforge/rapier.git', str(source))
     pinned = OUT / 'pinned'
     materialize(source, pinned)
     run('rustup', 'toolchain', 'install', TOOLCHAIN, '--profile', 'minimal', '--target', 'wasm32-unknown-unknown')
@@ -85,6 +89,14 @@ def main():
             text = text.replace('Float32Array::new_with_length(self.vertices', 'Float64Array::new_with_length(self.vertices')
         else:
             text = re.sub(r'\bf32\b', 'f64', text).replace('Float32Array', 'Float64Array')
+        # The f64 crate uses i64 voxel vectors; keep the JS i32 grid contract checked, never narrowed silently.
+        text = text.replace('IVector::new(ix, iy, iz)', 'IVector::new(ix.into(), iy.into(), iz.into())')
+        text = text.replace('IVector::new(shift_x, shift_y, shift_z)',
+                            'IVector::new(shift_x.into(), shift_y.into(), shift_z.into())')
+        text = text.replace('.map(IVector::from_slice)',
+                            '.map(|coords| IVector::from_slice(&coords.iter().map(|value| i64::from(*value)).collect::<Vec<_>>()))')
+        text = text.replace('.flat_map(|ids| ids.to_array())',
+                            '.flat_map(|ids| ids.to_array().map(|value| <i32 as std::convert::TryFrom<i64>>::try_from(value).expect("voxel coordinate exceeds JS i32")))')
         path.write_text(text)
     manifest = (HERE / 'Cargo.toml').read_text()
     if PRECISION == 'f32':

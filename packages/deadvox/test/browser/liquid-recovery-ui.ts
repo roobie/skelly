@@ -1,16 +1,13 @@
-import { Character } from '../../src/core/character.ts';
-import type { ClockSettings } from '../../src/core/clock.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
-import { CraftCommands } from '../../src/core/craftCommands.ts';
-import { craftActionHooks } from '../../src/core/craftWork.ts';
-import { HandlingQueue } from '../../src/core/handling.ts';
-import { Inventory } from '../../src/core/inventory.ts';
-import { restoreItem, snapshotItem } from '../../src/core/items.ts';
-import { bindReach } from '../../src/core/reach.ts';
-import { Simulation } from '../../src/core/sim.ts';
-import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
+import type { Registry } from '@skelly/engine/content';
+import { BindingRegistry } from '@skelly/engine/input';
+import type { ClockSettings } from '@skelly/engine/internal/core/clock.ts';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { CraftCommands, craftActionHooks, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Character, Simulation } from '@skelly/engine/sim';
+import { InventoryScreen } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
+import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { FULL, RESULT, STOCK, VESSEL } from '../liquidCraftFixture.ts';
 import { liquidRecoveryData } from '../liquidRecoveryFixture.ts';
 
@@ -34,8 +31,8 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     seed: 1,
     registry,
     clock,
-    bodyTuning: base.body.get(CORE_CONTENT_IDS.player)!,
-    compressionCaps: base.compression.get(CORE_CONTENT_IDS.player)!.caps,
+    bodyTuning: base.body.get(fixtureIds.player)!,
+    compressionCaps: base.compression.get(fixtureIds.player)!.caps,
   });
   const queue = new HandlingQueue(inventory);
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet: () => feet, calendar: () => sim.calendar });
@@ -60,6 +57,7 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
   root.dataset.recoveryProbe = '';
   document.body.append(root);
   const screen = new InventoryScreen(root, inventory, queue, {
+    bindings: new BindingRegistry(INPUT_BINDINGS),
     reach,
     feet: () => feet,
     nearby: () => [...inventory.piles.values()],
@@ -76,7 +74,7 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     character: () => character,
     body: () => sim.body,
     needs: () => '',
-    slotLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
+    slotLabels: registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
   });
   screen.selected = source;
   screen.open();

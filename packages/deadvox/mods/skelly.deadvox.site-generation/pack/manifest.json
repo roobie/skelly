@@ -1,0 +1,14 @@
+{
+  "dependencies": ["skelly.natural-world", "skelly.manufactured-blocks"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "site-generation.json"
+    }
+  ],
+  "id": "skelly.deadvox.site-generation",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

@@ -2,19 +2,43 @@
   "name": "@skelly/engine",
   "private": true,
   "license": "EUPL-1.2",
+  "version": "0.0.0",
   "type": "module",
+  "exports": {
+    "./content": "./src/content.ts",
+    "./input": "./src/input.ts",
+    "./inventory": "./src/inventory.ts",
+    "./look": "./src/look.ts",
+    "./math": "./src/math.ts",
+    "./mesh": "./src/mesh.ts",
+    "./modCatalogue": "./src/modCatalogue.ts",
+    "./packs": "./src/packs.ts",
+    "./pose": "./src/pose.ts",
+    "./save": "./src/save.ts",
+    "./session": "./src/session.ts",
+    "./sim": "./src/sim.ts",
+    "./sky": "./src/sky.ts",
+    "./sound": "./src/sound.ts",
+    "./terrain": "./src/terrain.mjs",
+    "./text": "./src/text.ts",
+    "./vehicles": "./src/vehicles.ts",
+    "./world": "./src/world.ts",
+    "./internal/*": {
+      "skelly-test": "./src/*"
+    }
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@skelly/thing-core": "*",
+    "jfxr": "0.13.0",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"
-  },
-  "exports": {
-    "./foundation/*": "./src/foundation/*",
-    "./shapes/*": "./src/shapes/*",
-    "./assembly/*": "./src/assembly/*"
   }
 }

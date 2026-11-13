@@ -1,0 +1,54 @@
+{
+  "layouts": [
+    {
+      "actors": [
+        {
+          "chance": 1,
+          "position": [12, 21.5, 16],
+          "type": "shambler"
+        },
+        {
+          "chance": 1,
+          "position": [20, 21.5, 16],
+          "type": "shambler"
+        }
+      ],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bounds": {
+        "x0": 0,
+        "x1": 32,
+        "z0": 0,
+        "z1": 32
+      },
+      "buildings": [],
+      "demo": true,
+      "ground": 21,
+      "id": "voice_size",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 0,
+        "position": [16, 21.5, 16]
+      },
+      "terrain": [],
+      "tracks": [],
+      "woodlands": []
+    }
+  ]
+}

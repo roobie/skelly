@@ -1,0 +1,14 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "saves.json"
+    }
+  ],
+  "id": "skelly.saves",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

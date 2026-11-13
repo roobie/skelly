@@ -1,15 +1,18 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { bashBlock } from '@skelly/engine/internal/core/blockDamage.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { decodeSave } from '@skelly/engine/save';
+import {
+  CHUNK,
+  Chunk,
+  createTerrainEvaluator,
+  makeScale,
+  type TerrainPlan,
+  type Vec3,
+  World,
+} from '@skelly/engine/world';
+import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { bashBlock } from '../src/core/blockDamage.ts';
-import { BLOCK_DAMAGE_KINDS } from '../src/core/blockDamageKinds.ts';
-import { CanonicalTerrain } from '../src/core/canonicalTerrain.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { buildRegistry } from '../src/core/content.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import type { Terrain } from '../src/core/worldgen.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
@@ -20,8 +23,22 @@ const structureCell: Vec3 = [6, 5, 6];
 const fixtureData = () => ({
   ...blockMaterialFixture('fixture_rubble'),
   blocks: [
-    { id: 'fixture_wall', name: 'Wall', material: 'fixture_material', color: '#888888', solid: true },
-    { id: 'fixture_rubble', name: 'Rubble', material: 'fixture_material', color: '#777777', solid: true },
+    {
+      id: 'fixture_wall',
+      name: 'Wall',
+      material: 'fixture_material',
+      color: '#888888',
+      solid: true,
+      drops: { default: 'fixture_blow' },
+    },
+    {
+      id: 'fixture_rubble',
+      name: 'Rubble',
+      material: 'fixture_material',
+      color: '#777777',
+      solid: true,
+      drops: { default: 'fixture_blow' },
+    },
   ],
 });
 const fixture = (world = new World()) => {
@@ -34,7 +51,7 @@ const fixture = (world = new World()) => {
   const wall = registry.blockIds.get('fixture_wall')!;
   const rubble = registry.blockIds.get('fixture_rubble')!;
   const scale = makeScale(0.5);
-  const terrain: Terrain = {
+  const terrain: TerrainPlan = {
     seed: 5,
     scale,
     blocks: { grass: wall, dirt: wall, rock: wall, sand: wall, water: wall },
@@ -46,24 +63,31 @@ const fixture = (world = new World()) => {
       featureSizeMetres: 1,
       octaves: 1,
     },
-    stamp: (chunk) => {
-      if (chunk.cx === 0 && chunk.cy === 0 && chunk.cz === 0) {
-        chunk.set(...cell, wall);
-        chunk.set(...stampCell, rubble);
-      }
+    structures: [{ min: structureCell, max: structureCell.map((value) => value + 1) as Vec3, block: wall }],
+    site: {
+      kind: 'weathering-pad',
+      data: {
+        blockSize: scale.blockSize,
+        padTop: 0,
+        heightPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        materialPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+        concrete: wall,
+        structures: [
+          { min: cell, max: cell.map((value) => value + 1) as Vec3, block: wall },
+          { min: stampCell, max: stampCell.map((value) => value + 1) as Vec3, block: rubble },
+        ],
+      },
     },
   };
-  const canonical = new CanonicalTerrain(world, terrain, [
-    { min: structureCell, max: structureCell.map((value) => value + 1) as Vec3, block: wall },
-  ]);
+  const canonical = new CanonicalTerrain(world, createTerrainEvaluator(terrain));
   return { world, registry, canonical, wall, rubble, material: data.blockMaterials[0]! };
 };
 
 describe('block damage foundation', () => {
   it('projects resistance before the strength gate without changing terrain or overlay', () => {
     const { world, material } = fixture();
-    for (const kind of BLOCK_DAMAGE_KINDS) {
-      const effective = 3 * (1 - material.resistance[kind]);
+    for (const { id: kind } of fixtureData().damageKinds) {
+      const effective = 3 * (1 - material.resistance[kind]!);
       const projected = bashBlock({ material, damage: 0 }, { kind, strength: 3 });
       expect(projected.outcome).toBe(effective < material.minimumStrength || effective === 0 ? 'resisted' : 'damaged');
       expect(projected.damage).toBe(projected.outcome === 'resisted' ? 0 : effective);
@@ -110,19 +134,25 @@ describe('block damage foundation', () => {
         registry.blockMaterials.set(id, material);
       }
       const runtime = createRuntime(undefined, false, [[8, 8]], { registry });
-      const terrain: Terrain = {
-        ...f.canonical.terrain,
+      const { plan } = f.canonical.terrain;
+      if (plan.site.kind !== 'weathering-pad') {
+        throw new Error('Expected fixture pad');
+      }
+      const terrain: TerrainPlan = {
+        ...plan,
         blocks: Object.fromEntries(
-          Object.entries(f.canonical.terrain.blocks).map(([key, id]) => [key, id + offset]),
-        ) as Terrain['blocks'],
-        stamp: (chunk) => {
-          if (chunk.cx === 0 && chunk.cy === 0 && chunk.cz === 0) {
-            chunk.set(...cell, registry.blockIds.get('fixture_wall')!);
-            chunk.set(...stampCell, registry.blockIds.get('fixture_rubble')!);
-          }
+          Object.entries(plan.blocks).map(([key, id]) => [key, id + offset]),
+        ) as TerrainPlan['blocks'],
+        structures: [],
+        site: {
+          ...plan.site,
+          data: {
+            ...plan.site.data,
+            structures: plan.site.data.structures.map((box) => ({ ...box, block: box.block + offset })),
+          },
         },
       };
-      const canonical = new CanonicalTerrain(runtime.world, terrain);
+      const canonical = new CanonicalTerrain(runtime.world, createTerrainEvaluator(terrain));
       const damage = amount === 'partial' ? f.material.minimumStrength : f.material.durability;
       const entry = runtime.world.blockDamage.record(canonical, registry, cell, damage);
       runtime.world.blockDamage.record(canonical, registry, cell, damage);
@@ -199,7 +229,7 @@ describe('block material admission', () => {
   });
 
   it('requires every supported resistance and rejects unknown kinds', () => {
-    for (const kind of BLOCK_DAMAGE_KINDS) {
+    for (const { id: kind } of fixtureData().damageKinds) {
       const data = fixtureData();
       const resistance: Partial<(typeof data.blockMaterials)[number]['resistance']> = {
         ...data.blockMaterials[0]!.resistance,

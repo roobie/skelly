@@ -2,7 +2,7 @@
 read_if:
   - you start a feature branch, push, take in main, or clean up after a merge
   - you wonder why skelly never rebases or force-pushes a published branch
-  - you check the framework refactor gate before opening a draft PR
+  - you bump the shared asset release pin and submodule
 ---
 
 # Git workflow
@@ -24,9 +24,8 @@ defects before they reach `main`.
 2. Run the installs under "Installing check dependencies" in `AGENTS.md` before the first
    push. The pre-push hook runs checks across every subproject, and a fresh worktree has
    no `node_modules`, so without them even the push that publishes the branch fails.
-3. `git push -u origin <branch>`, and open a draft PR only when permitted by
-   `docs/decisions/0009-content-defined-products.md`, "Refactor gate". CI then checks
-   every later push, so no agent has to repeat the full matrix locally.
+3. `git push -u origin <branch>`, and open a draft PR. CI then checks every later
+   push, so no agent has to repeat the full matrix locally.
 
 ## While working
 
@@ -40,6 +39,40 @@ defects before they reach `main`.
 - **Don't bypass the pre-push hook** with `--no-verify` to get past a real failure. The
   hook runs CI's shared root checks, while CI also checks generated content. A bypass only
   moves a shared-check failure to CI; content drift is caught there to keep the hook fast.
+
+## Shared asset pin bumps
+
+Skelly follows the latest published skelly-assets release. One linear release
+line exposes consumer gaps at each pin bump instead of accumulating them. The rule
+is a general direction, not a condition on every PR: a PR need not run on the newest
+release, so a bump lands as its own PR when the work it would disturb allows. Keep the
+release pin and `packages/skelly-assets` gitlink together in one commit with the
+content changes the release needs: source and released bytes must come from the
+same revision. See `tools/skelly-assets/setup.mjs`, `pinRelease` and
+`assertGitlinkMatchesRelease`.
+
+Run Deadvox's `validate`, root `content:check` and Deadvox's `digest:simulation` at the
+base and proposed head, and report both digest values. Selected assets and pack
+declarations must agree without an unexplained simulation change; report any digest
+difference to the lead before merging.
+
+Admit only rows named by content consumers, before assigning presentation; retain
+missing named references as validation errors. Declare, hash and ship only the
+released files those admitted rows need. Unused release files may stay installed
+without declarations; undeclared files outside the pinned release still fail the
+orphan check. Skelly-assets always carries models skelly does not use, so declaring,
+hashing and shipping the entire release would make config, build and deploy work
+grow with the library instead of the game's content. Content imports its consumer
+documents rather than maintaining a second list of model IDs. See
+`tools/jsonnet/lib/used-models.libsonnet`, `references`,
+`tools/jsonnet/lib/built-pack.libsonnet`, `consumed`, and
+`packages/deadvox/tools/readBundledPacks.ts`, `readAvailablePacks`.
+
+Consumed rows must still match the pinned exports; see `test/model-export-sync.mjs`,
+`readCutOver` and `assertCutOver`. The asset owns its emissive material selection,
+so the glow tag and material names change together in one released model row,
+not in a consumer mapping. See
+`packages/mods/skelly.light-sources/models-light-sources.jsonnet`.
 
 ## Merge and clean up
 

@@ -1,7 +1,8 @@
-import { RotationOps, VectorOps } from "../math";
-import { CoefficientCombineRule, } from "../dynamics";
+import { RawShape, RawVHACDParameters } from "../raw";
+import { RotationOps, VectorOps, scratchBuffer } from "../math";
+import { CoefficientCombineRule } from "../dynamics";
 import { ActiveHooks, ActiveEvents } from "../pipeline";
-import { Shape, Cuboid, Ball, Capsule, Voxels, TriMesh, Polyline, Heightfield, Segment, Triangle, RoundTriangle, RoundCuboid, Cylinder, RoundCylinder, Cone, RoundCone, ConvexPolyhedron, RoundConvexPolyhedron, } from "./shape";
+import { Shape, Cuboid, Ball, Capsule, Voxels, TriMesh, Polyline, Heightfield, Compound, Segment, Triangle, RoundTriangle, RoundCuboid, Cylinder, RoundCylinder, Cone, RoundCone, ConvexPolyhedron, RoundConvexPolyhedron, } from "./shape";
 import { RayIntersection } from "./ray";
 import { PointProjection } from "./point";
 import { ColliderShapeCastHit, ShapeCastHit } from "./toi";
@@ -43,17 +44,21 @@ export class Collider {
     isValid() {
         return this.colliderSet.raw.contains(this.handle);
     }
-    translation() {
-        return VectorOps.fromRaw(this.colliderSet.raw.coTranslation(this.handle));
+    translation(target) {
+        this.colliderSet.raw.coTranslation(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    translationWrtParent() {
-        return VectorOps.fromRaw(this.colliderSet.raw.coTranslationWrtParent(this.handle));
+    translationWrtParent(target) {
+        const hasParent = this.colliderSet.raw.coTranslationWrtParent(this.handle, scratchBuffer);
+        return hasParent ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
-    rotation() {
-        return RotationOps.fromRaw(this.colliderSet.raw.coRotation(this.handle));
+    rotation(target) {
+        this.colliderSet.raw.coRotation(this.handle, scratchBuffer);
+        return RotationOps.fromBuffer(scratchBuffer, target);
     }
-    rotationWrtParent() {
-        return RotationOps.fromRaw(this.colliderSet.raw.coRotationWrtParent(this.handle));
+    rotationWrtParent(target) {
+        const hasParent = this.colliderSet.raw.coRotationWrtParent(this.handle, scratchBuffer);
+        return hasParent ? RotationOps.fromBuffer(scratchBuffer, target) : null;
     }
     isSensor() {
         return this.colliderSet.raw.coIsSensor(this.handle);
@@ -157,8 +162,9 @@ export class Collider {
     shapeType() {
         return this.colliderSet.raw.coShapeType(this.handle);
     }
-    halfExtents() {
-        return VectorOps.fromRaw(this.colliderSet.raw.coHalfExtents(this.handle));
+    halfExtents(target) {
+        const isCuboid = this.colliderSet.raw.coHalfExtents(this.handle, scratchBuffer);
+        return isCuboid ? VectorOps.fromBuffer(scratchBuffer, target) : null;
     }
     setHalfExtents(newHalfExtents) {
         const rawPoint = VectorOps.intoRaw(newHalfExtents);
@@ -203,9 +209,11 @@ export class Collider {
     heightfieldHeights() {
         return this.colliderSet.raw.coHeightfieldHeights(this.handle);
     }
-    heightfieldScale() {
-        let scale = this.colliderSet.raw.coHeightfieldScale(this.handle);
-        return VectorOps.fromRaw(scale);
+    heightfieldScale(target) {
+        const isHeightfield = this.colliderSet.raw.coHeightfieldScale(this.handle, scratchBuffer);
+        return isHeightfield
+            ? VectorOps.fromBuffer(scratchBuffer, target)
+            : null;
     }
     heightfieldNRows() {
         return this.colliderSet.raw.coHeightfieldNRows(this.handle);
@@ -215,6 +223,13 @@ export class Collider {
     }
     parent() {
         return this._parent;
+    }
+    softBody() {
+        let handle = this.colliderSet.raw.coSoftBody(this.handle);
+        return handle === undefined ? null : handle;
+    }
+    isDeformable() {
+        return this.colliderSet.raw.coIsDeformable(this.handle);
     }
     friction() {
         return this.colliderSet.raw.coFriction(this.handle);
@@ -243,9 +258,9 @@ export class Collider {
         rawPoint.free();
         return result;
     }
-    projectPoint(point, solid) {
+    projectPoint(point, solid, target) {
         let rawPoint = VectorOps.intoRaw(point);
-        let result = PointProjection.fromRaw(this.colliderSet.raw.coProjectPoint(this.handle, rawPoint, solid));
+        let result = PointProjection.fromBuffer(this.colliderSet.raw.coProjectPoint(this.handle, rawPoint, solid), target);
         rawPoint.free();
         return result;
     }
@@ -257,13 +272,19 @@ export class Collider {
         rawDir.free();
         return result;
     }
-    castShape(collider1Vel, shape2, shape2Pos, shape2Rot, shape2Vel, targetDistance, maxToi, stopAtPenetration) {
+    castShape(collider1Vel, shape2, shape2Pos, shape2Rot, shape2Vel, targetDistance, maxToi, stopAtPenetration, target) {
         let rawCollider1Vel = VectorOps.intoRaw(collider1Vel);
         let rawShape2Pos = VectorOps.intoRaw(shape2Pos);
         let rawShape2Rot = RotationOps.intoRaw(shape2Rot);
         let rawShape2Vel = VectorOps.intoRaw(shape2Vel);
         let rawShape2 = shape2.intoRaw();
-        let result = ShapeCastHit.fromRaw(this.colliderSet, this.colliderSet.raw.coCastShape(this.handle, rawCollider1Vel, rawShape2, rawShape2Pos, rawShape2Rot, rawShape2Vel, targetDistance, maxToi, stopAtPenetration));
+        const rawShapeCastHit = this.colliderSet.raw.coCastShape(this.handle, rawCollider1Vel, rawShape2, rawShape2Pos, rawShape2Rot, rawShape2Vel, targetDistance, maxToi, stopAtPenetration);
+        let result = null;
+        if (rawShapeCastHit) {
+            rawShapeCastHit.getComponents(scratchBuffer);
+            result = ShapeCastHit.fromBuffer(null, scratchBuffer, target);
+            rawShapeCastHit.free();
+        }
         rawCollider1Vel.free();
         rawShape2Pos.free();
         rawShape2Rot.free();
@@ -271,10 +292,17 @@ export class Collider {
         rawShape2.free();
         return result;
     }
-    castCollider(collider1Vel, collider2, collider2Vel, targetDistance, maxToi, stopAtPenetration) {
+    castCollider(collider1Vel, collider2, collider2Vel, targetDistance, maxToi, stopAtPenetration, target) {
         let rawCollider1Vel = VectorOps.intoRaw(collider1Vel);
         let rawCollider2Vel = VectorOps.intoRaw(collider2Vel);
-        let result = ColliderShapeCastHit.fromRaw(this.colliderSet, this.colliderSet.raw.coCastCollider(this.handle, rawCollider1Vel, collider2.handle, rawCollider2Vel, targetDistance, maxToi, stopAtPenetration));
+        const rawColliderShapeCastHit = this.colliderSet.raw.coCastCollider(this.handle, rawCollider1Vel, collider2.handle, rawCollider2Vel, targetDistance, maxToi, stopAtPenetration);
+        let result = null;
+        if (rawColliderShapeCastHit) {
+            const colliderHandle = rawColliderShapeCastHit.colliderHandle();
+            rawColliderShapeCastHit.getComponents(scratchBuffer);
+            result = ColliderShapeCastHit.fromBuffer(this.colliderSet.get(colliderHandle), scratchBuffer, target);
+            rawColliderShapeCastHit.free();
+        }
         rawCollider1Vel.free();
         rawCollider2Vel.free();
         return result;
@@ -289,18 +317,18 @@ export class Collider {
         rawShape2.free();
         return result;
     }
-    contactShape(shape2, shape2Pos, shape2Rot, prediction) {
+    contactShape(shape2, shape2Pos, shape2Rot, prediction, target) {
         let rawPos2 = VectorOps.intoRaw(shape2Pos);
         let rawRot2 = RotationOps.intoRaw(shape2Rot);
         let rawShape2 = shape2.intoRaw();
-        let result = ShapeContact.fromRaw(this.colliderSet.raw.coContactShape(this.handle, rawShape2, rawPos2, rawRot2, prediction));
+        let result = ShapeContact.fromBuffer(this.colliderSet.raw.coContactShape(this.handle, rawShape2, rawPos2, rawRot2, prediction), target);
         rawPos2.free();
         rawRot2.free();
         rawShape2.free();
         return result;
     }
-    contactCollider(collider2, prediction) {
-        let result = ShapeContact.fromRaw(this.colliderSet.raw.coContactCollider(this.handle, collider2.handle, prediction));
+    contactCollider(collider2, prediction, target) {
+        let result = ShapeContact.fromBuffer(this.colliderSet.raw.coContactCollider(this.handle, collider2.handle, prediction), target);
         return result;
     }
     castRay(ray, maxToi, solid) {
@@ -311,10 +339,10 @@ export class Collider {
         rawDir.free();
         return result;
     }
-    castRayAndGetNormal(ray, maxToi, solid) {
+    castRayAndGetNormal(ray, maxToi, solid, target) {
         let rawOrig = VectorOps.intoRaw(ray.origin);
         let rawDir = VectorOps.intoRaw(ray.dir);
-        let result = RayIntersection.fromRaw(this.colliderSet.raw.coCastRayAndGetNormal(this.handle, rawOrig, rawDir, maxToi, solid));
+        let result = RayIntersection.fromBuffer(this.colliderSet.raw.coCastRayAndGetNormal(this.handle, rawOrig, rawDir, maxToi, solid), target);
         rawOrig.free();
         rawDir.free();
         return result;
@@ -371,8 +399,8 @@ export class ColliderDesc {
         const shape = new RoundTriangle(a, b, c, borderRadius);
         return new ColliderDesc(shape);
     }
-    static polyline(vertices, indices) {
-        const shape = new Polyline(vertices, indices);
+    static polyline(vertices, indices, flags) {
+        const shape = new Polyline(vertices, indices, flags);
         return new ColliderDesc(shape);
     }
     static voxels(voxels, voxelSize) {
@@ -425,6 +453,45 @@ export class ColliderDesc {
     }
     static roundConvexMesh(vertices, indices, borderRadius) {
         const shape = new RoundConvexPolyhedron(vertices, indices, borderRadius);
+        return new ColliderDesc(shape);
+    }
+    static compound(shapes, positions, rotations, flags) {
+        const shape = new Compound(shapes, positions, rotations, flags);
+        return new ColliderDesc(shape);
+    }
+    static convexDecomposition(vertices, indices, params, flags) {
+        let rawShape;
+        const rawFlags = flags ?? 0;
+        if (params) {
+            const rawParams = new RawVHACDParameters();
+            if (params.alpha !== undefined)
+                rawParams.alpha = params.alpha;
+            if (params.beta !== undefined)
+                rawParams.beta = params.beta;
+            if (params.concavity !== undefined)
+                rawParams.concavity = params.concavity;
+            if (params.planeDownsampling !== undefined)
+                rawParams.plane_downsampling = params.planeDownsampling;
+            if (params.convexHullDownsampling !== undefined)
+                rawParams.convex_hull_downsampling =
+                    params.convexHullDownsampling;
+            if (params.maxConvexHulls !== undefined)
+                rawParams.max_convex_hulls = params.maxConvexHulls;
+            if (params.resolution !== undefined)
+                rawParams.resolution = params.resolution;
+            if (params.convexHullApproximation !== undefined)
+                rawParams.convex_hull_approximation =
+                    params.convexHullApproximation;
+            rawShape = RawShape.convexDecompositionWithParams(vertices, indices, rawParams, rawFlags);
+            rawParams.free();
+        }
+        else {
+            rawShape = RawShape.convexDecomposition(vertices, indices, rawFlags);
+        }
+        if (!rawShape) {
+            return null;
+        }
+        const shape = Shape.fromRawShape(rawShape);
         return new ColliderDesc(shape);
     }
     setTranslation(x, y, z) {

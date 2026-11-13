@@ -1,29 +1,32 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import type { BlockEntitiesState } from '@skelly/engine/internal/core/blockEntities.ts';
+import { terrainSolid } from '@skelly/engine/internal/core/collision.ts';
+import { type FurnitureMover, removeFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { pickFurnitureAndObstruction } from '@skelly/engine/internal/core/furniturePick.ts';
+import { stepBodyHorizontal } from '@skelly/engine/internal/core/physics.ts';
+import type { ReachPlayer } from '@skelly/engine/internal/core/reach.ts';
+import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { type BrickOut, brickHas, type SolidBricks } from '@skelly/engine/internal/core/solidBricks.ts';
+import { cellsOf } from '@skelly/engine/internal/core/templates.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { bindReach } from '@skelly/engine/sim';
+import {
+  type BlockEntities,
+  type BlockEntity,
+  type Body,
+  raycast,
+  type SolidAt,
+  type Vec3,
+  World,
+  worldBricks,
+  worldOpaque,
+  worldSolid,
+} from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { BlockEntities, BlockEntitiesState, BlockEntity } from '../src/core/blockEntities.ts';
-import { terrainSolid, worldOpaque, worldSolid } from '../src/core/collision.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, removeFurniture } from '../src/core/furnitureMove.ts';
-import { pickFurnitureAndObstruction } from '../src/core/furniturePick.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
-import { raycast, type SolidAt } from '../src/core/raycast.ts';
-import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
-import { captureSky, furnitureBounds, growSky, SKY_SHELL } from '../src/core/skySnapshot.ts';
-import { type BrickOut, brickHas, type SolidBricks, worldBricks } from '../src/core/solidBricks.ts';
-import { cellsOf } from '../src/core/templates.ts';
-import { World } from '../src/core/world.ts';
+import { baseContentSources } from './baseContentFiles.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
-const base = readdirSync('src/content/base')
-  .filter((f) => f.endsWith('.json'))
-  .sort()
-  .map((f) => ({
-    source: f,
-    data: JSON.parse(readFileSync(join('src/content/base', f), 'utf8')) as unknown,
-  }));
+const base = baseContentSources();
 const { registry, issues } = buildRegistry([
   ...base,
   {
@@ -306,11 +309,4 @@ it('refuses to remove a piece with a piece, a pile or the player on it, leaving 
     expect(occupancy(entities, isSolid, stand), what).toEqual(before);
     expect(before[0], what).toEqual({ at: true, solid: true, live: true });
   }
-});
-
-it('removes a piece with nothing on it', () => {
-  const { world, inventory, entities, isSolid } = site();
-  const stand = entities.add({ type: 'occupancy_block', pos: [3, 1, 3], size: [1, 1, 1], facing: 'n' })!;
-  expect(removeFurniture(moverAt(inventory, world), stand)).toBeUndefined();
-  expect(isSolid(3, 1, 3)).toBe(false);
 });

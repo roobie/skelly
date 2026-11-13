@@ -1,3 +1,6 @@
+import { skyAt } from '@skelly/engine/sky';
+import { heightFogUniforms } from '@skelly/presentation/internal/render/heightFog.ts';
+import { applySky, Mood } from '@skelly/presentation/render';
 import {
   Color,
   DirectionalLight,
@@ -9,11 +12,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { expect, it } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
-import { skyAt } from '../src/core/sky.ts';
-import { heightFogUniforms } from '../src/render/heightFog.ts';
-import { Mood } from '../src/render/mood.ts';
-import { applySky } from '../src/render/sky.ts';
+import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 
 it('fog, background and mist follow local sky visibility from darkness to open sky', () => {
@@ -25,6 +24,7 @@ it('fog, background and mist follow local sky visibility from darkness to open s
     camera: new PerspectiveCamera(),
     radiusM: 100,
     farPlaneScale: graphicsFile.graphics[0]!.fogFarPlaneScale,
+    fogCurveExponent: graphicsFile.graphics[0]!.fogCurveExponent,
   };
   const mood = new Mood(
     { domElement: new EventTarget() } as unknown as WebGLRenderer,

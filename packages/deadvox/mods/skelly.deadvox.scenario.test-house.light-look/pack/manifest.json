@@ -1,0 +1,32 @@
+{
+  "dependencies": [
+    "skelly.deadvox.scenario.test-house",
+    "skelly.deadvox.actors",
+    "skelly.basic-recipes",
+    "skelly.deadvox.labs.underground",
+    "skelly.flame-tools",
+    "skelly.household-electrical",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "layouts.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.test-house.light-look",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

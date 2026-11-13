@@ -14,7 +14,17 @@ export const selectFixtureMods = async (page) => {
     await page.getByRole('textbox', { name: 'Mod JSON or URL' }).fill(data);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
   };
-  await paste(JSON.stringify({ id: 'earlier-mod', items: [{ ...fixture.items[0], name: 'Earlier override' }] }));
+  await paste(
+    JSON.stringify({
+      id: 'earlier-mod',
+      version: '1',
+      tier: 'theme',
+      product: false,
+      dependencies: [],
+      overrides: [],
+      items: [{ ...fixture.items[0], id: `${fixture.items[0].id}_earlier`, name: 'Earlier addition' }],
+    }),
+  );
   await paste('{');
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'enabled broken JSON blocks startup');
   const invalid = page.locator('[data-mod-source="mod-3/pasted.json"]');
@@ -56,16 +66,40 @@ export const selectFixtureMods = async (page) => {
   return fixture;
 };
 
+const OPT_IN_MOD = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL('../../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json', import.meta.url)),
+    'utf8',
+  ),
+).id;
+
+const startupContentPacks = async (page, url) => {
+  await page.goto(url);
+  await page.waitForFunction(() => globalThis.skellySaveTest?.identity !== undefined, null, { timeout: 30_000 });
+  return page.evaluate(async () =>
+    (await globalThis.skellySaveTest.identity()).components.contentPacks.map(({ id }) => id),
+  );
+};
+
+/** `src/main.ts` must hand the admitted opt-in packs to the save controller, which no helper test sees. */
+export const assertOptInModIdentity = async (page, urlFor) => {
+  const queryAndHash = 'save-test=1#{seed:1,radius:64,post:false,sunshadow:false,torchshadow:false}';
+  const selected = await startupContentPacks(page, urlFor(`mods=${OPT_IN_MOD}&${queryAndHash}`));
+  assert.equal(selected.filter((id) => id === OPT_IN_MOD).length, 1, 'a selected opt-in pack is in the identity once');
+  const normal = await startupContentPacks(page, urlFor(queryAndHash));
+  assert.equal(normal.includes(OPT_IN_MOD), false, 'a normal startup identity names no opt-in pack');
+};
+
 export const assertFixtureMods = async (page, fixture) => {
   const [item] = fixture.items;
-  const [zombie] = fixture.zombies;
+  const [actor] = fixture.actors;
   const actual = await page.evaluate(
-    ({ itemId, zombieId }) => {
+    ({ itemId, zombieId: actorId }) => {
       const { registry } = globalThis.firefoxUiTest;
-      return { item: registry.items.get(itemId), speed: registry.zombies.get(zombieId)?.speed };
+      return { item: registry.items.get(itemId), speed: registry.actors.get(actorId)?.speed };
     },
-    { itemId: item.id, zombieId: zombie.id },
+    { itemId: item.id, zombieId: actor.id },
   );
   assert.equal(actual.item.name, item.name, 'the URL definition reaches the running registry');
-  assert.deepEqual(actual.speed, zombie.speed, 'the selected mod reaches the running world');
+  assert.deepEqual(actual.speed, actor.speed, 'the selected mod reaches the running world');
 };

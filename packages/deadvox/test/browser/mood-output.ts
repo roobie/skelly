@@ -1,3 +1,4 @@
+import { createMoodOutputPass } from '@skelly/presentation/internal/render/moodOutput.ts';
 import {
   ACESFilmicToneMapping,
   DataTexture,
@@ -12,7 +13,6 @@ import {
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { createMoodOutputPass } from '../../src/render/moodOutput.ts';
 
 const vertexShader = `varying vec2 vUv;
 void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;

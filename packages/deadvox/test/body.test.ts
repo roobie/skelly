@@ -1,10 +1,10 @@
+import { SECONDS_PER_HOUR } from '@skelly/engine/internal/core/clock.ts';
+import { stepNeeds } from '@skelly/engine/internal/core/needs.ts';
+import type { TreatmentDef } from '@skelly/engine/internal/core/schema.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Rng } from '@skelly/engine/math';
+import { BODY_REGIONS, Body, type BodyRegion, type Needs } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { BODY_REGIONS, Body, type BodyRegion } from '../src/core/body.ts';
-import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
-import { type Needs, stepNeeds } from '../src/core/needs.ts';
-import { Rng } from '../src/core/random.ts';
-import type { TreatmentDef } from '../src/core/schema.ts';
-import { simSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, fixtureTier } from './simulationFixture.ts';
 
 const recoveryNeeds = (calories = 80): Needs => ({
@@ -348,7 +348,7 @@ describe('player body', () => {
     const critical = tiers[CRITICAL]!;
     const limb = 'leftLeg';
     const torso = 'torso';
-    const allPierce = tiers.reduce((sum, tier) => sum + tier.chancePerDamage.pierce * critical.minDamage, 0);
+    const allPierce = tiers.reduce((sum, tier) => sum + tier.chancePerDamage.pierce! * critical.minDamage, 0);
 
     expect(body.bleedingTierForHit(critical.minDamage, limb, 'pierce', 0)).toBe(CRITICAL);
     expect(body.bleedingTierForHit(critical.minDamage, torso, 'pierce', 0)).toBe(CRITICAL);
@@ -369,7 +369,7 @@ describe('player body', () => {
     });
     const withFactor = (region: BodyRegion, factor: number) => new Body(tuningWithFactor(region, factor));
     const critical = tiers[CRITICAL]!;
-    const boundaryRoll = critical.chancePerDamage.pierce * critical.minDamage * 0.75;
+    const boundaryRoll = critical.chancePerDamage.pierce! * critical.minDamage * 0.75;
     const zeroTorso = withFactor('torso', 0);
     const halfTorso = withFactor('torso', 0.5);
     const fullTorso = withFactor('torso', 1);

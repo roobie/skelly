@@ -83,7 +83,7 @@ export async function observeFailures(context, browser, child) {
           .__reportBrowserFailureFrame({
             count: globalThis.browserFailureFrames.count,
             last: time,
-            simTime: globalThis.deadvoxSaveTest?.controller?.simTime?.(),
+            simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
             contextLoss: [...globalThis.browserFailureFrames.contextLoss],
           })
           .catch(() => {
@@ -170,7 +170,7 @@ export async function observeFailures(context, browser, child) {
               canvasState,
               canvases,
               frames: globalThis.browserFailureFrames,
-              simTime: globalThis.deadvoxSaveTest?.controller?.simTime?.(),
+              simTime: globalThis.skellySaveTest?.controller?.simTime?.(),
             };
           })
           .catch((failure) => ({ evaluationError: String(failure) })),
@@ -190,7 +190,7 @@ export async function observeFailures(context, browser, child) {
                 return { error: String(failure) };
               }
             };
-            const storage = globalThis.deadvoxSaveTest?.storage;
+            const storage = globalThis.skellySaveTest?.storage;
             const [databases, namespaces, estimate] = await Promise.all([
               capture(() => indexedDB.databases()),
               capture(() => {

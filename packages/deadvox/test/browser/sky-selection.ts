@@ -1,7 +1,7 @@
+import { growSky, SKY_HALO } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { sampleSky } from '@skelly/engine/sky';
+import type { Vec3 } from '@skelly/engine/world';
 import { Camera, Mesh, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer, WebGLRenderTarget } from 'three';
-import type { Vec3 } from '../../src/core/coords.ts';
-import { growSky, SKY_HALO } from '../../src/core/skySnapshot.ts';
-import { sampleSky } from '../../src/core/skyTransport.ts';
 import { skyFixture } from '../fixtures/sky.ts';
 import { buildSkylight } from '../fixtures/skyOracle.ts';
 import { fixtureBox } from '../fixtures/skyWorld.ts';

@@ -1,9 +1,12 @@
-import { getBuildRevision } from '../core/buildInfo.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { SkyRouteAttachment } from '../game/debugInterface.ts';
-import type { Engine } from '../game/engine.ts';
-import { forwardedActionHolds, keyboardInput } from '../game/inputBindings.ts';
-import { createSkyRoutePanel } from '../ui/skyRoutePanel.ts';
+import { getBuildRevision, type StartupContent } from '@skelly/engine/packs';
+import { startForSite } from '@skelly/engine/session';
+import type { Vec3 } from '@skelly/engine/world';
+import type { SkyRouteAttachment } from '@skelly/presentation/debug';
+import { forwardedActionHolds } from '@skelly/presentation/input';
+import type { Engine } from '@skelly/presentation/play';
+import { createSkyRoutePanel } from '@skelly/presentation/ui';
+import { pageHref } from '../pageUrl.ts';
+import { linkStartMod } from '../product/page.ts';
 import { collectSkyGeometry } from './skyRouteGeometry.ts';
 import {
   SKY_ROUTE,
@@ -14,22 +17,10 @@ import {
 } from './skyRouteMetrics.ts';
 import { observeSkyRoute, skyRendererIdentity } from './skyRouteObserver.ts';
 
-export function skyRouteUrl() {
-  const url = new URL(location.href);
-  url.search = '';
-  const params = {
-    site: 'playtest',
-    seed: '1',
-    radius: '48',
-    debug: '1',
-    at: `${SKY_ROUTE.start},${SKY_ROUTE.z},-90`,
-    skyRoute: '1',
-  };
-  for (const [name, value] of Object.entries(params)) {
-    url.searchParams.set(name, value);
-  }
-  url.searchParams.set('time', '13:00');
-  return url.href;
+export function skyRouteUrl(content: StartupContent) {
+  const start = { ...startForSite(content, 'playtest', true), id: 'sky_route_start' };
+  const query = new URLSearchParams({ 'start-mod': linkStartMod('link.sky-route', start, '13:00'), skyRoute: '1' });
+  return pageHref(location.href, query, { debug: true, seed: 1, radius: 48, at: [SKY_ROUTE.start, SKY_ROUTE.z, -90] });
 }
 function eligibleSkyFields(engine: Engine, metres: Vec3) {
   const blocks = metres.map((value) => value / engine.config.scale.blockSize);
@@ -41,11 +32,17 @@ function eligibleSkyFields(engine: Engine, metres: Vec3) {
         : [],
     );
 }
-export function attachSkyRoute({ engine, session, debug, active }: Parameters<SkyRouteAttachment>[0]) {
+export function attachSkyRoute({
+  engine,
+  session,
+  debug,
+  active,
+  keyboard: keyboardInput,
+}: Parameters<SkyRouteAttachment>[0]) {
   if (!(engine.renderer && engine.skylight)) {
     return;
   }
-  const panel = createSkyRoutePanel(skyRouteUrl());
+  const panel = createSkyRoutePanel(skyRouteUrl(engine.config.content));
   const holdRouteAction = forwardedActionHolds(keyboardInput);
   const routeMovementActions = ['movement.sprint', 'movement.forward', 'movement.back'];
   // The input owner's live context decides whether play (and so the route's forwarded movement) is allowed.
@@ -110,7 +107,7 @@ export function attachSkyRoute({ engine, session, debug, active }: Parameters<Sk
         entityCount: [...engine.entities.all].length,
         fieldCount: engine.skylight!.inspect().length,
       },
-      pagePath: location.pathname + location.search,
+      pagePath: location.pathname + location.search + location.hash,
       hardware,
       attribution:
         'Lighting CPU service and owned GL submission, not GPU execution. Frame intervals include all scene and browser work. Forwarded input exercises the game owner, not native key delivery. Real-hardware evidence requires a completed route with useful jobs; no automatic gate verdict.',

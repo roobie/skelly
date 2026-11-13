@@ -1,44 +1,52 @@
-import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
-import type { Vec3 } from '../core/coords.ts';
-import type { Body } from '../core/physics.ts';
-import { raycast } from '../core/raycast.ts';
-import { type ZombieSystem, zombieAttackReachForType, zombieBodyDimensions } from '../core/zombies.ts';
-import type { Engine } from '../game/engine.ts';
+import { FUSED_MASS_FIGURE_SEED } from '@skelly/engine/pose';
+import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '@skelly/engine/sim';
+import { type Body, raycast, type Vec3 } from '@skelly/engine/world';
+import type { Engine } from '@skelly/presentation/play';
+import { placementWorldOf } from '../bench/placementWorld.ts';
+import { type PlacementQueries, placeShamblerRing } from '../bench/shamblerPlacement.ts';
+
+/** What a debug spawn needs: the engine's content, the session's solid rule, the player to keep clear of and the actors to join. */
+export interface SpawnContext {
+  readonly engine: Omit<Engine, 'isSolid' | 'isOpaque'>;
+  readonly queries: PlacementQueries;
+  readonly player: Body;
+  readonly actors: ActorSystem;
+}
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
-export const spawnZombieType = (
-  engine: Engine,
-  player: Body,
-  zombies: ZombieSystem,
+export const spawnActorType = (
+  { engine, queries, player, actors }: SpawnContext,
   options: { readonly typeId: string; readonly count: number },
 ): number => {
   const { typeId, count } = options;
-  const type = engine.registry.zombies.get(typeId);
+  const type = engine.registry.actors.get(typeId);
   if (!type) {
     return 0;
   }
+  // Reach differs by figure only for the fused mass, which has one seed.
+  const figure = actors.figureFor(type, type.model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : type.figureSeeds![0]!);
   const positions = placeShamblerRing({
     count,
-    seed: engine.config.seed + zombies.store.size,
+    seed: engine.config.seed + actors.store.size,
     player,
-    engine,
-    occupied: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
-    bodyDimensions: zombieBodyDimensions(type, engine.config.scale.blockSize),
-    minRadiusMetres: Math.max(8, zombieAttackReachForType(type) + 1),
+    engine: placementWorldOf(engine, queries),
+    occupied: [...actors.store.entries()].map(([, actor]) => actor.body),
+    bodyDimensions: actorBodyDimensions(type, engine.config.scale.blockSize),
+    minRadiusMetres: Math.max(8, actorAttackReachForDef(type, figure.body) + 1),
     allowPartial: true,
   });
   for (const pos of positions) {
-    zombies.add(type, pos, [player.pos[0] - pos[0], 0, player.pos[2] - pos[2]]);
+    actors.add(type, pos, [player.pos[0] - pos[0], 0, player.pos[2] - pos[2]]);
   }
   return positions.length;
 };
 
-export const spawnShamblers = (engine: Engine, player: Body, zombies: ZombieSystem, count: number): number =>
-  spawnZombieType(engine, player, zombies, { typeId: 'shambler', count });
+export const spawnShamblers = (context: SpawnContext, count: number): number =>
+  spawnActorType(context, { typeId: 'shambler', count });
 
 /** Debug-only fixture: place one close shambler behind solid geometry so it starts unaware. */
-export const spawnUnawareShambler = (engine: Engine, player: Body, zombies: ZombieSystem): boolean => {
-  const type = engine.registry.zombies.get('shambler');
+export const spawnUnawareShambler = ({ engine, queries, player, actors }: SpawnContext): boolean => {
+  const type = engine.registry.actors.get('shambler');
   if (!type) {
     return false;
   }
@@ -47,10 +55,10 @@ export const spawnUnawareShambler = (engine: Engine, player: Body, zombies: Zomb
   for (let attempt = 0; attempt < 16; attempt++) {
     const [position] = placeShamblerRing({
       count: 1,
-      seed: engine.config.seed + zombies.store.size + attempt,
+      seed: engine.config.seed + actors.store.size + attempt,
       player,
-      engine,
-      occupied: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
+      engine: placementWorldOf(engine, queries),
+      occupied: [...actors.store.entries()].map(([, actor]) => actor.body),
       allowPartial: true,
       minRadiusMetres: 1.5,
       maxRadiusMetres: 2.5,
@@ -63,10 +71,10 @@ export const spawnUnawareShambler = (engine: Engine, player: Body, zombies: Zomb
     const delta = [rayTarget[0] - rayOrigin[0], rayTarget[1] - rayOrigin[1], rayTarget[2] - rayOrigin[2]];
     const distance = Math.hypot(...delta);
     const direction = delta.map((coordinate) => coordinate / distance) as [number, number, number];
-    if (raycast(rayOrigin, direction, distance, engine.isSolid) === undefined) {
+    if (raycast(rayOrigin, direction, distance, queries.isSolid) === undefined) {
       continue;
     }
-    zombies.add(type, position, [player.pos[0] - position[0], 0, player.pos[2] - position[2]]);
+    actors.add(type, position, [player.pos[0] - position[0], 0, player.pos[2] - position[2]]);
     return true;
   }
   return false;

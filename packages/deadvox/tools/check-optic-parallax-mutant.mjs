@@ -7,7 +7,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const cwd = fileURLToPath(new URL('../', import.meta.url));
-const source = new URL('../src/core/adsView.ts', import.meta.url);
+const source = new URL('core/adsView.ts', import.meta.resolve('@skelly/engine/sim'));
 const original = await readFile(source, 'utf8');
 const selection = "ads.model.gun?.sight?.kind === 'optic' ? NEUTRAL_AIM : (ads.aimFrame ?? NEUTRAL_AIM)";
 assert.equal(original.split(selection).length, 2, 'mutate exactly the optic eye tracking decision');

@@ -1,13 +1,14 @@
+import { meleeContactTime } from '@skelly/engine/internal/core/meleePose.ts';
+import { PlayerCombat } from '@skelly/engine/internal/core/playerCombat.ts';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { startPlayerMelee } from '@skelly/engine/internal/game/melee.ts';
+import { decodeSave, encodeSave, type SaveContentKind } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dominantSide, offSide } from '@skelly/engine/sim';
+import { makeScale, World } from '@skelly/engine/world';
+import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import { dominantSide, offSide } from '../src/core/character.ts';
-import { meleeContactTime } from '../src/core/meleePose.ts';
-import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveContentKind } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { World } from '../src/core/world.ts';
-import { startPlayerMelee } from '../src/game/melee.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 
@@ -17,7 +18,11 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSave
 const saveVersion = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: {
+    worldgen: 'worldgen-v2',
+    'bodyPlan.humanoid': 'humanoid-figure-v1',
+    'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+  },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 
@@ -27,6 +32,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
   let useDominant = false;
   session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     isSolid: () => false,
     isOpaque: () => false,
@@ -63,11 +69,11 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
     onRead: () => {
       throw new Error('Unexpected reading in melee fixture');
     },
-    zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
+    actorEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
     ...(restore ? { restore } : {}),
     ...(handedness ? { handedness } : {}),
   });
-  session.zombies.setFrozen(true);
+  session.actors.setFrozen(true);
   session.sim.paused = false;
   return {
     session,
@@ -119,7 +125,7 @@ describe('player melee restore at the contact tolerance edge', () => {
     const first = saved.owner.snapshotState();
     expect(saved.owner.snapshotState()).toEqual(first);
     const restored = combat();
-    expect(() => restored.owner.restoreState(structuredClone(first))).not.toThrow();
+    expect(() => restored.owner.restoreState(structuredClone(first), registry)).not.toThrow();
     for (const step of [1 / 60, FISTS_MELEE.cooldown]) {
       uninterrupted.owner.tick(step, hands);
       restored.owner.tick(step, hands);

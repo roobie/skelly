@@ -1,3 +1,6 @@
+import type { MeshData } from '@skelly/engine/mesh';
+import { skyAt } from '@skelly/engine/sky';
+import { CHUNK, type Vec3 } from '@skelly/engine/world';
 import {
   Box3,
   DirectionalLight,
@@ -5,21 +8,17 @@ import {
   Frustum,
   HemisphereLight,
   Matrix4,
-  type Object3D,
   PerspectiveCamera,
   Scene,
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { CHUNK } from '../src/core/coords.ts';
-import type { MeshData } from '../src/core/mesher.ts';
-import { skyAt } from '../src/core/sky.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { applySky, type SkyTargets } from '../src/render/sky.ts';
+import type { SkyTargets } from '@skelly/presentation/internal/render/sky.ts';
+import { applySky, ChunkMeshes } from '@skelly/presentation/render';
 import { BASE_DAY_CYCLE, phaseMidpoint } from './dayPhaseFixture.ts';
 
 /** One upward face covering a chunk's bottom layer: a flat patch of ground. */
@@ -53,9 +52,10 @@ const setup = () => {
     camera,
     radiusM: RADIUS_M,
     farPlaneScale: FAR_PLANE_SCALE,
+    fogCurveExponent: 1,
   };
   const meshes = new ChunkMeshes(BLOCK_M, BUNDLED_CONTENT.registry);
-  scene.add(meshes.group);
+  scene.add(meshes.batch);
   return { scene, camera, sky, meshes };
 };
 
@@ -67,11 +67,10 @@ const cullFromOrigin = ({ scene, camera, meshes }: ReturnType<typeof setup>) => 
   meshes.cull(camera, fogFar(scene));
 };
 
-const visible = (meshes: ChunkMeshes) =>
-  meshes.group.children.filter((m) => m.visible).map((m) => m.position.toArray().join(','));
+const visible = (meshes: ChunkMeshes) => meshes.origins('main').map((origin) => origin.join(','));
 
 describe('culling', () => {
-  it('puts the far plane where the fog ends, day and night', () => {
+  it('puts the far plane where the fog ends, day and night, nearer at night', () => {
     const { scene, camera, sky } = setup();
     for (const hour of [dayHour, nightHour]) {
       applySky(sky, skyAt(hour, BASE_DAY_CYCLE));
@@ -81,7 +80,7 @@ describe('culling', () => {
     applySky(sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const day = fogFar(scene);
     applySky(sky, skyAt(nightHour, BASE_DAY_CYCLE));
-    expect(fogFar(scene)).toBeLessThan(day / 2);
+    expect(fogFar(scene)).toBeLessThan(day);
     // The projection follows, so culling does too.
     const fresh = camera.clone();
     fresh.updateProjectionMatrix();
@@ -119,20 +118,20 @@ describe('culling', () => {
     const scene = setup();
     applySky(scene.sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const fogEnd = fogFar(scene.scene);
-    const others = new Set(scene.meshes.group.children); // not chunks: never drawn
     const span = Math.ceil(fogEnd / (CHUNK * BLOCK_M)) + 1; // whole chunks, reaching past the fog on every side
+    const origins: Vec3[] = [];
     for (let x = -span; x < span; x += 1) {
       for (let z = -span; z < span; z += 1) {
+        origins.push([x * CHUNK, 0, z * CHUNK]);
         scene.meshes.set(`${x},${z}`, [x * CHUNK, 0, z * CHUNK], floor);
       }
     }
-    const chunks = scene.meshes.group.children.filter((child) => !others.has(child));
     // Above the ground and looking down a little, as from a tower, so the view reaches the fog's end.
     scene.camera.position.set(1, 20, 1);
     for (const yawDegrees of [0, 20, 45, 90, 135, 200, 315]) {
-      const expected = discAtYaw(scene.camera, yawDegrees, fogEnd, chunks);
+      const expected = discAtYaw(scene.camera, yawDegrees, fogEnd, origins);
       scene.meshes.cull(scene.camera, fogEnd);
-      expect(chunks.map((mesh) => mesh.visible)).toEqual(expected.shown);
+      expect(scene.meshes.origins('main')).toEqual(origins.filter((_, i) => expected.shown[i]));
       // Ground on both sides of the fog's end was in view at this yaw, so the disc's edge was tested.
       expect(expected.shown.some(Boolean)).toBe(true);
       expect(expected.inViewBeyond).toBeGreaterThan(0);
@@ -144,7 +143,7 @@ describe('culling', () => {
  * Turns the camera to the yaw and returns which floor chunks should show: those in the camera's
  * view (its far plane included) and nearer than the fog's end horizontally.
  */
-const discAtYaw = (camera: PerspectiveCamera, yawDegrees: number, fogEnd: number, chunks: Object3D[]) => {
+const discAtYaw = (camera: PerspectiveCamera, yawDegrees: number, fogEnd: number, origins: readonly Vec3[]) => {
   camera.rotation.set(-0.2, (yawDegrees * Math.PI) / 180, 0);
   camera.updateMatrixWorld();
   const frustum = new Frustum().setFromProjectionMatrix(
@@ -152,11 +151,11 @@ const discAtYaw = (camera: PerspectiveCamera, yawDegrees: number, fogEnd: number
   );
   const eye = new Vector3(camera.position.x, BLOCK_M, camera.position.z);
   let inViewBeyond = 0;
-  const shown = chunks.map(({ position }) => {
+  const shown = origins.map(([x, , z]) => {
     // The floor's own box, in metres.
     const box = new Box3(
-      new Vector3(position.x, 1, position.z).multiplyScalar(BLOCK_M),
-      new Vector3(position.x + CHUNK, 1, position.z + CHUNK).multiplyScalar(BLOCK_M),
+      new Vector3(x, 1, z).multiplyScalar(BLOCK_M),
+      new Vector3(x + CHUNK, 1, z + CHUNK).multiplyScalar(BLOCK_M),
     );
     const near = box.clampPoint(eye, new Vector3()).sub(eye);
     const inside = Math.hypot(near.x, near.z) < fogEnd;

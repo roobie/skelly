@@ -1,25 +1,20 @@
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { openingTargetForHand } from '@skelly/engine/internal/game/canOpening.ts';
+import { Unpacking } from '@skelly/engine/internal/game/unpacking.ts';
+import { HandlingQueue, type HandSide, Inventory } from '@skelly/engine/inventory';
+import { bindReach, Survival, selectPrimaryAction } from '@skelly/engine/sim';
+import { GuidedSteps as Tutorial } from '@skelly/presentation/internal/presentation/guidedSteps.ts';
 import { describe, expect, it, vi } from 'vitest';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { type HandSide, Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { openingTargetForHand } from '../src/game/canOpening.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
-import { Survival } from '../src/game/survival.ts';
-import { Tutorial } from '../src/game/tutorial.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { buildFixtureRegistry, fixtureEconomy } from './economyFixtures.ts';
+import { buildFixtureRegistry } from './economyFixtures.ts';
+import { guidanceFixture } from './fixtures/guidance.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const fixture = (side: HandSide = 'right', quality = 2) => {
   const base = baseRegistry();
-  const economy = { usage: [], tiers: [] };
   const common = {
-    economy,
     workInProgress: false,
-    notLoot: false,
     category: 'food' as const,
     weight: 1,
     size: [1, 2] as [number, number],
@@ -72,10 +67,7 @@ const fixture = (side: HandSide = 'right', quality = 2) => {
 describe('held can opening', () => {
   it('rejects a serving with missing food or an incompatible empty vessel', () => {
     const { registry } = fixture();
-    const items = ['test_opened', 'test_food', 'test_empty'].map((id) => ({
-      ...registry.items.get(id)!,
-      economy: fixtureEconomy(),
-    }));
+    const items = ['test_opened', 'test_food', 'test_empty'].map((id) => registry.items.get(id)!);
     expect(buildFixtureRegistry([{ source: 'vessels', data: { items } }]).issues).toEqual([]);
     const invalid = items.map((item) =>
       item.id === 'test_opened'
@@ -159,31 +151,31 @@ describe('held can opening', () => {
     expect(f.can.type).toBe('test_empty');
   });
 
-  it('an unavailable opening choice falls back to the tool own action', () => {
+  it('a chosen opening runs once instead of the swing, and refuses rather than swinging once its target is gone', () => {
     const f = fixture('left');
-    const selected = () => selectPrimaryAction(f.inventory, f.other, f.survival.selectedItemAction(f.tool)?.id);
-    expect(selected().kind).toBe('melee');
-    expect(f.survival.availableItemActions(f.tool).some((action) => action.opening)).toBe(true);
-    expect(
-      f.survival.withItemAction(f.tool, 'open-can', () => {
-        expect(selected().kind).toBe('open-can');
-        expect(f.inventory.move(f.can, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-      }),
-    ).toBeUndefined();
+    const selected = () => selectPrimaryAction(f.inventory, f.other, f.survival.selectedItemAction(f.tool)?.id).kind;
+    const opening = f.survival.availableItemActions(f.tool).find((action) => action.opening);
+    expect(opening).toBeDefined();
+    expect(selected()).toBe('melee');
+    let chosenUse: string | undefined;
+    const choose = () =>
+      f.survival.withItemAction(f.tool, opening!.id, () => {
+        chosenUse = selected();
+      });
+    expect(choose()).toBeUndefined();
+    expect(chosenUse).toBe('open-can');
+    expect(selected()).toBe('melee');
+    expect(f.inventory.move(f.can, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
     expect(openingTargetForHand(f.inventory, f.other)).toBeUndefined();
-    expect(selected().kind).toBe('melee');
-    expect(
-      f.survival.withItemAction(f.tool, 'open-can', () => {
-        throw new Error('An unavailable action must not execute');
-      }),
-    ).toBeDefined();
-    expect(selected().kind).toBe('melee');
+    chosenUse = undefined;
+    expect(choose()).toBeDefined();
+    expect(chosenUse).toBeUndefined();
   });
 
   it('a tutorial opening is earned by completion, not activation or cancellation', () => {
     const f = fixture();
-    const lightKit = baseRegistry().layouts.get('tutorial')!.practice!.light;
-    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
+    const guide = guidanceFixture('fixture_light');
+    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, guide);
     f.opened.mockImplementation(() => tutorial.opened('canned_beans'));
     expect(f.unpacking.activate(f.can)).toBeUndefined();
     f.queue.cancel();

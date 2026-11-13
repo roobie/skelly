@@ -1,0 +1,232 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "id": "ak_slant_compensator",
+      "model": "ak_slant_compensator",
+      "name": "Slant compensator",
+      "size": [1, 1],
+      "weight": 80,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_hunting_3_9x",
+      "model": "optic_hunting_3_9x",
+      "name": "3–9× hunting scope",
+      "opticMagnification": 6,
+      "opticUnityImage": "world",
+      "opticZoom": {
+        "rememberPerWeapon": true,
+        "step": 1
+      },
+      "size": [2, 2],
+      "weight": 400,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_digital_thermal",
+      "model": "optic_digital_thermal",
+      "name": "Digital thermal optic",
+      "opticUnityImage": "world",
+      "opticView": "unavailable",
+      "size": [2, 2],
+      "weight": 750,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_fixed_prism_4x",
+      "model": "optic_fixed_prism_4x",
+      "name": "Fixed 4× prism optic",
+      "opticUnityImage": "world",
+      "size": [1, 2],
+      "weight": 450,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_high_mag_5_25x",
+      "model": "optic_high_mag_5_25x",
+      "name": "5–25× magnified optic",
+      "opticMagnification": 10,
+      "opticUnityImage": "world",
+      "opticZoom": {
+        "rememberPerWeapon": true,
+        "step": 1
+      },
+      "size": [2, 2],
+      "weight": 900,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_holographic",
+      "model": "optic_holographic",
+      "name": "Holographic sight",
+      "opticUnityImage": "source",
+      "size": [1, 1],
+      "weight": 250,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_lpvo_1_6x",
+      "model": "optic_lpvo_1_6x",
+      "name": "1–6× variable-power optic",
+      "opticMagnification": 3,
+      "opticUnityImage": "world",
+      "opticZoom": {
+        "rememberPerWeapon": true,
+        "step": 1
+      },
+      "size": [2, 2],
+      "weight": 520,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_mini_reflex",
+      "model": "optic_mini_reflex",
+      "name": "Mini reflex sight",
+      "opticUnityImage": "world",
+      "size": [1, 1],
+      "weight": 180,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "optic_tube_dot",
+      "model": "optic_tube_dot",
+      "name": "Tube red-dot sight",
+      "opticUnityImage": "world",
+      "size": [1, 2],
+      "weight": 220,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "rail_front_sight",
+      "model": "rail_front_sight",
+      "name": "Rail-mounted front sight",
+      "size": [1, 1],
+      "weight": 90,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "rail_rear_sight",
+      "model": "rail_rear_sight",
+      "name": "Rail-mounted rear sight",
+      "size": [1, 1],
+      "weight": 90,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "firearmAttachmentEffects": {
+        "fitRefusal": "I can't fit this suppressor yet",
+        "fitSkillLevel": 4,
+        "kind": "suppressor",
+        "recoilReduction": 0.14999999999999999,
+        "wearPerShot": 0.001
+      },
+      "id": "real_suppressor",
+      "model": "real_suppressor",
+      "name": "Suppressor",
+      "size": [1, 2],
+      "weight": 300,
+      "workInProgress": false
+    },
+    {
+      "category": "light",
+      "description": "A rail-clamp flashlight. Fitted to a rail on a long gun, its beam follows the barrel.",
+      "id": "tactical_flashlight_mount",
+      "light": {
+        "beam": {
+          "angleDegrees": 60,
+          "decay": 1,
+          "penumbra": 0.59999999999999998,
+          "spill": {
+            "enabled": false,
+            "intensity": 0.17999999999999999,
+            "radiusRatio": 1.5
+          }
+        },
+        "color": "#fff1d8",
+        "intensity": 4,
+        "power": {
+          "battery": "aa_battery",
+          "chargePerGameHour": 0.25,
+          "compatibleBatteries": ["rechargeable_aa_battery"],
+          "swapSimSeconds": 2
+        },
+        "radius": 20,
+        "seenFrom": 40
+      },
+      "model": "tactical_flashlight_mount",
+      "name": "Tactical flashlight rail mount",
+      "size": [1, 1],
+      "weight": 120,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 4,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "rope",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "fastener_pack",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "weapon_sling_worn",
+          "overTorso": {
+            "jacket": "weapon_sling_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "weapon_sling",
+      "model": "weapon_sling",
+      "name": "Weapon sling",
+      "size": [1, 1],
+      "sling": true,
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "firearmAttachmentEffects": {
+        "kind": "foregrip",
+        "raiseScale": 0.94999999999999996,
+        "recoveryScale": 1.1000000000000001,
+        "swayScale": 0.84999999999999998,
+        "swingScale": 1.1000000000000001,
+        "wearPerShot": 0
+      },
+      "id": "foregrip",
+      "model": "foregrip",
+      "name": "Vertical foregrip",
+      "size": [1, 1],
+      "weight": 160,
+      "workInProgress": false
+    }
+  ]
+}

@@ -4,10 +4,52 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { install } from './perf-baseline-browser.mjs';
 import { watchPageErrors } from './perf-baseline-page.mjs';
 import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs';
 import { startTrace } from './perf-baseline-trace.mjs';
+
+const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
+const playAnchorLiteral = /'[^'\n]*startRealFrames\(frame\);'/;
+const playActorStoreBinding = /const\s*\{[^}]*\bactorStore\s*(?:,[^}]*)?\}\s*=\s*session\s*;/;
+
+test('injected play startup attaches the live actor store before starting frames', async () => {
+  const source = await readFile(new URL('./perf-baseline.mjs', import.meta.url), 'utf8');
+  const literal = source.match(playStartupLiteral)?.[0];
+  assert.ok(literal, 'play startup instrumentation exists');
+  const injection = runInNewContext(literal);
+  const anchorLiteral = source.match(playAnchorLiteral)?.[0];
+  assert.ok(anchorLiteral, 'play startup replacement anchor exists');
+  const play = await readFile(new URL('../../presentation/src/presentation/play.ts', import.meta.url), 'utf8');
+  assert.ok(play.includes(runInNewContext(anchorLiteral)), 'play source retains the injection anchor');
+  assert.match(play, playActorStoreBinding);
+  const actorStore = { size: 1 };
+  let attached;
+  let started = false;
+  runInNewContext(injection, {
+    engine: {},
+    session: {},
+    input: {},
+    view: {},
+    worldLoading: {},
+    debugTools: {},
+    actorStore,
+    perfBaseline: {
+      attach: (runtime) => {
+        attached = runtime;
+      },
+      frame: () => undefined,
+    },
+    frame: () => undefined,
+    startRealFrames: (callback) => {
+      assert.equal(attached?.actorStore, actorStore);
+      assert.equal(typeof callback, 'function');
+      started = true;
+    },
+  });
+  assert.ok(started);
+});
 
 test('query-free scene draws retain actor evidence without opening GPU timers', () => {
   const previous = globalThis.perfBaseline;
@@ -33,14 +75,14 @@ test('query-free scene draws retain actor evidence without opening GPU timers', 
   const engine = {
     renderer,
     scene,
-    meshes: { group: { userData: {} } },
+    meshes: { batch: { userData: {} } },
     shadows: { drawMaps: () => undefined },
     mood: { renderScale: 1 },
   };
   try {
     install(engine);
     const perf = globalThis.perfBaseline;
-    perf.attach({ engine, view: { zombieMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
+    perf.attach({ engine, view: { actorMeshes: { group }, playerMeshes: { group: { userData: {} } } } });
     perf.enabled = true;
     perf.mode = 'off';
     perf.frame(() => renderer.render(scene), 0);
@@ -174,23 +216,25 @@ test('lost trace data closes its stream without publishing an artifact', async (
   }
 });
 
-test('CPU attribution counts descendants once and keeps GC and native gaps separate', () => {
+test('CPU attribution counts descendants once, includes parentless actor steps and keeps GC and native gaps separate', () => {
   const node = (id, functionName, children = []) => ({ id, callFrame: { functionName }, children });
   const ranking = rankProfile({
     nodes: [
-      node(1, '(root)', [2, 5, 6, 7]),
+      node(1, '(root)', [2, 5, 6, 7, 8, 9]),
       node(2, 'tickActive', [3, 4]),
       node(3, 'overlapsTerrain'),
       node(4, '(garbage collector)'),
       node(5, 'prepareStreaming'),
       node(6, '(program)'),
       node(7, '(idle)'),
+      node(8, 'stepActorBody'),
+      node(9, 'finishActorTick'),
     ],
-    samples: [3, 4, 5, 6, 7],
-    timeDeltas: [1000, 2000, 3000, 4000, 5000],
+    samples: [3, 4, 5, 6, 7, 8, 9],
+    timeDeltas: [1000, 2000, 3000, 4000, 5000, 1000, 1000],
   });
-  assert.equal(ranking.sampledMs, 15);
-  assert.equal(ranking.categories.find((row) => row.name === 'ai').ms, 1);
+  assert.equal(ranking.sampledMs, 17);
+  assert.equal(ranking.categories.find((row) => row.name === 'ai').ms, 3);
   assert.equal(ranking.categories.find((row) => row.name === 'gc').ms, 2);
   assert.equal(ranking.categories.find((row) => row.name === 'streamingMeshing').ms, 3);
   assert.equal(ranking.categories.find((row) => row.name === 'unattributed').ms, 4);

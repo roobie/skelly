@@ -1,50 +1,59 @@
-import { describe, expect, it } from 'vitest';
-import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import type { Item } from '../src/core/items.ts';
-import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
-import { encodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import type { Site, ZombieSpawn } from '../src/core/site.ts';
-import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
-import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
-import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
-  DEFAULT_REPLAY_START_STATE,
+  clearPendingInputReplay,
+  createReplayPlayStateBinding,
+  debugSpawnActorRow,
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
-  INPUT_REPLAY_SCHEMA_VERSION,
+  InputReplayDriver,
+  InputReplayPlayer,
   InputReplayRecorder,
   joinInputReplayWindows,
+  pendingInputReplay,
   type ReplayAction,
-  type ReplayColumnUpdate,
+  type ReplayActionPayload,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
   type ReplayStartState,
+  stashInputReplay,
+  withReplayExportGuard,
+} from '@skelly/engine/input';
+import { canonicalJsonBytes } from '@skelly/engine/internal/core/canonicalJson.ts';
+import { SKILL_LEVEL_LEGENDARY } from '@skelly/engine/internal/core/character.ts';
+import { pocketGroundItem, stowTarget, toHands } from '@skelly/engine/internal/core/options.ts';
+import type { ActorSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import { gameTimeOfDay } from '@skelly/engine/internal/core/time.ts';
+import { advanceLiveFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import {
+  DEFAULT_REPLAY_START_STATE,
+  INPUT_REPLAY_SCHEMA_VERSION,
+  type ReplayColumnUpdate,
   replayStateFingerprint,
   restoreReplayStartState,
   rolloverInputReplayRecorder,
   sampleFromReplayFrame,
-  withReplayExportGuard,
-} from '../src/game/inputReplay.ts';
-import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
-import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
-import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
-import { inputReplayStatus } from '../src/game/play.ts';
-import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
+} from '@skelly/engine/internal/game/inputReplay.ts';
+import { routeDominantUse, toggleWalking } from '@skelly/engine/internal/game/inputReplayActions.ts';
+import { nextReplayInputSample } from '@skelly/engine/internal/game/inputReplayDriver.ts';
+import { applyReplayLook } from '@skelly/engine/internal/game/inputReplayPlayer.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '@skelly/engine/internal/game/reloadInput.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import { type Item, SLING_SLOT } from '@skelly/engine/inventory';
+import { encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSimulationStepper, type InputRecording, PHYSICS_RATE } from '@skelly/engine/session';
 import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
-  type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
-import { PHYSICS_RATE } from '../src/game/session.ts';
-import { Unpacking } from '../src/game/unpacking.ts';
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  dominantSide,
+  practiceForNextLevel,
+  realSeconds as realDuration,
+} from '@skelly/engine/sim';
+import { CHUNK, toChunk, type Vec3 } from '@skelly/engine/world';
+import { inputReplayStatus } from '@skelly/presentation/internal/presentation/play.ts';
+import { describe, expect, it } from 'vitest';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { levelSite } from './fixtures/levelSite.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -57,8 +66,8 @@ import {
   fixtureZombieColumn,
   formatVersion,
   formatWorldOptions,
+  registry,
   removeFixtureColumn,
-  scale,
 } from './snapshotTestSupport.ts';
 
 const INCOMPATIBLE_SAVE = /incompatible|version|identity/i;
@@ -86,9 +95,12 @@ const replaySample = {
   worldReady: true,
 } as const;
 
+const spawnId = (typeId: string): string => debugSpawnActorRow(typeId, typeId).id;
+const ABSENT_ACTOR = 'fixture_absent_actor';
+
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
-    magic: 'DEADVOX_REPLAY',
+    magic: 'SKELLY_REPLAY',
     schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
     startState: inputs.startState ?? DEFAULT_REPLAY_START_STATE,
     endStateFingerprint: '0'.repeat(64),
@@ -156,6 +168,7 @@ const applyCommand = (
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftRepairEntity: (recipeId, entityUid, preference) =>
       runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
+    craftTakeApartEntity: (entityUid) => runtime.session.crafting.takeApartEntity(entityUid),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
       return uid === undefined ? undefined : runtime.session.crafting.act(uid, 'continue');
@@ -198,43 +211,6 @@ const generatedColumnsReady = (generated: ReadonlySet<string>, x: number, z: num
     }
   }
   return true;
-};
-
-type FixtureWorld = ReturnType<typeof createRuntime>['world'];
-
-const groundTop = (world: FixtureWorld, x: number, z: number): number | undefined => {
-  for (let y = (scale.maxCy + 1) * CHUNK - 1; y >= scale.minCy * CHUNK; y--) {
-    if (world.getBlock(x, y, z) !== 0) {
-      return y;
-    }
-  }
-  return undefined;
-};
-
-/** The shared ground top across a rectangle of cells, or undefined when it is not level. */
-const levelTop = (world: FixtureWorld, [x0, x1]: [number, number], [z0, z1]: [number, number]) => {
-  const tops = new Set<number | undefined>();
-  for (let z = z0; z <= z1; z++) {
-    for (let x = x0; x <= x1; x++) {
-      tops.add(groundTop(world, x, z));
-    }
-  }
-  return tops.size === 1 ? [...tops][0] : undefined;
-};
-
-/** A cell inside the column with level ground for `spread` cells either side along x and `depth` cells along z. */
-const levelSite = (world: FixtureWorld, [cx, cz]: [number, number], spread: number, depth: number) => {
-  const margin = spread + 3;
-  for (let z = cz * CHUNK + margin; z < (cz + 1) * CHUNK - margin; z++) {
-    for (let x = cx * CHUNK + margin; x < (cx + 1) * CHUNK - margin; x++) {
-      const north = z - Math.floor(depth / 2);
-      const top = levelTop(world, [x - spread, x + spread], [north, north + depth - 1]);
-      if (top !== undefined) {
-        return { x, z, north, ground: top + 1 };
-      }
-    }
-  }
-  throw new Error(`Column ${cx},${cz} has no level ground for the fixture`);
 };
 
 const recordActiveSession = (
@@ -741,6 +717,70 @@ describe('input replay', () => {
     }
   });
 
+  it('decodes every debug spawn the recorder accepted against the same content', async () => {
+    expect(registry.actors.has(ABSENT_ACTOR)).toBe(false);
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    const accepted = [...registry.actors.keys(), ABSENT_ACTOR].map(spawnId).filter((id) => {
+      try {
+        recorder.queueAction(id, 'down', 'play');
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(accepted).toEqual([...registry.actors.keys()].map(spawnId));
+    expect(decoded.inputs.actions.map(({ action }) => action)).toEqual(accepted);
+  });
+
+  it('keeps its content check across rollover', () => {
+    const start = capture(createRuntime());
+    const [present] = registry.actors.keys();
+    const first = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    expect(() => first.queueAction(spawnId(ABSENT_ACTOR), 'down', 'play')).toThrow(ABSENT_ACTOR);
+    first.recordTick(replaySample);
+    const next = rolloverInputReplayRecorder(first, start);
+    expect(() => next.queueAction(spawnId(ABSENT_ACTOR), 'down', 'play')).toThrow(ABSENT_ACTOR);
+    expect(() => next.queueAction(spawnId(present!), 'down', 'play')).not.toThrow();
+  });
+
+  it('refuses every debug spawn when built without a content check', () => {
+    const [present] = registry.actors.keys();
+    const recorder = new InputReplayRecorder(capture(createRuntime()));
+    expect(() => recorder.queueAction(spawnId(present!), 'down', 'play')).toThrow(present!);
+  });
+
+  it('refuses an imported debug spawn action whose actor is absent from the content', async () => {
+    const start = capture(createRuntime());
+    // A replay recorded against other content, where this actor existed.
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup: () => true });
+    recorder.queueAction(spawnId(ABSENT_ACTOR), 'down', 'play');
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    await expect(decodeInputReplay(bytes, { contentLookup })).rejects.toThrow(ABSENT_ACTOR);
+  });
+
+  it('keeps each debug spawn id exact past the range of a stored action index', () => {
+    const start = capture(createRuntime());
+    const indexRange = 2 ** 16;
+    let recorded = 0;
+    while (recorded <= indexRange) {
+      const recorder = new InputReplayRecorder(start, 1, [], { contentLookup: () => true });
+      const expected: string[] = [];
+      while (!recorder.full) {
+        const id = spawnId(`fixture_${recorded + expected.length}`);
+        expected.push(id);
+        recorder.queueAction(id, 'down', 'play');
+      }
+      recorder.recordTick(replaySample);
+      expect(recorder.copyInputs().actions.map(({ action }) => action)).toEqual(expected);
+      recorded += expected.length;
+    }
+  });
+
   it('reports the supplied stop reason instead of an idle recording', () => {
     const options = {
       replayPlayer: undefined,
@@ -758,16 +798,22 @@ describe('input replay', () => {
     expect.soft(status).not.toBe(idleStatus);
   });
 
-  it('rejects recordings from before drag-free throw strength', async () => {
+  it('rejects a replay of another schema version', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     recorder.recordTick(replaySample);
     const current = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const differentSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
-    differentSchema.schemaVersion = 20;
+    const parsed = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
+    expect(parsed.schemaVersion).toBe(INPUT_REPLAY_SCHEMA_VERSION);
+    await expect(decodeInputReplay(canonicalJsonBytes(parsed), { contentLookup })).resolves.toBeDefined();
 
-    await expect(decodeInputReplay(canonicalJsonBytes(differentSchema), { contentLookup })).rejects.toThrow(
-      'Unsupported replay format',
+    await Promise.all(
+      [INPUT_REPLAY_SCHEMA_VERSION - 1, INPUT_REPLAY_SCHEMA_VERSION + 1].map((schemaVersion) =>
+        expect(
+          decodeInputReplay(canonicalJsonBytes({ ...parsed, schemaVersion }), { contentLookup }),
+          `schema ${schemaVersion}`,
+        ).rejects.toThrow(),
+      ),
     );
   });
 
@@ -869,47 +915,6 @@ describe('input replay', () => {
     expect(replay.session.leanAmount).not.toBe(amount);
   });
 
-  it('replays a held-ready stance at a standalone segment start', async () => {
-    const initial = createRuntime();
-    const backpack = initial.inventory.hands.right;
-    if (!(backpack && initial.inventory.move(backpack, { kind: 'pile', pos: initial.player.body.pos }).ok)) {
-      throw new Error('Could not clear a hand for the replay firearm');
-    }
-    const rifle = initial.inventory.create('rifle_assault');
-    if (!initial.inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-      throw new Error('Could not hold the replay firearm');
-    }
-    const start = capture(initial);
-    const startState: ReplayStartState = {
-      leanAmount: 0,
-      throwingStance: false,
-      readyHeld: true,
-      aimingDownSights: false,
-      inventoryOpen: false,
-    };
-    const recorder = new InputReplayRecorder(start, 1, [], { startState });
-    const source = createRuntime(start, false, undefined, {
-      readyHeld: () => true,
-      sampleAtPlayerTick: (_tick, live, _time, compression) => {
-        recorder.recordTick(live, compression);
-        return live;
-      },
-    });
-    source.sim.paused = false;
-    source.view.intent.forward = 1;
-    source.session.frame(1 / 60);
-    const sourceEnd = capture(source);
-    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
-    const standaloneReplay = playSession(decoded.snapshot, decoded.inputs, {
-      endSimTimestamp: decoded.endSimTimestamp,
-      startState: decoded.startState,
-    });
-
-    expect(sourceEnd.character.player.firearmReadyWalking).toBe(true);
-    expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
-  });
-
   it('replays a breath held through the sights from a standalone segment start', async () => {
     const site = levelSite(createRuntime().world, fixtureZombieColumn, 1, 3);
     const initial = createRuntime(undefined, false, undefined, { spawn: [site.x + 0.5, site.ground, site.z + 0.5] });
@@ -961,17 +966,6 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(replayWith(false))).not.toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('constructs the replay session at the decoded recording snapshot position', async () => {
-    const start = capture(createRuntime());
-    const recorder = new InputReplayRecorder(start);
-    recorder.recordTick(replaySample);
-    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
-    const replay = createRuntime(decoded.snapshot);
-
-    expect(replay.player.body.pos).toEqual(decoded.snapshot.character.player.body.pos);
-  });
-
   it('joins adjacent recording windows and offsets semantic actions from the earlier start save', () => {
     const frame = (yaw: number) => [yaw, 0, 0, 0, 1, 1, 0, 0] as const;
     const action = (tick: number) => ({
@@ -995,19 +989,18 @@ describe('input replay', () => {
 
   it('replays a same-tick column load and unload in order, preserving its marker and furniture', async () => {
     const [cx, cz] = fixtureColumns.find(([columnX, columnZ]) => fixtureSite.furnitureIn(columnX, columnZ).length > 0)!;
-    const marker: ZombieSpawn = {
+    const marker: ActorSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
     };
     const site: Site = {
-      surface: fixtureSite.surface,
+      terrain: fixtureSite.terrain,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
-      zombiesIn: (columnX, columnZ) =>
-        columnX === cx && columnZ === cz ? [marker] : fixtureSite.zombiesIn(columnX, columnZ),
+      actorsIn: (columnX, columnZ) =>
+        columnX === cx && columnZ === cz ? [marker] : fixtureSite.actorsIn(columnX, columnZ),
       hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const initialColumns: ReplayGeneratedColumn[] = [[cx + 10, cz + 10]];
@@ -1223,16 +1216,6 @@ describe('input replay', () => {
     expect(idle.input).toMatchObject({ active: false, inputLocked: true, compression: 7 });
   });
 
-  it('records whether the player column was ready at each player tick', () => {
-    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
-    recorder.recordTick({ ...replaySample, worldReady: true });
-    recorder.recordTick({ ...replaySample, worldReady: false });
-    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
-
-    expect(player.next()?.worldReady).toBe(true);
-    expect(player.next()?.worldReady).toBe(false);
-  });
-
   it('reports replay unavailable when a recorded-ready player column is missing', () => {
     const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
     recorder.recordTick(replaySample);
@@ -1272,22 +1255,21 @@ describe('input replay', () => {
         initialColumns.push([cx + dx, cz + dz]);
       }
     }
-    const marker: ZombieSpawn = {
+    const marker: ActorSpawn = {
       type: 'shambler',
       pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
       window: { fromGameTimeOfDay: gameTimeOfDay(BASE_CLOCK.start + 1) },
     };
     const site: Site = {
-      surface: fixtureSite.surface,
+      terrain: fixtureSite.terrain,
       spawn: fixtureSite.spawn,
-      stamp: (chunk) => fixtureSite.stamp(chunk),
       supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
-      zombiesIn: (columnX, columnZ) =>
+      actorsIn: (columnX, columnZ) =>
         columnX === cx && columnZ === cz
-          ? [...fixtureSite.zombiesIn(columnX, columnZ), marker]
-          : fixtureSite.zombiesIn(columnX, columnZ),
+          ? [...fixtureSite.actorsIn(columnX, columnZ), marker]
+          : fixtureSite.actorsIn(columnX, columnZ),
       hordesIn: (columnX, columnZ) => fixtureSite.hordesIn(columnX, columnZ),
     };
     const loadedSource = createRuntime(
@@ -1325,29 +1307,29 @@ describe('input replay', () => {
 
   it("replays a recorded column load's spawn and furniture under compression", async () => {
     const runtime = createRuntime();
-    const firstZombieEntry = runtime.zombies.store.entries().next().value;
-    if (!firstZombieEntry) {
+    const firstActorEntry = runtime.zombies.store.entries().next().value;
+    if (!firstActorEntry) {
       throw new Error('Replay fixture has no zombie');
     }
-    const [zombieId, firstZombie] = firstZombieEntry;
+    const [actorId, firstActor] = firstActorEntry;
     const restRefusal = runtime.sim.actions.startRest('sleep', -10, 1);
     if (restRefusal) {
       throw new Error(`Replay fixture could not start compression: ${restRefusal}`);
     }
     const start = capture(runtime);
-    const cx = toChunk(Math.floor(firstZombie.body.pos[0]));
-    const cz = toChunk(Math.floor(firstZombie.body.pos[2]));
-    const targetTick = BACKGROUND_ZOMBIE_SLICE_COUNT + (zombieId % BACKGROUND_ZOMBIE_SLICE_COUNT);
-    const generatedAroundZombie: ReplayColumnUpdate[] = [];
+    const cx = toChunk(Math.floor(firstActor.body.pos[0]));
+    const cz = toChunk(Math.floor(firstActor.body.pos[2]));
+    const targetTick = BACKGROUND_ACTOR_SLICE_COUNT + (actorId % BACKGROUND_ACTOR_SLICE_COUNT);
+    const generatedAroundActor: ReplayColumnUpdate[] = [];
     for (let dz = -1; dz <= 1; dz++) {
       for (let dx = -1; dx <= 1; dx++) {
-        generatedAroundZombie.push([cx + dx, cz + dz, true]);
+        generatedAroundActor.push([cx + dx, cz + dz, true]);
       }
     }
-    const spawnColumn = generatedAroundZombie.find(
-      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.zombiesIn(columnX, columnZ).length > 0,
+    const spawnColumn = generatedAroundActor.find(
+      ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.actorsIn(columnX, columnZ).length > 0,
     );
-    const furnitureColumn = generatedAroundZombie.find(
+    const furnitureColumn = generatedAroundActor.find(
       ([columnX, columnZ]) =>
         (columnX !== cx || columnZ !== cz) && fixtureSite.furnitureIn(columnX, columnZ).length > 0,
     );
@@ -1357,17 +1339,17 @@ describe('input replay', () => {
     const source = recordActiveSession(start, recorder, {
       columns: {
         initial: [],
-        updatesAtTick: (tick) => (tick === targetTick ? generatedAroundZombie : []),
+        updatesAtTick: (tick) => (tick === targetTick ? generatedAroundActor : []),
       },
       initialColumns: [[cx + 10, cz + 10]],
       frameDts: [1 / 60],
     });
     expect(
       [...source.zombies.store.entries()].some(
-        ([, zombie]) =>
+        ([, actor]) =>
           spawnColumn &&
-          toChunk(Math.floor(zombie.body.pos[0])) === spawnColumn[0] &&
-          toChunk(Math.floor(zombie.body.pos[2])) === spawnColumn[1],
+          toChunk(Math.floor(actor.body.pos[0])) === spawnColumn[0] &&
+          toChunk(Math.floor(actor.body.pos[2])) === spawnColumn[1],
       ),
     ).toBe(true);
     expect(
@@ -1397,6 +1379,58 @@ describe('input replay', () => {
     });
     expect([...replay.world.chunks.values()].some((chunk) => chunk.cx === cx && chunk.cz === cz)).toBe(true);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('a stashed replay is pending after reload and gone after clear', () => {
+    const session = new Map<string, string>();
+    // Each page load resolves its own store over the same session data.
+    const reloadedStash = () => ({
+      getItem: (key: string) => session.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        session.set(key, value);
+      },
+      removeItem: (key: string) => {
+        session.delete(key);
+      },
+    });
+    const bytes = new Uint8Array([0, 1, 2, 250, 255]);
+    stashInputReplay(reloadedStash, bytes);
+    expect(pendingInputReplay(reloadedStash)).toEqual(bytes);
+    clearPendingInputReplay(reloadedStash);
+    expect(pendingInputReplay(reloadedStash)).toBeUndefined();
+  });
+
+  it("a recorder window that fills during a frame rolls after that frame's step", () => {
+    const start = capture(createRuntime());
+    const recording: InputRecording = { recorder: undefined, previous: undefined, stoppedReason: undefined };
+    const runtime = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recording.recorder?.recordTick(live, compression);
+        return live;
+      },
+    });
+    const filling = new InputReplayRecorder(start, 1, []);
+    recording.recorder = filling;
+    const stepper = createSimulationStepper({
+      sim: runtime.sim,
+      advance: (simDt, until) => runtime.session.frame(simDt, until),
+      worldReady: () => true,
+      gameFrozen: () => false,
+      replayPlayer: undefined,
+      replayDriver: undefined,
+      replay: undefined,
+      recording,
+      captureSnapshot: () => capture(runtime),
+      generatedColumns: () => [],
+      captureReplayStartState: () => DEFAULT_REPLAY_START_STATE,
+    });
+
+    stepper.step(realDuration(1 / 30), { menuPaused: false });
+
+    expect(filling.full).toBe(true);
+    expect(recording.previous).toBe(filling);
+    expect(recording.recorder).not.toBe(filling);
+    expect(recording.recorder?.tickCount).toBe(0);
   });
 
   it('bounds the always-on recording window and retained buffers', () => {
@@ -1513,21 +1547,6 @@ describe('input replay', () => {
     expect(decoded.inputs.actions).toEqual(
       commands.map((payload, tick) => ({ tick, action: payload.kind, phase: 'down', context: 'inventory', payload })),
     );
-  });
-
-  it('round-trips an explicitly chosen held operation with its item identity', async () => {
-    const start = capture(createRuntime());
-    const recorder = new InputReplayRecorder(start);
-    const payload = { kind: 'hand.action', itemUid: 7, actionId: 'fixture-treatment:head' } as const;
-    recorder.queueAction(payload.kind, 'down', 'play', { payload });
-    recorder.recordTick(replaySample);
-    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const decoded = await decodeInputReplay(bytes, { contentLookup });
-    expect(decoded.inputs.actions).toEqual([
-      { tick: 0, action: payload.kind, phase: 'down', context: 'play', payload },
-    ]);
-    expect(isReplayActionPayload({ ...payload, itemUid: 0 })).toBe(false);
-    expect(isReplayActionPayload({ ...payload, actionId: '' })).toBe(false);
   });
 
   it('validates replay command identities and pickup modes', () => {
@@ -1803,8 +1822,16 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('replays scaled unpacking and furniture search with their completed practice awards', async () => {
-    const initial = createRuntime();
+  it('replays scaled unpacking and a furniture search in real reach with their completed practice awards', async () => {
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
+    const probe = createRuntime(undefined, false, [column]);
+    const cupboardDef = probe.inventory.registry.furniture.get('kitchen_cupboard')!;
+    const [width, , depth] = cupboardDef.size;
+    // The player stands still beside the cupboard on level ground, so the real reach decides the search.
+    const site = levelSite(probe.world, column, width + 1, depth);
+    const { ground, north } = site;
+    const initial = createRuntime(undefined, false, [column], { spawn: [site.x + 0.5, ground, site.z + 0.5] });
     initial.session.character.skills.inventory_management = 5;
     const backpack = initial.inventory.hands.right;
     if (!(backpack && initial.inventory.move(backpack, { kind: 'worn' }).ok)) {
@@ -1815,9 +1842,9 @@ describe('input replay', () => {
       throw new Error('Could not hold the replay unpack fixture box');
     }
     const cupboard = initial.inventory.furnish({
-      type: 'kitchen_cupboard',
-      pos: [0, 0, 0],
-      size: [2, 2, 1],
+      type: cupboardDef.id,
+      pos: [site.x + 2, ground, north],
+      size: cupboardDef.size,
       facing: 'n',
     });
     if (!cupboard) {
@@ -1831,13 +1858,11 @@ describe('input replay', () => {
       payload: { kind: 'inventory.search' as const, entityUid: cupboard.uid },
     };
     const useDominant = (runtime: ReturnType<typeof createRuntime>) => {
-      runtime.inventory.canReachEntity = () => true;
       const held = runtime.inventory.hands.right;
       if (!held) {
         throw new Error('Replay unpack fixture lost its held box');
       }
-      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
-      const refusal = unpacking.activate(held);
+      const refusal = runtime.session.unpacking.activate(held);
       if (refusal) {
         throw new Error(`Replay unpack was refused: ${refusal}`);
       }
@@ -1846,6 +1871,8 @@ describe('input replay', () => {
     const source = recordActiveSession(start, recorder, {
       commands: [command],
       recordedTicks: 220,
+      forward: 0,
+      initialColumns: [column],
       useDominantAtTick: 12,
       useDominant,
     });
@@ -1858,14 +1885,15 @@ describe('input replay', () => {
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     const replay = playSession(start, decoded.inputs, {
       endSimTimestamp: decoded.endSimTimestamp,
+      initialColumns: [column],
       useDominant,
     });
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('replays a furniture lift and put-down to the same piece, place and fingerprint', async () => {
-    const [zombieCx, zombieCz] = fixtureZombieColumn;
-    const column: [number, number] = [zombieCx + 10, zombieCz + 10];
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
     const probe = createRuntime(undefined, false, [column]);
     const crate = probe.inventory.registry.furniture.get('crate')!;
     const [width, , depth] = crate.size;

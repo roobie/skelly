@@ -1,4 +1,4 @@
-import { VectorOps } from "../math";
+import { VectorOps, scratchBuffer } from "../math";
 import { FeatureType } from "./feature";
 export class Ray {
     constructor(origin, dir) {
@@ -24,12 +24,17 @@ export class RayIntersection {
         if (featureType !== undefined)
             this.featureType = featureType;
     }
-    static fromRaw(raw) {
+    static fromBuffer(raw, target) {
         if (!raw)
             return null;
-        const result = new RayIntersection(raw.time_of_impact(), VectorOps.fromRaw(raw.normal()), raw.featureType(), raw.featureId());
+        raw.normal(scratchBuffer);
+        target ?? (target = new RayIntersection(0, VectorOps.zeros()));
+        target.timeOfImpact = raw.time_of_impact();
+        target.normal = VectorOps.fromBuffer(scratchBuffer, target.normal);
+        target.featureType = raw.featureType();
+        target.featureId = raw.featureId();
         raw.free();
-        return result;
+        return target;
     }
 }
 export class RayColliderIntersection {
@@ -44,12 +49,18 @@ export class RayColliderIntersection {
         if (featureType !== undefined)
             this.featureType = featureType;
     }
-    static fromRaw(colliderSet, raw) {
+    static fromBuffer(colliderSet, raw, target) {
         if (!raw)
             return null;
-        const result = new RayColliderIntersection(colliderSet.get(raw.colliderHandle()), raw.time_of_impact(), VectorOps.fromRaw(raw.normal()), raw.featureType(), raw.featureId());
+        raw.normal(scratchBuffer);
+        target ?? (target = new RayColliderIntersection(null, 0, VectorOps.zeros()));
+        target.collider = colliderSet.get(raw.colliderHandle());
+        target.timeOfImpact = raw.time_of_impact();
+        target.normal = VectorOps.fromBuffer(scratchBuffer, target.normal);
+        target.featureType = raw.featureType();
+        target.featureId = raw.featureId();
         raw.free();
-        return result;
+        return target;
     }
 }
 export class RayColliderHit {

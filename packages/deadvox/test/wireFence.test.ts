@@ -1,13 +1,18 @@
+import { perceivePlayer } from '@skelly/engine/internal/core/agentPerception.ts';
+import { extractPadded, extractWide } from '@skelly/engine/internal/core/meshInput.ts';
+import { isEnclosed } from '@skelly/engine/internal/core/world.ts';
+import { buildMesh } from '@skelly/engine/mesh';
+import {
+  BlockEntities,
+  type Body,
+  bodyOverlapsTerrain,
+  Chunk,
+  raycast,
+  World,
+  worldOpaque,
+  worldSolid,
+} from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Chunk } from '../src/core/chunk.ts';
-import { worldOpaque, worldSolid } from '../src/core/collision.ts';
-import { buildMesh } from '../src/core/mesher.ts';
-import { extractPadded, extractWide } from '../src/core/meshInput.ts';
-import { type Body, bodyOverlapsTerrain } from '../src/core/physics.ts';
-import { raycast } from '../src/core/raycast.ts';
-import { isEnclosed, World } from '../src/core/world.ts';
-import { perceivePlayer } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -21,7 +26,7 @@ it('keeps a wire fence solid to bodies and physical rays but open to zombie sigh
   const opaque = worldOpaque(world, registry, entities);
   const sees = () =>
     perceivePlayer({
-      zombie: registry.zombies.get('shambler')!,
+      def: registry.actors.get('shambler')!,
       from: [0.5, 2, 1.5],
       facing: [1, 0, 0],
       player: {

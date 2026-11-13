@@ -1,11 +1,11 @@
 ---
 read_if:
   - you distinguish intact vehicle disassembly from destructive salvage
-  - you're planning vehicle implementation, authoring or the Wheels playtest
+  - you're planning vehicle implementation, Rapier-only feasibility evidence, authoring or the Wheels playtest
   - you're applying the settled vehicle scope and deferred directions from issue 322
   - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
-  - you're comparing presentation physics with vehicle simulation
+  - you're integrating the selected Rapier f64 build across driving, parked collision and presentation physics
 ---
 
 # Slice 6 — Wheels
@@ -85,8 +85,8 @@ interior visibility. A passing debug route or export tool is not that exit.
 
 Vehicle membership and ordinary inventory ownership are exclusive so disassembly can
 retain the item's condition, resources and contents without reconciling two mutable
-copies. The production owner is `src/core/vehicleInstances.ts`, `VehicleInstances`;
-its parts join ordinary lookup and UID validation through `src/core/itemTree.ts`,
+copies. The production owner is `packages/engine/src/core/vehicleInstances.ts`, `VehicleInstances`;
+its parts join ordinary lookup and UID validation through `packages/engine/src/core/itemTree.ts`,
 `itemRoots` and `savedItemTree`. Factory service suggestions remain distinct from
 occupied fittings so an absent part does not erase its reinstall location or seal
 the build to blueprint sockets. Failed or interrupted transfers must retain the
@@ -96,12 +96,12 @@ VAT assembles things; the thing tool authors their shapes. The VAT export carrie
 baked per-part collision geometry beside render geometry so simulation never
 reconstructs authoring shapes. Do not revive a second vehicle material or mass
 authority. The neutral export boundary is
-`packages/thing-core/src/schema.ts`, `NeutralModelSchema`; the reasons for keeping
+`packages/skelly-assets/tools/packages/thing-core/src/schema.ts`, `NeutralModelSchema`; the reasons for keeping
 geometry out of Deadvox are in `things/WORK.md`, "Decisions". Vehicle-specific
 capabilities and gameplay requirements belong to validated game content, not the
 neutral core. The export contract precedes full VAT editor productionisation.
 
-The spike's `src/vehicles/model.ts`, `PartType`, `Fitting` and `VehicleInstance`,
+The spike's `packages/engine/src/vehicles/model.ts`, `PartType`, `Fitting` and `VehicleInstance`,
 are useful concepts, not a production schema to preserve. Do not carry its mass
 field and geometric-centroid calculation forward as a competing authority to
 exported per-part mass and centre of mass. Attached cargo, fuel and occupants also
@@ -123,7 +123,7 @@ of play instead of scheduled maintenance. Fuel and charge consumption are not we
 
 Fitted and loose parts use the shared item condition vocabulary so removing a part
 does not change what its condition means. This is not a new vehicle ladder or a
-new numeric representation; its owner is `src/core/items.ts`, `Item`.
+new numeric representation; its owner is `packages/engine/src/core/items.ts`, `Item`.
 
 Impact can detach a struck part and cascade through unsupported dependents. Surviving
 parts remain recoverable world items; damage does not silently delete ownership.
@@ -139,12 +139,12 @@ voxel erosion or player-operated cutting of welded assemblies.
 Keep attachment legality, structural support, work requirements and functional
 capability separate. Contact can suggest supports but cannot choose the structural
 contract: touching two surfaces does not mean both hold the part up. See
-`src/vehicles/model.ts`, `supportProblems`, `addFitting` and `removeFitting`.
+`packages/engine/src/vehicles/model.ts`, `supportProblems`, `addFitting` and `removeFitting`.
 The spike's refusal to remove a support is not an impact-detachment implementation.
 
 Install, remove and repair are distinct activities. Cutting a weld is not welding
 in reverse. Use the existing long-action and crafting ownership boundaries rather
-than building a vehicle job scheduler; see `src/core/craftWork.ts`,
+than building a vehicle job scheduler; see `packages/engine/src/core/craftWork.ts`,
 `craftActionHooks`. Vehicle jobs need a world-target adapter because an installed
 part is not an ordinary inventory repair target. Revalidate reach, supports,
 resources and destination on completion. The hoist's lifted load must participate
@@ -173,8 +173,8 @@ blocking. Gas sealing is a separate question.
 
 Fitted parts and their poses own both appearance and obstruction. Keep parked
 world collision and picking derived, not hand-authored per wreck. The shared pose and
-part boxes are projected by `src/core/vehicleProjection.ts`, `projectVehicleParts`,
-and presentation groups each instance through `src/render/vehicles.ts`,
+part boxes are projected by `packages/engine/src/core/vehicleProjection.ts`, `projectVehicleParts`,
+and presentation groups each instance through `packages/presentation/src/render/vehicles.ts`,
 `VehicleMeshes`. The filled-column approximation is not an enterable-cabin or
 transparent-window model. Extend the consumers without treating that approximation as
 the cabin's authoritative empty space.
@@ -194,10 +194,11 @@ motion and recovery. Greater realism remains the long-term direction, not a reas
 to delay the playable loop. Fuel and electricity retain pools rather than cable
 and pipe graphs.
 
-Rapier remains a candidate for vehicle simulation. Compare it with a bounded
-project-owned solver before selecting an implementation. Presentation-only corpse
-contact is not evidence that car suspension, tunnelling or deterministic replay is
-solved; see `src/render/ragdoll.ts`, `RagdollWorld`.
+Driving and parked collision use the project-owned Rapier f64 build; ragdolls
+migrate to that same build rather than retaining npm Rapier. The build and upgrade
+rule is in `docs/decisions/0009-rapier-f64-build.md`, "Decision". Presentation-only
+corpse contact is not evidence that car suspension, tunnelling or deterministic
+replay is solved; see `packages/presentation/src/render/ragdoll.ts`, `RagdollWorld`.
 
 Leaving a moving car permits unattended coasting, collision and bystander damage.
 Budget and prove its deterministic coarse transition after regional departure;
@@ -205,11 +206,11 @@ unloading is never an emergency brake. Do not keep extra regions locally simulat
 until a vehicle stops as an unrecorded exception to the residency contract.
 
 Deadvox owns pause and compression. Driving uses simulation time and bounded steps,
-not render frame time. A physics choice must satisfy
+not render frame time. Physics integration must satisfy
 `docs/decisions/0008-deterministic-world.md`, "Decision", including cross-browser
 agreement and position-driven residency. A WASM physics library does not establish
-that contract by itself. A failed deterministic prototype stops physics selection;
-it does not silently weaken the contract.
+that contract by itself. A failed deterministic prototype blocks production
+integration; it does not silently weaken the contract.
 
 ## What must survive a save
 
@@ -217,13 +218,13 @@ Persist authoritative instance identity, build membership and placement, support
 and joint state, part condition and appearance, door state, storage contents,
 resource amounts, vehicle pose and motion, occupants, lifted loads and any resumable
 work. These are intended state obligations, not a parallel field schema. Extend
-owning types and `src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
+owning types and `packages/engine/src/core/saveState.ts`, `SaveSnapshot`, as each obligation lands.
 Derived mass, capabilities, geometry caches and world occupancy are rebuilt from
 that truth, never restored as independent editable totals. The parked owner crosses
-the durable boundary through `src/core/saveFormat.ts`, `makeWirePayload` and
+the durable boundary through `packages/engine/src/core/saveFormat.ts`, `makeWirePayload` and
 `restoreWirePayload`, rather than relying on a snapshot-only copy. Scenario
 registration must preserve saved builds instead of regenerating missing parts;
-see `src/game/layoutVehicles.ts`, `registerLayoutVehicles`.
+see `packages/engine/src/game/layoutVehicles.ts`, `registerLayoutVehicles`.
 
 Saving in motion, during work or across detachment must be equivalent to continuing
 without a load; parking is not permission to erase momentum at save time. Settled
@@ -239,13 +240,13 @@ includes its state, validation, focused proof and reason-doc update rather than
 leaving saves to an integration finale.
 
 1. **Feasibility.** Run the slice-start consolidation in
-   `EPIC.md`, "How each slice runs". Compare driving candidates on slopes,
-   terrain edges, a thin obstacle and
-   a shallow wall scrape. Require cross-browser replay agreement, bounded collision
-   work and no tunnelling. Include unattended motion and a loaded hoist in the
-   feasibility envelope so neither becomes a late exception. BR judges handling,
-   the constrained boundary and the mass-placement difference. Select neither a
-   library nor its version without evidence and the dependency-age check.
+   `EPIC.md`, "How each slice runs". Run authored Rapier-only probes under
+   `docs/decisions/0009-rapier-f64-build.md`, "Decision", on slopes, terrain edges,
+   a thin obstacle and a shallow wall scrape. Require cross-browser replay
+   agreement, bounded collision work and no tunnelling. Include unattended motion
+   and a loaded hoist in the feasibility envelope so neither becomes a late
+   exception. BR judges handling, the constrained boundary and the mass-placement
+   difference. Engine selection does not waive these evidence requirements.
 2. **Authoring-to-game contract.** Settled in
    `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
    #323 rather than making a full editor a prerequisite for reproducible exports.

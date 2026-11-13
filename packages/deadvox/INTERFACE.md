@@ -4,9 +4,11 @@ read_if:
   - you're showing a number to the player
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
-  - you're changing HUD options, UI layering, radial action choices, single-action hold feedback or treatment region controls
+  - you're changing HUD options, UI layering or choice controls
+  - you're changing single-choice shortcuts or battery refusal language
   - you're changing debug/playtest separation or inventory layout
   - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
+  - you're changing how a player picks among a crafting or world-work input group's alternatives
   - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
 ---
 
@@ -20,7 +22,7 @@ Prefer information carried by the world, the character's body and held items. Th
 
 Every element is diegetic, bodily, spatial or meta. Prefer bodily cues over persistent statistics when a state can be communicated through sight or sound; use spatial outlines only when the world cannot make an interaction clear. Meta HUD elements start enabled and can be turned off individually.
 
-A new element names its kind at the view-model boundary and explains why a less intrusive kind would not suffice. See `src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`.
+A new element names its kind at the view-model boundary and explains why a less intrusive kind would not suffice. See `packages/presentation/src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`.
 
 ## Bodily cues
 
@@ -34,53 +36,57 @@ A screen is not a narrator. Before writing or changing text a player sees in the
 
 Hover and focus details use one or two sentences of plain fact. No wordplay, contrasts such as “fewer X, more Y”, reassurance or “you should”. World-authored notes, books and signs are characters speaking; short first-person refusals and observations name the world or the character's state, not procedures.
 
-The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. Gungen and mobgen viewers are development tools, outside this rule.
+The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis.
 
-The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. A line marks each value code fills in as a `{slot}`, so a pack can reword or reorder around it; validation rejects a line that drops a slot or names one code never fills, and a slot holding a bound key is drawn as its key cap. See `src/core/schema.ts`, `UiScreenTextSchema`, and `src/ui/keyCap.ts`, `fillHint`.
+The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. A line marks each value code fills in as a `{slot}`, so a pack can reword or reorder around it; validation rejects a line that drops a slot or names one code never fills, and a slot holding a bound key is drawn as its key cap. See `packages/engine/src/core/schema/ui.ts`, `UiScreenTextSchema`, and `packages/presentation/src/ui/keyCap.ts`, `fillHint`.
 
-Every number a player reads is formatted through one precision table, `src/core/numberText.ts`, whose kinds (`countText`, `decimalText` and the rest) own each value's precision, because accumulated simulation values carry float noise no line should show and precision belongs in one place, not in literals at call sites. Every text-slot boundary takes only formatted values — action text (`src/core/actionText.ts`, `fillText`), core messages and labels (`src/core/coreText.ts`, `coreMessage`), and hint lines (`src/ui/keyCap.ts`, `fillHint`, whose slots take text, rendered templates and directives like the crafting combo box, but no primitive) — so the compiler rejects a raw number reaching a line.
+Every number a player reads is formatted through one precision table, `packages/engine/src/core/numberText.ts`, whose kinds (`countText`, `decimalText` and the rest) own each value's precision, because accumulated simulation values carry float noise no line should show and precision belongs in one place, not in literals at call sites. Every text-slot boundary takes only formatted values — action text (`packages/engine/src/core/actionText.ts`, `fillText`), core messages and labels (`packages/engine/src/core/coreText.ts`, `coreMessage`), and hint lines (`packages/presentation/src/ui/keyCap.ts`, `fillHint`, whose slots take text, rendered templates and directives like the crafting combo box, but no primitive) — so the compiler rejects a raw number reaching a line.
 
 ## Class 3: the character's voice
 
-Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `src/game/tierNotice.ts`, `TierNotice`.
+Short first-person refusals and observations name the world or the character's state, not keys or procedures. Their reason text follows the messages HUD option; the refusal sound remains a player-only presentation cue. See `packages/presentation/src/presentation/tierNotice.ts`, `TierNotice`.
 
 ## HUD
 
-The HUD options and master toggle govern HUD-owned elements without changing individual settings. World, bodily and held-item cues, the compass display, inventory controls and the rest card remain outside them. Interaction hints are hidden while a modal screen is open, because the screen owns input and a world hint over it is noise. See `src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
+The HUD options and master toggle govern HUD-owned elements without changing individual settings. World, bodily and held-item cues, the compass display, inventory controls and the rest card remain outside them. Interaction hints are hidden while a modal screen is open, because the screen owns input and a world hint over it is noise. See `packages/presentation/src/ui/hudOptions.ts`, `HudSettings`, and `hudVisibility`.
 
-A bound key in a hint or label is drawn as a key cap, a small bordered capital, so the player reads it as a key to press rather than as a word. One shared render takes the live binding label, so a rebind redraws every cap and the look stays in the stylesheet. See `src/ui/keyCap.ts`, `keyCap`, and `src/ui/style.css`, ".keycap".
+A bound key in a hint or label is drawn as a key cap, a small bordered capital, so the player reads it as a key to press rather than as a word. One shared render takes the live binding label, so a rebind redraws every cap and the look stays in the stylesheet. See `packages/presentation/src/ui/keyCap.ts`, `keyCap`, and `packages/presentation/src/ui/style.css`, ".keycap".
 
-The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
+The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `packages/presentation/src/render/interactionMarker.ts`, `markInteractionTarget`, and `packages/presentation/src/render/furniture.ts`, `markerEdges`.
 
-The shared action radial is meta presentation: held geometry cannot express which of several operations release will perform. Its transparent centre preserves the target, and its visibility follows interaction hints. Single-action hold repetition adds neither a radial nor an extra hold-progress panel, because there is nothing to choose; the action keeps its own feedback. Treatment regions use an explicit list with Back rather than another radial; the open chooser owns input like other menus. One owner avoids competing choices and highlights. See `DESIGN.md`, "Action choices", and `src/game/play.ts`, `drawActionChoices`.
+The action menu is meta presentation: neither held geometry nor furniture can express which of several valid operations a press will perform. Every in-game menu outside the Inventory UI is radial, so a choice never hands the pointer to a panel away from the view, and all of them work alike; the Inventory UI is a screen of its own, where the pointer is already free. Holding the press opens a ring around the crosshair, so the choice is made where the player already looks, while a tap keeps the ordinary action so the common case costs no step. A lone action opens no menu, furniture included, because a menu with one choice is only a delay; a held item keeps its ordinary owner's hold behavior. While en-garde the primary hold belongs to the power attack with any wielded weapon, independent of charge content, because a fighter's hold must be reliable rather than stall into a choice. One owner serves furniture and held items, so both choose alike, and each menu keeps fixed directions per action so a hand learns where an action lies. The ring's centre is transparent so the target stays visible, and releasing there cancels, so an open menu never forces a choice. The ring follows the interaction-hint visibility policy. A choice within a choice, such as which wound to treat, uses a child ring so it keeps the same input grammar. Its centre returns to the parent when the parent has alternatives, otherwise it cancels. Sole parents and sole children are shortcuts, not extra menus. A child ring owns input like any other menu, so it always shows. The Continue-or-Stop prompt an interruption raises is a two-entry ring from the same owner, for every long action that prompts, because it is a menu outside the Inventory UI and must choose like the rest; its two bound keys stay as accelerators, so a player who knows the answer need not pull. Which interruptions prompt and which stop the action outright is in `DESIGN.md`, "Long actions". See `packages/engine/src/game/actionMenu.ts`, `ActionMenu`; `packages/engine/src/game/heldActionPress.ts`, `HeldActionPress`; `packages/presentation/src/ui/actionRadial.ts`, `mountActionRadial`; and `packages/presentation/src/ui/rest.ts`, `interruptionPrompt`.
 
-Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft offers continuation with no progress shown; only alternatives justify an action radial. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
+Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft is a "Continue" entry in the held action menu, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. A paused world job's Continue is on its piece's ring, because the piece holds the job (`DESIGN.md`, "World repair selection"). One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `packages/presentation/src/ui/craftReadout.ts`, `runningCraftPresentation`, and `packages/engine/src/game/survival.ts`, `Survival.availableItemActions`.
 
-The handling HUD gauge and caption own the space below the crosshair, so the interaction prompt moves above the gauge while handling is shown. Both stay readable, the prompt grows upward when it wraps, and neither is hidden. The rule lives in the stylesheet for the shared panel, so every timed action gets it. See `src/ui/style.css`, "#prompt".
+The handling HUD gauge and caption own the space below the crosshair, so the interaction prompt moves above the gauge while handling is shown. Both stay readable, the prompt grows upward when it wraps, and neither is hidden. The rule lives in the stylesheet for the shared panel, so every timed action gets it. See `packages/presentation/src/ui/style.css`, "#prompt".
 
 The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 
 ## Combat and feedback
 
-Combat readiness is a stance, not a HUD mode. Firearms fire only while ready and not sprinting; an unready click does nothing and produces no refusal sound. Melee attacks require en-garde, and en-garde alone blocks, so guarding needs no extra key. Firearms Combat affects duck-walking; Melee Combat affects blocking. Hand activation follows actor roles without remapping physical slots. See `src/game/play.ts`, `fireHeldItem` and `shouldPlayerBlock`; `src/game/inputBindings.ts`, `BindingRegistry`; and `src/game/primaryAction.ts`, `selectPrimaryAction`, for which held item owns the click.
+Combat readiness is a stance, not a HUD mode. Firearms fire only while ready and not sprinting; an unready click does nothing and produces no refusal sound. Melee attacks require en-garde, and en-garde alone blocks, so guarding needs no extra key. Firearms Combat affects duck-walking; Melee Combat affects blocking. Hand activation follows actor roles without remapping physical slots. See `packages/engine/src/game/handUse.ts`, `fireHeldItem`; `packages/engine/src/game/commandRouter.ts`, `shouldPlayerBlock`; `packages/engine/src/game/bindingRegistry.ts`, `BindingRegistry`; and `packages/engine/src/game/primaryAction.ts`, `selectPrimaryAction`, for which held item owns the click.
 
 Bleeding feedback names each region's tier when messages are enabled. A content tier marked for warning gets a warning; a quiet tier stays quiet. Refusal text follows the messages option, while the character's refusal sound remains available. Treatment progress belongs to the handling HUD; recipe reading progress belongs on the open page because it provides an endpoint even when HUD options are off.
 
 ## Development, playtest and errors
 
-`?debug=1` is a development profile whose tools and readouts may be instructional. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
+The hash `debug` key (`#{debug:true}`) selects a development profile whose tools and readouts may be instructional. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
 
-A `?debug=1` run neither saves nor loads a save unless `?save=1` is also set, because debug runs are ephemeral tests where progress is not worth keeping, and a stale save would stop each run starting fresh. The title card says saves are off, through the same path as other unsaved sessions. See `src/game/config.ts`, `savingEnabledFromUrl`, and `src/ui/saveController.ts`, `SaveController`.
+A debug run neither saves nor loads a save unless the hash `save` key is also set, because debug runs are ephemeral tests where progress is not worth keeping, and a stale save would stop each run starting fresh. The title card says saves are off, through the same path as other unsaved sessions. See `packages/engine/src/game/config.ts`, `savingEnabledFromUrl`, and `packages/presentation/src/ui/saveController.ts`, `SaveController`.
 
-A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
+A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `packages/presentation/src/ui/errorReport.ts`, `errorReportText`, and `packages/presentation/src/presentation/play.ts`, `stopPlayAfterError`.
+
+Startup refusals and content errors that do not halt play land in one error log with one copy button, so a player can paste the whole message into a report. The log sits above the startup screen, because text behind an overlay cannot be selected. Every site logs through the one helper rather than writing the element. See `packages/presentation/src/ui/errorLog.ts`, `appendError`.
 
 ## Layout
 
-The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `src/ui/style.css`, ":root", and `src/ui/comboBox.ts`, `comboBox`.
+The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `packages/presentation/src/ui/style.css`, ":root", and `packages/presentation/src/ui/comboBox.ts`, `comboBox`.
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
 
-Repair acts on one chosen world piece, so it has its own ephemeral vertical in the inventory/skills/crafting panel rather than appearing among Crafting recipes. Choosing Repair opens the pinned target's requirements; closing the screen or losing the target removes the vertical. It uses the panel's existing navigation and close paths, not a second targeting or keyboard mode. Requirements share the Crafting renderer so two presentations of the same stock cannot disagree. Refused starts remain focusable so keyboard users can inspect their reasons, and Start is explicit because choosing Repair is not consent to spend. See `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`, and `src/ui/crafting.ts`, `renderCrafting`. Only the turnable target preview waits for #1469.
+Repair acts on one chosen world piece, so it has its own ephemeral vertical in the inventory/skills/crafting panel rather than appearing among Crafting recipes. Choosing Repair opens the pinned target's requirements; closing the screen or losing the target removes the vertical. It uses the panel's existing navigation and close paths, not a second targeting or keyboard mode. Requirements share the Crafting renderer so two presentations of the same stock cannot disagree. Refused starts remain focusable so keyboard users can inspect their reasons, and Start is explicit because choosing Repair is not consent to spend. Start closes the screen, so the player watches the piece and the handling HUD arc instead of working on the world from behind a screen; crafting's Start keeps its screen because that work is in the hands, not on a piece the player should see. See `packages/presentation/src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`, and `packages/presentation/src/ui/crafting.ts`, `renderCrafting`. Taking a piece apart reviews in the same vertical; when players get either entry is in `DESIGN.md`, "World repair selection".
+
+Crafting and world work share one rows pane, and in it each input group with alternatives is one row: the chosen alternative's found and needed amounts, with a note naming what is in use and how many other options the group has. Clicking a row, or entering it from the keyboard, lists that group's alternatives in a fixed side column of the rows pane, where the player picks one. A group with a single option is a plain row, and hover never switches the column. One row per group keeps the rows short, which answers BR's screen-space complaint about long crafting rows, and a fixed column overlays no other row. The column is part of the #1469 relayout, so crafting and world work have one owner for it and the world-work view builds no column of its own.
 
 ## Item pictures
 
@@ -90,7 +96,7 @@ recognisable at its real size. A larger picture serves the selected item. Pictur
 connect shape and fitted equipment to the object seen in hand or on the ground;
 names still distinguish items that share a model, and text carries exact facts and
 condition that geometry cannot show. Useful grids and their pointer access take
-precedence over a larger illustration. See `src/ui/inventoryScreen.ts`,
+precedence over a larger illustration. See `packages/presentation/src/ui/inventoryScreen.ts`,
 `itemTemplate` and `detailsTemplate`, and `docs/inventory-layout.md`,
 "Clickable inventory layout".
 
@@ -101,15 +107,15 @@ continuous rendering competition with the moving world, at the cost of cold
 picture generation and cache upkeep. Readiness and appearance changes must not
 leave stale pictures. Wait for fitted geometry before caching a still: a partial
 likeness would claim the item lacks equipment it owns. See
-`src/render/itemPictures.ts`, `ItemPictures`, `src/render/itemLook.ts`, `itemLook`,
-and `src/render/models.ts`, `ModelLibrary`.
+`packages/presentation/src/render/itemPictures.ts`, `ItemPictures`, `packages/presentation/src/render/itemLook.ts`, `itemLook`,
+and `packages/presentation/src/render/models.ts`, `ModelLibrary`.
 
 Keep still storage bounded: fitted combinations must not accumulate for the
 whole session. Eviction may cost another cold render, but must preserve the
 likeness when requested again. The play view owns picture resources so leaving
 the page releases their GPU context without releasing shared model geometry.
 Render-free play keeps text tiles rather than creating a second rendering path.
-See `src/render/itemPictures.ts`, `ItemPictures`, and `src/render/playView.ts`,
+See `packages/presentation/src/render/itemPictures.ts`, `ItemPictures`, and `packages/presentation/src/render/playView.ts`,
 `createPlayView`.
 
 Keep browser pixel proof isolated from world rendering: a still needs a model,
@@ -127,7 +133,7 @@ picture. Uneven visual coverage is preferable to blocking new items and mods on
 art or pretending a generic bundle is the item's likeness. This is distinct from
 a declared model failing to load: errors must not be hidden as intentional
 coverage, and temporary loading must not become a permanent absent picture.
-See `src/core/schema.ts`, `ItemSchema`, and `src/render/models.ts`, `ModelLibrary`.
+See `packages/engine/src/core/schema/items.ts`, `ItemSchema`, and `packages/presentation/src/render/models.ts`, `ModelLibrary`.
 
 Pictures and the read-only viewer depict stable instance snapshots, not handling
 motion. They share the world's state presentation so inspection does not invent
@@ -136,8 +142,8 @@ is not visible knowledge. Fuel fill requires authored clear geometry; opaque
 vessels grant no x-ray view. Wear tints follow material class so metal, cloth and
 wood remain distinct substances. Existing lit glow and firestarter flames remain
 visible in the reference view, independent of the world's ambient light. See
-`src/render/itemLook.ts`, `itemLook`, `src/render/itemStateLook.ts`,
-`applyItemStateLook`, and `src/render/itemPictures.ts`, `ItemPictures`.
+`packages/presentation/src/render/itemLook.ts`, `itemLook`, `packages/presentation/src/render/itemStateLook.ts`,
+`applyItemStateLook`, and `packages/presentation/src/render/itemPictures.ts`, `ItemPictures`.
 
 State that geometry cannot express remains text; a misleading pose must be
 corrected or omitted, not excused as static. A fitted magazine does not prove
@@ -151,5 +157,5 @@ material such as the controls list, and storage and build diagnostics must not b
 A save that cannot be used changes what starting means, so the player learns that before
 choosing. Replacing a saved world destroys it, so replacement needs an explicit, confirmed
 choice that names its effect; an empty canvas click must never make it. See
-`src/ui/saveController.ts`, `SaveController`, `index.html`, "title-choice", and
-`src/ui/style.css`, "#overlay.startup-ready.saved-choice".
+`packages/presentation/src/ui/saveController.ts`, `SaveController`, `index.html`, "title-choice", and
+`packages/presentation/src/ui/style.css`, "#overlay.startup-ready.saved-choice".

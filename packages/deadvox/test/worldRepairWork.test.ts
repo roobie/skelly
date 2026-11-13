@@ -1,24 +1,24 @@
-import { expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { snapshotItem } from '../src/core/items.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { realSeconds, simSeconds } from '../src/core/time.ts';
-import { planRealFrame } from '../src/game/frameDriver.ts';
-import { furnitureActionsFor } from '../src/game/furnitureActions.ts';
-import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
-  applyReplayActionPayload,
-  isReplayActionPayload,
+  BindingRegistry,
+  decodeInputReplay,
+  encodeInputReplay,
+  InputReplayRecorder,
   type ReplayActionPayload,
-} from '../src/game/replayCommands.ts';
-import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
-import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+} from '@skelly/engine/input';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { type FurnitureMover, ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
+import { applyReplayActionPayload, isReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
+import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { bindReach, Character, realSeconds } from '@skelly/engine/sim';
+import { runningCraftPresentation, workName } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { handlingViewModel, timedActionHandlingPresentation } from '@skelly/presentation/internal/ui/hud.ts';
+import { contentLookup } from '@skelly/presentation/ui';
+import { expect, it } from 'vitest';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -35,6 +35,7 @@ interface Saved {
 }
 const make = (saved?: Saved) => {
   const character = new Character(registry);
+  character.initializeProgression({}, [RECIPE]);
   const inventory = saved
     ? Inventory.restoreState(registry, saved.inventory)
     : new Inventory(registry, undefined, undefined, character);
@@ -72,7 +73,7 @@ const start = () => {
   if (refusal) {
     throw new Error(refusal);
   }
-  const work = r.inventory.hands.right!;
+  const work = r.target.work!;
   return { ...r, work };
 };
 const finish = (r: ReturnType<typeof make>, uid: number) => {
@@ -101,7 +102,10 @@ it.each(['normal', 'compressed'] as const)(
         compressionActive: r.sim.compression.active,
       });
       expect(action).toBeDefined();
-      return handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+      return handlingViewModel(
+        timedActionHandlingPresentation(action!, handling, new BindingRegistry(INPUT_BINDINGS)),
+        handling,
+      );
     };
     const owned = structuredClone(r.work.work);
     const slice =
@@ -167,47 +171,54 @@ it('pauses, encodes, restores and resumes entity work without duplicate repair o
   expect(returned(loaded)).toEqual([]);
 });
 
-it.each(['gone', 'out of reach', 'reserved', 'intact', 'carried', 'ruined'] as const)(
+/** The pieces' state apart from the jobs they hold, which a refused completion ends. */
+const piecesApartFromJobs = (r: ReturnType<typeof make>) => {
+  const state = r.inventory.entities.snapshotState();
+  return { ...state, entities: state.entities.map(({ work: _, ...piece }) => piece) };
+};
+
+// A piece holding a job can't be lifted, repaired by another job or removed, so only reach and blows change it.
+it.each(['out of reach', 'ruined'] as const)(
   're-admits a target that became %s and returns exact escrow on refused completion',
   (change) => {
     const r = start();
-    if (change === 'gone') {
-      r.inventory.entities.destroy(r.target);
-      const replacement = r.inventory.entities.add({
-        type: PIECE,
-        pos: [...r.target.pos],
-        size: [1, 1, 1],
-        facing: 'n',
-      })!;
-      r.inventory.entities.bash(replacement, DURABILITY / 2);
-      expect(replacement.uid).not.toBe(r.target.uid);
-    }
     if (change === 'out of reach') {
       r.position[0] += 100;
-    }
-    if (change === 'reserved') {
-      r.inventory.entities.reserve(r.target);
-    }
-    if (change === 'intact') {
-      r.inventory.entities.repair(r.target, DURABILITY);
-    }
-    if (change === 'carried') {
-      r.inventory.entities.lift(r.target);
     }
     if (change === 'ruined') {
       r.inventory.entities.bash(r.target, DURABILITY);
     }
-    const before = r.inventory.entities.snapshotState();
+    const before = piecesApartFromJobs(r);
     const reason = r.hooks.validate(r.work.uid);
     expect(reason).toBeDefined();
     expect(r.hooks.finish(r.work.uid)).toBe(reason);
-    expect(r.inventory.entities.snapshotState()).toEqual(before);
+    expect(piecesApartFromJobs(r)).toEqual(before);
+    expect(r.target.work).toBeUndefined();
     expect(returned(r)).toEqual(r.exact);
     expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
     r.hooks.finish(r.work.uid);
     expect(returned(r)).toEqual(r.exact);
   },
 );
+
+it('ruining a piece mid-repair drops the escrowed inputs once, so ruin conserves them', () => {
+  const r = start();
+  r.sim.actions.stop();
+  const mover: FurnitureMover = {
+    inventory: r.inventory,
+    terrainSolid: (_x, y) => y < 1,
+    blockSize: 0.5,
+    player: { pos: [30, 1, 30], vel: [0, 0, 0], halfWidth: 0.4, height: 3.6, onGround: true },
+    others: [],
+    stamina: 100,
+  };
+  expect(ruinFurniture(mover, r.target)).toEqual([r.target]);
+  expect(r.inventory.entities.byUid(r.target.uid)).toBeUndefined();
+  expect(returned(r)).toEqual(r.exact);
+  expect(r.hooks.validate(r.work.uid)).toBeDefined();
+  r.hooks.finish(r.work.uid);
+  expect(returned(r)).toEqual(r.exact);
+});
 
 it.each(['left', 'right'] as const)(
   'refuses entity repair with the %s hand occupied without moving anything',
@@ -223,15 +234,14 @@ it.each(['left', 'right'] as const)(
   },
 );
 
-it('live reach refusal keeps escrow and both Continue routes resume the named held work', () => {
+it('live reach refusal keeps escrow and both item-work Continue routes resume the named piece work', () => {
   const r = start();
   r.sim.actions.stop();
-  expect(r.inventory.move(r.work, { kind: 'pile', pos: [...ORIGIN] }).ok).toBe(true);
   const target = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
   expect(r.inventory.entities.bash(target, DURABILITY / 2)).toBe('damaged');
   expect(r.inventory.add(r.inventory.create(STOCK, 2), { kind: 'pile', pos: [...ORIGIN] })).toBe(true);
   expect(r.commands.repairEntity(RECIPE, target.uid)).toBeUndefined();
-  const held = r.inventory.hands.right!;
+  const held = target.work!;
   const inputs = held.work!.components.map((item) => snapshotItem(item));
   r.sim.scheduler.advance(held.work!.duration / r.sim.clock.ratio / 3);
   const { elapsed } = held.work!;
@@ -239,15 +249,11 @@ it('live reach refusal keeps escrow and both Continue routes resume the named he
   r.position[0] += 100;
   r.sim.scheduler.advance(1);
   expect(r.sim.actions.job).toMatchObject({ stopped: true, workUid: held.uid });
-  expect(r.inventory.hands.right).toBe(held);
+  expect(target.work).toBe(held);
   expect(held.work!.components.map((item) => snapshotItem(item))).toEqual(inputs);
   expect(r.commands.act(held.uid, 'continue')).toBeDefined();
   r.position[0] = ORIGIN[0];
-  const choices = furnitureActionsFor(r.inventory, target, 0.5, [RECIPE]);
-  const choice = choices.find(({ id }) => id === 'continue');
-  expect(choice?.workUid).toBe(held.uid);
-  expect(furnitureActionsFor(r.inventory, r.target, 0.5, [RECIPE]).some(({ id }) => id === 'continue')).toBe(false);
-  expect(dispatch(r, { kind: 'inventory.work', itemUid: choice!.workUid!, operation: 'continue' })).toBeUndefined();
+  expect(dispatch(r, { kind: 'inventory.work', itemUid: held.uid, operation: 'continue' })).toBeUndefined();
   expect(r.sim.actions.job).toMatchObject({ stopped: false, workUid: held.uid });
   expect(held.work!.elapsed).toBe(elapsed);
   r.sim.actions.stop();
@@ -307,6 +313,7 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     queue: new HandlingQueue(r.inventory),
     quickbar: { assign: unused },
     craftRepairEntity: (recipe, uid, preference, sources) => r.commands.repairEntity(recipe, uid, preference, sources),
+    craftTakeApartEntity: unused,
     search: unused,
     work: (uid, operation) => r.commands.act(uid, operation),
     vehicleWork: unused,
@@ -348,7 +355,7 @@ it('projects the entity name, damage and requirements without owning inputs', ()
   expect(projection.refusal).toBeUndefined();
   expect(r.inventory.snapshotState()).toEqual(before);
   expect(dispatch(r, intent(r.target.uid))).toBeUndefined();
-  expect(workName(registry, r.inventory.hands.right!)).toContain(projection.targetName);
+  expect(workName(registry, r.target.work!)).toContain(projection.targetName);
 });
 
 it.each(['gone', 'reserved', 'out of reach'] as const)(
@@ -361,7 +368,8 @@ it.each(['gone', 'reserved', 'out of reach'] as const)(
       r.inventory.entities.destroy(r.target);
     }
     if (change === 'reserved') {
-      r.inventory.entities.reserve(r.target);
+      expect(r.commands.repairEntity(RECIPE, r.target.uid)).toBeUndefined();
+      r.sim.actions.stop();
     }
     if (change === 'out of reach') {
       r.position[0] += 100;
@@ -428,11 +436,11 @@ it('recorded repair intent keeps its selected UID and exact escrow instead of th
   });
   expect(dispatch(r, command)).toBeUndefined();
   expect(dispatch(replay, payload)).toBeUndefined();
-  const work = replay.inventory.hands.right!;
-  expect(work.work).toEqual(r.inventory.hands.right!.work);
+  const work = replay.inventory.entities.byUid(selected.uid)!.work!;
+  expect(work.work).toEqual(selected.work!.work);
   expect(work.work?.repairTarget).toEqual({ kind: 'entity', uid: selected.uid });
   expect(work.work?.components.map((item) => snapshotItem(item)).sort((a, b) => a.uid - b.uid)).toEqual(r.exact);
-  finish(r, r.inventory.hands.right!.uid);
+  finish(r, selected.work!.uid);
   finish(replay, work.uid);
   expect(replay.inventory.entities.conditionOf(replay.inventory.entities.byUid(selected.uid)!)).toBe(
     r.inventory.entities.conditionOf(selected),

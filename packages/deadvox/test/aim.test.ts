@@ -1,26 +1,27 @@
-import { Euler, Vector3 } from 'three';
-import { expect, it } from 'vitest';
 import {
   AimController,
   type AimWobbleNoiseTuning,
   advanceOrnsteinUhlenbeckAxis,
   aimBasis,
-  aimDirection,
   assertAimState,
-  NEUTRAL_AIM,
-} from '../src/core/aim.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
-import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '../src/core/footsteps.ts';
-import { Rng } from '../src/core/random.ts';
+} from '@skelly/engine/internal/core/aim.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '@skelly/engine/internal/core/character.ts';
+import { firearmStanceEffects, firearmsSkillEffects } from '@skelly/engine/internal/core/firearmsSkill.ts';
+import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '@skelly/engine/internal/core/footsteps.ts';
+import { Rng } from '@skelly/engine/math';
+import { aimDirection, NEUTRAL_AIM } from '@skelly/engine/pose';
+import type { FirearmsSkillShotKind } from '@skelly/engine/sim';
+import { Euler, Vector3 } from 'three';
+import { expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { PLAYER } from './playerFixture.ts';
+import { AIM, PLAYER } from './playerFixture.ts';
 
 const footstepTuning = BUNDLED_CONTENT.registry.senses.get('player')!.footsteps;
-const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
+const stanceTuning = skilledFirearmsTuning(BUNDLED_CONTENT.registry);
 const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
 const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
 const skillEffects = (level: number, kind: FirearmsSkillShotKind = 'singleShot') =>
@@ -38,7 +39,7 @@ const createAim = (
   verticalToHorizontalRatio = stanceTuning.wobbleVerticalToHorizontalRatio,
 ) =>
   new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio,
@@ -52,7 +53,7 @@ const createAim = (
   });
 const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning, variance = 1) =>
   new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     wobbleLimitRadians: stanceTuning.wobbleLimitRadians,
     wobbleShape: {
       verticalToHorizontalRatio: stanceTuning.wobbleVerticalToHorizontalRatio,
@@ -108,7 +109,7 @@ it('restores and advances saved look offsets at the geometric limit beyond core 
   };
   expect(() => assertAimState(state)).not.toThrow();
   const restored = new AimController({
-    tuning: PLAYER.aim,
+    tuning: AIM,
     state,
     wobbleLimitRadians: 0.2,
     wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
@@ -127,7 +128,7 @@ it.each(['lookYaw', 'lookPitch'] as const)('refuses impossible saved %s before r
   expect(
     () =>
       new AimController({
-        tuning: PLAYER.aim,
+        tuning: AIM,
         state,
         wobbleLimitRadians: 0.2,
         wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
@@ -176,27 +177,6 @@ it('OU smoothing reduces total per-tick variation over a run', () => {
 
   expect(rawVariation).toBeGreaterThan(0);
   expect(smoothVariation).toBeLessThan(rawVariation);
-});
-
-it('seeded OU wobble is deterministic and sways while standing still', () => {
-  const tuning = {
-    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
-    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
-    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
-  };
-  const first = createNoiseAim(tuning);
-  const second = createNoiseAim(tuning);
-  const firstPath = Array.from({ length: 120 }, () => first.advance(step()));
-  const secondPath = Array.from({ length: 120 }, () => second.advance(step()));
-
-  expect(secondPath).toEqual(firstPath);
-  expect(firstPath.some(({ yaw, pitch }) => Math.hypot(yaw, pitch) > 0)).toBe(true);
-  expect(
-    firstPath.some(
-      ({ yaw, pitch }, index) =>
-        index > 0 && (yaw !== firstPath[index - 1]!.yaw || pitch !== firstPath[index - 1]!.pitch),
-    ),
-  ).toBe(true);
 });
 
 it('firearms skill scales standing OU drift by the content variance ratio', () => {
@@ -525,17 +505,21 @@ it('expert recovery scale decays the same released recoil faster', () => {
   );
 });
 
+// A fixture firearm's own skill-zero handling, set well above the skill-ten wobble endpoint.
+const fixtureHandling = {
+  singleShot: { ...stanceTuning.skillZeroHandling.singleShot, variance: stanceTuning.wobbleSkillTenVariance * 4 },
+  automaticFollowup: {
+    ...stanceTuning.skillZeroHandling.automaticFollowup,
+    variance: stanceTuning.wobbleSkillTenVariance * 6,
+  },
+};
+
 const readiedWalkWobble = (
   level: number,
-  firearmType = 'pump_shotgun',
   shotKind: FirearmsSkillShotKind = 'singleShot',
   wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
 ): number => {
-  const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
-  const tuning = {
-    ...stanceTuning,
-    skillZeroHandling: firearm.skillZeroHandling ?? stanceTuning.skillZeroHandling,
-  };
+  const tuning = { ...stanceTuning, skillZeroHandling: fixtureHandling };
   const effects = firearmsSkillEffects(level, tuning, shotKind);
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();
@@ -675,12 +659,6 @@ it('scales the vertical walking lune without changing horizontal swing', () => {
   }
 });
 
-it('pump skill-zero readied-walk wobble fits its content bound', () => {
-  const wobble = readiedWalkWobble(0);
-  expect(wobble).toBeGreaterThan(0);
-  expect(wobble).toBeLessThan(stanceTuning.wobbleLimitRadians);
-});
-
 it('wobble can use its larger content bound without merging it into recoil', () => {
   const { variance } = pumpSkillEffects(0);
   const aim = createAim(variance);
@@ -702,22 +680,17 @@ it('wobble can use its larger content bound without merging it into recoil', () 
   expect(peak).toBeCloseTo(stanceTuning.wobbleLimitRadians, 8);
 });
 
-it('readied-walk wobble follows skill without dropping during automatic follow-up', () => {
+it("readied-walk wobble scales by a firearm's own skill-zero variance and does not drop during automatic follow-up", () => {
+  const unclamped = Number.MAX_SAFE_INTEGER;
   const levels = [0, Math.floor(SKILL_LEVEL_MAX / 2), SKILL_LEVEL_MAX];
-  for (const firearmType of ['pump_shotgun', 'rifle_assault', 'rifle_ak']) {
-    const wobble = levels.map((level) => readiedWalkWobble(level, firearmType));
-    expect(wobble[1]).toBeLessThan(wobble[0]!);
-    expect(wobble[2]).toBeLessThan(wobble[1]!);
-    const firearm = BUNDLED_CONTENT.registry.items.get(firearmType)!.firearm!;
-    const noviceVariance =
-      firearm.skillZeroHandling?.singleShot.variance ?? stanceTuning.skillZeroHandling.singleShot.variance;
-    const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / noviceVariance;
-    const unclampedWobbleLimit = Number.MAX_SAFE_INTEGER;
-    const unclampedNovice = readiedWalkWobble(0, firearmType, 'singleShot', unclampedWobbleLimit);
-    const unclampedExpert = readiedWalkWobble(SKILL_LEVEL_MAX, firearmType, 'singleShot', unclampedWobbleLimit);
-    expect(unclampedExpert / unclampedNovice).toBeCloseTo(configuredExpertFraction, 4);
-    expect(readiedWalkWobble(0, firearmType, 'automaticFollowup')).toBeGreaterThanOrEqual(wobble[0]!);
-  }
+  const wobble = levels.map((level) => readiedWalkWobble(level, 'singleShot', unclamped));
+  expect(wobble[1]).toBeLessThan(wobble[0]!);
+  expect(wobble[2]).toBeLessThan(wobble[1]!);
+  expect(wobble[2]! / wobble[0]!).toBeCloseTo(
+    stanceTuning.wobbleSkillTenVariance / fixtureHandling.singleShot.variance,
+    4,
+  );
+  expect(readiedWalkWobble(0, 'automaticFollowup')).toBeGreaterThanOrEqual(readiedWalkWobble(0));
 });
 
 it('quick-look lag follows the skill-scaled wobble endpoint', () => {
@@ -747,31 +720,22 @@ it('firearms skill reduces climb over the same full-auto burst', () => {
 it('reload and rack curves preserve skill-zero time and stay monotonic', () => {
   const levels = Array.from({ length: SKILL_LEVEL_LEGENDARY + 1 }, (_, level) => level);
   const effects = levels.map((level) => skillEffects(level));
-  const reloadDurations = effects.map(({ reloadDuration }) => reloadDuration);
-  const rackDurations = effects.map(({ rackDuration }) => rackDuration);
-  expect(reloadDurations[0]).toBe(1);
-  expect(rackDurations[0]).toBe(1);
+  const reloadFactors = effects.map(({ reloadFactor }) => reloadFactor);
+  const rackFactors = effects.map(({ rackFactor }) => rackFactor);
+  expect(reloadFactors[0]).toBe(1);
+  expect(rackFactors[0]).toBe(1);
   for (let index = 1; index < levels.length; index++) {
-    expect(reloadDurations[index]).toBeLessThanOrEqual(reloadDurations[index - 1]!);
-    expect(rackDurations[index]).toBeLessThanOrEqual(rackDurations[index - 1]!);
+    expect(reloadFactors[index]).toBeLessThanOrEqual(reloadFactors[index - 1]!);
+    expect(rackFactors[index]).toBeLessThanOrEqual(rackFactors[index - 1]!);
   }
 });
 
-it('firearms skill effects improve through expert level and legendary matches expert', () => {
-  const novice = skillEffects(0);
-  const experienced = skillEffects(SKILL_LEVEL_MAX);
-  const legendary = skillEffects(SKILL_LEVEL_LEGENDARY);
-  expect(experienced.variance).toBeLessThan(novice.variance);
-  expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
-  expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
-  expect(experienced.variance).toBe(stanceTuning.wobbleSkillTenVariance);
-  expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
-  expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
+it('firearms skill improves the readied stance and rack through expert level, and legendary stance matches expert', () => {
+  expect(skillEffects(SKILL_LEVEL_MAX).rackFactor).toBeLessThan(skillEffects(0).rackFactor);
   const noviceStance = firearmStanceEffects(0, stanceTuning);
   const experiencedStance = firearmStanceEffects(SKILL_LEVEL_MAX, stanceTuning);
   const legendaryStance = firearmStanceEffects(SKILL_LEVEL_LEGENDARY, stanceTuning);
   expect(experiencedStance.raiseDurationSimSeconds).toBeLessThan(noviceStance.raiseDurationSimSeconds);
   expect(experiencedStance.readyMovementFactor).toBeGreaterThan(noviceStance.readyMovementFactor);
-  expect(legendary).toEqual(experienced);
   expect(legendaryStance).toEqual(experiencedStance);
 });

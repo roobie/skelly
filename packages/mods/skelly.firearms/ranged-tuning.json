@@ -1,0 +1,14 @@
+{
+  "rangedTuning": [
+    {
+      "capability": "ranged",
+      "caseEjection": {
+        "flightSimSeconds": 0.47999999999999998,
+        "landingLiftMetres": 0.0060000000000000001,
+        "speedMetresPerSimSecond": 3.5
+      },
+      "id": "ranged",
+      "shotTraceRangeBlocks": 240
+    }
+  ]
+}

@@ -1,9 +1,0 @@
-{
-  "saves": [
-    {
-      "checkpointSimSeconds": 120,
-      "id": "autosave",
-      "leaveConfirmationRealSeconds": 10
-    }
-  ]
-}

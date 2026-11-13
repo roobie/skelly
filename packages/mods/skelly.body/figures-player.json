@@ -1,0 +1,584 @@
+{
+  "figures": [
+    {
+      "aimPose": {
+        "ads": {
+          "cameraOffsetLimitMetres": 0.20000000000000001,
+          "cameraWallMarginMetres": 0.01,
+          "headRollDegrees": 45,
+          "neckLengthToleranceFraction": 0.050000000000000003,
+          "ownBodyClipMetres": 0.080000000000000002,
+          "ownBodyHide": ["spine", "neck"],
+          "proneTorsoRollDegrees": -12,
+          "stockShoulderLimitMetres": 0.10000000000000001,
+          "stockShoulderOffset": [-0.059999999999999998, 0.029999999999999999, 0.01],
+          "torsoRollDegrees": 25,
+          "viewBlend": {
+            "blendBackRealSeconds": 0.20000000000000001,
+            "easing": "smoothstep"
+          }
+        },
+        "headLimitDegrees": [60, 60],
+        "neckLimitDegrees": [35, 35],
+        "neckShare": 0.5,
+        "stockShoulderOffset": {
+          "down": [-0.029999999999999999, 0.025000000000000001, -0.059999999999999998],
+          "up": [-0.029999999999999999, 0.025000000000000001, 0.02]
+        },
+        "torsoLimitDegrees": [45, 80],
+        "torsoShare": {
+          "down": 0.10000000000000001,
+          "up": 0.55000000000000004
+        }
+      },
+      "armRig": {
+        "elbowPole": {
+          "down": [0.5, -0.5, -0.70710678118654757],
+          "up": [0.70710678118654757, -0.70710678118654757, 0]
+        },
+        "fingers": {
+          "parts": [
+            "index",
+            "index2",
+            "index3",
+            "middle",
+            "middle2",
+            "middle3",
+            "ring",
+            "ring2",
+            "ring3",
+            "little",
+            "little2",
+            "little3"
+          ],
+          "pivot": "knuckles"
+        },
+        "fore": {
+          "parts": ["fore"],
+          "pivot": "elbow"
+        },
+        "grip": "grip",
+        "hand": {
+          "parts": ["palm"],
+          "pivot": "wrist"
+        },
+        "handPoses": {
+          "fist": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 60,
+            "thumbInDegrees": 45
+          },
+          "forend": {
+            "fingersDegrees": 90,
+            "thumbAcrossDegrees": 55,
+            "thumbInDegrees": 30
+          },
+          "holding": {
+            "fingersDegrees": 80,
+            "thumbAcrossDegrees": 50,
+            "thumbInDegrees": 30
+          },
+          "open": {
+            "fingersDegrees": 10,
+            "thumbAcrossDegrees": 10,
+            "thumbInDegrees": 0
+          },
+          "pistolCup": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 20,
+            "thumbInDegrees": 10
+          },
+          "pistolGrip": {
+            "fingersDegrees": 85,
+            "thumbAcrossDegrees": 70,
+            "thumbInDegrees": 35
+          },
+          "pistolWrap": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 45,
+            "thumbInDegrees": 20
+          },
+          "stockWrist": {
+            "fingersDegrees": 90,
+            "thumbAcrossDegrees": 65,
+            "thumbInDegrees": 35
+          }
+        },
+        "minimumBendDegrees": {
+          "down": 45,
+          "up": 0
+        },
+        "proneAdsElbowPole": {
+          "down": [0.29999999999999999, -0.95393920141694566, 0],
+          "up": [0.29999999999999999, -0.95393920141694566, 0]
+        },
+        "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
+        "thumb": {
+          "parts": ["thumb", "thumb2", "thumb3"],
+          "pivot": "thumb_root"
+        },
+        "upper": {
+          "parts": ["upper"],
+          "pivot": "shoulder"
+        }
+      },
+      "attachmentFrames": {
+        "clothing_body": {
+          "at": [0, -0.19870588235294118, 0],
+          "insideView": false,
+          "part": "body",
+          "pivot": "spine",
+          "turn": [0, 0, 0]
+        },
+        "head": {
+          "at": [0, 0.080399999999999999, 0],
+          "insideView": true,
+          "part": "body",
+          "pivot": "head",
+          "turn": [0, 180, 0]
+        },
+        "left_boot": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftLeg",
+          "pivot": "ankle",
+          "turn": [0, 0, 0]
+        },
+        "left_cuff": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "pivot": "elbow",
+          "turn": [0, 0, 0]
+        },
+        "left_hem": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftLeg",
+          "pivot": "knee",
+          "turn": [0, 0, 0]
+        },
+        "left_sleeve": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "turn": [0, 0, 0]
+        },
+        "left_trouser": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftLeg",
+          "turn": [0, 0, 0]
+        },
+        "right_boot": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightLeg",
+          "pivot": "ankle",
+          "turn": [0, 0, 0]
+        },
+        "right_cuff": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "pivot": "elbow",
+          "turn": [0, 0, 0]
+        },
+        "right_hem": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightLeg",
+          "pivot": "knee",
+          "turn": [0, 0, 0]
+        },
+        "right_sleeve": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "turn": [0, 0, 0]
+        },
+        "right_trouser": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightLeg",
+          "turn": [0, 0, 0]
+        },
+        "torso": {
+          "at": [0, -0.19870588235294118, 0],
+          "insideView": false,
+          "part": "body",
+          "pivot": "spine",
+          "turn": [0, 0, 0]
+        }
+      },
+      "body": {
+        "eyes": ["eye_left", "eye_right"],
+        "head": {
+          "part": "head",
+          "pivot": "head"
+        },
+        "joints": {
+          "leftHip": "hip_left",
+          "leftShoulder": "shoulder_left",
+          "rightHip": "hip_right",
+          "rightShoulder": "shoulder_right"
+        },
+        "model": "player_bust",
+        "neck": {
+          "part": "neck",
+          "pivot": "neck"
+        },
+        "spine": {
+          "part": "torso",
+          "pivot": "spine"
+        }
+      },
+      "capability": "player",
+      "corpsePose": {
+        "ankleDegrees": -40,
+        "armsForwardDegrees": 0,
+        "elbowBendDegrees": 12,
+        "headUpDegrees": 10,
+        "kneeBendDegrees": 8,
+        "legsForwardDegrees": 90,
+        "torsoForwardDegrees": -90
+      },
+      "gait": {
+        "armSwingDegrees": 10,
+        "legSwingDegrees": 12.6
+      },
+      "hipHeightMetres": 0.81999999999999995,
+      "holds": {
+        "aimActiveOffHand": {
+          "offset": [0, 0.25, 0.02],
+          "rotation": [0, 0, 0]
+        },
+        "display": [0.14000000000000001, -0.13, -0.29999999999999999],
+        "guardPrimary": {
+          "offset": [-0.040000000000000001, 0.12, 0.050000000000000003],
+          "rotation": [0.12, -0.080000000000000002, -0.040000000000000001]
+        },
+        "guardSupport": {
+          "offset": [0.040000000000000001, 0.10000000000000001, 0.059999999999999998],
+          "rotation": [0.10000000000000001, 0.080000000000000002, 0.040000000000000001]
+        },
+        "oneHand": [0.20000000000000001, -0.20000000000000001, -0.38],
+        "reachLeadMetres": 0.29999999999999999,
+        "readyPrimary": {
+          "offset": [0.025000000000000001, 0.085000000000000006, 0.014999999999999999],
+          "rotation": [0.12, -0.080000000000000002, -0.040000000000000001]
+        },
+        "readySupport": {
+          "offset": [-0.025000000000000001, 0.074999999999999997, 0.01],
+          "rotation": [0.10000000000000001, 0.080000000000000002, 0.040000000000000001]
+        },
+        "supportForward": [0, 0, -0.14000000000000001],
+        "supportUpright": [0, 0.14000000000000001, 0],
+        "twoHand": [0.080000000000000002, -0.22, -0.41999999999999998]
+      },
+      "id": "player",
+      "legRig": {
+        "foot": {
+          "part": "foot",
+          "pivot": "ankle"
+        },
+        "shin": {
+          "part": "shin",
+          "pivot": "knee"
+        }
+      },
+      "limbs": {
+        "leftArm": {
+          "joint": "shoulder",
+          "model": "player_arm"
+        },
+        "leftLeg": {
+          "joint": "hip",
+          "model": "player_leg"
+        },
+        "rightArm": {
+          "joint": "shoulder",
+          "model": "player_arm"
+        },
+        "rightLeg": {
+          "joint": "hip",
+          "model": "player_leg"
+        }
+      },
+      "lookDownLean": {
+        "startPitchDegrees": 60,
+        "torsoForwardDegrees": 15
+      },
+      "mannequinPlacement": {
+        "aheadMetres": 1.2,
+        "asideMetres": 1.2
+      },
+      "outfits": {
+        "lab_coat": {
+          "foot": {
+            "skin": "#2d2622"
+          },
+          "fore": {
+            "skin": "#b6a597"
+          },
+          "head": {
+            "skin": "#b6a597"
+          },
+          "index": {
+            "skin": "#b6a597"
+          },
+          "index2": {
+            "skin": "#b6a597"
+          },
+          "index3": {
+            "skin": "#b6a597"
+          },
+          "little": {
+            "skin": "#b6a597"
+          },
+          "little2": {
+            "skin": "#b6a597"
+          },
+          "little3": {
+            "skin": "#b6a597"
+          },
+          "middle": {
+            "skin": "#b6a597"
+          },
+          "middle2": {
+            "skin": "#b6a597"
+          },
+          "middle3": {
+            "skin": "#b6a597"
+          },
+          "neck": {
+            "skin": "#b6a597"
+          },
+          "palm": {
+            "skin": "#b6a597"
+          },
+          "pelvis": {
+            "underwear": "#585b62"
+          },
+          "ring": {
+            "skin": "#b6a597"
+          },
+          "ring2": {
+            "skin": "#b6a597"
+          },
+          "ring3": {
+            "skin": "#b6a597"
+          },
+          "shin": {
+            "skin": "#585b62"
+          },
+          "thigh": {
+            "skin": "#585b62"
+          },
+          "thumb": {
+            "skin": "#b6a597"
+          },
+          "thumb2": {
+            "skin": "#b6a597"
+          },
+          "thumb3": {
+            "skin": "#b6a597"
+          },
+          "torso": {
+            "skin": "#d9d9d1"
+          },
+          "upper": {
+            "skin": "#d9d9d1"
+          }
+        },
+        "police_uniform": {
+          "foot": {
+            "skin": "#121212"
+          },
+          "fore": {
+            "skin": "#b39e8f"
+          },
+          "head": {
+            "skin": "#b39e8f"
+          },
+          "index": {
+            "skin": "#b39e8f"
+          },
+          "index2": {
+            "skin": "#b39e8f"
+          },
+          "index3": {
+            "skin": "#b39e8f"
+          },
+          "little": {
+            "skin": "#b39e8f"
+          },
+          "little2": {
+            "skin": "#b39e8f"
+          },
+          "little3": {
+            "skin": "#b39e8f"
+          },
+          "middle": {
+            "skin": "#b39e8f"
+          },
+          "middle2": {
+            "skin": "#b39e8f"
+          },
+          "middle3": {
+            "skin": "#b39e8f"
+          },
+          "neck": {
+            "skin": "#b39e8f"
+          },
+          "palm": {
+            "skin": "#b39e8f"
+          },
+          "pelvis": {
+            "underwear": "#232937"
+          },
+          "ring": {
+            "skin": "#b39e8f"
+          },
+          "ring2": {
+            "skin": "#b39e8f"
+          },
+          "ring3": {
+            "skin": "#b39e8f"
+          },
+          "shin": {
+            "skin": "#232937"
+          },
+          "thigh": {
+            "skin": "#232937"
+          },
+          "thumb": {
+            "skin": "#b39e8f"
+          },
+          "thumb2": {
+            "skin": "#b39e8f"
+          },
+          "thumb3": {
+            "skin": "#b39e8f"
+          },
+          "torso": {
+            "skin": "#33415e"
+          },
+          "upper": {
+            "skin": "#33415e"
+          }
+        },
+        "special_ops_uniform": {
+          "foot": {
+            "skin": "#17140f"
+          },
+          "fore": {
+            "skin": "#a99a8b"
+          },
+          "head": {
+            "skin": "#a99a8b"
+          },
+          "index": {
+            "skin": "#a99a8b"
+          },
+          "index2": {
+            "skin": "#a99a8b"
+          },
+          "index3": {
+            "skin": "#a99a8b"
+          },
+          "little": {
+            "skin": "#a99a8b"
+          },
+          "little2": {
+            "skin": "#a99a8b"
+          },
+          "little3": {
+            "skin": "#a99a8b"
+          },
+          "middle": {
+            "skin": "#a99a8b"
+          },
+          "middle2": {
+            "skin": "#a99a8b"
+          },
+          "middle3": {
+            "skin": "#a99a8b"
+          },
+          "neck": {
+            "skin": "#a99a8b"
+          },
+          "palm": {
+            "skin": "#a99a8b"
+          },
+          "pelvis": {
+            "underwear": "#363b2e"
+          },
+          "ring": {
+            "skin": "#a99a8b"
+          },
+          "ring2": {
+            "skin": "#a99a8b"
+          },
+          "ring3": {
+            "skin": "#a99a8b"
+          },
+          "shin": {
+            "skin": "#363b2e"
+          },
+          "thigh": {
+            "skin": "#363b2e"
+          },
+          "thumb": {
+            "skin": "#a99a8b"
+          },
+          "thumb2": {
+            "skin": "#a99a8b"
+          },
+          "thumb3": {
+            "skin": "#a99a8b"
+          },
+          "torso": {
+            "skin": "#3d4434"
+          },
+          "upper": {
+            "skin": "#3d4434"
+          }
+        }
+      },
+      "proneAdsPose": {
+        "ankleDegrees": 0,
+        "armsForwardDegrees": 0,
+        "elbowBendDegrees": 0,
+        "headUpDegrees": 0,
+        "hipDropMetres": 0.62,
+        "kneeBendDegrees": 0,
+        "legsForwardDegrees": -90,
+        "torsoForwardDegrees": 58
+      },
+      "stancePoses": {
+        "blendRealSeconds": 0.20000000000000001,
+        "crouching": {
+          "ankleDegrees": 55,
+          "armsForwardDegrees": 70,
+          "elbowBendDegrees": 115,
+          "headUpDegrees": 45,
+          "hipDropMetres": 0.374,
+          "kneeBendDegrees": 120,
+          "legsForwardDegrees": 65,
+          "torsoForwardDegrees": 50
+        },
+        "prone": {
+          "ankleDegrees": 0,
+          "armsForwardDegrees": 150,
+          "elbowBendDegrees": 60,
+          "headUpDegrees": 0,
+          "hipDropMetres": 0.62,
+          "kneeBendDegrees": 0,
+          "legsForwardDegrees": -90,
+          "torsoForwardDegrees": 90
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+local manifest = import '../../../../../tools/jsonnet/lib/pack-manifest.libsonnet';
+// Why a scenario is played by picking a pack that names its start: `packages/deadvox/docs/url-mods.md`, "Committed scenarios".
+manifest(
+  id='skelly.deadvox.scenario.gauntlet.play',
+  tier='scenario',
+  defaultStart='gauntlet',
+  optIn=true,
+  dependencies=['skelly.deadvox', 'skelly.deadvox.scenario.gauntlet.start'],
+  overrides=[{ pack: 'skelly.deadvox', entry: 'defaultStart' }],
+)

@@ -1,6 +1,6 @@
+import { reach } from '@skelly/engine/internal/core/reach.ts';
+import { Inventory } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { reach } from '../src/core/reach.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('keeps a fitted vehicle part outside the generic crafting reach snapshot', () => {

@@ -5,24 +5,73 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
-import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
-import { PLAYER } from '../playerFixture.ts';
+import { RELOAD_GESTURE_MS } from '@skelly/engine/input';
 import { buildTestHouseRangeRoute, routeMovementInput } from '../testHouseRangeRoute.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../testHouseRouteGeometry.ts';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { worldRepairInGameFlow } from './world-repair-flow.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+const noonStart = {
+  density: null,
+  id: 'pump_handling_noon_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const shotgunStart = {
+  ...noonStart,
+  id: 'pump_handling_fixture_start',
+  debugOnly: true,
+  kit: [
+    ...noonStart.kit,
+    { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+    { id: 'firearm', item: 'pump_shotgun', destination: { kind: 'hand', role: 'dominant' } },
+    { id: 'box', item: 'shotshell_box', destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
+    {
+      id: 'rounds',
+      item: 'shell_12_gauge_00_buck',
+      count: 20,
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+  ],
+};
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
 const observation = {
   name: 'pump-handling-readonly-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     assert(code.includes(marker), 'pump observation anchor exists');
@@ -30,8 +79,6 @@ const observation = {
       marker,
       `
   Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    debugRepairTarget, get repairTargetUid() { return screen.repairTarget?.uid; }, furnitureActionSelection, furnitureActions,
-    getReplayActions: () => inputRecorder?.copyInputs().actions,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
@@ -43,7 +90,7 @@ ${marker}`,
     );
   },
 };
-const vite = await createServer({
+const vite = await createStageServer({
   root: projectRoot,
   configFile: resolve(projectRoot, 'vite.config.ts'),
   logLevel: 'error',
@@ -52,6 +99,8 @@ const vite = await createServer({
 });
 let browser;
 try {
+  // The fixture reaches the engine's test-only subpath, which only the stage server's resolution enables.
+  const { PLAYER } = await vite.ssrLoadModule('/test/playerFixture.ts');
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
@@ -172,7 +221,11 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.pump-handling.shotgun', shotgunStart),
+        mods: ['skelly.deadvox.scenario.test-house.debug'],
+        hash: { debug: true, seed: 7, radius: 64 },
+      }),
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -187,7 +240,7 @@ try {
       document.querySelector('#world-loading').hidden,
   );
   const reloadCode = await page.evaluate(
-    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
+    `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
   );
   await page.evaluate((code) => {
     addEventListener('keydown', (event) => {
@@ -281,7 +334,7 @@ try {
   const moveTo = async (waypoint) => {
     const { currentPosition, yaw } = await page.evaluate(({ axis }) => {
       const { input, session } = globalThis.pumpHandlingTest;
-      return { currentPosition: session.body.pos[axis], yaw: input.yaw };
+      return { currentPosition: session.body.pos[axis], yaw: input.controls.yaw };
     }, waypoint);
     const moveDirection = Math.sign(waypoint.target - currentPosition);
     if (!moveDirection) {
@@ -375,14 +428,14 @@ try {
   });
   const { lockerUid: routeLockerUid } = routeInputs;
   assert.ok(lockerRoute.waypoints.length > 0);
-  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.walking);
+  const wasWalking = await page.evaluate(() => globalThis.pumpHandlingTest.input.controls.walking);
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.walking);
+    await page.waitForFunction(() => globalThis.pumpHandlingTest.input.controls.walking);
   }
   // Spawn faces the showroom's slots, off the route's axes; face east so each leg's key moves along one axis.
   await page.evaluate(() => {
-    globalThis.pumpHandlingTest.input.yaw = -Math.PI / 2;
+    globalThis.pumpHandlingTest.input.controls.yaw = -Math.PI / 2;
   });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
   let routeStop;
@@ -406,7 +459,7 @@ try {
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
   if (!wasWalking) {
     await pressAction(page, 'movement.walk-toggle');
-    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.walking);
+    await page.waitForFunction(() => !globalThis.pumpHandlingTest.input.controls.walking);
   }
   assert.ok(routeStop, 'route settled at the rack-facing stop');
   const rackApproach = {
@@ -839,7 +892,7 @@ try {
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
         fov: camera.fov,
-        ads: globalThis.pumpHandlingTest.input.aimingDownSights,
+        ads: globalThis.pumpHandlingTest.input.controls.aimingDownSights,
         paused: session.sim.paused,
         dead: session.sim.dead ?? null,
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,
@@ -850,22 +903,32 @@ try {
   await pressAction(page, 'inventory.hands');
   await waitForHands(ids.box);
   await pressAction(page, 'ui.inventory-toggle');
+  // Live frames keep simulating between the CDP round trips, so a short unpack can finish before
+  // Stop arrives; stepping frames by hand keeps simulated time still until Stop is pressed.
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
   await page.mouse.click(640, 450);
-  await page.waitForFunction(() =>
-    globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+  const queuedUnpack = await page.evaluate(() =>
+    globalThis.pumpManualFrames.until(() =>
+      globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+    ),
   );
+  assert.equal(queuedUnpack.reached, true, 'the click must queue an unpack job');
   await pressAction(page, 'handling.stop');
   const cancelled = await observe();
   assert.equal(cancelled.box, true);
   assert.equal(cancelled.loose, ids.carried);
   assert.equal(cancelled.jobs, 0);
   await page.mouse.click(640, 450);
-  await page.waitForFunction((uid) => {
+  const requeuedUnpack = await page.evaluate((uid) => {
     const s = globalThis.pumpHandlingTest.session;
-    return !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack');
+    return globalThis.pumpManualFrames.until(
+      () => !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack'),
+    );
   }, ids.box);
+  assert.equal(requeuedUnpack.reached, true, 'the second click must queue the unpack again');
   await waitForWork('itemGone', ids.box);
   const unpacked = await observe();
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
   assert.equal(unpacked.loose, ids.carried + ids.payload);
   assert.equal(unpacked.hand, null);
   await pressAction(page, 'firearm.reload');
@@ -1021,7 +1084,7 @@ try {
       caseType,
       casesBefore,
     };
-  }, '/src/game/firearmHandling.ts');
+  }, '/@stage/@skelly/engine/inventory');
   await pressAction(page, 'ui.inventory-toggle');
   await select(boltIds.round);
   await pressAction(page, 'inventory.best-pocket');
@@ -1203,10 +1266,44 @@ try {
   await releaseRevolverTopUp();
   assert.equal(revolverReloaded.reached, true, 'native top-up clears the fired case');
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
-  await worldRepairInGameFlow(page, `http://127.0.0.1:${address.port}`);
+  assert.deepEqual(errors, []);
+  await page.goto(
+    browserStageUrl(
+      'pump-handling',
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.pump-handling.noon', noonStart),
+        mods: ['skelly.deadvox.scenario.test-house.debug'],
+        hash: { debug: true, seed: 7, radius: 64, ragdollSweep: 19 },
+      }),
+    ),
+    { waitUntil: 'domcontentloaded' },
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  const ragdollSample = await page.evaluate(() => {
+    const { engine, session } = globalThis.pumpHandlingTest;
+    const viewer = engine.config.debugStart;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    return {
+      seed: engine.config.ragdollSweep,
+      staged: [...session.actors.store.entries()].some(([, actor]) => actor.incapacitated),
+      viewerDownrange:
+        viewer !== undefined &&
+        rack !== undefined &&
+        viewer.x >= rack.pos[0] * engine.config.scale.blockSize &&
+        Math.hypot(
+          viewer.x - rack.pos[0] * engine.config.scale.blockSize,
+          viewer.z - rack.pos[2] * engine.config.scale.blockSize,
+        ) < engine.config.radiusM,
+    };
+  });
+  assert.equal(ragdollSample.seed, 19, 'the explicit mod URL selects the requested ragdoll sample');
+  assert.equal(ragdollSample.staged, true, 'the fresh debug session stages downed sample actors');
+  assert.equal(ragdollSample.viewerDownrange, true, 'the sample viewer reaches the lane beyond the admitted rack');
   assert.deepEqual(errors, []);
   process.stdout.write(
-    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, errors })}\n`,
+    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, ragdollSample, errors })}\n`,
   );
 } finally {
   await browser?.close();

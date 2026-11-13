@@ -1,10 +1,14 @@
 // @vitest-environment happy-dom
+import { readFileSync } from 'node:fs';
+import { buildRegistry, requiredContentIssues } from '@skelly/engine/content';
+import { validateContent } from '@skelly/engine/internal/core/content.ts';
+import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '@skelly/engine/internal/core/coreText.ts';
+import type { PackManifest } from '@skelly/engine/packs';
+import { bundledAssetFiles } from '@skelly/presentation/play';
+import { applyUiTokens } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
-import baseUi from '../src/content/base/ui.json' with { type: 'json' };
-import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
-import { applyUiTokens } from '../src/ui/uiTokens.ts';
+import baseUi from '../../mods/skelly.ui/ui.json' with { type: 'json' };
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const refusalSound = {
   id: 'player_nope',
@@ -38,10 +42,11 @@ const PLACEHOLDER = /\{\w+\}/;
 /** Base content's action text: its placeholders are what validation checks, so a fixture copy would only drift. */
 const baseActionText = baseUi.ui[0]!.actionText as TextTable;
 const tuning = {
-  id: CORE_CONTENT_IDS.coreUi,
+  id: fixtureIds.ui,
+  capability: 'interface',
   spacing: 1,
   hudScale: 1,
-  furnitureRadial: baseUi.ui[0]!.furnitureRadial,
+  actionMenu: baseUi.ui[0]!.actionMenu,
   refusalSound: refusalSound.id,
   audioVolumes: { master: 0.5, world: 0.5, body: 0.5, ui: 0.5 },
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
@@ -83,56 +88,110 @@ const tuning = {
   ),
 };
 
-it('validates radial slots per menu, requires every operation and rejects overflow', () => {
-  const radial = tuning.furnitureRadial;
-  const issues = (slots: unknown, entryCap = radial.entryCap) =>
-    validateContent({
-      source: 'radial-fixture.json',
-      data: { ui: [{ ...tuning, furnitureRadial: { ...radial, slots, entryCap } }] },
-    });
-  expect(issues(radial.slots)).toEqual([]);
-  for (const [menu, directions] of Object.entries(radial.slots)) {
-    const [first, second] = Object.keys(directions);
-    expect(first).toBeDefined();
-    expect(second).toBeDefined();
-    const collision = { ...directions, [second!]: directions[first as keyof typeof directions] };
-    expect(
-      issues({ ...radial.slots, [menu]: collision }).some(({ path }) =>
-        [first, second].some((action) => path === `ui[0].furnitureRadial.slots.${menu}.${action}`),
-      ),
-    ).toBe(true);
-    for (const action of Object.keys(directions)) {
-      const missing: Record<string, number> = { ...directions };
-      delete missing[action];
-      expect(issues({ ...radial.slots, [menu]: missing }).map(({ path }) => path)).toContain(
-        `ui[0].furnitureRadial.slots.${menu}.${action}`,
-      );
-    }
-    expect(issues(radial.slots, Object.keys(directions).length - 1).map(({ path }) => path)).toContain(
-      'ui[0].furnitureRadial.entryCap',
-    );
-  }
-  const sharedDirections = Object.fromEntries(
-    Object.entries(radial.slots).map(([menu, directions]) => [
-      menu,
-      Object.fromEntries(Object.keys(directions).map((action, index) => [action, index * 30])),
-    ]),
-  );
-  expect(issues(sharedDirections)).toEqual([]);
-});
+const CURSOR_RULE = /#game-cursor \{[^}]*\}/;
+const cursor = {
+  id: 'fixture_cursor',
+  capability: 'gameCursor',
+  image: 'assets/cursors/fixture.png',
+  frameWidthPx: 10,
+  frameHeightPx: 20,
+  handOffsetPx: -1,
+};
+const cursorPacks = ['../../mods/fixture.early', '../../../mods/fixture.later'].map((root, index) => ({
+  root,
+  manifest: { id: `fixture.pack${index}` } as PackManifest,
+}));
+const cursorAssets = {
+  files: bundledAssetFiles(
+    Object.fromEntries(cursorPacks.map(({ root }, index) => [`${root}/${cursor.image}`, `/url${index}.png`])),
+    cursorPacks,
+  ),
+};
+const failOnReport = (message: string) => {
+  throw new Error(message);
+};
+const report = () => undefined;
+const uiSources = (ui: object) => [
+  { source: 'ui-fixture.json', data: { ui: [{ ...tuning, ...ui }] } },
+  { source: 'ui-sounds.json', data: { sounds: [refusalSound] } },
+];
 
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {
   const { registry, issues } = buildRegistry([
-    { source: 'ui-fixture.json', data: { ui: [{ ...tuning, spacing: 0.75, hudScale: 1.25 }] } },
-    { source: 'ui-sounds.json', data: { sounds: [refusalSound] } },
+    ...uiSources({ spacing: 0.75, hudScale: 1.25 }),
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
   ]);
   expect(issues).toEqual([]);
 
   const root = document.createElement('html');
-  applyUiTokens(registry, root);
+  applyUiTokens(registry, root, { ...cursorAssets, report: failOnReport });
 
   expect(root.style.getPropertyValue('--ui-spacing')).toBe('0.75');
   expect(root.style.getPropertyValue('--ui-scale')).toBe('1.25');
+});
+
+it("draws the cursor from the later stack entry's row, with its image found in that entry's pack", () => {
+  const { registry, issues } = buildRegistry([
+    ...uiSources({}),
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
+    {
+      source: `${cursorPacks[1]!.root}/cursor.json`,
+      data: { cursors: [{ ...cursor, frameWidthPx: 11, frameHeightPx: 22, handOffsetPx: -3 }] },
+    },
+  ]);
+  expect(issues).toEqual([]);
+
+  const root = document.createElement('html');
+  applyUiTokens(registry, root, { ...cursorAssets, report: failOnReport });
+
+  expect(root.style.getPropertyValue('--cursor-image')).toContain('/url1.png');
+  expect(root.style.getPropertyValue('--cursor-frame-width')).toBe('11px');
+  expect(root.style.getPropertyValue('--cursor-frame-height')).toBe('22px');
+  expect(root.style.getPropertyValue('--cursor-hand-offset')).toBe('-3px');
+  const [rule] = CURSOR_RULE.exec(readFileSync('../presentation/src/ui/style.css', 'utf8'))!;
+  expect(rule).toContain('var(--cursor-image)');
+  expect(rule).not.toContain('url(');
+});
+
+it('reports a winning cursor whose image is not bundled and draws the nearest earlier row that is', () => {
+  const { registry } = buildRegistry([
+    ...uiSources({}),
+    { source: `${cursorPacks[0]!.root}/cursor.json`, data: { cursors: [cursor] } },
+    { source: `${cursorPacks[1]!.root}/cursor.json`, data: { cursors: [{ ...cursor, frameWidthPx: 13 }] } },
+    {
+      source: 'elsewhere-a/cursor.json',
+      data: { cursors: [{ ...cursor, frameWidthPx: 11 }] },
+    },
+    {
+      source: 'elsewhere-b/cursor.json',
+      data: { cursors: [{ ...cursor, frameWidthPx: 12 }] },
+    },
+  ]);
+  const reported: string[] = [];
+  const root = document.createElement('html');
+  applyUiTokens(registry, root, { ...cursorAssets, report: (message) => reported.push(message) });
+
+  expect(root.style.getPropertyValue('--cursor-image')).toContain('/url1.png');
+  expect(root.style.getPropertyValue('--cursor-frame-width')).toBe('13px');
+  expect(reported).toHaveLength(2);
+  expect(reported[0]).toContain('elsewhere-b/cursor.json');
+  expect(reported[1]).toContain('elsewhere-a/cursor.json');
+});
+
+it('refuses a stack with no cursor row or with no bundled cursor image, rather than drawing a broken one', () => {
+  const { registry } = buildRegistry(uiSources({}));
+  expect(requiredContentIssues(registry).some(({ path }) => path === 'cursors')).toBe(true);
+  expect(() => applyUiTokens(registry, document.createElement('html'), { ...cursorAssets, report })).toThrow(
+    '"gameCursor"',
+  );
+
+  const unbundled = buildRegistry([
+    ...uiSources({}),
+    { source: 'elsewhere/cursor.json', data: { cursors: [cursor] } },
+  ]).registry;
+  expect(() => applyUiTokens(unbundled, document.createElement('html'), { ...cursorAssets, report })).toThrow(
+    'no cursor row',
+  );
 });
 
 it('rejects non-positive UI spacing and scale', () => {

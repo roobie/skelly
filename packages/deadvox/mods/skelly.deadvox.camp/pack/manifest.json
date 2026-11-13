@@ -1,0 +1,31 @@
+{
+  "dependencies": [
+    "skelly.crafting",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.loot",
+    "skelly.firearms",
+    "skelly.inventory",
+    "skelly.keys",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.readables",
+    "skelly.structures"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "camp.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    }
+  ],
+  "id": "skelly.deadvox.camp",
+  "overrides": [],
+  "product": false,
+  "tier": "product",
+  "version": "1"
+}

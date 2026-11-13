@@ -1,3 +1,58 @@
+import {
+  assembledVehicle,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  requireDayCycle,
+  type VehicleFittingDef,
+} from '@skelly/engine/content';
+import { claimed } from '@skelly/engine/inventory';
+import { graphicsTuningOf } from '@skelly/engine/look';
+import { skyAt } from '@skelly/engine/sky';
+import {
+  APC,
+  addFitting,
+  type Blueprint,
+  BOX_VAN,
+  CATALOGUE,
+  type Fitting,
+  fittingById,
+  fittingWear,
+  gridBounds,
+  isClearMaterial,
+  latticeVoxels,
+  MATERIALS,
+  type MassReport,
+  type MeshBuffers,
+  MOTORBIKE,
+  measure,
+  meshGrid,
+  newInstance,
+  noiseRadius,
+  PART_CELL,
+  PART_LAYERS,
+  type Paint,
+  type PartLayer,
+  PartLibrary,
+  PICKUP,
+  partTypeOf,
+  quadColors,
+  RANGE_ROVER,
+  type Rgb,
+  removeFitting,
+  SEDAN,
+  STRIPPED_REMOVED,
+  type VehicleInstance,
+  VOXEL,
+  VOXELS_PER_CELL,
+  type VoxelGrid,
+  type WearSite,
+  wearGrid,
+  wearKey,
+  wearPalette,
+  wheel,
+} from '@skelly/engine/vehicles';
+import { BLOCK_SIZE, type Vec3 } from '@skelly/engine/world';
+import { applySky, ModelLibrary, PLAYER_FIGURE_LAYER, PlayerMeshes } from '@skelly/presentation/render';
 import { html, render } from 'lit-html';
 import {
   BoxGeometry,
@@ -22,51 +77,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import type { Vec3 } from '../core/coords.ts';
-import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { BLOCK_SIZE } from '../core/scale.ts';
-import type { VehicleFittingDef } from '../core/schema.ts';
-import { skyAt } from '../core/sky.ts';
-import { assembledVehicle, loadVehicleBlueprint, type PlacedFitting } from '../core/vehicleBlueprint.ts';
-import { buildBundledContent } from '../game/bundledContent.ts';
-import { ModelLibrary } from '../render/models.ts';
-import { PlayerMeshes } from '../render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
-import { applySky } from '../render/sky.ts';
-import { APC } from '../vehicles/apc.ts';
-import { BOX_VAN } from '../vehicles/boxVan.ts';
-import { CATALOGUE } from '../vehicles/catalogue.ts';
-import { MATERIALS } from '../vehicles/materials.ts';
-import {
-  addFitting,
-  type Blueprint,
-  type Fitting,
-  fittingById,
-  isClearMaterial,
-  latticeVoxels,
-  type MassReport,
-  measure,
-  newInstance,
-  noiseRadius,
-  PART_CELL,
-  PART_LAYERS,
-  type Paint,
-  type PartLayer,
-  PartLibrary,
-  partTypeOf,
-  removeFitting,
-  type VehicleInstance,
-  VOXEL,
-  VOXELS_PER_CELL,
-} from '../vehicles/model.ts';
-import { MOTORBIKE } from '../vehicles/motorbike.ts';
-import { PICKUP } from '../vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
-import { SEDAN } from '../vehicles/sedan.ts';
-import { gridBounds, type MeshBuffers, meshGrid, quadColors, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
-import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
+import { productAssets } from '../product/assets.ts';
+import { buildBundledContent } from '../product/content.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
 
 const required = <T extends Element>(selector: string): T => {
@@ -465,8 +477,8 @@ const partModels = new ModelLibrary(
     errorText = message;
     renderPanel();
   },
-  undefined,
-  graphicsTuningOf(registry).modelLoadConcurrency,
+  { packAssets: productAssets.models },
+  graphicsTuningOf(registry),
 );
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
 interface ContentFitting {
@@ -514,7 +526,7 @@ const placeContentFitting = ({ def, placed }: ContentFitting): Object3D | undefi
   const holder = new Group().add(model);
   holder.position.set(...def.at);
   if (def.mirror) {
-    holder.scale.z = -1;
+    holder.scale.x = -1;
   }
   const { hinge_a: hingeA, hinge_b: hingeB } = placed.datums;
   if (!(placed.capabilities.includes('entry') && hingeA && hingeB)) {
@@ -637,10 +649,15 @@ const assembleVoxelBuild = (spec: BuildSpec): string => {
 const assembleContentBuild = (spec: ContentBuildSpec): string => {
   const present = presentContent(spec);
   modelsPending = false;
+  // Content fittings lie in the model frame, forward +z and the near side at -x; the page shows every build
+  // forward along +x with its near side at +z.
+  const frame = new Group();
+  frame.rotation.y = Math.PI / 2;
+  vehicleGroup.add(frame);
   for (const fitting of present) {
     const object = placeContentFitting(fitting);
     if (object) {
-      vehicleGroup.add(object);
+      frame.add(object);
     } else {
       modelsPending = true;
     }
@@ -650,7 +667,8 @@ const assembleContentBuild = (spec: ContentBuildSpec): string => {
     spec.content,
     present.map(({ placed }) => placed),
   );
-  return `${massText(present.length, massKg, centreOfMass)} · exported part masses${modelsPending ? ' · loading part models…' : ''}`;
+  const [x, y, z] = centreOfMass;
+  return `${massText(present.length, massKg, [z, y, -x])} · exported part masses${modelsPending ? ' · loading part models…' : ''}`;
 };
 
 let watchingModels = false;
@@ -773,7 +791,10 @@ const fittingColor = (paint: Paint, fitting: Fitting): string => {
   return first ? hexOf(paint, first.mat) : '#777777';
 };
 
-/** A content fitting's footprint from above, in vehicle metres: the extent of its exported collision. */
+/**
+ * A content fitting's footprint from above, in metres along the page's axes: x forward, z toward the near side.
+ * Its exported collision lies in the model frame, forward +z and the near side at -x.
+ */
 interface MetreRect {
   readonly id: string;
   readonly x0: number;
@@ -784,10 +805,10 @@ interface MetreRect {
 const contentRects = (spec: ContentBuildSpec): readonly MetreRect[] =>
   contentFittingsOf(spec).map(({ placed }) => ({
     id: placed.id,
-    x0: Math.min(...placed.collision.map(({ min }) => min[0])),
-    z0: Math.min(...placed.collision.map(({ min }) => min[2])),
-    x1: Math.max(...placed.collision.map(({ max }) => max[0])),
-    z1: Math.max(...placed.collision.map(({ max }) => max[2])),
+    x0: Math.min(...placed.collision.map(({ min }) => min[2])),
+    z0: Math.min(...placed.collision.map(({ max }) => -max[0])),
+    x1: Math.max(...placed.collision.map(({ max }) => max[2])),
+    z1: Math.max(...placed.collision.map(({ min }) => -min[0])),
   }));
 
 /** Pixels per metre and where the vehicle origin falls on the schematic. */
@@ -1030,7 +1051,8 @@ applySky(
     ambient,
     camera,
     radiusM: 96,
-    farPlaneScale: registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.fogFarPlaneScale ?? 1,
+    farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
+    fogCurveExponent: claimed(registry.graphics, 'graphics')?.fogCurveExponent ?? 1,
   },
   skyAt(12, requireDayCycle(registry)),
 );
@@ -1197,7 +1219,7 @@ const playerGroup = new Group();
 scene.add(playerGroup);
 
 const addPlayer = (): void => {
-  const player = registry.figures.get(CORE_CONTENT_IDS.player);
+  const player = claimed(registry.figures, 'player');
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }

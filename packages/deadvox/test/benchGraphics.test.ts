@@ -1,17 +1,20 @@
+import { buildRegistry } from '@skelly/engine/content';
+import { resolveGraphics } from '@skelly/engine/look';
+import { configFromUrl } from '@skelly/engine/session';
+import { GraphicsControls } from '@skelly/presentation/internal/presentation/graphicsControls.ts';
+import { writeGraphicsSettings } from '@skelly/presentation/internal/presentation/graphicsSettings.ts';
+import { createEngine } from '@skelly/presentation/play';
+import { Mood } from '@skelly/presentation/render';
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
-import baseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
-import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { resolveGraphics } from '../src/core/graphics.ts';
-import { configFromUrl } from '../src/game/config.ts';
-import { createEngine } from '../src/game/engine.ts';
-import { GraphicsControls } from '../src/game/graphicsControls.ts';
-import { writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
-import { Mood } from '../src/render/mood.ts';
+import baseDayCycle from '../../mods/skelly.day-cycle/dayCycle.json' with { type: 'json' };
+import baseWeathering from '../../mods/skelly.weathering/weathering.json' with { type: 'json' };
+import productWeathering from '../mods/skelly.deadvox.weathering/deadvox-weathering.json' with { type: 'json' };
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
-vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
+vi.mock('@skelly/engine/internal/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
 afterEach(() => vi.unstubAllGlobals());
 
 const scale = { label: 'Fixture scale', min: 0.2, max: 1, default: 0.7 };
@@ -36,28 +39,40 @@ const tuning = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  msaaSamples: { label: 'Fixture smoothing', default: 0, choices: [{ value: 0, label: 'Fixture off' }] },
 };
 
-it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
-  const content = buildRegistry([
+it('benchmark engines use mod defaults despite saved graphics preferences', () => {
+  const result = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
+    { source: 'base/weathering.json', data: baseWeathering },
+    { source: 'base/deadvox-weathering.json', data: productWeathering },
     {
       source: 'fixture',
       data: {
+        starts: [{ id: 'fixture_graphics_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: [] }],
         graphics: [
           {
-            id: CORE_CONTENT_IDS.coreGraphics,
+            id: fixtureIds.graphics,
+            capability: 'graphics',
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
+            viewRadiusM: 96,
             readyRadiusM: 16,
             streamHysteresisM: 16,
             fogFarPlaneScale: 1.5,
+            fogCurveExponent: 1,
             itemPictureCacheCapacity: 2,
             itemPicture: { framing: 1.1 },
             modelLoadConcurrency: 2,
+            modelFetchRetry: { retries: 1, backoffRealSeconds: 1 },
             unbuiltSkyCap: 0.5,
+            sunShadow: { defaultReachMetres: 20, debugReachMetres: [12, 20, 64] },
             skyJobsInFlight: 2,
             skyPreloadRings: 1,
+            columnsPerFrame: 2,
+            terrainWorkers: { count: 1, lookaheadColumns: 1, maxOutstandingColumns: 1 },
+            furnitureSectorChunks: 1,
             itemViewer: {
               framing: 1,
               startYawDegrees: 0,
@@ -76,6 +91,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       },
     },
   ]);
+  const content = { ...result, defaultStart: 'fixture_graphics_start' };
   const { registry } = content;
   owner.setup = { registry, skyFields: { fields: [] } };
   let saved = '';
@@ -87,18 +103,17 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   };
   writeGraphicsSettings(tuning, { renderScale: scale.min, fastCamo: false }, storage);
   vi.stubGlobal('localStorage', storage);
-  vi.stubGlobal('location', { search: '?renderscale=0.2&camofast=0' });
   vi.stubGlobal(
     'ResizeObserver',
     class {
       observe = vi.fn();
     },
   );
-  const config = configFromUrl(new URLSearchParams('debug=1'), content);
+  const config = configFromUrl(new URLSearchParams(), { debug: true }, content, ragdollSweepViewer);
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);
-  const graphics = content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const graphics = content.registry.graphics.get(fixtureIds.graphics)!;
   expect(player.camera.near).toBe(graphics.nearPlaneMetres);
   expect(player.camera.fov).toBe(graphics.playerViewFovDegrees);
   storage.getItem.mockClear();
@@ -121,12 +136,7 @@ it('post benchmark scale stays at the content default under GPU overload, includ
       mood,
       meshes: { setFastCamo: vi.fn(), setCoarseWeathering: vi.fn(), setCachedSurfaceNoise: vi.fn() },
     },
-    {
-      source: 'mod',
-      debug: true,
-      params: new URLSearchParams(),
-      storage: { getItem: () => null, setItem: vi.fn() },
-    },
+    { source: 'mod', storage: { getItem: () => null, setItem: vi.fn() } },
   );
   const overload = () => {
     for (let sample = 0; sample < tuning.renderScale.adaptive.sampleWindow; sample++) {

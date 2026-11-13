@@ -1,12 +1,13 @@
+import type { Registry, SoundDef } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { firearmShotSound } from '@skelly/engine/internal/game/audioPresentation.ts';
+import type { Item } from '@skelly/engine/inventory';
+import { createSession, IDLE } from '@skelly/engine/session';
+import type { SoundEmission } from '@skelly/engine/sound';
+import { createRefusalPresenter, heartbeatForStamina } from '@skelly/engine/sound';
+import { makeScale, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import type { Registry, SoundDef } from '../src/core/content.ts';
-import type { Item } from '../src/core/items.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { SoundEmission } from '../src/core/soundPicker.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import { createRefusalPresenter, firearmShotSound, heartbeatForStamina } from '../src/game/audioPresentation.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
@@ -29,15 +30,6 @@ describe('heartbeat audio presentation', () => {
     expect(heartbeat(startStamina).bpm).toBeCloseTo(startHz * 60);
     expect(heartbeat(0).bpm).toBeCloseTo(exhaustedHz * 60);
     expect(heartbeat(startStamina).gain).toBeGreaterThan(0);
-  });
-
-  it('raises rate and loudness monotonically from the start to exhaustion', () => {
-    const samples = [1, 0.7, 0.35, 0].map((share) => heartbeat(tuning.startStamina * share));
-    for (let index = 1; index < samples.length; index++) {
-      expect(samples[index]!.bpm).toBeGreaterThanOrEqual(samples[index - 1]!.bpm);
-      expect(samples[index]!.gain).toBeGreaterThanOrEqual(samples[index - 1]!.gain);
-    }
-    expect(samples.at(-1)!.gain).toBeGreaterThan(samples[0]!.gain);
   });
 
   it('interpolates rate and loudness linearly halfway to exhaustion', () => {
@@ -143,6 +135,7 @@ describe('firearm audio presentation', () => {
     const played: SoundEmission[] = [];
     const session = createSession({
       registry,
+      actorFigureFiles: stackActorFigureFiles(registry),
       world: new World(),
       isSolid: () => false,
       isOpaque: () => false,

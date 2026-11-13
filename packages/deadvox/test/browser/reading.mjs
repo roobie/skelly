@@ -8,19 +8,55 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import { actionRingShown } from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(mode === 'consumer' || mode === 'lifecycle', 'choose consumer or lifecycle');
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const houseStart = {
+  density: null,
+  id: 'reading_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const forestStart = { ...houseStart, id: 'reading_forest_start', site: 'forest' };
 const artifacts = resolve(process.env.READING_ARTIFACT_DIR ?? `test-results/reading-${mode}`);
 await mkdir(artifacts, { recursive: true });
-const vite = await createServer({
+const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',
@@ -30,19 +66,19 @@ const vite = await createServer({
       name: 'reading-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (id.endsWith('/src/game/worldSetup.ts')) {
+        if (id.endsWith('/engine/src/game/worldSetup.ts')) {
           const anchor = "  if (config.site === 'forest') {";
           assert.equal(code.split(anchor).length, 2);
           return `import { readingWorld } from '/test/fixtures/readingWorld.ts';\n${code.replace(anchor, `${anchor}\n    return readingWorld(registry, config.seed, config.scale);`)}`;
         }
-        if (!id.endsWith('/src/game/play.ts')) {
+        if (!id.endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = 'startRealFrames(frame);';
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;},get handsBusy(){return queue.busy||firearms.busy;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
+          `let proofReadCalls=0; let throwGameLoopError=false; const proofOpen=reading.open; reading.open=(value,...args)=>{proofReadCalls++;proofOpen(value,...args);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt:()=>{const target=interactionTargetAt();return target?.kind==='furniture'?target.entity:undefined;},useTarget:router.useTarget,saveController:options.saveController,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;},requestResume(){resume();},playFrame:frame,triggerGameLoopError(){throwGameLoopError=true;},get handsBusy(){return queue.busy||firearms.busy;}}});\nstartRealFrames((now)=>{if(throwGameLoopError){throwGameLoopError=false;throw new Error('Browser-stage game-loop failure');}return frame(now);});`,
         );
       },
     },
@@ -75,7 +111,11 @@ try {
   await page.goto(
     browserStageUrl(
       'reading',
-      `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0&save-test=1`,
+      gameUrl(`http://127.0.0.1:${port}`, {
+        startMod: inlineStartMod('fixture.reading.house', houseStart),
+        harness: { 'save-test': 1 },
+        hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+      }),
     ),
     { waitUntil: 'domcontentloaded' },
   );
@@ -96,7 +136,7 @@ try {
     throw new Error(`Reading title did not become ready: ${JSON.stringify({ readiness, errors })}`, { cause: error });
   }
   const ordinaryControlIds = await page.evaluate(
-    "import('/src/game/controls.ts').then(({ controlsCardRows }) => controlsCardRows().map(({ id }) => id))",
+    "Promise.all([import('/@stage/@skelly/presentation/internal/presentation/controls.ts'), import('/src/product/input.ts')]).then(([{ controlsCardRows }, { inputBindings }]) => controlsCardRows(inputBindings).map(({ id }) => id))",
   );
   const renderedControlIds = await page
     .locator('#controls dt')
@@ -108,7 +148,7 @@ try {
     // KeyJ is the new chord being captured; world.interact still resolves to the old key until capture commits.
     await page.keyboard.press('KeyJ');
     await page.waitForFunction(
-      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
+      "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
     );
     await page.reload();
     await page.waitForFunction(
@@ -118,7 +158,7 @@ try {
     );
     assert.equal(
       await page.evaluate(
-        "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
+        "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
       ),
       'KeyJ',
       'settings rebind persists across reload',
@@ -253,35 +293,23 @@ try {
       stanceBeforeToggle,
     );
     const walk = async (actionId, targetX, increasing) => {
-      const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-      const release = await holdInputAction(page, actionId);
-      try {
-        await waitForSimulation(
-          page,
-          ({ x, up }) => {
-            const { session, body } = globalThis.readingWitness;
-            return {
-              time: session.sim.time,
-              paused: session.sim.paused,
-              reached: up ? body.pos[0] >= x : body.pos[0] <= x,
-            };
-          },
-          { x: targetX, up: increasing },
-          {
-            seconds: 10,
-            from,
-            label: `walk ${actionId} to ${targetX}`,
-            record,
-            stop: release,
-          },
-        );
-      } finally {
-        await release();
-      }
+      await waitForSimulation(
+        page,
+        ({ x, up }) => {
+          const { session, body } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: up ? body.pos[0] >= x : body.pos[0] <= x,
+          };
+        },
+        { x: targetX, up: increasing },
+        { seconds: 10, label: `walk ${actionId} to ${targetX}`, record, hold: actionId },
+      );
     };
     // Spawn faces the showroom's newest slot; the route runs east along the path to the house door.
     await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
     });
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
     await walk('movement.forward', startX + 10, true);
@@ -295,9 +323,16 @@ try {
           const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
           const origin = eye();
           const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
-          input.yaw = Math.atan2(-dx, -dz);
-          input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-          return { pos: entity.pos, size: entity.size, origin, aim: [dx, dy, dz], yaw: input.yaw, pitch: input.pitch };
+          input.controls.yaw = Math.atan2(-dx, -dz);
+          input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+          return {
+            pos: entity.pos,
+            size: entity.size,
+            origin,
+            aim: [dx, dy, dz],
+            yaw: input.controls.yaw,
+            pitch: input.controls.pitch,
+          };
         },
         { id: type, uid: targetUid },
       );
@@ -412,8 +447,10 @@ try {
       return entity.uid;
     });
     await page.evaluate(async () => {
-      const restUiModule = '/src/ui/rest.ts';
+      const restUiModule = '/@stage/@skelly/presentation/internal/ui/rest.ts';
+      const inputModule = '/src/product/input.ts';
       globalThis.readingWitness.restViewModel = (await import(restUiModule)).restViewModel;
+      globalThis.readingWitness.keys = (await import(inputModule)).inputBindings;
     });
     const sleepRefusal = await page.evaluate((uid) => {
       const { session } = globalThis.readingWitness;
@@ -421,12 +458,13 @@ try {
     }, bedUid);
     assert.equal(sleepRefusal, undefined);
     const progressHandle = await page.waitForFunction(() => {
-      const { session, restViewModel } = globalThis.readingWitness;
+      const { session, restViewModel, keys } = globalThis.readingWitness;
       const gauge = document.querySelector('#rest [role="progressbar"]');
       const vm = restViewModel(session.rest.action, true, session.sim, {
         messagesVisible: true,
         restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
         text: session.inventory.registry.ui.get('core').screenText,
+        keys,
       });
       if (
         !(gauge && session.rest.action?.sleepOnset) ||
@@ -534,8 +572,8 @@ try {
     assert.equal(awakened.interruption, undefined);
     assert.equal(awakened.locksInput, false);
     await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.pitch = 0;
+      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.controls.pitch = 0;
     });
     // A walk ends when the stage releases the key, a wall-clock-dependent time after its condition holds, so it
     // overshoots. Stopping abreast of the crate keeps any overshoot inside use reach.
@@ -559,7 +597,7 @@ try {
     await aim('crate', noteCrate.uid);
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     const interactLabel = await page.evaluate(
-      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
+      "import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
     );
     await page.waitForFunction((label) => document.querySelector('#prompt').textContent.includes(label), interactLabel);
     await pressAction(page, 'world.interact');
@@ -742,7 +780,7 @@ try {
         return {
           time: session.sim.time,
           position: [...body.pos],
-          walking: input.walking,
+          walking: input.controls.walking,
           uid: item.uid,
           count: item.count,
           open: reading.isOpen,
@@ -865,28 +903,21 @@ try {
     const reopened = await readProgress();
     assert.ok(reopened.elapsed >= stoppedOnClose.elapsed);
     assert.ok(reopened.value >= stoppedOnClose.elapsed);
-    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk's length
-    // depends on when the stage releases the key, and the walk to the sign must start on the lane.
+    // Face along the clear lane before walking away, not at the crate the last aim chose: the walk to the sign
+    // must start on the lane.
     await page.evaluate(() => {
-      globalThis.readingWitness.input.yaw = -Math.PI / 2;
-      globalThis.readingWitness.input.pitch = 0;
+      globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.controls.pitch = 0;
     });
     const beforeMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       time: globalThis.readingWitness.session.sim.time,
     }));
-    await holdAction('movement.forward', async () => {
-      await page.waitForFunction(() => document.querySelector('#reading').hidden);
-      await waitForSimulation(
-        page,
-        (until) => {
-          const { session } = globalThis.readingWitness;
-          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
-        },
-        beforeMove.time + 0.2,
-        { seconds: 3, from: beforeMove.time, label: 'walking away from reading', record },
-      );
-    });
+    // The midnight check depends on where this walk ends. `walk` arms its stop in the page before the key goes
+    // down, so the walk ends within a frame of the destination whatever the driver latency. Reading closes by the
+    // walk and is checked after the stop.
+    await walk('movement.forward', beforeMove.position[0] + 1, true);
+    await page.waitForFunction(() => document.querySelector('#reading').hidden);
     const afterMove = await page.evaluate(() => ({
       position: [...globalThis.readingWitness.body.pos],
       stopped: globalThis.readingWitness.session.sim.actions.job?.stopped,
@@ -898,24 +929,36 @@ try {
     assert.equal(afterMove.stopped, true);
     assert.equal(afterMove.compression, false);
     // Light states are controlled through the hour, the lamp switch and the battery, never through tuning.
-    const seekHour = (hour) =>
-      page.evaluate(async (seconds) => {
-        const clockModule = '/src/core/clock.ts';
+    // One evaluate seeks and measures, so no game frame runs between the new hour and the light read from it.
+    // The measure carries what a failure needs to show where and when the light was read.
+    const probeLight = async (seekSeconds) => {
+      const { session, reading, readCalls, body, saveController } = globalThis.readingWitness;
+      if (seekSeconds !== undefined) {
+        const clockModule = '/@stage/@skelly/engine/internal/core/clock.ts';
         const { nextTimeOfDay } = await import(clockModule);
-        const { session, saveController } = globalThis.readingWitness;
-        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seconds));
+        session.sim.setDebugCalendarTime(nextTimeOfDay(session.sim.calendar, seekSeconds));
         saveController?.rearmAutosaveAfterTimeSeek?.();
-      }, hour * 3600);
-    const lightState = () =>
-      page.evaluate(() => {
-        const { session, reading, readCalls } = globalThis.readingWitness;
-        return {
-          refusal: session.readingLight(),
-          open: reading.isOpen,
-          readCalls,
-          prompt: document.querySelector('#prompt')?.textContent ?? '',
-        };
-      });
+      }
+      // The light is read where `readingLight` samples it, at the reader's eye; the feet only show the route.
+      const eye = session.playerEye();
+      return {
+        refusal: session.readingLight(),
+        open: reading.isOpen,
+        readCalls,
+        prompt: document.querySelector('#prompt')?.textContent ?? '',
+        diagnostics: {
+          time: session.sim.time,
+          hour: (session.sim.calendar / 3600) % 24,
+          eye,
+          feet: [...body.pos],
+          illumination: session.illuminationAt(eye),
+          skyVisibility: session.skyFields.visibilityAt(eye),
+          fixtureLights: session.power?.lights().length ?? 0,
+        },
+      };
+    };
+    const seekHour = (hour) => page.evaluate(probeLight, hour * 3600);
+    const lightState = () => page.evaluate(probeLight);
     const refusedRead = async (slot) => {
       const unread = await lightState();
       await pressAction(page, `quickbar.use.${slot}`);
@@ -929,8 +972,7 @@ try {
       return refused;
     };
     await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
-    await seekHour(0);
-    const midnight = await lightState();
+    const midnight = await seekHour(0);
     assert.ok(midnight.refusal, `the reading spot must be too dark at midnight: ${JSON.stringify(midnight)}`);
     await page.locator('#reading').waitFor({ state: 'hidden' });
     await page.waitForFunction(
@@ -939,7 +981,7 @@ try {
     );
     await refusedRead(1);
     const lamps = await page.evaluate(async () => {
-      const lightsModule = '/src/core/lights.ts';
+      const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
       const { session } = globalThis.readingWitness;
       const { inventory } = session;
@@ -988,7 +1030,7 @@ try {
     await switchLamp(lamps.full, false);
     await refusedRead(2);
     const lowLamp = await page.evaluate(async ({ type, full }) => {
-      const lightsModule = '/src/core/lights.ts';
+      const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
       const { session } = globalThis.readingWitness;
       const { inventory } = session;
@@ -1040,7 +1082,7 @@ try {
       },
     );
     const drained = await page.evaluate(async (uid) => {
-      const lightsModule = '/src/core/lights.ts';
+      const lightsModule = '/@stage/@skelly/engine/internal/core/lights.ts';
       const { chargeOf } = await import(lightsModule);
       const { session, reading } = globalThis.readingWitness;
       const { job } = session.sim.actions;
@@ -1090,10 +1132,11 @@ try {
     });
     await walk('movement.back', signFixture.x, false);
     await aim(signFixture.type);
-    // Reading stays on the tap so moveable signs remain readable without a chooser.
+    // A tap on furniture does its ordinary use, so one press reads the sign; only a hold opens the action menu.
     const readSign = async () => {
       await pressAction(page, 'world.interact');
       await page.locator('#reading').waitFor({ state: 'visible' });
+      assert.equal(await actionRingShown(page), false);
     };
     await readSign();
     assert.equal(await page.locator('#reading h1').innerText(), signFixture.readable.title);
@@ -1119,15 +1162,15 @@ try {
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
     // An earlier periodic checkpoint may already have committed, so only a newer generation proves this one did.
-    const generationBeforeTrigger = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
-    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    const generationBeforeTrigger = await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration);
+    await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction((triggerGeneration) => {
-      const { controller } = globalThis.deadvoxSaveTest;
+      const { controller } = globalThis.skellySaveTest;
       const { savedGeneration, failure, writing, queued } = controller;
       // A refused snapshot sets `failure` and never advances the generation, so end the wait with its reason.
       return Boolean(failure) || (savedGeneration > triggerGeneration && !writing && !queued);
     }, generationBeforeTrigger);
-    const checkpoint = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState());
+    const checkpoint = await page.evaluate(() => globalThis.skellySaveTest.saveState());
     assert.equal(checkpoint.failure, '', 'the checkpoint before the error test saved');
     assert.ok(checkpoint.savedGeneration > generationBeforeTrigger, 'the error test begins with a new committed save');
     const beforeError = await page.evaluate(() => ({
@@ -1213,24 +1256,27 @@ try {
       document.dispatchEvent(new Event('visibilitychange'));
     });
     await page.waitForFunction(() => {
-      const { controller } = globalThis.deadvoxSaveTest;
+      const { controller } = globalThis.skellySaveTest;
       return !(controller.writing || controller.queued);
     });
     assert.equal(
-      await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration),
+      await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration),
       checkpoint.savedGeneration,
       'hiding the tab after the error leaves the last committed save unchanged',
     );
     await page.goto(
       browserStageUrl(
         'reading',
-        `http://127.0.0.1:${port}/?site=forest&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: inlineStartMod('fixture.reading.forest', forestStart),
+          hash: { seed: 1, radius: 16, post: false, sunshadow: false, torchshadow: false },
+        }),
       ),
       { waitUntil: 'domcontentloaded' },
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    // The forest start mod is its own save namespace, so the house save leaves nothing here to replace.
     await page.locator('#go').click();
-    await page.locator('#save-replace-confirm').click();
     await page.waitForFunction(
       () =>
         document.querySelector('#world-loading')?.dataset.state === 'ready' &&
@@ -1248,8 +1294,8 @@ try {
       }, index);
       if (index > 0) {
         await page.evaluate(() => {
-          globalThis.readingWitness.input.yaw = -Math.PI / 2;
-          globalThis.readingWitness.input.pitch = 0;
+          globalThis.readingWitness.input.controls.yaw = -Math.PI / 2;
+          globalThis.readingWitness.input.controls.pitch = 0;
         });
         await walk('movement.forward', source.x, true);
       }
@@ -1258,8 +1304,8 @@ try {
         const entity = engine.entities.byUid(uid);
         const origin = eye();
         const [dx, dy, dz] = entity.pos.map((value, axis) => value + entity.size[axis] / 2 - origin[axis]);
-        input.yaw = Math.atan2(-dx, -dz);
-        input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       }, source.uid);
       const aimed = await record('aim at sheet source');
       assert.equal(

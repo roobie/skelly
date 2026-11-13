@@ -1,0 +1,22 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.electric-power",
+    "skelly.electronics",
+    "skelly.firearms",
+    "skelly.light-sources",
+    "skelly.melee",
+    "skelly.readables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "manuals-items.json"
+    }
+  ],
+  "id": "skelly.manuals",
+  "overrides": [],
+  "product": false,
+  "tier": "theme",
+  "version": "1"
+}

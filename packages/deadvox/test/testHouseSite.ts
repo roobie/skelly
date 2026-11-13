@@ -1,11 +1,9 @@
-import { AuthoredSite } from '../src/core/authoredSite.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { FurnitureSpawn, Rect, Site } from '../src/core/site.ts';
-import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
+import type { Registry } from '@skelly/engine/content';
+import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
+import type { FurnitureSpawn, Site } from '@skelly/engine/internal/core/site.ts';
+import type { Rect } from '@skelly/engine/sim';
+import { CHUNK, makeScale, type Vec3, World } from '@skelly/engine/world';
+import { terrainFor } from './fixtures/terrain.ts';
 
 /**
  * The authored test house at the template scale, with its blocks generated on demand. A caller may pass the site
@@ -22,6 +20,7 @@ export const testHouseSite = <S extends Site = AuthoredSite>(
   const house = new AuthoredSite(7, registry, scale, layout);
   const site = (wrap ? wrap(house) : house) as S;
   const { seed } = house;
+  const terrain = terrainFor(site, registry, scale, seed);
   const { x0, x1, z0, z1 } = area ? area(site) : layout.bounds;
   const world = new World();
   const columns = new Set<string>();
@@ -30,18 +29,7 @@ export const testHouseSite = <S extends Site = AuthoredSite>(
     const cz = Math.floor(z / CHUNK);
     const key = `${cx},${cz}`;
     if (!columns.has(key)) {
-      for (const chunk of generateColumn(
-        {
-          seed,
-          scale,
-          shape: terrainShapeOf(registry),
-          blocks: sitePalette(registry).terrain,
-          surface: site.surface,
-          stamp: (target) => site.stamp(target),
-        },
-        cx,
-        cz,
-      )) {
+      for (const chunk of terrain.generateColumn(cx, cz)) {
         world.addChunk(chunk);
       }
       columns.add(key);

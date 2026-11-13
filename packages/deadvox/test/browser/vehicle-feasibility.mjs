@@ -4,13 +4,13 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const { firefox, webkit } = await import('playwright');
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: false,
   root,
   logLevel: 'error',
@@ -39,7 +39,14 @@ const engines = {
 try {
   await vite.listen();
   await mkdir(artifactDirectory, { recursive: true });
-  if (process.argv.includes('--local-rapier')) {
+  if (process.argv.includes('--driving')) {
+    const { runDrivingProbes } = await import('./vehicle-driving.mjs');
+    await runDrivingProbes(
+      vite,
+      engines,
+      process.argv.slice(2).filter((argument) => argument !== '--driving'),
+    );
+  } else if (process.argv.includes('--local-rapier')) {
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(
       vite,
@@ -47,10 +54,12 @@ try {
       process.argv.slice(2).filter((argument) => argument !== '--local-rapier'),
     );
   } else {
+    const { runDrivingProbes } = await import('./vehicle-driving.mjs');
+    await runDrivingProbes(vite, engines, process.argv.slice(2));
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(vite, engines, process.argv.slice(2), false);
-    const { runSuite } = await vite.ssrLoadModule('/src/vehicles/feasibility/runner.ts');
-    const { firstDivergence } = await vite.ssrLoadModule('/src/vehicles/feasibility/trace.ts');
+    const { runSuite } = await vite.ssrLoadModule('/src/feasibility/runner.ts');
+    const { firstDivergence } = await vite.ssrLoadModule('/src/feasibility/trace.ts');
     const fingerprint = await vite.ssrLoadModule('/tools/simulationFingerprint.ts');
     const graph = await fingerprint.collectSimulationSourceGraph(fingerprint.FEASIBILITY_ENTRIES, root, {
       resolve: async (specifier, importer) => (await vite.pluginContainer.resolveId(specifier, importer))?.id,
@@ -64,7 +73,7 @@ try {
         .digest('hex'),
       sourceFingerprint: build,
       rapierWasmSha256: createHash('sha256').update(wasm).digest('hex'),
-      rapierRole: 'committed f64 diagnostic candidate; agreement measured by runLocal',
+      rapierRole: 'selected f64 build; diagnostic agreement measured by runLocal',
     };
     const baseline = runSuite(build);
     await writeFile(
@@ -88,7 +97,7 @@ try {
         await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-feasibility.html`);
         const suite = await page.evaluate(async (identity) => {
           // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root module URL
-          const { runSuite: browserSuite } = await import('/src/vehicles/feasibility/runner.ts');
+          const { runSuite: browserSuite } = await import('/src/feasibility/runner.ts');
           return browserSuite(identity);
         }, build);
         const difference = firstDivergence(baseline.regular.traces, suite.regular.traces) ?? null;

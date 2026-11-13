@@ -1,0 +1,218 @@
+{
+  "dependencies": ["skelly.melee-classes", "skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "body.json"
+    },
+    {
+      "kind": "content",
+      "path": "body-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "body-synth-sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "figures-body.json"
+    },
+    {
+      "kind": "content",
+      "path": "figures-player.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-body.json"
+    },
+    {
+      "kind": "content",
+      "path": "player.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/player.1.body.json"
+    },
+    {
+      "kind": "json",
+      "path": "actors/player.1.clips.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_small.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flesh_chunk_strip.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_bust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_head.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_torso.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/heartbeat-fast-beat.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/heartbeat-slow-beat.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee_hit_fist-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-block-full-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-08.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-landing-hard-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-09.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-12.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-14.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/actors/player.1.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_small.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flesh_chunk_strip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_bust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_torso.glb"
+    }
+  ],
+  "id": "skelly.body",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

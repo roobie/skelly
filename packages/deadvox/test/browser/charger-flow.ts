@@ -1,12 +1,15 @@
-import { batteryEnergy } from '../../src/core/battery.ts';
-import type { Registry } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
-import { toHands } from '../../src/core/options.ts';
-import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../../src/core/saveFormat.ts';
-import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
-import { chargerPanel } from '../../src/ui/chargerPanel.ts';
-import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
-import { contentLookup } from '../../src/ui/saveController.ts';
+import type { Registry } from '@skelly/engine/content';
+import { BindingRegistry, type ReplayActionPayload } from '@skelly/engine/input';
+import { SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { batteryEnergy, toHands } from '@skelly/engine/inventory';
+import { decodeSave, encodeSave } from '@skelly/engine/save';
+import { chargerPanel } from '@skelly/presentation/internal/ui/chargerPanel.ts';
+import { InventoryScreen } from '@skelly/presentation/internal/ui/inventoryScreen.ts';
+import { fetchActorFigureFiles } from '@skelly/presentation/play';
+import { contentLookup } from '@skelly/presentation/ui';
+import { productAssets } from '../../src/product/assets.ts';
+import { INPUT_BINDINGS } from '../../src/product/controls.ts';
+import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { createChargerSession } from '../fixtures/chargerSession.ts';
 
 const queueMove = (
@@ -22,20 +25,26 @@ const queueMove = (
   return plan.ok ? undefined : plan.reason;
 };
 
-export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
-  let runtime = createChargerSession(base);
+export const mountChargerFlow = async (base: Registry, root: HTMLElement) => {
+  const figures = await fetchActorFigureFiles(base, productAssets.figures);
+  let runtime = createChargerSession(base, figures);
   let screen: InventoryScreen;
   const refusals: string[] = [];
   const version = {
     simulationHash: 'a'.repeat(64),
     schemaVersion: SAVE_SCHEMA_VERSION,
-    generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+    generators: {
+      worldgen: 'worldgen-v2',
+      'bodyPlan.humanoid': 'humanoid-figure-v1',
+      'bodyPlan.fused-mass': 'fused-mass-figure-v1',
+    },
     contentPacks: [{ id: 'fixture', version: '1', canonicalHash: '0'.repeat(64) }],
   };
   const mount = () => {
     const { session } = runtime;
     const { inventory } = session;
     screen = new InventoryScreen(root, inventory, session.queue, {
+      bindings: new BindingRegistry(INPUT_BINDINGS),
       reach: session.reach,
       feet: () => session.reach().feet,
       nearby: () => session.reach().piles,
@@ -49,7 +58,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
       body: () => session.sim.body,
       character: () => session.character,
       needs: () => '',
-      slotLabels: runtime.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
+      slotLabels: runtime.registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
       charger: (entity) => chargerPanel(entity, session.power, session.reach()),
       chargerRevision: () => session.sim.time,
       dispatch: (payload) => {
@@ -111,7 +120,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
         contentLookup: (kind, id) => contentLookup(runtime.registry, kind, id),
       });
       screen.close();
-      runtime = createChargerSession(base, saved.snapshot);
+      runtime = createChargerSession(base, figures, saved.snapshot);
       mount();
     },
     inspect: () => {

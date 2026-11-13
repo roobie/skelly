@@ -1,0 +1,898 @@
+{
+  "scenarios": [
+    {
+      "anchors": [
+        {
+          "clearOf": ["woodland", "building"],
+          "id": "north_road",
+          "kind": "edge",
+          "minDistance": 100,
+          "spawnMarginMetres": 2,
+          "woodlandDensityFloor": 0.10000000000000001
+        },
+        {
+          "clearOf": ["woodland", "building"],
+          "id": "far_edge",
+          "kind": "edge",
+          "minDistance": 250,
+          "spawnMarginMetres": 2,
+          "woodlandDensityFloor": 0.10000000000000001
+        }
+      ],
+      "asks": [
+        {
+          "id": "shelter",
+          "kind": "place",
+          "template": "holdout_house"
+        }
+      ],
+      "body": "player",
+      "bounds": {
+        "x0": -500,
+        "x1": 500,
+        "z0": -500,
+        "z1": 500
+      },
+      "compression": "player",
+      "decalLimit": 48,
+      "eventRules": [
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 8,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_1",
+          "trigger": {
+            "afterGameHours": 0.10000000000000001,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 12,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_2",
+          "trigger": {
+            "afterGameHours": 120.09999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_3",
+          "trigger": {
+            "afterGameHours": 240.09999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_4",
+          "trigger": {
+            "afterGameHours": 360.10000000000002,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_5",
+          "trigger": {
+            "afterGameHours": 480.10000000000002,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_6",
+          "trigger": {
+            "afterGameHours": 600.10000000000002,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_7",
+          "trigger": {
+            "afterGameHours": 720.10000000000002,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_8",
+          "trigger": {
+            "afterGameHours": 840.10000000000002,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_9",
+          "trigger": {
+            "afterGameHours": 960.10000000000002,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_10",
+          "trigger": {
+            "afterGameHours": 1080.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_11",
+          "trigger": {
+            "afterGameHours": 1200.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_12",
+          "trigger": {
+            "afterGameHours": 1320.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_13",
+          "trigger": {
+            "afterGameHours": 1440.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_14",
+          "trigger": {
+            "afterGameHours": 1560.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_15",
+          "trigger": {
+            "afterGameHours": 1680.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_16",
+          "trigger": {
+            "afterGameHours": 1800.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_17",
+          "trigger": {
+            "afterGameHours": 1920.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_18",
+          "trigger": {
+            "afterGameHours": 2040.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_19",
+          "trigger": {
+            "afterGameHours": 2160.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_20",
+          "trigger": {
+            "afterGameHours": 2280.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_21",
+          "trigger": {
+            "afterGameHours": 2400.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_22",
+          "trigger": {
+            "afterGameHours": 2520.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_23",
+          "trigger": {
+            "afterGameHours": 2640.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_24",
+          "trigger": {
+            "afterGameHours": 2760.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_25",
+          "trigger": {
+            "afterGameHours": 2880.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_26",
+          "trigger": {
+            "afterGameHours": 3000.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_27",
+          "trigger": {
+            "afterGameHours": 3120.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_28",
+          "trigger": {
+            "afterGameHours": 3240.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_29",
+          "trigger": {
+            "afterGameHours": 3360.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_30",
+          "trigger": {
+            "afterGameHours": 3480.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_31",
+          "trigger": {
+            "afterGameHours": 3600.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_32",
+          "trigger": {
+            "afterGameHours": 3720.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_33",
+          "trigger": {
+            "afterGameHours": 3840.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_34",
+          "trigger": {
+            "afterGameHours": 3960.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_35",
+          "trigger": {
+            "afterGameHours": 4080.0999999999999,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_36",
+          "trigger": {
+            "afterGameHours": 4200.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_37",
+          "trigger": {
+            "afterGameHours": 4320.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_38",
+          "trigger": {
+            "afterGameHours": 4440.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_39",
+          "trigger": {
+            "afterGameHours": 4560.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_40",
+          "trigger": {
+            "afterGameHours": 4680.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_41",
+          "trigger": {
+            "afterGameHours": 4800.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_42",
+          "trigger": {
+            "afterGameHours": 4920.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_43",
+          "trigger": {
+            "afterGameHours": 5040.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_44",
+          "trigger": {
+            "afterGameHours": 5160.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_45",
+          "trigger": {
+            "afterGameHours": 5280.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_46",
+          "trigger": {
+            "afterGameHours": 5400.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_47",
+          "trigger": {
+            "afterGameHours": 5520.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_48",
+          "trigger": {
+            "afterGameHours": 5640.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_49",
+          "trigger": {
+            "afterGameHours": 5760.1000000000004,
+            "kind": "elapsed"
+          }
+        },
+        {
+          "effects": [
+            {
+              "actor": "shambler",
+              "at": ["north_road", "far_edge"],
+              "count": 16,
+              "kind": "releaseHorde"
+            }
+          ],
+          "id": "holding_wave_50",
+          "trigger": {
+            "afterGameHours": 5880.1000000000004,
+            "kind": "elapsed"
+          }
+        }
+      ],
+      "ground": 21,
+      "guarantee": {},
+      "id": "holdout",
+      "kind": "composedSite",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "outbreakAgeGameHours": 2880,
+      "placement": {
+        "apronMetres": 2,
+        "attempts": 1000
+      },
+      "population": {
+        "authoredMarkers": false
+      },
+      "settlementKind": "rural",
+      "start": {
+        "ask": "shelter"
+      }
+    }
+  ],
+  "starts": [
+    {
+      "allSkills": 10,
+      "debugOnly": true,
+      "density": null,
+      "id": "holdout_debug",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "holdout",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    }
+  ]
+}

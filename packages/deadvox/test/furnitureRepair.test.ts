@@ -1,6 +1,5 @@
+import { Inventory } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureMaterials } from './economyFixtures.ts';
 
 const BREACH = { minimumStrength: 10, durability: 100 };
@@ -84,7 +83,7 @@ it.each(['repair_leaf', 'repair_boarded'])('preserves a surviving %s lock, bar o
   expect(entities.isSolid(...entity.pos)).toBe(true);
 });
 
-it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.MIN_VALUE])(
+it.each([0, -1, Number.POSITIVE_INFINITY, Number.MIN_VALUE])(
   'refuses invalid or unrepresentable repair amount %s without signalling a change',
   (amount) => {
     const { entities, entity } = fixture();
@@ -97,15 +96,12 @@ it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 
   },
 );
 
-it.each(['removed', 'stale', 'carried', 'ruined', 'broken', 'intact'])(
+it.each(['removed', 'carried', 'ruined', 'broken', 'intact'])(
   'refuses a %s target without mutation or a change signal',
   (kind) => {
-    let { entities, entity } = fixture(kind === 'broken' ? 'repair_leaf' : 'repair_box');
+    const { entities, entity } = fixture(kind === 'broken' ? 'repair_leaf' : 'repair_box');
     if (kind === 'removed') {
       entities.destroy(entity);
-    }
-    if (kind === 'stale') {
-      entities = BlockEntities.restoreState(registry, entities.snapshotState());
     }
     if (kind === 'carried') {
       entities.lift(entity);

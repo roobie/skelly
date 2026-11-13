@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "category": "weapon",
+      "description": "A fragmentation grenade. With the pin pulled, its fuse lights as it leaves the hand.",
+      "explosive": {
+        "blast": {
+          "damage": 180,
+          "damageKind": "blunt",
+          "impulse": 30,
+          "radiusMetres": 7
+        },
+        "fragments": {
+          "count": 600,
+          "damage": 30,
+          "damageKind": "pierce",
+          "impulse": 0.5,
+          "rangeMetres": 15
+        },
+        "fuseSimSeconds": 4,
+        "sound": "grenade_blast"
+      },
+      "id": "frag_grenade",
+      "model": "frag_grenade",
+      "name": "Hand grenade",
+      "size": [1, 1],
+      "workInProgress": false
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import type { SenseDef } from '../src/core/schema.ts';
-import { simSeconds } from '../src/core/time.ts';
+import type { SenseDef } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { startupContent } from './baseRegistry.ts';
 
 export const BASE_SENSE_TUNING: SenseDef = startupContent().registry.senses.get('player')!;

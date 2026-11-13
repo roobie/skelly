@@ -1,16 +1,19 @@
-import { VectorOps } from "../math";
+import { VectorOps, scratchBuffer } from "../math";
 import { FeatureType } from "./feature";
 export class PointProjection {
     constructor(point, isInside) {
         this.point = point;
         this.isInside = isInside;
     }
-    static fromRaw(raw) {
+    static fromBuffer(raw, target) {
         if (!raw)
             return null;
-        const result = new PointProjection(VectorOps.fromRaw(raw.point()), raw.isInside());
+        raw.point(scratchBuffer);
+        target ?? (target = new PointProjection(VectorOps.zeros(), false));
+        target.point = VectorOps.fromBuffer(scratchBuffer, target.point);
+        target.isInside = raw.isInside();
         raw.free();
-        return result;
+        return target;
     }
 }
 export class PointColliderProjection {
@@ -25,11 +28,17 @@ export class PointColliderProjection {
         if (featureType !== undefined)
             this.featureType = featureType;
     }
-    static fromRaw(colliderSet, raw) {
+    static fromBuffer(colliderSet, raw, target) {
         if (!raw)
             return null;
-        const result = new PointColliderProjection(colliderSet.get(raw.colliderHandle()), VectorOps.fromRaw(raw.point()), raw.isInside(), raw.featureType(), raw.featureId());
+        raw.point(scratchBuffer);
+        target ?? (target = new PointColliderProjection(null, VectorOps.zeros(), false));
+        target.collider = colliderSet.get(raw.colliderHandle());
+        target.point = VectorOps.fromBuffer(scratchBuffer, target.point);
+        target.isInside = raw.isInside();
+        target.featureType = raw.featureType();
+        target.featureId = raw.featureId();
         raw.free();
-        return result;
+        return target;
     }
 }

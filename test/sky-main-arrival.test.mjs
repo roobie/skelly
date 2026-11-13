@@ -7,9 +7,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { it } from 'node:test';
 import {
-  adaptMainInteractionPick,
-  adaptMainOpticLensPass,
-  adaptMainSeedPool,
+  adaptMainArmParts,
   baseOnlyWorkspacePlugin,
   mainArrivalGit,
   mainOverlayPath,
@@ -23,86 +21,67 @@ import {
 
 const { createServer } = createRequire(new URL('../packages/deadvox/package.json', import.meta.url))('vite');
 
-it('main rendering overlays retain branch core API owners', () => {
-  assert.ok(mainSourceOverlays.length > 0);
-  assert.ok(mainSourceOverlays.every((path) => !path.startsWith('core/')));
+it('main startup keeps terrain construction on one revision while retaining unrelated branch core owners', () => {
+  const terrainBoundary = new Set([
+    'engine:core/authoredSite.ts',
+    'engine:core/citySite.ts',
+    'engine:core/forest.ts',
+    'engine:core/canonicalTerrain.ts',
+    'engine:game/weatheringTestSite.ts',
+  ]);
+  for (const key of ['engine:game/worldSetup.ts', 'engine:game/streamer.ts', ...terrainBoundary]) {
+    assert.ok(mainSourceOverlays.includes(key), `${key} must share main's terrain construction contract`);
+  }
+  for (const key of mainSourceOverlays) {
+    const separator = key.indexOf(':');
+    assert.ok(separator > 0 && !key.slice(separator + 1).startsWith('/'), `${key} is not a package-qualified src path`);
+    assert.ok(
+      !key.slice(separator + 1).startsWith('core/') || terrainBoundary.has(key),
+      `${key} takes an unrelated branch core owner`,
+    );
+  }
 });
 
 it('main overlays keep play, view and their presentation constructor contracts on the same revision', () => {
-  assert.ok(mainSourceOverlays.includes('game/play.ts'));
-  assert.ok(mainSourceOverlays.includes('render/playView.ts'));
-  assert.ok(mainSourceOverlays.includes('render/playerFigure.ts'));
-  assert.ok(mainSourceOverlays.includes('render/hands.ts'));
-  assert.ok(mainSourceOverlays.includes('render/heldPresentation.ts'));
-  assert.ok(mainSourceOverlays.includes('render/heldDisplay.ts'));
-  assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
-  assert.ok(mainSourceOverlays.includes('render/gore.ts'));
-  assert.ok(mainSourceOverlays.includes('render/mobActors.ts'));
-  assert.ok(mainSourceOverlays.includes('render/heightFog.ts'));
-  assert.ok(mainSourceOverlays.includes('render/sky.ts'));
-  assert.ok(mainSourceOverlays.includes('bench/post.ts'));
-  assert.ok(mainSourceOverlays.includes('game/damageFeedback.ts'));
-  assert.ok(mainSourceOverlays.includes('game/painCue.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:presentation/play.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/playView.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/playerFigure.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/hands.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/heldPresentation.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/heldDisplay.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/acidEffects.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/gore.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/mobActors.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/heightFog.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:render/sky.ts'));
+  assert.ok(mainSourceOverlays.includes('deadvox:bench/post.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:presentation/damageFeedback.ts'));
+  assert.ok(mainSourceOverlays.includes('presentation:presentation/painCue.ts'));
 });
 
 it('main play overlays keep the entire UI boundary on the base even when export names survive signature changes', () => {
-  const basePaths = new Set([
-    'ui/options.ts',
-    'ui/nested/readout.ts',
-    'ui/style.css',
-    'core/rules.ts',
-    'game/unrelated.ts',
+  const basePaths = new Map([
+    ['presentation', new Set(['ui/options.ts', 'ui/nested/readout.ts', 'ui/style.css', 'presentation/play.ts'])],
+    ['engine', new Set(['core/rules.ts', 'game/unrelated.ts'])],
   ]);
   const sources = mainOverlaySources(basePaths);
-  assert.ok(sources.includes('ui/options.ts'));
-  assert.ok(sources.includes('ui/nested/readout.ts'));
-  assert.ok(!sources.includes('core/rules.ts'));
-  assert.ok(!sources.includes('game/unrelated.ts'));
-  assert.ok(!sources.includes('ui/style.css'));
+  assert.ok(sources.includes('presentation:ui/options.ts'));
+  assert.ok(sources.includes('presentation:ui/nested/readout.ts'));
+  assert.ok(!sources.includes('engine:core/rules.ts'));
+  assert.ok(!sources.includes('engine:game/unrelated.ts'));
+  assert.ok(!sources.includes('presentation:ui/style.css'));
 });
 
-it('main picker callers supply both branch reach predicates without changing an already-current caller', () => {
-  const source = `return pickInteractionTarget({
-      worldSeed: config.seed,
-      isSolid: engine.isOpaque,
-    });`;
-  const physical = () => true;
-  const sight = () => false;
-  const adapted = adaptMainInteractionPick(source);
-  const pick = Function('engine', 'config', 'pickInteractionTarget', adapted);
-  const options = pick({ isSolid: physical, isOpaque: sight }, { seed: 1 }, (input) => input);
-  assert.equal(options.isSolid, physical);
-  assert.equal(options.isOpaque, sight);
-  assert.equal(adaptMainInteractionPick(adapted), adapted);
-});
-
-it('main Mood overlays pass graphics-owned optic-lens tuning to the branch renderer', () => {
-  const source = 'this.opticPass = opticLensPass();';
-  const adapted = adaptMainOpticLensPass(source);
-  assert.equal(adapted, 'this.opticPass = opticLensPass(this.graphicsTuning.opticLens);');
-  assert.equal(adaptMainOpticLensPass(adapted), adapted);
-});
-
-it('a main renderer on one shared seed pool builds only the seeds each model realizes and rethrows other errors', () => {
-  const source = `return modelIds.flatMap((model) =>
-    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
-      buildActorVariant(model, seed, amalgamType),
-    ),
-  );`;
-  const adapted = adaptMainSeedPool(source);
-  const build = Function('modelIds', 'figureSeeds', 'buildActorVariant', 'AMALGAM_FIGURE_SEED', 'amalgamType', adapted);
-  const strict = (model, seed) => {
-    if (model === 'crawler' && seed === 2) {
-      throw new Error(`Zombie figure ${model} seed ${seed} is not valid`);
-    }
-    return `${model}:${seed}`;
-  };
-  assert.deepEqual(build(['shambler', 'crawler'], [1, 2], strict, 1), ['shambler:1', 'shambler:2', 'crawler:1']);
-  const broken = () => {
-    throw new Error('geometry failed');
-  };
-  assert.throws(() => build(['shambler'], [1], broken, 1), { message: 'geometry failed' });
-  assert.equal(adaptMainSeedPool(adapted), adapted);
+it('main figure arm reads follow the branch segments listing parts, and a base that already lists them is untouched', () => {
+  const single = `{ name: 'elbow', parts: [armRig.fore.part], pivot: armRig.fore.pivot },
+{ name: 'wrist', parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part], pivot: armRig.hand.pivot }`;
+  assert.equal(
+    adaptMainArmParts(single),
+    `{ name: 'elbow', parts: armRig.fore.parts, pivot: armRig.fore.pivot },
+{ name: 'wrist', parts: [...armRig.hand.parts, ...armRig.fingers.parts, ...armRig.thumb.parts], pivot: armRig.hand.pivot }`,
+  );
+  const listed = adaptMainArmParts(single);
+  assert.equal(adaptMainArmParts(listed), listed);
 });
 
 it('main imports of an export the branch removed are found, and type-only or kept exports are not', () => {
@@ -302,8 +281,8 @@ it('main reference restores deleted sibling dependencies while retaining branch 
 it('main overlays accept the directory URL trailing separator and worker module query', () => {
   const root = resolve('fixture-root');
   const id = `${root}/src/worker/mesh.worker.ts?worker_file&type=module`;
-  for (const directory of [root, `${root}/`]) {
-    assert.equal(mainOverlayPath(directory, id), 'worker/mesh.worker.ts');
+  for (const directory of [`${root}/src`, `${root}/src/`]) {
+    assert.equal(mainOverlayPath(new Map([['presentation', directory]]), id), 'presentation:worker/mesh.worker.ts');
   }
-  assert.equal(mainOverlayPath(root, resolve('unrelated/worker.ts')), null);
+  assert.equal(mainOverlayPath(new Map([['presentation', `${root}/src`]]), resolve('unrelated/worker.ts')), null);
 });

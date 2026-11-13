@@ -1,0 +1,87 @@
+{
+  "starts": [
+    {
+      "defaultForSite": true,
+      "density": null,
+      "id": "forest",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "forest",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    }
+  ]
+}

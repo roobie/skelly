@@ -1,13 +1,14 @@
+import { cellsOf, placedPieces } from '@skelly/engine/internal/core/templates.ts';
+import { vehicleCells } from '@skelly/engine/internal/core/vehicleProjection.ts';
+import { Inventory } from '@skelly/engine/inventory';
+import { CHUNK, footprint, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { CHUNK, type Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { cellsOf, footprint, placedPieces } from '../src/core/templates.ts';
-import { vehicleCells } from '../src/core/vehicleProjection.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { terrainFor } from './fixtures/terrain.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
 const registry = baseRegistry();
-const { layout, s, site, at, solid, furniture, insideLot, walkable } = testHouseSite(registry);
+const { layout, scale, s, site, at, solid, furniture, insideLot, walkable } = testHouseSite(registry);
 const reachable = (start: Vec3): Vec3[] => {
   // Traverse the buildings and their immediate approaches, not the surrounding landscape.
   const bounds = site.placements.map((placement) => {
@@ -127,13 +128,16 @@ describe('authored test house', () => {
       const [ox, oy, oz] = placement.origin;
       for (let x = ox; x < ox + width; x++) {
         for (let z = oz; z < oz + depth; z++) {
-          expect(site.surface.height(x, z, layout.ground / s), `foundation at ${x},${z}`).toBe(oy);
+          expect(
+            terrainFor(site, site.registry, scale, site.seed).surface!.height(x, z, layout.ground / s),
+            `foundation at ${x},${z}`,
+          ).toBe(oy);
         }
       }
     }
   });
 
-  it('keeps showroom props and repair-stock containers outside the home', () => {
+  it('keeps showroom props outside the home', () => {
     const [width, depth] = footprint(home);
     const overlapsHome = (pos: Vec3, size: Vec3) =>
       pos[0] < home.origin[0] + width &&
@@ -144,16 +148,6 @@ describe('authored test house', () => {
     expect(site.slots.length).toBeGreaterThan(0);
     for (const prop of site.slots) {
       expect(overlapsHome(prop.pos, prop.size), `${prop.furniture} showroom prop enters the home`).toBe(false);
-    }
-    const stock = site.placements
-      .filter(({ template }) => template.id === layout.repairStock)
-      .flatMap(placedPieces)
-      .filter(({ furniture: type }) => registry.furniture.get(type)?.container);
-    expect(stock.length).toBeGreaterThan(0);
-    for (const container of stock) {
-      expect(overlapsHome(container.pos, container.size), `${container.furniture} repair stock enters the home`).toBe(
-        false,
-      );
     }
   });
 

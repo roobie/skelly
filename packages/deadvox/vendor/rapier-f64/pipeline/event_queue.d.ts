@@ -1,4 +1,5 @@
 import { RawContactForceEvent, RawEventQueue } from "../raw";
+import { SoftBodyTearEvent } from "../dynamics";
 import { ColliderHandle } from "../geometry";
 import { Vector } from "../math";
 export declare enum ActiveEvents {
@@ -11,9 +12,9 @@ export declare class TempContactForceEvent {
     free(): void;
     collider1(): ColliderHandle;
     collider2(): ColliderHandle;
-    totalForce(): Vector;
+    totalForce(target?: Vector): Vector;
     totalForceMagnitude(): number;
-    maxForceDirection(): Vector;
+    maxForceDirection(target?: Vector): Vector;
     maxForceMagnitude(): number;
 }
 export declare class EventQueue {
@@ -22,5 +23,6 @@ export declare class EventQueue {
     free(): void;
     drainCollisionEvents(f: (handle1: ColliderHandle, handle2: ColliderHandle, started: boolean) => void): void;
     drainContactForceEvents(f: (event: TempContactForceEvent) => void): void;
+    drainSoftBodyTearEvents(f: (event: SoftBodyTearEvent) => void): void;
     clear(): void;
 }

@@ -1,11 +1,11 @@
+import type { ItemDef } from '@skelly/engine/content';
+import { restoreItem, snapshotItem } from '@skelly/engine/internal/core/items.ts';
+import { savedItemTree } from '@skelly/engine/internal/core/itemTree.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import type { ItemState } from '@skelly/engine/inventory';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it } from 'vitest';
-import type { ItemDef } from '../src/core/content.ts';
-import { type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
-import { savedItemTree } from '../src/core/itemTree.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { registry as base, capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const vessel: ItemDef = {
@@ -15,8 +15,6 @@ const vessel: ItemDef = {
   weight: 1,
   size: [1, 1],
   workInProgress: false,
-  notLoot: false,
-  economy: { usage: [], tiers: [] },
   vessel: {
     capacityMicrolitres: 8000,
     accepts: ['fixture_liquid'],

@@ -1,20 +1,23 @@
-import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import type { RecipeDef } from '../src/core/content.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { type CraftSources, planCraft } from '../src/core/crafting.ts';
-import { craftActionHooks } from '../src/core/craftWork.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { ItemFactory, restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '../src/core/items.ts';
-import { planLiquidDraw } from '../src/core/liquids.ts';
-import { bindReach } from '../src/core/reach.ts';
+import type { RecipeDef } from '@skelly/engine/content';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
+import { restoreItem, sameRecoveryState, snapshotItem, stackRoom } from '@skelly/engine/internal/core/items.ts';
+import { planLiquidDraw } from '@skelly/engine/internal/core/liquids.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayCommandOwners,
-} from '../src/game/replayCommands.ts';
+} from '@skelly/engine/internal/game/replayCommands.ts';
+import {
+  CraftCommands,
+  type CraftSources,
+  HandlingQueue,
+  Inventory,
+  ItemFactory,
+  planCraft,
+} from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
+import { describe, expect, it } from 'vitest';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry, fixtureSources } from './economyFixtures.ts';
@@ -232,7 +235,7 @@ it('drop-placement refusal precedes every liquid balance change', () => {
   expect(r.inventory.move(work, { kind: 'pile', pos: origin }).ok).toBe(true);
   r.inventory.landing = () => undefined;
   const before = contents(r);
-  expect(() => r.inventory.releaseWork(work, true, origin)).toThrow();
+  expect(() => r.inventory.releaseWork(work, true, { feet: origin })).toThrow();
   expect(contents(r)).toEqual(before);
   expect(work.work).toBeDefined();
 });
@@ -289,7 +292,7 @@ it('replayed default selection debits the same uid for tied vessels across a sav
 it('solid and liquid route results never stack and a split preserves per-unit records through restore', () => {
   const r = setup([40]);
   const liquid = r.inventory.beginWork(recorded(r))!;
-  r.inventory.releaseWork(liquid, true, origin);
+  r.inventory.releaseWork(liquid, true, { feet: origin });
   const result = r.inventory.hands.right!;
   expect(r.inventory.move(result, { kind: 'pile', pos: origin }).ok).toBe(true);
   const solidRecipe = r.definitions.recipes.get(SOLID_RECIPE)!;
@@ -298,7 +301,7 @@ it('solid and liquid route results never stack and a split preserves per-unit re
     throw new Error(solidPlan.missing.reason);
   }
   const solid = r.inventory.beginWork(solidPlan.plan)!;
-  r.inventory.releaseWork(solid, true, origin);
+  r.inventory.releaseWork(solid, true, { feet: origin });
   const solidResult = r.inventory.hands.right!;
   expect(stackRoom(r.definitions, solidResult, result)).toBe(0);
   expect(stackRoom(r.definitions, result, solidResult)).toBe(0);

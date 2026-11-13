@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
+
+import { fillText } from '@skelly/engine/text';
+import type { ComboBoxOption } from '@skelly/presentation/internal/ui/comboBox.ts';
+import { renderCrafting } from '@skelly/presentation/internal/ui/crafting.ts';
+import type { CraftRow } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { comboBox } from '@skelly/presentation/ui';
 import { html, render } from 'lit-html';
 import { afterEach, expect, it, vi } from 'vitest';
-import { fillText } from '../src/core/textTemplate.ts';
-import { type ComboBoxOption, comboBox } from '../src/ui/comboBox.ts';
-import { renderCrafting } from '../src/ui/crafting.ts';
-import type { CraftRow } from '../src/ui/craftReadout.ts';
 import { baseScreenText } from './baseRegistry.ts';
 
 const OPTIONS: readonly ComboBoxOption[] = [

@@ -1,15 +1,13 @@
+import type { FurnitureDef, GunModelDef, ItemDef, Registry } from '@skelly/engine/content';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import {
+  attachmentWorkSkill,
+  FirearmAttachmentHandling,
+} from '@skelly/engine/internal/game/firearmAttachmentHandling.ts';
+import { defOf, HandlingQueue, Inventory, type Item, SLING_SLOT } from '@skelly/engine/inventory';
+import { opticViewSettings } from '@skelly/engine/pose';
+import { bindReach, Character, type HandedCharacter } from '@skelly/engine/sim';
 import { describe, expect, it, vi } from 'vitest';
-import { Character, type HandedCharacter } from '../src/core/character.ts';
-import type { FurnitureDef, ItemDef, Registry } from '../src/core/content.ts';
-import { SLING_SLOT } from '../src/core/firearmFitting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { defOf, type Item } from '../src/core/items.ts';
-import { opticViewSettings } from '../src/core/opticView.ts';
-import { bindReach } from '../src/core/reach.ts';
-import type { GunModelDef } from '../src/core/schema.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
@@ -220,21 +218,6 @@ describe('certified firearm fitting', () => {
     );
   });
 
-  it('accepts a certified combined fit independent of pair order', () => {
-    const fixture = makeFixture();
-    const slot = bottomRailSlots(fixture.model)[0]!;
-    const defaultSlot = fixture.model.attachments![0]!.mountedAt;
-    fixture.withModel((model) => ({
-      ...model,
-      compatibility: { ...model.compatibility, [slot]: ['foregrip'] },
-      compatibilityPairs: [pair([slot, 'foregrip'], [defaultSlot, fixture.model.attachments![0]!.id])],
-    }));
-
-    fitAttachmentInFixture(fixture.inventory, fixture.firearm, slot, fixture.foregrip);
-
-    expect(fixture.firearm.slots?.[slot]).toBe(fixture.foregrip);
-  });
-
   it('rejects footprints that leave the exported rail notches', () => {
     const fixture = makeFixture();
     const [slot, omitted] = bottomRailSlots(fixture.model);
@@ -367,9 +350,8 @@ describe('certified firearm fitting', () => {
     expect(durations(0, 10)).toEqual(untrained);
   });
 
-  it('requires Firearms Combat 4 to fit a suppressor but not to remove one', () => {
+  it('refuses a suppressor fit below its authored fit skill level but removes one at no skill', () => {
     const character = new Character(baseRegistry);
-    character.skills.firearms_combat = 3;
     const fixture = makeFixture(character);
     const suppressorType = [...fixture.registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
@@ -378,6 +360,13 @@ describe('certified firearm fitting', () => {
     if (!suppressorType) {
       throw new Error('Fixture registry needs a suppressor');
     }
+    const effects = defOf(fixture.registry, suppressorType).firearmAttachmentEffects;
+    if (effects?.kind !== 'suppressor') {
+      throw new Error('Fixture suppressor needs suppressor attachment effects');
+    }
+    expect(effects.fitSkillLevel).toBeGreaterThan(0);
+    const skill = attachmentWorkSkill(fixture.registry);
+    character.skills[skill] = effects.fitSkillLevel - 1;
     const suppressor = fixture.inventory.create(suppressorType);
     const suppressorId = fixture.registry.models.get(defOf(fixture.registry, suppressor.type).model!)!.gun!.attachment!
       .id;
@@ -398,15 +387,15 @@ describe('certified firearm fitting', () => {
       throw new Error('Fixture suppressor could not be placed');
     }
 
-    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBe("I can't fit this suppressor yet");
+    expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBe(effects.fitRefusal);
     expect(queue.jobs).toHaveLength(0);
 
-    character.skills.firearms_combat = 4;
+    character.skills[skill] = effects.fitSkillLevel;
     expect(handling.fit(fixture.firearm.uid, slot, suppressor.uid)).toBeUndefined();
     queue.tick(10);
     expect(fixture.firearm.slots?.[slot]).toBe(suppressor);
 
-    character.skills.firearms_combat = 0;
+    character.skills[skill] = 0;
     expect(handling.remove(fixture.firearm.uid, slot)).toBeUndefined();
     queue.tick(10);
     expect(fixture.firearm.slots?.[slot]).toBeUndefined();
@@ -414,34 +403,39 @@ describe('certified firearm fitting', () => {
 
   it('keeps an optic with an unavailable view out of fitting with its own refusal', () => {
     const fixture = makeFixture();
-    const optic = [...fixture.registry.items.values()].find((item) => item.opticView === 'unavailable');
-    if (!optic?.model) {
-      throw new Error('Fixture registry needs an optic with an unavailable view');
+    const slotFor = (attachmentId: string | undefined) =>
+      fixture.model.attachmentSlots!.find(
+        ({ id }) => attachmentId !== undefined && fixture.model.compatibility?.[id]?.includes(attachmentId),
+      );
+    const attachmentOf = (item: ItemDef) =>
+      item.model === undefined ? undefined : fixture.registry.models.get(item.model)?.gun?.attachment;
+    const viewable = [...fixture.registry.items.values()].find((item) => {
+      const attachment = attachmentOf(item);
+      return attachment?.kind === 'optic' && item.opticView === undefined && slotFor(attachment.id) !== undefined;
+    });
+    if (!viewable) {
+      throw new Error('Fixture firearm needs a compatible optic with a view');
     }
-    const opticModel = fixture.registry.models.get(optic.model)!;
-    const firearmSlot = fixture.model.attachmentSlots!.find(({ id }) =>
-      fixture.model.compatibility?.[id]?.includes(opticModel.gun!.attachment!.id),
-    );
-    if (!firearmSlot) {
-      throw new Error('Fixture firearm needs a compatible optic slot');
-    }
+    // The test owns the mark, so it does not depend on shipped content carrying one.
+    fixture.registry.items.set(viewable.id, { ...viewable, opticView: 'unavailable' });
+    const firearmSlot = slotFor(attachmentOf(viewable)!.id)!;
     if (fixture.firearm.slots?.[firearmSlot.id]) {
       fixture.inventory.fitSlot(fixture.firearm, firearmSlot.id, undefined);
     }
-    const thermal = fixture.inventory.create(optic.id);
+    const marked = fixture.inventory.create(viewable.id);
     const queue = new HandlingQueue(fixture.inventory);
     const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
     if (
       !(
         fixture.inventory.add(fixture.firearm, { kind: 'hand', side: 'right' }) &&
-        fixture.inventory.add(thermal, { kind: 'pile', pos: [0, 0, 0] })
+        fixture.inventory.add(marked, { kind: 'pile', pos: [0, 0, 0] })
       )
     ) {
       throw new Error('Fixture items could not be placed for optic handling');
     }
 
-    expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(thermal);
-    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBe(
+    expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(marked);
+    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, marked.uid)).toBe(
       fixture.registry.ui.get('core')!.actionText.attachments.viewUnavailable,
     );
     expect(queue.jobs).toHaveLength(0);

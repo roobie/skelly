@@ -1,9 +1,9 @@
-import { BACKGROUND_ZOMBIE_RATE } from '../core/zombies.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE, BACKGROUND_ACTOR_RATE } from '@skelly/engine/sim';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
-/** Arguments for `ZombieRenderer.sync` on the simulation clock, as `packages/deadvox/src/render/playView.ts` supplies them.
+/** Arguments for `ActorRenderer.sync` on the simulation clock, as `packages/presentation/src/render/playView.ts`
+ * supplies them.
  * Background actors blend from their own `renderPrevious.time`, so `simulationTime` must be the same clock
  * `tickBackground` stamps them with; a wall-clock alpha since the last slice would pin them near zero. */
 export const syncClock = (
@@ -11,7 +11,7 @@ export const syncClock = (
   lastActiveStep: number,
   lastBackgroundStep: number,
 ): { alpha: number; backgroundAlpha: number; simSeconds: number } => ({
-  alpha: clamp01((simulationTime - lastActiveStep) * ZOMBIE_RATE),
-  backgroundAlpha: clamp01((simulationTime - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE),
+  alpha: clamp01((simulationTime - lastActiveStep) * ACTIVE_ACTOR_RATE),
+  backgroundAlpha: clamp01((simulationTime - lastBackgroundStep) * BACKGROUND_ACTOR_RATE),
   simSeconds: simulationTime,
 });

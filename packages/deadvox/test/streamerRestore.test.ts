@@ -1,34 +1,28 @@
-import { Scene } from 'three';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import type { Chunk } from '../src/core/chunk.ts';
-import { CHUNK } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { SkyFields } from '../src/core/skyField.ts';
-import type { SkySnapshot } from '../src/core/skySnapshot.ts';
-import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
-import { World } from '../src/core/world.ts';
-import { generateColumn } from '../src/core/worldgen.ts';
-import { Streamer } from '../src/game/streamer.ts';
-import { Skylight } from '../src/render/skylight.ts';
+import type { SkySnapshot } from '@skelly/engine/internal/core/skySnapshot.ts';
+import { Streamer } from '@skelly/engine/internal/game/streamer.ts';
+import type { MesherPort, MesherSource } from '@skelly/engine/mesh';
+import { buildSkyResult, SkyFields, type SkyResult } from '@skelly/engine/sky';
+import { BlockEntities, CHUNK, type Chunk, generateColumn, makeScale, World } from '@skelly/engine/world';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
+import { Skylight } from '@skelly/presentation/render';
+import { describe, expect, it, vi } from 'vitest';
+import graphicsFile from '../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 import { baseTerrainShape } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { fixtureTerrain } from './fixtures/terrain.ts';
 
-class QuietWorker {
-  onmessage: ((event: MessageEvent) => void) | null = null;
-  postMessage(): void {
+class QuietWorker implements MesherPort {
+  post(): void {
     // The test deliberately prevents worker execution.
   }
-  terminate(): void {
-    // The test worker owns no external resources.
+  listen(): void {
+    // A quiet worker never replies.
   }
 }
 
-afterEach(() => vi.unstubAllGlobals());
+const quietMeshers: MesherSource = { count: 1, create: () => new QuietWorker() };
 
 it('builds a field over arriving all-air chunks and stops certifying it once its column unloads', () => {
-  vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
   const { registry } = buildRegistry([
@@ -40,7 +34,6 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     },
   ]);
   const entities = new BlockEntities(registry);
-  const scene = new Scene();
   let admit = false;
   const jobs: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields({ world, entities, registry }, { bottom: scale.minCy * CHUNK, top: 96 }, [
@@ -57,6 +50,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     },
     {
       clock: () => 0,
+      patches: new MaterialPatches(),
       submit: (input, receive) => {
         if (!admit) {
           return false;
@@ -66,25 +60,23 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
       },
     },
   );
-  const update = () => sky.update(scene, [4, 29, 4]);
+  const update = () => sky.update([4, 29, 4]);
   update();
   expect(fields.loaded(0)).toBe(false);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    mesher: quietMeshers,
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const loaded: string[] = [];
   const unloaded: string[] = [];
@@ -113,23 +105,21 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
 });
 
 it('reports generated-column transitions that match the generated-column snapshot', () => {
-  vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    mesher: quietMeshers,
+    terrain: fixtureTerrain({ scale }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
   });
   const observedGenerated = new Set<string>();
@@ -151,25 +141,22 @@ it('reports generated-column transitions that match the generated-column snapsho
 });
 
 it('lets replay drive terrain generation and unloading without live streaming side effects', () => {
-  vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
   const streamer = new Streamer({
     world,
     meshes: meshes as never,
-    seed: 17,
-    terrain: { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 },
-    shape: baseTerrainShape(),
+    mesher: quietMeshers,
+    terrain: fixtureTerrain({ scale, floor: 20 }),
     colors: new Uint8Array(256 * 4),
     patterns: new Uint8Array(256),
     weatherable: new Uint8Array(256),
     scale,
-    structures: [],
     radius: 0,
     preloadRings: 0,
+    columnsPerFrame: 2,
     hysteresis: 1,
-    surface: { height: () => 20, top: () => undefined },
   });
   const liveLoads = vi.fn();
   const liveUnloads = vi.fn();
@@ -192,29 +179,60 @@ it('lets replay drive terrain generation and unloading without live streaming si
   expect(liveUnloads).not.toHaveBeenCalled();
 });
 
+it('throttles terrain generation to columnsPerFrame columns per update', () => {
+  const scale = makeScale(0.5);
+  const budgeted = (columnsPerFrame: number) => {
+    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
+    return new Streamer({
+      world: new World(),
+      meshes: meshes as never,
+      mesher: quietMeshers,
+      terrain: fixtureTerrain({ scale }),
+      colors: new Uint8Array(256 * 4),
+      patterns: new Uint8Array(256),
+      weatherable: new Uint8Array(256),
+      scale,
+      radius: 2,
+      preloadRings: 0,
+      columnsPerFrame,
+      hysteresis: 1,
+    });
+  };
+  const one = budgeted(1);
+  one.update(0, 0);
+  expect(one.generatedColumns()).toHaveLength(1);
+  const four = budgeted(4);
+  four.update(0, 0);
+  expect(four.generatedColumns()).toHaveLength(4);
+});
+
 describe('saved columns', () => {
   const scale = makeScale(0.5);
   const terrain = { grass: 1, dirt: 2, rock: 3, sand: 4, water: 5 };
   const generate = (cx: number, cz: number) =>
     generateColumn({ seed: 17, blocks: terrain, shape: baseTerrainShape(), scale }, cx, cz, []);
   const streamerFor = (world: World, stamp: (chunk: Chunk) => void) => {
-    vi.stubGlobal('Worker', QuietWorker);
     const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
     return new Streamer({
       world,
       meshes: meshes as never,
-      seed: 17,
-      terrain,
-      shape: baseTerrainShape(),
+      mesher: quietMeshers,
+      terrain: {
+        ...fixtureTerrain({ scale, blocks: terrain }),
+        generateColumn: (cx, cz) =>
+          generate(cx, cz).map((chunk) => {
+            stamp(chunk);
+            return chunk;
+          }),
+      },
       colors: new Uint8Array(256 * 4),
       patterns: new Uint8Array(256),
       weatherable: new Uint8Array(256),
       scale,
-      structures: [],
       radius: 0,
       preloadRings: 0,
+      columnsPerFrame: 2,
       hysteresis: 1,
-      stamp,
     });
   };
   // Column 0,0 with one changed cell, saved and restored into a fresh world.

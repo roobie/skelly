@@ -1,7 +1,7 @@
 // A direct flood of the diffuse sky volume: the oracle the production sky transport is checked against.
-import type { Vec3 } from '../../src/core/coords.ts';
-import type { SolidAt } from '../../src/core/raycast.ts';
-import { SKY_LOSS, type SkyBounds, type SkyVolume, skyIndex } from '../../src/core/skylight.ts';
+import { SKY_LOSS, type SkyBounds, type SkyVolume } from '@skelly/engine/internal/core/skylight.ts';
+import { skyIndex } from '@skelly/engine/sky';
+import type { SolidAt, Vec3 } from '@skelly/engine/world';
 
 interface Flood {
   volume: SkyVolume;

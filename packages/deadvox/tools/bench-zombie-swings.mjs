@@ -1,9 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createServer } from 'vite';
+import { createStageServer } from '../test/browser/stageServer.mjs';
 
 const projectRoot = resolve(import.meta.dirname, '..');
-const server = await createServer({
+const server = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'silent',
@@ -11,19 +10,15 @@ const server = await createServer({
   appType: 'custom',
 });
 try {
-  const { buildRegistry } = await server.ssrLoadModule('/src/core/content.ts');
-  const { ZombieSystem } = await server.ssrLoadModule('/src/core/zombies.ts');
-  const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
-  const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
-  const contentDirectory = resolve(projectRoot, 'src/content/base');
-  const { registry } = buildRegistry(
-    readdirSync(contentDirectory)
-      .filter((file) => file.endsWith('.json'))
-      .sort()
-      .map((file) => ({ source: file, data: JSON.parse(readFileSync(resolve(contentDirectory, file), 'utf8')) })),
-  );
+  const { buildRegistry } = await server.ssrLoadModule('@skelly/engine/content');
+  const { ActorSystem, playerTuning, physicsFor } = await server.ssrLoadModule('@skelly/engine/sim');
+  const { makeScale } = await server.ssrLoadModule('@skelly/engine/world');
+  const { readStackActorFigureFiles, readStackContentSources } =
+    await server.ssrLoadModule('/tools/readBundledPacks.ts');
+  const { registry } = buildRegistry(readStackContentSources(projectRoot, 'skelly.deadvox'));
+  const actorFigureFiles = readStackActorFigureFiles(projectRoot, 'skelly.deadvox', registry);
   const PLAYER = playerTuning(registry);
-  const type = { ...registry.zombies.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
+  const type = { ...registry.actors.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
   const player = {
     pos: [100, 2, 100],
     vel: [0, 0, 0],
@@ -33,7 +28,8 @@ try {
     lightSeenFrom: 0,
     eyeHeightMetres: PLAYER.eye,
   };
-  const zombies = new ZombieSystem({
+  const zombies = new ActorSystem({
+    actorFigureFiles,
     seed: 41,
     isSolid: () => false,
     blockSize: 0.5,

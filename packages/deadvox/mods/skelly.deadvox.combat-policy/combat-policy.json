@@ -1,0 +1,62 @@
+{
+  "combatPolicy": [
+    {
+      "aim": {
+        "lookLagPerRadian": 0.035000000000000003,
+        "lookSettleSimSeconds": 0.22,
+        "maxOffsetRadians": 0.12,
+        "moveYawPerSpeed": 0.0044999999999999997,
+        "recoilRecoverySimSeconds": 0.34000000000000002
+      },
+      "capability": "player",
+      "firearms": {
+        "adsAcquisitionMaximumSimSeconds": 0.55000000000000004,
+        "breathHold": {
+          "painWeakeningPerRatio": 0.5,
+          "recoverySimSeconds": 3,
+          "recoverySwayScale": 2.5,
+          "staminaPerSimSecond": 12,
+          "steadyingMinimum": 0.5
+        },
+        "loweredPitchRadians": 0.29999999999999999,
+        "raiseSimSeconds": 0.69999999999999996,
+        "readyMovementMinimum": 0.45000000000000001,
+        "skillZeroHandling": {
+          "automaticFollowup": {
+            "recoilKickScale": 12,
+            "recoilRecoveryScale": 0.25,
+            "variance": 40
+          },
+          "singleShot": {
+            "recoilKickScale": 6,
+            "recoilRecoveryScale": 0.5,
+            "variance": 20
+          }
+        },
+        "wobbleLimitRadians": 0.14000000000000001,
+        "wobbleLuneArchPower": 2,
+        "wobbleLunePhaseOffsetRadians": 0.080000000000000002,
+        "wobbleNoiseReversionRatePerSimSecond": 2.3999999999999999,
+        "wobbleNoiseSigmaRadiansPerSqrtSecond": 0.002,
+        "wobbleNoiseSmoothingSimSeconds": 0.12,
+        "wobbleStanceDriftScale": {
+          "crouching": 0.80000000000000004,
+          "prone": 0.59999999999999998,
+          "standing": 1
+        },
+        "wobbleVerticalToHorizontalRatio": 0.22500000000000001
+      },
+      "id": "deadvox",
+      "melee": {
+        "blockChanceMinimum": 0.050000000000000003,
+        "deflectRealSeconds": 0.34999999999999998,
+        "deflectRiseFloor": 0.59999999999999998,
+        "deflectRiseMetres": 0.14000000000000001,
+        "joltPerAbsorbedPoint": 0.080000000000000002,
+        "joltRealSeconds": 0.080000000000000002,
+        "mitigationMinimum": 0.29999999999999999,
+        "staminaPerAbsorbedPoint": 2
+      }
+    }
+  ]
+}

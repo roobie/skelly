@@ -1,37 +1,36 @@
-import { describe, expect, it, vi } from 'vitest';
-import { sizeFits } from '../src/core/items.ts';
-import { APC } from '../src/vehicles/apc.ts';
-import { pairAcross } from '../src/vehicles/authoring.ts';
-import { BOX_VAN } from '../src/vehicles/boxVan.ts';
-import { CATALOGUE } from '../src/vehicles/catalogue.ts';
+import { sizeFits } from '@skelly/engine/internal/core/items.ts';
+import { pairAcross } from '@skelly/engine/internal/vehicles/authoring.ts';
+import { catalogueOf, type PartType, supportProblems } from '@skelly/engine/internal/vehicles/model.ts';
+import { rasterize } from '@skelly/engine/internal/vehicles/voxels.ts';
+import { WEAR_MATERIALS } from '@skelly/engine/internal/vehicles/wear.ts';
 import {
+  APC,
   addFitting,
   type Blueprint,
-  catalogueOf,
+  BOX_VAN,
+  CATALOGUE,
   type Fitting,
-  newInstance,
-  noiseRadius,
-  PartLibrary,
-  type PartType,
-  partTypeOf,
-  removeFitting,
-  supportProblems,
-  VOXEL,
-} from '../src/vehicles/model.ts';
-import { MOTORBIKE } from '../src/vehicles/motorbike.ts';
-import { PICKUP } from '../src/vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/vehicles/rangeRover.ts';
-import { SEDAN } from '../src/vehicles/sedan.ts';
-import {
   GLASS,
   keyVoxel,
   type MeshBuffers,
+  MOTORBIKE,
   meshGrid,
-  rasterize,
+  newInstance,
+  noiseRadius,
+  PartLibrary,
+  PICKUP,
+  partTypeOf,
+  RANGE_ROVER,
+  removeFitting,
+  SEDAN,
+  STRIPPED_REMOVED,
+  VOXEL,
   type VoxelGrid,
   voxelKey,
-} from '../src/vehicles/voxels.ts';
-import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/vehicles/wear.ts';
+  wearGrid,
+  wearKey,
+} from '@skelly/engine/vehicles';
+import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
 import { PLAYER } from './playerFixture.ts';
 

@@ -7,33 +7,116 @@ import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
+import { modFileBytes } from '../modFile.ts';
+import {
+  actionRingShown,
+  chooseHeldAction,
+  holdDominantUse,
+  pointActionMenu,
+  stepActionMenuTo,
+  waitForActionRing,
+} from './action-menu.mjs';
 import { launchChromium } from './chromium.mjs';
-import { chooseHeldAction } from './held-action-menu.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { dispatchMenuPointerClick, dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { installScopedGun } from './scoped-gun.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
-// The flow group is the long live-page journey; the replays group is the independent replay and search contexts.
-// They are separate CI steps so each keeps headroom under its own timeout.
-const groups = ['flow', 'replays'];
+// The flow group is the long live-page journey; the replays groups are the independent replay and search contexts,
+// split so each CI step keeps headroom under its own timeout.
+const groups = ['flow', 'replays-search-look', 'replays-motion-fire'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-const debugLoadoutModule = '/src/debug/debugLoadout.ts';
-const firearmActionModule = '/src/core/firearmAction.ts';
-const inputBindingsModule = '/src/game/inputBindings.ts';
-const inputReplayModule = '/src/game/inputReplay.ts';
-const firearmHandlingModule = '/src/game/firearmHandling.ts';
-const reloadInputModule = '/src/game/reloadInput.ts';
-const magazineModule = '/src/core/magazine.ts';
-const heldPoseModule = '/src/core/heldPose.ts';
-const optionsModule = '/src/core/options.ts';
-const itemLookModule = '/src/render/itemLook.ts';
-const pileLayoutModule = '/src/core/pileLayout.ts';
-const vehicleProjectionModule = '/src/core/vehicleProjection.ts';
+const magazineModel = JSON.parse(modFileBytes('gungen/magazine_pistol_9.model.json').toString('utf8'));
+const houseNoonStart = {
+  density: null,
+  id: 'primary_action_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
+const houseNoonMod = inlineStartMod('fixture.primary-action.house', houseNoonStart);
+const debugHouseStart = {
+  ...houseNoonStart,
+  id: 'primary_action_fixture_start',
+  debugOnly: true,
+  kit: [
+    ...houseNoonStart.kit,
+    { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+    { id: 'firearm', item: 'pistol_service', destination: { kind: 'hand', role: 'dominant' } },
+    {
+      id: 'fitted_magazine',
+      item: 'magazine_pistol_9',
+      cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_9x19'),
+      destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
+    },
+    {
+      id: 'rounds',
+      item: 'cartridge_9x19',
+      count: 50,
+      destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+    },
+  ],
+};
+const debugHouseMod = inlineStartMod('fixture.primary-action.debug-house', debugHouseStart);
+const lockTestNoonMod = inlineStartMod('fixture.primary-action.lock-test', {
+  ...houseNoonStart,
+  id: 'primary_action_lock_test_start',
+  site: 'lock_test',
+});
+const replayFixtureMod = inlineStartMod('fixture.primary-action.replay', {
+  id: 'replay_fixture_start',
+  site: 'replay_fixture',
+  startTimeGameTimeOfDay: '12:00',
+  kit: [{ id: 'stock', item: 'replay_fixture_stock', destination: { kind: 'hand', role: 'dominant' } }],
+  wounds: [],
+  skills: {},
+  recipes: [],
+});
+const startStateModule = '/@stage/@skelly/engine/internal/core/startState.ts';
+const debugStartsModule = '/test/fixtures/debugStarts.ts';
+const firearmActionModule = '/@stage/@skelly/engine/internal/core/firearmAction.ts';
+const inputBindingsModule = '/src/product/input.ts';
+const inputReplayModule = '/@stage/@skelly/engine/input';
+const firearmHandlingModule = '/@stage/@skelly/engine/inventory';
+const reloadInputModule = '/@stage/@skelly/engine/input';
+const magazineModule = '/@stage/@skelly/engine/internal/core/magazine.ts';
+const heldPoseModule = '/@stage/@skelly/engine/internal/core/heldPose.ts';
+const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
+const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
+const pileLayoutModule = '/@stage/@skelly/engine/internal/core/pileLayout.ts';
+const vehicleProjectionModule = '/@stage/@skelly/engine/internal/core/vehicleProjection.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -46,9 +129,9 @@ const aimThrowAtFreeLanding = async (page, fixture) => {
   // Different items have different dragged flights; a clear glowstick landing says nothing about a firearm's.
   const landing = await page.evaluate(({ uid, chargeSimSeconds }) => {
     const r = globalThis.primaryActionTest;
-    const { yaw } = r.input;
+    const { yaw } = r.input.controls;
     for (let turn = 0; turn < 32; turn += 1) {
-      r.input.yaw = yaw + (turn * Math.PI * 2) / 32;
+      r.input.controls.yaw = yaw + (turn * Math.PI * 2) / 32;
       const candidate = r.getItemThrowLanding(uid, chargeSimSeconds);
       if (candidate?.fits) {
         return candidate;
@@ -96,7 +179,17 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=replay_fixture&radius=${cleanReplayRadiusM}&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: replayFixtureMod,
+          hash: {
+            debug: true,
+            seed: 73,
+            radius: cleanReplayRadiusM,
+            post: false,
+            sunshadow: false,
+            torchshadow: false,
+          },
+        }),
         renderOverride,
       ),
     );
@@ -113,8 +206,8 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     const start = await page.evaluate(() => {
       const { input, session } = globalThis.primaryActionTest;
       return {
-        yaw: input.yaw,
-        pitch: input.pitch,
+        yaw: input.controls.yaw,
+        pitch: input.controls.pitch,
         position: [...session.body.pos],
         frame: globalThis.primaryActionTest.frames,
       };
@@ -134,11 +227,13 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.mouse.move(640, 360);
     await page.mouse.move(700, 380);
     await page.waitForFunction(
-      () => globalThis.primaryActionTest.input.freeLooking && globalThis.primaryActionTest.input.freeLook.yaw !== 0,
+      () =>
+        globalThis.primaryActionTest.input.controls.freeLooking &&
+        globalThis.primaryActionTest.input.controls.freeLook.yaw !== 0,
     );
     const headLook = await page.evaluate(() => {
       const { input, frames } = globalThis.primaryActionTest;
-      return { bodyYaw: input.yaw, viewYaw: input.viewYaw, frames };
+      return { bodyYaw: input.controls.yaw, viewYaw: input.controls.viewYaw, frames };
     });
     assert.equal(headLook.bodyYaw, start.yaw, 'free look leaves ballistic and movement yaw with the body');
     assert.notEqual(headLook.viewYaw, headLook.bodyYaw, 'free look turns the view');
@@ -146,13 +241,17 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.keyboard.up('AltLeft');
     await page.keyboard.up('w');
     assert.equal(
-      await page.evaluate(() => globalThis.primaryActionTest.input.intent().forward),
+      await page.evaluate(() => globalThis.primaryActionTest.input.controls.intent().forward),
       0,
       'movement does not latch after W and Alt are released',
     );
     await page.waitForFunction(() => {
       const { input } = globalThis.primaryActionTest;
-      return !input.freeLooking && input.viewYaw === input.yaw && input.viewPitch === input.pitch;
+      return (
+        !input.controls.freeLooking &&
+        input.controls.viewYaw === input.controls.yaw &&
+        input.controls.viewPitch === input.controls.pitch
+      );
     });
     const altEdges = await page.evaluate(() => globalThis.freeLookAltEdges);
     assert(
@@ -174,18 +273,18 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.keyboard.up('w');
     const moved = await page.evaluate(() => {
       const { input, session } = globalThis.primaryActionTest;
-      return { yaw: input.yaw, pitch: input.pitch, position: [...session.body.pos] };
+      return { yaw: input.controls.yaw, pitch: input.controls.pitch, position: [...session.body.pos] };
     });
     assert.notEqual(moved.yaw, start.yaw, 'the recording includes real mouse yaw');
     assert.notEqual(moved.pitch, start.pitch, 'the recording includes real mouse pitch');
     assert.notDeepEqual(moved.position, start.position, 'the recording includes player movement');
-    const zombieNearStreamEdge = await page.evaluate(() => {
+    const actorNearStreamEdge = await page.evaluate(() => {
       const { session, streamer } = globalThis.primaryActionTest;
-      return [...session.zombies.store.entries()].some(
-        ([, zombie]) => !streamer.isReady(zombie.body.pos[0], zombie.body.pos[2]),
+      return [...session.actors.store.entries()].some(
+        ([, actor]) => !streamer.isReady(actor.body.pos[0], actor.body.pos[2]),
       );
     });
-    assert(zombieNearStreamEdge, 'the clean recording includes a zombie in an unready stream-edge column');
+    assert(actorNearStreamEdge, 'the clean recording includes a zombie in an unready stream-edge column');
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -291,7 +390,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     );
     const replayLook = await page.evaluate(() => {
       const { input } = globalThis.primaryActionTest;
-      return { yaw: input.yaw, pitch: input.pitch };
+      return { yaw: input.controls.yaw, pitch: input.controls.pitch };
     });
     assert.equal(replayLook.yaw, lastFrame[0], 'playback drives the camera yaw from its final recorded sample');
     assert.equal(replayLook.pitch, lastFrame[1], 'playback drives the camera pitch from its final recorded sample');
@@ -393,12 +492,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       {
         fixture: '/test/liquidCraftFixture.ts',
         economy: '/test/economyFixtures.ts',
-        inventory: '/src/core/inventory.ts',
-        character: '/src/core/character.ts',
-        reach: '/src/core/reach.ts',
-        readout: '/src/ui/craftReadout.ts',
-        view: '/src/ui/crafting.ts',
-        numbers: '/src/core/numberText.ts',
+        inventory: '/@stage/@skelly/engine/internal/core/inventory.ts',
+        character: '/@stage/@skelly/engine/internal/core/character.ts',
+        reach: '/@stage/@skelly/engine/internal/core/reach.ts',
+        readout: '/@stage/@skelly/presentation/internal/ui/craftReadout.ts',
+        view: '/@stage/@skelly/presentation/internal/ui/crafting.ts',
+        numbers: '/@stage/@skelly/engine/internal/core/numberText.ts',
       },
     );
     assert(liquidRow.visible && liquidRow.picker, 'the crafting flow renders a liquid draw and its source picker');
@@ -440,7 +539,10 @@ const withTestHouse = async (browserInstance, port, renderOverride, run) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -559,7 +661,10 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -579,11 +684,15 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       r.clearHand(r.dominant);
       r.clearHand(r.off);
       const light = r.inventory.create('glowstick');
-      const selectable = r.inventory.create('flashlight');
       r.setHand(r.off, light);
-      r.setHand(r.dominant, selectable);
+      // A cell light offers a choice, so its battery comes out only through the ring.
+      const torch = r.inventory.create('flashlight');
+      if (!torch.slots?.battery) {
+        throw new Error('The held-choice fixture needs a fitted battery');
+      }
+      r.setHand(r.dominant, torch);
       r.startInputReplayRecording();
-      return { uid: light.uid, selectableUid: selectable.uid, start: r.session.sim.time };
+      return { uid: light.uid, torchUid: torch.uid, start: r.session.sim.time };
     });
     const litInEvent = await page.evaluate((uid) => {
       document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
@@ -594,10 +703,23 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
       fixture.uid,
     );
-    await chooseHeldAction(page, 'own');
-    await page.waitForFunction(
-      (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
-      fixture.selectableUid,
+    await chooseHeldAction(page, 'battery:unload');
+    await waitForSimulation(
+      page,
+      ({ uid }) => {
+        const r = globalThis.primaryActionTest;
+        return {
+          time: r.session.sim.time,
+          paused: r.session.sim.paused,
+          reached: !r.inventory.itemByUid(uid).slots?.battery,
+        };
+      },
+      { uid: fixture.torchUid },
+      {
+        seconds: 30,
+        label: 'the chosen battery unload completes',
+        record: (line) => process.stdout.write(`${line}\n`),
+      },
     );
     await waitForSimulation(
       page,
@@ -638,8 +760,9 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
     assert.deepEqual(
-      artifact.actions.filter(({ action }) => action === 'hand.action').map(({ payload }) => payload),
-      [{ kind: 'hand.action', itemUid: fixture.selectableUid, actionId: 'own' }],
+      artifact.actions.filter(({ payload }) => payload?.kind === 'hand.action').map(({ payload }) => payload),
+      [{ kind: 'hand.action', itemUid: fixture.torchUid, actionId: 'battery:unload' }],
+      'the ring records its choice once, as the action it chose',
     );
     const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
@@ -656,20 +779,17 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       undefined,
       { timeout: 20_000 },
     );
-    const replay = await page.evaluate((uid) => {
+    const replay = await page.evaluate(({ uid, torchUid }) => {
       const r = globalThis.primaryActionTest;
       return {
         state: document.querySelector('#input-replay-status')?.dataset.state,
         lightOn: r.inventory.itemByUid(uid)?.on,
+        torchLoaded: Boolean(r.inventory.itemByUid(torchUid)?.slots?.battery),
         endSnapshot: r.captureSnapshot(),
       };
-    }, fixture.uid);
+    }, fixture);
     assert.equal(replay.lightOn, true, 'replaying the recorded forward-button press lights the off-hand light');
-    assert.equal(
-      await page.evaluate((uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on, fixture.selectableUid),
-      true,
-      'replay executes the chosen held action without reopening its menu',
-    );
+    assert.equal(replay.torchLoaded, false, 'replay runs the chosen held action without opening its ring');
     assert.equal(replay.state, 'verified', 'the replay reproduces the recorded end state');
     assert.deepEqual(replay.endSnapshot, liveEndSnapshot);
     assert.deepEqual(pageErrors, []);
@@ -703,7 +823,10 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -819,7 +942,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
         mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
         bodyPosition: [...r.session.body.pos],
-        look: [r.input.yaw, r.input.pitch],
+        look: [r.input.controls.yaw, r.input.controls.pitch],
         quickbarTapCommit: r.quickbarTapCommitObservation,
         quickbarTapTick: r.quickbarTapTickObservation,
       };
@@ -896,7 +1019,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
           offLocation: offLocation?.kind === 'pile' ? offLocation.pos : offLocation?.kind,
           mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
           bodyPosition: [...r.session.body.pos],
-          look: [r.input.yaw, r.input.pitch],
+          look: [r.input.controls.yaw, r.input.controls.pitch],
         },
       };
     }, fixture);
@@ -983,7 +1106,10 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -1066,7 +1192,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.evaluate((duration) => globalThis.primaryActionTest.session.frame(duration), raiseDuration);
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
-    await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    await page.waitForFunction(() => globalThis.primaryActionTest.input.controls.aimingDownSights);
     // Long-gun ADS arrives through its Combat-owned acquisition, so the pose checks wait for it.
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isAdsAcquired(uid), firearm.uid);
     await page.waitForFunction(() =>
@@ -1169,7 +1295,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction(() =>
       globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some(({ action }) => action === 'aim.ads-toggle'),
     );
-    assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.aimingDownSights), false);
+    assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.controls.aimingDownSights), false);
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -1250,8 +1376,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
       return (
-        r.input.rightMouseHeld &&
-        r.input.aimingDownSights &&
+        r.input.controls.rightMouseHeld &&
+        r.input.controls.aimingDownSights &&
         document.querySelector('#input-replay-status')?.dataset.state === 'playing'
       );
     });
@@ -1259,11 +1385,11 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     const { viewerMouseInput, viewerBlurInput } = await page.evaluate(() => {
       const { input, inputTarget } = globalThis.primaryActionTest;
       const read = () => ({
-        rightMousePressed: input.rightMousePressed,
-        rightMouseSuppressed: input.rightMouseSuppressed,
-        rightMouseHeld: input.rightMouseHeld,
-        aimingDownSights: input.aimingDownSights,
-        dominantUseDown: input.dominantUseDown,
+        rightMousePressed: input.controls.rightMousePressed,
+        rightMouseSuppressed: input.controls.rightMouseSuppressed,
+        rightMouseHeld: input.controls.rightMouseHeld,
+        aimingDownSights: input.controls.aimingDownSights,
+        dominantUseDown: input.controls.dominantUseDown,
       });
       const click = (button) => {
         const before = read();
@@ -1277,8 +1403,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       const pointerLocked = input.locked;
       input.unlock();
       const readBlur = () => ({
-        readyHeld: input.rightMouseHeld,
-        aimingDownSights: input.aimingDownSights,
+        readyHeld: input.controls.rightMouseHeld,
+        aimingDownSights: input.controls.aimingDownSights,
       });
       const before = readBlur();
       globalThis.dispatchEvent(new FocusEvent('blur'));
@@ -1324,8 +1450,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       return {
         state: document.querySelector('#input-replay-status')?.dataset.state,
         snapshot: r.captureSnapshot(),
-        aimingDownSights: r.input.aimingDownSights,
-        readyHeld: r.input.rightMouseHeld,
+        aimingDownSights: r.input.controls.aimingDownSights,
+        readyHeld: r.input.controls.rightMouseHeld,
         cases: count,
         firearm: r.inventory.itemByUid(fixture.uid)?.firearm,
       };
@@ -1382,7 +1508,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -1447,7 +1576,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         }).map((metres) => metres / r.scale.blockSize);
         const feetDx = target[0] - r.session.body.pos[0];
         const feetDz = target[2] - r.session.body.pos[2];
-        r.input.yaw = Math.atan2(-feetDx, -feetDz);
+        r.input.controls.yaw = Math.atan2(-feetDx, -feetDz);
         // Pitch changes the eye position too, so solve the aim against the posed eye.
         let low = -LOOK_PITCH_LIMIT;
         let high = 0;
@@ -1456,7 +1585,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           const posedEye = playerEyePosition({
             feet: r.session.body.pos,
             blockSize: r.scale.blockSize,
-            yaw: r.input.yaw,
+            yaw: r.input.controls.yaw,
             pitch,
             stance: r.session.stance,
             figure: r.inventory.registry.figures.get('player'),
@@ -1465,14 +1594,14 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           const dx = target[0] - posedEye[0];
           const dy = target[1] - posedEye[1];
           const dz = target[2] - posedEye[2];
-          const forward = -dx * Math.sin(r.input.yaw) - dz * Math.cos(r.input.yaw);
+          const forward = -dx * Math.sin(r.input.controls.yaw) - dz * Math.cos(r.input.controls.yaw);
           if (pitch < Math.atan2(dy, forward)) {
             low = pitch;
           } else {
             high = pitch;
           }
         }
-        r.input.pitch = (low + high) / 2;
+        r.input.controls.pitch = (low + high) / 2;
         const targeted = r.interactionTargetAt();
         if (targeted?.kind !== 'item' || targeted.item.uid !== itemUid) {
           throw new Error('Posed-eye aim does not target the ground pickup fixture');
@@ -1489,8 +1618,8 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       },
       {
         pileLayoutModuleUrl: pileLayoutModule,
-        playerLookPoseModuleUrl: '/src/core/playerLookPose.ts',
-        inputModuleUrl: '/src/game/input.ts',
+        playerLookPoseModuleUrl: '/@stage/@skelly/engine/internal/core/playerLookPose.ts',
+        inputModuleUrl: '/@stage/@skelly/engine/internal/game/playerControls.ts',
         ground: placed,
       },
     );
@@ -1560,10 +1689,17 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
               !def.vehicle &&
               !def.scenarioGoal &&
               !def.cover &&
-              def.size.some(
-                (cells) =>
-                  cells * r.scale.blockSize > r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
-              ),
+              (kind === 'small'
+                ? def.size.every(
+                    (cells) =>
+                      cells * r.scale.blockSize <=
+                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
+                  )
+                : def.size.some(
+                    (cells) =>
+                      cells * r.scale.blockSize >
+                      r.inventory.registry.inventory.get('player').furnitureMove.maxSizeMetres,
+                  )),
         );
         if (!doorDef) {
           throw new Error('Door fixture is missing');
@@ -1607,8 +1743,8 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         const dx = target[0] - eye[0];
         const dy = target[1] - eye[1];
         const dz = target[2] - eye[2];
-        r.input.yaw = Math.atan2(-dx, -dz);
-        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        r.input.controls.yaw = Math.atan2(-dx, -dz);
+        r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       }, fixtureUid);
       return fixtureUid;
     };
@@ -1618,41 +1754,35 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       (uid) => globalThis.primaryActionTest.inventory.entities.byUid(uid)?.open === true,
       doorUid,
     );
-    assert.equal(
-      await page.locator('#furniture-radial').isVisible(),
-      false,
-      'a door opens directly without movement choices',
-    );
+    assert.equal(await actionRingShown(page), false, 'a door opens directly without movement choices');
     const fixedUid = await aimFurnitureFixture('fixed');
-    const openAlternatives = async () => {
-      const releaseHold = await holdAction(page, 'world.interact');
-      await page.waitForFunction(() => !document.querySelector('#furniture-radial').hidden);
-      return releaseHold;
-    };
+    const look = () =>
+      page.evaluate(() => {
+        const { yaw, pitch } = globalThis.primaryActionTest.input.controls;
+        return { yaw, pitch };
+      });
+    // The ring lasts only while interact is held, and its release confirms the chosen entry.
     for (const way of ['push', 'drag']) {
-      const releaseHold = await openAlternatives();
-      if (way === 'push') {
-        const lookBefore = await page.evaluate(() => {
-          const { yaw, pitch } = globalThis.primaryActionTest.input;
-          return { yaw, pitch };
-        });
-        await page.evaluate(() => {
-          document.dispatchEvent(new MouseEvent('mousemove', { movementX: 0, movementY: -200, bubbles: true }));
-        });
-        assert.deepEqual(
-          await page.evaluate(() => {
-            const { yaw, pitch } = globalThis.primaryActionTest.input;
-            return { yaw, pitch };
-          }),
-          lookBefore,
-          'radial mouse selection holds the camera look',
-        );
-      } else {
-        await page.mouse.wheel(0, 100);
-        await page.keyboard.press('ArrowLeft');
-        await page.keyboard.press('ArrowRight');
+      const releaseHold = await holdAction(page, 'world.interact');
+      try {
+        await waitForActionRing(page);
+        if (way === 'push') {
+          const lookBefore = await look();
+          await pointActionMenu(page, way);
+          assert.deepEqual(await look(), lookBefore, 'pointing at a ring entry holds the camera look');
+        } else {
+          await stepActionMenuTo(page, way, () => page.mouse.wheel(0, 100));
+          // The arrow keys step the same ring: off the wheel's choice and back to it.
+          await page.keyboard.press('ArrowRight');
+          await page.waitForFunction(
+            (id) => document.querySelector('#action-radial .radial-entry.selected')?.dataset.action !== id,
+            way,
+          );
+          await stepActionMenuTo(page, way, () => page.keyboard.press('ArrowLeft'));
+        }
+      } finally {
+        await releaseHold();
       }
-      await releaseHold();
       await page.waitForFunction(
         ({ uid, way: expectedWay }) =>
           globalThis.primaryActionTest.inputRecorder
@@ -1672,6 +1802,26 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         'a fastened piece refuses movement rather than queuing a step',
       );
     }
+    const movesRecorded = () =>
+      page.evaluate(
+        (uid) =>
+          globalThis.primaryActionTest.inputRecorder
+            .copyInputs()
+            .actions.filter(
+              ({ payload }) =>
+                payload?.entityUid === uid && (payload.kind === 'furniture.slide' || payload.kind === 'furniture.lift'),
+            ).length,
+        fixedUid,
+      );
+    const movesBeforeCancel = await movesRecorded();
+    const releaseUnchosen = await holdAction(page, 'world.interact');
+    try {
+      await waitForActionRing(page);
+    } finally {
+      await releaseUnchosen();
+    }
+    await waitForActionRing(page, false);
+    assert.equal(await movesRecorded(), movesBeforeCancel, 'releasing with nothing chosen moves nothing');
     await pressAction(page, 'world.interact');
     // The queued search proves the tap resolved to Search; waiting for it to finish adds only its game time.
     await page.waitForFunction(
@@ -1690,6 +1840,35 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       true,
       'a tap on movable furniture records a plain interaction that searches it',
     );
+    await page.waitForFunction(
+      () => !globalThis.primaryActionTest.queue.busy && globalThis.primaryActionTest.screen.isOpen,
+    );
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !globalThis.primaryActionTest.screen.isOpen);
+    await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+    });
+    const smallUid = await aimFurnitureFixture('small');
+    const releaseSingle = await holdAction(page, 'world.interact');
+    try {
+      await page.waitForFunction(
+        (uid) => globalThis.primaryActionTest.inventory.entities.carrying()?.uid === uid,
+        smallUid,
+      );
+      assert.equal(await actionRingShown(page), false, 'a sole furniture action lifts directly without a menu');
+    } finally {
+      await releaseSingle();
+    }
+    const singleLifts = await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inputRecorder
+          .copyInputs()
+          .actions.filter(({ payload }) => payload?.kind === 'furniture.lift' && payload.entityUid === uid).length,
+      smallUid,
+    );
+    assert.equal(singleLifts, 1, 'one hold dispatches the sole furniture action once');
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -1723,8 +1902,8 @@ const verifyVehicleService = async (page) => {
     const part = parts.find(({ fittingId }) => fittingId === site.id);
     const { min, max } = part.boxes[0];
     const centre = [0, 1, 2].map((axis) => (min[axis] + max[axis]) / 2);
-    // Out from the car's side by the part's half width plus a body's clearance.
-    const side = [Math.sin(part.transform.yaw), Math.cos(part.transform.yaw)];
+    // Out from the car's side by the part's half width plus a body's clearance: along the vehicle's x, across it.
+    const side = [Math.cos(part.transform.yaw), -Math.sin(part.transform.yaw)];
     const outward = Math.sign(
       (centre[0] - vehicle.origin[0] * s) * side[0] + (centre[2] - vehicle.origin[2] * s) * side[1],
     );
@@ -1750,8 +1929,8 @@ const verifyVehicleService = async (page) => {
         r.session.body.pos[2],
       ];
       const [dx, dy, dz] = [0, 1, 2].map((axis) => target[axis] / s - eye[axis]);
-      r.input.yaw = Math.atan2(-dx, -dz);
-      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      r.input.controls.yaw = Math.atan2(-dx, -dz);
+      r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     };
     aim(centre);
     const fitted = vehicle.fittings.find(({ id }) => id === site.id).item;
@@ -1836,7 +2015,7 @@ const verifyVehicleService = async (page) => {
   assert.equal(witness.savedCopies, 1, 'the part has exactly one saved owner');
 };
 
-const vite = await createServer({
+const vite = await createStageServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
   logLevel: 'error',
@@ -1848,7 +2027,7 @@ try {
   await timePhase('vite-listen', () => vite.listen());
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  const renderOverride = process.env.DEADVOX_TEST_RENDER_MODE;
+  const renderOverride = process.env.SKELLY_TEST_RENDER_MODE;
   const renderMode = browserStageMode('primary-action', renderOverride);
   browser = await timePhase('browser-launch', () =>
     launchChromium('primary-action', {
@@ -1907,7 +2086,10 @@ try {
       await page.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+          gameUrl(`http://127.0.0.1:${address.port}`, {
+            startMod: debugHouseMod,
+            hash: { debug: true, seed: 73, radius: 64, post: false, sunshadow: false, torchshadow: false },
+          }),
           renderOverride,
         ),
       );
@@ -1930,6 +2112,20 @@ try {
           document.querySelector('#world-loading').hidden,
       );
     });
+    assert.equal(
+      await page.evaluate(() => globalThis.primaryActionTest.engine.config.startId),
+      debugHouseStart.id,
+      'the full-product flow runs its selected content-owned debug preset',
+    );
+    assert.equal(
+      await page.evaluate(() => {
+        const { inventory } = globalThis.primaryActionTest;
+        const held = inventory.hands[inventory.character.handedness];
+        return Object.values(held?.slots ?? {}).some((item) => item.cartridges?.length > 0);
+      }),
+      true,
+      'the selected debug row supplies a loaded magazine before flow setup',
+    );
     const identity = await page.evaluate(() => {
       const { inventory, session } = globalThis.primaryActionTest;
       return {
@@ -1970,233 +2166,6 @@ try {
       leanFeet,
       'held world lean leaves the feet in place',
     );
-    const knifeTap = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      r.setHand(r.dominant, r.inventory.create('kitchen_knife'));
-      return r.swings.length;
-    });
-    await page.mouse.down({ button: 'right' });
-    await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
-    await page.mouse.click(640, 450);
-    await page.waitForFunction((before) => globalThis.primaryActionTest.swings.length > before, knifeTap);
-    await page.mouse.up({ button: 'right' });
-    await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
-    assert.equal(
-      await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
-      true,
-      'a knife tap swings without opening a radial',
-    );
-
-    assert.equal(
-      await page.evaluate(() => globalThis.primaryActionTest.swings.length),
-      knifeTap + 1,
-      'a one-action tap acts once',
-    );
-    const knifeHeld = await page.evaluate(
-      () => globalThis.primaryActionTest.swings.filter((swing) => swing.result).length,
-    );
-    await page.mouse.down({ button: 'right' });
-    await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
-    await page.mouse.down();
-    try {
-      await page.waitForFunction(
-        () => globalThis.primaryActionTest.session.playerCombat.activeMeleeAction?.chargeHeldSimSeconds > 0,
-      );
-      const charged = await page.evaluate(() => {
-        const r = globalThis.primaryActionTest;
-        return {
-          swings: r.swings.filter((swing) => swing.result).length,
-          contacted: r.session.playerCombat.activeMeleeAction.hitResolved,
-          radialHidden: document.querySelector('#furniture-radial').hidden,
-        };
-      });
-      assert.equal(charged.swings, knifeHeld + 1, 'holding a charge-capable action starts only one swing');
-      assert.equal(charged.contacted, false, 'the charged strike waits for release before contact');
-      assert.equal(charged.radialHidden, true, 'charging does not open a radial');
-    } finally {
-      await page.mouse.up();
-      await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
-      await page.mouse.up({ button: 'right' });
-    }
-
-    for (const route of ['tap', 'radial']) {
-      const fixture = await page.evaluate((method) => {
-        const r = globalThis.primaryActionTest;
-        r.clearHand(r.dominant);
-        r.clearHand(r.off);
-        const side = method === 'tap' ? r.dominant : r.off;
-        const other = method === 'tap' ? r.off : r.dominant;
-        const light = r.inventory.createRolled({ type: 'flashlight', count: 1, condition: 1, charge: 0 });
-        r.setHand(side, light);
-        if (method === 'tap') {
-          const removed = r.inventory.fitSlot(light, 'battery', undefined);
-          if (!r.inventory.add(removed, { kind: 'pile', pos: r.feet() })) {
-            throw new Error('Could not stage an empty held light');
-          }
-        }
-        const battery = r.inventory.create('aa_battery');
-        r.setHand(other, battery);
-        return { light: light.uid, battery: battery.uid, other };
-      }, route);
-      if (route === 'tap') {
-        await page.mouse.click(640, 450);
-      } else {
-        const release = await holdAction(page, 'hand.use-off');
-        try {
-          await page.waitForFunction(() => !document.querySelector('#furniture-radial').hidden);
-          await page.evaluate(async () => {
-            const tuning = (await import('/src/content/base/ui.json?import')).default.ui[0].furnitureRadial;
-            document.dispatchEvent(
-              new MouseEvent('mousemove', { movementX: tuning.radiusPixels, movementY: 0, bubbles: true }),
-            );
-          });
-          await page.waitForFunction(() => document.querySelector('.radial-pull'));
-          assert.equal(await page.locator('.radial-entry.selected').count(), 0, 'an empty-side pull selects no action');
-        } finally {
-          await release();
-        }
-        await page.waitForFunction(() => document.querySelector('#furniture-radial').hidden);
-        assert.equal(
-          await page.evaluate(() => globalThis.primaryActionTest.queue.busy),
-          false,
-          'empty-side release cancels',
-        );
-        await chooseHeldAction(page, 'own', 'hand.use-off');
-      }
-      await page.waitForFunction(({ light, battery }) => {
-        const r = globalThis.primaryActionTest;
-        return r.queue.busy || r.inventory.itemByUid(light).slots?.battery?.uid === battery;
-      }, fixture);
-      const loaded = await page.evaluate(({ light, battery, other }) => {
-        const r = globalThis.primaryActionTest;
-        const failures = r.queue.tick(r.queue.remaining).failed;
-        return {
-          failures,
-          loaded: r.inventory.itemByUid(light).slots?.battery?.uid === battery,
-          otherEmpty: !r.inventory.hands[other],
-        };
-      }, fixture);
-      assert.deepEqual(
-        loaded,
-        { failures: [], loaded: true, otherEmpty: true },
-        `${route} loads the prepared other-hand battery`,
-      );
-    }
-
-    const stripping = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const magazine = r.inventory.create('magazine_stanag_30');
-      r.setHand(r.off, magazine);
-      r.setHand(r.dominant, r.inventory.create('cartridge_5_d_56x45', 4));
-      for (let round = 0; round < 4; round += 1) {
-        const reason = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
-        if (reason || r.queue.tick(r.queue.remaining).failed.length > 0) {
-          throw new Error('Could not load the held-strip fixture');
-        }
-      }
-      r.clearHand(r.dominant);
-      if (
-        r.survival.availableItemActions(magazine).length !== 1 ||
-        r.inventory.registry.items.get(magazine.type).weapon?.melee?.charge !== undefined
-      ) {
-        throw new Error('Repeat witness needs a lone action without charge content');
-      }
-      return { uid: magazine.uid, before: magazine.cartridges.length };
-    });
-    await pressAction(page, 'hand.use-off');
-    await page.waitForFunction(({ uid, before }) => {
-      const r = globalThis.primaryActionTest;
-      return r.queue.busy || r.inventory.itemByUid(uid).cartridges.length < before;
-    }, stripping);
-    const strippedOnce = await page.evaluate((uid) => {
-      const r = globalThis.primaryActionTest;
-      const failures = r.queue.tick(r.queue.remaining).failed;
-      return { failures, remaining: r.inventory.itemByUid(uid).cartridges.length };
-    }, stripping.uid);
-    assert.deepEqual(strippedOnce, { failures: [], remaining: stripping.before - 1 }, 'a magazine tap strips once');
-    const releaseStrip = await holdAction(page, 'hand.use-off');
-    try {
-      await page.waitForFunction(
-        ({ uid, before }) => globalThis.primaryActionTest.inventory.itemByUid(uid).cartridges.length < before - 1,
-        { uid: stripping.uid, before: strippedOnce.remaining },
-      );
-      assert.equal(
-        await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
-        true,
-        'the shared hold owner repeats off-hand stripping without a radial',
-      );
-    } finally {
-      await releaseStrip();
-    }
-    await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      if (r.queue.tick(r.queue.remaining).failed.length > 0) {
-        throw new Error('Held stripping failed');
-      }
-    });
-
-    const singleFurniture = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const { material, color, breach } = r.inventory.registry.furniture.get('crate');
-      const definition = {
-        id: 'fixture_single_lift',
-        name: 'Fixture lift',
-        size: [1, 1, 1],
-        material,
-        color,
-        breach,
-        massKg: 1,
-      };
-      r.inventory.registry.furniture.set(definition.id, definition);
-      const floor = r.feet();
-      const pos = [floor[0] + 2, floor[1], floor[2]];
-      const entity = r.inventory.entities.add({ type: definition.id, size: definition.size, facing: 'n', pos });
-      if (!entity) {
-        throw new Error('Could not place the single-action furniture fixture');
-      }
-      const eye = [
-        r.session.body.pos[0],
-        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-        r.session.body.pos[2],
-      ];
-      const [dx, dy, dz] = pos.map((value, axis) => value + 0.5 - eye[axis]);
-      const look = { yaw: r.input.yaw, pitch: r.input.pitch };
-      r.input.yaw = Math.atan2(-dx, -dz);
-      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-      return { uid: entity.uid, pos, look, frame: r.frames };
-    });
-    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, singleFurniture.frame);
-    const releaseFurniture = await holdAction(page, 'world.interact');
-    try {
-      await page.waitForFunction(
-        (uid) => globalThis.primaryActionTest.inventory.entities.carrying()?.uid === uid,
-        singleFurniture.uid,
-      );
-      assert.equal(
-        await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
-        true,
-        'a lone furniture action executes without an invisible choice',
-      );
-    } finally {
-      await releaseFurniture();
-    }
-    await page.evaluate(({ uid, pos, look }) => {
-      const r = globalThis.primaryActionTest;
-      const reason = r.session.placeFurniture(pos);
-      if (reason) {
-        throw new Error(`Could not set down the fixture: ${reason}`);
-      }
-      r.inventory.entities.remove(r.inventory.entities.byUid(uid));
-      r.input.yaw = look.yaw;
-      r.input.pitch = look.pitch;
-    }, singleFurniture);
-
     const canOpening = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -2204,8 +2173,50 @@ try {
       const can = r.inventory.create('canned_beans');
       r.setHand(r.dominant, r.inventory.create('machete'));
       r.setHand(r.off, can);
-      return { uid: can.uid, opened: r.inventory.registry.items.get(can.type).unpack.item };
+      return { uid: can.uid, closed: can.type, opened: r.inventory.registry.items.get(can.type).unpack.item };
     });
+    const heldOutcome = (uid) =>
+      page.evaluate((canUid) => {
+        const r = globalThis.primaryActionTest;
+        return { busy: r.queue.busy, swings: r.swings.length, type: r.inventory.itemByUid(canUid).type };
+      }, uid);
+    const beforeTap = await heldOutcome(canOpening.uid);
+    // A weapon swings only from the ready stance, so the tap is made with right mouse held.
+    await page.mouse.down({ button: 'right' });
+    await page.waitForFunction(() => globalThis.primaryActionTest.input.controls.rightMouseActionHeld);
+    try {
+      await page.mouse.click(640, 450);
+      await page.waitForFunction((before) => globalThis.primaryActionTest.swings.length > before, beforeTap.swings);
+    } finally {
+      await page.mouse.up({ button: 'right' });
+    }
+    await page.waitForFunction(() => {
+      const combat = globalThis.primaryActionTest.session.playerCombat;
+      return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
+    });
+    const afterTap = await heldOutcome(canOpening.uid);
+    assert.deepEqual(
+      afterTap,
+      { busy: false, swings: beforeTap.swings + 1, type: canOpening.closed },
+      'a tap keeps the ordinary use: one swing, and the can stays shut',
+    );
+    const releaseUnchosen = await holdDominantUse(page);
+    try {
+      await waitForActionRing(page);
+      // The ring follows the interaction hints, like the prompt it sits beside.
+      await page.evaluate(() => {
+        globalThis.primaryActionTest.hudOptions.interaction = false;
+      });
+      await waitForActionRing(page, false);
+      await page.evaluate(() => {
+        globalThis.primaryActionTest.hudOptions.interaction = true;
+      });
+      await waitForActionRing(page);
+    } finally {
+      await releaseUnchosen();
+    }
+    await waitForActionRing(page, false);
+    assert.deepEqual(await heldOutcome(canOpening.uid), afterTap, 'releasing at the centre does nothing');
     await chooseHeldAction(page, 'open-can');
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const openedInHand = await page.evaluate((uid) => {
@@ -2217,9 +2228,9 @@ try {
     assert.deepEqual(
       openedInHand,
       { failures: [], type: canOpening.opened, held: true },
-      'the radial-selected release opens rather than swings',
+      'the chosen release opens rather than swings',
     );
-    await page.waitForFunction(() => document.querySelector('#furniture-radial').hidden);
+    assert.equal(await actionRingShown(page), false, 'confirming closes the ring');
     const honing = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -2229,11 +2240,12 @@ try {
       r.setHand(r.off, r.inventory.create('whetstone'));
       return { uid: blade.uid, condition: blade.condition };
     });
-    for (const trigger of ['click', 'offhand']) {
-      if (trigger === 'offhand') {
-        await pressAction(page, 'hand.use-off');
-      } else {
+    // The blade's own press chooses Sharpen from its ring; the whetstone's only action is to sharpen.
+    for (const trigger of ['ring', 'offhand']) {
+      if (trigger === 'ring') {
         await chooseHeldAction(page, 'sharpen');
+      } else {
+        await pressAction(page, 'hand.use-off');
       }
       await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
       const honed = await page.evaluate((uid) => {
@@ -2266,9 +2278,9 @@ try {
       ];
       const target = [wheel.pos[0] + 1, wheel.pos[1] + 1.6, wheel.pos[2] + 1];
       const [dx, dy, dz] = target.map((value, axis) => value - eye[axis]);
-      const look = { yaw: r.input.yaw, pitch: r.input.pitch };
-      r.input.yaw = Math.atan2(-dx, -dz);
-      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      const look = { yaw: r.input.controls.yaw, pitch: r.input.controls.pitch };
+      r.input.controls.yaw = Math.atan2(-dx, -dz);
+      r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       const aimed = r.interactionTargetAt();
       if (aimed?.kind !== 'furniture' || aimed.entity !== wheel) {
         throw new Error('The sharpening wheel is not aimed at');
@@ -2283,8 +2295,8 @@ try {
       const failures = r.queue.tick(r.queue.remaining).failed;
       const { condition } = r.inventory.itemByUid(uid);
       r.inventory.entities.remove(r.inventory.entities.byUid(wheelUid));
-      r.input.yaw = look.yaw;
-      r.input.pitch = look.pitch;
+      r.input.controls.yaw = look.yaw;
+      r.input.controls.pitch = look.pitch;
       return { failures, condition };
     }, wheelGrinding);
     assert.deepEqual(groundAtWheel.failures, [], 'aimed-wheel activation completes');
@@ -2522,7 +2534,7 @@ try {
     const strike = async () => {
       const before = await observe();
       await page.mouse.down({ button: 'right' });
-      await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
+      await page.waitForFunction(() => globalThis.primaryActionTest.input.controls.rightMouseActionHeld);
       try {
         await page.mouse.click(640, 450);
         await page.waitForFunction((count) => globalThis.primaryActionTest.swings.length > count, before.swings.length);
@@ -2640,22 +2652,17 @@ try {
         time: globalThis.primaryActionTest.session.sim.time,
         feet: globalThis.primaryActionTest.feet(),
       }));
-      const releaseForward = await holdAction(page, 'movement.forward');
-      try {
-        await waitForSimulation(
-          page,
-          progressingSample,
-          { start: before.time },
-          {
-            seconds: 0.35,
-            label: 'render-free input and simulation witness',
-            record: (line) => process.stderr.write(`${line}\n`),
-            stop: releaseForward,
-          },
-        );
-      } finally {
-        await releaseForward();
-      }
+      await waitForSimulation(
+        page,
+        progressingSample,
+        { start: before.time },
+        {
+          seconds: 0.35,
+          label: 'render-free input and simulation witness',
+          record: (line) => process.stderr.write(`${line}\n`),
+          hold: 'movement.forward',
+        },
+      );
       const witness = await page.evaluate(() => ({
         renderer: Boolean(globalThis.primaryActionTest.engine.renderer),
         requests: globalThis.renderFreeWitness.webglRequests,
@@ -2685,11 +2692,13 @@ try {
     assert.deepEqual(first.swings.at(-1), { result: true, profile: loadout.profile, hand: 'left' });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
     await finishedSwing();
+    await installScopedGun(page);
     await page.evaluate(async (magazineUrl) => {
       const { magazineWellCalibre } = await import(magazineUrl);
       const r = globalThis.primaryActionTest;
       const defs = [...r.inventory.registry.items.values()];
-      const light = defs.find((def) => def.light && !def.twoHanded);
+      // A battery light switches on any use and back off; a flame needs a held firestarter, whatever loads first.
+      const light = defs.find((def) => def.light?.power && !def.twoHanded);
       const tool = defs.find((def) => def.weapon && !def.twoHanded);
       const inert = defs.find(
         (def) =>
@@ -2710,19 +2719,37 @@ try {
             def.ammo
           ),
       );
-      const gun = defs.find(
-        (def) =>
-          def.firearm &&
-          magazineWellCalibre(r.inventory.registry, def.id) &&
-          r.inventory.registry.models.get(def.model)?.gun?.attachments?.some((mounted) => {
-            const range = mounted.properties.magnification;
-            return range && range.min < range.max;
-          }),
-      );
-      if (!(light && tool && inert && gun)) {
+      const variableOptics = defs.filter((def) => {
+        const range = r.inventory.registry.models.get(def.model)?.gun?.attachment?.properties.magnification;
+        return range && range.min < range.max && def.opticZoom?.step > 0;
+      });
+      const fitting = defs
+        .filter((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id))
+        .flatMap((gun) =>
+          (r.inventory.registry.models.get(gun.model)?.gun?.attachmentSlots ?? []).flatMap(({ id: station }) =>
+            variableOptics.map((optic) => ({ gun, optic, station })),
+          ),
+        )
+        .find(({ gun, optic, station }) => {
+          try {
+            r.scopedGun(gun.id, station, optic.id);
+            return true;
+          } catch {
+            return false;
+          }
+        });
+      if (!(light && tool && inert && fitting)) {
         throw new Error('Missing hand-action fixture capabilities');
       }
-      r.types = { light: light.id, tool: tool.id, profile: tool.weapon.melee.type, inert: inert.id, gun: gun.id };
+      r.types = {
+        light: light.id,
+        tool: tool.id,
+        profile: tool.weapon.melee.type,
+        inert: inert.id,
+        gun: fitting.gun.id,
+        optic: fitting.optic.id,
+        opticStation: fitting.station,
+      };
       r.clearHand(r.dominant);
     }, magazineModule);
     // Fixture creation and placement stay with Inventory, never its hand map.
@@ -3123,12 +3150,12 @@ try {
       // A Node round trip can cross the minimum hold on a slow rendered frame. Deliver the
       // input-listener press/release pair in one page task, then let simulation consume it.
       target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
-      const pressed = globalThis.primaryActionTest.input.dominantUseDown;
+      const pressed = globalThis.primaryActionTest.input.controls.dominantUseDown;
       target.dispatchEvent(new MouseEvent('mouseup', { ...init, buttons: 0 }));
       return {
         start: globalThis.primaryActionTest.session.sim.time,
         pressed,
-        released: !globalThis.primaryActionTest.input.dominantUseDown,
+        released: !globalThis.primaryActionTest.input.controls.dominantUseDown,
       };
     });
     assert.equal(shortGesture.pressed, true, 'the short press reached the input owner');
@@ -3206,8 +3233,8 @@ try {
             activeThrows: r.itemThrows.activeCount,
             throw: r.getItemThrowState(),
             target: r.getItemThrowLanding(uid, seconds),
-            useHeld: r.input.dominantUseHeld,
-            rightHeld: r.input.rightMouseHeld,
+            useHeld: r.input.controls.dominantUseHeld,
+            rightHeld: r.input.controls.rightMouseHeld,
             time: r.session.sim.time,
             bodyRefusal: r.session.sim.body.actionRefusal,
             notice: r.getNotice(),
@@ -3643,9 +3670,9 @@ try {
 
     // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
     const firearm = await page.evaluate(async () => {
-      const moduleUrl = '/src/game/firearmHandling.ts';
-      const magazineUrl = '/src/core/magazine.ts';
-      const optionsUrl = '/src/core/options.ts';
+      const moduleUrl = '/@stage/@skelly/engine/inventory';
+      const magazineUrl = '/@stage/@skelly/engine/internal/core/magazine.ts';
+      const optionsUrl = '/@stage/@skelly/engine/internal/core/options.ts';
       const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
       const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
       const { stowTarget } = await import(optionsUrl);
@@ -3677,7 +3704,7 @@ try {
       if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
         throw new Error('Could not pocket the loaded fixture magazine');
       }
-      const gun = r.inventory.create(r.types.gun);
+      const gun = r.scopedGun(r.types.gun, r.types.opticStation, r.types.optic);
       r.setHand(r.dominant, gun);
       must(firearms.loadNext(gun.uid, sim.time));
       settle();
@@ -3707,7 +3734,7 @@ try {
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
-      return r.input.aimingDownSights && r.view.held.opticLensFrame;
+      return r.input.controls.aimingDownSights && r.view.held.opticLensFrame;
     });
     const opticView = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -3781,15 +3808,22 @@ try {
     await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
     await page.mouse.up({ button: 'right' });
     const pistol = await page.evaluate(
-      async ({ loadoutModule, actionModule }) => {
+      async ({ startModule, presetsModule, actionModule, options }) => {
         const r = globalThis.primaryActionTest;
-        const { equipDebugLoadout } = await import(loadoutModule);
+        const { applyStartKit } = await import(startModule);
+        const { shortFirearmStart } = await import(presetsModule);
         const { actionCycleSeconds } = await import(actionModule);
+        const { dropTarget } = await import(options);
         r.clearHand(r.dominant);
         r.clearHand(r.off);
-        if (!equipDebugLoadout(r.inventory, true, true, '?loadout=pistol')) {
-          throw new Error('Pistol debug loadout was refused');
+        const pos = r.session.body.pos.map(Math.floor);
+        for (const worn of new Set(Object.values(r.inventory.worn))) {
+          if (worn && !r.inventory.move(worn, dropTarget(r.inventory, worn, pos).target).ok) {
+            throw new Error('Could not clear worn items for the authored debug preset');
+          }
         }
+        const preset = shortFirearmStart(r.inventory.registry, r.engine.config.site);
+        applyStartKit(r.inventory, preset);
         const gun = r.inventory.hands[r.dominant];
         const definition = r.inventory.registry.items.get(gun.type);
         const model = r.inventory.registry.models.get(definition.model);
@@ -3828,7 +3862,12 @@ try {
           cycle: actionCycleSeconds(model.gun.action, 'fire'),
         };
       },
-      { loadoutModule: debugLoadoutModule, actionModule: firearmActionModule },
+      {
+        startModule: startStateModule,
+        presetsModule: debugStartsModule,
+        actionModule: firearmActionModule,
+        options: optionsModule,
+      },
     );
     await page.mouse.down({ button: 'right' });
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), pistol.uid);
@@ -3854,6 +3893,46 @@ try {
       pistol,
     );
     await page.mouse.up({ button: 'right' });
+    const grenade = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.explosive);
+      if (!definition) {
+        throw new Error('No explosive capability for grenade fixture');
+      }
+      const item = r.inventory.create(definition.id);
+      const { blast, fragments, fuseSimSeconds } = definition.explosive;
+      // A landed charge beyond both hazards cannot injure the later flow's player.
+      const pos = [...r.session.body.pos];
+      pos[0] += (blast.radiusMetres + fragments.rangeMetres) / r.scale.blockSize;
+      if (!r.inventory.add(item, { kind: 'pile', pos }) || r.session.fuses.togglePin(item) !== 'pulled') {
+        throw new Error('Could not stage the landed grenade');
+      }
+      return { uid: item.uid, fuseSimSeconds, start: r.session.sim.time };
+    });
+    await page.waitForFunction((uid) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      return item && r.session.fuses.state(item) === 'burning';
+    }, grenade.uid);
+    await waitForSimulation(
+      page,
+      ({ uid }) => {
+        const { session, inventory } = globalThis.primaryActionTest;
+        return { time: session.sim.time, paused: session.sim.paused, reached: !inventory.itemByUid(uid) };
+      },
+      { uid: grenade.uid },
+      {
+        seconds: grenade.fuseSimSeconds + 1,
+        from: grenade.start,
+        label: 'released grenade burns its authored fuse',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    assert.equal(
+      await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)), grenade.uid),
+      false,
+      'detonation consumes the released grenade',
+    );
     const food = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const source = [...r.inventory.registry.items.values()].find((candidate) => candidate.food && !candidate.unpack);
@@ -4003,8 +4082,8 @@ try {
     const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
     assert.ok(resumedElapsed >= pryElapsed, 'resuming never moves the pry cursor backwards');
     const stopLabel = await page.evaluate(async (moduleUrl) => {
-      const { labelForAction } = await import(moduleUrl);
-      return labelForAction('handling.stop');
+      const { inputBindings } = await import(moduleUrl);
+      return inputBindings.label('handling.stop');
     }, inputBindingsModule);
     assert.ok((await page.locator('#handling').textContent())?.includes(stopLabel));
     await page.evaluate(() => {
@@ -4046,7 +4125,10 @@ try {
       await lockedPage.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=lock_test&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+          gameUrl(`http://127.0.0.1:${address.port}`, {
+            startMod: lockTestNoonMod,
+            hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+          }),
           renderOverride,
         ),
       );
@@ -4080,8 +4162,8 @@ try {
           const dx = target[0] - eye[0];
           const dy = target[1] - eye[1];
           const dz = target[2] - eye[2];
-          r.input.yaw = Math.atan2(-dx, -dz);
-          r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+          r.input.controls.yaw = Math.atan2(-dx, -dz);
+          r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
         };
         aimAtDoor();
         const target = r.interactionTargetAt();
@@ -4106,8 +4188,8 @@ try {
         const dx = target[0] - eye[0];
         const dy = target[1] - eye[1];
         const dz = target[2] - eye[2];
-        r.input.yaw = Math.atan2(-dx, -dz);
-        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        r.input.controls.yaw = Math.atan2(-dx, -dz);
+        r.input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
         const picked = r.interactionTargetAt();
         if (picked?.kind !== 'furniture' || picked.entity.uid !== door.uid) {
           throw new Error(`lock_test tool door is not the F target: ${JSON.stringify(picked)}`);
@@ -4228,91 +4310,46 @@ try {
       logPhase('locked-door-input-case', lockedDoorStart);
     }
 
-    const continuedWork = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      r.clearHand(r.dominant);
-      r.clearHand(r.off);
-      const recipeId = 'fixture_radial_work';
-      r.inventory.registry.recipes.set(recipeId, {
-        id: recipeId,
-        kind: 'craft',
-        result: { item: 'rag', count: 1 },
-        timeGameMinutes: 60,
-        skills: {},
-        qualities: {},
-        components: [],
-      });
-      r.session.character.knownRecipes.add(recipeId);
-      const reason = r.session.crafting.start(recipeId);
-      if (reason) {
-        throw new Error(`Could not begin radial work fixture: ${reason}`);
-      }
-      const uid = r.session.sim.actions.job.workUid;
-      r.session.sim.actions.stop();
-      return { chosen: uid };
-    });
-    await page.mouse.click(640, 450);
-    await page.waitForFunction((uid) => {
-      const { job } = globalThis.primaryActionTest.session.sim.actions;
-      return job?.jobType === 'craft' && !job.stopped && job.workUid === uid;
-    }, continuedWork.chosen);
-    await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.stop());
-
-    await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.compression.locksInput);
     const treatment = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
       r.clearHand(r.off);
-      const definition = {
-        ...r.inventory.registry.items.get('rag'),
-        id: 'fixture_dressing_tool',
-        tool: { qualities: { opening: 1 } },
-      };
-      r.inventory.registry.items.set(definition.id, definition);
-      const rag = r.inventory.create(definition.id);
+      const rag = r.inventory.create('rag');
       r.setHand(r.dominant, rag);
-      r.setHand(r.off, r.inventory.create('canned_beans'));
       r.session.sim.body.impact(1, 'leftArm', { bleeding: 0 });
       r.session.sim.body.impact(3, 'rightArm', { bleeding: 0 });
-      const actions = r.survival.availableItemActions(rag);
-      if (!(actions.some((action) => action.treatment) && actions.some((action) => action.opening))) {
-        throw new Error(`Treatment fixture needs real alternatives: ${JSON.stringify(actions)}`);
-      }
-      return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
+      return {
+        uid: rag.uid,
+        defaultRegion: r.survival.selectedItemAction(rag)?.treatment?.region,
+        wounds: r.survival
+          .availableItemActions(rag)
+          .filter((action) => action.treatment)
+          .map((action) => ({ id: action.id, region: action.treatment.region })),
+      };
     });
-    await chooseHeldAction(page, 'treat');
-    await page.locator('#treatment-choices').waitFor({ state: 'visible' });
-    const regions = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      return r.survival
-        .availableItemActions(r.inventory.hands[r.dominant])
-        .filter((action) => action.treatment)
-        .map((action) => action.id);
-    });
-    assert(regions.length > 0, 'fixture exposes treatable regions');
-    assert.deepEqual(
-      await page
-        .locator('#treatment-choices button:not([data-action="back"])')
-        .evaluateAll((buttons) => buttons.map((button) => button.dataset.action)),
-      regions,
-    );
-    await pressWithDrawnCursor(page, '#treatment-choices [data-action="back"]');
-    await page.waitForFunction(
-      () => document.querySelector('#treatment-choices').hidden && !document.querySelector('#furniture-radial').hidden,
-    );
+    const ringEntriesShown = (ids) =>
+      page.waitForFunction(
+        (expected) =>
+          JSON.stringify(
+            [...document.querySelectorAll('#action-radial .radial-entry')].map((entry) => entry.dataset.action),
+          ) === JSON.stringify(expected),
+        ids,
+      );
+    const releaseAtCentre = await holdDominantUse(page);
+    await waitForActionRing(page);
+    await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    await releaseAtCentre();
+    await waitForActionRing(page, false);
     assert.notEqual(
       await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
       'treatment',
-      'Back does not treat',
+      'the wound ring centre cancels without offering a sole Treat parent or treating',
     );
-    await chooseHeldAction(page, 'treat');
-    const chosen = regions.at(-1);
-    const selected = await page.evaluate((id) => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.availableItemActions(r.inventory.hands[r.dominant]).find((action) => action.id === id).treatment
-        .region;
-    }, chosen);
-    await pressWithDrawnCursor(page, `#treatment-choices [data-action="${chosen}"]`);
+    // A wound other than the default proves the choice, not the default, picks what is treated.
+    const chosenWound = treatment.wounds.find(({ region }) => region !== treatment.defaultRegion);
+    assert(chosenWound, 'the treatment fixture offers a wound besides the default');
+    await chooseHeldAction(page, chosenWound.id);
+    const selected = chosenWound.region;
     await page.waitForFunction(
       (uid) => {
         const { sim } = globalThis.primaryActionTest.session;
@@ -4346,7 +4383,7 @@ try {
     });
     await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
     const replayArtifact = JSON.parse(replayText);
-    assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
+    assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
     assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
     assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
@@ -4360,11 +4397,7 @@ try {
         buffer: Buffer.from(replayText),
       });
       await replayRestart;
-      await page.waitForFunction(
-        () =>
-          document.querySelector('#input-replay-status')?.dataset.state === 'playing' ||
-          document.querySelector('#errors')?.textContent.startsWith('Replay rejected:'),
-      );
+      await page.waitForFunction(() => document.querySelector('#input-replay-status')?.dataset.state === 'playing');
       const replayError = await page.locator('#errors').textContent();
       assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
     });
@@ -4372,7 +4405,10 @@ try {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: houseNoonMod,
+          hash: { debug: true, seed: 73, radius: 32, post: false, sunshadow: false, torchshadow: false },
+        }),
         renderOverride,
       ),
     );
@@ -4414,7 +4450,7 @@ try {
       return fetch(link.href).then((response) => response.text());
     });
     const shortReplayArtifact = JSON.parse(shortReplayText);
-    assert.equal(shortReplayArtifact.magic, 'DEADVOX_REPLAY');
+    assert.equal(shortReplayArtifact.magic, 'SKELLY_REPLAY');
     assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
     assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
     assert.equal(
@@ -4453,13 +4489,14 @@ try {
 
     assert.deepEqual(pageErrors, []);
     await page.close();
-  } else {
+  } else if (group === 'replays-search-look') {
     await withTestHouse(browser, address.port, renderOverride, async (testHousePage) => {
       await timePhase('container-search-tab-case', () => verifyContainerSearchTab(testHousePage));
       await timePhase('vehicle-service-case', () => verifyVehicleService(testHousePage));
     });
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
+  } else {
     await timePhase('forward-button-replay-case', () =>
       verifyForwardButtonReplay(browser, address.port, renderOverride),
     );

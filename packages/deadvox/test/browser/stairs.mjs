@@ -9,14 +9,15 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { measureMainFirstMesh } from './sky-main-arrival.mjs';
 import { skySelectionProof } from './sky-selection.mjs';
 import { initializeSkyTiming, skyTimingPlugin, summarizeSkyTiming } from './sky-timing.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
+import { addCamoWitnessTemplate, CAMO_WITNESS, injectSiteFixture, RAISED_CABIN } from './stairs-fixture.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(
@@ -34,6 +35,39 @@ const isLightingMode =
   mode === 'lighting-outdoor' ||
   mode === 'lighting-atlas';
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const noonStart = {
+  density: null,
+  id: 'stairs_noon_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'stair_demo',
+  skills: {},
+  startTimeGameTimeOfDay: '12:00',
+  storeys: 1,
+  wounds: [],
+};
 const artifacts = resolve(process.env.STAIRS_ARTIFACT_DIR ?? 'test-results/stairs');
 const pixelCrop = { x: 480, y: 260, width: 240, height: 240 };
 const timePhase = async (phase, action) => {
@@ -47,9 +81,6 @@ const timePhase = async (phase, action) => {
   }
 };
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
-const RAISED_CABIN = { template: 'stairs_cabin', position: [82, 27, 55], rotation: 0 };
-// Keep the witness near the stairs lighting route; the remote wall incurred chunk streaming before its captures.
-const CAMO_WITNESS = { template: 'stairs_camo_witness', position: [75, 21, 60], rotation: 0 };
 const hasSkyControl = isLightingMode || mode === 'camo';
 const arrivalObservation =
   mode === 'camo'
@@ -61,7 +92,7 @@ engine.scene.onBeforeRender = function(...args) {
   if(args[2] !== engine.camera) return;
   const s = engine.config.scale.blockSize;
   if(Math.hypot(engine.camera.position.x/s-155,engine.camera.position.z/s-122)>1) return;
-  if(!engine.meshes.group.children.some(mesh=>mesh.position.x===128&&mesh.position.y===32&&mesh.position.z===96)) return;
+  if(!engine.meshes.origins().some(([x,y,z])=>x===128&&y===32&&z===96)) return;
   const point=[151.5,43.5,121.5];
   const fields=engine.skylight.inspect().filter(({bounds})=>point.every((v,a)=>v>=bounds.min[a]&&v<bounds.max[a]));
   if(!fields.length) throw new Error('Camo arrival witness has no eligible field');
@@ -73,7 +104,7 @@ engine.scene.onBeforeRender = function(...args) {
 `
     : '';
 await mkdir(artifacts, { recursive: true });
-const vite = await createServer({
+const vite = await createStageServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
   logLevel: 'error',
@@ -84,20 +115,10 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
-        if (mode === 'camo' && id.endsWith('/src/content/base/templates-stairs.json')) {
-          const content = JSON.parse(code);
-          const floor = new Array(8).fill('########');
-          const walls = ['########', ...new Array(6).fill('c......#'), '########'];
-          content.templates.push({
-            id: 'stairs_camo_witness',
-            lootContext: { usage: ['Residential'], tier: 'Tier1' },
-            size: [8, 4, 8],
-            palette: { '#': 'stone', c: 'camo_woodland', '.': 'air' },
-            layers: [floor, walls, walls, new Array(8).fill('........')],
-          });
-          return JSON.stringify(content);
+        if (mode === 'camo' && id.endsWith('/mods/skelly.deadvox.scenario.stairs/templates-stairs.json')) {
+          return addCamoWitnessTemplate(code);
         }
-        if (mode === 'camo' && id.endsWith('/src/content/base/blocks.json')) {
+        if (mode === 'camo' && id.endsWith('/mods/skelly.manufactured-blocks/manufactured-blocks.json')) {
           const content = JSON.parse(code);
           const camo = content.blocks.find(({ pattern }) => pattern === 'camo');
           assert.ok(camo);
@@ -106,21 +127,14 @@ const vite = await createServer({
           camo.patternWashout = 1;
           return JSON.stringify(content);
         }
-        if (mode !== 'traversal' && id.endsWith('/src/core/authoredSite.ts')) {
-          const anchor = '    const s = scale.blockSize;';
-          assert.equal(code.split(anchor).length, 2);
-          const fixtureName = isLightingMode ? 'raisedCabin' : 'camoWitness';
-          const fixture = isLightingMode ? RAISED_CABIN : CAMO_WITNESS;
-          let transformed = code.replace(
-            anchor,
-            `${anchor}\n    const ${fixtureName} = ${JSON.stringify(fixture)};\n    layout = {...layout, buildings: [...layout.buildings, ${fixtureName}]};`,
-          );
+        if (mode !== 'traversal' && id.endsWith('/engine/src/core/authoredSite.ts')) {
+          let transformed = injectSiteFixture(code, isLightingMode ? RAISED_CABIN : CAMO_WITNESS);
           if (isLightingMode) {
             const lot = 'lotOf(building, rect)';
             assert.equal(code.split(lot).length, 2);
             transformed = transformed.replace(
               lot,
-              '{...lotOf(building, rect), ...(building === raisedCabin ? {floor: layout.ground} : {})}',
+              '{...lotOf(building, rect), ...(building === siteFixture ? {floor: layout.ground} : {})}',
             );
           }
           return transformed;
@@ -139,14 +153,14 @@ const vite = await createServer({
               'uniform float uSkyProofControl;\nvec2 skyVisibility(out bool unbuilt) {\n  if (uSkyProofControl > 0.5) { unbuilt = false; return vec2(1.0); }',
             );
         }
-        if (!id.endsWith('/src/game/play.ts')) {
+        if (!id.endsWith('/src/presentation/play.ts')) {
           return;
         }
         const marker = 'startRealFrames(frame);';
         assert.ok(code.includes(marker));
-        return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
+        return `import { doorPanel as stairsDoorPanel } from '@skelly/engine/internal/core/blockEntities.ts';\n${code.replace(
           marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${arrivalObservation}\n${marker}`,
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse:router.performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${arrivalObservation}\n${marker}`,
         )}`;
       },
     },
@@ -172,17 +186,6 @@ try {
   );
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const viewport = isLightingMode ? { width: 1280, height: 800 } : { width: 640, height: 400 };
-  if (mode === 'camo') {
-    await timePhase('main-first-mesh-reference', () =>
-      measureMainFirstMesh(browser, {
-        root,
-        artifacts,
-        viewport,
-        fixtureTransform: vite.config.plugins.find((plugin) => plugin.name === 'stairs-test-observation').transform,
-        eventPath: process.env.GITHUB_EVENT_PATH,
-      }),
-    );
-  }
   page = await browser.newPage({ viewport });
   const errors = [];
   const states = [];
@@ -232,7 +235,11 @@ try {
     await page.goto(
       browserStageUrl(
         stageId,
-        `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00${mode === 'camo' ? '&skyRoute=1' : ''}`,
+        gameUrl(`http://127.0.0.1:${port}`, {
+          startMod: inlineStartMod('fixture.stairs.noon', noonStart),
+          harness: mode === 'camo' ? { skyRoute: 1 } : {},
+          hash: { debug: true, seed: 1, radius: 32 },
+        }),
       ),
     );
     await page.waitForFunction(
@@ -348,7 +355,7 @@ try {
     const verifyGate = async (locked) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
       const gate = await page.evaluate(
-        `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
+        `import('/src/product/input.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
       );
       await page.evaluate(() => {
         globalThis.nativeGateEvents.length = 0;
@@ -405,9 +412,9 @@ try {
     page.waitForFunction(
       (lighting) =>
         [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
-          globalThis.stairsWitness.engine.meshes.group.children.some(
-            (mesh) => mesh.position.x === x && mesh.position.y === y && mesh.position.z === z,
-          ),
+          globalThis.stairsWitness.engine.meshes
+            .origins()
+            .some(([chunkX, chunkY, chunkZ]) => chunkX === x && chunkY === y && chunkZ === z),
         ),
       isLightingMode,
       { timeout: 60_000 },
@@ -507,8 +514,8 @@ try {
         session.body.pos = [...position];
         session.body.vel = [0, 0, 0];
         session.body.onGround = true;
-        input.yaw = yaw;
-        input.pitch = pitch;
+        input.controls.yaw = yaw;
+        input.controls.pitch = pitch;
         return shouldCaptureFrame ? engine.renderer.info.render.frame : null;
       },
       { position: fixturePosition, yaw: fixtureYaw, pitch: fixturePitch, captureFrame },
@@ -551,11 +558,11 @@ try {
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
-        zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
+        zombies: [...session.actorStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
-          mode: z.mode,
-          lastPerceived: z.lastPerceived,
+          mode: z.agent.mode,
+          lastPerceived: z.agent.lastPerceived,
         })),
       };
     });
@@ -691,14 +698,17 @@ try {
           throw new Error('Could not place fixture flashlight in hand');
         }
       });
+      // A tap: the flashlight has a choice of actions, so its use runs on release.
       const mouse5 = () =>
-        page.evaluate(() =>
-          document
-            .querySelector('#view canvas')
-            .dispatchEvent(
-              new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
-            ),
-        );
+        page.evaluate(() => {
+          const canvas = document.querySelector('#view canvas');
+          canvas.dispatchEvent(
+            new PointerEvent('pointerdown', { button: 4, buttons: 16, pointerType: 'mouse', bubbles: true }),
+          );
+          canvas.dispatchEvent(
+            new PointerEvent('pointerup', { button: 4, buttons: 0, pointerType: 'mouse', bubbles: true }),
+          );
+        });
       await mouse5();
       await page.waitForFunction(() => {
         const { session, engine } = globalThis.stairsWitness;
@@ -825,7 +835,7 @@ try {
       await stage([125, 43.0001, 118]);
       await waitForSkyFields([[62.5, 21.5, 59]]);
       await page.evaluate(() => {
-        globalThis.stairsWitness.input.pitch = -0.3;
+        globalThis.stairsWitness.input.controls.pitch = -0.3;
       });
       await waitForRenderedFrame();
       const outdoor = await shot('outdoor-normal', true);
@@ -864,7 +874,7 @@ try {
       );
       assert.equal(raisedCabinVisibility, 0, 'raised cabin field is resident at the atlas stage');
       await page.evaluate(() => {
-        globalThis.stairsWitness.input.pitch = Math.atan2(3.25, 7);
+        globalThis.stairsWitness.input.controls.pitch = Math.atan2(3.25, 7);
       });
       await waitForRenderedFrame();
       const secondWall = await shot('second-slot-wall-normal', true);
@@ -924,7 +934,7 @@ try {
             body: [...session.body.pos],
             velocity: [...session.body.vel],
             calendar: session.sim.calendar,
-            meshes: engine.meshes.group.children.length,
+            meshes: engine.meshes.count,
             film: engine.mood.film,
             grain: engine.mood.gradePass?.uniforms.uGrain.value,
             grainSeed: engine.mood.gradePass?.uniforms.uSeed.value,
@@ -1005,9 +1015,7 @@ try {
     });
   }
   const walk = async (actionId, targetX, ascending, targetFeet) => {
-    const release = await holdAction(page, actionId);
     try {
-      const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await waitForSimulation(
         page,
         ({ x, increasing }) => {
@@ -1019,13 +1027,7 @@ try {
           };
         },
         { x: targetX, increasing: ascending },
-        {
-          seconds: 10,
-          from: keyDownTime,
-          label: `arrival ${actionId} x=${targetX}`,
-          record: state,
-          stop: release,
-        },
+        { seconds: 10, label: `arrival ${actionId} x=${targetX}`, record: state, hold: actionId },
       );
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
       await waitForSimulation(
@@ -1039,17 +1041,14 @@ try {
         { seconds: 3, from: start, label: `settle ${actionId} x=${targetX} feet=${targetFeet}`, record: state },
       );
     } catch (error) {
-      await release();
       await state(`walk/settle failure ${actionId} x=${targetX} feet=${targetFeet}: ${error}`);
       throw error;
-    } finally {
-      await release();
     }
   };
   const openResidentDoor = async (residentId) => {
     const approach = await page.evaluate((id) => {
       const { session, entities } = globalThis.stairsWitness;
-      const resident = session.zombieStore.get(id);
+      const resident = session.actorStore.get(id);
       if (!resident) {
         throw new Error('stairs_house resident is not streamed');
       }
@@ -1085,8 +1084,8 @@ try {
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
       const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.yaw = Math.atan2(-dx, -dz);
-      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, approach.uid);
     const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await pressAction(page, 'world.interact');
@@ -1104,70 +1103,65 @@ try {
   const walkTo = async (target, label) => {
     const start = await page.evaluate((destination) => {
       const { input, session, body } = globalThis.stairsWitness;
-      input.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
-      input.pitch = 0;
+      input.controls.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
+      input.controls.pitch = 0;
       return session.sim.time;
     }, target);
-    const releaseForward = await holdAction(page, 'movement.forward');
-    try {
-      await waitForSimulation(
-        page,
-        ({ target: destination, from, seconds }) => {
-          const { body, session, input, engine } = globalThis.stairsWitness;
-          const dx = destination[0] - body.pos[0];
-          const dz = destination[2] - body.pos[2];
-          input.yaw = Math.atan2(-dx, -dz);
-          const distance = Math.hypot(dx, dz);
-          const reached = distance < 0.5;
-          const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
-          if (!terminal) {
-            return { time: session.sim.time, paused: session.sim.paused, reached, distance };
-          }
-          const supportCell = (position) => [
-            Math.floor(position[0]),
-            Math.floor(position[1] - 1),
-            Math.floor(position[2]),
-          ];
-          const playerSupport = supportCell(body.pos);
-          const targetSupport = supportCell(destination);
-          const intent = input.intent();
-          return {
-            time: session.sim.time,
-            paused: session.sim.paused,
-            reached,
-            distance,
-            position: [...body.pos],
-            target: [...destination],
-            onGround: body.onGround,
-            velocity: [...body.vel],
-            path: {
-              from: [body.pos[0], body.pos[2]],
-              to: [destination[0], destination[2]],
-              delta: [dx, dz],
-              yaw: input.yaw,
-              forward: intent.forward,
-              sprint: intent.sprint,
-            },
-            readiness: {
-              playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
-              playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
-              playerSupport: engine.isSolid(...playerSupport),
-              targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
-              targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
-              targetSupport: engine.isSolid(...targetSupport),
-            },
-            residents: [...session.zombieStore.entries()].map(([, resident]) => ({
-              position: [...resident.body.pos],
-              mode: resident.mode,
-            })),
-          };
-        },
-        { target, from: start, seconds: 12 },
-        { seconds: 12, from: start, label, record: state, stop: releaseForward },
-      );
-    } finally {
-      await releaseForward();
-    }
+    await waitForSimulation(
+      page,
+      ({ target: destination, from, seconds }) => {
+        const { body, session, input, engine } = globalThis.stairsWitness;
+        const dx = destination[0] - body.pos[0];
+        const dz = destination[2] - body.pos[2];
+        input.controls.yaw = Math.atan2(-dx, -dz);
+        const distance = Math.hypot(dx, dz);
+        const reached = distance < 0.5;
+        const terminal = reached || session.sim.paused || session.sim.time - from >= seconds;
+        if (!terminal) {
+          return { time: session.sim.time, paused: session.sim.paused, reached, distance };
+        }
+        const supportCell = (position) => [
+          Math.floor(position[0]),
+          Math.floor(position[1] - 1),
+          Math.floor(position[2]),
+        ];
+        const playerSupport = supportCell(body.pos);
+        const targetSupport = supportCell(destination);
+        const intent = input.controls.intent();
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached,
+          distance,
+          position: [...body.pos],
+          target: [...destination],
+          onGround: body.onGround,
+          velocity: [...body.vel],
+          path: {
+            from: [body.pos[0], body.pos[2]],
+            to: [destination[0], destination[2]],
+            delta: [dx, dz],
+            yaw: input.controls.yaw,
+            forward: intent.forward,
+            sprint: intent.sprint,
+          },
+          readiness: {
+            playerColumnGenerated: engine.streamer.isReady(body.pos[0], body.pos[2]),
+            playerColumnUnmeshed: engine.streamer.unmeshedColumns(body.pos[0], body.pos[2], 0),
+            playerSupport: engine.isSolid(...playerSupport),
+            targetColumnGenerated: engine.streamer.isReady(destination[0], destination[2]),
+            targetColumnUnmeshed: engine.streamer.unmeshedColumns(destination[0], destination[2], 0),
+            targetSupport: engine.isSolid(...targetSupport),
+          },
+          residents: [...session.actorStore.entries()].map(([, resident]) => ({
+            position: [...resident.body.pos],
+            mode: resident.agent.mode,
+          })),
+        };
+      },
+      { target, from: start, seconds: 12 },
+      { seconds: 12, from: start, label, record: state, hold: 'movement.forward' },
+    );
     const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
       page,
@@ -1234,13 +1228,13 @@ try {
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
       const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.yaw = Math.atan2(-dx, -dz);
-      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       return door.uid;
     });
     const releaseSprint = await holdAction(page, 'movement.sprint');
     try {
-      assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.intent().sprint), true);
+      assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.controls.intent().sprint), true);
       await pressAction(page, 'world.interact');
     } finally {
       await releaseSprint();
@@ -1267,8 +1261,8 @@ try {
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
       const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
-      input.yaw = Math.atan2(-dx, -dz);
-      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      input.controls.yaw = Math.atan2(-dx, -dz);
+      input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, sprintDoor);
     await pressAction(page, 'world.interact');
     const doorValue = async (propertyName, expectedValue) => {
@@ -1338,7 +1332,7 @@ try {
       page,
       ({ id, lowerLanding, upperLanding, from, seconds }) => {
         const { engine, session } = globalThis.stairsWitness;
-        const resident = session.zombieStore.get(id);
+        const resident = session.actorStore.get(id);
         const residentPosition = resident ? [...resident.body.pos] : null;
         const residentGroundedAtUpper = Boolean(
           resident?.body.onGround && Math.abs(resident.body.pos[1] - upperLanding[1]) < 0.01,
@@ -1392,36 +1386,29 @@ try {
     );
     await state('upper resident and lower-floor/stair collision ready', { upperAnchor });
     await openResidentDoor(residentId);
-    const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-    const releaseForward = await holdAction(page, 'movement.forward');
-    try {
-      await waitForSimulation(
-        page,
-        (id) => {
-          const { body, session } = globalThis.stairsWitness;
-          const target = session.zombieStore.get(id)?.lastPerceived;
-          const distance = target
-            ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
-            : Number.POSITIVE_INFINITY;
-          return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
-        },
-        residentId,
-        {
-          seconds: 8,
-          from: approachStart,
-          label: 'resident hears the player at the open doorway',
-          record: state,
-          stop: releaseForward,
-        },
-      );
-    } finally {
-      await releaseForward();
-    }
+    await waitForSimulation(
+      page,
+      (id) => {
+        const { body, session } = globalThis.stairsWitness;
+        const target = session.actorStore.get(id)?.agent.lastPerceived;
+        const distance = target
+          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
+          : Number.POSITIVE_INFINITY;
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
+      },
+      residentId,
+      {
+        seconds: 8,
+        label: 'resident hears the player at the open doorway',
+        record: state,
+        hold: 'movement.forward',
+      },
+    );
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
-      globalThis.stairsWitness.input.yaw = -Math.PI / 2;
-      globalThis.stairsWitness.input.pitch = 0;
+      globalThis.stairsWitness.input.controls.yaw = -Math.PI / 2;
+      globalThis.stairsWitness.input.controls.pitch = 0;
     });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');

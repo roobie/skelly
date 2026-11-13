@@ -1,0 +1,48 @@
+{
+  combatPolicy: [{
+    id: 'deadvox',
+    capability: 'player',
+    aim: {
+      moveYawPerSpeed: 0.0045,
+      lookLagPerRadian: 0.035,
+      lookSettleSimSeconds: 0.22,
+      recoilRecoverySimSeconds: 0.34,
+      maxOffsetRadians: 0.12,
+    },
+    firearms: {
+      raiseSimSeconds: 0.28 + 0.42,
+      adsAcquisitionMaximumSimSeconds: 0.55,
+      readyMovementMinimum: 0.45,
+      loweredPitchRadians: 0.3,
+      skillZeroHandling: {
+        singleShot: { variance: 20, recoilKickScale: 6, recoilRecoveryScale: 0.5 },
+        automaticFollowup: { variance: 40, recoilKickScale: 12, recoilRecoveryScale: 0.25 },
+      },
+      wobbleLimitRadians: 0.14,
+      wobbleVerticalToHorizontalRatio: 0.225,
+      wobbleLuneArchPower: 2,
+      wobbleLunePhaseOffsetRadians: 0.08,
+      wobbleNoiseReversionRatePerSimSecond: 2.4,
+      wobbleNoiseSigmaRadiansPerSqrtSecond: 0.002,
+      wobbleNoiseSmoothingSimSeconds: 0.12,
+      wobbleStanceDriftScale: { standing: 1, crouching: 0.8, prone: 0.6 },
+      breathHold: {
+        staminaPerSimSecond: 12,
+        recoverySimSeconds: 3,
+        recoverySwayScale: 2.5,
+        steadyingMinimum: 0.5,
+        painWeakeningPerRatio: 0.5,
+      },
+    },
+    melee: {
+      blockChanceMinimum: 0.05,
+      mitigationMinimum: 0.3,
+      staminaPerAbsorbedPoint: 2,
+      joltPerAbsorbedPoint: 0.08,
+      joltRealSeconds: 0.08,
+      deflectRiseMetres: 0.14,
+      deflectRiseFloor: 0.6,
+      deflectRealSeconds: 0.35,
+    },
+  }],
+}

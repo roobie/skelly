@@ -1,13 +1,11 @@
+import { BindingRegistry } from '@skelly/engine/input';
+import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
+import { bindReach, Character } from '@skelly/engine/sim';
+import { fillText } from '@skelly/engine/text';
+import { craftingText, craftRows, runningCraftPresentation } from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { Character } from '../src/core/character.ts';
-import { CraftCommands } from '../src/core/craftCommands.ts';
-import { planCraft, requirementStatus } from '../src/core/crafting.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { bindReach } from '../src/core/reach.ts';
-import { fillText } from '../src/core/textTemplate.ts';
-import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/craftReadout.ts';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
@@ -27,8 +25,8 @@ for (const key of [
 ] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
-const { renderCrafting } = await import('../src/ui/crafting.ts');
-const { handlingViewModel, timedActionHandlingPresentation } = await import('../src/ui/hud.ts');
+const { renderCrafting } = await import('@skelly/presentation/internal/ui/crafting.ts');
+const { handlingViewModel, timedActionHandlingPresentation } = await import('@skelly/presentation/internal/ui/hud.ts');
 afterAll(() => dom.happyDOM.abort());
 
 const ENTITY_REPAIR = 'fixture_entity_repair';
@@ -46,14 +44,14 @@ const repairRegistry = baseRegistryWith(
           { id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 },
         ],
         furniture: [{ id: FURNITURE, name: 'Fixture furniture', size: [1, 1, 1], color: '#777777' }],
-        skills: [{ id: 'fixture_repair_skill', name: 'Fixture repair', startingRecipes: [ENTITY_REPAIR, ITEM_REPAIR] }],
+        skills: [{ id: 'fixture_repair_skill', name: 'Fixture repair' }],
         recipes: [ENTITY_REPAIR, ITEM_REPAIR].map((id) => ({
           id,
           kind: 'repair',
           result: { item: RESULT, count: 1 },
           repair: {
             ...(id === ENTITY_REPAIR ? { entity: FURNITURE } : {}),
-            skill: 'fixture_repair_skill',
+            skill: 'crafting',
             amount: 0.2,
             perSkill: 0,
           },
@@ -68,6 +66,7 @@ const repairRegistry = baseRegistryWith(
 );
 const repairFixture = (withItem = true) => {
   const character = new Character(repairRegistry);
+  character.initializeProgression({}, [ENTITY_REPAIR, ITEM_REPAIR]);
   const inventory = new Inventory(repairRegistry);
   if (!inventory.add(inventory.create(STOCK), { kind: 'pile', pos: [0, 0, 0] })) {
     throw new Error('Fixture stock did not fit');
@@ -157,6 +156,7 @@ describe('crafting read-only presentation', () => {
   });
   it('shows raw material counts, best usable quality and skill gap without granting unknown recipes', () => {
     const character = new Character(registry);
+    character.initializeProgression({}, ['torch', 'candle']);
     const inventory = new Inventory(registry);
     character.knownRecipes.delete('candle');
     const broken = inventory.create('kitchen_knife');
@@ -243,7 +243,10 @@ describe('crafting read-only presentation', () => {
       );
       expect(action).toBeDefined();
       const { handling } = baseScreenText();
-      const model = handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+      const model = handlingViewModel(
+        timedActionHandlingPresentation(action!, handling, new BindingRegistry(INPUT_BINDINGS)),
+        handling,
+      );
       expect(model.visible).toBe(true);
       expect(model.percent).toBe(25);
     });

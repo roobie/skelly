@@ -3,15 +3,13 @@
   models: [{
     id: 'lamp',
     file: 'assets/models/lamp.glb',
-    grip: { at: [0.05, 0.05, 0.05] },
-    anchors: { lens: [0.3, 0.05, 0.05] },
+    grip: { at: [-0.05, 0.05, 0.05] },
+    anchors: { lens: [-0.05, 0.05, 0.3] },
     itemPresentation: { wear: 'fixture_lamp', materials: ['metal'], supply: { kind: 'none' } },
   }],
   items: [{
     id: 'lamp',
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
     name: 'Lamp',
     category: 'light',
     weight: 400,

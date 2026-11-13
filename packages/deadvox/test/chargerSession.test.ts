@@ -1,11 +1,13 @@
+import { simTimestamp } from '@skelly/engine/internal/core/time.ts';
+import { batteryEnergy } from '@skelly/engine/inventory';
+import { chargerPanel } from '@skelly/presentation/internal/ui/chargerPanel.ts';
 import { describe, expect, it } from 'vitest';
-import { batteryEnergy } from '../src/core/battery.ts';
-import { simTimestamp } from '../src/core/time.ts';
-import { chargerPanel } from '../src/ui/chargerPanel.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { createChargerSession } from './fixtures/chargerSession.ts';
 
 const base = baseRegistry();
+const figures = stackActorFigureFiles(base);
 const load = (runtime: ReturnType<typeof createChargerSession>) => {
   const { session, entity, batteryType } = runtime;
   const cell = session.inventory.create(batteryType);
@@ -26,17 +28,17 @@ const load = (runtime: ReturnType<typeof createChargerSession>) => {
 
 describe('placed charger session', () => {
   it('saves power and the active cell at the same boundary between scheduled power ticks', () => {
-    const runtime = createChargerSession(base);
+    const runtime = createChargerSession(base, figures);
     const cell = load(runtime);
     runtime.advance(1.5);
     const saved = runtime.snapshot();
     expect(batteryEnergy(runtime.registry, cell)).toBeGreaterThan(0);
     expect(runtime.entity!.charging!.atGameMilliseconds).toBe(saved.world.power!.atGameMilliseconds);
-    expect(() => createChargerSession(base, saved)).not.toThrow();
+    expect(() => createChargerSession(base, figures, saved)).not.toThrow();
   });
   it('takes a snapshot between power ticks without moving the network, and a restore continues as the uninterrupted run', () => {
-    const uninterrupted = createChargerSession(base);
-    const saving = createChargerSession(base);
+    const uninterrupted = createChargerSession(base, figures);
+    const saving = createChargerSession(base, figures);
     for (const runtime of [uninterrupted, saving]) {
       load(runtime);
       runtime.advance(0.5);
@@ -47,7 +49,7 @@ describe('placed charger session', () => {
     expect(network.snapshot()).toEqual(before);
     expect(first.world.power).toEqual(before);
     expect(saving.snapshot()).toEqual(first);
-    const restored = createChargerSession(base, first);
+    const restored = createChargerSession(base, figures, first);
     for (const runtime of [uninterrupted, saving, restored]) {
       runtime.advance(2);
     }
@@ -56,7 +58,7 @@ describe('placed charger session', () => {
     expect(restored.snapshot()).toEqual(expected);
   });
   it('keeps charging while hands and movement work, saves a blackout, resumes and collects the same cell once', () => {
-    const runtime = createChargerSession(base);
+    const runtime = createChargerSession(base, figures);
     const { session, entity } = runtime;
     const cell = load(runtime);
     const rag = session.inventory.create('rag');
@@ -72,7 +74,7 @@ describe('placed charger session', () => {
     expect(session.inventory.hands.right).toBe(rag);
     expect(batteryEnergy(runtime.registry, cell)).toBe(partial);
     const saved = runtime.snapshot();
-    const restored = createChargerSession(base, saved);
+    const restored = createChargerSession(base, figures, saved);
     expect(restored.entity!.uid).toBe(entity!.uid);
     const restoredCell = restored.session.inventory.itemByUid(cell.uid)!;
     expect(batteryEnergy(restored.registry, restoredCell)).toBe(partial);
@@ -98,7 +100,7 @@ describe('placed charger session', () => {
   });
 
   it('refuses an unreachable cell and returns partial charge on stop through ordinary handling', () => {
-    const runtime = createChargerSession(base);
+    const runtime = createChargerSession(base, figures);
     const { session, entity } = runtime;
     const far = session.inventory.create(runtime.batteryType);
     far.charges = 0;
@@ -118,7 +120,7 @@ describe('placed charger session', () => {
   });
 
   it('settles before destruction and drops the owned cell without a live endpoint or reservation', () => {
-    const runtime = createChargerSession(base);
+    const runtime = createChargerSession(base, figures);
     const { session, entity } = runtime;
     const cell = load(runtime);
     runtime.advance(0.5);
@@ -127,6 +129,6 @@ describe('placed charger session', () => {
     expect(session.power!.chargerId(entity!)).toBeUndefined();
     expect(session.inventory.itemByUid(cell.uid)).toBe(cell);
     expect(entity!.charging).toBeUndefined();
-    expect(() => createChargerSession(base, runtime.snapshot())).not.toThrow();
+    expect(() => createChargerSession(base, figures, runtime.snapshot())).not.toThrow();
   });
 });

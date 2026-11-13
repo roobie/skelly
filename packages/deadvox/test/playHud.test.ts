@@ -1,13 +1,11 @@
 // @vitest-environment happy-dom
-import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
-import { expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { bodyRegionLabel } from '../src/core/body.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { damageWord } from '../src/core/items.ts';
-import { fillText } from '../src/core/textTemplate.ts';
-import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
-import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
+
+import { BindingRegistry } from '@skelly/engine/input';
+import { damageWord } from '@skelly/engine/inventory';
+import { bodyRegionLabel } from '@skelly/engine/sim';
+import { fillText } from '@skelly/engine/text';
+import { BlockEntities } from '@skelly/engine/world';
+import { DEFAULT_HUD_OPTIONS, hudVisibility } from '@skelly/presentation/internal/ui/hudOptions.ts';
 import {
   playCarryText,
   playCrosshairFrame,
@@ -16,11 +14,17 @@ import {
   playPromptText,
   projectCrosshairScreenPosition,
   renderPlayHud,
-} from '../src/ui/playHud.ts';
-import { playReadout } from '../src/ui/playReadout.ts';
+} from '@skelly/presentation/internal/ui/playHud.ts';
+import { playReadout } from '@skelly/presentation/internal/ui/playReadout.ts';
+import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { expect, it } from 'vitest';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const text = baseScreenText();
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const labelForAction = (actionId: string): string => inputBindings.label(actionId);
 
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
   const geometry = new BufferGeometry();
@@ -39,7 +43,7 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
     chunks: 2,
     pending: 0,
     holes: 0,
-    zombies: 1,
+    actors: 1,
     sounds: [],
     simulationMs: 1,
     renderMs: 2,
@@ -68,10 +72,23 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
   );
   expect(view.position).toEqual(positionBlocks.map((coordinate) => coordinate * blockSize));
   expect(view.memoryBytes).toBe(chunks.reduce((sum, chunk) => sum + chunk.bytes, geometryBytes));
-  expect(view.revealedZombies).toEqual(
+  expect(view.revealedActors).toEqual(
     revealedPositions.map((position) => position.map((coordinate) => (coordinate * blockSize).toFixed(1)).join(',')),
   );
   expect(view.movement).toBe('walking');
+  expect(view.meshingDone).toBe(true);
+  expect(
+    playReadout({
+      measurements: { ...measurements, holes: 3 },
+      walking: true,
+      positionBlocks,
+      blockSize,
+      calendar: 0,
+      chunks,
+      drawn,
+      revealedPositions,
+    }).meshingDone,
+  ).toBe(false);
   expect(view.fps).toBe(measurements.fps);
   expect(positionBlocks).toEqual([1, 2, 3]);
   geometry.dispose();
@@ -228,6 +245,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
         fullName: 'Fixture',
       },
       text.interaction,
+      inputBindings,
     );
     const prompt = drawn(hint);
     expect(prompt.querySelector('.keycap')?.textContent).toBe(labelForAction('world.interact'));
@@ -239,7 +257,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
 
 it("names a damaged piece's band from the shared band table below the top band, and only its name in the top band", () => {
   const registry = baseRegistry();
-  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const bands = registry.inventory.get(fixtureIds.player)!.conditionBands;
   const entities = new BlockEntities(registry);
   const { uid } = entities.add({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' })!;
   const def = entities.defOf(entities.byUid(uid)!);
@@ -270,6 +288,7 @@ it("names a damaged piece's band from the shared band table below the top band, 
         damage: damageText,
       },
       text.interaction,
+      inputBindings,
     );
     return { word: damageText, shown: drawn(hint).textContent };
   };
@@ -375,20 +394,24 @@ it('keeps an in-view firearm crosshair beyond the camera far plane', () => {
   expect(playCrosshairFrame(true, true, beyondFarPlane, false)).toMatchObject({ visible: true });
 });
 
-it('omits expired notices and the duplicated rest interruption but retains the interaction hint', () => {
+it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {
   const visible = hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true, interaction: true });
   const state = Object.freeze({
     now: 20,
     notice: 'old',
     noticeUntil: 10,
     interactionHint: 'F: search the cupboard',
+    itemActionHint: 'Rag:\n› left arm · bleeding',
     interruption: 'Hurt',
     resting: true,
   });
-  const restingPrompt = drawn(playPromptText(state, visible, text.prompt)).textContent;
+  const restingPrompt = drawn(playPromptText(state, visible, text.prompt, inputBindings)).textContent;
   expect(restingPrompt).toContain(state.interactionHint);
+  expect(restingPrompt).toContain(state.itemActionHint);
   expect(restingPrompt).not.toContain(state.interruption);
-  const interruptedPrompt = drawn(playPromptText({ ...state, resting: false }, visible, text.prompt)).textContent;
+  const interruptedPrompt = drawn(
+    playPromptText({ ...state, resting: false }, visible, text.prompt, inputBindings),
+  ).textContent;
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
 });
@@ -401,12 +424,14 @@ it('draws the live turn and tip keys as key caps in the carry hint, follows a re
           now: 1,
           notice: '',
           noticeUntil: 0,
-          interactionHint: playCarryText('fixture set down', text.interaction),
+          interactionHint: playCarryText('fixture set down', text.interaction, inputBindings),
+          itemActionHint: undefined,
           interruption: undefined,
           resting: false,
         },
         hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, interaction }),
         text.prompt,
+        inputBindings,
       ),
     );
   const caps = (prompt: HTMLElement): string[] =>
@@ -432,14 +457,26 @@ it('shows a refusal reason only when the messages option is on', () => {
     notice: `Can't sleep: ${reason}`,
     noticeUntil: 2,
     interactionHint: undefined,
+    itemActionHint: undefined,
     interruption: undefined,
     resting: false,
   });
   expect(
-    playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }), text.prompt),
+    playPromptText(
+      state,
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }),
+      text.prompt,
+      inputBindings,
+    ),
   ).toBe('');
   expect(
-    drawn(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }), text.prompt))
-      .textContent,
+    drawn(
+      playPromptText(
+        state,
+        hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }),
+        text.prompt,
+        inputBindings,
+      ),
+    ).textContent,
   ).toContain(reason);
 });

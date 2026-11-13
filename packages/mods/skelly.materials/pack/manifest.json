@@ -1,0 +1,154 @@
+{
+  "dependencies": ["skelly.inventory"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "materials-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cord_coil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/duct_tape.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fastener_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/field_patch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hinge_set.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nails.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rag.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_metal.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_spring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stick.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tape_roll.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thread_spool.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wax.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wooden_plank.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cloth_bundle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cord_coil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/duct_tape.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fastener_pack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/field_patch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_shards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hinge_set.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nails.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rag.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rubber_strip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_metal.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_spring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tape_roll.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thread_spool.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wax.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wood_offcut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wooden_plank.glb"
+    }
+  ],
+  "id": "skelly.materials",
+  "overrides": [],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}

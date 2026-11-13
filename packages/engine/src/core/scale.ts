@@ -1,0 +1,28 @@
+// Block size and what follows from it. Everything the player sees or tunes is in
+// metres; the voxel grid is in blocks. The game uses BLOCK_SIZE; the benchmark can
+// build other scales to compare them.
+
+import { CHUNK } from './coords.ts';
+
+/** The world's vertical extent in metres (`packages/deadvox/DESIGN.md`, "Performance and scale"). */
+export const WORLD_BOTTOM_M = -48;
+export const WORLD_TOP_M = 80;
+
+export const BLOCK_SIZE = 0.5;
+
+export interface Scale {
+  /** Edge length of one block, in metres. */
+  readonly blockSize: number;
+  /** Lowest and highest chunk layer (inclusive) that covers the world's height. */
+  readonly minCy: number;
+  readonly maxCy: number;
+}
+
+export const makeScale = (blockSize: number): Scale => ({
+  blockSize,
+  minCy: Math.floor(WORLD_BOTTOM_M / blockSize / CHUNK),
+  maxCy: Math.ceil(WORLD_TOP_M / blockSize / CHUNK) - 1,
+});
+
+/** How many chunks a horizontal distance in metres spans, rounded up. */
+export const chunksFor = (scale: Scale, metres: number): number => Math.ceil(metres / (CHUNK * scale.blockSize));

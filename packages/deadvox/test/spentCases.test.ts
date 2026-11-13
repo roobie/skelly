@@ -1,11 +1,10 @@
+import { spentCaseScatter } from '@skelly/engine/internal/core/scatterPile.ts';
+import type { FirearmShotEffect } from '@skelly/engine/inventory';
+import { Inventory, SPENT_CASE_SCATTER_CAP } from '@skelly/engine/inventory';
+import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '@skelly/presentation/internal/render/caseEffects.ts';
+import { type ModelLibrary, PileMeshes } from '@skelly/presentation/render';
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
-import { Inventory } from '../src/core/inventory.ts';
-import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from '../src/core/scatterPile.ts';
-import type { FirearmShotEffect } from '../src/game/firearmHandling.ts';
-import { CaseEffects, caseFlightPoint, FLYING_CASE_CAP } from '../src/render/caseEffects.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -56,6 +55,30 @@ describe('spent-case presentation', () => {
     expect(piles.group.children).toHaveLength(1);
     expect(piles.group.children[0]).toBeInstanceOf(InstancedMesh);
     expect((piles.group.children[0] as InstancedMesh).count).toBe(12);
+  });
+
+  it('redraws only the pile that changed, and frees the bundle of a pile that empties', () => {
+    const inventory = new Inventory(registry);
+    const first = inventory.create('canned_beans');
+    const second = inventory.create('canned_beans');
+    expect(inventory.add(first, { kind: 'pile', pos: [1, 2, 3] })).toBe(true);
+    expect(inventory.add(second, { kind: 'pile', pos: [8, 2, 3] })).toBe(true);
+    const piles = new PileMeshes(0.5);
+    piles.sync(inventory);
+    const [bundleOfFirst, bundleOfSecond] = piles.group.children;
+    expect(piles.group.children).toHaveLength(2);
+
+    expect(inventory.add(inventory.create('canned_beans'), { kind: 'pile', pos: [1, 2, 3] })).toBe(true);
+    piles.sync(inventory);
+    expect(piles.group.children).toContain(bundleOfSecond);
+    expect(piles.group.children).toHaveLength(2);
+    expect(piles.group.children).not.toContain(bundleOfFirst);
+
+    expect(inventory.consume(second)).toBe(true);
+    piles.sync(inventory);
+    expect(piles.group.children).not.toContain(bundleOfSecond);
+    expect(piles.group.children).toHaveLength(1);
+    piles.dispose();
   });
 
   it('uses validated pile-display components instead of item ids to choose scatter rendering', () => {

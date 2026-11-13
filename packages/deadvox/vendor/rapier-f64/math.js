@@ -1,4 +1,5 @@
 import { RawVector, RawRotation } from "./raw";
+export const scratchBuffer = new Float64Array(16);
 export class Vector3 {
     constructor(x, y, z) {
         this.x = x;
@@ -15,6 +16,15 @@ export class VectorOps {
     }
     static zeros() {
         return VectorOps.new(0.0, 0.0, 0.0);
+    }
+    static fromBuffer(buffer, target) {
+        if (!buffer)
+            return null;
+        target ?? (target = VectorOps.zeros());
+        target.x = buffer[0];
+        target.y = buffer[1];
+        target.z = buffer[2];
+        return target;
     }
     static fromRaw(raw) {
         if (!raw)
@@ -40,6 +50,16 @@ export class Quaternion {
 export class RotationOps {
     static identity() {
         return new Quaternion(0.0, 0.0, 0.0, 1.0);
+    }
+    static fromBuffer(buffer, target) {
+        if (!buffer)
+            return null;
+        target ?? (target = RotationOps.identity());
+        target.x = buffer[0];
+        target.y = buffer[1];
+        target.z = buffer[2];
+        target.w = buffer[3];
+        return target;
     }
     static fromRaw(raw) {
         if (!raw)
@@ -91,6 +111,18 @@ export class SdpMatrix3 {
     }
 }
 export class SdpMatrix3Ops {
+    static fromBuffer(buffer, target) {
+        if (!buffer)
+            return null;
+        target ?? (target = new SdpMatrix3(buffer));
+        target.elements[0] = buffer[0];
+        target.elements[1] = buffer[1];
+        target.elements[2] = buffer[2];
+        target.elements[3] = buffer[3];
+        target.elements[4] = buffer[4];
+        target.elements[5] = buffer[5];
+        return target;
+    }
     static fromRaw(raw) {
         const sdpMatrix3 = new SdpMatrix3(raw.elements());
         raw.free();

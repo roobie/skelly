@@ -1,16 +1,14 @@
 import { readFileSync } from 'node:fs';
+import { buildRegistry, type ContentSource } from '@skelly/engine/content';
+import { simSecondsPerHour } from '@skelly/engine/internal/core/clock.ts';
+import { coreMessage } from '@skelly/engine/internal/core/coreText.ts';
+import { freshnessWord, isRotten, spoilage } from '@skelly/engine/internal/core/food.ts';
+import { chargeOf, drainLight, swapBattery } from '@skelly/engine/internal/core/lights.ts';
+import { canSprint, consume, stepNeeds, stepStamina } from '@skelly/engine/internal/core/needs.ts';
+import { gameHours, gameSeconds } from '@skelly/engine/internal/core/time.ts';
+import { freshDropTarget, Inventory, type Item, ItemFactory, type Target, toggleLight } from '@skelly/engine/inventory';
+import { Body, type Needs } from '@skelly/engine/sim';
 import { describe, expect, it } from 'vitest';
-import { Body } from '../src/core/body.ts';
-import { simSecondsPerHour } from '../src/core/clock.ts';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { coreMessage } from '../src/core/coreText.ts';
-import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
-import { Inventory, type Target } from '../src/core/inventory.ts';
-import { type Item, ItemFactory } from '../src/core/items.ts';
-import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
-import { canSprint, consume, type Needs, stepNeeds, stepStamina } from '../src/core/needs.ts';
-import { freshDropTarget } from '../src/core/options.ts';
-import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureFood, foodFixtureRegistry } from './foodFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -20,48 +18,79 @@ const fixtureBody = new Body(BODY_TUNING_FIXTURE);
 const SPAWN_NEEDS: Needs = fixtureBody.spawnNeeds;
 const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
-  const source = `src/content/base/${file}`;
+  const source = `mods/skelly.deadvox.actors/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
-  if (file === 'items-other.json') {
-    data.items = data.items.filter(
-      (item: { id: string; category: string }) => item.id !== 'bandage' && item.category !== 'book',
-    );
-  }
-  if (file === 'items-tools.json') {
-    data.items = data.items.filter(
-      (item: { id: string }) =>
-        !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
-    );
-  }
-  if (file === 'items-wearables.json') {
-    data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
-  }
+  return { source, data };
+};
+const firearmsFile = (file: string): ContentSource => {
+  const source = `skelly.firearms/${file}`;
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
   if (file === 'items-attachments.json') {
     data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
   return { source, data };
 };
+const wearablesWithoutArmourInputs = (): ContentSource => {
+  const source = 'skelly.wearables/wearables-items.json';
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
+  data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
+  return { source, data };
+};
+const electricItemsWithoutCrafting = (): ContentSource => {
+  const source = 'skelly.electric-power/electric-power-items.json';
+  const data = JSON.parse(readFileSync(`../mods/${source}`, 'utf8'));
+  data.items = data.items.filter((item: { id: string }) => item.id !== 'headlamp');
+  data.recipes = [];
+  return { source, data };
+};
 const { registry } = buildRegistry(
-  [
-    'ui.json',
-    'item-wear.json',
-    'inventory.json',
-    'sounds.json',
-    'sounds-pump.json',
-    'sounds-weapons.json',
-    'items-food.json',
-    'items-other.json',
-    'items-tools.json',
-    'items-wearables.json',
-    'items-ammunition.json',
-    'items-attachments.json',
-    'items-gun-parts.json',
-    'models-items.json',
-    'models-gun-parts.json',
-    'models-melee.json',
-    'models-firearms.json',
-    'models-attachments.json',
-  ].map(base),
+  ['actors-sounds.json', 'actors-items.json']
+    .map(base)
+    .concat(
+      [
+        'firearms-items.json',
+        'models-firearm-things.json',
+        'sounds-firearms.json',
+        'sounds-pump.json',
+        'sounds-weapons.json',
+        'items-ammunition.json',
+        'items-attachments.json',
+        'items-gun-parts.json',
+        'models-gun-parts.json',
+        'models-firearms.json',
+        'models-attachments.json',
+      ].map(firearmsFile),
+    )
+    .concat(
+      [
+        'skelly.ui/ui.json',
+        'skelly.ui/ui-sounds.json',
+        'skelly.melee-classes/damage-kinds.json',
+        'skelly.melee-classes/melee-classes.json',
+        'skelly.melee-classes/melee-sounds.json',
+        'skelly.inventory/item-wear.json',
+        'skelly.inventory/inventory.json',
+        'skelly.materials/materials-items.json',
+        'skelly.materials/models-materials.json',
+        'skelly.medicine/medicine-items.json',
+        'skelly.medicine/models-medicine.json',
+        'skelly.basic-foods/basic-foods-items.json',
+        'skelly.basic-foods/models-basic-foods.json',
+        'skelly.packaged-foods/packaged-foods-items.json',
+        'skelly.body/models-body.json',
+        'skelly.wearables/wearables-sounds.json',
+        'skelly.wearables/models-wearables.json',
+        'skelly.fuel/fuel-items.json',
+        'skelly.containers/models-containers.json',
+        'skelly.electronics/models-electronics.json',
+        'skelly.light-sources/models-light-sources.json',
+      ]
+        .map((file) => ({
+          source: file,
+          data: JSON.parse(readFileSync(`../mods/${file}`, 'utf8')),
+        }))
+        .concat(wearablesWithoutArmourInputs(), electricItemsWithoutCrafting()),
+    ),
 );
 
 /** Steps needs every simulation second, as the needs system does at 1×. */
@@ -78,7 +107,7 @@ const tickLive = (needs: Needs, body: Body, hours: number): void => {
 };
 
 describe('need rates', () => {
-  it('run at their rates per game hour', () => {
+  it('drain calories and hydration and build fatigue over a game hour', () => {
     const sim = new Simulation({ seed: 1 });
     for (let i = 0; i < HOUR; i++) {
       sim.frame(1);
@@ -192,47 +221,59 @@ describe('food', () => {
 });
 
 describe('flashlight', () => {
-  // 0.25 of a battery per game hour: a full AA lasts 4 hours.
   const lit = () => {
     const inventory = new Inventory(registry);
     const light = inventory.create('flashlight');
     toggleLight(registry, light);
     return { inventory, light };
   };
+  /** The registry's drain rate, the charge of a fresh battery and how long that charge lasts on. */
+  const drain = () => {
+    const { light } = lit();
+    const rate = registry.items.get(light.type)!.light!.power!.chargePerGameHour;
+    const full = chargeOf(registry, light)!;
+    return { rate, full, lifetime: full / rate, batteryType: light.slots!.battery!.type };
+  };
 
-  it('drains the same in one step as ticking every second, and goes out when the battery dies', () => {
+  it('drains the registry rate in one step as ticking every second, and goes out when the battery dies', () => {
+    const { rate, full, lifetime } = drain();
+    expect(full).toBeGreaterThan(0);
     const caught = lit().light;
     const live = lit().light;
     expect([caught.on, live.on]).toEqual([true, true]);
-    expect(drainLight(registry, caught, gameHours(3))).toBeUndefined();
-    for (let i = 0; i < 3 * HOUR; i++) {
-      drainLight(registry, live, gameSeconds(BASE_CLOCK.ratio));
+    const span = lifetime * 0.75;
+    expect(drainLight(registry, caught, gameSeconds(span))).toBeUndefined();
+    const second = BASE_CLOCK.ratio;
+    for (let t = 0; t < span - 1e-9; t += second) {
+      drainLight(registry, live, gameSeconds(Math.min(second, span - t)));
     }
-    expect(chargeOf(registry, caught)).toBeCloseTo(0.25, 9);
-    expect(chargeOf(registry, live)).toBeCloseTo(0.25, 6);
+    expect(chargeOf(registry, caught)).toBeCloseTo(full - rate * span, 9);
+    expect(chargeOf(registry, live)).toBeCloseTo(full - rate * span, 6);
 
-    expect(drainLight(registry, caught, gameHours(5))).toBeCloseTo(gameHours(1), 9); // ran out an hour in
+    expect(drainLight(registry, caught, gameSeconds(lifetime))).toBeCloseTo(lifetime - span, 6);
     expect(caught.on).toBe(false);
     expect(chargeOf(registry, caught)).toBe(0);
-    expect(toggleLight(registry, caught)).toBe('The battery is dead');
+    expect(toggleLight(registry, caught)).toBe(coreMessage(registry, 'batteryDead'));
   });
 
   it('takes a fresh battery from a stack, and gives back the old one if it had charge left', () => {
+    const { full, lifetime, batteryType } = drain();
     const { inventory, light } = lit();
-    drainLight(registry, light, gameHours(2)); // half left
-    const batteries = inventory.create('aa_battery', 3);
+    drainLight(registry, light, gameSeconds(lifetime / 2));
+    const batteries = inventory.create(batteryType, 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
     const feet = (): Target => ({ kind: 'pile', pos: [0, 0, 0] });
     expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
     expect(batteries.count).toBe(2);
-    expect(chargeOf(registry, light)).toBe(1);
+    expect(chargeOf(registry, light)).toBe(full);
     const spent = inventory.pileAt([0, 0, 0])!.items[0]!.item;
-    expect([spent.type, chargeOf(registry, spent)]).toEqual(['aa_battery', 0.5]);
+    expect(spent.type).toBe(batteryType);
+    expect(chargeOf(registry, spent)).toBeCloseTo(full / 2, 9);
 
-    drainLight(registry, light, gameHours(10)); // dead
+    drainLight(registry, light, gameSeconds(lifetime * 2)); // dead
     expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
     expect(inventory.pileAt([0, 0, 0])!.items).toHaveLength(1); // the dead one is thrown away
-    expect(swapBattery(inventory, light, light, feet)).toBe("It doesn't take that battery");
+    expect(swapBattery(inventory, light, light, feet)).toBe(coreMessage(registry, 'wrongBattery'));
   });
 
   const halfSpent = () => {

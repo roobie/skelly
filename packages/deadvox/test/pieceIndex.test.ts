@@ -1,10 +1,18 @@
 import process from 'node:process';
+import type { FurnitureDef } from '@skelly/engine/content';
+import type { BlockEntitiesState } from '@skelly/engine/internal/core/blockEntities.ts';
+import type { BrickOut } from '@skelly/engine/internal/core/solidBricks.ts';
+import {
+  BlockEntities,
+  type BlockEntity,
+  CHUNK,
+  isBodyDoor,
+  toChunk,
+  type Vec3,
+  World,
+  worldBricks,
+} from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities, type BlockEntitiesState, type BlockEntity, isBodyDoor } from '../src/core/blockEntities.ts';
-import type { FurnitureDef } from '../src/core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { type BrickOut, worldBricks } from '../src/core/solidBricks.ts';
-import { World } from '../src/core/world.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -108,7 +116,7 @@ it('lists the pieces of each column as a full scan does through adds, moves, rem
 });
 
 // biome-ignore lint/style/noProcessEnv: this benchmark is explicitly opt-in.
-describe.runIf(process.env.DEADVOX_BENCH === '1')('piece edit cost benchmark', () => {
+describe.runIf(process.env.SKELLY_BENCH === '1')('piece edit cost benchmark', () => {
   it('prints the cost of one piece edit and its lookups against resident pieces', () => {
     const rows = [2000, 10_000, 50_000].map((resident) => {
       const entities = new BlockEntities(registry);

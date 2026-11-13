@@ -1,30 +1,79 @@
 ---
 read_if:
-  - you change tutorial entry, objectives, practice content or save isolation
+  - you change how practice is entered or left, its objectives, practice content or save isolation
 ---
 
 # Disposable practice
 
-Practice is a separate authored place, not a guided replacement world. Guaranteed supplies and a compact route let a newcomer learn ordinary interactions without depending on random scavenging. Use `src/content/base/tutorial.jsonnet` and `src/core/authoredSite.ts`, `AuthoredSite`.
+Practice is a separate authored place, not a guided replacement world. Guaranteed
+supplies and a compact route let a newcomer learn ordinary interactions without
+depending on random scavenging. See `mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet` and
+`packages/engine/src/core/authoredSite.ts`, `AuthoredSite`.
 
-The essentials route stays short so entry remains cheap. Its completion choice precedes navigation: declining weapons must remain a successful essentials-only finish, while accepting retains the disposable runtime. Injury recovery and light and power belong in separate optional modules so growth does not lengthen everyone's first session. See `src/game/tutorial.ts`, `Tutorial`.
+Keep the essentials short so entry remains cheap. Optional modules must not lengthen
+everyone's first session or make declining further practice a failure. Linear weapons
+practice avoids making module navigation another lesson. Empty weapons and packaged
+ammunition make acquiring and carrying supplies part of learning rather than granting
+a working gun. Case picking is not partial loading because the lesson requires
+insertion followed by usable closure below capacity. Ready and sighted discharges
+establish that sights are not a firing prerequisite. See
+`mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`.
 
-Weapons practice uses a fixed order to avoid adding module-navigation machinery. Empty weapons and packaged ammunition make acquisition, unpacking and carrying part of learning rather than granting a working gun. Partial loading, recovery after firing and live-round unloading distinguish cylinder handling from tube-and-chamber handling; ready and sighted discharges demonstrate that sights are not a firing prerequisite. Facts belong to one weapon instance so switching guns cannot splice together a recovery sequence. Picking a case is not partial loading: that lesson requires insertion followed by usable closure below capacity, so an open cylinder cannot count as a finished load. See `src/game/tutorialWeapons.ts`, `TutorialWeapons`.
+Static targets provide an aiming reference without requiring injury, a kill or target
+scoring. Completion should demonstrate handling rather than accuracy. Empty-hand
+practice likewise must not require another living target. Finite supplies retain
+ordinary scarcity; replacing the whole attempt avoids hidden restocking and a second
+reset owner. See `mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet`, `tutorial_range`,
+and `mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`.
 
-Static targets provide an aiming reference without requiring injury, a kill or target scoring. Completion proves committed discharges, not accuracy; the authored backstop separates the firing line from the essentials threat. Empty-hand practice credits a completed swing rather than requiring another living target. Finite supplies retain ordinary scarcity and use the whole-practice restart rather than hidden restocking or a second reset owner. See `src/content/base/tutorial.jsonnet`, `tutorial_range`, and `src/game/tutorialWeapons.ts`, `TutorialWeapons`.
+A newcomer whose light dies may not know that batteries can be swapped. Optional
+light practice makes discovering that action cheap without delaying the essentials.
+Outcomes before choosing the module must not silently complete the lesson the player
+has yet to see. See `mods/skelly.deadvox.scenario.tutorial/guidance.libsonnet`, `gunStep`, and
+`packages/presentation/src/presentation/guidedSteps.ts`, `GuidedSteps`.
 
-The light and power module is chosen from the main menu after the essentials, so it never delays them. A newcomer whose light dies doesn't know a battery can be swapped, so the module teaches it where failure costs nothing: a windowless store holds a light whose battery is nearly flat and a spare. Its steps complete on the light being on, a battery swap the battery owner finished, and the light on again after the swap; a refused or cancelled swap earns nothing, and lights and swaps before the module starts count for nothing. The swap itself is the outcome, so swapping into the essentials' own light also completes it. Its items, step labels and the battery's charge are content: the layout's `practice` names the light and battery, and fixed loot's `charge` sets how long the light lasts. See `src/game/tutorial.ts`, `Tutorial`, `src/game/survival.ts`, `SurvivalHooks`, and `src/content/base/tutorial.jsonnet`.
+Action labels need live bindings because outcome nouns alone leave newcomers without
+the means to act. Help uses the shared controls card rather than a second manual that
+can drift. See `packages/presentation/src/ui/guidedSteps.ts`, `mountGuidance`, and
+`packages/presentation/src/presentation/controls.ts`, `mountControlsCard`.
 
-Action labels show live bindings because outcome nouns alone leave newcomers without the means to act. Fixed pointer actions use their catalogue labels rather than implying rebinding support. Help opens the shared controls card on the relevant topic, keeping one binding catalogue that follows rebinding instead of a second manual that can drift. See `src/ui/tutorial.ts`, `mountTutorial`, and `src/game/controls.ts`, `mountControlsCard`.
+Completed outcomes, not requests or pressed buttons, are the teaching evidence.
+Remembering early outcomes prevents lesson order from stranding someone who already
+used their supplies. Observation must not become another execution owner; the
+framework boundary is in `docs/decisions/0009-content-defined-products.md`,
+"Starts and mixing". See `packages/engine/src/game/unpacking.ts`, `Unpacking.complete`,
+`packages/engine/src/game/firearmHandling.ts`, `FirearmMechanics`, and
+`packages/engine/src/core/playerCombat.ts`, `PlayerCombat`.
 
-Short contextual objectives observe completed outcomes rather than pressed buttons. Preparing a held pair, opening it and eating from it are distinct lessons: possession or consumption alone cannot prove a successful opening. The opening owner supplies completion so refused and cancelled attempts cannot earn it. Early opening still counts, including preparation credit, so lesson order cannot strand someone who already opened and ate their supplies. The observer cannot execute actions; see `src/game/tutorial.ts`, `Tutorial`, `src/game/unpacking.ts`, `Unpacking.complete`, and `src/ui/tutorial.ts`, `mountTutorial`. Firearm handling owners report completed insertions, closure, cycles and ejections; shot context comes from committed discharge, never the admission of a delayed trigger pull. This narrow observation seam avoids changing simulation rules or inferring success from animation, requests or queued work. See `src/game/firearmHandling.ts`, `FirearmMechanics`, `src/game/revolverHandling.ts`, `RevolverHandling`, and `src/core/playerCombat.ts`, `PlayerCombat`.
+Avoidance teaches that fighting is optional. Naming a destination makes leaving the
+threat legible without changing ordinary senses or damage. Injury must not become a
+graduation requirement, and lost supplies must not trap the learner. See
+`mods/skelly.deadvox.scenario.tutorial/guidance-text.libsonnet`, `exitPath`, and
+`mods/skelly.deadvox.scenario.tutorial/tutorial.jsonnet`, `tutorial_range`.
 
-Avoidance teaches that fighting is optional. Its objective names the destination as well as crouching because a stance change alone does not demonstrate leaving the threat behind; see `src/content/base/ui-screen-text.libsonnet`, `exitPath`, and `src/game/tutorial.ts`, `Tutorial`. The threat has ordinary senses and damage, and the route offers separation and cover instead of immunity, scripted injury or a required kill. A bandage supports recovery without making injury a graduation requirement. Restart and exit remain available in the pause menu because practice supplies can be lost or exhausted.
+Practice must never touch the player's save: disposable learning must not share a
+normal world's persistence identity. The game knows a practice run from its start row, so
+every link that starts the tutorial gets the same isolation. See
+`packages/engine/src/game/startSelection.ts`, `isPracticeStart`, and
+`packages/presentation/src/presentation/play.ts`, `startPlay`.
 
-Practice must never touch the player's save. Its startup branch does not construct a save controller; play also rejects a practice session bound to persistence or restoration. This avoids periodic checkpoints, sleep saves, lifecycle writes and death markers sharing a normal world identity. See `src/game/tutorialUrl.ts`, `tutorialRequested`, and `src/game/play.ts`, `startPlay`.
+Practice is a page, not a mode inside a run. Its own link names the practice pack and
+never carries `start-mod`, and the player leaves it with the browser, by Back or by
+closing the tab. One link names one start, so start order needs no practice exception,
+and the browser already owns leaving a page. A page whose link carries `start-mod`
+names its own start, so it does not offer practice. See
+`packages/presentation/src/presentation/tutorialUrl.ts`, `tutorialUrl`.
 
-Completion, death and voluntary exit return to the start choice rather than silently creating a world or transferring equipment. Finishing the essentials does not exit by itself, because the same menu offers the optional modules. Light practice and weapons practice share the disposable runtime but are chosen separately so neither interrupts the other's objectives. Returning by navigation discards the entire practice runtime and its listeners. Storage-backend selection survives navigation so Continue discovers the same normal save rather than a different storage area; presentation settings also survive; world and debug selections do not follow practice. See `src/game/tutorialUrl.ts`, `tutorialUrl`.
+Death and completion stay on the practice page, whose one end control restarts
+practice; nothing creates a world or transfers equipment. Finishing the essentials
+must not end practice while optional modules are still available. See
+`packages/presentation/src/presentation/play.ts`, `restartPractice`.
 
-The launcher offers practice only as a play destination, so a benchmark cannot carry an unsaved teaching place. Its URL contract stays independent of the simulation and workspace packages because launcher checks run without a game installation. See `site/launcher.js`, `setPlayOnlySite`, and `src/game/tutorialUrl.ts`, `tutorialRequested`.
+The launcher offers practice only as a play destination, so a benchmark cannot carry
+an unsaved teaching place. Its URL contract stays independent of simulation and
+workspace packages because launcher checks run without a game installation. See
+`site/launcher.js`, `siteOffered`.
 
-Five minutes is a nominal teaching target, not a timer or test assertion. Slower reading is allowed. Teachability, threat intensity and readability require a newcomer playtest; automated proofs establish outcome observation, an injury-free route and save isolation, not whether the lesson feels clear.
+Five minutes is a nominal teaching target, not a timer or test assertion. Slower
+reading is allowed. Teachability, threat intensity and readability require a newcomer
+playtest; automated proofs cannot establish whether the lesson feels clear.

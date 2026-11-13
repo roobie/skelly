@@ -1,6 +1,11 @@
+import {
+  type CompiledTemplate,
+  cellsOf,
+  compileAssembly,
+  compileTemplate,
+} from '@skelly/engine/internal/core/templates.ts';
+import type { Vec3 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { type CompiledTemplate, cellsOf, compileAssembly, compileTemplate } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();

@@ -1,18 +1,14 @@
+import { pickFurniture } from '@skelly/engine/internal/core/furniturePick.ts';
+import { pieceSize } from '@skelly/engine/internal/core/templates.ts';
+import { applyToHeldItem } from '@skelly/engine/internal/game/playerTickActions.ts';
+import type { HandSide, Item } from '@skelly/engine/inventory';
+import type { SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { dominantSide, offSide, PlayerTickActions } from '@skelly/engine/sim';
+import { projectVehicleParts } from '@skelly/engine/vehicles';
+import { BlockEntities, makeScale, type SolidAt, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { BlockEntities } from '../src/core/blockEntities.ts';
-import { dominantSide, offSide } from '../src/core/character.ts';
-import type { Vec3 } from '../src/core/coords.ts';
-import { pickFurniture } from '../src/core/furniturePick.ts';
-import type { HandSide } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { pieceSize } from '../src/core/templates.ts';
-import { projectVehicleParts } from '../src/core/vehicleProjection.ts';
-import { World } from '../src/core/world.ts';
-import { applyToHeldItem, PlayerTickActions } from '../src/game/playerTickActions.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { type MoveIntent, PLAYER } from './playerFixture.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
@@ -47,6 +43,7 @@ const makeRuntime = (terrain: SolidAt, spawn: Vec3, entities: BlockEntities, res
   const isSolid: SolidAt = (x, y, z) => terrain(x, y, z) || entities.isSolid(x, y, z);
   const session = createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: new World(),
     entities,
     isSolid,
@@ -132,7 +129,10 @@ const holdInHand = (runtime: Runtime, type: string, side?: HandSide): Item => {
   return item;
 };
 const itemDefs = [...registry.items.values()];
-const twoHandedType = itemDefs.find((def) => def.twoHanded)!.id;
+// The smallest, so it fits the worn pocket a case carries it in.
+const twoHandedType = itemDefs
+  .filter((def) => def.twoHanded)
+  .sort((a, b) => a.size[0] * a.size[1] - b.size[0] * b.size[1])[0]!.id;
 const oneHandedFoodType = itemDefs.find((def) => def.food && !def.twoHanded)!.id;
 
 /**
@@ -310,9 +310,9 @@ describe('ladders', () => {
 
   it('is not climbed by a shambler under a player on the roof', () => {
     const runtime = houseWithLadder([1, roofTop, 1]);
-    const id = runtime.session.zombies.add(registry.zombies.get('shambler')!, [-3, 1, 1], [1, 0, 0]);
+    const id = runtime.session.actors.add(registry.actors.get('shambler')!, [-3, 1, 1], [1, 0, 0]);
     runtime.advance(600);
-    const shambler = runtime.session.zombies.store.get(id)!;
+    const shambler = runtime.session.actors.store.get(id)!;
     // It came for the player as far as the wall, into the ladder's cells, and stayed on the ground.
     expect(shambler.body.pos[0] + shambler.body.halfWidth).toBeGreaterThan(-1);
     expect(shambler.body.pos[1]).toBeLessThan(1 + PLAYER.stepHeight / scale.blockSize);

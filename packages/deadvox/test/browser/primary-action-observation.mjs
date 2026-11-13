@@ -1,15 +1,14 @@
 // biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
 import assert from 'node:assert/strict';
 import process from 'node:process';
-import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
-import { CHUNK } from '../../src/core/coords.ts';
-import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
+import { BLOCK_SIZE, CHUNK, chunksFor, makeScale } from '@skelly/engine/world';
+import graphicsFile from '../../../mods/skelly.graphics/graphics.json' with { type: 'json' };
 
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
 const streamEdgeColumn =
   chunksFor(makeScale(BLOCK_SIZE), cleanReplayRadiusM) + graphicsFile.graphics[0].skyPreloadRings + 1;
-const streamEdgeZombieX = (streamEdgeColumn + 0.5) * columnMetres;
+const streamEdgeActorX = (streamEdgeColumn + 0.5) * columnMetres;
 
 export const logPhase = (phase, start) => {
   process.stdout.write(
@@ -18,6 +17,7 @@ export const logPhase = (phase, start) => {
 };
 
 export const timePhase = async (phase, action) => {
+  process.stdout.write(`PRIMARY_ACTION_PHASE_START ${phase}\n`);
   const start = performance.now();
   try {
     return await action();
@@ -31,12 +31,12 @@ export const observationPlugin = {
   enforce: 'pre',
   transform(code, id) {
     // A quiet test-owned site isolates replay's stream-edge witness from scenario population changes.
-    if (id.endsWith('/src/content/base/layouts.json')) {
+    if (id.endsWith('/mods/skelly.deadvox.scenario.lone-house/layouts.json')) {
       const data = JSON.parse(code);
       data.layouts.push({
         id: 'replay_fixture',
         lootContext: { usage: ['Residential'], tier: 'Tier1' },
-        bounds: { x0: -64, z0: -64, x1: Math.max(64, streamEdgeZombieX + columnMetres), z1: 64 },
+        bounds: { x0: -64, z0: -64, x1: Math.max(64, streamEdgeActorX + columnMetres), z1: 64 },
         ground: 20,
         terrain: [],
         buildings: [],
@@ -44,73 +44,84 @@ export const observationPlugin = {
         tracks: [],
         player: { position: [8, 20.5, 8], bearing: 0 },
         // Its own column is generated, but the outward neighbour is not: replay must preserve that gate.
-        shamblers: [{ type: 'shambler', position: [streamEdgeZombieX, 20.5, 8] }],
+        actors: [{ type: 'shambler', position: [streamEdgeActorX, 20.5, 8] }],
       });
       return JSON.stringify(data);
     }
-    if (!id.endsWith('/src/game/play.ts')) {
-      return;
+    if (id.endsWith('/mods/skelly.deadvox.scenario.test-house/starts.json')) {
+      const data = JSON.parse(code);
+      // Quickbar replay needs owned stock without borrowing the product's kit or an implicit debug bag.
+      data.items = [
+        {
+          id: 'replay_fixture_stock',
+          name: 'Replay stock',
+          category: 'material',
+          size: [1, 1],
+          weight: 1,
+          workInProgress: false,
+        },
+      ];
+      return JSON.stringify(data);
     }
-    const marker = '  const onForwardPress = (e: MouseEvent) => {';
-    const throwQueueMarker = `      pendingPlayerTickActions.enqueue(() => {
+    if (id.endsWith('/engine/src/game/commandRouter.ts')) {
+      const throwQueueMarker = `      ports.pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
           throwHeldItem(heldItem, hand, distance);
           syncThrowingStance();
         });
       });`;
-    const playerTickMarker = '      pendingPlayerTickActions.applyAtNextTick();';
-    const adsToggleMarker = `      case 'aim.ads-toggle':
-        input.toggleAimingDownSights(replayPlayer !== undefined);
+      const adsToggleMarker = `      case 'aim.ads-toggle':
+        controls.toggleAimingDownSights(ports.replaying());
         break;`;
-    assert(code.includes(marker), 'game-loop observation point exists');
-    assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
-    assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
-    assert(code.includes(playerTickMarker), 'player tick action observation point exists');
-    let observedCode = code.replace(
-      throwQueueMarker,
-      `${throwQueueMarker}
-      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
-        const slot = proof.quickbarTapAfterNextThrowCommit;
-        proof.quickbarTapAfterNextThrowCommit = undefined;
-        quickbarTap(slot);
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapCommitObservation = {
-          itemMoveQueued: queue.jobs.some(
+      const playerTickMarker = '      ports.pendingPlayerTickActions.applyAtNextTick();';
+      assert(code.includes(throwQueueMarker), 'stance throw queue observation point exists');
+      assert(code.includes(adsToggleMarker), 'ADS replay observation point exists');
+      assert(code.includes(playerTickMarker), 'player tick action observation point exists');
+      return code
+        .replace(
+          playerTickMarker,
+          `${playerTickMarker}
+      const proof = globalThis.primaryActionTest;
+      if (proof?.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
+        const tappedItem = ports.inventory().itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapTickObservation = {
+          itemMoveQueued: ports.session().queue.jobs.some(
             (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
           ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+          location: tappedItem ? ports.inventory().locate(tappedItem)?.kind ?? null : null,
         };
-      }
-      if (proof.dropAfterNextThrowCommit) {
-        proof.dropAfterNextThrowCommit = false;
-        dropHeldItemForThrowingStance();
       }`,
-    );
-    observedCode = observedCode.replace(
-      adsToggleMarker,
-      `      case 'aim.ads-toggle': {
-        const before = input.aimingDownSights;
-        const replaying = replayPlayer !== undefined;
-        input.toggleAimingDownSights(replaying);
-        proof.adsToggleObservations.push({ before, after: input.aimingDownSights, replaying, locked: input.locked });
+        )
+        .replace(
+          throwQueueMarker,
+          `${throwQueueMarker}
+      globalThis.primaryActionTest?.afterThrowCommit();`,
+        )
+        .replace(
+          adsToggleMarker,
+          `      case 'aim.ads-toggle': {
+        const before = controls.aimingDownSights;
+        const replaying = ports.replaying();
+        controls.toggleAimingDownSights(replaying);
+        globalThis.primaryActionTest?.adsToggled(before, controls.aimingDownSights, replaying);
         break;
       }`,
-    );
-    observedCode = observedCode.replace(
-      playerTickMarker,
-      `${playerTickMarker}
-      if (proof.quickbarTapCommitObservation && !proof.quickbarTapTickObservation) {
-        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
-        proof.quickbarTapTickObservation = {
-          itemMoveQueued: queue.jobs.some(
-            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
-          ),
-          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
-        };
-      }`,
-    );
+        );
+    }
+    if (!id.endsWith('/src/presentation/play.ts')) {
+      return;
+    }
+    const marker = '  const onForwardPress = (e: MouseEvent) => {';
+    assert(code.includes(marker), 'game-loop observation point exists');
+    let observedCode = code;
     // The fixture drops the way the game does, so a full pile at the feet spills to the next spot.
-    observedCode = `import { dropTarget as primaryActionDropTarget } from '../core/options.ts';\n${observedCode}`;
+    observedCode = `import { dropTarget as primaryActionDropTarget } from '@skelly/engine/internal/core/options.ts';\n${observedCode}`;
+    // The quickbar probe drives the router's quickbar actions directly.
+    observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';\n${observedCode}`;
+    // The landing probe measures a throw as the router does.
+    observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '@skelly/engine/internal/core/itemThrow.ts';\n${observedCode}`;
+    // The ignition probe finds the hand's target as the router's hand use does.
+    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
@@ -135,12 +146,19 @@ export const observationPlugin = {
     audio,
     feet,
     scale,
-    performHandUse,
-    quickbarActions,
+    performHandUse: router.performHandUse,
+    // The router builds its own quickbar actions; this one has the same owners and holds no state of its own.
+    quickbarActions: new PrimaryActionQuickbarActions({
+      inventory,
+      queue,
+      feet,
+      survival,
+      notice: (text) => showRefusal(text, sim.time),
+    }),
     quickbar,
     screen,
-    dispatchScreenCommand,
-    get inputRecorder() { return inputRecorder; },
+    dispatchScreenCommand: router.dispatchScreenCommand,
+    get inputRecorder() { return inputRecording.recorder; },
     captureSnapshot,
     dropAfterNextThrowCommit: false,
     quickbarTapAfterNextThrowCommit: undefined,
@@ -148,22 +166,45 @@ export const observationPlugin = {
     quickbarTapCommitObservation: undefined,
     quickbarTapTickObservation: undefined,
     adsToggleObservations: [],
+    // The router calls this from its ADS toggle, with the state before and after it.
+    adsToggled: (before, after, replaying) => {
+      proof.adsToggleObservations.push({ before, after, replaying, locked: input.locked });
+    },
     throwSpawnObservations: {},
+    // The router calls this right after a live stance throw queues its player-tick commit.
+    afterThrowCommit: () => {
+      if (proof.quickbarTapAfterNextThrowCommit !== undefined) {
+        const slot = proof.quickbarTapAfterNextThrowCommit;
+        proof.quickbarTapAfterNextThrowCommit = undefined;
+        router.quickbarTap(slot);
+        const tappedItem = inventory.itemByUid(proof.quickbarTapItemUid);
+        proof.quickbarTapCommitObservation = {
+          itemMoveQueued: queue.jobs.some(
+            (job) => job.kind === 'move' && job.itemUid === proof.quickbarTapItemUid,
+          ),
+          location: tappedItem ? inventory.locate(tappedItem)?.kind ?? null : null,
+        };
+      }
+      if (proof.dropAfterNextThrowCommit) {
+        proof.dropAfterNextThrowCommit = false;
+        router.dropHeldItemForThrowingStance();
+      }
+    },
     startInputReplayRecording: () => {
-      previousInputRecorder = undefined;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
+      inputRecording.previous = undefined;
+      inputRecording.recorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns(), {
         startState: captureReplayStartState(),
       });
     },
     hudOptions,
-    beginItemThrow,
+    beginItemThrow: router.beginItemThrow,
     getItemThrowLanding: (itemUid, heldSimSeconds) => {
       const item = inventory.itemByUid(itemUid);
       if (!item) return undefined;
-      const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
+      const distance = primaryActionThrowDistance(item, registry, itemThrowTuning, heldSimSeconds);
       const location = inventory.locate(item);
       const hand = location?.kind === 'hand' ? location.side : session.throwCharge.throwHand();
-      const flight = itemThrowFlight(item, hand, distance);
+      const flight = router.itemThrowFlight(item, hand, distance);
       const target = flight.landing ? { kind: 'pile', pos: flight.landing } : undefined;
       const landingDistance = target
         ? Math.hypot(target.pos[0] + 0.5 - body.pos[0], target.pos[2] + 0.5 - body.pos[2]) * s
@@ -177,15 +218,15 @@ export const observationPlugin = {
     }),
     selectPrimaryAction,
     nextTimeOfDay,
-    ignitionTargetForHand,
+    ignitionTargetForHand: primaryActionIgnitionTarget,
     interactionTargetAt,
-    useTarget,
+    useTarget: router.useTarget,
     useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
     isChargingItemThrow: () => session.throwCharge.startedAt !== undefined,
-    isThrowingStance: () => throwingStance,
+    isThrowingStance: () => router.throwingStance(),
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];

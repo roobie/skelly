@@ -2,7 +2,11 @@
 read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
   - you classify mods, choose their ids or combine a theme with a product
-  - you change remote mod intake, product save separation or the framework refactor gate
+  - you change remote mod intake, product save separation or package boundaries
+  - you name reusable mechanisms, runtime storage and build contracts, descriptive actor body plans or content-selected providers
+  - you separate actor bodies from agent decisions, memory and save ownership
+  - you change scenario guidance, observations, staging or authored start admission
+  - you change attempt recording or snapshot diagnostics
 ---
 
 # 9. Content-defined products on one composable framework
@@ -50,6 +54,14 @@ Each product chooses its dependencies rather than inheriting one mandatory core 
 
 ## Definitions and distribution
 
+Shared topics live under `packages/mods`; product and scenario mods live under the
+product's own mod root so removing a product leaves shared definitions intact.
+The shared root is one workspace package, giving mod-wide scripts one home rather
+than a package per content topic; see `packages/mods/package.json`.
+A mod folder equals its full manifest id to keep paths and grep in step. The folder
+name has a path-budget cap checked by `packages/deadvox/test/shippedMods.test.ts`,
+so a short Windows checkout root leaves room inside mods under MAX_PATH.
+
 Cut reusable content by topic and consumer. A topic mod declares dependencies on
 other topics it uses, so a vehicle's fuel or a firearm's ammunition is not a hidden
 cross-pack reference. Reusable transport and parts belong in shared content;
@@ -59,8 +71,11 @@ product-specific vehicles belong in that product, classified entry by entry.
 appears through loot, shops, sites and other distribution; recipe availability is
 also distribution. Scarcity, placement and prices belong to that consumer, not to
 the generic object's definition. Player-facing lists, including spawn menus,
-encyclopedias and crafting books, filter to what the product uses. An exclusion
-mechanism or a parallel era axis would duplicate those choices.
+encyclopedias and crafting books, filter to what the product uses. Editing rows out
+of an included mod waits for #1544's typed patches and entry removal under
+`docs/decisions/0007-typed-field-patches.md`. Until then the row stays loaded:
+the product leaves it out of distribution and player lists filter to what the
+product uses. Distribution filters do not remove definitions from the registry.
 
 Reusable definitions start under their shared topic identity, rather than under a
 product name that must later be renamed. Content reused by two or more scenarios
@@ -96,8 +111,11 @@ evidence governs classification, not perfect adherence to the table.
 | Magic | Opt-in | ✓ | · | · | Theme; #1528 is a reference consumer |
 | Mounts, armies and factions | · | ~ | ✓ | · | Theme direction, not delivered mechanisms |
 | Ships and space | · | · | · | ✓ | Deferred theme direction |
-| Zombie types, skills, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
+| Zombie types, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
 | Gauntlet, tutorial, playtest and test house | ✓ | · | · | · | Scenario |
+
+Skills belong in theme topics; products select their available skills through ordinary
+mod dependencies, rather than a separate skill configuration or registry filter.
 
 The roster classifies content and tuning, not engine code. The open measurement on
 #1532 is when a topic mod becomes too large for products that use little of it.
@@ -108,8 +126,43 @@ Measure that cost before splitting further; no size threshold is adopted here.
 Start rows live in scenario content because location and carried kit depend on the
 map and run. A scenario can provide several starts, and a mod can add another. The
 entry pack selects the default scenario and start. A player start picker is separate
-UI work, not a prerequisite for recording the content relationship. The start-state
-contract belongs to `packages/deadvox/docs/url-mods.md`, "Start state in mods".
+UI work, not a prerequisite for recording the content relationship. Start admission
+must not require lower-layer definitions to supply a playable scenario, and placement
+must use ordinary item and character owners rather than privileged preset state.
+See `packages/engine/src/core/startIssues.ts`, `startIssues`, and
+`packages/engine/src/core/startState.ts`, `applyStartState`.
+
+Fresh normal product starts use admitted rows and the entry pack's default, including
+selection of generated worlds and explicit initial recipe knowledge. Skill-earned
+recipe unlocks stay with the character owner. Debug kits are composed at play time
+from a normal start plus the spawn menu or a mod row. Base content carries no
+per-kit start rows, keeping content small and admission fast. Development tools
+alone do not alter the selected run's initial state. The start-state contract belongs to
+`packages/deadvox/docs/url-mods.md`, "Start state in mods".
+
+Scenario rows own guided steps, stage marks and attempt recording because a different
+run must not require runtime identity branches. Guidance observes completed actions
+and selects presentation; it cannot issue gameplay commands or bypass action owners.
+Handling history belongs to an observed item instance so separate items cannot be
+combined into one completed lesson. See `packages/presentation/src/presentation/guidedSteps.ts`,
+`GuidedSteps`; `packages/presentation/src/presentation/handlingLessons.ts`, `HandlingLessons`;
+and `packages/presentation/src/ui/guidedSteps.ts`, `mountGuidance`.
+Input references share the action catalogue rather than the browser resolver so
+admission cannot pull DOM timing into simulation. See
+`packages/engine/src/core/inputActions.ts`, `INPUT_ACTIONS`.
+
+Attempt recording is scenario content carried by scenario or layout rows. Without
+an authored row there is nothing to record against, so no code default stands in.
+See `packages/engine/src/core/schema/attemptPolicy.ts`, `AttemptPolicySchema`, and
+`packages/presentation/src/presentation/playtestObserver.ts`, `createAttemptRecording`.
+
+Snapshot measurement is a debugging aid, not scenario attempt policy: its result
+never reaches the attempt file, so scenarios must not tune it. See
+`packages/deadvox/src/debug/snapshotMeasurement.ts`, `measureSessionSnapshot`.
+
+Observation mechanisms do not stage or mutate the world; staging that needs another
+mechanism requires its own decision. See `packages/engine/src/core/stageMarks.ts`,
+`stageMarkArea` and `stageMarksAt`.
 
 Theme mods stand alone without wiring themselves into any product's distribution.
 A small, player-selected compatibility mod supplies that wiring: for example, magic
@@ -126,18 +179,36 @@ and restricted CEL rules remain governed by `docs/decisions/0004-content-languag
 
 ## Vocabulary
 
-Use the role definitions in `GLOSSARY.md`, "Actor roles". Whether a ship is an actor
-is not decided by those words.
+Runtime storage, build contracts and diagnostic names use Skelly rather than a
+product's name so other products inherit no Deadvox vocabulary; renaming browser
+stores has no fallback or migration under `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
+
+Use Actor for a body and its state, and Agent only for the part that decides. A
+setting's name in engine code ties the engine to one product; these roles keep the
+body and decision mechanisms independent of that setting. See `GLOSSARY.md`, "Actor roles".
+Whether a ship is an actor is not decided by those words.
+
+An actor's body is described in content and works with no Agent at all, so it can stand undriven or be driven by something other than this decision code, such as a player, without carrying that code or its memory. The Agent is a separate layer on top: simulation body code takes no value import from it and reads none of its state, and its memory lives apart from the body, in the save as well. An Agent acts only through the body's own means and limits, so injury and reach bind whatever drives the body. It never branches on body plan, so a new body plan or a new decision mechanism needs no edit to the other, and a product can reuse either alone.
+
+Body-plan mechanisms use descriptive anatomy names: humanoid rather than shambler,
+fused-mass rather than amalgam, and shape names for other forms. Product content ids
+may retain their setting vocabulary. This keeps reusable anatomy independent of the
+product that first supplies it; see `packages/deadvox/docs/pack-split.md`, "Creature framework".
+A test holds engine and presentation sources free of "zombie", "amalgam" and "shambler", so those
+setting words cannot creep back into shared code; see `test/setting-vocabulary.test.mjs`, `settingWordHits`.
+The engine carries many content-only products, so product actor ids stay out of its action catalogue:
+debug spawn rows come from loaded content; see `packages/engine/src/core/inputActions.ts`, `debugSpawnActorRow`.
 
 Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army
-would need its own mechanism, not a vaguer name for the horde. Rename setting and
-scenario names in framework mechanisms, such as `packages/deadvox/src/core/gauntlet.ts`,
-`GauntletSite`, to descriptive names: a scenario name in framework code ties every
-product to one scenario. Generic words must not blur distinct mechanisms.
+would need its own mechanism, not a vaguer name for the horde. Use descriptive names
+for framework mechanisms, including scenario assembly: a scenario name in framework
+code ties every product to one scenario. See
+`packages/engine/src/core/scenarioCity.ts`, `ScenarioCitySite` and
+`scenarioCityPopulation`. Generic words must not blur distinct mechanisms.
 Content selectors and taxonomies move out of code regardless of the mechanism's name;
-see `packages/deadvox/src/core/settlementSpawns.ts`, `HORDE_TYPE`, and
-`packages/deadvox/src/core/loot.ts`, `LOOT_TIERS`.
+see `packages/engine/src/core/settlementSpawns.ts`, `settlementHordeSpawn`, and
+`packages/engine/src/core/loot.ts`, `LOOT_TIERS`.
 
 ## Remote intake
 
@@ -173,15 +244,76 @@ later consumer, not a feasibility claim or a requirement of this refactor. Give 
 assumptions named owners instead of freezing them as universal APIs; missing space
 mechanisms still require scoped engine work.
 
-## Refactor gate
+## Package boundaries
 
-The runtime moves out of `packages/deadvox` into its own workspace package, and content
-splits into `skelly.*` mods in one refactor. The runtime package name is chosen at the
-refactor and must not collide with `packages/engine`, the assembly/geometry library.
+The runtime is its own workspace package, `packages/engine`, `@skelly/engine`, outside
+`packages/deadvox`, and content lives in `skelly.*` mods. The assembly/geometry library
+therefore gave up that name and is construct, `@skelly/construct`, in the asset submodule; the reasons
+for that name are in its
+`packages/skelly-assets/tools/packages/construct/README.md`,
+"Name". The product package is `@skelly/deadvox` (`packages/deadvox/package.json`,
+`name`): every workspace package shares the `@skelly/` scope, so the product's name
+matches the runtime and presentation packages.
 
-The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
-#1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
-#1403 and #1369. No new PRs open until the refactor is executed. Work can use an
-existing PR. Waiting avoids moving files under active branches, and one extraction
-avoids paying for a temporary internal-edge phase and its later removal. The content-extraction plan belongs in
-`packages/deadvox/docs/pack-split.md`.
+Runtime code (the `packages/engine` package and the workspace libraries it depends on)
+reaches nothing outside that set, not even for types: no file of deadvox, so no
+presentation, render or UI code and no product configuration, mods or pages, whether by
+import or by glob. It imports only the npm packages its manifest names in `dependencies`. See
+`packages/deadvox/tools/runtimeClosure.ts`, `ENGINE_POLICY`. Runtime source also compiles without DOM types, so a DOM-only name in it
+fails the typecheck; see `packages/engine/tsconfig.json`. That config keeps Node's types,
+which declare `navigator`, `MessageEvent`, `localStorage` and `sessionStorage`, so the
+typecheck alone lets those through; a lint ban on runtime source fails them. See `biome.jsonc`,
+`noRestrictedGlobals`. The checks guard honest edits, not deliberate bypasses; what they
+do not check is in `packages/deadvox/docs/runtime-closure-limits.md`, "Not checked".
+
+Presentation (rendering, UI, play, input, audio and the mesher and save workers) is its own
+package too, `packages/presentation`, `@skelly/presentation`. It reaches no file of deadvox,
+imports only the npm packages its manifest names, and reaches the engine only through the
+engine's curated entries, never its test-only subpath, so another product can reuse it on the
+engine's chosen surface. See `packages/deadvox/tools/runtimeClosure.ts`, `PRESENTATION_POLICY`.
+
+The runtime and presentation packages export curated entry points only, so each surface is
+chosen rather than every file a package holds: one entry per domain, each carrying only what
+code outside the package uses. Product code (deadvox source, its tools, its Vite config, the
+Tiled extension and the root deadvox contract tests) imports them only as
+`@skelly/engine/<entry>` and `@skelly/presentation/<entry>`; see
+`packages/engine/package.json`, `exports`, and `packages/presentation/package.json`, `exports`.
+A consumer that runs without an npm install names an entry's file instead of the package:
+Tiled's script runtime has no package resolution, and the site-launcher CI job runs
+`test/site-launcher.test.mjs` uninstalled. Such a consumer gets an entry that loads no npm
+dependency, because a re-export loads its whole module even when the consumer takes one
+name, so the mod catalogue and the tutorial URL have their own entries; see
+`packages/engine/src/modCatalogue.ts` and `packages/presentation/src/tutorialUrl.ts`.
+
+A test that uses only fixtures lives in the package it tests. Tests that use shipped
+content or deadvox code stay in deadvox, yet need internals no entry carries. They import
+those through each package's one test-only subpath, `internal/*`, which resolves only under
+the `skelly-test` export condition; one condition serves both packages, so whatever enables it
+opens both. Tests also take a name from an entry when the entry carries it. A separate
+test-only surface keeps product code on the curated entries without growing the entries
+to serve tests. Three places enable the condition: the deadvox and presentation Vitest
+configs, and the dev servers browser stages create. Browser stages are test runs too, so their fixtures and
+page code share the unit tests' test-only surface; all of them create their server in one
+place, see `packages/deadvox/test/browser/stageServer.mjs`, `createStageServer`. A stage's
+own Node process loads a fixture that reaches the subpath through that server, never by a
+plain import, so the stage server is the one owner that enables the condition for all
+stage code; see `packages/deadvox/test/browser/pump-handling.mjs`. The
+product dev server and the product build never enable it, so they cannot resolve the
+subpath; see `packages/deadvox/test/stageServer.test.ts`. The entry-only check fails a
+product file that imports a non-entry subpath of either package or reaches either package's
+files by path; see
+`packages/deadvox/tools/runtimeEntries.ts`, `entryViolations`.
+It reads import syntax with a literal target; a module path a browser stage or the dev
+server loads from a string is not checked.
+
+Runtime and presentation code name no product path. The product globs its own mod roots
+and reads its own configuration, then passes the maps in, so the runtime carries neither a
+product's layout nor build-tool coupling and another product can supply different sources.
+See `packages/deadvox/src/product/content.ts`, `productContent`, and
+`packages/deadvox/src/product/mods.ts`, `productModIntake`. The product entry owns all
+product wiring, the page's keyboard and the corpse physics tuning included: it builds the
+keyboard from the product's default keys and passes it to the UI, debug and presentation
+modules that read keys, and it passes its ragdoll config to play, which hands it to the
+corpse renderer, so presentation needs no product import. See
+`packages/deadvox/src/product/input.ts`, `keyboardInput`, and
+`packages/deadvox/src/product/ragdoll.ts`, `ragdollConfig`.

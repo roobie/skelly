@@ -1,15 +1,17 @@
 import process from 'node:process';
 import { gunzipSync } from 'node:zlib';
-import { afterEach, expect, it, vi } from 'vitest';
-import { DEFAULT_MAX_PAYLOAD_BYTES, decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
-import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { columnArrival } from '../src/game/columnArrival.ts';
-import { configFromUrl } from '../src/game/config.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
-import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
-import { ChunkMeshes } from '../src/render/chunks.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
+import { DEFAULT_MAX_PAYLOAD_BYTES, SAVE_SCHEMA_VERSION } from '@skelly/engine/internal/core/saveFormat.ts';
+import { decodeSave, encodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { configFromUrl, createSession, IDLE } from '@skelly/engine/session';
+import { columnArrival, createWorldSetup, type WorldSetup } from '@skelly/engine/world';
+import { ChunkMeshes } from '@skelly/presentation/render';
+import { contentLookup } from '@skelly/presentation/ui';
+import { expect, it } from 'vitest';
+import { ragdollSweepViewer } from '../src/product/ragdoll.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { startupContent } from './baseRegistry.ts';
+import { quietMesherSource } from './fixtures/quietMesherSource.ts';
+import { startedOn } from './fixtures/startupContent.ts';
 
 // Save size and save time are held to these bounds against explored area (`DESIGN.md`, "Edits persist").
 // A failing bound is not fixed by raising a constant: the round that crosses it raises a BR card that
@@ -24,15 +26,10 @@ const SNAPSHOT_PAUSE_BUDGET_MS = 100;
 const ENCODE_BUDGET_MS = 2000;
 // The default suite samples small squares; the bench samples the target area.
 const SAMPLED_SIDES = [5, 9] as const;
-// Exploring the target area through the column path takes seconds; only the bench runs it. The timeout
-// is a hang guard, about fifteen times the bench's measured run; the budgets above are CPU time.
-const BENCH_TIMEOUT_MS = 60_000;
 const TARGET_SIDE = Math.ceil(Math.sqrt(TARGET_EXPLORED_COLUMNS));
 
 // biome-ignore lint/style/noProcessEnv: timings are asserted only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
-
-afterEach(() => vi.unstubAllGlobals());
+const benchmarking = process.env.SKELLY_BENCH === '1';
 
 const content = startupContent();
 const { registry } = content;
@@ -44,19 +41,14 @@ const version = {
 };
 
 const worldSetup = (): WorldSetup => {
-  vi.stubGlobal(
-    'Worker',
-    class {
-      postMessage = vi.fn();
-    },
-  );
-  const config = configFromUrl(new URLSearchParams('site=city'), content);
-  return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  const config = configFromUrl(new URLSearchParams(), {}, startedOn(content, 'city'), ragdollSweepViewer);
+  return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry), quietMesherSource());
 };
 
 const session = (source: WorldSetup, restore?: Readonly<SaveSnapshot>) =>
   createSession({
     registry,
+    actorFigureFiles: stackActorFigureFiles(registry),
     world: source.world,
     entities: source.entities,
     isSolid: source.isSolid,
@@ -129,7 +121,11 @@ const sample = async (side: number) => {
   };
 };
 
-it('keeps decompressed save growth per explored column inside the target-area size budget', async () => {
+// Sampling builds the stress city's squares, bounded CPU work whose duration scales with machine load, so a timer
+// only turns a busy machine into a failure.
+it('keeps decompressed save growth per explored column inside the target-area size budget', {
+  timeout: 0,
+}, async () => {
   const [small, large] = await Promise.all(SAMPLED_SIDES.map(sample));
   expect(large!.snapshot.world.rolledColumns.length).toBe(large!.columns);
   // Without furnished columns in the samples the bound below would pass vacuously.
@@ -139,15 +135,18 @@ it('keeps decompressed save growth per explored column inside the target-area si
   expect(perColumn * TARGET_EXPLORED_COLUMNS).toBeLessThan(EXPLORED_SAVE_BUDGET_BYTES);
 });
 
-it('round-trips the save of each sampled explored area to an equal snapshot', async () => {
+// Sampling builds the stress city's squares, bounded CPU work whose duration scales with machine load, so a timer
+// only turns a busy machine into a failure.
+it('round-trips the save of each sampled explored area to an equal snapshot', { timeout: 0 }, async () => {
   for (const { snapshot, decoded } of await Promise.all(SAMPLED_SIDES.map(sample))) {
     expect(decoded).toEqual(snapshot);
   }
 });
 
+// Exploring the target area through the column path takes seconds, so only the bench runs it, without a timer.
 it('keeps snapshot pause and encode time at the target explored area inside budget', {
   skip: !benchmarking,
-  timeout: BENCH_TIMEOUT_MS,
+  timeout: 0,
 }, async () => {
   const result = await sample(TARGET_SIDE);
   // biome-ignore lint/style/noProcessEnv: names the runner the measurement was taken on.

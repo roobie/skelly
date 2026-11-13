@@ -1,14 +1,33 @@
-import type { ClockSettings } from '../src/core/clock.ts';
-import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
-import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
-import { gameHours, gameMinutes, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
+import type { BodyTuningDef, Registry } from '@skelly/engine/content';
+import type { ClockSettings } from '@skelly/engine/internal/core/clock.ts';
+import type { CompressionCaps } from '@skelly/engine/internal/core/schema.ts';
+import type { SimOptions } from '@skelly/engine/internal/core/sim.ts';
+import { gameHours, gameMinutes, gamePerHour, simRate, simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Simulation as CoreSimulation, realSeconds } from '@skelly/engine/sim';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
+const responses = (blunt: number, cut: number, pierce: number, acid: number) => ({
+  blunt,
+  cut,
+  pierce,
+  acid,
+  blast: blunt,
+  fragment: pierce,
+  breach: blunt,
+  crush: blunt,
+});
+
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
+  sounds: {
+    hurt: { light: 'fixture_hurt_light', heavy: 'fixture_hurt_heavy', heavyAtDamage: 10 },
+    strain: 'fixture_strain',
+    landing: 'fixture_landing',
+    block: { full: 'fixture_block_full', partial: 'fixture_block_partial' },
+    breath: { inhale: 'fixture_inhale', exhale: 'fixture_exhale', gasp: 'fixture_gasp' },
+  },
+  capability: 'player',
   infectionOnsetGameHours: gameHours(0.01),
   antisepticWindowGameHours: gameHours(0.02),
   infectionChance: 0.5,
@@ -17,8 +36,8 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
   fragmentRegionHeights: { head: 0.85, torso: 0.45 },
-  shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
-  outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
+  shockPerDamage: responses(2, 0, 0, 1),
+  outerWearMultiplier: responses(1, 1, 1, 4),
   coverage: {
     head: ['head'],
     torso: ['vest', 'torso'],
@@ -57,7 +76,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         closeSimSeconds: simSeconds(60),
         treatmentEffort: 1,
         minDamage: 0,
-        chancePerDamage: { blunt: 0.01, cut: 0.03, pierce: 0.03, acid: 0 },
+        chancePerDamage: responses(0.01, 0.03, 0.03, 0),
         drip: { rate: 0.5, size: 1 },
         pain: 2,
       },
@@ -70,7 +89,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         closeSimSeconds: simSeconds(600),
         treatmentEffort: 2,
         minDamage: 5,
-        chancePerDamage: { blunt: 0.005, cut: 0.03, pierce: 0.03, acid: 0 },
+        chancePerDamage: responses(0.005, 0.03, 0.03, 0),
         drip: { rate: 1, size: 1 },
         pain: 6,
       },
@@ -84,7 +103,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
         treatmentEffort: 4,
         minDamage: 20,
         regionFactor: { head: 0, torso: 0.5, leftArm: 0, rightArm: 0 },
-        chancePerDamage: { blunt: 0.001, cut: 0.01, pierce: 0.01, acid: 0 },
+        chancePerDamage: responses(0.001, 0.01, 0.01, 0),
         drip: { rate: 4, size: 1.5 },
         pain: 12,
       },
@@ -93,7 +112,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   // The fixture's own pain scale and tiers, so pain tests never lean on base content's tuning.
   pain: {
     knockoutAt: 50,
-    perDamage: { blunt: 1, cut: 2, pierce: 2, acid: 3 },
+    perDamage: responses(1, 2, 2, 3),
     regionWeight: { head: 2, torso: 1, leftArm: 1, rightArm: 1, leftLeg: 1, rightLeg: 1 },
     perRegionDamage: 0.4,
     infection: { early: 5, advanced: 10 },
@@ -158,7 +177,10 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
 /** Content whose player body uses the supplied tuning, so a whole-session test owns its body definition. */
 export const withPlayerBodyTuning = (content: Registry, body: BodyTuningDef): Registry => ({
   ...content,
-  body: new Map(content.body).set(CORE_CONTENT_IDS.player, body),
+  body: new Map([...content.body].filter(([, entry]) => entry.capability !== 'player')).set(body.id, {
+    ...body,
+    capability: 'player',
+  }),
 });
 
 /** Content whose player body is this fixture, so a whole-session test owns the body tuning it asserts on. */

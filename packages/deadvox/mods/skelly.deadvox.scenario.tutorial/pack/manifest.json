@@ -1,0 +1,33 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.actors",
+    "skelly.deadvox.site-generation",
+    "skelly.electric-power",
+    "skelly.firearms",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "starts.json"
+    },
+    {
+      "kind": "content",
+      "path": "tutorial.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.tutorial",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

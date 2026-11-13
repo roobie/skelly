@@ -1,3 +1,5 @@
+import type { MeshData } from '@skelly/engine/mesh';
+import { ChunkMeshes, Shadows } from '@skelly/presentation/render';
 import {
   BoxGeometry,
   DirectionalLight,
@@ -11,9 +13,6 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
 } from 'three';
-import type { MeshData } from '../../src/core/mesher.ts';
-import { ChunkMeshes } from '../../src/render/chunks.ts';
-import { Shadows } from '../../src/render/shadows.ts';
 import { skyWorldFixture } from '../fixtures/skyWorld.ts';
 
 function slab(thickness: number): MeshData {
@@ -41,7 +40,7 @@ export function undergroundSunProof() {
   const renderer = new WebGLRenderer();
   const scene = new Scene();
   const meshes = new ChunkMeshes(1, skyWorldFixture().registry);
-  scene.add(meshes.group);
+  scene.add(meshes.batch);
   const floor = new Mesh(new PlaneGeometry(2, 2), new MeshLambertMaterial());
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;

@@ -1,15 +1,13 @@
+import type { FigureDef, Registry } from '@skelly/engine/content';
+import type { HandSide, Item } from '@skelly/engine/inventory';
+import type { PlayerStance } from '@skelly/engine/pose';
+import { makeScale } from '@skelly/engine/world';
+import { ARM_NODE } from '@skelly/presentation/internal/render/armRig.ts';
+import { createAvatarMannequin } from '@skelly/presentation/internal/render/avatarMannequin.ts';
+import { heldItemPoses } from '@skelly/presentation/internal/render/heldPresentation.ts';
+import { type ModelLibrary, PlayerMeshes } from '@skelly/presentation/render';
 import { Group, type Object3D, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import type { FigureDef, Registry } from '../src/core/content.ts';
-import type { HandSide } from '../src/core/inventory.ts';
-import type { Item } from '../src/core/items.ts';
-import type { PlayerStance } from '../src/core/playerStance.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { ARM_NODE } from '../src/render/armRig.ts';
-import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
-import { heldItemPoses } from '../src/render/heldPresentation.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
-import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -50,7 +48,7 @@ it.each(['world', 'mannequin'] as const)(
               modelDefs: registry.models,
               models,
             },
-            `?mannequin=${samples[0]!.name}`,
+            { mannequin: samples[0]!.name },
           )!
         : undefined;
     try {

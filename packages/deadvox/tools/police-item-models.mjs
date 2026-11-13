@@ -40,7 +40,8 @@ for (const side of [-1, 1]) {
   box(vest)('waist fastening', [0.07, 0.075, 0.1], straps, [side * 0.2, 0.05, 0.1]);
 }
 
-// The worn helmet is thing-tool content (`packages/thing-authoring-tool/head-gear.libsonnet`). Its inside view stays
+// The worn helmet is thing-tool content in the asset submodule
+// (`packages/skelly-assets/models/catalogue/sets/head-gear.libsonnet`). Its inside view stays
 // here: it is drawn in the camera's frame, not as a thing, and the renderer tells the pane from the rim by mesh name.
 const view = new Group();
 view.name = 'Riot helmet inside';
@@ -56,6 +57,9 @@ await Promise.all(
     ['riot_helmet_view', view],
   ].map(async ([id, model]) => {
     const bytes = await new GLTFExporter().parseAsync(model, { binary: true });
-    await writeFile(new URL(`../src/content/base/assets/models/${id}.glb`, import.meta.url), Buffer.from(bytes));
+    await writeFile(
+      new URL(`../../mods/skelly.wearables/assets/models/${id}.glb`, import.meta.url),
+      Buffer.from(bytes),
+    );
   }),
 );

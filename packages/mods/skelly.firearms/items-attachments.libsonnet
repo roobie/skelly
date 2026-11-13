@@ -1,0 +1,159 @@
+local lights = import 'tools/jsonnet/lib/lights.libsonnet';
+local opticZoom = { step: 1, rememberPerWeapon: true };
+
+{
+  "items": [
+    {
+      id: 'ak_slant_compensator', name: 'Slant compensator', category: 'misc',
+      weight: 80, size: [1, 1], model: 'ak_slant_compensator',
+    },
+    {
+      id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
+      weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom, opticUnityImage: 'world',
+    },
+    {
+      "id": "optic_digital_thermal",
+      "name": "Digital thermal optic",
+      "category": "misc",
+      "weight": 750,
+      "size": [2, 2],
+      "model": "optic_digital_thermal",
+      opticUnityImage: 'world',
+      opticView: 'unavailable',
+    },
+    {
+      "id": "optic_fixed_prism_4x",
+      "name": "Fixed 4× prism optic",
+      "category": "misc",
+      "weight": 450,
+      "size": [1, 2],
+      "model": "optic_fixed_prism_4x",
+      opticUnityImage: 'world',
+    },
+    {
+      "id": "optic_high_mag_5_25x",
+      "name": "5–25× magnified optic",
+      "category": "misc",
+      "weight": 900,
+      "size": [2, 2],
+      "model": "optic_high_mag_5_25x",
+      opticUnityImage: 'world',
+      "opticMagnification": 10,
+      opticZoom: opticZoom,
+    },
+    {
+      "id": "optic_holographic",
+      "name": "Holographic sight",
+      "category": "misc",
+      "weight": 250,
+      "size": [1, 1],
+      "model": "optic_holographic",
+      opticUnityImage: 'source',
+    },
+    {
+      "id": "optic_lpvo_1_6x",
+      "name": "1–6× variable-power optic",
+      "category": "misc",
+      "weight": 520,
+      "size": [2, 2],
+      "model": "optic_lpvo_1_6x",
+      opticUnityImage: 'world',
+      "opticMagnification": 3,
+      opticZoom: opticZoom,
+    },
+    {
+      "id": "optic_mini_reflex",
+      "name": "Mini reflex sight",
+      "category": "misc",
+      "weight": 180,
+      "size": [1, 1],
+      "model": "optic_mini_reflex",
+      opticUnityImage: 'world',
+    },
+    {
+      "id": "optic_tube_dot",
+      "name": "Tube red-dot sight",
+      "category": "misc",
+      "weight": 220,
+      "size": [1, 2],
+      "model": "optic_tube_dot",
+      opticUnityImage: 'world',
+    },
+    {
+      "id": "rail_front_sight",
+      "name": "Rail-mounted front sight",
+      "category": "misc",
+      "weight": 90,
+      "size": [1, 1],
+      "model": "rail_front_sight"
+    },
+    {
+      "id": "rail_rear_sight",
+      "name": "Rail-mounted rear sight",
+      "category": "misc",
+      "weight": 90,
+      "size": [1, 1],
+      "model": "rail_rear_sight"
+    },
+    {
+      "id": "real_suppressor",
+      "name": "Suppressor",
+      "category": "misc",
+      "weight": 300,
+      "size": [1, 2],
+      "model": "real_suppressor",
+      "firearmAttachmentEffects": {
+        "kind": "suppressor",
+        "recoilReduction": 0.15,
+        "wearPerShot": 0.001,
+        "fitSkillLevel": 4,
+        "fitRefusal": "I can't fit this suppressor yet"
+      }
+    },
+    {
+      "id": "tactical_flashlight_mount",
+      "name": "Tactical flashlight rail mount",
+      "category": "light",
+      "weight": 120,
+      "size": [1, 1],
+      "model": "tactical_flashlight_mount",
+      "description": "A rail-clamp flashlight. Fitted to a rail on a long gun, its beam follows the barrel.",
+      "light": lights.flashlight
+    },
+    {
+      "id": "weapon_sling",
+      "name": "Weapon sling",
+      "category": "misc",
+      "model": "weapon_sling",
+      // Its strap over the shoulder, drawn while the long gun it is fitted to is slung.
+      "figureModels": [{ model: 'weapon_sling_worn', overTorso: { jacket: 'weapon_sling_worn_jacket' }, frame: 'torso', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0] }],
+      "size": [1, 1],
+      "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
+      "sling": true,
+      "disassembly": {
+        "timeGameMinutes": 4,
+        "skill": "crafting",
+        "yields": [
+          { "item": "rope", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "fastener_pack", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "foregrip",
+      "name": "Vertical foregrip",
+      "category": "misc",
+      "weight": 160,
+      "size": [1, 1],
+      "model": "foregrip",
+      "firearmAttachmentEffects": {
+        "kind": "foregrip",
+        "swayScale": 0.85,
+        "recoveryScale": 1.1,
+        "raiseScale": 0.95,
+        "swingScale": 1.1,
+        "wearPerShot": 0
+      }
+    }
+  ]
+}

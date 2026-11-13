@@ -1,0 +1,3 @@
+{
+  actors: [{ id: 'modelled_zombie', model: 'humanoid' }],
+}

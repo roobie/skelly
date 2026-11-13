@@ -1,0 +1,765 @@
+{
+  "furniture": [
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#c8c9c0",
+      "container": {
+        "pockets": [
+          {
+            "grid": [6, 4],
+            "handlingSimSeconds": 1.2
+          }
+        ]
+      },
+      "corpse": {
+        "figure": "player",
+        "outfit": "lab_coat"
+      },
+      "id": "gauntlet_lab_dead_researcher",
+      "massKg": 16,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Dead researcher",
+      "size": [4, 1, 2],
+      "solid": false
+    },
+    {
+      "appearance": {
+        "kind": "fridge",
+        "surface": "painted-metal"
+      },
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#d8dcd8",
+      "container": {
+        "pockets": [
+          {
+            "grid": [5, 14],
+            "handlingSimSeconds": 1
+          }
+        ]
+      },
+      "id": "gauntlet_lab_fridge",
+      "massKg": 80,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Fridge",
+      "power": {
+        "device": "lab_machine",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "size": [2, 4, 2],
+      "upright": true
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#59634e",
+      "id": "gauntlet_lab_generator",
+      "massKg": 72,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Generator",
+      "power": {
+        "device": "lab_generator",
+        "enabled": true,
+        "fuelLitres": 0.25
+      },
+      "shape": [
+        {
+          "position": [0.10000000000000001, 0, 0.10000000000000001],
+          "size": [3.7999999999999998, 0.29999999999999999, 2.7999999999999998]
+        },
+        {
+          "position": [0.29999999999999999, 0.29999999999999999, 0.29999999999999999],
+          "size": [2, 1.8, 2.3999999999999999]
+        },
+        {
+          "position": [2.2999999999999998, 0.29999999999999999, 0.59999999999999998],
+          "size": [1.3999999999999999, 1.3, 1.8]
+        },
+        {
+          "position": [0.5, 2.1000000000000001, 0.5],
+          "size": [1.6000000000000001, 0.40000000000000002, 2]
+        },
+        {
+          "position": [0.5, 0.69999999999999996, 0.10000000000000001],
+          "size": [0.80000000000000004, 0.59999999999999998, 0.20000000000000001]
+        },
+        {
+          "position": [1.6000000000000001, 0.69999999999999996, 0.10000000000000001],
+          "size": [0.29999999999999999, 0.29999999999999999, 0.20000000000000001]
+        },
+        {
+          "position": [3.1000000000000001, 1.6000000000000001, 2.1000000000000001],
+          "size": [0.25, 1.3999999999999999, 0.25]
+        }
+      ],
+      "size": [4, 3, 3],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 300,
+        "minimumStrength": 9
+      },
+      "color": "#68767b",
+      "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
+        "handlingSimSeconds": 1.2,
+        "methods": {},
+        "openSound": "door_open"
+      },
+      "id": "gauntlet_lab_bulkhead",
+      "massKg": 80,
+      "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Steel bulkhead door",
+      "shape": [
+        {
+          "position": [0, 0, 0.59999999999999998],
+          "size": [4, 5, 0.80000000000000004]
+        },
+        {
+          "position": [0.20000000000000001, 0.20000000000000001, 0.40000000000000002],
+          "size": [3.6000000000000001, 0.29999999999999999, 1.2]
+        },
+        {
+          "position": [0.20000000000000001, 4.5, 0.40000000000000002],
+          "size": [3.6000000000000001, 0.29999999999999999, 1.2]
+        },
+        {
+          "position": [0.29999999999999999, 0.5, 0.40000000000000002],
+          "size": [0.29999999999999999, 4, 1.2]
+        },
+        {
+          "position": [3.3999999999999999, 0.5, 0.40000000000000002],
+          "size": [0.29999999999999999, 4, 1.2]
+        },
+        {
+          "position": [2.6000000000000001, 2, 0.20000000000000001],
+          "size": [0.69999999999999996, 0.69999999999999996, 0.29999999999999999]
+        },
+        {
+          "color": "#3f474b",
+          "position": [0, 0.80000000000000004, 0.29999999999999999],
+          "size": [0.80000000000000004, 0.29999999999999999, 0.29999999999999999]
+        },
+        {
+          "color": "#3f474b",
+          "position": [0, 3.8999999999999999, 0.29999999999999999],
+          "size": [0.80000000000000004, 0.29999999999999999, 0.29999999999999999]
+        },
+        {
+          "color": "#3f474b",
+          "position": [0, 0.80000000000000004, 1.3999999999999999],
+          "size": [0.80000000000000004, 0.29999999999999999, 0.29999999999999999]
+        },
+        {
+          "color": "#3f474b",
+          "position": [0, 3.8999999999999999, 1.3999999999999999],
+          "size": [0.80000000000000004, 0.29999999999999999, 0.29999999999999999]
+        }
+      ],
+      "size": [4, 5, 2]
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#62696c",
+      "id": "gauntlet_lab_dead_lift",
+      "massKg": 80,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Freight lift",
+      "power": {
+        "device": "lab_machine",
+        "enabled": false,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0, 0, 0],
+          "size": [0.29999999999999999, 5, 2]
+        },
+        {
+          "position": [3.7000000000000002, 0, 0],
+          "size": [0.29999999999999999, 5, 2]
+        },
+        {
+          "position": [0, 4.7000000000000002, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [1.8, 0, 0],
+          "size": [0.40000000000000002, 5, 0.29999999999999999]
+        }
+      ],
+      "size": [4, 5, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#555c61",
+      "id": "gauntlet_lab_fixture_broken",
+      "massKg": 4,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Broken strip light",
+      "power": {
+        "device": "lab_light",
+        "enabled": false,
+        "fuelLitres": 0,
+        "light": {
+          "color": "#d9eee8",
+          "intensity": 40,
+          "offset": [0.5, 0.14999999999999999, 0],
+          "radius": 8
+        }
+      },
+      "shape": [
+        {
+          "position": [0, 0.69999999999999996, 0],
+          "size": [2, 0.29999999999999999, 1]
+        },
+        {
+          "position": [0.20000000000000001, 0, 0.29999999999999999],
+          "size": [0.20000000000000001, 0.69999999999999996, 0.20000000000000001]
+        }
+      ],
+      "size": [2, 1, 1],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#a0a6a0",
+      "id": "gauntlet_look_archive",
+      "massKg": 80,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype archive shelves",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0, 0.29999999999999999, 0],
+          "size": [0.29999999999999999, 4.7000000000000002, 2]
+        },
+        {
+          "position": [3.7000000000000002, 0.29999999999999999, 0],
+          "size": [0.29999999999999999, 4.7000000000000002, 2]
+        },
+        {
+          "position": [0.29999999999999999, 4.7000000000000002, 0],
+          "size": [3.3999999999999999, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0.29999999999999999, 2.2999999999999998, 0],
+          "size": [3.3999999999999999, 0.29999999999999999, 2]
+        }
+      ],
+      "size": [4, 5, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#90b0b5",
+      "id": "gauntlet_look_cold_store",
+      "massKg": 80,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype cold specimen bank",
+      "power": {
+        "device": "lab_machine",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 5, 2]
+        }
+      ],
+      "size": [4, 5, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#c7cfc7",
+      "id": "gauntlet_look_exam",
+      "massKg": 32,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype examination slab",
+      "shape": [
+        {
+          "position": [0, 1.5, 0],
+          "size": [4, 0.5, 2]
+        },
+        {
+          "position": [0.5, 0, 0.5],
+          "size": [3, 1.5, 1]
+        }
+      ],
+      "size": [4, 2, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#738981",
+      "id": "gauntlet_look_pump",
+      "massKg": 96,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype pressure plant",
+      "power": {
+        "device": "lab_machine",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.40000000000000002, 3]
+        },
+        {
+          "position": [0.29999999999999999, 0.40000000000000002, 0.29999999999999999],
+          "size": [1.2, 3.6000000000000001, 2.3999999999999999]
+        },
+        {
+          "position": [2.5, 0.40000000000000002, 0.29999999999999999],
+          "size": [1.2, 3.6000000000000001, 2.3999999999999999]
+        }
+      ],
+      "size": [4, 4, 3],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#91a978",
+      "id": "gauntlet_look_culture",
+      "massKg": 64,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype culture apparatus",
+      "power": {
+        "device": "lab_machine",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.40000000000000002, 2]
+        },
+        {
+          "position": [0.20000000000000001, 0.40000000000000002, 0.20000000000000001],
+          "size": [0.59999999999999998, 3.6000000000000001, 1.6000000000000001]
+        },
+        {
+          "position": [1.7, 0.40000000000000002, 0.20000000000000001],
+          "size": [0.59999999999999998, 3.6000000000000001, 1.6000000000000001]
+        },
+        {
+          "position": [3.2000000000000002, 0.40000000000000002, 0.20000000000000001],
+          "size": [0.59999999999999998, 3.6000000000000001, 1.6000000000000001]
+        }
+      ],
+      "size": [4, 4, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#707b7e",
+      "id": "gauntlet_look_exhaust",
+      "massKg": 128,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Service exhaust",
+      "shape": [
+        {
+          "position": [0.20000000000000001, 0, 0.40000000000000002],
+          "size": [1.2, 8, 1.2]
+        },
+        {
+          "position": [2.5, 0, 0.40000000000000002],
+          "size": [1.2, 8, 1.2]
+        },
+        {
+          "position": [0, 0, 0],
+          "size": [4, 1, 2]
+        }
+      ],
+      "size": [4, 8, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#707b7e",
+      "id": "gauntlet_look_bollard",
+      "massKg": 32,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Utility bollard",
+      "shape": [
+        {
+          "position": [0.40000000000000002, 0, 0.40000000000000002],
+          "size": [1.2, 3.7999999999999998, 1.2]
+        },
+        {
+          "position": [0.20000000000000001, 3.6000000000000001, 0.20000000000000001],
+          "size": [1.6000000000000001, 0.40000000000000002, 1.6000000000000001]
+        }
+      ],
+      "size": [2, 4, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#707b7e",
+      "id": "gauntlet_look_cabinet",
+      "massKg": 48,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Utility cabinet",
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.40000000000000002, 2]
+        },
+        {
+          "position": [0.10000000000000001, 0.40000000000000002, 0.10000000000000001],
+          "size": [3.7999999999999998, 2.6000000000000001, 1.8]
+        }
+      ],
+      "size": [4, 3, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#707b7e",
+      "id": "gauntlet_look_riser",
+      "massKg": 90,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Service duct riser",
+      "shape": [
+        {
+          "position": [0.40000000000000002, 0, 0.40000000000000002],
+          "size": [1, 5, 1]
+        },
+        {
+          "position": [0.40000000000000002, 4, 0.40000000000000002],
+          "size": [2.6000000000000001, 1, 1]
+        },
+        {
+          "position": [0, 0, 0],
+          "size": [2, 0.40000000000000002, 2]
+        }
+      ],
+      "size": [3, 5, 3],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#acb4b1",
+      "id": "gauntlet_look_bench",
+      "massKg": 32,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype workbench",
+      "shape": [
+        {
+          "position": [0, 1.6000000000000001, 0],
+          "size": [4, 0.40000000000000002, 2]
+        },
+        {
+          "position": [0.20000000000000001, 0, 0.20000000000000001],
+          "size": [0.29999999999999999, 1.6000000000000001, 1.6000000000000001]
+        },
+        {
+          "position": [3.5, 0, 0.20000000000000001],
+          "size": [0.29999999999999999, 1.6000000000000001, 1.6000000000000001]
+        }
+      ],
+      "size": [4, 2, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#7c868c",
+      "id": "gauntlet_look_console",
+      "massKg": 32,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype objective console",
+      "power": {
+        "device": "lab_machine",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 1.2, 2]
+        },
+        {
+          "position": [0, 1.2, 0],
+          "size": [4, 0.80000000000000004, 0.29999999999999999]
+        },
+        {
+          "position": [0, 1.2, 0.29999999999999999],
+          "size": [4, 0.20000000000000001, 1.7]
+        }
+      ],
+      "size": [4, 2, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#b29a61",
+      "id": "gauntlet_look_containment_bay",
+      "massKg": 64,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype containment bay",
+      "power": {
+        "device": "lab_machine",
+        "enabled": true,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0, 3.7000000000000002, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0, 0.29999999999999999, 0],
+          "size": [0.29999999999999999, 3.3999999999999999, 2]
+        },
+        {
+          "position": [3.7000000000000002, 0.29999999999999999, 0],
+          "size": [0.29999999999999999, 3.3999999999999999, 2]
+        },
+        {
+          "position": [1.8, 0.29999999999999999, 0.80000000000000004],
+          "size": [0.40000000000000002, 2.7999999999999998, 0.40000000000000002]
+        }
+      ],
+      "size": [4, 4, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#9b5550",
+      "id": "gauntlet_look_breached_bay",
+      "massKg": 80,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype breached containment bay",
+      "power": {
+        "device": "lab_machine",
+        "enabled": false,
+        "fuelLitres": 0
+      },
+      "shape": [
+        {
+          "position": [0, 0, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0, 4.7000000000000002, 0],
+          "size": [4, 0.29999999999999999, 2]
+        },
+        {
+          "position": [0, 0.29999999999999999, 0],
+          "size": [0.29999999999999999, 4.4000000000000004, 2]
+        },
+        {
+          "position": [3.7000000000000002, 0.29999999999999999, 1.7],
+          "size": [0.29999999999999999, 4.4000000000000004, 0.29999999999999999]
+        },
+        {
+          "position": [0.29999999999999999, 0.29999999999999999, 0.5],
+          "size": [2.2000000000000002, 0.25, 0.29999999999999999]
+        }
+      ],
+      "size": [4, 5, 2],
+      "solidFill": 0.01
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#742e30",
+      "id": "gauntlet_look_spill",
+      "massKg": 24,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype spill mark — no active hazard",
+      "shape": [
+        {
+          "position": [0.40000000000000002, 0, 0.10000000000000001],
+          "size": [2.8999999999999999, 0.050000000000000003, 1.7]
+        },
+        {
+          "position": [1.2, 0, 1.5],
+          "size": [2.6000000000000001, 0.050000000000000003, 1.2]
+        }
+      ],
+      "size": [4, 1, 3],
+      "solid": false
+    },
+    {
+      "breach": {
+        "durability": 60,
+        "minimumStrength": 3.5
+      },
+      "color": "#c94b3d",
+      "id": "gauntlet_look_button",
+      "massKg": 2,
+      "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
+      "name": "Prototype nuclear objective button",
+      "readable": {
+        "text": "This is a visual placeholder for the nuclear objective button. This look has no goal command and cannot record a win.",
+        "title": "Prototype console — inactive"
+      },
+      "shape": [
+        {
+          "position": [0.20000000000000001, 0, 0.20000000000000001],
+          "size": [0.59999999999999998, 0.29999999999999999, 0.59999999999999998]
+        }
+      ],
+      "size": [1, 1, 1],
+      "solidFill": 0.01
+    }
+  ]
+}

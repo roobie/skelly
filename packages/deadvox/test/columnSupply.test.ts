@@ -1,16 +1,14 @@
+import type { EntitySpec } from '@skelly/engine/internal/core/blockEntities.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { createColumnSupply } from '@skelly/engine/internal/core/columnSupply.ts';
+import { commitRuin, planRuin, ruinFurniture } from '@skelly/engine/internal/core/furnitureMove.ts';
+import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '@skelly/engine/internal/core/site.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
+import { Inventory, PILE_GRID } from '@skelly/engine/inventory';
+import { decodeSave } from '@skelly/engine/save';
+import { CHUNK, createTerrainEvaluator, makeScale, toChunk, type Vec3 } from '@skelly/engine/world';
+import { contentLookup } from '@skelly/presentation/ui';
 import { describe, expect, it, vi } from 'vitest';
-import type { EntitySpec } from '../src/core/blockEntities.ts';
-import { CanonicalTerrain } from '../src/core/canonicalTerrain.ts';
-import { createColumnSupply } from '../src/core/columnSupply.ts';
-import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { commitRuin, planRuin, ruinFurniture } from '../src/core/furnitureMove.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { PILE_GRID } from '../src/core/inventoryScale.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
-import { makeScale } from '../src/core/scale.ts';
-import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../src/core/site.ts';
-import { simSeconds } from '../src/core/time.ts';
-import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureLootPoint } from './economyFixtures.ts';
@@ -43,9 +41,7 @@ const registryFixture = () => {
     category: 'material',
     size: [1, 1],
     weight: 1,
-    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
   });
   registry.furniture.set(shelf.type, {
     id: shelf.type,
@@ -76,7 +72,7 @@ const fixture = () => {
     furnitureIn: (cx, cz) => spawns.filter(({ spec }) => toChunk(spec.pos[0]) === cx && toChunk(spec.pos[2]) === cz),
     lootPointsIn: (cx, cz) => (toChunk(ground.destination[0]) === cx && cz === 0 ? [ground] : []),
     supplySourcesIn: (area) => footprints.in(area),
-    zombiesIn: () => [],
+    actorsIn: () => [],
   };
   return { registry, inventory, consumed, owner, source };
 };
@@ -179,6 +175,22 @@ describe('authored supply projection', () => {
     expect(runs[0]).toEqual(runs[1]);
   });
 
+  it('arrival publishes only its column, and a column a live pile refuses publishes nothing', () => {
+    const { registry, inventory, consumed, owner, source } = fixture();
+    const filler = 'supply_fixture_filler';
+    registry.items.set(filler, { ...registry.items.get(loot.type)!, id: filler, size: [PILE_GRID.w, PILE_GRID.h] });
+    expect(inventory.add(inventory.create(filler), { kind: 'pile', pos: ground.destination })).toBe(true);
+    const before = owners(inventory);
+    // Column 1 furnishes its shelf before its ground loot meets the full pile.
+    expect(() => owner.arrive(1, 0, source)).toThrow('does not fit in its pile');
+    expect(owners(inventory)).toEqual(before);
+    expect([...consumed]).toEqual([]);
+    owner.arrive(0, 0, source);
+    expect(inventory.entities.at(...shelf.pos)).toBeDefined();
+    expect(inventory.entities.at(...second.pos)).toBeUndefined();
+    expect([...consumed]).toEqual(['0,0']);
+  });
+
   it('rebuilds closure in source order and resolves stable entity and item handles to eventual owners', () => {
     const { inventory, owner, source } = fixture();
     const existing = inventory.furnish({ ...shelf, pos: [-4, 2, 3] }, [loot])!;
@@ -264,19 +276,24 @@ describe('authored supply projection', () => {
     const { registry, source } = fixture();
     const runtime = createRuntime(undefined, false, [[8, 8]], { registry });
     const floor = registry.blockIds.get('supply_fixture_floor')!;
-    const canonical = new CanonicalTerrain(runtime.world, {
-      seed: 7,
-      scale: makeScale(0.5),
-      blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
-      shape: {
-        minHeightMetres: 0.5,
-        maxHeightMetres: 0.5,
-        beachBelowMetres: 0,
-        dirtDepthMetres: 1,
-        featureSizeMetres: 1,
-        octaves: 1,
-      },
-    });
+    const canonical = new CanonicalTerrain(
+      runtime.world,
+      createTerrainEvaluator({
+        site: { kind: 'natural' },
+        structures: [],
+        seed: 7,
+        scale: makeScale(0.5),
+        blocks: { grass: floor, dirt: floor, rock: floor, sand: floor, water: floor },
+        shape: {
+          minHeightMetres: 0.5,
+          maxHeightMetres: 0.5,
+          beachBelowMetres: 0,
+          dirtDepthMetres: 1,
+          featureSizeMetres: 1,
+          octaves: 1,
+        },
+      }),
+    );
     const projection = runtime.session.projectSupply(source);
     projection.read(region);
     projection.include(2, 0);

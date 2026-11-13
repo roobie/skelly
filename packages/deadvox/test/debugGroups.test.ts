@@ -43,11 +43,11 @@ describe('debug group state', () => {
   it('opens everything when the stored value is damaged or names unknown groups', () => {
     for (const text of ['', 'nonsense', '{"look":true}', '"look"', '[1, null]']) {
       const store = storage();
-      store.setItem('deadvox.debug-groups-closed', text);
+      store.setItem('skelly.debug-groups-closed', text);
       expect(readClosedGroups(store)).toEqual(new Set());
     }
     const store = storage();
-    store.setItem('deadvox.debug-groups-closed', '["gone","look"]');
+    store.setItem('skelly.debug-groups-closed', '["gone","look"]');
     expect(readClosedGroups(store)).toEqual(new Set(['look']));
   });
 
@@ -67,7 +67,7 @@ describe('debug group headers', () => {
 
   it('has unique group ids and takes the name out of a parameter hint', () => {
     expect(new Set(DEBUG_GROUPS.map((def) => def.id)).size).toBe(DEBUG_GROUPS.length);
-    expect(paramName('bloomclip=1..8')).toBe('bloomclip');
-    expect(paramName('cam=x,y,z,yaw,pitch,roll')).toBe('cam');
+    expect(paramName('sunsmall=1')).toBe('sunsmall');
+    expect(paramName('cam:[x,y,z,yaw,pitch,roll]')).toBe('cam');
   });
 });

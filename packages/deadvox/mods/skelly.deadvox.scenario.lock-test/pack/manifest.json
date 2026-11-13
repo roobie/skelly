@@ -1,0 +1,35 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.site-generation",
+    "skelly.inventory",
+    "skelly.keys",
+    "skelly.light-sources",
+    "skelly.manufactured-blocks",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.natural-world",
+    "skelly.packaged-foods",
+    "skelly.structures",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "item-economy.json"
+    },
+    {
+      "kind": "content",
+      "path": "locks.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.lock-test",
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

@@ -1,4 +1,4 @@
-import type { ModelDef, Registry } from '../src/core/content.ts';
+import type { ModelDef, Registry } from '@skelly/engine/content';
 
 export type FixtureAttachment = NonNullable<NonNullable<ModelDef['gun']>['attachment']>;
 export type FixtureFittedAttachment = NonNullable<NonNullable<ModelDef['gun']>['attachments']>[number];

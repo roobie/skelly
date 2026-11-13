@@ -89,7 +89,7 @@ queries or profiling; GPU cost remains absent rather than zero. See
 `packages/deadvox/tools/perf-baseline-browser.mjs`, `install`, and
 `packages/deadvox/tools/perf-baseline-stats.mjs`, `summarize`. Query-free collection also suspends
 the adapter's GPU-driven resolution feedback, so compare only frames at matching effective
-scene scale. Diagnostic URL overrides and sampling configs are not proposed game defaults.
+scene scale. Sampling configs are not proposed game defaults.
 
 Raw warm frames accompany each summary, enabling different aggregation without repeating
 the expensive hardware run. Compare repeat spreads as well as pooled results; no automatic
@@ -101,7 +101,7 @@ An upload's first consumer is not necessarily its owner: a shadow draw can first
 pose texture, charging the upload to the shadow stack even though later colour draws need it too.
 Identify the texture and compare its bytes between uploads before calling repeated uploads waste.
 The shared actor texture's producer and dirtying boundary are in
-`packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.sync`; its material binding is in
+`packages/presentation/src/render/mobActors.ts`, `MobActorMeshes.sync`; its material binding is in
 `MobActorMeshes` in the same file. Keep byte comparisons and upload hooks in separate diagnostic
 captures because copying texture data perturbs the callback being measured. A changing texture
 can still contain unchanged regions, but reducing its transfer needs separate evidence and must
@@ -111,9 +111,9 @@ preserve all consumers' pose data.
 
 Prefer excluding impossible work to retaining mutable simulation projections. Inventory ownership,
 light power and terrain edits must be visible immediately, without a second invalidation protocol.
-See `packages/deadvox/src/core/lights.ts`, `inventoryLightSources`, and `packages/deadvox/src/core/physics.ts`,
+See `packages/engine/src/core/lights.ts`, `inventoryLightSources`, and `packages/engine/src/core/physics.ts`,
 `moveTerrainAxis`. Revolver cancellation needs only the continuations already owned by handling,
-not every idle item in the world; see `packages/deadvox/src/game/revolverHandling.ts`, `cancelUnheld`.
+not every idle item in the world; see `packages/engine/src/game/revolverHandling.ts`, `cancelUnheld`.
 Eligibility still reads live ownership, so moving a gun between steps cannot leave its handling running.
 Equivalence fixtures compare pruned exposure and cancellation to full item-tree scans, and terrain-only
 movement to the generic obstacle path; see `packages/deadvox/test/lightPool.test.ts`,

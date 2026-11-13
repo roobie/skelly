@@ -1,0 +1,55 @@
+{
+  "models": [
+    {
+      "file": "assets/models/can_opener.glb",
+      "grip": {
+        "at": [0.014999999999999999, 0.0050000000000000001, -0.080000000000000002],
+        "turn": [0, 0, 0]
+      },
+      "hold": "upright",
+      "id": "can_opener",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "body": {
+          "centreOfMass": [-0.00098214285714285743, 0.0075892857142857125, -0.026071428571428561],
+          "massKg": 0.10000000000000001,
+          "node": "body:handOpener"
+        }
+      },
+      "roll": 90
+    },
+    {
+      "anchors": {
+        "strike": [0, 1.5994150448506161e-14, 0.24709999999999999]
+      },
+      "file": "assets/models/kitchen_knife.glb",
+      "grip": {
+        "at": [0, 0, -0.053032258064512006],
+        "turn": [0, 0, 0]
+      },
+      "hold": "forward",
+      "id": "kitchen_knife",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "kitchen_knife": {
+          "centreOfMass": [0, -0.002989651928504233, 0.034455315145813736],
+          "massKg": 0.14999999999999999,
+          "node": "kitchen_knife:knife"
+        }
+      },
+      "roll": 0
+    }
+  ]
+}

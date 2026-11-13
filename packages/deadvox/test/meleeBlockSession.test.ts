@@ -1,17 +1,17 @@
+import type { ActorDef } from '@skelly/engine/content';
+import { simRate } from '@skelly/engine/internal/core/time.ts';
+import { createSession, IDLE } from '@skelly/engine/session';
+import { makeScale, type SolidAt, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
-import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
-import { simRate } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
-const shambler = registry.zombies.get('shambler')!;
-const move: ZombieDef['attack']['moves'][number] = {
+const shambler = registry.actors.get('shambler')!;
+const move: NonNullable<ActorDef['attack']>['moves'][number] = {
   id: 'fixture-hit',
   motion: 'swing',
   weight: 1,
@@ -19,26 +19,32 @@ const move: ZombieDef['attack']['moves'][number] = {
   damageKind: 'blunt',
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
-const attacker: ZombieDef = { ...shambler, attack: { ...shambler.attack, moves: [move] } };
-const meleeSkill = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)!;
+const attacker: ActorDef = { ...shambler, attack: { ...shambler.attack!, moves: [move] } };
 const playerBody = registry.body.get('player')!;
 
 /** Pins the full-block roll's outcome by making the full-block chance 0 or 1 at every skill level. */
 const withFullBlockChance = (chance: number, content = registry) => ({
   ...content,
-  skills: new Map([
-    ...content.skills,
-    [
-      CORE_CONTENT_IDS.meleeCombat,
+  combatPolicy: new Map(
+    [...content.combatPolicy].map(([id, policy]) => [
+      id,
       {
-        ...meleeSkill,
-        combat: {
-          ...meleeSkill.combat,
-          melee: { ...meleeSkill.combat!.melee!, blockChanceMinimum: chance, blockChanceRange: 0 },
-        },
+        ...policy,
+        melee: { ...policy.melee!, blockChanceMinimum: chance, mitigationMinimum: 0.5 },
       },
-    ],
-  ]),
+    ]),
+  ),
+  skills: new Map(
+    [...content.skills].map(([id, skill]) => [
+      id,
+      skill.capability === 'meleeCombat'
+        ? {
+            ...skill,
+            combat: { ...skill.combat, melee: { ...skill.combat!.melee!, blockChanceRange: 0, mitigationRange: 0 } },
+          }
+        : skill,
+    ]),
+  ),
 });
 
 /** A player who starts winded and stays so for the whole fixture, as after a long sprint. */
@@ -64,6 +70,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
   const blocks: { jolt: number; full: boolean }[] = [];
   const session = createSession({
     registry: content,
+    actorFigureFiles: stackActorFigureFiles(content),
     world: new World(),
     isSolid: FLAT,
     isOpaque: FLAT,
@@ -94,9 +101,9 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     },
   });
   session.sim.paused = false;
-  session.zombies.add(attacker, [1.2, 1, 0], [-1, 0, 0]);
+  session.actors.add(attacker, [1.2, 1, 0], [-1, 0, 0]);
   const hit = vi.spyOn(session.sim, 'hit');
-  const maxFrames = Math.ceil((attacker.attack.windupSimSeconds + 2) * 60);
+  const maxFrames = Math.ceil((attacker.attack!.windupSimSeconds + 2) * 60);
   for (let frame = 0; frame < maxFrames && hit.mock.calls.length === 0 && blocks.length === 0; frame++) {
     session.frame(1 / 60);
   }
@@ -106,11 +113,20 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     blockSounds: sounds.filter((event) => event.startsWith('player_block_')),
     blocks,
     stamina: session.sim.needs.stamina,
-    practice: session.character.practice[CORE_CONTENT_IDS.meleeCombat] ?? 0,
+    practice: session.character.practice[fixtureIds.meleeCombat] ?? 0,
   };
 };
 
 describe('melee blocking in a session', () => {
+  it('blocks at the policy baseline without a melee skill or progression', () => {
+    const { registry: content, issues } = withoutCombatSkills();
+    expect(issues).toEqual([]);
+    const guarded = strike({ content: withFullBlockChance(0, content) });
+    expect(guarded.hits).toHaveLength(1);
+    expect(guarded.hits[0]!.damage).toBeLessThan(move.damage);
+    expect(guarded.blocks).toHaveLength(1);
+    expect(guarded.practice).toBe(0);
+  });
   it('passes a partial block’s leftover to the same region and kind, paid for in stamina', () => {
     const open = strike({ content: withFullBlockChance(0), blocking: false });
     const guarded = strike({ content: withFullBlockChance(0) });

@@ -1,0 +1,45 @@
+{
+  "assets/models/apple.glb": { "materials": ["plastic-red", "wood-walnut", "plastic-green"] },
+  "assets/models/beans.glb": { "materials": ["paint-terracotta", "paperboard-tan"] },
+  "assets/models/canned_beans.glb": { "materials": ["steel-grey", "paint-terracotta"] },
+  "assets/models/canned_soup.glb": { "materials": ["steel-grey", "paperboard-tan"] },
+  "assets/models/cattail_jelly.glb": { "materials": ["glass-clear", "wax-cream", "steel-grey", "tape-grey"] },
+  "assets/models/chocolate_bar.glb": { "materials": ["paperboard-brown", "paperboard-tan"] },
+  "assets/models/crackers.glb": { "materials": ["paperboard-tan", "paint-terracotta"] },
+  "assets/models/crystallizing_sugar.glb": {
+    "materials": ["glass-clear", "resin-honey", "wood-birch", "wood-pine", "steel-grey", "salt-white"]
+  },
+  "assets/models/empty_can.glb": { "materials": ["steel-grey", "paint-terracotta", "paperboard-tan"] },
+  "assets/models/empty_soda_can.glb": { "materials": ["steel-grey", "plastic-red"] },
+  "assets/models/fermenting_eggs.glb": { "materials": ["glass-clear", "syrup-green", "wax-cream"] },
+  "assets/models/fermenting_pickles.glb": {
+    "materials": ["glass-clear", "syrup-green", "cloth-cotton", "cord-cotton", "leaf-green", "plant-dried"]
+  },
+  "assets/models/fermenting_sauerkraut.glb": {
+    "materials": ["glass-clear", "jelly-pale", "cloth-cotton", "cord-cotton", "straw-pale", "stone-grey"]
+  },
+  "assets/models/hard_rind_fruit.glb": { "materials": ["chitin-brown", "bark", "plant-dried", "plant-purple"] },
+  "assets/models/jelly_fruit.glb": { "materials": ["jelly-teal", "verdigris", "plant-dried", "crystal-glow-white"] },
+  "assets/models/juice_carton.glb": { "materials": ["paperboard-tan", "plastic-green"] },
+  "assets/models/koji_rice.glb": { "materials": ["paint-cream", "cloth-sage"] },
+  "assets/models/koji_rice_parcel.glb": {
+    "materials": ["straw-pale", "jute", "cloth-cream", "plant-dried", "fleece-pale", "cloth-sage"]
+  },
+  "assets/models/mouldy_soy_wheat_cake.glb": { "materials": ["mushroom-pale", "fleece-pale", "cloth-sage"] },
+  "assets/models/opened_beans.glb": { "materials": ["steel-grey", "paint-terracotta", "paperboard-tan"] },
+  "assets/models/opened_soda.glb": { "materials": ["steel-grey", "plastic-red", "paperboard-tan", "paint-oxblood"] },
+  "assets/models/opened_soup.glb": { "materials": ["steel-grey", "paperboard-tan", "paint-terracotta"] },
+  "assets/models/pale_bush_berries.glb": { "materials": ["pearl", "plant-purple", "verdigris"] },
+  "assets/models/ration_dessert_pouch.glb": { "materials": ["polymer-fde", "paint-red"] },
+  "assets/models/ration_entree_pouch.glb": { "materials": ["polymer-fde", "paint-charcoal"] },
+  "assets/models/ration_jam_packet.glb": { "materials": ["polymer-fde", "paint-oxblood"] },
+  "assets/models/ration_meal_bag.glb": { "materials": ["polymer-fde", "paint-charcoal"] },
+  "assets/models/ration_side_pouch.glb": { "materials": ["polymer-fde", "paint-olive"] },
+  "assets/models/ration_spread_packet.glb": { "materials": ["polymer-fde", "paperboard-brown"] },
+  "assets/models/snack_box.glb": { "materials": ["paint-red", "paperboard-tan", "paint-cream", "plastic-yellow"] },
+  "assets/models/soda.glb": { "materials": ["glass-clear", "paint-oxblood"] },
+  "assets/models/soda_can.glb": { "materials": ["steel-grey", "plastic-red"] },
+  "assets/models/soup.glb": { "materials": ["paint-terracotta", "plastic-green"] },
+  "assets/models/stimulant_cola.glb": { "materials": ["paint-oxblood", "glass-clear", "plastic-red", "tape-grey"] },
+  "assets/models/water_bottle.glb": { "materials": ["glass-grey", "steel-grey", "plastic-blue"] }
+}

@@ -1,0 +1,25 @@
+import type { Inventory } from '@skelly/engine/inventory';
+import type { MeleePoseFrame } from '@skelly/engine/pose';
+import type { PerspectiveCamera } from 'three';
+import { createHeldAnimation, type HeldHandlingFrame } from './actorAnimator.ts';
+import type { HeldItems } from './hands.ts';
+import type { PlayerMeshes } from './playerFigure.ts';
+
+/** The observer must not own the actor's solve, including when the camera is detached. */
+export const createHeldViews = (
+  inventory: Inventory,
+  view: Pick<HeldItems, 'update'>,
+  world: Pick<PlayerMeshes, 'syncHeldView' | 'stockSeats' | 'adsEyes' | 'proneAds'>,
+) => {
+  const animation = createHeldAnimation();
+  return (observer: PerspectiveCamera, pose: MeleePoseFrame, recoil: number, handling: HeldHandlingFrame): void => {
+    const frame = {
+      ...animation.advance(inventory, handling),
+      stockSeats: world.stockSeats,
+      adsEyes: world.adsEyes,
+      proneAds: world.proneAds,
+    };
+    const source = world.syncHeldView(pose, frame, recoil);
+    view.update(observer, pose, recoil, { ...frame, poseSource: source });
+  };
+};

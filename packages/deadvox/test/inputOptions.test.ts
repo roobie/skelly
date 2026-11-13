@@ -1,17 +1,21 @@
-import { Window } from 'happy-dom';
-import { afterAll, describe, expect, it } from 'vitest';
 import {
   BindingRegistry,
-  bindingConflict,
   bindingIsDebugOnly,
+  bindingsFromControls,
   chordIssue,
-  DEBUG_ONLY_CONTEXTS,
-  INPUT_BINDINGS,
+  debugSpawnActorRow,
   type InputContext,
-  inputBindings,
-  keyboardInput,
-} from '../src/game/inputBindings.ts';
+} from '@skelly/engine/input';
+import { DEBUG_ONLY_CONTEXTS } from '@skelly/engine/internal/core/inputActions.ts';
+import { bindingConflict } from '@skelly/engine/internal/game/bindingRegistry.ts';
+import { KeyboardInput } from '@skelly/presentation/internal/presentation/inputBindings.ts';
+import { Window } from 'happy-dom';
+import { afterAll, describe, expect, it } from 'vitest';
+import { INPUT_BINDINGS } from '../src/product/controls.ts';
 import { baseScreenText } from './baseRegistry.ts';
+
+const inputBindings = new BindingRegistry(INPUT_BINDINGS);
+const keyboardInput = new KeyboardInput(inputBindings);
 
 const contextWordSeparator = /[^a-z0-9-]+/;
 const dom = new Window();
@@ -34,8 +38,9 @@ Object.defineProperty(globalThis, 'window', { configurable: true, value: dom });
 for (const key of ['addEventListener', 'removeEventListener'] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key].bind(dom) });
 }
-const { mountInputOptions } = await import('../src/ui/inputOptions.ts');
-const { mountMenuPointer } = await import('../src/ui/menuPointer.ts');
+const { mountInputOptions } = await import('@skelly/presentation/internal/ui/inputOptions.ts');
+const { mountMenuPointer } = await import('@skelly/presentation/internal/ui/menuPointer.ts');
+const { controlsCardRows } = await import('@skelly/presentation/internal/presentation/controls.ts');
 const inputOptionsText = baseScreenText().inputOptions;
 
 afterAll(() => dom.happyDOM.abort());
@@ -96,6 +101,24 @@ const debugKeyCollision = () => {
 };
 
 describe('input options context visibility', () => {
+  it('labels a keyed debug spawn row by its actor content name after load', () => {
+    const typeId = 'fixture_roamer';
+    const { id } = debugSpawnActorRow(typeId, typeId);
+    const controls = [
+      { id: 'debug.gate', keys: [{ code: 'F2' }] },
+      { id, keys: [{ code: 'Numpad1' }] },
+    ];
+    const registry = new BindingRegistry(bindingsFromControls({ controls }));
+    const root = document.createElement('div');
+    document.body.append(root);
+    mountInputOptions(root, inputOptionsText, new KeyboardInput(registry), true);
+    for (const name of ['Fixture first name', 'Fixture second name']) {
+      registry.setSpawnActorNames([{ id: typeId, name }]);
+      expect(rowFor(root, id)?.querySelector('span')?.textContent).toContain(name);
+      expect(controlsCardRows(registry, true).find((row) => row.id === id)?.description).toContain(name);
+    }
+    root.remove();
+  });
   it('hides debug-only rows and context names in ordinary runs but keeps them in debug runs', () => {
     const ordinaryRoot = document.createElement('div');
     const debugRoot = document.createElement('div');
@@ -110,7 +133,7 @@ describe('input options context visibility', () => {
     expect(debugOnly.length).toBeGreaterThan(0);
     expect(shared.length).toBeGreaterThan(0);
 
-    mountInputOptions(ordinaryRoot, inputOptionsText);
+    mountInputOptions(ordinaryRoot, inputOptionsText, keyboardInput);
     const headings = [...ordinaryRoot.querySelectorAll('section h3')].map(
       (heading) => heading.textContent?.trim() ?? '',
     );
@@ -125,7 +148,7 @@ describe('input options context visibility', () => {
       expect(labels.every((context) => binding.contexts.includes(context as InputContext))).toBe(true);
     }
 
-    mountInputOptions(debugRoot, inputOptionsText, true);
+    mountInputOptions(debugRoot, inputOptionsText, keyboardInput, true);
     expect(debugOnly.every(({ id }) => rowFor(debugRoot, id) !== undefined)).toBe(true);
     expect(
       INPUT_BINDINGS.every((binding) => {
@@ -176,7 +199,7 @@ describe('input options context visibility', () => {
     expect(free).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root, inputOptionsText);
+    mountInputOptions(root, inputOptionsText, keyboardInput);
     const remove = keyboardInput.install();
     const slot = () =>
       rowFor(root, binding!.id)!.querySelector<HTMLButtonElement>('button[data-binding-alternative="0"]')!;
@@ -220,7 +243,7 @@ describe('input options context visibility', () => {
     expect(pair).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root, inputOptionsText);
+    mountInputOptions(root, inputOptionsText, keyboardInput);
     const button = rowFor(root, pair!.first.id)?.querySelector<HTMLButtonElement>(
       'button[data-binding-alternative="0"]',
     );
@@ -243,7 +266,7 @@ describe('input options context visibility', () => {
     expect(pair).toBeDefined();
     const root = document.createElement('div');
     document.body.append(root);
-    mountInputOptions(root, inputOptionsText);
+    mountInputOptions(root, inputOptionsText, keyboardInput);
     const button = rowFor(root, pair!.ordinary.id)?.querySelector<HTMLButtonElement>(
       'button[data-binding-alternative="0"]',
     );

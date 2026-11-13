@@ -4,17 +4,51 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { createStageServer } from './stageServer.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
+const houseStart = {
+  density: null,
+  id: 'melee_build_click_house_start',
+  kit: [
+    { condition: 0.7, count: 1, destination: { kind: 'worn' }, id: 'jeans', item: 'jeans' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'sneakers', item: 'sneakers' },
+    { condition: 0.8, count: 1, destination: { kind: 'worn' }, id: 'hoodie', item: 'hoodie' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'beans', item: 'canned_beans' },
+    { destination: { kind: 'pocket', parent: 'hoodie', pocket: 0 }, id: 'matches', item: 'matches' },
+    { count: 2, destination: { kind: 'pocket', parent: 'jeans', pocket: 2 }, id: 'bandages', item: 'bandage' },
+  ],
+  recipes: [
+    'torch',
+    'candle',
+    'repair_kit',
+    'repair_crowbar',
+    'sawn_plank',
+    'door_bar',
+    'make_rope',
+    'grind_kitchen_knife',
+    'hone_kitchen_knife',
+    'grind_kabar',
+    'hone_kabar',
+    'grind_machete',
+    'hone_machete',
+  ],
+  seed: 1,
+  site: 'testHouse',
+  skills: {},
+  startTimeGameTimeOfDay: '10:00',
+  storeys: 1,
+  wounds: [],
+};
 const observationPlugin = {
   name: 'melee-build-click-observation',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.endsWith('/src/game/play.ts')) {
+    if (!id.endsWith('/src/presentation/play.ts')) {
       return;
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -25,7 +59,7 @@ const observationPlugin = {
     );
   },
 };
-const vite = await createServer({
+const vite = await createStageServer({
   root: projectRoot,
   configFile: fileURLToPath(new URL('../../vite.config.ts', import.meta.url)),
   logLevel: 'error',
@@ -42,7 +76,13 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(
-    browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&radius=16`),
+    browserStageUrl(
+      'melee-build-click',
+      gameUrl(`http://127.0.0.1:${address.port}`, {
+        startMod: inlineStartMod('fixture.melee-build-click.house', houseStart),
+        hash: { debug: true, seed: 73, radius: 16 },
+      }),
+    ),
     {
       waitUntil: 'domcontentloaded',
     },
@@ -88,7 +128,7 @@ try {
   });
 
   const downwardFrame = await page.evaluate(() => {
-    globalThis.d7Review.input.pitch = -Math.PI / 2;
+    globalThis.d7Review.input.controls.pitch = -Math.PI / 2;
     return globalThis.d7Review.session.sim.time;
   });
   await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, downwardFrame);
@@ -102,7 +142,7 @@ try {
     const { decimalText } = await import(numberTextModule);
     globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
     return { damage: entry.damage, durability: material.durability, solid: block.solid };
-  }, '/src/core/numberText.ts');
+  }, '/@stage/@skelly/engine/internal/core/numberText.ts');
   await page.waitForFunction(() => document.querySelector('#hud').textContent.includes(globalThis.d7ToolDamage.text));
   await pressAction(page, 'debug.build-destroy');
   await page.waitForFunction(() => globalThis.d7Review.engine.world.getBlock(...globalThis.d7ToolDamage.cell) === 0);
@@ -129,7 +169,7 @@ try {
     globalThis.d7Observed.combatStaminaBefore = globalThis.d7Review.session.sim.needs.stamina;
   });
   await page.mouse.down({ button: 'right' });
-  await page.waitForFunction(() => globalThis.d7Review.input.rightMouseActionHeld);
+  await page.waitForFunction(() => globalThis.d7Review.input.controls.rightMouseActionHeld);
   await page.mouse.click(640, 360);
   await page.waitForFunction(() => globalThis.d7Observed.starts.length > 0);
   await page.mouse.up({ button: 'right' });
