@@ -1,21 +1,24 @@
 import { worldCellRepair } from '@skelly/engine/internal/core/blockDamage.ts';
-import type { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
+import { CanonicalTerrain } from '@skelly/engine/internal/core/canonicalTerrain.ts';
 import { craftActionHooks } from '@skelly/engine/internal/core/craftWork.ts';
 import { snapshotItem } from '@skelly/engine/internal/core/items.ts';
 import type { LongJob } from '@skelly/engine/internal/core/longAction.ts';
-import { gameMinutes } from '@skelly/engine/internal/core/time.ts';
+import type { ColumnSource } from '@skelly/engine/internal/core/site.ts';
+import { gameMinutes, simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { applyReplayActionPayload, type ReplayActionPayload } from '@skelly/engine/internal/game/replayCommands.ts';
 import { CraftCommands, HandlingQueue, Inventory } from '@skelly/engine/inventory';
-import { decodeSave } from '@skelly/engine/save';
+import { decodeSave, type SaveSnapshot } from '@skelly/engine/save';
+import { createSession, IDLE } from '@skelly/engine/session';
 import { bindReach, Character } from '@skelly/engine/sim';
-import { type Vec3, World } from '@skelly/engine/world';
+import { CHUNK, createTerrainEvaluator, type TerrainPlan, type Vec3, World } from '@skelly/engine/world';
 import { contentLookup } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
+import { stackActorFigureFiles } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
+import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
-import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
+import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const ORIGIN: [number, number, number] = [0, 0, 0];
 const CELL: Vec3 = [1, 1, 0];
@@ -61,6 +64,130 @@ const terrainOf = (world: World): CanonicalTerrain =>
     getBlock: (x: number, y: number, z: number) => world.getBlock(x, y, z),
     ensureCell: () => undefined,
   }) as unknown as CanonicalTerrain;
+
+// The save round-trip runs the same session the game runs: damage enters the save through the session's own
+// strike owner and returns only through the decoded snapshot (`packages/deadvox/test/terrainStrike.test.ts`).
+const SESSION_SEED = 7;
+const SESSION_SCALE = { blockSize: 0.5, minCy: 0, maxCy: 0 };
+const WALL: Vec3 = [CHUNK + 3, 1, 5];
+const SPAWN: Vec3 = [WALL[0] - 1, 1, WALL[2]];
+const sessionRegistry = (() => {
+  const base = baseRegistry();
+  for (const sound of blockMaterialFixture(BLOCK).sounds) {
+    base.sounds.set(sound.id, {
+      ...sound,
+      minIntervalSimSeconds: simSeconds(0),
+      category: 'world',
+      pitchJitter: [1, 1],
+      gainJitter: [1, 1],
+    });
+  }
+  base.blockMaterials.set('cell_repair_material', {
+    ...fixtureBlockMaterial(BLOCK),
+    id: 'cell_repair_material',
+    breakable: true,
+    rubble: [{ item: STOCK, count: 1 }],
+  });
+  base.blockIds.set(BLOCK, base.blocks.length);
+  base.blocks.push({
+    id: BLOCK,
+    name: 'Fixture wall',
+    material: 'cell_repair_material',
+    solid: true,
+    color: '#888888',
+  });
+  base.items.set(STOCK, {
+    id: STOCK,
+    name: 'Stock',
+    category: 'material',
+    size: [1, 1],
+    weight: 1,
+    workInProgress: false,
+  });
+  base.recipes.set(RECIPE, {
+    id: RECIPE,
+    kind: 'repair',
+    result: { item: STOCK, count: 1 },
+    repair: { block: BLOCK, skill: 'crafting', amount: AMOUNT, perSkill: 0 },
+    category: 'repair_structures',
+    tags: [],
+    searchTerms: [],
+    timeGameMinutes: gameMinutes(1),
+    skills: {},
+    qualities: {},
+    components: [[{ item: STOCK, count: 2 }]],
+  });
+  return base;
+})();
+const sessionSource: ColumnSource = {
+  furnitureIn: () => [],
+  lootPointsIn: () => [],
+  supplySourcesIn: () => [],
+  actorsIn: () => [],
+};
+const sessionTerrain = (): TerrainPlan => ({
+  seed: SESSION_SEED,
+  scale: SESSION_SCALE,
+  blocks: {
+    grass: sessionRegistry.blockIds.get(BLOCK)!,
+    dirt: sessionRegistry.blockIds.get(BLOCK)!,
+    rock: sessionRegistry.blockIds.get(BLOCK)!,
+    sand: sessionRegistry.blockIds.get(BLOCK)!,
+    water: sessionRegistry.blockIds.get(BLOCK)!,
+  },
+  shape: {
+    minHeightMetres: 0,
+    maxHeightMetres: 0,
+    beachBelowMetres: 0,
+    dirtDepthMetres: 1,
+    featureSizeMetres: 1,
+    octaves: 1,
+  },
+  site: {
+    kind: 'weathering-pad',
+    data: {
+      blockSize: SESSION_SCALE.blockSize,
+      padTop: 0,
+      heightPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+      materialPad: { x0: 0, x1: 0, z0: 0, z1: 0 },
+      concrete: sessionRegistry.blockIds.get(BLOCK)!,
+      structures: [],
+    },
+  },
+  structures: [
+    { min: WALL, max: [WALL[0] + 1, WALL[1] + 2, WALL[2] + 1], block: sessionRegistry.blockIds.get(BLOCK)! },
+  ],
+});
+const sessionFixture = (restored?: Readonly<SaveSnapshot>) => {
+  const world = new World();
+  const canonical = new CanonicalTerrain(world, createTerrainEvaluator(sessionTerrain()));
+  const session = createSession({
+    registry: sessionRegistry,
+    actorFigureFiles: stackActorFigureFiles(registry),
+    world,
+    scale: SESSION_SCALE,
+    seed: SESSION_SEED,
+    start: 43_200,
+    spawn: [...SPAWN],
+    terrainDestruction: { terrain: canonical, source: sessionSource },
+    isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    isOpaque: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    ready: () => false,
+    controls: {
+      active: () => true,
+      intent: () => IDLE,
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => undefined,
+    ...(restored ? { restore: restored } : {}),
+  });
+  return { registry: sessionRegistry, world, session, inventory: session.inventory };
+};
 
 interface Saved {
   inventory: ReturnType<Inventory['snapshotState']>;
@@ -204,46 +331,50 @@ it('refuses cell repair of an undamaged cell, a missing block and an unreachable
   expect(r.inventory.snapshotState()).toEqual(before);
 });
 
+const stockOf = (inventory: Inventory) =>
+  [...inventory.items()]
+    .filter(({ item }) => item.type === STOCK)
+    .map(({ item }) => snapshotItem(item))
+    .sort((a, b) => a.uid - b.uid);
+
 it('saves and loads a mid-job cell repair and completes it once without duplicate payout', async () => {
-  const r = start(AMOUNT - 1);
-  expect(r.work.work?.repairTarget).toEqual({
-    kind: 'cell',
-    cell: [...CELL],
-    epoch: r.world.blockDamage.get(CELL)!.epoch,
-  });
-  r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
-  r.sim.actions.stop();
-  expect(r.work.work!.elapsed).toBeGreaterThan(0);
-  const template = capture(createRuntime());
-  const saved = {
-    ...template,
-    character: {
-      ...template.character,
-      inventory: r.inventory.snapshotState(),
-      longAction: r.sim.actions.snapshotState(),
-      simulation: r.sim.snapshotState(),
-    },
-  };
+  const f = sessionFixture();
+  f.session.character.initializeProgression({}, [RECIPE]);
+  const inputs = [f.session.inventory.create(STOCK, 1, 0.7), f.session.inventory.create(STOCK, 1, 0.4)];
+  for (const item of inputs) {
+    if (!f.session.inventory.add(item, { kind: 'pile', pos: [...SPAWN] })) {
+      throw new Error('Fixture input did not fit');
+    }
+  }
+  expect(f.session.strikeTerrainCell(WALL, { strength: 4, kind: 'blunt' })).toBe(true);
+  const damage = f.world.blockDamage.get(WALL)!;
+  expect(damage.damage).toBe(4);
+  expect(f.session.crafting.repairCell(RECIPE, WALL)).toBeUndefined();
+  const uid = workUidOf(f.session.sim.actions.job);
+  const work = f.session.inventory.itemByUid(uid)!.work!;
+  expect(work.repairTarget).toEqual({ kind: 'cell', cell: [...WALL], epoch: damage.epoch });
+  f.session.sim.scheduler.advance(work.duration / f.session.sim.clock.ratio / 3);
+  f.session.sim.actions.stop();
+  expect(work.elapsed).toBeGreaterThan(0);
+  const saved = f.session.snapshot({ worldId: 'cell-repair-world', characterId: 'cell-repair-character' });
   const decoded = await decodeSave(await encodeFixture(saved), {
     version: formatVersion,
-    contentLookup: (kind, id) => contentLookup(registry, kind, id),
+    contentLookup: (kind, id) => contentLookup(f.registry, kind, id),
   });
-  const loaded = make({
-    inventory: decoded.snapshot.character.inventory,
-    action: r.sim.actions.snapshotState(),
-    simulation: r.sim.snapshotState(),
-    damage: r.world.blockDamage.snapshotState(),
-  });
-  expect(loaded.inventory.itemByUid(r.uid)!.work).toEqual(r.work.work);
-  expect(loaded.commands.act(r.uid, 'continue')).toBeUndefined();
-  finish(loaded, r.uid);
-  expect(loaded.world.blockDamage.get(CELL)).toBeUndefined();
-  expect(returned(loaded)).toEqual([]);
-  loaded.hooks.finish(r.uid);
-  loaded.sim.actions.resume();
-  loaded.sim.scheduler.advance(1);
-  expect(loaded.world.blockDamage.get(CELL)).toBeUndefined();
-  expect(returned(loaded)).toEqual([]);
+  const { session, world, inventory } = sessionFixture(decoded.snapshot);
+  session.sim.paused = false;
+  expect(world.blockDamage.get(WALL)).toEqual(damage);
+  expect(inventory.itemByUid(uid)!.work).toEqual(work);
+  expect(session.crafting.act(uid, 'continue')).toBeUndefined();
+  const remaining = inventory.itemByUid(uid)!.work!;
+  session.sim.scheduler.advance((remaining.duration - remaining.elapsed) / session.sim.clock.ratio + 1);
+  expect(world.blockDamage.get(WALL)).toBeUndefined();
+  expect(stockOf(inventory)).toEqual([]);
+  session.sim.actions.craft?.finish(uid);
+  session.sim.actions.resume();
+  session.sim.scheduler.advance(1);
+  expect(world.blockDamage.get(WALL)).toBeUndefined();
+  expect(stockOf(inventory)).toEqual([]);
 });
 
 it('refuses completing a cell repair whose block was destroyed, returning the escrow once', () => {
