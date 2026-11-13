@@ -33,6 +33,7 @@ import { logPracticeWarnings, stagePracticeLink, tutorialUrl } from '@skelly/pre
 import {
   appendError,
   applyUiTokens,
+  feedbackUrl,
   chooseMods,
   contentLookup,
   installErrorLogCopy,
@@ -340,6 +341,10 @@ if (bench === 'report') {
       applyWeatheringConfig(resumed, hash);
       config = resumed;
     }
+    const feedback = document.getElementById('playtest-feedback') as HTMLAnchorElement;
+    feedback.href = feedbackUrl(feedback.href, {
+      body: `Seed: ${config.seed}\nBrowser: ${navigator.userAgent}\nBuild: ${getBuildRevision()}\n\nWhat happened?`,
+    });
     const engine = createEngine(config, view, undefined, engineOptions);
     const restored = await saveController.validateContent(engine.registry);
     if (saveController.isRestored && restored) {

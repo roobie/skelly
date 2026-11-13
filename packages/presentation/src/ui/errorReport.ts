@@ -40,15 +40,21 @@ export const errorText = (details: ErrorDetails): string =>
 
 const GITHUB_URL_LIMIT = 7000;
 
-export const feedbackUrlForError = (text: string, sourceHref: string): { href: string; attachReport: boolean } => {
+export const feedbackUrl = (sourceHref: string, fields: Readonly<Record<string, string>>): string => {
   const url = new URL(sourceHref);
-  url.searchParams.set('title', `Game error: ${text.split('\n', 1)[0]!.slice(0, 100)}`);
-  url.searchParams.set(
-    'body',
-    `The game encountered an error.\n\nPlease attach the downloaded error report.\n\n\`\`\`text\n${text}\n\`\`\``,
-  );
-  if (url.href.length <= GITHUB_URL_LIMIT) {
-    return { href: url.href, attachReport: false };
+  for (const [name, value] of Object.entries(fields)) {
+    url.searchParams.set(name, value);
+  }
+  return url.href;
+};
+
+export const feedbackUrlForError = (text: string, sourceHref: string): { href: string; attachReport: boolean } => {
+  const href = feedbackUrl(sourceHref, {
+    title: `Game error: ${text.split('\n', 1)[0]!.slice(0, 100)}`,
+    body: `The game encountered an error.\n\nPlease attach the downloaded error report.\n\n\`\`\`text\n${text}\n\`\`\``,
+  });
+  if (href.length <= GITHUB_URL_LIMIT) {
+    return { href, attachReport: false };
   }
   return { href: sourceHref, attachReport: true };
 };

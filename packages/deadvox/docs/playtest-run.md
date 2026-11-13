@@ -29,7 +29,7 @@ There is no fixed play duration or number of sittings. Continue resumes a living
 
 When the blocking error panel appears, stop playing. Copy the complete displayed error and download the local report; nothing is sent automatically. The report may include build, world, browser and recent playtest data. Review it before posting publicly. Use the feedback form, and attach the report if the error is too long to prefill. See `packages/presentation/src/ui/errorReport.ts`, `errorReportText`, and `packages/presentation/src/presentation/play.ts`, `stopPlayAfterError`.
 
-The menu can export playtest metrics and a recent replay during play or after death. Sending either is the tester's choice. Review files before posting or emailing them.
+The feedback form asks for one free-form description; a bug may include an exported recent replay. The in-game link pre-fills seed, browser and build because the game can provide facts without asking the tester to do so. The menu can export playtest metrics and a recent replay during play or after death. Sending either is the tester's choice. Review files before posting or emailing them.
 
 ## Findings
 
