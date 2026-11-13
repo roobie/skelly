@@ -7,7 +7,8 @@ local substation = import 'packages/deadvox/mods/skelly.deadvox.rural-sites/rura
 local hq = import 'packages/deadvox/mods/skelly.deadvox.crisis-hq/crisis-hq.jsonnet';
 local find(templates, id) = std.filter(function(t) t.id == id, templates)[0];
 // The base sites carry no car; the gauntlet parks its wreck in the police garage bay and on the substation's van spot.
-local wreck = { V: { furniture: 'gauntlet_car_wreck_0_0_intact' } };
+// Both bays are four by nine cells, the hatchback's footprint.
+local wreck = { V: { furniture: 'gauntlet_car_wreck_hatchback_intact' } };
 local garageBay = { x: 32, width: 4, z0: 18, z1: 26, y0: 1, y1: 4 };
 local inGarageBay(y, z) = y >= garageBay.y0 && y <= garageBay.y1 && z >= garageBay.z0 && z <= garageBay.z1;
 local policeMain = police.templates[0] + {
