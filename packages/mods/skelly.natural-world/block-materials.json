@@ -33,7 +33,12 @@
         "fragment": 0.40000000000000002,
         "pierce": 0.40000000000000002
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "rubble_stone"
+        }
+      ],
       "span": 0
     },
     {
@@ -69,7 +74,12 @@
         "fragment": 0.69999999999999996,
         "pierce": 0.80000000000000004
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "rubble_stone"
+        }
+      ],
       "span": 2
     },
     {
@@ -105,7 +115,12 @@
         "fragment": 0.40000000000000002,
         "pierce": 0.5
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "wood_offcut"
+        }
+      ],
       "span": 3
     },
     {
@@ -141,7 +156,12 @@
         "fragment": 0.59999999999999998,
         "pierce": 0.59999999999999998
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "scrap_metal"
+        }
+      ],
       "span": 4
     },
     {
@@ -177,7 +197,12 @@
         "fragment": 0.10000000000000001,
         "pierce": 0.10000000000000001
       },
-      "rubble": [],
+      "rubble": [
+        {
+          "count": 1,
+          "item": "cloth_strip"
+        }
+      ],
       "span": 1
     },
     {

@@ -22,6 +22,17 @@ const stampCell: Vec3 = [4, 5, 4];
 const structureCell: Vec3 = [6, 5, 6];
 const fixtureData = () => ({
   ...blockMaterialFixture('fixture_rubble'),
+  blockMaterials: [{ ...fixtureBlockMaterial('fixture_rubble'), rubble: [{ item: 'fixture_rubble_yield', count: 1 }] }],
+  items: [
+    {
+      id: 'fixture_rubble_yield',
+      name: 'Fixture rubble yield',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      workInProgress: false,
+    },
+  ],
   blocks: [
     {
       id: 'fixture_wall',
@@ -226,6 +237,13 @@ describe('block material admission', () => {
       const { issues } = buildRegistry([{ source: 'fixture.json', data: { ...data, blocks } }]);
       expect(issues.some(({ path }) => path === 'blocks[0].material')).toBe(true);
     }
+  });
+
+  it('refuses a breakable material without a rubble yield', () => {
+    const data = fixtureData();
+    data.blockMaterials[0]!.rubble = [];
+    const { issues } = buildRegistry([{ source: 'fixture.json', data }]);
+    expect(issues.some(({ path }) => path === 'blockMaterials[0].rubble')).toBe(true);
   });
 
   it('requires every supported resistance and rejects unknown kinds', () => {

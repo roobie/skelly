@@ -32,6 +32,14 @@
       size: [1, 2],
       stack: 5,
     },
+    {
+      id: 'rubble_stone',
+      name: 'Rubble stone',
+      category: 'material',
+      model: 'stone_eggshell_shard',
+      size: [1, 1],
+      stack: 6,
+    },
     { id: 'stick', name: 'Stick', category: 'material', model: 'stick', size: [1, 4], stack: 6 },
     { id: 'wax', name: 'Wax lump', category: 'material', model: 'wax', size: [1, 1], stack: 10 },
     {
