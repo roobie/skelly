@@ -83,8 +83,8 @@ import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../
 import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
-import { LampReachCache } from '../core/lampReach.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
+import { LampReachCache } from '../core/lampReach.ts';
 import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';

@@ -197,7 +197,7 @@ export class LightPool {
     this.fixtureSlots.forEach((_, slot) => {
       this.fixtureSlots[slot] = fixtures[slot];
     });
-    const glowDistance =({ position }: BodyGlow) =>
+    const glowDistance = ({ position }: BodyGlow) =>
       (position[0] - camera.position.x) ** 2 +
       (position[1] - camera.position.y) ** 2 +
       (position[2] - camera.position.z) ** 2;

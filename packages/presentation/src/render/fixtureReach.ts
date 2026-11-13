@@ -1,8 +1,22 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
-import { materialPatch } from './materialPatches.ts';
+import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
+
+/** A play view's reach, patched into the materials; none where the session has no lamp reach cache. */
+export function installFixtureReach(
+  patches: MaterialPatches,
+  cache: LampReachCache | undefined,
+  { slots, blockSize, tuning }: { slots: number; blockSize: number; tuning: LampReachTuning },
+): FixtureReach | undefined {
+  if (!cache) {
+    return undefined;
+  }
+  const reach = new FixtureReach(cache, slots, blockSize, tuning);
+  patches.add(reach.patch);
+  return reach;
+}
 
 const LIGHTS_FRAGMENT_BEGIN = '#include <lights_fragment_begin>';
 const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;

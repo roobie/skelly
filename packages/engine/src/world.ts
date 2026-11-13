@@ -42,6 +42,7 @@ export {
 } from './core/furnitureMove.ts';
 export { GENERATED_SITES } from './core/generatedSites.ts';
 export { climb, LadderHold } from './core/ladders.ts';
+export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';
 export { rotationOf } from './core/orientation.ts';
 export { type PaperMapCoverage, paperMapBounds } from './core/paperMap.ts';
 export {
@@ -57,7 +58,6 @@ export { raycast, type SolidAt } from './core/raycast.ts';
 export { BLOCK_SIZE, chunksFor, makeScale, type Scale, WORLD_BOTTOM_M } from './core/scale.ts';
 export { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './core/settlementSpawns.ts';
 export { siteGenerationOf, sitePalette, terrainShapeOf } from './core/sitePalette.ts';
-export { type LampReach, LampReachCache, type LampReachTuning } from './core/lampReach.ts';
 export { type PlacedPowerDevice, type PoweredLight, placedPowerDevices, SitePower } from './core/sitePower.ts';
 export { type SolidBricks, worldBricks } from './core/solidBricks.ts';
 export { type BlockBox, type MetreBox, rasterize, stampChunk } from './core/structure.ts';

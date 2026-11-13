@@ -30,7 +30,7 @@ export interface LampReach {
   /** Goes up at every rebuild, so an uploader can tell a new grid from the one it holds. */
   readonly revision: number;
   /** 0 or 1 at a point in blocks; 1 outside the grid, where the lamp is out of range anyway. */
-  at(point: Readonly<Vec3>): number;
+  readonly at: (point: Readonly<Vec3>) => number;
 }
 
 interface Entry {
@@ -120,7 +120,9 @@ export class LampReachCache {
     const key = keyOf(light);
     let entry = this.entries.get(key);
     if (!entry) {
-      const cells = Math.ceil(Math.min(light.radius, this.tuning.rangeMetres) / this.blockSize / this.tuning.cellBlocks);
+      const cells = Math.ceil(
+        Math.min(light.radius, this.tuning.rangeMetres) / this.blockSize / this.tuning.cellBlocks,
+      );
       const reachBlocks = (cells + 1) * this.tuning.cellBlocks;
       entry = {
         light,
@@ -167,7 +169,9 @@ export class LampReachCache {
       revision,
       at: (point) => {
         const cell = point.map((value, axis) => Math.floor(value / cellBlocks) - origin[axis]!);
-        return cell.some((value) => value < 0 || value >= size) ? 1 : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]!;
+        return cell.some((value) => value < 0 || value >= size)
+          ? 1
+          : cells[cell[0]! + size * (cell[2]! + size * cell[1]!)]!;
       },
     };
   }
