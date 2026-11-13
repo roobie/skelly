@@ -55,10 +55,15 @@ export const feedbackUrl = (sourceHref: string, fields: Readonly<Record<string, 
   return url.href;
 };
 
+const fencedErrorText = (text: string): string => {
+  const fence = '`'.repeat(Math.max(3, ...(text.match(/`+/g) ?? []).map(({ length }) => length + 1)));
+  return [`${fence}text`, text, fence].join('\n');
+};
+
 export const feedbackUrlForError = (text: string, sourceHref: string): { href: string; attachReport: boolean } => {
   const href = feedbackUrl(sourceHref, {
     title: `Game error: ${text.split('\n', 1)[0]!.slice(0, 100)}`,
-    [PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened]: ['```text', text, '```'].join('\n'),
+    [PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened]: fencedErrorText(text),
   });
   if (href.length <= GITHUB_URL_LIMIT) {
     return { href, attachReport: false };

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { PLAYTEST_FEEDBACK_FIELD_IDS } from '../src/ui/errorReport.ts';
 
 interface IssueForm {
