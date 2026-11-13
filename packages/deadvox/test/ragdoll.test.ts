@@ -1,5 +1,13 @@
 import type { ActorFigureFile } from '@skelly/engine/content';
-import { bodySkeleton, decodeFrame, type Pose, quatToMat3, sampleClip, severedBoneSet } from '@skelly/engine/pose';
+import {
+  bodySkeleton,
+  decodeFrame,
+  figureVariantOf,
+  type Pose,
+  quatToMat3,
+  sampleClip,
+  severedBoneSet,
+} from '@skelly/engine/pose';
 import { reachTuning } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { RagdollWorld, ragdollGroups, ragdollMotion } from '@skelly/presentation/internal/render/ragdoll.ts';
@@ -43,7 +51,16 @@ const restPose = ({ clips }: ActorFigureFile): Pose => {
 };
 
 describe('render ragdoll', () => {
-  it.each(ragdollConfig.models)(
+  /** The models today's core content corpse-physics, plus the fused-mass compound body a type can still
+   * select (the only compound skeleton, so its grouping needs cover even while the amalgam freezes). */
+  const ragdollModels = (): readonly string[] => {
+    const selected = new Set(
+      [...baseRegistry().actors.values()].filter((type) => type.deathFall === 'ragdoll').map(figureVariantOf),
+    );
+    return [...selected, 'fused-mass'];
+  };
+
+  it.each(ragdollModels())(
     '%s partitions every skeleton bone once with one limited link per non-root group',
     async (model) => {
       const figure = figureOf(model).body;

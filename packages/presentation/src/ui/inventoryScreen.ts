@@ -274,9 +274,8 @@ interface AttachmentSlotViewModel {
 /** A powered light's battery slot, which takes a dragged battery. */
 interface BatterySlotViewModel {
   readonly lightUid: number;
-  /** The fitted battery's name, or the open-slot word. */
-  readonly name: string;
-  readonly fitted: boolean;
+  /** The fitted battery, drawn and dragged like any item in an inventory slot. */
+  readonly item?: ItemViewModel | undefined;
 }
 
 interface DetailsViewModel {
@@ -298,7 +297,9 @@ interface DetailsViewModel {
 }
 
 const batterySlotTemplate = (slot: BatterySlotViewModel, text: InventoryText): TemplateResult =>
-  html`<div class="inv-line inv-service-target" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.fitted}>${fillText(text.battery, { battery: slot.name })}</div>`;
+  html`<div class="inv-slot inv-service-target" data-target=${batterySlotTarget(slot.lightUid)} data-occupied=${slot.item !== undefined}>
+    <span class="inv-slot-label">${text.battery}</span>${slot.item ? itemTemplate(slot.item) : html`<span class="inv-slot-empty">${text.batteryEmpty}</span>`}
+  </div>`;
 
 /** Only a tier content marks `warn` gets the warning style (`packages/deadvox/DESIGN.md`, "Bleeding"). */
 const bleedingTemplate = (bleeding: BodyRegionViewModel['bleeding']) => {
@@ -1422,6 +1423,20 @@ export class InventoryScreen {
     );
   }
 
+  /** Takes the fitted battery out of its light's card slot to where it was dropped, as an item leaves an inventory slot. */
+  private unloadBattery(light: Item, target: Target): string | undefined {
+    return (
+      this.hooks.actionRefusal?.() ??
+      this.hooks.dispatch({ kind: 'light.battery.unload', lightUid: light.uid, target: this.inv.targetState(target) })
+    );
+  }
+
+  /** The light whose battery slot holds `item`, if it does. */
+  private fittedBatteryHolder(item: Item): Item | undefined {
+    const at = this.inv.locate(item);
+    return at?.kind === 'slot' && at.slot === 'battery' ? at.owner : undefined;
+  }
+
   private refuse(text: string): void {
     (this.hooks.refusal ?? this.hooks.notice)(text);
   }
@@ -2068,8 +2083,7 @@ export class InventoryScreen {
     const fitted = light.slots?.battery;
     return {
       lightUid: light.uid,
-      name: fitted ? workName(this.inv.registry, fitted) : this.text().open,
-      fitted: fitted !== undefined,
+      item: fitted && this.itemViewModel(fitted, 'inv-item inv-item-slot'),
     };
   }
 
@@ -2263,7 +2277,7 @@ export class InventoryScreen {
     if (drag.moved) {
       this.hover(e.clientX, e.clientY, e.clientX - drag.grab[0], e.clientY - drag.grab[1]);
       const { hover } = drag;
-      if (hover && !('target' in hover)) {
+      if (hover && (!('target' in hover) || this.fittedBatteryHolder(drag.item))) {
         this.selected = drag.card;
       }
       if (hover?.ok) {
@@ -2280,7 +2294,11 @@ export class InventoryScreen {
     if ('receiver' in hover) {
       return this.hooks.dispatch({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: hover.receiver.uid });
     }
-    return 'light' in hover ? this.loadBattery(hover.light, item) : this.tryQueue(item, hover.target);
+    if ('light' in hover) {
+      return this.loadBattery(hover.light, item);
+    }
+    const holder = this.fittedBatteryHolder(item);
+    return holder ? this.unloadBattery(holder, hover.target) : this.tryQueue(item, hover.target);
   }
 
   private endDrag(): void {
@@ -2326,7 +2344,8 @@ export class InventoryScreen {
     if (spec.startsWith('worn:') && wornSlotOf(this.inv.registry, item) !== spec.slice(5)) {
       return { ok: false, reason: this.text().notWornThere };
     }
-    const plan = this.inv.plan(item, target);
+    const holder = this.fittedBatteryHolder(item);
+    const plan = holder ? this.inv.planAdd(item, target) : this.inv.plan(item, target);
     return plan.ok ? { ok: true, reason: '', ...(plan.at ? { at: plan.at } : {}) } : { ok: false, reason: plan.reason };
   }
 
@@ -2417,6 +2436,9 @@ export class InventoryScreen {
     const view = this.hooks.reach();
     const light = view.player.inventory.itemByUid(lightUid);
     if (!light) {
+      return;
+    }
+    if (this.fittedBatteryHolder(drag.item) === light) {
       return;
     }
     const reason = batterySlotRefusal(view, light, drag.item);

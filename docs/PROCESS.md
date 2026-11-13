@@ -116,6 +116,13 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
   `packages/deadvox/docs/url-mods.md`, "Start mod". Reason: a look spends the tester's time
   on the check, not on setup or waiting. A start cannot hand over a loaded weapon until #1570, so a look
   that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
+- **deadvox fixture start mods are built from the start kit.** A new look copies
+  `packages/deadvox/mods/skelly.deadvox.scenario.look-template/starts.jsonnet` and its manifest,
+  building its row on `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, or on a scenario's own
+  row with `look`, and its dependencies with `dependencies`. Reason: the kit owns what every look
+  would otherwise re-derive (the base gear and the packs that own it, the top skills, staying off
+  another start's site default), so a look states only its site, time and the gear its check
+  needs, and a kit change reaches every fixture.
 - **deadvox debug, review and test starts give every skill its top level.** Each builds on
   the start kit's fixture row, which sets every content skill there; see
   `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, and `packages/engine/src/core/startState.ts`,

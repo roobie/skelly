@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change Deadvox browser CI partition, aggregate requirements, or browser launch source
+  - you change a browser stage's in-script startup wait or production-bundle build
   - you investigate or reinstate a quarantined browser case or rename its environment gate
   - you change how the Deadvox unit suite is split across CI jobs or the bound on a shard
 ---
@@ -16,6 +17,8 @@ Install steps keep a 3-minute bound because a cold `npm ci` takes seconds. The f
 GitHub Actions owns browser scheduling, isolation and timeouts. Keeping orchestration in `.github/workflows/deadvox-browser.yml` avoids a second runner that could change what the measurements mean.
 
 A browser step's bound follows the same rule as a unit shard's: about twice its measured time, split when the work grows rather than raised. A step near its bound fails on runner variance alone, and a green rerun cannot clear that failure (`tools/browser-ci-result.mjs`, `assertBrowserResult`), so it blocks the head (#1546). The gauntlet save flow has its own step for this reason; it shares its server with the other save-controller cases. See `packages/deadvox/test/browser/gauntlet-save-regressions.mjs` and `packages/deadvox/test/browser/save-controller-fixture.mjs`, `saveControllerServer`.
+
+An in-script wait obeys the same rule at script level: a save-storage stage's readiness waits never cover the production-bundle build, because that build is deterministic compile work whose duration tracks runner speed rather than readiness, and racing it against a readiness bound failed on runner variance alone in both the OPFS Continue and the Firefox navigation stages (#1691). A slow build shows through its logged duration, and a hung build is bounded by the enclosing workflow step's timeout. `packages/deadvox/test/saveStorageStartup.test.ts`, "save-storage stage startup bounds", pins these boundaries deterministically; the helpers live in `packages/deadvox/test/browser/saveStorageStartup.mjs`, "createSaveStorageStartup".
 
 ## Main first-mesh reference shard
 

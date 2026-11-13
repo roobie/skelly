@@ -2822,6 +2822,7 @@ describe('content references', () => {
               ],
             },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
+            deathFall: 'ragdoll',
             downed: {
               finishOff: { simSeconds: 3 },
               dismember: { simSeconds: 15, quality: 'missing_quality', level: 1 },
