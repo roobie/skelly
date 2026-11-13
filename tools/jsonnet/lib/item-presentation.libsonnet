@@ -1,5 +1,5 @@
 // `metadata` is the calling mod's generated item material file, so a mod classifies only its own models.
-// A model's `pieces` are the body regions its GLB draws, which a worn model can cover.
+// A model's `pieces` are the distinct primitive `piece` names its GLB draws, which a worn model may cover.
 // `overrides` name wear classes per model file and `supplies` a model's supply; both belong to that mod.
 local prefixes = {
   steel: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
