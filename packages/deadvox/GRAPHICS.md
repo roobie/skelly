@@ -121,13 +121,13 @@ player or mod values into the URL. See `packages/presentation/src/ui/graphicsOpt
 
 ## Vehicle finishes
 
-A vehicle body read as matte plastic because nothing in the game gave it anything to reflect. The option adds a reflection and a clear coat to vehicles and to nothing else, for these reasons:
+The sky reflection every model takes is spread by the paint's own roughness, so it brightens a vehicle body without making it read as glossy paint. The option gives vehicles, and nothing else, a clear coat that mirrors the sky over the paint, for these reasons:
 
 - The reflection sits on the finished copies' own map, which takes the place of the scene's sky reflection on them alone; a change to the scene's reflection reaches every model and every building.
 - Vehicles draw finished copies and models keep their shared originals, because the same model material also draws in hands, piles and the item viewer, and because off has to draw exactly what the game drew without the option.
-- Only the coat reflects. The hemisphere light is already the ambient term on these materials, and the rough layer under a coat spreads whatever it reflects evenly over the panel, so a reflection there reads as a pale film on the paint and lightens parts that were never glossy.
+- Only the coat reflects: with the option on, a finished part drops the base layer's sky reflection that every model takes, and the coat's reflection replaces it. The hemisphere light is already the ambient term on these materials, and the rough layer under a coat spreads whatever it reflects evenly over the panel, so a reflection there as well reads as a pale film on the paint and lightens parts that were never glossy.
 - The coat's reflectance at grazing angles is capped below the physical limit, in content at `packages/engine/src/core/schema/graphics.ts`, `coatGrazing`. A voxel panel is flat, with no curve to break up what it mirrors, so a full Fresnel swaps the paint on a roof for one even sky colour, which reads as frost.
-- The map is drawn from the sky's colours rather than taken from the scene's sky bake, so it can carry the horizon band below. It stays behind `packages/presentation/src/render/skyReflection.ts`, `ReflectionMap`, so a bake can take its place.
+- The map is drawn from the sky's colours rather than taken from the scene's sky bake, so it can carry the horizon band below. It stays behind `packages/presentation/src/render/skyReflection.ts`, `ReflectionMap`, so the world-following map of #1542 can take its place.
 - The sky's colours are display colours, so the map rescales them to the hemisphere light's brightness; otherwise a reflection outshines what the same sky lights. See `packages/presentation/src/render/skyReflection.ts`, `GradientTuning`.
 - The map's horizon stands brighter than the rest of it. A flat panel sees a narrow range of directions, so an even map only tints it; the bright band is what moves across a body as a sheen.
 - The map follows the time of day by redrawing only when the sky has drifted visibly, because a redraw every frame is cost with nothing to see.
