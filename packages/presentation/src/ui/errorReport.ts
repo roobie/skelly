@@ -58,7 +58,7 @@ export const feedbackUrl = (sourceHref: string, fields: Readonly<Record<string, 
 export const feedbackUrlForError = (text: string, sourceHref: string): { href: string; attachReport: boolean } => {
   const href = feedbackUrl(sourceHref, {
     title: `Game error: ${text.split('\n', 1)[0]!.slice(0, 100)}`,
-    [PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened]: text,
+    [PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened]: ['```text', text, '```'].join('\n'),
   });
   if (href.length <= GITHUB_URL_LIMIT) {
     return { href, attachReport: false };

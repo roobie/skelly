@@ -30,7 +30,9 @@ describe('error reports', () => {
     expect(concise.attachReport).toBe(false);
     expect(conciseUrl.searchParams.get('template')).toBe('playtest-feedback.yml');
     expect(conciseUrl.searchParams.get('title')).toContain('Short failure');
-    expect(conciseUrl.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened)).toContain('Short failure');
+    expect(conciseUrl.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.whatHappened)).toBe(
+      ['```text', 'Short failure\nstack', '```'].join('\n'),
+    );
 
     const long = feedbackUrlForError('x'.repeat(10_000), FEEDBACK_SOURCE);
     expect(long.attachReport).toBe(true);

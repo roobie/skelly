@@ -289,13 +289,16 @@ try {
     'binding-derived controls stack in one column within the scroll shell width and viewport',
   );
   const feedback = await evaluate(`(async () => {
-    const { getBuildRevision } = await import('/@stage/@skelly/engine/packs');
+    const [{ getBuildRevision }, { PLAYTEST_FEEDBACK_FIELD_IDS }] = await Promise.all([
+      import('/@stage/@skelly/engine/packs'),
+      import('/@stage/@skelly/presentation/ui'),
+    ]);
     const url = new URL(document.querySelector('#playtest-feedback').href);
     return {
       template: url.searchParams.get('template'),
-      seed: url.searchParams.get('seed'),
-      browser: url.searchParams.get('browser'),
-      build: url.searchParams.get('build'),
+      seed: url.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.seed),
+      browser: url.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.browser),
+      build: url.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.build),
       revision: getBuildRevision(),
     };
   })()`);
