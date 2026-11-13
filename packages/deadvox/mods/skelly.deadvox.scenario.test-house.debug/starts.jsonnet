@@ -4,7 +4,7 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
     id: 'amalgamlook',
     site: 'testHouseAmalgam',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
-    kit: kit.fixture.kit + [
+    kit+: [
       { id: 'shotgun', item: 'pump_shotgun', condition: 1, destination: { kind: 'hand', role: 'dominant' } },
       {
         id: 'flare', item: 'road_flare', condition: 1,
