@@ -1,11 +1,8 @@
 local gauntlet = (import 'packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.jsonnet').starts[0];
-local day = (import 'packages/mods/skelly.day-cycle/dayCycle.json').dayCycle;
+local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 {
-  starts: [gauntlet + {
+  starts: [gauntlet + kit.look + kit.notSiteDefault + {
     id: 'gauntletnightfoglook',
-    debugOnly: true,
-    allSkills: 10,
-    defaultForSite:: true,
-    startTimeGameTimeOfDay: day.midnightGameTimeOfDay,
+    startTimeGameTimeOfDay: kit.day.midnightGameTimeOfDay,
   }],
 }

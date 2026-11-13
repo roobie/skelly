@@ -149,7 +149,6 @@
       }
     ]
   },
-  "models": ["humanoid", "slim-humanoid", "broad-humanoid", "legless-humanoid", "fused-mass"],
   "motion": {
     "hitDirectionWeight": 1,
     "launchSpeed": 1.2,

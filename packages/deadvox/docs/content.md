@@ -1,6 +1,7 @@
 ---
 read_if:
   - you author or change Deadvox content sources, pack file names or their build pipeline
+  - you author or change how a creature type's body falls when it dies
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you integrate mod selection into the ordinary start flow
@@ -223,6 +224,10 @@ Weather sits on the same row because how fog, cloud and rain change the sky is m
 Footstep and vocal-noise tuning is a property of the player's body, so it lives in the player's sense row beside the other hearing tunables and a mod that changes the body needs no engine code. Every field is required, with no code default, so a pack that omits one fails to load. See `packages/engine/src/core/schema/senses.ts`, `SenseSchema`.
 
 Two nearby values stay out of the sense tuning on purpose. The stride-phase origin is mechanism: it aligns the first footfall with the shared gait phase that presentation and aim wobble also read, so a pack tuning spacing never needs it (`packages/engine/src/core/footsteps.ts`, `initialFootstepClock`). The hit-flinch duration is the length of the figure's built flinch, so a second copy in content could disagree with the animation it must match (`packages/engine/src/core/actorPose.ts`, `actorHitFlinchDuration`). Tests take the row from `test/senseFixture.ts`, `BASE_SENSE_TUNING`, and never restate it.
+
+## Death falls
+
+Each actor type's content selects how its body falls, in death and in a downed collapse alike, because one body type cannot fall well every way: a fused mass of bodies collapses badly as a physics corpse. The selection, its admitted values and its rejection of a baked fall without a baked figure to play: `packages/engine/src/core/schema/actors.ts`, `ActorSchema`; `packages/engine/src/core/content.ts`, `actorFigureFileIssues`; and `packages/presentation/src/render/mobActors.ts`, `startRagdoll`.
 
 ## Content test registries
 

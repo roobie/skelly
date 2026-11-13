@@ -1,11 +1,12 @@
 {
   "dependencies": [
-    "skelly.deadvox.scenario.test-house",
     "skelly.basic-recipes",
     "skelly.body",
+    "skelly.deadvox.scenario.test-house",
     "skelly.electric-power",
     "skelly.flame-tools",
     "skelly.hand-tools",
+    "skelly.light-sources",
     "skelly.materials",
     "skelly.medicine",
     "skelly.melee",

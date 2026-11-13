@@ -2855,15 +2855,26 @@ outlive the preparation that admitted it. See `packages/engine/src/core/options.
 `batterySlotOption`, `batteryOption` and `lightOption`; and
 `packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen in the held
-action menu, because a swap needs a spare: without one a player could not move
-a cell to a charger, another light or a pocket. It follows magazine removal: the light
-must be in hand, the battery keeps its charge and goes to the first pocket with room,
-else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
-thrown away, as in a swap. Taking the battery out switches the light off, and an empty
-light is a valid item that takes a battery back as a dead one does. See
+The light's card is the expected way to load and unload a light, so its battery slot is
+an inventory slot: it reads as a slot that takes a battery, empty or full, and the
+fitted battery is picked up and dragged out to a pocket, the ground or a hand like any
+item leaving a slot. This also serves a light with no free hand, such as one fitted to
+a gun, whose card shows the same slot. The slot only asks; the simulation owns the
+change, so a drop and an action-menu unload share one rule. See
+`packages/presentation/src/ui/inventoryScreen.ts`, `batterySlotTemplate`, and
+`packages/engine/src/game/survival.ts`, `Survival.unloadBatteryTo`.
+
+A light's battery can be taken out on its own, because a swap needs a spare: without
+one a player could not move a cell to a charger, another light or a pocket. It follows
+magazine removal. Chosen in the held action menu, the light must be in hand and the
+battery goes to the first pocket with room, else the ground. Dragged out of the card
+slot, the light need only be in reach and the battery goes where it is dropped. Either
+way the battery keeps its charge, a dead primary cell is thrown away as in a swap, and
+with nowhere to put it the battery stays fitted and the refusal says why. Taking the
+battery out switches the light off, and an empty light is a valid item that takes a
+battery back as a dead one does. See
 `packages/engine/src/core/lights.ts`, `unloadBattery`; `packages/engine/src/game/itemActions.ts`, `itemActionsFor`;
-and `packages/engine/src/core/options.ts`, `stowTarget`.
+`packages/engine/src/core/options.ts`, `stowTarget` and `batterySlotUnloadRefusal`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light

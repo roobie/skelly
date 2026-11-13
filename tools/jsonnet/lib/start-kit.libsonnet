@@ -1,5 +1,10 @@
-// Importing this kit gives a start mod no runtime dependency, so each one declares the kit's item and recipe owners itself.
 local day = (import 'packages/mods/skelly.day-cycle/dayCycle.json').dayCycle;
+// Importing this kit gives a start mod no runtime dependency, so its manifest declares these owners itself; listing
+// them beside the kit keeps every start's dependencies in step with what the kit hands over.
+local owners = [
+  'skelly.basic-recipes', 'skelly.hand-tools', 'skelly.light-sources', 'skelly.medicine', 'skelly.melee',
+  'skelly.packaged-foods', 'skelly.wearables',
+];
 local common = {
   seed: 1,
   storeys: 1,
@@ -23,14 +28,19 @@ local common = {
   ],
   defaultForSite: true,
 };
+// Debug-only with every skill at the top level; see `docs/PROCESS.md`, "Reviews by eye and by play".
+local look = { debugOnly: true, allSkills: 10 };
 {
   day: day,
   common: common,
-  // Every debug, review and test fixture start builds on this; see `docs/PROCESS.md`, "Reviews by eye and by play".
-  fixture: common + {
-    debugOnly: true,
-    allSkills: 10,
-  },
+  // Every debug, review and test fixture start builds on this.
+  fixture: common + look,
+  // Turns a scenario's own start row into a fixture, so the look keeps its placement.
+  look: look,
+  // A fixture beside another start's site leaves that start the site's default and is reached only as a start mod.
+  notSiteDefault: { defaultForSite:: true },
+  // A start mod's manifest dependencies: its own packs plus the owners of every item and recipe the kit hands over.
+  dependencies(packs):: std.set(packs + owners),
   fromLayouts(layouts):: [common + {
     id: std.asciiLower(layout.id),
     site: layout.id,

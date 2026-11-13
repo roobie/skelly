@@ -1,7 +1,7 @@
 // biome-ignore lint/correctness/noNodejsModules: This build-time utility runs in Vite's Node.js process.
 import { createHash } from 'node:crypto';
 // biome-ignore lint/correctness/noNodejsModules: This build-time utility runs in Vite's Node.js process.
-import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { dirname, extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { canonicalJson } from '@skelly/engine/save';
 import { init, parse } from 'es-module-lexer';
 import { transformWithOxc } from 'vite';
@@ -9,6 +9,8 @@ import { transformWithOxc } from 'vite';
 export interface SimulationModuleGraphHost {
   resolve: (specifier: string, importer?: string) => Promise<string | undefined>;
   readFile: (path: string) => Promise<string>;
+  /** Reads a binary dependency's bytes; a graph that discovers one (WASM) fails closed without it. */
+  readBinary?: (path: string) => Promise<Uint8Array>;
 }
 
 export interface SimulationFingerprintOptions {
@@ -71,6 +73,9 @@ export const SIMULATION_ENTRIES = [
   'engine/game/session.ts',
   'engine/game/simulationStepper.ts',
   'engine/game/worldSetup.ts',
+  // The Rapier f64 supply decides physics results; its only permitted importer, the supply seam, carries the
+  // binaries into simulation identity until a consumer's import reaches them on its own.
+  'src/core/rapier.ts',
 ] as const;
 
 export const SIMULATION_EXCLUSIONS = [
@@ -160,6 +165,7 @@ export const SIMULATION_EXCLUSIONS = [
 ] as const;
 
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx']);
+const BINARY_EXTENSIONS = new Set(['.wasm']);
 const PRESENTATION_ASSET_EXTENSIONS = new Set([
   '.avif',
   '.css',
@@ -187,7 +193,16 @@ const GLOB_REFERENCE = /\bimport\.meta\.glob\b/;
 const REQUIRE_CALL = /\brequire\s*\(/;
 const IMPORT_META_URL_REFERENCE = /\bimport\.meta\.url\b/g;
 const WORKER_URL_CALL = /\bnew\s+Worker\s*\(\s*new\s+URL\s*\(\s*(['"])(.*?)\1\s*,\s*import\.meta\.url\s*\)/g;
+// The bundler's binary-asset dependency: `new URL('<file>.wasm', import.meta.url)` resolves to an emitted asset,
+// so the fingerprint follows it and hashes the referenced bytes.
+const WASM_ASSET_URL_CALL = /\bnew\s+URL\s*\(\s*(['"])([^'"\n]+\.wasm)\1\s*,\s*import\.meta\.url\s*\)/g;
 const LINE_ENDING_PATTERN = /\r\n?/g;
+
+/** The vendored Rapier supply's relative-path prefix and its provenance manifest. */
+const RAPIER_SUPPLY_PREFIX = 'vendor/rapier-f64/';
+const RAPIER_PROVENANCE_RELATIVE_PATH = 'vendor/rapier-f64/provenance.json';
+/** The supply seam: the only module outside the vendored supply whose imports may reach it. */
+const RAPIER_SEAM_RELATIVE_PATH = 'src/core/rapier.ts';
 
 function comparePaths(left: string, right: string): number {
   if (left < right) {
@@ -199,7 +214,7 @@ function comparePaths(left: string, right: string): number {
   return 0;
 }
 
-function assertSupportedDependencyDiscovery(path: string, source: string): void {
+function assertSupportedDependencyDiscovery(path: string, source: string): string[] {
   // The product globs its mod roots and passes the maps in, so a simulation source never globs.
   if (GLOB_REFERENCE.test(source)) {
     throw new Error(`Unclassified import.meta.glob dependency in simulation source ${path}`);
@@ -207,15 +222,22 @@ function assertSupportedDependencyDiscovery(path: string, source: string): void 
   if (REQUIRE_CALL.test(source)) {
     throw new Error(`Unsupported require() dependency in simulation source ${path}`);
   }
-  const importMetaUrlReferences = [...source.matchAll(IMPORT_META_URL_REFERENCE)];
   const workerUrls = [...source.matchAll(WORKER_URL_CALL)];
-  if (importMetaUrlReferences.length !== workerUrls.length) {
+  const wasmAssetUrls = [...source.matchAll(WASM_ASSET_URL_CALL)];
+  const classified = [...workerUrls, ...wasmAssetUrls].map(
+    (match) => [match.index ?? 0, (match.index ?? 0) + match[0].length] as const,
+  );
+  const unclassified = [...source.matchAll(IMPORT_META_URL_REFERENCE)].some(
+    (match) => !classified.some(([start, end]) => (match.index ?? 0) >= start && (match.index ?? 0) < end),
+  );
+  if (unclassified) {
     throw new Error(`Unclassified import.meta.url dependency in simulation source ${path}`);
   }
   // The streamer takes its mesher port from presentation, so no simulation source starts a worker.
   if (workerUrls.length > 0) {
     throw new Error(`Unclassified worker URL dependency in simulation source ${path}`);
   }
+  return wasmAssetUrls.map((match) => match[2]!);
 }
 
 function importsFromTransformedSource(path: string, code: string): string[] {
@@ -236,10 +258,16 @@ function importsFromTransformedSource(path: string, code: string): string[] {
   return [...dependencies].sort();
 }
 
-async function runtimeImports(path: string, source: string): Promise<string[]> {
-  assertSupportedDependencyDiscovery(path, source);
+interface RuntimeDependencies {
+  imports: string[];
+  /** Binary files the source references through the bundler's asset-URL pattern. */
+  wasmAssets: string[];
+}
+
+async function runtimeDependencies(path: string, source: string): Promise<RuntimeDependencies> {
+  const wasmAssets = assertSupportedDependencyDiscovery(path, source);
   const transformed = await transformWithOxc(source, path, { target: 'esnext' });
-  return importsFromTransformedSource(path, transformed.code);
+  return { imports: importsFromTransformedSource(path, transformed.code), wasmAssets };
 }
 
 function sourcePath(id: string): string | undefined {
@@ -282,6 +310,7 @@ function sourceRelativePath(projectRoot: string, sourceRoot: string, file: strin
     { root: resolve(projectRoot, '../mods'), prefix: 'shared-mods/' },
     { root: resolve(projectRoot, '../skelly-assets/tools/packages/thing-core/src'), prefix: 'thing-core/' },
     { root: resolve(projectRoot, '../skelly-assets/models'), prefix: 'asset-models/' },
+    { root: resolve(projectRoot, 'vendor/rapier-f64'), prefix: RAPIER_SUPPLY_PREFIX },
     { root: resolve(projectRoot, '../../node_modules'), prefix: 'node_modules/' },
   ];
   for (const { root, prefix } of roots) {
@@ -331,11 +360,28 @@ interface GraphWalkContext {
   excludedImportContext: ExcludedImportContext;
   visited: Set<string>;
   sources: Map<string, string>;
+  /** The Rapier supply's provenance manifest, included once the graph enters the supply. */
+  rapierProvenance: Promise<void> | undefined;
+}
+
+const binaryDigestMarker = (bytes: Uint8Array): string =>
+  `binary-sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+
+async function includeRapierProvenance(context: GraphWalkContext): Promise<void> {
+  context.rapierProvenance ??= (async () => {
+    const file = labelledPath(context.projectRoot, RAPIER_PROVENANCE_RELATIVE_PATH);
+    const source = (await context.host.readFile(file)).replace(LINE_ENDING_PATTERN, '\n');
+    JSON.parse(source);
+    context.sources.set(RAPIER_PROVENANCE_RELATIVE_PATH, source);
+  })();
+  await context.rapierProvenance;
 }
 
 interface TrackableModule {
   file: string;
   relativePath: string;
+  /** A binary dependency hashed by bytes rather than walked as a module. */
+  binary: boolean;
 }
 
 async function resolveTrackableModule(
@@ -351,12 +397,21 @@ async function resolveTrackableModule(
   if (!file) {
     throw new Error(`Unsupported virtual runtime dependency ${specifier} resolved as ${resolvedId}`);
   }
+  return trackableModuleFor(file, importer, context);
+}
+
+function trackableModuleFor(
+  file: string,
+  importer: string | undefined,
+  context: Pick<GraphWalkContext, 'projectRoot' | 'sourceRoot' | 'excludedImportContext'>,
+): TrackableModule | undefined {
   const relativePath = sourceRelativePath(context.projectRoot, context.sourceRoot, file);
   if (!relativePath) {
     throw new Error(
-      `Runtime dependency ${specifier} resolves outside src/, the engine's and presentation's src/, the submodule's thing-core and models sources, and node_modules: ${resolvedId}`,
+      `Runtime dependency resolves outside src/, the engine's and presentation's src/, the submodule's thing-core and models sources, the vendored Rapier supply and node_modules: ${file}`,
     );
   }
+  assertRapierSupplyReachedThroughSeam(relativePath, importer, context);
   if (recordExcludedImport(relativePath, importer, context.excludedImportContext)) {
     return;
   }
@@ -367,18 +422,45 @@ async function resolveTrackableModule(
   if (PRESENTATION_ASSET_EXTENSIONS.has(extension)) {
     return;
   }
+  if (BINARY_EXTENSIONS.has(extension)) {
+    return { file, relativePath, binary: true };
+  }
   if (
     extension === '.json' &&
-    ['src/config/', 'src/feasibility/', 'thing-core/', 'asset-models/'].some((prefix) =>
+    ['src/config/', 'src/feasibility/', 'thing-core/', 'asset-models/', RAPIER_SUPPLY_PREFIX].some((prefix) =>
       relativePath.startsWith(prefix),
     )
   ) {
-    return { file, relativePath };
+    return { file, relativePath, binary: false };
   }
   if (!SOURCE_EXTENSIONS.has(extension)) {
-    throw new Error(`Unsupported runtime dependency ${specifier}: ${relativePath}`);
+    throw new Error(`Unsupported runtime dependency: ${relativePath}`);
   }
-  return { file, relativePath };
+  return { file, relativePath, binary: false };
+}
+
+/**
+ * The vendored supply enters an identity graph only through its seam: the seam imports the bindings, and the
+ * supply's own generated files reach each other and the WASM. Any other importer — a graph entry included —
+ * bypasses the shared initialization and binary identity, so it fails the check rather than fingerprinting.
+ */
+function assertRapierSupplyReachedThroughSeam(
+  dependency: string,
+  importer: string | undefined,
+  context: Pick<GraphWalkContext, 'projectRoot' | 'sourceRoot'>,
+): void {
+  if (!dependency.startsWith(RAPIER_SUPPLY_PREFIX)) {
+    return;
+  }
+  const importerPath =
+    importer === undefined ? undefined : sourceRelativePath(context.projectRoot, context.sourceRoot, importer);
+  if (importerPath !== RAPIER_SEAM_RELATIVE_PATH && importerPath?.startsWith(RAPIER_SUPPLY_PREFIX) !== true) {
+    throw new Error(
+      `Runtime dependency ${dependency} is the vendored Rapier supply; only ${RAPIER_SEAM_RELATIVE_PATH} and the supply's own modules may import it, not ${
+        importerPath ?? 'a graph entry'
+      }`,
+    );
+  }
 }
 
 /** Resolve the runtime import graph using the caller's Vite resolver. */
@@ -406,23 +488,52 @@ export async function collectSimulationSourceGraph(
     },
     visited,
     sources,
+    rapierProvenance: undefined,
   };
 
-  const visit = async (specifier: string, importer?: string): Promise<void> => {
-    const module = await resolveTrackableModule(specifier, importer, context);
-    if (!module || context.visited.has(module.file)) {
+  const visitModule = async (module: TrackableModule): Promise<void> => {
+    if (context.visited.has(module.file)) {
       return;
     }
     context.visited.add(module.file);
+    if (module.binary) {
+      if (!context.host.readBinary) {
+        throw new Error(`Binary dependency ${module.relativePath} requires a byte-reading host`);
+      }
+      context.sources.set(module.relativePath, binaryDigestMarker(await context.host.readBinary(module.file)));
+      return;
+    }
     const source = (await context.host.readFile(module.file)).replace(LINE_ENDING_PATTERN, '\n');
     context.sources.set(module.relativePath, source);
+    if (module.relativePath.startsWith(RAPIER_SUPPLY_PREFIX)) {
+      // The provenance manifest pins the supply's regeneration inputs and every supply file's digest, which
+      // the shipped bytes and bindings alone do not carry.
+      await includeRapierProvenance(context);
+    }
     // Declarative configuration and generated-body content have no module dependencies.
     if (extname(module.file) === '.json') {
       JSON.parse(source);
       return;
     }
-    const dependencies = await runtimeImports(module.file, source);
-    await Promise.all(dependencies.map((dependency) => visit(dependency, module.file)));
+    const { imports, wasmAssets } = await runtimeDependencies(module.file, source);
+    const binaryModules = wasmAssets.map((reference) =>
+      trackableModuleFor(resolve(dirname(module.file), reference), module.file, context),
+    );
+    await Promise.all([
+      ...imports.map((dependency) => visit(dependency, module.file)),
+      ...binaryModules.map(async (binary) => {
+        if (binary) {
+          await visitModule(binary);
+        }
+      }),
+    ]);
+  };
+
+  const visit = async (specifier: string, importer?: string): Promise<void> => {
+    const module = await resolveTrackableModule(specifier, importer, context);
+    if (module) {
+      await visitModule(module);
+    }
   };
 
   const sortedEntries = [...entries].sort();

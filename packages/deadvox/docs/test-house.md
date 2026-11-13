@@ -134,6 +134,8 @@ hostile actors would interrupt held-item work and prevent comparisons beside the
 furniture staging. See `mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet`, `starts`,
 and `mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.jsonnet`, `manifest`.
 
+The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
+
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker

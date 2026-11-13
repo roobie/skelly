@@ -46,6 +46,7 @@ export type ReplayActionPayload =
       itemUid: number;
     } & VehicleWorkPlacement)
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
+  | { kind: 'light.battery.unload'; lightUid: number; target: TargetState }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
   | {
       kind: 'craft.repair-entity';
@@ -290,6 +291,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       return isVehicleWorkPayload(payload);
     case 'light.battery.load':
       return isUid(payload.lightUid) && isUid(payload.batteryUid);
+    case 'light.battery.unload':
+      return isUid(payload.lightUid) && isTargetState(payload.target);
     case 'inventory.cancel-handling':
     case 'furniture.turn':
     case 'furniture.tip':
@@ -341,6 +344,8 @@ export interface ReplayCommandOwners {
   ) => string | undefined;
   /** Puts a battery into a light from the light's battery slot on its item card. */
   loadBattery: (lightUid: number, batteryUid: number) => string | undefined;
+  /** Takes a light's battery out of its item-card slot to the chosen place. */
+  unloadBattery: (lightUid: number, target: TargetState) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number, alternatives?: true) => string | undefined;
@@ -460,6 +465,8 @@ export const applyReplayActionPayload = (
       );
     case 'light.battery.load':
       return owners.loadBattery(payload.lightUid, payload.batteryUid);
+    case 'light.battery.unload':
+      return owners.unloadBattery(payload.lightUid, payload.target);
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;

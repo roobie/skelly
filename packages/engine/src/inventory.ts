@@ -105,6 +105,7 @@ export {
   batteryHandRefusal,
   batterySlotOption,
   batterySlotRefusal,
+  batterySlotUnloadRefusal,
   bestPocket,
   consumption,
   doorOptions,
