@@ -288,13 +288,23 @@ try {
     true,
     'binding-derived controls stack in one column within the scroll shell width and viewport',
   );
-  assert.equal(
-    await evaluate(
-      `document.querySelector('#about a[href*=${JSON.stringify('template=playtest-feedback.md')}]')?.href`,
-    ),
-    'https://github.com/roobie/skelly/issues/new?template=playtest-feedback.md',
-    'feedback link opens the playtest issue template',
-  );
+  const feedback = await evaluate(`(async () => {
+    const [{ getBuildRevision }, { PLAYTEST_FEEDBACK_FIELD_IDS }] = await Promise.all([
+      import('/@stage/@skelly/engine/packs'),
+      import('/@stage/@skelly/presentation/ui'),
+    ]);
+    const url = new URL(document.querySelector('#playtest-feedback').href);
+    return {
+      template: url.searchParams.get('template'),
+      seed: url.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.seed),
+      browser: url.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.browser),
+      build: url.searchParams.get(PLAYTEST_FEEDBACK_FIELD_IDS.build),
+      revision: getBuildRevision(),
+    };
+  })()`);
+  assert.equal(feedback.template, 'playtest-feedback.yml', 'feedback link names the playtest issue form');
+  assert.equal(feedback.browser, await evaluate('navigator.userAgent'), 'feedback link includes the browser');
+  assert.equal(feedback.build, feedback.revision, 'feedback link includes the build');
   const captureMetricsDownload = () =>
     evaluate(`(() => {
     window.__metricsBlob = undefined;
@@ -552,6 +562,7 @@ try {
     return { seed: sim.seed, run: session.scenarioRun };
   })()`);
   assert.ok(liveAttempt.run, 'default entry starts a scenario attempt');
+  assert.equal(feedback.seed, String(liveAttempt.seed), 'feedback link includes the game seed');
   assert.deepEqual(exportedMetrics.run, liveAttempt.run, 'download includes the live scenario progress');
   assert.equal(exportedMetrics.seed, liveAttempt.seed, 'download identifies the live world seed');
   assert.equal(exportedMetrics.outcome, 'running', 'download identifies an unfinished attempt');

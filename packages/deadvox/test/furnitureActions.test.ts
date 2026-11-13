@@ -108,6 +108,22 @@ describe('action menu directions in content', () => {
 });
 
 describe('action menu lifetime', () => {
+  it('returns a lone furniture action to run directly without opening a menu', () => {
+    const menu = new ActionMenu();
+    const lone = entries.slice(0, 1);
+    expect(menu.open('furniture', piece, lone)).toBe(lone[0]);
+    expect(menu.opened).toBeUndefined();
+    expect(menu.confirm(lone)).toBeUndefined();
+  });
+
+  it('cancels an open choice when its alternatives disappear instead of silently running the survivor', () => {
+    const menu = new ActionMenu();
+    menu.open('furniture', piece, entries);
+    menu.step(entries, 1);
+    expect(menu.ring(entries.slice(0, 1))).toBeUndefined();
+    expect(menu.opened).toBeUndefined();
+  });
+
   it('chooses nothing until the player points past the dead zone', () => {
     const menu = new ActionMenu();
     menu.open('furniture', piece, entries);
@@ -169,13 +185,35 @@ describe('held treatment child ring', () => {
     return menu.confirm(held);
   };
 
+  it('skips a sole Treat parent and offers no centre return when the centre cancels', () => {
+    const menu = new ActionMenu();
+    const onlyTreat = held.filter((action) => action.id === 'treat');
+    expect(menu.open('held', { uid: 3 }, onlyTreat)).toBeUndefined();
+    expect(menu.childOpen).toBe(true);
+    expect(menu.ring(onlyTreat)).toHaveLength(treatments.length);
+    expect(menu.canReturn(onlyTreat)).toBe(false);
+    expect(menu.confirm(onlyTreat)).toBeUndefined();
+    expect(menu.opened).toBeUndefined();
+  });
+
+  it('returns a sole wound directly instead of opening a one-entry child ring', () => {
+    const menu = new ActionMenu();
+    const oneWound = heldRadialEntries([{ id: 'own', label: 'Use' }, treatments[0]], 'Treat', content.directions);
+    menu.open('held', { uid: 3 }, oneWound);
+    menu.point(oneWound, toward(content.directions.held.treat), content);
+    expect(menu.confirm(oneWound)?.id).toBe(treatments[0].id);
+    expect(menu.opened).toBeUndefined();
+  });
+
   it('chooses the wound pointed at by its region, and goes back to the parent ring at the centre', () => {
     const menu = new ActionMenu();
     menu.open('held', { uid: 3 }, held);
     expect(confirmTreat(menu)).toBeUndefined();
     expect(menu.childOpen).toBe(true);
+    expect(menu.canReturn(held)).toBe(true);
     expect(menu.confirm(held)).toBeUndefined();
     expect(menu.childOpen).toBe(false);
+    expect(menu.canReturn(held)).toBe(false);
     expect(menu.isOpen('held', 3)).toBe(true);
     expect(menu.choice(held)).toBeUndefined();
 
