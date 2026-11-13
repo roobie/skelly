@@ -9106,6 +9106,7 @@
           "at": [0, 0, 0],
           "finish": "paint-police-blue",
           "id": "front_wing_far",
+          "mirror": true,
           "part": "saloon_front_wing",
           "supportedBy": ["shell"]
         },
@@ -9120,6 +9121,7 @@
           "at": [0, 0, 0],
           "finish": "paint-white",
           "id": "front_door_far",
+          "mirror": true,
           "part": "saloon_front_door",
           "supportedBy": ["shell"]
         },
@@ -9134,6 +9136,7 @@
           "at": [0, 0, 0],
           "finish": "paint-white",
           "id": "rear_door_far",
+          "mirror": true,
           "part": "saloon_rear_door",
           "supportedBy": ["shell"]
         },
@@ -9146,6 +9149,7 @@
         {
           "at": [0, 0, 0],
           "id": "tail_lamp_far",
+          "mirror": true,
           "part": "saloon_tail_lamp",
           "supportedBy": ["shell"]
         },
@@ -9158,6 +9162,7 @@
         {
           "at": [0.34000000000000002, 1.52, -0.40000000000000002],
           "id": "beacon_far",
+          "mirror": true,
           "part": "beacon_blue",
           "supportedBy": ["shell"]
         },
@@ -9170,6 +9175,7 @@
         {
           "at": [0.745, 0.28000000000000003, 1.3999999999999999],
           "id": "front_strut_far",
+          "mirror": true,
           "part": "front_strut",
           "supportedBy": ["shell"]
         },
@@ -9182,6 +9188,7 @@
         {
           "at": [0.79500000000000004, 0.316, 1.3999999999999999],
           "id": "front_wheel_far",
+          "mirror": true,
           "part": "wheel_205_55r16",
           "supportedBy": ["front_strut_far"]
         },
@@ -9194,6 +9201,7 @@
         {
           "at": [0.79500000000000004, 0.316, -1.3500000000000001],
           "id": "rear_wheel_far",
+          "mirror": true,
           "part": "wheel_205_55r16",
           "supportedBy": ["rear_axle"]
         },
@@ -9206,6 +9214,7 @@
         {
           "at": [0.37, 0.29999999999999999, 0.050000000000000003],
           "id": "front_seat_far",
+          "mirror": true,
           "part": "front_seat",
           "supportedBy": ["shell"]
         },
@@ -9218,6 +9227,7 @@
         {
           "at": [0.87, 0.95999999999999996, 0.78000000000000003],
           "id": "door_mirror_far",
+          "mirror": true,
           "part": "door_mirror",
           "supportedBy": ["shell"]
         },
@@ -9230,6 +9240,7 @@
         {
           "at": [0.62, 0.66000000000000003, 2.2799999999999998],
           "id": "headlamp_far",
+          "mirror": true,
           "part": "car_headlamp",
           "supportedBy": ["shell"]
         },
@@ -9366,6 +9377,7 @@
           "at": [0, 0, 0],
           "finish": "paint-signal-yellow",
           "id": "front_wing_far",
+          "mirror": true,
           "part": "saloon_front_wing",
           "supportedBy": ["shell"]
         },
@@ -9380,6 +9392,7 @@
           "at": [0, 0, 0],
           "finish": "paint-signal-yellow",
           "id": "front_door_far",
+          "mirror": true,
           "part": "saloon_front_door",
           "supportedBy": ["shell"]
         },
@@ -9394,6 +9407,7 @@
           "at": [0, 0, 0],
           "finish": "paint-signal-yellow",
           "id": "rear_door_far",
+          "mirror": true,
           "part": "saloon_rear_door",
           "supportedBy": ["shell"]
         },
@@ -9406,6 +9420,7 @@
         {
           "at": [0, 0, 0],
           "id": "tail_lamp_far",
+          "mirror": true,
           "part": "saloon_tail_lamp",
           "supportedBy": ["shell"]
         },
@@ -9418,6 +9433,7 @@
         {
           "at": [0.745, 0.28000000000000003, 1.3999999999999999],
           "id": "front_strut_far",
+          "mirror": true,
           "part": "front_strut",
           "supportedBy": ["shell"]
         },
@@ -9430,6 +9446,7 @@
         {
           "at": [0.79500000000000004, 0.316, 1.3999999999999999],
           "id": "front_wheel_far",
+          "mirror": true,
           "part": "wheel_205_55r16",
           "supportedBy": ["front_strut_far"]
         },
@@ -9442,6 +9459,7 @@
         {
           "at": [0.79500000000000004, 0.316, -1.3500000000000001],
           "id": "rear_wheel_far",
+          "mirror": true,
           "part": "wheel_205_55r16",
           "supportedBy": ["rear_axle"]
         },
@@ -9454,6 +9472,7 @@
         {
           "at": [0.37, 0.29999999999999999, 0.050000000000000003],
           "id": "front_seat_far",
+          "mirror": true,
           "part": "front_seat",
           "supportedBy": ["shell"]
         },
@@ -9466,6 +9485,7 @@
         {
           "at": [0.87, 0.95999999999999996, 0.78000000000000003],
           "id": "door_mirror_far",
+          "mirror": true,
           "part": "door_mirror",
           "supportedBy": ["shell"]
         },
@@ -9478,6 +9498,7 @@
         {
           "at": [0.62, 0.66000000000000003, 2.2799999999999998],
           "id": "headlamp_far",
+          "mirror": true,
           "part": "car_headlamp",
           "supportedBy": ["shell"]
         },
@@ -9598,6 +9619,7 @@
         {
           "at": [0, 0, 0],
           "id": "front_wing_far",
+          "mirror": true,
           "part": "muscle_car_front_wing",
           "supportedBy": ["shell"]
         },
@@ -9610,6 +9632,7 @@
         {
           "at": [0, 0, 0],
           "id": "front_door_far",
+          "mirror": true,
           "part": "muscle_car_front_door",
           "supportedBy": ["shell"]
         },
@@ -9622,6 +9645,7 @@
         {
           "at": [0, 0, 0],
           "id": "tail_lamp_far",
+          "mirror": true,
           "part": "muscle_car_tail_lamp",
           "supportedBy": ["shell"]
         },
@@ -9634,6 +9658,7 @@
         {
           "at": [0.5, 0.20000000000000001, -1.8899999999999999],
           "id": "exhaust_far",
+          "mirror": true,
           "part": "exhaust_small",
           "supportedBy": ["shell"]
         },
@@ -9646,6 +9671,7 @@
         {
           "at": [0.76000000000000001, 0.33100000000000002, 1.55],
           "id": "front_strut_far",
+          "mirror": true,
           "part": "front_strut",
           "supportedBy": ["shell"]
         },
@@ -9658,6 +9684,7 @@
         {
           "at": [0.81000000000000005, 0.36699999999999999, 1.55],
           "id": "front_wheel_far",
+          "mirror": true,
           "part": "wheel_235_75r15",
           "supportedBy": ["front_strut_far"]
         },
@@ -9670,6 +9697,7 @@
         {
           "at": [0.81000000000000005, 0.36699999999999999, -1.2],
           "id": "rear_wheel_far",
+          "mirror": true,
           "part": "wheel_235_75r15",
           "supportedBy": ["rear_axle"]
         },
@@ -9682,6 +9710,7 @@
         {
           "at": [0.37, 0.26000000000000001, -0.02],
           "id": "front_seat_far",
+          "mirror": true,
           "part": "front_seat",
           "supportedBy": ["shell"]
         },
@@ -9694,6 +9723,7 @@
         {
           "at": [0.90000000000000002, 0.92000000000000004, 0.51000000000000001],
           "id": "door_mirror_far",
+          "mirror": true,
           "part": "door_mirror",
           "supportedBy": ["shell"]
         },
@@ -9706,6 +9736,7 @@
         {
           "at": [0.69999999999999996, 0.68000000000000005, 2.3300000000000001],
           "id": "headlamp_far",
+          "mirror": true,
           "part": "car_headlamp",
           "supportedBy": ["shell"]
         },

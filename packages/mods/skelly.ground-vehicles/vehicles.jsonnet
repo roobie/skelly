@@ -147,6 +147,12 @@ local boxVan = [
   fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
   cargoSpace('box_cargo', [0, 1, -0.9], [20, 20, 42], 'box_floor'),
 ] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
+// Shared near-side models need reflecting at far-side sites, so suspension arms point inboard and panels
+// cover both sides rather than overlapping on the near side.
+local reflectFar(fittings) = [
+  fitting + (if std.endsWith(fitting.id, '_far') then { mirror: true } else {})
+  for fitting in fittings
+];
 // The saloon family and the muscle car come from skelly-assets placements (`vehicles/<car>.placements.json` in the
 // built release): the panels sit where they are pressed, the shared parts at their own frames. The near and far
 // sides are separate authored sites there, so they stay plain fittings rather than a `pair`.
@@ -543,8 +549,8 @@ local muscleCar = [
     { id: 'pickup', name: 'Pickup', fittings: pickup },
     { id: 'box_van', name: 'Box van', fittings: boxVan },
     { id: 'hoist', name: 'Crane truck', fittings: hoist },
-    { id: 'police_car', name: 'Police car', fittings: policeCar },
-    { id: 'taxi', name: 'Taxi', fittings: taxi },
-    { id: 'muscle_car', name: 'Muscle car', fittings: muscleCar },
+    { id: 'police_car', name: 'Police car', fittings: reflectFar(policeCar) },
+    { id: 'taxi', name: 'Taxi', fittings: reflectFar(taxi) },
+    { id: 'muscle_car', name: 'Muscle car', fittings: reflectFar(muscleCar) },
   ],
 }))

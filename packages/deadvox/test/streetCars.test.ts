@@ -3,6 +3,7 @@ import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan
 import type { ContentFile } from '@skelly/engine/internal/core/schema.ts';
 import { BLUEPRINTS } from '@skelly/engine/vehicles';
 import {
+  BLOCK_SIZE,
   CHUNK,
   type Chunk,
   CitySite,
@@ -192,6 +193,29 @@ it('reports rather than throws when a furniture blueprint has an unsound part', 
   expect(checkWreck({}, [4, 4, 10], sources).some(({ message }) => message.includes('unsound part'))).toBe(true);
 });
 
+it('reflects paired vehicle parts across the centre plane rather than pointing both outboard', async () => {
+  const { placeFitting } = await import('@skelly/engine/internal/core/vehicleBlueprint.ts');
+  let checked = 0;
+  for (const blueprint of registry.vehicleBlueprints.values()) {
+    for (const near of blueprint.fittings.filter(({ id }) => id.endsWith('_near'))) {
+      const far = blueprint.fittings.find(({ id }) => id === `${near.id.slice(0, -5)}_far`);
+      if (!far || far.part !== near.part) {
+        continue;
+      }
+      const bounds = (fitting: typeof near) => {
+        const boxes = placeFitting(registry, fitting).collision;
+        return [Math.min(...boxes.map(({ min }) => min[0])), Math.max(...boxes.map(({ max }) => max[0]))];
+      };
+      const [low, high] = bounds(near);
+      const [farLow, farHigh] = bounds(far);
+      expect(farLow, `${blueprint.id}/${far.id}`).toBeCloseTo(-high!);
+      expect(farHigh, `${blueprint.id}/${far.id}`).toBeCloseTo(-low!);
+      checked += 1;
+    }
+  }
+  expect(checked).toBeGreaterThan(0);
+});
+
 it('blocks every column spanned by kept collision in every content wreck look', async () => {
   const { contentVehicleBlocks, contentVehicleFrame } = await import(
     '@skelly/engine/internal/core/vehicleShapeSolid.ts'
@@ -204,7 +228,9 @@ it('blocks every column spanned by kept collision in every content wreck look', 
   for (const def of wrecks) {
     const vehicleLook = def.vehicle!;
     const { cx, cz } = contentVehicleFrame(registry, vehicleLook);
-    const blocked = new Set(contentVehicleBlocks(registry, vehicleLook, def.size, 0.5).map(([x, , z]) => `${x},${z}`));
+    const blocked = new Set(
+      contentVehicleBlocks(registry, vehicleLook, def.size, BLOCK_SIZE).map(([x, , z]) => `${x},${z}`),
+    );
     const spans = new Map<string, [number, number]>();
     const boxes = registry.vehicleBlueprints
       .get(vehicleLook.blueprint)!
@@ -212,20 +238,20 @@ it('blocks every column spanned by kept collision in every content wreck look', 
       .flatMap((fitting) => placeFitting(registry, fitting).collision);
     for (const { min, max } of boxes) {
       for (
-        let x = Math.floor(def.size[0] / 2 - (max[0] - cx) / 0.5);
-        x < Math.ceil(def.size[0] / 2 - (min[0] - cx) / 0.5);
+        let x = Math.floor(def.size[0] / 2 - (max[0] - cx) / BLOCK_SIZE);
+        x < Math.ceil(def.size[0] / 2 - (min[0] - cx) / BLOCK_SIZE);
         x += 1
       ) {
         for (
-          let z = Math.floor(def.size[2] / 2 - (max[2] - cz) / 0.5);
-          z < Math.ceil(def.size[2] / 2 - (min[2] - cz) / 0.5);
+          let z = Math.floor(def.size[2] / 2 - (max[2] - cz) / BLOCK_SIZE);
+          z < Math.ceil(def.size[2] / 2 - (min[2] - cz) / BLOCK_SIZE);
           z += 1
         ) {
           const key = `${x},${z}`;
           const previous = spans.get(key);
           spans.set(key, [
-            Math.min(previous?.[0] ?? Number.POSITIVE_INFINITY, min[1] / 0.5),
-            Math.max(previous?.[1] ?? Number.NEGATIVE_INFINITY, max[1] / 0.5),
+            Math.min(previous?.[0] ?? Number.POSITIVE_INFINITY, min[1] / BLOCK_SIZE),
+            Math.max(previous?.[1] ?? Number.NEGATIVE_INFINITY, max[1] / BLOCK_SIZE),
           ]);
         }
       }
