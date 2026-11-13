@@ -42,13 +42,21 @@ export const physicalCopy = (material: MeshStandardMaterial): MeshPhysicalMateri
 const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial =>
   material instanceof MeshPhysicalMaterial ? material : physicalCopy(material);
 
+export type Coat = NonNullable<MaterialDef['finish']['clearcoat']>;
+
+/** Kept in user data, which every copy of a material carries, so a paint's coat, or its lack of one, travels with it. */
+const COAT = 'clearcoat';
+
+/** The clear coat of the library entry `material` wears, which only vehicle finishes draw. */
+export const coatOf = (material: Material): Coat | undefined => material.userData[COAT] as Coat | undefined;
+
 /** Draws a library entry on `loaded`, the one way an authored material and a painted copy both get their surface. */
 const surfaced = (
   loaded: MeshStandardMaterial,
   definition: MaterialDef,
   colourMultiplier: readonly [number, number, number],
 ): MeshStandardMaterial => {
-  const { opacity, transparent, depthWrite, sheen } = surfaceOf(definition.finish);
+  const { opacity, transparent, depthWrite, sheen, clearcoat } = surfaceOf(definition.finish);
   const material = sheen ? sheenable(loaded) : loaded;
   if (sheen && material instanceof MeshPhysicalMaterial) {
     material.sheen = 1;
@@ -66,6 +74,11 @@ const surfaced = (
   material.opacity = opacity;
   material.transparent = transparent;
   material.depthWrite = depthWrite;
+  if (clearcoat) {
+    material.userData[COAT] = clearcoat;
+  } else {
+    delete material.userData[COAT];
+  }
   return material;
 };
 

@@ -9,7 +9,6 @@ import { resolveGraphics } from '@skelly/engine/look';
 import type { GameConfig } from '@skelly/engine/session';
 import { skyAt } from '@skelly/engine/sky';
 import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@skelly/engine/world';
-import { MATERIALS } from '@skelly/thing-core/materials';
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { MaterialPatches } from '../render/materialPatches.ts';
@@ -159,7 +158,6 @@ export function createEngine(
         shadows: new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes),
         vehicleFinishes: new VehicleFinishes(
           new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection),
-          MATERIALS,
           graphicsTuning.vehicleReflection.coatGrazing,
           materialPatches,
         ),

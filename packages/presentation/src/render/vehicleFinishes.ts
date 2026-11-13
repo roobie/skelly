@@ -1,11 +1,8 @@
 import type { Sky } from '@skelly/engine/sky';
-import { type MaterialDef, surfaceOf } from '@skelly/thing-core/materials';
 import { type Material, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, type Object3D, ShaderChunk } from 'three';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
-import { physicalCopy } from './modelMaterials.ts';
+import { type Coat, coatOf, physicalCopy } from './modelMaterials.ts';
 import type { ReflectionMap } from './skyReflection.ts';
-
-type Coat = NonNullable<ReturnType<typeof surfaceOf>['clearcoat']>;
 
 const LIGHT_MAPS_CHUNK = '#include <lights_fragment_maps>';
 const PHYSICAL_CHUNK = '#include <lights_physical_fragment>';
@@ -65,18 +62,11 @@ const STAND_IN_COAT: Coat = { amount: 1, roughness: 1, metallic: 0 };
  */
 export class VehicleFinishes {
   private readonly reflection: ReflectionMap;
-  private readonly table: Readonly<Record<string, MaterialDef>>;
   private readonly copies = new WeakMap<Material, Material>();
   private on = false;
 
-  constructor(
-    reflection: ReflectionMap,
-    table: Readonly<Record<string, MaterialDef>>,
-    grazingLimit: number,
-    patches: MaterialPatches,
-  ) {
+  constructor(reflection: ReflectionMap, grazingLimit: number, patches: MaterialPatches) {
     this.reflection = reflection;
-    this.table = table;
     patches.add(coatOnly(grazingLimit));
   }
 
@@ -111,7 +101,7 @@ export class VehicleFinishes {
   warmUpVariants = (plain: MeshStandardMaterial): Material[] => [finished(plain, STAND_IN_COAT, this.reflection)];
 
   private copyOf(material: Material): Material {
-    const coat = this.coatOf(material);
+    const coat = coatOf(material);
     if (!(coat && material instanceof MeshStandardMaterial)) {
       return material;
     }
@@ -121,10 +111,5 @@ export class VehicleFinishes {
       this.copies.set(material, copy);
     }
     return copy;
-  }
-
-  private coatOf(material: Material): Coat | undefined {
-    const definition = this.table[material.userData.materialId as string];
-    return definition && surfaceOf(definition.finish).clearcoat;
   }
 }

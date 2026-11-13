@@ -1,5 +1,6 @@
 import type { Sky } from '@skelly/engine/sky';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
+import { applyModelMaterials, paintedCopy } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { GradientSkyReflection } from '@skelly/presentation/internal/render/skyReflection.ts';
 import { VehicleFinishes } from '@skelly/presentation/internal/render/vehicleFinishes.ts';
 import {
@@ -29,14 +30,16 @@ const table = {
 const gradientTuning = { cubeSize: 16, skyDrift: 0.1, zenithHeight: 0.5, groundEdge: 0.1, strength: 1, horizonGain: 2 };
 const renderer = (domElement: EventTarget = new EventTarget()) => ({ domElement }) as unknown as WebGLRenderer;
 
-const meshOf = (materialId: string) => {
-  const material = new MeshStandardMaterial({ metalness: 0.6, roughness: 0.5 });
-  material.userData = { materialId };
-  return new Mesh(new BoxGeometry(), material);
+const meshOf = (materialId: keyof typeof table) => {
+  const material = new MeshStandardMaterial();
+  material.userData = { materialId, colourMultiplier: [1, 1, 1] };
+  const mesh = new Mesh(new BoxGeometry(), material);
+  applyModelMaterials(mesh, table);
+  return mesh;
 };
 
 const finishesOf = (patches = new MaterialPatches(), update = reflection.update) =>
-  new VehicleFinishes({ texture: reflection.texture, update }, table, grazingLimit, patches);
+  new VehicleFinishes({ texture: reflection.texture, update }, grazingLimit, patches);
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -76,6 +79,20 @@ it('takes a coat, and the metalness under it, only from the finish content', () 
   expect(material.metalness).toBe(coat.metallic);
   expect(shared.metalness).toBe(table.coated.finish.metallic);
   expect(bare.material).toBe(uncoated);
+});
+
+it('takes the coat of a painted part, and the metalness under it, from the paint rather than the material it covers', () => {
+  const finishes = finishesOf();
+  finishes.setEnabled(true);
+  const [onBare, onCoated] = [meshOf('bare'), meshOf('coated')];
+  onBare.material = paintedCopy(onBare.material, table.coated);
+  onCoated.material = paintedCopy(onCoated.material, table.bare);
+  const flat = onCoated.material;
+  finishes.dress(new Group().add(onBare, onCoated));
+  const glossy = onBare.material as Material as MeshPhysicalMaterial;
+  expect(glossy.clearcoat).toBe(coat.amount);
+  expect(glossy.metalness).toBe(coat.metallic);
+  expect(onCoated.material).toBe(flat);
 });
 
 it('keeps one finished copy per shared material, so a rebuilt vehicle compiles and uploads nothing new', () => {

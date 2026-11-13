@@ -166,7 +166,7 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     expect([...new Set(keys)].filter((key) => !warmed.has(key))).toEqual([]);
   }
   const patches = new MaterialPatches();
-  const finishes = new VehicleFinishes({ texture: new Texture(), update: vi.fn() }, MATERIALS, 0.25, patches);
+  const finishes = new VehicleFinishes({ texture: new Texture(), update: vi.fn() }, 0.25, patches);
   finishes.setEnabled(true);
   const finishedMeshes = meshes.map((mesh) => mesh.clone());
   const finishedModel = new Group().add(...finishedMeshes);
