@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,8 +21,9 @@ import {
 const root = '/fixture/deadvox';
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 type Sources = Map<string, string>;
+type FixtureSources = Map<string, string | Uint8Array>;
 
-function hostFor(sources: Sources): SimulationModuleGraphHost {
+function hostFor(sources: FixtureSources): SimulationModuleGraphHost {
   return {
     resolve(specifier, importer) {
       let base = isAbsolute(specifier) ? specifier : resolve(dirname(importer ?? root), specifier);
@@ -36,20 +39,28 @@ function hostFor(sources: Sources): SimulationModuleGraphHost {
     },
     readFile(path) {
       const source = sources.get(path);
-      if (source === undefined) {
+      if (typeof source !== 'string') {
         return Promise.reject(new Error(`missing fixture source: ${path}`));
+      }
+      return Promise.resolve(source);
+    },
+    readBinary(path) {
+      const source = sources.get(path);
+      if (!(source instanceof Uint8Array)) {
+        return Promise.reject(new Error(`missing fixture binary: ${path}`));
       }
       return Promise.resolve(source);
     },
   };
 }
 
-const hash = (sources: Sources, ...entryPaths: string[]) =>
+const hash = (sources: FixtureSources, ...entryPaths: string[]) =>
   fingerprintSimulationSources(entryPaths, root, hostFor(sources), { exclude: ['src/ui'] });
 
 const entries = ['src/core/sim.ts'];
 const UNRESOLVED_DEPENDENCY_ERROR = /Cannot resolve runtime dependency/;
 const UNSUPPORTED_ID_ERROR = /Unsupported virtual runtime dependency|resolves outside src\//;
+const RAPIER_SEAM_ERROR = /vendored Rapier supply.*src\/core\/rapier\.ts/;
 const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
 const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
@@ -126,6 +137,9 @@ const actualSimulationHost = (): Promise<SimulationModuleGraphHost> => {
       },
       readFile(path) {
         return readFile(path, 'utf8');
+      },
+      readBinary(path) {
+        return readFile(path);
       },
     };
   })();
@@ -363,7 +377,7 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('engine/vehicles/solid.ts')).toBe(true);
   });
 
-  it('classifies the isolated feasibility graph separately from production and rejects WASM until explicitly owned', async () => {
+  it('classifies the isolated feasibility graph separately from production', async () => {
     const host = await actualSimulationHost();
     const graph = await collectSimulationSourceGraph(FEASIBILITY_ENTRIES, projectRoot, host);
     const modules = await sourceFilesUnder('src/feasibility');
@@ -371,20 +385,72 @@ describe('simulation source fingerprint', () => {
     expect(modules.filter((path) => !graph.sources.has(path) && path !== erasedContracts)).toEqual([]);
     expect(graph.sources.has('src/feasibility/vehicleFeasibility.json')).toBe(true);
     expect(graph.sources.has('src/feasibility/movingBody.ts')).toBe(true);
+    // The feasibility runner keeps its separate graph: its driver reaches the Rapier supply only through types.
+    expect([...graph.sources.keys()].some((path) => path.startsWith('vendor/rapier-f64/'))).toBe(false);
+  });
+
+  it('hashes WASM binary dependencies by bytes through the bundler asset pattern', async () => {
     const entry = `${root}/src/core/sim.ts`;
     const wasm = `${root}/src/core/candidate.wasm`;
-    await expect(
-      collectSimulationSourceGraph(
-        entries,
-        root,
-        hostFor(
-          new Map([
-            [entry, "import './candidate.wasm';"],
-            [wasm, 'fixture bytes'],
-          ]),
-        ),
+    const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+    const urlReferenced: FixtureSources = new Map<string, string | Uint8Array>([
+      [entry, "const url = new URL('./candidate.wasm', import.meta.url);\nexport const asset = url;\n"],
+      [wasm, new Uint8Array([1, 2, 3])],
+    ]);
+    const graph = await collectSimulationSourceGraph(entries, root, hostFor(urlReferenced));
+    expect(graph.sources.get('src/core/candidate.wasm')).toBe(`binary-sha256:${digest(new Uint8Array([1, 2, 3]))}`);
+    const before = fingerprintSimulationSourceMap(graph.sources);
+    const oneByteChanged = new Map(urlReferenced).set(wasm, new Uint8Array([1, 2, 4]));
+    expect(
+      fingerprintSimulationSourceMap(
+        (await collectSimulationSourceGraph(entries, root, hostFor(oneByteChanged))).sources,
       ),
-    ).rejects.toThrow(UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR);
+    ).not.toBe(before);
+    // A module import of a WASM file is the same hashed binary dependency, not a rejection.
+    const moduleImport: FixtureSources = new Map<string, string | Uint8Array>([
+      [entry, "import wasm from './candidate.wasm';\nexport const asset = wasm;\n"],
+      [wasm, new Uint8Array([1, 2, 3])],
+    ]);
+    const imported = await collectSimulationSourceGraph(entries, root, hostFor(moduleImport));
+    expect(imported.sources.get('src/core/candidate.wasm')).toBe(`binary-sha256:${digest(new Uint8Array([1, 2, 3]))}`);
+  });
+
+  it('enters the vendored Rapier supply into the simulation fingerprint', async () => {
+    const graph = await actualSimulationGraph();
+    expect(graph.sources.has('src/core/rapier.ts')).toBe(true);
+    expect(graph.sources.has('vendor/rapier-f64/rapier.js')).toBe(true);
+    expect(graph.sources.has('vendor/rapier-f64/rapier_wasm3d.js')).toBe(true);
+    expect(graph.sources.has('vendor/rapier-f64/provenance.json')).toBe(true);
+    const wasm = readFileSync(resolve(projectRoot, 'vendor/rapier-f64/rapier_wasm3d_bg.wasm'));
+    const digest = `binary-sha256:${createHash('sha256').update(wasm).digest('hex')}`;
+    expect(graph.sources.get('vendor/rapier-f64/rapier_wasm3d_bg.wasm')).toBe(digest);
+    const original = fingerprintSimulationSourceMap(graph.sources);
+    // One changed byte of a copy of the WASM changes the fingerprint; the unchanged copy keeps it.
+    const flipped = new Uint8Array(wasm);
+    flipped[flipped.length - 1]! ^= 0xff;
+    const mutated = new Map(graph.sources).set(
+      'vendor/rapier-f64/rapier_wasm3d_bg.wasm',
+      `binary-sha256:${createHash('sha256').update(flipped).digest('hex')}`,
+    );
+    expect(fingerprintSimulationSourceMap(mutated)).not.toBe(original);
+    expect(fingerprintSimulationSourceMap(new Map(graph.sources))).toBe(original);
+  });
+
+  it('rejects a vendor import outside the supply seam', async () => {
+    // The probe source is assembled from its specifier so the import-boundary scan — which reads text for
+    // package-escaping specifiers and owns package escapes, not the seam rule this probe feeds — sees no
+    // escaping import in this file, while the fingerprint parser still receives the bypass spelled exactly
+    // as a real module would write it. A real import here stays flagged; see
+    // `test/importBoundary.test.ts`, "imports no sibling source, allowing only shared root tooling (the Jsonnet compiler and the Lit check)".
+    const bypassSpecifier = '../../vendor/rapier-f64/rapier.js';
+    const bypass: FixtureSources = new Map<string, string | Uint8Array>([
+      [`${root}/src/core/bypass.ts`, `export * from '${bypassSpecifier}';\n`],
+      [`${root}/vendor/rapier-f64/rapier.js`, 'export const api = 1;\n'],
+      [`${root}/vendor/rapier-f64/provenance.json`, '{}'],
+    ]);
+    await expect(collectSimulationSourceGraph([`${root}/src/core/bypass.ts`], root, hostFor(bypass))).rejects.toThrow(
+      RAPIER_SEAM_ERROR,
+    );
   });
 
   it('ignores ragdoll tuning', async () => {
@@ -451,7 +517,7 @@ describe('simulation source fingerprint', () => {
     expect(await hash(runtimeChanged, ...entries)).not.toBe(original);
   });
 
-  it.each(['../config/intake.json', '../../../skelly-assets/tools/packages/thing-core/src/materials.json'])(
+  it.each(['../config/intake.json', '../../../skelly-assets/models/finishes.json'])(
     'fingerprints declarative JSON dependency %s without parsing it as a module',
     async (specifier) => {
       const entry = resolve(root, entries[0]!);
@@ -548,7 +614,7 @@ describe('simulation source fingerprint', () => {
 
   it('fails closed when a runtime dependency is not a classified source, content file, or presentation asset', async () => {
     await Promise.all(
-      ['.wasm', '.ogg'].map((extension) => {
+      ['.ogg'].map((extension) => {
         const path = `${root}/src/core/opaque${extension}`;
         const sources: Sources = new Map([[`${root}/src/core/sim.ts`, `import './opaque${extension}';\n`]]);
         const host: SimulationModuleGraphHost = {

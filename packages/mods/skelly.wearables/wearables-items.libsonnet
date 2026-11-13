@@ -15,9 +15,9 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
       "name": "Jeans",
       "category": "clothing",
       "model": "jeans",
-      figureModels: [worn('worn_trousers_pelvis', 'clothing_body', ['pelvis'])]
-        + pair('worn_trousers_thigh', 'left_trouser', 'right_trouser', ['thigh'])
-        + pair('worn_trousers_shin', 'left_hem', 'right_hem', ['shin']),
+      figureModels: [worn('jeans_worn_pelvis', 'clothing_body', ['pelvis'])]
+        + pair('jeans_worn_thigh', 'left_trouser', 'right_trouser', ['thigh'])
+        + pair('jeans_worn_shin', 'left_hem', 'right_hem', ['shin']),
       "size": [3, 3],
       "wearable": {
         "slot": "legs",
@@ -39,8 +39,8 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
       "name": "Rubber boots",
       "category": "clothing",
       "model": "rubber_boots",
-      figureModels: pair('worn_boot_shaft', 'left_hem', 'right_hem', ['shin'])
-        + pair('worn_boot_foot', 'left_boot', 'right_boot', ['foot']),
+      figureModels: pair('rubber_boots_worn_shaft', 'left_hem', 'right_hem', ['shin'])
+        + pair('rubber_boots_worn_foot', 'left_boot', 'right_boot', ['foot']),
       "size": [2, 3],
       "wearable": {
         "slot": "feet",
@@ -55,7 +55,8 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
       "name": "Sneakers",
       "category": "clothing",
       "model": "sneakers",
-      figureModels: pair('worn_sneaker_foot', 'left_boot', 'right_boot', ['foot']),
+      figureModels: pair('sneakers_worn_shaft', 'left_hem', 'right_hem', ['shin'])
+        + pair('sneakers_worn_foot', 'left_boot', 'right_boot', ['foot']),
       "size": [2, 3],
       "wearable": {
         "slot": "feet",
@@ -90,9 +91,9 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
       "name": "Hoodie",
       "category": "clothing",
       "model": "hoodie",
-      figureModels: [worn('worn_hoodie_body', 'clothing_body', ['torso'])]
-        + pair('worn_hoodie_upper', 'left_sleeve', 'right_sleeve', ['upper'])
-        + pair('worn_hoodie_fore', 'left_cuff', 'right_cuff', ['fore']),
+      figureModels: [worn('hoodie_worn_body', 'clothing_body', ['torso'])]
+        + pair('hoodie_worn_upper', 'left_sleeve', 'right_sleeve', ['upper'])
+        + pair('hoodie_worn_fore', 'left_cuff', 'right_cuff', ['fore']),
       "size": [3, 3],
       "wearable": {
         "slot": "torso",
@@ -108,9 +109,9 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
       "name": "Jacket",
       "category": "clothing",
       "model": "jacket",
-      figureModels: [worn('worn_jacket_body', 'clothing_body', ['torso'])]
-        + pair('worn_jacket_upper', 'left_sleeve', 'right_sleeve', ['upper'])
-        + pair('worn_jacket_fore', 'left_cuff', 'right_cuff', ['fore']),
+      figureModels: [worn('jacket_worn_body', 'clothing_body', ['torso'])]
+        + pair('jacket_worn_upper', 'left_sleeve', 'right_sleeve', ['upper'])
+        + pair('jacket_worn_fore', 'left_cuff', 'right_cuff', ['fore']),
       "size": [3, 3],
       "wearable": {
         "slot": "torso",
@@ -196,46 +197,6 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
         "warmth": 1,
         "wearPerDamage": 0.0015,
         "protects": { "blunt": 0.6, "cut": 0.6, "pierce": 0.5, "acid": 0.3 }
-      }
-    },
-    {
-      "id": "fanny_pack",
-      "name": "Fanny pack",
-      "category": "bag",
-      "model": "fanny_pack",
-      "figureModels": onTorso('fanny_pack_worn'),
-      "size": [2, 2],
-      "wearable": { "slot": "waist", "encumbrance": 3 },
-      "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8 }] }
-    },
-    {
-      "id": "school_backpack",
-      "name": "School backpack",
-      "category": "bag",
-      "model": "school_backpack",
-      "figureModels": onTorso('school_backpack_worn'),
-      "size": [4, 4],
-      "wearable": { "slot": "back", "encumbrance": 10 },
-      "container": {
-        "pockets": [
-          { "name": "main", "grid": [5, 6], "handlingSimSeconds": 1.5 },
-          { "name": "front", "grid": [3, 2], "handlingSimSeconds": 1.2 }
-        ]
-      }
-    },
-    {
-      "id": "hiking_backpack",
-      "name": "Hiking backpack",
-      "category": "bag",
-      "model": "hiking_backpack",
-      "figureModels": onTorso('hiking_backpack_worn'),
-      "size": [4, 5],
-      "wearable": { "slot": "back", "encumbrance": 12 },
-      "container": {
-        "pockets": [
-          { "name": "main", "grid": [6, 8], "handlingSimSeconds": 1.5 },
-          { "name": "lid", "grid": [3, 2], "handlingSimSeconds": 1.0 }
-        ]
       }
     }
   ]

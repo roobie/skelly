@@ -19,6 +19,7 @@
     "skelly.hand-tools",
     "skelly.household-electrical",
     "skelly.inventory",
+    "skelly.keys",
     "skelly.light-sources",
     "skelly.manufactured-blocks",
     "skelly.materials",
@@ -48,27 +49,7 @@
     },
     {
       "kind": "content",
-      "path": "models-items.json"
-    },
-    {
-      "kind": "content",
       "path": "scenarios.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/gauntlet_lab_entry_card.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gauntlet_lab_entry_card.glb"
     }
   ],
   "id": "skelly.deadvox.scenario.gauntlet.city",

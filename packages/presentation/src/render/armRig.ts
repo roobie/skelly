@@ -83,21 +83,28 @@ export const buildArmRig = (
 ) => {
   scene.updateMatrixWorld(true);
   const nodes = Object.fromEntries(
-    ARM_SEGMENTS.map((segment) => {
-      const node = partNode(scene, rig[segment].part);
-      return [segment, { node, placed: node.matrixWorld.clone() }];
-    }),
-  ) as Record<ArmSegment, { node: Object3D; placed: Matrix4 }>;
+    ARM_SEGMENTS.map((segment) => [
+      segment,
+      rig[segment].parts.map((part) => {
+        const node = partNode(scene, part);
+        return { node, placed: node.matrixWorld.clone() };
+      }),
+    ]),
+  ) as Record<ArmSegment, { node: Object3D; placed: Matrix4 }[]>;
   const pivots = Object.fromEntries(
     ARM_SEGMENTS.map((segment) => [segment, anchorOf(model, rig[segment].pivot)]),
   ) as Record<ArmSegment, Vector3>;
-  const palmBounds = new Box3().setFromObject(nodes.hand.node);
+  const palmBounds = new Box3();
+  for (const { node } of nodes.hand) {
+    palmBounds.expandByObject(node);
+  }
   const halfThickness = (palmBounds.max.x - palmBounds.min.x) / 2;
   const hang = (segment: ArmSegment, pivot: Object3D, origin: Vector3): void => {
-    const { node, placed } = nodes[segment];
-    pivot.add(node);
-    placed.decompose(node.position, node.quaternion, node.scale);
-    node.position.sub(origin);
+    for (const { node, placed } of nodes[segment]) {
+      pivot.add(node);
+      placed.decompose(node.position, node.quaternion, node.scale);
+      node.position.sub(origin);
+    }
   };
   const shoulder = new Object3D();
   shoulder.name = ARM_NODE.shoulder;

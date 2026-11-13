@@ -223,6 +223,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25

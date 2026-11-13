@@ -149,7 +149,7 @@ layer order inside construct is in `packages/skelly-assets/tools/packages/constr
    Construct ends at assembly so the game can consume authored mass and placed centres
    without loading authoring geometry. Atoms read their item weight; gun bodies sum authored
    part masses and fitted child items keep their own weight. See `packages/skelly-assets/tools/packages/thing-export/README.md`, "Physical model";
-   `packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet`, `parts`; and
+   `packages/skelly-assets/models/guns/tables/catalogue.jsonnet`, `parts`; and
    `packages/engine/src/core/items.ts`, `typeWeightGrams`.
 3. **Thing tool, first slice — complete.** Tape, thread, cord and fuse atoms plus a
    multi-part desk lamp share the source-to-preview and export path. The lamp proves that the single-part helper's users

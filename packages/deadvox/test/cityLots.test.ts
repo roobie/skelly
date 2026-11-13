@@ -2,7 +2,7 @@ import { buildRegistry } from '@skelly/engine/content';
 import { cityLotIssues, cityLotRouteIssues, lotRect, placeCityLots } from '@skelly/engine/internal/core/cityLots.ts';
 import { buildCityPlan, cityGridOf } from '@skelly/engine/internal/core/cityPlan.ts';
 import { ScenarioRouteSpace } from '@skelly/engine/internal/core/scenarioRoute.ts';
-import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
+import type { CityScenarioDef } from '@skelly/engine/internal/core/schema.ts';
 import { rectsOverlap } from '@skelly/engine/internal/core/site.ts';
 import { compileTemplate } from '@skelly/engine/internal/core/templates.ts';
 import { CitySite, footprint, makeScale } from '@skelly/engine/world';
@@ -12,7 +12,7 @@ import { terrainFor } from './fixtures/terrain.ts';
 import { scale } from './snapshotTestSupport.ts';
 
 const QUOTA_CANNOT_FIT = /quota cannot fit/;
-type Lot = NonNullable<ScenarioDef['city']['lots']>[number];
+type Lot = NonNullable<CityScenarioDef['city']['lots']>[number];
 const fixture = () => {
   const scenario = fixtureScenario();
   const built = buildRegistry(fixtureScenarioSources(scenario));

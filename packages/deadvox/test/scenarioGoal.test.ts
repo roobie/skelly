@@ -56,7 +56,7 @@ const registry = {
   items: new Map([...BUNDLED_CONTENT.registry.items, ...own.registry.items]),
   itemEconomy: new Map([...BUNDLED_CONTENT.registry.itemEconomy, ...own.registry.itemEconomy]),
 };
-const profile = [...registry.scenarios.values()][0]!;
+const profile = [...registry.scenarios.values()].find((scenario) => scenario.kind === 'assembledCity')!;
 const objective: Vec3 = [8, 1, 6];
 const worldOptions = { blockSize: 0.5, site: profile.id, storeys: 1, density: null };
 const fixture = (

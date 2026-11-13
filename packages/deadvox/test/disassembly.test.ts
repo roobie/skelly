@@ -86,10 +86,13 @@ const fixtureBuild = buildRegistry([
     source: 'item-wear.json',
     data: JSON.parse(readFileSync('../mods/skelly.inventory/item-wear.json', 'utf8')) as unknown,
   },
-  { source: 'models-items.json', data: JSON.parse(readFileSync(join(base, 'models-items.json'), 'utf8')) as unknown },
   {
-    source: 'models-electric-power.json',
-    data: JSON.parse(readFileSync('../mods/skelly.electric-power/models-electric-power.json', 'utf8')) as unknown,
+    source: 'models-household.json',
+    data: JSON.parse(readFileSync('../mods/skelly.household/models-household.json', 'utf8')) as unknown,
+  },
+  {
+    source: 'models-electronics.json',
+    data: JSON.parse(readFileSync('../mods/skelly.electronics/models-electronics.json', 'utf8')) as unknown,
   },
   {
     source: 'models-hand-tools.json',

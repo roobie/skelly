@@ -19,9 +19,10 @@ import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from
 import { defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry, issues } = startupContent();
+const cityScenarios = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
 
 const streetCars = (seed: number) => {
-  const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
+  const scenario = cityScenarios.find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
   const pool = new Set(grid.streetProps!.flatMap((id) => registry.mapPools.get(id)!.choices.map(({ ref }) => ref.id)));
   const plan = buildCityPlan({ seed, registry, grid, floor: 0 });
@@ -54,7 +55,7 @@ const checkCar = (override: Partial<typeof fixtureCar>, size: [number, number, n
 
 it('street car procedural variants', () => {
   expect(issues).toEqual([]);
-  const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
+  const scenario = cityScenarios.find(({ city }) => city.streetProps?.length)!;
   const poolIds = scenario.city.streetProps!.flatMap((id) =>
     registry.mapPools.get(id)!.choices.map(({ ref }) => ref.id),
   );
@@ -76,7 +77,7 @@ it('street car procedural variants', () => {
 
 // An item template is a floor pad plus furniture; a pad that stamps its own block shows as a patch on the street.
 it('keeps the street surface under every placed item standing on a street cell', () => {
-  const scenario = [...registry.scenarios.values()].find(({ city }) => city.streetProps?.length)!;
+  const scenario = cityScenarios.find(({ city }) => city.streetProps?.length)!;
   const grid = cityGridOf(registry, scenario.city);
   const plan = buildCityPlan({
     seed: 1,

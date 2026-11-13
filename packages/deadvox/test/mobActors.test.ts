@@ -72,7 +72,7 @@ import {
 import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
-import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -2159,6 +2159,87 @@ describe('MobActorMeshes reactions', () => {
       const before = renderer.boneMatrix(id, 'pelvis');
       renderer.sync(store, ragdollConfig.timestepRealSeconds, 1, frozen);
       expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(before);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('builds no ragdoll for a type whose content freezes its death fall', async () => {
+    const type = { ...SHAMBLER, id: 'fixture_frozen_fall', deathFall: 'frozen' as const };
+    const renderer = new FixtureMobActorMeshes(0.5, 2, {
+      actors: new Map([[type.id, type]]),
+      poolSize: 1,
+      actorFigureFiles: withFixtureFigures(FIGURES, { [type.id]: SHAMBLER.id }),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([0, 0, 0], [0, 0, -1], [], { type });
+      const id = store.add(actor);
+      renderer.sync(store, 1 / 60, 1);
+      store.remove(id);
+      renderer.actorDied(id, actor);
+      await renderer.whenCorpsesReady();
+      const corpse = (
+        renderer as unknown as {
+          readonly corpses: ReadonlyMap<number, { readonly ragdoll?: unknown }>;
+        }
+      ).corpses.get(id);
+      expect(corpse).toBeDefined();
+      // No physics means no motion: the corpse keeps the pose it died in.
+      const frozen = renderer.boneMatrix(id, 'pelvis');
+      expect(frozen).toBeDefined();
+      expect(corpse?.ragdoll).toBeUndefined();
+      renderer.sync(store, ragdollConfig.timestepRealSeconds, 1);
+      expect(renderer.boneMatrix(id, 'pelvis')).toEqual(frozen);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('freezes a frozen-selected corpse even when its figure bakes a death fall', async () => {
+    const type = {
+      ...registry.actors.get('acid_zombie')!,
+      id: 'fixture_frozen_baked',
+      deathFall: 'frozen' as const,
+    };
+    const renderer = new FixtureMobActorMeshes(0.5, 2, {
+      actors: new Map([[type.id, type]]),
+      poolSize: 1,
+      actorFigureFiles: withFixtureFigures(FIGURES, { [type.id]: 'acid_zombie' }),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([0, 0, 0], [0, 0, -1], [], { type });
+      const id = store.add(actor);
+      renderer.sync(store, 1 / 60, 1);
+      store.remove(id);
+      renderer.actorDied(id, actor);
+      await renderer.whenCorpsesReady();
+      const corpse = (
+        renderer as unknown as {
+          readonly corpses: ReadonlyMap<number, { readonly ragdoll?: unknown }>;
+        }
+      ).corpses.get(id);
+      expect(corpse).toBeDefined();
+      const tick = () => renderer.sync(store, 0.1, 1);
+      tick(); // pack the corpse once before capturing its frozen row
+      const frozen = renderer.boneMatrix(id, 'hips');
+      expect(frozen).toBeDefined();
+      expect(corpse?.ragdoll).toBeUndefined();
+      // Past the baked fall's span the root has not moved: no clip plays for a frozen corpse.
+      for (let i = 0; i < 30; i++) {
+        tick();
+      }
+      expect(renderer.boneMatrix(id, 'hips')).toEqual(frozen);
+      // Still lying just before the lie time, sinking the moment it passes: no fall-length delay.
+      for (let i = 0; i < 18; i++) {
+        tick();
+      }
+      expect(renderer.boneMatrix(id, 'hips')).toEqual(frozen);
+      for (let i = 0; i < 4; i++) {
+        tick();
+      }
+      expect(renderer.boneMatrix(id, 'hips')).not.toEqual(frozen);
     } finally {
       renderer.dispose();
     }

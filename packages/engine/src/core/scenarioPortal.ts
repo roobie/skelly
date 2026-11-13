@@ -2,14 +2,14 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { ladderOutward } from './ladders.ts';
 import { reachTuning } from './reach.ts';
-import type { ScenarioDef } from './schema.ts';
+import type { CityScenarioDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { STAIR_BODY_HALF_WIDTH } from './stairFlight.ts';
 import { templateBodySpace, templateReachableStandingPositions } from './templateSpatial.ts';
 import type { CompiledTemplate } from './templates.ts';
 
 type Piece = CompiledTemplate['pieces'][number];
-const portalPieces = (template: CompiledTemplate, scenario: ScenarioDef, kind: 'hatch' | 'ladder'): Piece[] => {
+const portalPieces = (template: CompiledTemplate, scenario: CityScenarioDef, kind: 'hatch' | 'ladder'): Piece[] => {
   const anchor = scenario.portal[kind];
   return template.pieces.filter((piece) =>
     kind === 'hatch'
@@ -21,14 +21,14 @@ const portalPieces = (template: CompiledTemplate, scenario: ScenarioDef, kind: '
   );
 };
 
-export const portalLadderPoint = (scenario: ScenarioDef, template: CompiledTemplate): Vec3 => {
+export const portalLadderPoint = (scenario: CityScenarioDef, template: CompiledTemplate): Vec3 => {
   const bottom = portalPieces(template, scenario, 'ladder').sort((a, b) => a.pos[1] - b.pos[1])[0]!;
   return [bottom.pos[0] + bottom.size[0] / 2, bottom.pos[1], bottom.pos[2] + bottom.size[2] / 2];
 };
 
 const columnIssues = (
   template: CompiledTemplate,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   hatch: Piece,
   ladders: Piece[],
 ): [string, string][] => {
@@ -125,7 +125,7 @@ const onEdge = (template: CompiledTemplate, [x, , z]: Vec3): boolean => {
 /** Each underground port must open through the service shell into circulation the portal's lower landing reaches. */
 export const undergroundPortIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   template: CompiledTemplate,
 ): [string, string][] => {
   const issues: [string, string][] = [];
@@ -155,7 +155,7 @@ export const undergroundPortIssues = (
 
 export const scenarioPortalIssues = (
   registry: Registry,
-  scenario: ScenarioDef,
+  scenario: CityScenarioDef,
   template: CompiledTemplate,
 ): [string, string][] => {
   const hatches = portalPieces(template, scenario, 'hatch');

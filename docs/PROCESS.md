@@ -108,14 +108,21 @@ Whoever merges ticks by hand what the workflow cannot. Slice 3's checklist is #2
 - **Review references use page paths, never LAN addresses.** The maintainer reviews from
   another machine, so the review origin is supplied outside tracked work.
 - **Tool-specific look rules** sit beside the pages they describe, so they change with them.
-- **deadvox:** every look runs from a fixture start that prepares the test: a debug-only start
-  row whose site spawns the maintainer beside the target, with the gear the check needs already
-  in hand. The look link names it as its start mod, by the id of a mod whose one start row it is
+- **deadvox:** every look runs from a fixture start: a debug-only start row whose site spawns the
+  maintainer beside the target, with the gear and world state the check needs, such as time of day
+  and weather. The look link names it as its start mod, by the id of a mod whose one start row it is
   or inline, and names any debug mods its scene needs
   (`/?start-mod=<fixture mod>&mods=<debug mods>#{debug:true}`); see
   `packages/deadvox/docs/url-mods.md`, "Start mod". Reason: a look spends the tester's time
-  on the check, not on setup. A start cannot hand over a loaded weapon until #1570, so a look
+  on the check, not on setup or waiting. A start cannot hand over a loaded weapon until #1570, so a look
   that needs one pockets the ammunition. Anything that saves needs HTTPS (a secure context).
+- **deadvox fixture start mods are built from the start kit.** A new look copies
+  `packages/deadvox/mods/skelly.deadvox.scenario.look-template/starts.jsonnet` and its manifest,
+  building its row on `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, or on a scenario's own
+  row with `look`, and its dependencies with `dependencies`. Reason: the kit owns what every look
+  would otherwise re-derive (the base gear and the packs that own it, the top skills, staying off
+  another start's site default), so a look states only its site, time and the gear its check
+  needs, and a kit change reaches every fixture.
 - **deadvox debug, review and test starts give every skill its top level.** Each builds on
   the start kit's fixture row, which sets every content skill there; see
   `tools/jsonnet/lib/start-kit.libsonnet`, `fixture`, and `packages/engine/src/core/startState.ts`,

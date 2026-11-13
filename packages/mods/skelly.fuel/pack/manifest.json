@@ -4,26 +4,6 @@
     {
       "kind": "content",
       "path": "fuel-items.json"
-    },
-    {
-      "kind": "content",
-      "path": "models-fuel.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/gas_canister.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/gas_canister.glb"
     }
   ],
   "id": "skelly.fuel",

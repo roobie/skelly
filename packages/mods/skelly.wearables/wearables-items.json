@@ -32,7 +32,7 @@
           "at": [0, 0, 0],
           "covers": ["pelvis"],
           "frame": "clothing_body",
-          "model": "worn_trousers_pelvis",
+          "model": "jeans_worn_pelvis",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -40,7 +40,7 @@
           "at": [0, 0, 0],
           "covers": ["thigh"],
           "frame": "left_trouser",
-          "model": "worn_trousers_thigh",
+          "model": "jeans_worn_thigh",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -48,7 +48,7 @@
           "at": [0, 0, 0],
           "covers": ["thigh"],
           "frame": "right_trouser",
-          "model": "worn_trousers_thigh",
+          "model": "jeans_worn_thigh",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -56,7 +56,7 @@
           "at": [0, 0, 0],
           "covers": ["shin"],
           "frame": "left_hem",
-          "model": "worn_trousers_shin",
+          "model": "jeans_worn_shin",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -64,7 +64,7 @@
           "at": [0, 0, 0],
           "covers": ["shin"],
           "frame": "right_hem",
-          "model": "worn_trousers_shin",
+          "model": "jeans_worn_shin",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }
@@ -88,7 +88,7 @@
           "at": [0, 0, 0],
           "covers": ["shin"],
           "frame": "left_hem",
-          "model": "worn_boot_shaft",
+          "model": "rubber_boots_worn_shaft",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -96,7 +96,7 @@
           "at": [0, 0, 0],
           "covers": ["shin"],
           "frame": "right_hem",
-          "model": "worn_boot_shaft",
+          "model": "rubber_boots_worn_shaft",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -104,7 +104,7 @@
           "at": [0, 0, 0],
           "covers": ["foot"],
           "frame": "left_boot",
-          "model": "worn_boot_foot",
+          "model": "rubber_boots_worn_foot",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -112,7 +112,7 @@
           "at": [0, 0, 0],
           "covers": ["foot"],
           "frame": "right_boot",
-          "model": "worn_boot_foot",
+          "model": "rubber_boots_worn_foot",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }
@@ -135,9 +135,25 @@
       "figureModels": [
         {
           "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "left_hem",
+          "model": "sneakers_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "right_hem",
+          "model": "sneakers_worn_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
           "covers": ["foot"],
           "frame": "left_boot",
-          "model": "worn_sneaker_foot",
+          "model": "sneakers_worn_foot",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -145,7 +161,7 @@
           "at": [0, 0, 0],
           "covers": ["foot"],
           "frame": "right_boot",
-          "model": "worn_sneaker_foot",
+          "model": "sneakers_worn_foot",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }
@@ -218,7 +234,7 @@
           "at": [0, 0, 0],
           "covers": ["torso"],
           "frame": "clothing_body",
-          "model": "worn_hoodie_body",
+          "model": "hoodie_worn_body",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -226,7 +242,7 @@
           "at": [0, 0, 0],
           "covers": ["upper"],
           "frame": "left_sleeve",
-          "model": "worn_hoodie_upper",
+          "model": "hoodie_worn_upper",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -234,7 +250,7 @@
           "at": [0, 0, 0],
           "covers": ["upper"],
           "frame": "right_sleeve",
-          "model": "worn_hoodie_upper",
+          "model": "hoodie_worn_upper",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -242,7 +258,7 @@
           "at": [0, 0, 0],
           "covers": ["fore"],
           "frame": "left_cuff",
-          "model": "worn_hoodie_fore",
+          "model": "hoodie_worn_fore",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -250,7 +266,7 @@
           "at": [0, 0, 0],
           "covers": ["fore"],
           "frame": "right_cuff",
-          "model": "worn_hoodie_fore",
+          "model": "hoodie_worn_fore",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }
@@ -295,7 +311,7 @@
           "at": [0, 0, 0],
           "covers": ["torso"],
           "frame": "clothing_body",
-          "model": "worn_jacket_body",
+          "model": "jacket_worn_body",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -303,7 +319,7 @@
           "at": [0, 0, 0],
           "covers": ["upper"],
           "frame": "left_sleeve",
-          "model": "worn_jacket_upper",
+          "model": "jacket_worn_upper",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -311,7 +327,7 @@
           "at": [0, 0, 0],
           "covers": ["upper"],
           "frame": "right_sleeve",
-          "model": "worn_jacket_upper",
+          "model": "jacket_worn_upper",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -319,7 +335,7 @@
           "at": [0, 0, 0],
           "covers": ["fore"],
           "frame": "left_cuff",
-          "model": "worn_jacket_fore",
+          "model": "jacket_worn_fore",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         },
@@ -327,7 +343,7 @@
           "at": [0, 0, 0],
           "covers": ["fore"],
           "frame": "right_cuff",
-          "model": "worn_jacket_fore",
+          "model": "jacket_worn_fore",
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }
@@ -511,117 +527,6 @@
         },
         "warmth": 1,
         "wearPerDamage": 0.0015
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "bag",
-      "container": {
-        "pockets": [
-          {
-            "grid": [3, 2],
-            "handlingSimSeconds": 0.80000000000000004
-          }
-        ],
-        "takeSound": "pouch_take"
-      },
-      "figureModels": [
-        {
-          "at": [0, 0, 0],
-          "frame": "torso",
-          "model": "fanny_pack_worn",
-          "overTorso": {
-            "jacket": "fanny_pack_worn_jacket"
-          },
-          "pivot": [0, 0, 0],
-          "turn": [0, 0, 0]
-        }
-      ],
-      "id": "fanny_pack",
-      "model": "fanny_pack",
-      "name": "Fanny pack",
-      "size": [2, 2],
-      "wearable": {
-        "encumbrance": 3,
-        "slot": "waist"
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "bag",
-      "container": {
-        "pockets": [
-          {
-            "grid": [5, 6],
-            "handlingSimSeconds": 1.5,
-            "name": "main"
-          },
-          {
-            "grid": [3, 2],
-            "handlingSimSeconds": 1.2,
-            "name": "front"
-          }
-        ],
-        "takeSound": "pouch_take"
-      },
-      "figureModels": [
-        {
-          "at": [0, 0, 0],
-          "frame": "torso",
-          "model": "school_backpack_worn",
-          "overTorso": {
-            "jacket": "school_backpack_worn_jacket"
-          },
-          "pivot": [0, 0, 0],
-          "turn": [0, 0, 0]
-        }
-      ],
-      "id": "school_backpack",
-      "model": "school_backpack",
-      "name": "School backpack",
-      "size": [4, 4],
-      "wearable": {
-        "encumbrance": 10,
-        "slot": "back"
-      },
-      "workInProgress": false
-    },
-    {
-      "category": "bag",
-      "container": {
-        "pockets": [
-          {
-            "grid": [6, 8],
-            "handlingSimSeconds": 1.5,
-            "name": "main"
-          },
-          {
-            "grid": [3, 2],
-            "handlingSimSeconds": 1,
-            "name": "lid"
-          }
-        ],
-        "takeSound": "pouch_take"
-      },
-      "figureModels": [
-        {
-          "at": [0, 0, 0],
-          "frame": "torso",
-          "model": "hiking_backpack_worn",
-          "overTorso": {
-            "jacket": "hiking_backpack_worn_jacket"
-          },
-          "pivot": [0, 0, 0],
-          "turn": [0, 0, 0]
-        }
-      ],
-      "id": "hiking_backpack",
-      "model": "hiking_backpack",
-      "name": "Hiking backpack",
-      "size": [4, 5],
-      "wearable": {
-        "encumbrance": 12,
-        "slot": "back"
       },
       "workInProgress": false
     }

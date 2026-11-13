@@ -199,13 +199,16 @@ with a model, `skelly.body` too, loads inventory tuning and the work-in-progress
 
 **Food.** Packaged means any wrapped or canned food, and `skelly.packaged-foods` depends on
 `skelly.hand-tools` so a tool-opened can always finds an opener. Portions stay with their
-vessel, so the two food mods share no edge. `skelly.basic-foods` never depends on hand tools.
+vessel. The release ships the packaged foods' models in the `skelly.basic-foods` pack, so
+`skelly.packaged-foods` also depends on it; `skelly.basic-foods` never depends on hand tools.
 See `packages/mods/skelly.packaged-foods/pack/manifest.jsonnet`, `dependencies`.
 
 **Keys.** A key is content of whichever pack holds its lock-bearing door, not of core
 structures. Validation requires every key to name a lock some door in the same stack carries,
 so a core key whose door sits in a scenario template would fail the core stack alone. The core
-key box is a generic container and names no key. See `packages/engine/src/core/content.ts`, `checkKeys`.
+key box is a generic container and names no key. Key models are one release pack, so they live in the
+product mod `skelly.keys` and each key's pack depends on it; see
+`packages/deadvox/mods/skelly.keys/models-keys.jsonnet` and `packages/engine/src/core/content.ts`, `checkKeys`.
 
 **Liquid vessels.** A vessel lists the liquids it takes or takes any liquid the stack loads, so a general container needs no edge to every mod that adds a liquid and no list to maintain. A lamp keeps its list, because what it holds must burn. See `packages/engine/src/core/liquids.ts`, `vesselAccepts`.
 

@@ -3,7 +3,7 @@ import type { Registry } from '@skelly/engine/content';
 import type { CityPlan } from '@skelly/engine/internal/core/cityPlan.ts';
 import { ladderOutward } from '@skelly/engine/internal/core/ladders.ts';
 import { scenarioCertificate } from '@skelly/engine/internal/core/scenarioCertificate.ts';
-import type { ScenarioDef } from '@skelly/engine/internal/core/schema.ts';
+import type { CityScenarioDef } from '@skelly/engine/internal/core/schema.ts';
 import { compileTemplate, placedPieces } from '@skelly/engine/internal/core/templates.ts';
 import { DOOR_ACTION } from '@skelly/engine/internal/game/doorAction.ts';
 import type { SessionOptions } from '@skelly/engine/internal/game/session.ts';
@@ -121,7 +121,7 @@ export const cyclicSite = (registry: Registry, base: CityPlan, scale: Scale): Ci
   return new CyclicSite(9, cycleRegistry, scale, plan);
 };
 
-export const traverseScenario = (site: CitySite, profile: ScenarioDef, scale: Scale): void => {
+export const traverseScenario = (site: CitySite, profile: CityScenarioDef, scale: Scale): void => {
   const { plan, registry } = site;
   const certificate = scenarioCertificate(site);
   assert(certificate.issues.length === 0, JSON.stringify(certificate.issues));

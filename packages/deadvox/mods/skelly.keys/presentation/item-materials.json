@@ -1,0 +1,10 @@
+{
+  "assets/models/camp_armoury_key.glb": { "materials": ["steel-parkerized"] },
+  "assets/models/camp_hq_safe_key.glb": { "materials": ["brass"] },
+  "assets/models/dad_cabin_key.glb": { "materials": ["steel-grey"] },
+  "assets/models/gauntlet_lab_entry_card.glb": { "materials": ["plastic-white", "plastic-blue"] },
+  "assets/models/gold_skeleton_key.glb": { "materials": ["metal-gold", "crystal-glow-blue"] },
+  "assets/models/pharmacy_key.glb": { "materials": ["brass"] },
+  "assets/models/police_armoury_key.glb": { "materials": ["steel-blued"] },
+  "assets/models/shed_key.glb": { "materials": ["steel-grey"] }
+}

@@ -185,7 +185,9 @@ const floorCourses = (id: string, template: ReturnType<typeof compileTemplate>, 
 describe('one finished city plan', () => {
   it('keeps compiled building floor and roof courses in the exterior wall material', () => {
     const native = BUNDLED_CONTENT.registry;
-    const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+    const scenario = [...native.scenarios.values()]
+      .filter((candidate) => candidate.kind === 'assembledCity')
+      .find((candidate) => candidate.composition)!;
     for (const { id, style } of cityGridOf(native, scenario.city).templates) {
       for (const [variant, template] of nativeDefinitions(id, style).entries()) {
         const { courses, scanned } = floorCourses(id, template, style);
@@ -198,7 +200,9 @@ describe('one finished city plan', () => {
   });
   describe('gauntlet population from scenario content', () => {
     const native = BUNDLED_CONTENT.registry;
-    const bundled = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+    const bundled = [...native.scenarios.values()]
+      .filter((candidate) => candidate.kind === 'assembledCity')
+      .find((candidate) => candidate.composition)!;
     const fixture = registry.templates.get('fixture_house')!;
     const solid = native.blocks.find((block) => block.solid)!.id;
     const cityRegistry = {
@@ -591,7 +595,9 @@ describe('one finished city plan', () => {
   sweepGroup('as a gauntlet site', () => {
     it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
       const native = BUNDLED_CONTENT.registry;
-      const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
+      const scenario = [...native.scenarios.values()]
+        .filter((candidate) => candidate.kind === 'assembledCity')
+        .find((candidate) => candidate.composition)!;
       const site = new ScenarioCitySite({
         seed: 73,
         registry: native,

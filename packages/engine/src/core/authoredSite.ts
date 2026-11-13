@@ -75,7 +75,17 @@ export class AuthoredSite implements Site {
   /** The showroom's authored props, oldest first. */
   readonly slots: readonly ShowroomProp[];
 
-  constructor(seed: number, registry: Registry, scale: Scale, layout: SiteLayoutDef) {
+  readonly eventRules: readonly import('./schema/scenarios.ts').EventRuleDef[];
+
+  // biome-ignore lint/complexity/useMaxParams: Scenario population and resolved events are runtime metadata, not authored layout fields.
+  constructor(
+    seed: number,
+    registry: Registry,
+    scale: Scale,
+    layout: SiteLayoutDef,
+    options: { authoredMarkers?: boolean; eventRules?: readonly import('./schema/scenarios.ts').EventRuleDef[] } = {},
+  ) {
+    this.eventRules = options.eventRules ?? [];
     this.seed = seed;
     this.registry = registry;
     if (scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
@@ -235,7 +245,7 @@ export class AuthoredSite implements Site {
       data: { catalogue: catalogue?.terrain, trees, litter, sand: terrain.sand },
       placements: terrainPlacements(this.placements),
     };
-    const markers = this.placements.flatMap(placedSpawns).map((marker) => ({
+    const markers = (options.authoredMarkers === false ? [] : this.placements.flatMap(placedSpawns)).map((marker) => ({
       type: marker.actor,
       pos: marker.pos,
       chance: marker.chance,

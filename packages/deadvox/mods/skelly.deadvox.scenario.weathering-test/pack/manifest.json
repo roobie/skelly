@@ -2,6 +2,7 @@
   "dependencies": [
     "skelly.basic-recipes",
     "skelly.deadvox.site-generation",
+    "skelly.hand-tools",
     "skelly.light-sources",
     "skelly.medicine",
     "skelly.melee",

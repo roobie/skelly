@@ -343,6 +343,12 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
+      "id": "rail_rear_sight",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
       "id": "real_suppressor",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -487,6 +493,12 @@
       "usage": []
     },
     {
+      "id": "barrel_pipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "barrel_pistol",
       "notLoot": false,
       "tiers": [],
@@ -529,13 +541,31 @@
       "usage": []
     },
     {
+      "id": "bolt_carrier_pipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "bolt_carrier_pump",
       "notLoot": false,
       "tiers": [],
       "usage": []
     },
     {
+      "id": "bolt_handle_pipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "bolt_handle_sporter",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "bolt_knob_pipe",
       "notLoot": false,
       "tiers": [],
       "usage": []
@@ -643,6 +673,12 @@
       "usage": []
     },
     {
+      "id": "handguard_pipe",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
       "id": "handguard_sporter",
       "notLoot": false,
       "tiers": [],
@@ -668,6 +704,12 @@
     },
     {
       "id": "lower_ar_large",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "lower_pipe",
       "notLoot": false,
       "tiers": [],
       "usage": []
@@ -722,6 +764,12 @@
     },
     {
       "id": "receiver_ar_large",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "receiver_pipe",
       "notLoot": false,
       "tiers": [],
       "usage": []
@@ -800,6 +848,12 @@
     },
     {
       "id": "stock_m4_medium",
+      "notLoot": false,
+      "tiers": [],
+      "usage": []
+    },
+    {
+      "id": "stock_pipe",
       "notLoot": false,
       "tiers": [],
       "usage": []
@@ -1033,24 +1087,6 @@
       "usage": ["Police"]
     },
     {
-      "id": "fanny_pack",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "school_backpack",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
-      "id": "hiking_backpack",
-      "notLoot": false,
-      "tiers": ["Tier1", "Tier2", "Tier3"],
-      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
-    },
-    {
       "id": "gas_canister",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -1064,6 +1100,24 @@
     },
     {
       "id": "lamp_oil",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "fanny_pack",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "school_backpack",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "hiking_backpack",
       "notLoot": false,
       "tiers": ["Tier1", "Tier2", "Tier3"],
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -1357,7 +1411,7 @@
       "usage": []
     },
     {
-      "id": "hatchback_battery_tray",
+      "id": "battery_tray",
       "notLoot": false,
       "tiers": [],
       "usage": []

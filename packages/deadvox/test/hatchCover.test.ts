@@ -201,7 +201,9 @@ describe('a cover over a hatch', () => {
 
 sweepGroup('the secret house', () => {
   it('has one cover lying over every cell of its hatch, which can be lifted', () => {
-    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
+    const scenario = [...registry.scenarios.values()]
+      .filter((candidate) => candidate.kind === 'assembledCity')
+      .find((candidate) => candidate.composition)!;
     const city = new ScenarioCitySite({
       seed: 73,
       registry,
@@ -308,7 +310,9 @@ sweepGroup('tarps', () => {
     );
     expect(built.issues).toEqual([]);
     const tarpYards = built.registry;
-    const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
+    const scenario = [...tarpYards.scenarios.values()]
+      .filter((candidate) => candidate.kind === 'assembledCity')
+      .find((candidate) => candidate.composition)!;
     const city = new ScenarioCitySite({
       seed: 73,
       registry: tarpYards,

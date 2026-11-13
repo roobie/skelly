@@ -1,0 +1,24 @@
+{
+  "dependencies": [
+    "skelly.basic-recipes",
+    "skelly.deadvox.scenario.gauntlet.debug",
+    "skelly.hand-tools",
+    "skelly.light-sources",
+    "skelly.medicine",
+    "skelly.melee",
+    "skelly.packaged-foods",
+    "skelly.wearables"
+  ],
+  "files": [
+    {
+      "kind": "content",
+      "path": "starts.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.gauntlet.night-fog-look",
+  "optIn": true,
+  "overrides": [],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

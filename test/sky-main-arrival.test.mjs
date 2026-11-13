@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { it } from 'node:test';
 import {
+  adaptMainArmParts,
   baseOnlyWorkspacePlugin,
   mainArrivalGit,
   mainOverlayPath,
@@ -69,6 +70,18 @@ it('main play overlays keep the entire UI boundary on the base even when export 
   assert.ok(!sources.includes('engine:core/rules.ts'));
   assert.ok(!sources.includes('engine:game/unrelated.ts'));
   assert.ok(!sources.includes('presentation:ui/style.css'));
+});
+
+it('main figure arm reads follow the branch segments listing parts, and a base that already lists them is untouched', () => {
+  const single = `{ name: 'elbow', parts: [armRig.fore.part], pivot: armRig.fore.pivot },
+{ name: 'wrist', parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part], pivot: armRig.hand.pivot }`;
+  assert.equal(
+    adaptMainArmParts(single),
+    `{ name: 'elbow', parts: armRig.fore.parts, pivot: armRig.fore.pivot },
+{ name: 'wrist', parts: [...armRig.hand.parts, ...armRig.fingers.parts, ...armRig.thumb.parts], pivot: armRig.hand.pivot }`,
+  );
+  const listed = adaptMainArmParts(single);
+  assert.equal(adaptMainArmParts(listed), listed);
 });
 
 it('main imports of an export the branch removed are found, and type-only or kept exports are not', () => {
