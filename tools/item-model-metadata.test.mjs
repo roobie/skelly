@@ -9,8 +9,9 @@ import { syncItemModelMetadata } from './item-model-metadata.mjs';
 const STALE = /stale/;
 const BOTH_ROOTS = /both roots/;
 
-const writeModel = (mod, file, material) => {
-  const json = Buffer.from(JSON.stringify({ materials: [{ name: material }], meshes: [] }));
+const writeModel = (mod, file, material, pieces = []) => {
+  const meshes = pieces.length > 0 ? [{ primitives: pieces.map((piece) => ({ material: 0, extras: { piece } })) }] : [];
+  const json = Buffer.from(JSON.stringify({ materials: [{ name: material }], meshes }));
   const header = Buffer.alloc(20);
   header.writeUInt32LE(json.length, 12);
   mkdirSync(join(mod, 'assets/models'), { recursive: true });
@@ -42,6 +43,22 @@ test('each mod gets one metadata file over its own models, and a mod that lost t
     });
     assert.equal(existsSync(metadataOf(emptied)), false);
     syncItemModelMetadata({ check: true, repositoryRoot });
+  } finally {
+    rmSync(repositoryRoot, { recursive: true, force: true });
+  }
+});
+
+test('a model lists the distinct regions its primitives are drawn in, and a model without any lists none', () => {
+  const repositoryRoot = mkdtempSync(join(tmpdir(), 'item-model-metadata-'));
+  try {
+    const mod = join(repositoryRoot, 'packages/mods/fixture.regions');
+    writeModel(mod, 'bust.glb', 'cloth', ['trunk', 'shoulders', 'trunk']);
+    writeModel(mod, 'plain.glb', 'cloth');
+    syncItemModelMetadata({ repositoryRoot });
+    assert.deepEqual(JSON.parse(readFileSync(metadataOf(mod), 'utf8')), {
+      'assets/models/bust.glb': { materials: ['cloth'], pieces: ['shoulders', 'trunk'] },
+      'assets/models/plain.glb': { materials: ['cloth'] },
+    });
   } finally {
     rmSync(repositoryRoot, { recursive: true, force: true });
   }

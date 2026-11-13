@@ -933,7 +933,8 @@ const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry,
     }
     const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
     for (const [coverIndex, name] of (entry.covers ?? []).entries()) {
-      if (!(registry.models.get(model)?.parts?.[name] || figure.pieces?.[frame.part]?.includes(name))) {
+      const drawn = registry.models.get(model);
+      if (!(drawn?.parts?.[name] || drawn?.pieces?.includes(name))) {
         report(
           'items',
           item.id,

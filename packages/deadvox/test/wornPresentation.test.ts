@@ -24,6 +24,7 @@ import { createPlayerBody } from './playerFixture.ts';
 
 const base = baseRegistry();
 const figure = base.figures.get('player')!;
+const bodyRegions = base.models.get(figure.body.model)!.pieces!;
 const bodyModels = await loadFigureModels(base);
 const segment = {
   model: 'fixture_worn',
@@ -290,7 +291,8 @@ describe('shared worn presentation', () => {
   });
 
   it('hides only the covered region of a body part and restores it when the garment comes off', () => {
-    const [covered, ...rest] = figure.pieces!.body!;
+    const [covered, ...rest] = bodyRegions;
+    expect(rest.length).toBeGreaterThan(0);
     const top: ItemDef = {
       ...fixtureItem,
       id: 'fixture_region_top',
@@ -485,7 +487,8 @@ describe('shared worn presentation', () => {
           overTorso: { fixture: 'fixture_missing_fit_model' },
         },
         { ...segment, frame: 'head', covers: ['fixture_missing_part'] },
-        { ...segment, frame: 'torso', covers: figure.pieces!.body },
+        { ...segment, frame: 'torso', covers: bodyRegions },
+        { ...segment, frame: 'torso', covers: ['fixture_missing_region'] },
       ],
     };
     const { issues } = buildRegistry([
@@ -528,6 +531,10 @@ describe('shared worn presentation', () => {
         expect.objectContaining({
           path: 'items[0].figureModels[1].covers[0]',
           message: expect.stringContaining('fixture_missing_part'),
+        }),
+        expect.objectContaining({
+          path: 'items[0].figureModels[3].covers[0]',
+          message: expect.stringContaining('fixture_missing_region'),
         }),
         expect.objectContaining({
           path: 'figures[0].attachmentFrames.shin.pivot',

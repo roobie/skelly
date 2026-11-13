@@ -1,4 +1,5 @@
 // `metadata` is the calling mod's generated item material file, so a mod classifies only its own models.
+// A model's `pieces` are the body regions its GLB draws, which a worn model can cover.
 // `overrides` name wear classes per model file and `supplies` a model's supply; both belong to that mod.
 local prefixes = {
   steel: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
@@ -15,7 +16,7 @@ function(metadata, overrides={}, supplies={}) {
     local filename = std.strReplace(std.strReplace(model.file, 'assets/models/', ''), '.glb', '');
     local materials = if std.objectHas(overrides, filename) then overrides[filename] else [classify(m) for m in asset.materials];
     assert std.length(materials) == std.length(asset.materials) : 'Wear classes must cover every material: ' + model.id;
-    model + { itemPresentation: {
+    model + (if std.objectHas(asset, 'pieces') then { pieces: asset.pieces } else {}) + { itemPresentation: {
       materials: materials,
       wear: 'core',
       supply: if std.objectHas(supplies, model.id) then supplies[model.id] else { kind: 'none' },
