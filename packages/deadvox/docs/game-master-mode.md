@@ -8,7 +8,7 @@ read_if:
 
 # GameMaster mode
 
-A design note, nothing built. BR's words are quoted; every other sentence is the writer's proposal until BR rules on the questions at the end (`docs/PROCESS.md`, "Recording decisions").
+A design note ahead of the build. BR's words are quoted; the rest is the writer's reading of BR's rulings, and the questions at the end are still open (`docs/PROCESS.md`, "Recording decisions").
 
 ## Why a role of its own
 
@@ -18,23 +18,29 @@ Debug mode stays as `INTERFACE.md`, "Development, playtest and errors" has it: a
 
 ## What the role is
 
-GameMaster is a control role in the sense of `GLOSSARY.md`, "Actor roles": a seat holds it, as a seat holds Player. It is not a property of the character, the world or the save, so a save never carries it; what a power changes in the world is an ordinary world change and saves like one, the rule `docs/decisions/0002-saves.md`, "Decision" already sets for debug toggles. A role on a seat is what lets multiplayer grant it to an admin's seat later, while single player grants it to the only seat, without the powers caring who granted it.
+GameMaster is a control role in the sense of `GLOSSARY.md`, "Actor roles": a seat holds it, as a seat holds Player. It is not a property of the character, the world or the save, so a save never carries the role itself; what a power changes in the world is an ordinary world change and saves like one, the rule `docs/decisions/0002-saves.md`, "Decision" already sets for debug toggles. A role on a seat is what lets multiplayer grant it to an admin's seat later, while single player grants it to the only seat, without the powers caring who granted it.
+
+Every shipped run has the role on offer. BR: "we'll gate it later". A who-may-use gate is therefore not designed here; it stays an open trigger, deferred in #1695, and the role check at the command path below is the one place a later gate plugs in.
 
 ## Powers are commands
 
 Every GameMaster power is a command through the ordinary command path, carrying the role, like any player command; see `packages/engine/src/game/commandRouter.ts`, `CommandRouter`. Nothing reaches the simulation beside that path. Two reasons. Input replay records commands, so a replay of an assisted run replays the assist. Lockstep peers exchange inputs and nothing else (`docs/decisions/0008-deterministic-world.md`, "Decision"), so a power that bypassed the command path would desync the world, while a power that is a command arrives at every peer, which checks the issuer's seat holds the role. This one rule is what makes the multiplayer extension a grant, not a rework.
 
-The mechanisms mostly exist in debug: damage immunity is `packages/engine/src/core/sim.ts`, `godMode`; free movement is `src/debug/noclip.ts`, `stepNoclip`; the spectator camera's teleport, which refuses a spot inside solid terrain, is `packages/presentation/src/presentation/spectatorCamera.ts`, `SpectatorCamera`; time skips and spawning are debug actions in `src/debug/index.ts`, `createDebugActions`. GameMaster selects them through its own curated surface. The debug module itself stays out of the shipped page, so a selected mechanism moves to a home both profiles import, and the debug action keeps calling it.
+The first cut is unstick, free movement, damage immunity and spawn items. The first three free a player from geometry, a fall or a hopeless fight, the case BR named and the one a player meets alone; spawn items joins them because a run can also break by losing the one thing it needs, such as the key to a locked route or the ammunition for its gun, and spawning it is cheaper than a teleport past the obstacle. Teleport to a map point, body reset and time skip stay out of the first cut: each needs a rule of its own and none is needed to get unstuck.
 
-The power catalogue is content, under `PILLARS.md`, "Content forward compatibility": a power row selects a mechanism and carries its values, such as how far an unstick may move the player, how many hours a skip jumps or what a heal restores. Code owns the mechanism dispatch table and refuses an unknown selector at validation; a pack may add a row that selects an existing mechanism and may reword or translate the labels, and only a new mechanism needs code. A game master authoring play for others later adds rows and scenario content, not code.
+The mechanisms mostly exist in debug: damage immunity is `packages/engine/src/core/sim.ts`, `godMode`; free movement is `src/debug/noclip.ts`, `stepNoclip`; spawning an item into the player's reach is `src/debug/spawnItem.ts`, `spawnDebugItem`, chosen through `src/debug/spawnMenu.ts`, `SpawnMenu`. Unstick has no mechanism yet. The debug module stays out of the shipped page, so noclip, god mode and item spawning move to a home both profiles import, and the debug actions keep calling them there; the debug spawn menu keeps its own surface, because an instructional developer list is not the curated surface a player sees.
 
-Get-unstuck comes first because it is the case BR named and the one a player meets alone. The candidates are the smallest set that frees a player from geometry, a fall, a locked state or a hopeless body: an unstick that moves the player to the nearest spot where they can stand, free movement, a teleport to a map point, damage immunity, a body reset and a time skip. Which of them the first cut ships is a question below. Every label, value and button is player text under `INTERFACE.md`, "Text", so the surface narrates nothing and names no procedure.
+The power catalogue is content, under `PILLARS.md`, "Content forward compatibility": a power row selects a mechanism and carries its values, such as how far an unstick may move the player or which item types the spawn offers. Code owns the mechanism dispatch table and refuses an unknown selector at validation; a pack may add a row that selects an existing mechanism and may reword or translate the labels, and only a new mechanism needs code. A game master authoring play for others later adds rows and scenario content, not code. Every label, value and button is player text under `INTERFACE.md`, "Text", so the surface narrates nothing and names no procedure.
 
 ## Entry and presence
 
-BR proposed triple F2. F2 is bound to nothing. Multi-press and hold gestures exist (`packages/engine/src/core/inputActions.ts`, `PressKind`), but every gesture window is a code constant. The entry binding is a row in the base controls pack like every other default key (`packages/mods/skelly.controls/controls.jsonnet`), and its press count and window are content values, because the entry gesture is the one surface every stuck player must find and its timing is tuned by play, not by a code edit. One tension is open: `CONTROLS.md`, "Settled controls" chose tap-or-hold for inventory to keep "one gesture grammar rather than a double-tap window", and a triple press is a new grammar entry, hence the first question.
+Triple F2 enters the role and the same triple press leaves it. F2 is bound to nothing, so the gesture takes no key from play. A toggle, rather than a role that ends after one power, because the common rescue is a sequence, free movement until the player stands clear and then immunity off again, and re-entering before each step would make the gesture the obstacle. A multi-press is a third gesture grammar beside tap-or-hold and the reload double press (`packages/engine/src/core/inputActions.ts`, `PressKind`); it is accepted here because a rescue gesture must be hard to make by accident in a fight and easy to remember when stuck, and a triple press on an otherwise unbound key is both. The entry binding is a row in the base controls pack like every other default key (`packages/mods/skelly.controls/controls.jsonnet`), and its press count and window are content values, because the entry gesture is the one surface every stuck player must find and its timing is tuned by play, not by a code edit.
 
-While a seat holds the role the player must see it, because unseen super-powers are the surprise this design exists to avoid, and the indicator is a meta HUD element that names its kind at the view-model boundary under `INTERFACE.md`, "Diegesis and development". Its form is a question below.
+While a seat holds the role a persistent HUD marker shows it, because unseen super-powers are the surprise this design exists to avoid, and a notice that fades is forgotten by the player who looked away. The marker is a meta HUD element that names its kind at the view-model boundary under `INTERFACE.md`, "Diegesis and development".
+
+## The saved run
+
+The run keeps saving while the role is held, and the save records that the run was assisted; the title card shows the mark. Saving must continue because the stuck player entered the role to rescue a run worth keeping, and stopping saves, as debug does, would lose exactly that run. The mark exists because a playtest save that silently includes assists misleads whoever reads its metrics, and a player deciding whether to continue a run deserves to know it was helped. The mark is persistent owner state and follows `docs/decisions/0002-saves.md`, "Decision": it is saved with the change that introduces it, and the role itself is still not saved.
 
 ## Multiplayer later
 
@@ -44,40 +50,19 @@ The role sits on a seat; the host, or whoever a later ruling names, grants and r
 
 Grades compare ongoing coupling and future replacement cost (`GLOSSARY.md`, "Tech debt"), not build time. Negative space says what stays unbuilt and open. WTF names who is surprised and how much. No option is a recommendation.
 
-### Q1. Entry gesture
+### Q1. Where unstick puts the player
 
-- **A: triple F2** (BR's proposal). Tech debt: medium. A new multi-press kind with a count, and a third gesture grammar beside tap-or-hold and the reload double press; the window is content. Negative space: a menu entry stays addable. WTF: low for a player who was told; medium for a tester who presses twice and gets nothing; low for a modder, who sees one more row.
-- **B: hold F2.** Tech debt: low. The hold kind exists; only its window moves to content. Negative space: a menu entry stays addable. WTF: low for player and tester, since crouch and the HUD toggle already hold; medium for BR, whose ask was a triple press.
-- **C: a main menu button, no key.** Tech debt: low. No gesture at all. Negative space: a key stays addable. WTF: medium for a stuck player hunting a menu with the pointer locked; low for a modder.
-- **D: gesture and menu button.** Tech debt: medium. Two entries kept in step. Negative space: smallest. WTF: low for everyone.
+- **A: the nearest spot where the player can stand.** Tech debt: medium. A search over nearby cells for standing room, a geometry query the engine does not have yet. Negative space: a return to a remembered position stays addable. WTF: low for the player; medium for a tester when the nearest spot is on the wrong side of the wall they were stuck in.
+- **B: the last place the player stood unstuck.** Tech debt: medium. The simulation keeps a rolling safe position, which is saved state. Negative space: a nearest-spot search stays addable. WTF: low for the player; medium for a modder, who sees a new saved field for a rescue tool.
+- **C: the run's start position.** Tech debt: low. The start is known. Negative space: both of the above stay addable. WTF: high for a player who loses an hour's walk to escape a wall.
 
-### Q2. Leaving the role
+### Q2. What spawn items offers
 
-- **A: the same gesture toggles it off.** Tech debt: low. Negative space: a timed or single-use variant stays open. WTF: low; medium for a player who forgets it is on, which the indicator answers.
-- **B: off after one power.** Tech debt: low. Negative space: a sustained mode stays open. WTF: medium for a player who needs free movement for a while and must re-enter each step.
-- **C: off only from the menu.** Tech debt: low. Negative space: same as A. WTF: medium for the player, who entered by key and leaves by menu.
+- **A: every loaded item type, as the debug spawn menu does.** Tech debt: low. One row selecting the catalogue. Negative space: a curated list stays addable. WTF: medium for BR, since this is a full cheat menu in the shipped page; low for a tester.
+- **B: a curated content list in the power row.** Tech debt: low. The row names the types. Negative space: the full list stays addable. WTF: medium for a stuck player whose missing thing is not on the list; low for a modder, who edits the row.
+- **C: only the items the run has already held.** Tech debt: medium. The run tracks held types, which is saved state. Negative space: both of the above stay addable. WTF: medium for the player who never found the key they now need.
 
-### Q3. Powers in the first cut
+### Q3. The marker and the HUD options
 
-- **A: unstick only.** Tech debt: low. One mechanism, one row. Negative space: everything else stays unbuilt and the catalogue is still the mechanism. WTF: medium for a player stuck in a way unstick cannot read, such as a hopeless body.
-- **B: unstick, free movement, damage immunity.** Tech debt: medium. Noclip and god mode move to a shared home so debug and GameMaster call one copy. Negative space: teleport, body reset and time skip stay unbuilt. WTF: low for the player; medium for a tester who expects the debug set.
-- **C: B plus teleport to a map point, body reset and time skip.** Tech debt: medium to high. The map page gains a GameMaster entry and body reset needs a rule for what it restores. Negative space: authoring rows stay unbuilt. WTF: low for the player; medium for BR, since this edges into a cheat menu.
-
-### Q4. The saved run
-
-- **A: saves as before, nothing recorded.** Tech debt: low. Negative space: a marker stays addable, but past assists are then unknown. WTF: medium for a tester whose playtest save silently includes assists.
-- **B: saves as before; the run is marked and the title card shows it.** Tech debt: medium. The save gains an assisted marker, a save decision under `docs/decisions/0002-saves.md`, "Decision". Negative space: a count or a log stays addable. WTF: low for player and tester.
-- **C: saving stops for the run, as in debug.** Tech debt: low. Reuses the unsaved-session path. Negative space: B stays addable. WTF: high for the stuck player, who loses the run they wanted to rescue.
-- **D: entry asks whether to keep saving.** Tech debt: medium. A prompt and both paths. Negative space: smallest. WTF: medium for the player, who is asked a question mid-rescue.
-
-### Q5. Who gets it
-
-- **A: every shipped run, always.** Tech debt: low. Negative space: a gate stays addable. WTF: low for the player; medium for BR if the playtest's fear depends on no way out.
-- **B: a player option, off by default.** Tech debt: low. One option row. Negative space: same as A. WTF: medium for a stuck player who did not turn it on and now cannot save their run.
-- **C: only when a link or mod enables it.** Tech debt: low. A pack row or hash key. Negative space: same as A. WTF: high for an ordinary player, who has no way out; low for a tester.
-
-### Q6. The indicator while the role is held
-
-- **A: a persistent HUD marker.** Tech debt: low. One meta element. Negative space: a stronger cue stays addable. WTF: low.
-- **B: a notice on entry and exit only.** Tech debt: low. Negative space: a marker stays addable. WTF: medium for a player who looks away during the notice and forgets.
-- **C: a visible change to the view, such as a tinted frame.** Tech debt: medium. A render effect beside the HUD. Negative space: smallest. WTF: low for the player; medium for a tester reading look fixtures through it.
+- **A: the marker ignores the HUD options and the master toggle.** Tech debt: low. One exception beside the existing non-HUD elements in `INTERFACE.md`, "HUD". Negative space: none lost. WTF: low for the player; medium for a tester reading a HUD-off look fixture through it.
+- **B: the marker is an ordinary meta element, off with the rest.** Tech debt: low. No exception. Negative space: an always-on cue stays addable. WTF: medium for a player who plays HUD-off and forgets the role is on, the surprise the marker exists to prevent.
