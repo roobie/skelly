@@ -106,3 +106,4 @@ export {
   type PlacedFitting,
   vehicleContentIssues,
 } from './core/vehicleBlueprint.ts';
+export { contentVehicleFrame } from './core/vehicleShapeSolid.ts';
