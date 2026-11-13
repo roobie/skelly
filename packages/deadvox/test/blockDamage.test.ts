@@ -252,6 +252,14 @@ describe('block material admission', () => {
     expect(issues.some(({ path }) => path === 'blockMaterials[0].rubble')).toBe(true);
   });
 
+  it('refuses a block material that leaves breakability unstated', () => {
+    const data = fixtureData();
+    const { breakable: unstated, ...material } = data.blockMaterials[0]!;
+    expect(unstated).toBe(true);
+    const { issues } = buildRegistry([{ source: 'fixture.json', data: { ...data, blockMaterials: [material] } }]);
+    expect(issues.some(({ path }) => path === 'blockMaterials[0].breakable')).toBe(true);
+  });
+
   it('requires every supported resistance and rejects unknown kinds', () => {
     for (const { id: kind } of fixtureData().damageKinds) {
       const data = fixtureData();

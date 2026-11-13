@@ -3,7 +3,7 @@ read_if:
   - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
-  - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
+  - you change terrain strikes, block material breakability, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly, intact part recovery or physical settling after vehicle removal
   - you author recipes or item take-apart yields
@@ -2605,6 +2605,11 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   more time per unit than looting stock, so looting stays the efficient path; see
   `SLICE-5.md`, "Settled base-building playtest rules", and
   `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`.
+  Every material states whether blows can break it, and a blow never breaks one
+  that says no, because a flag the game ignores is a false contract for mod
+  authors; a breakable material still owes a yield. See
+  `packages/engine/src/core/blockDamage.ts`, `bashBlock`, and
+  `packages/engine/src/core/content.ts`, `checkBlockMaterials`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
   arrival's allocation order cannot decide who takes drop capacity first. A fixed

@@ -2504,7 +2504,7 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
     if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
       report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
     }
-    if (material.breakable === true && material.rubble.length === 0) {
+    if (material.breakable && material.rubble.length === 0) {
       report('blockMaterials', material.id, '.rubble', 'breakable materials need a yield');
     }
     material.rubble.forEach(({ item }, i) => {

@@ -52,6 +52,7 @@ const fixtureRegistry = () => {
   registry.blocks.push({ id: floorType, name: 'Floor', material: 'fixture_material', solid: true, color: '#888888' });
   registry.blockMaterials.set('fixture_material', {
     ...fixtureBlockMaterial(floorType),
+    breakable: true,
     rubble: [{ item: stock, count: 1 }],
   });
   for (const sound of blockMaterialFixture(floorType).sounds) {
@@ -600,6 +601,16 @@ describe('supply-aware terrain destruction', () => {
     const after = restored.inventory.snapshotState();
     restored.arrive();
     expect(restored.inventory.snapshotState()).toEqual(after);
+  });
+  it('keeps an unbreakable material standing through a blow that would break it', () => {
+    const f = fixture();
+    const material = f.registry.blockMaterials.get('fixture_material')!;
+    f.registry.blockMaterials.set(material.id, { ...material, breakable: false });
+    const before = owners(f);
+    expect(f.strike(material.durability * 2)).toEqual({ outcome: 'resisted', destroyed: [], edited: [] });
+    expect(f.canonical.getBlock(...cell)).toBe(f.floor);
+    expect(f.world.blockDamage.get(cell)).toBeUndefined();
+    expect(owners(f)).toEqual(before);
   });
 
   it('removes a floorless shelf, conserves all drops, and agrees across terrain and supply arrival orders', async () => {

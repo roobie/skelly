@@ -34,6 +34,10 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   if (!Object.hasOwn(material.resistance, blow.kind)) {
     throw new Error(`Unsupported block damage kind "${blow.kind}"`);
   }
+  // The breakable flag is the author's contract, so an unbreakable material refuses every blow, not only weak ones.
+  if (!material.breakable) {
+    return { outcome: 'resisted', damage };
+  }
   const strength = blow.strength * (1 - material.resistance[blow.kind]!);
   if (strength <= 0 || strength < material.minimumStrength) {
     return { outcome: 'resisted', damage };
