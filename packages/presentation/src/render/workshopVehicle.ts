@@ -1,4 +1,4 @@
-import type { FurnitureDef } from '@skelly/engine/content';
+import { contentVehicleFrame, type FurnitureDef, type Registry, type VehicleFittingDef } from '@skelly/engine/content';
 import { BLUEPRINTS, GLASS, MATERIALS, newInstance, type Paint, quadColors, type Rgb } from '@skelly/engine/vehicles';
 import { BLOCK_SIZE, type BlockEntity, rotationOf } from '@skelly/engine/world';
 import {
@@ -11,9 +11,12 @@ import {
   Mesh,
   MeshLambertMaterial,
   MeshPhongMaterial,
+  type Object3D,
   Quaternion,
   Vector3,
 } from 'three';
+import { applyItemStateLook } from './itemStateLook.ts';
+import type { ModelLibrary } from './models.ts';
 import { type Part, type Shape, VehicleShapes } from './vehicleShapes.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
@@ -26,10 +29,10 @@ const GRIME_ON_PARTS = 0.4;
 
 export const vehicleInstanceOf = (look: VehicleLook) => {
   const blueprint = BLUEPRINTS[look.blueprint]!;
-  const seam = new Color(look.body).multiplyScalar(SEAM_DARKENING);
+  const seam = new Color(look.body!).multiplyScalar(SEAM_DARKENING);
   return {
     ...newInstance(blueprint, `${look.blueprint}-${look.body}-${look.dirt}`, look.removed),
-    paint: { body: look.body, seam: `#${seam.getHexString()}` } satisfies Paint,
+    paint: { body: look.body!, seam: `#${seam.getHexString()}` } satisfies Paint,
   };
 };
 
@@ -69,7 +72,7 @@ const displayOf = (look: VehicleLook, shape: Shape): Display => {
   let display = displays.get(key);
   if (display === undefined) {
     const { paint } = vehicleInstanceOf(look);
-    const colorOf = (material: string) => rgb(paint, look.dirt, material);
+    const colorOf = (material: string) => rgb(paint, look.dirt!, material);
     display = { solidGeometry: painted(shape.solid, colorOf), clearGeometry: painted(shape.clear, colorOf) };
     displays.set(key, display);
   }
@@ -116,7 +119,73 @@ interface VehicleView {
   readonly blockSize?: number;
   readonly shapes?: VehicleShapes;
   readonly wait?: boolean;
+  /** Draws a content blueprint look; a catalogue look never reads it. */
+  readonly content?: ContentVehicleView | undefined;
 }
+
+/** What a content vehicle look is drawn from: the registry that holds its blueprint, and the model library that draws its parts. */
+export interface ContentVehicleView {
+  readonly registry: Registry;
+  readonly models: ModelLibrary;
+}
+
+const contentGroups = new Map<string, Group>();
+
+/** One kept fitting as a posed holder: its part model cloned and wearing its authored finish, or nothing yet. */
+const contentPart = (fitting: VehicleFittingDef, content: ContentVehicleView): Group | undefined => {
+  const model = content.registry.items.get(fitting.part)?.model;
+  const part = model === undefined ? undefined : content.models.part(model);
+  if (!part) {
+    return undefined;
+  }
+  part.traverse((object: Object3D) => {
+    object.castShadow = true;
+    object.receiveShadow = true;
+  });
+  if (fitting.finish !== undefined && model !== undefined) {
+    const finishLook = content.registry.vehicleFinishes.get(fitting.finish);
+    if (finishLook) {
+      const { id: _id, ...finish } = finishLook;
+      applyItemStateLook(part, { model, state: { finish }, slots: [], hidden: [], key: '' }, content.registry);
+    }
+  }
+  const holder = new Group();
+  holder.position.set(fitting.at[0], fitting.at[1], fitting.at[2]);
+  holder.scale.x = fitting.mirror === true ? -1 : 1;
+  holder.add(part);
+  return holder;
+};
+
+/**
+ * A content blueprint's fitted part models, cached per blueprint and `removed` set, in the piece's pose. The
+ * parts' own models are authored in the model frame — z forward, y up, the near side at −x, metres, origin at
+ * the vehicle's ground centre — and the piece's front is local −z, so each part turns 180° about y when it is
+ * placed, with the kept parts' bounds centred in the piece (the same reading as
+ * `packages/engine/src/core/vehicleShapeSolid.ts`). A part whose model is still loading is skipped, and the
+ * piece restages when the library's version rises (see `furniture.ts`, `sync`).
+ */
+const contentDisplay = (look: VehicleLook, content: ContentVehicleView): Group => {
+  const key = JSON.stringify([look.blueprint, look.removed, content.models.version]);
+  let group = contentGroups.get(key);
+  if (group === undefined) {
+    group = new Group();
+    const { cx, cz } = contentVehicleFrame(content.registry, look);
+    const centre = new Group();
+    centre.position.set(cx, 0, cz);
+    for (const fitting of content.registry.vehicleBlueprints.get(look.blueprint)?.fittings ?? []) {
+      if (!look.removed.includes(fitting.id)) {
+        const holder = contentPart(fitting, content);
+        if (holder) {
+          centre.add(holder);
+        }
+      }
+    }
+    centre.rotation.y = Math.PI;
+    group.add(centre);
+    contentGroups.set(key, group);
+  }
+  return group.clone();
+};
 
 /**
  * Renders a furniture def's vehicle look in the piece's pose, standing on its lowest solid voxel. The group is
@@ -128,8 +197,21 @@ export const vehicleModel = (
   entity: BlockEntity,
   look: VehicleLook,
   pieceHeight: number,
-  { blockSize = BLOCK_SIZE, shapes = onTheSpot, wait = true }: VehicleView = {},
+  { blockSize = BLOCK_SIZE, shapes = onTheSpot, wait = true, content }: VehicleView = {},
 ): Group => {
+  if (BLUEPRINTS[look.blueprint] === undefined) {
+    const group = new Group();
+    if (!content) {
+      return group;
+    }
+    const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
+    group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!));
+    const [x, y, z] = entity.pos;
+    const [width, , depth] = entity.size;
+    group.position.set(x + width / 2, y, z + depth / 2).multiplyScalar(blockSize);
+    group.add(contentDisplay(look, content));
+    return group;
+  }
   const group = new Group();
   const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
   group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!)).multiply(FORWARD_TO_FRONT);

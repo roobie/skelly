@@ -36,7 +36,7 @@ import { castsAndReceives } from './shadowFlags.ts';
 import { addSkyAnchors } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
-import { vehicleModel, workshopLift } from './workshopVehicle.ts';
+import { type ContentVehicleView, vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
@@ -67,6 +67,8 @@ function markerEdges(): EdgesGeometry {
 
 interface Piece {
   readonly pose: string;
+  /** The model library version its mesh was staged against; a content vehicle look restages when it rises. */
+  readonly models: number;
   /** A batched piece's mesh is never drawn; it holds the geometry, material and transform its batch instances. */
   readonly mesh: Group | Mesh;
   /** The batch a piece that never moves between syncs is drawn in. */
@@ -110,6 +112,9 @@ export class FurnitureMeshes {
   private drawnReveal = -1;
   private readonly reveal: ColumnReveal | undefined;
   private readonly sectorBlocks: number | undefined;
+  private readonly content: ContentVehicleView | undefined;
+  /** The model library version whose parts the content vehicle looks were staged against. */
+  private drawnModels = -1;
   private readonly pieces = new Map<BlockEntity, Piece>();
   private readonly columns = new Map<string, RevealColumn>();
   /** Every drawn piece of each batch, revealed or not. */
@@ -121,11 +126,17 @@ export class FurnitureMeshes {
    * `sectorChunks` is the side of the square area one batch of standing pieces covers; without it one batch covers
    * the world.
    */
-  constructor(blockSize: number, reveal?: ColumnReveal, vehicles = new VehicleShapes(), sectorChunks?: number) {
+  constructor(
+    blockSize: number,
+    reveal?: ColumnReveal,
+    vehicles = new VehicleShapes(),
+    { sectorChunks, content }: { sectorChunks?: number; content?: ContentVehicleView } = {},
+  ) {
     this.blockSize = blockSize;
     this.vehicles = vehicles;
     this.reveal = reveal;
     this.sectorBlocks = sectorChunks === undefined ? undefined : sectorChunks * CHUNK;
+    this.content = content;
     this.marker.visible = false;
     this.marker.receiveShadow = true;
     this.group.add(this.marker);
@@ -192,15 +203,26 @@ export class FurnitureMeshes {
    */
   sync(entities: BlockEntities): void {
     const revealVersion = this.reveal?.revealVersion ?? 0;
-    if (entities === this.entities && entities.standing === this.drawn && revealVersion === this.drawnReveal) {
+    const modelsVersion = this.content?.models.version ?? 0;
+    const modelsArrived = modelsVersion !== this.drawnModels;
+    if (
+      entities === this.entities &&
+      entities.standing === this.drawn &&
+      revealVersion === this.drawnReveal &&
+      !modelsArrived
+    ) {
       return;
     }
-    const changed = entities === this.entities ? entities.standingChangesSince(this.drawn) : undefined;
+    const since = entities === this.entities ? entities.standingChangesSince(this.drawn) : undefined;
+    this.drawnModels = modelsVersion;
     this.entities = entities;
     this.drawn = entities.standing;
     const redraw = new Set<string>();
-    for (const entity of new Set(changed ?? [...this.pieces.keys(), ...entities.all])) {
-      this.restage(entity, entities, redraw);
+    // `standingChangesSince` reads undefined when it can no longer tell what changed, and models arriving
+    // restages every piece whatever its pose, so both draw afresh.
+    const every = since === undefined || modelsArrived;
+    for (const entity of new Set(every ? [...this.pieces.keys(), ...entities.all] : since)) {
+      this.restage(entity, entities, modelsVersion, redraw);
     }
     if (revealVersion !== this.drawnReveal) {
       this.drawnReveal = revealVersion;
@@ -214,18 +236,18 @@ export class FurnitureMeshes {
     }
   }
 
-  /** Keeps an entity's piece while its pose is unchanged, else rebuilds it, or drops it once the entity stops standing. */
-  private restage(entity: BlockEntity, entities: BlockEntities, redraw: Set<string>): void {
+  /** Keeps an entity's piece while its pose is unchanged and its mesh is current, else rebuilds it, or drops it once the entity stops standing. */
+  private restage(entity: BlockEntity, entities: BlockEntities, modelsVersion: number, redraw: Set<string>): void {
     const pose = entities.stands(entity) ? poseKey(entity, entities.wearOf(entity)) : undefined;
     const kept = this.pieces.get(entity);
-    if (kept?.pose === pose) {
+    if (kept !== undefined && kept.pose === pose && kept.models === modelsVersion) {
       return;
     }
     if (kept) {
       this.unstage(entity, kept, redraw);
     }
     if (pose !== undefined) {
-      this.stage(entity, this.piece(entity, entities.defOf(entity), pose), redraw);
+      this.stage(entity, { ...this.piece(entity, entities.defOf(entity), pose), models: modelsVersion }, redraw);
     }
   }
 
@@ -309,7 +331,7 @@ export class FurnitureMeshes {
     }
   }
 
-  private piece(entity: BlockEntity, def: FurnitureDef, pose: string): Piece {
+  private piece(entity: BlockEntity, def: FurnitureDef, pose: string): Omit<Piece, 'models'> {
     const column = this.columnOf(entity);
     if (!standsStill(def)) {
       return { pose, mesh: castsAndReceives(this.meshFor(entity, def)), column };
@@ -386,7 +408,12 @@ export class FurnitureMeshes {
       return workshopLift(entity, this.blockSize);
     }
     if (def.vehicle) {
-      return vehicleModel(entity, def.vehicle, def.size[1], { blockSize: this.blockSize, shapes: this.vehicles, wait });
+      return vehicleModel(entity, def.vehicle, def.size[1], {
+        blockSize: this.blockSize,
+        shapes: this.vehicles,
+        wait,
+        content: this.content,
+      });
     }
     if (def.corpse) {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).

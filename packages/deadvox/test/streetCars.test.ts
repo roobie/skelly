@@ -13,6 +13,7 @@ import {
   toChunk,
 } from '@skelly/engine/world';
 import { expect, it } from 'vitest';
+import { baseSources } from '../src/product/content.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { defaultStartOf } from './fixtures/scenario.ts';
@@ -67,8 +68,8 @@ it('street car procedural variants', () => {
   expect(new Set(looks).size).toBeGreaterThan(1);
   const field = (pick: (vehicle: ReturnType<typeof look>) => unknown) =>
     new Set(draws.flat().map((id) => JSON.stringify(pick(look(id)))));
-  expect(field((vehicle) => vehicle.body).size).toBeGreaterThan(1);
-  expect(field((vehicle) => vehicle.dirt).size).toBeGreaterThan(1);
+  // The street holds several car blueprints, each stripped of a different part set.
+  expect(field((vehicle) => vehicle.blueprint).size).toBeGreaterThan(1);
   expect(field((vehicle) => vehicle.removed).size).toBeGreaterThan(1);
   expect(streetCars(1)).toEqual(draws[0]);
 });
@@ -132,6 +133,47 @@ it('rejects a vehicle look naming an unknown blueprint or part', () => {
   expect(checkCar({ removed: ['no-such-part'] }).length).toBeGreaterThan(0);
   expect(checkCar({ blueprint: 'no_such_vehicle' }).length).toBeGreaterThan(0);
   expect(checkCar({ dirt: 1.5 }).length).toBeGreaterThan(0);
+});
+
+// A wreck look over a content vehicle blueprint takes its finishes from the blueprint's fittings, and its blocks
+// from the same fitted collision the renderer draws, so it is refused when that collision blocks nowhere or
+// spills outside the piece. The vehicle content it refers to, not the whole base, keeps the case light.
+const VEHICLE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'natural-sounds.json'];
+const vehicleFixtureSources = baseSources.filter(({ source }) =>
+  VEHICLE_BASE.some((file) => source.endsWith(`/${file}`)),
+);
+const wreckVehicle = { blueprint: 'police_car', removed: [] as string[], solidFill: 0.4 };
+const checkWreck = (override: Partial<typeof wreckVehicle>, size: [number, number, number] = [4, 4, 10]) => {
+  const data: ContentFile = {
+    furnitureMaterials: fixtureMaterials(),
+    sounds: fixtureSounds(),
+    furniture: [
+      {
+        id: 'fixture_wreck',
+        name: 'Wreck',
+        size,
+        color: '#5b605c',
+        vehicle: { ...wreckVehicle, ...override },
+        breach: fixtureBreach(),
+        material: FIXTURE_MATERIAL,
+      },
+    ],
+  };
+  return buildRegistry([...vehicleFixtureSources, { source: 'fixture-wreck.json', data }]).issues.filter(
+    ({ source }) => source === 'fixture-wreck.json',
+  );
+};
+
+it('accepts a content blueprint wreck look, and refuses one whose parts block nowhere or outside its size', () => {
+  const everyFitting = buildRegistry(vehicleFixtureSources)
+    .registry.vehicleBlueprints.get('police_car')!
+    .fittings.map(({ id }) => id);
+  expect(checkWreck({})).toEqual([]);
+  expect(checkWreck({ removed: ['no-such-fitting'] }).length).toBeGreaterThan(0);
+  expect(checkWreck({ blueprint: 'no_such_blueprint' }).length).toBeGreaterThan(0);
+  for (const refused of [checkWreck({ removed: everyFitting }), checkWreck({}, [1, 1, 1])]) {
+    expect(refused.some(({ message }) => message.includes('must block somewhere'))).toBe(true);
+  }
 });
 
 const checkShaped = (solidFill: number, height = 0.5) => {
