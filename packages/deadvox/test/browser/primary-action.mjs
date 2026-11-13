@@ -4213,7 +4213,6 @@ try {
         pryStartedSample,
         { uid: toolDoor.uid },
         {
-          from: toolDoor.start,
           seconds: 0.5,
           label: 'locked-door F action enters the simulation',
           record: (line) => process.stderr.write(`${line}\n`),
