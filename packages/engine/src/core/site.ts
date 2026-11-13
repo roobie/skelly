@@ -82,6 +82,7 @@ export interface PlaytestMarks {
 }
 
 export interface Site {
+  readonly eventRules?: readonly import('./schema/scenarios.ts').EventRuleDef[];
   readonly practiceExitMark?: string;
   readonly guidance?: import('./schema/guidance.ts').GuidanceDef | undefined;
   /** Finished authored footprints eligible for world-derived sky transport. */

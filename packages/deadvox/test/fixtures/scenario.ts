@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { buildRegistry, type ContentSource, type Registry } from '@skelly/engine/content';
 import type { StartPlacementDef } from '@skelly/engine/internal/core/scenarioStart.ts';
 import type { StartDef } from '@skelly/engine/internal/core/schema/starts.ts';
-import type { MapPoolDef, ScenarioDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
+import type { CityScenarioDef, MapPoolDef, ScenarioDef, TemplateDef } from '@skelly/engine/internal/core/schema.ts';
 import { gameHours } from '@skelly/engine/internal/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
 import {
@@ -20,7 +20,7 @@ import { fixtureIds } from './capabilityIds.ts';
 import { fixtureDamageContent } from './damageKinds.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
-export const fixtureScenario = (): ScenarioDef => ({
+export const fixtureScenario = (): CityScenarioDef => ({
   id: 'fixture_scenario',
   kind: 'assembledCity',
   outbreakAgeGameHours: gameHours(24),
@@ -68,8 +68,10 @@ export const placementOf = (registry: Pick<Registry, 'starts'>, scenario: Scenar
   [...registry.starts.values()].find((row) => row.defaultForSite && row.site === scenario.id)?.placement;
 
 /** Scenarios whose authored lots build the city's buildings; an empty-by-design site such as Holdout authors none. */
-export const authoredCityScenarios = (registry: Pick<Registry, 'scenarios'>): ScenarioDef[] =>
-  [...registry.scenarios.values()].filter((scenario) => (scenario.city.lots ?? []).length > 0);
+export const authoredCityScenarios = (registry: Pick<Registry, 'scenarios'>): CityScenarioDef[] =>
+  [...registry.scenarios.values()]
+    .filter((scenario) => scenario.kind === 'assembledCity')
+    .filter((scenario) => (scenario.city.lots ?? []).length > 0);
 
 export const fixtureStartRow = (
   placement: StartPlacementDef | null = fixtureStart(),

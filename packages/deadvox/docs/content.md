@@ -16,7 +16,7 @@ read_if:
   - you're authoring or changing furniture mounting, appearance, abandoned furniture placement, surface materials or procedural pattern tuning, assigning action noise, or need the isolated look probe
   - you model a thing or place one fallen, on its side or in another special pose
   - you author decals or scenario outbreak age
-  - you author a scenario, its start-building rooms or ways down, or move scenario rules from code into content
+  - you author a scenario, composed asks, anchors, wave schedules or population policy, its start-building rooms or ways down, or move scenario rules from code into content
   - you author graphics defaults, permitted player graphics choices, weathering profiles or site weathering-profile references
   - you author or change the day cycle, the sky looks or the weather tuning (fog, cloudiness, rain)
   - you change the debug kit ownership view
@@ -426,14 +426,33 @@ state. See `packages/engine/src/core/schema/scenarios.ts`, `ScenarioSchema`; `pa
   mechanism, because how a site is built and proved is geometry, not data. See
   `packages/engine/src/core/scenarioKinds.ts`, `SCENARIO_KINDS`; and `packages/engine/src/game/worldSetup.ts`,
   `SCENARIO_SITES`.
-- **Route proof.** Each kind's code proves that its own routes are open, and the row
+- **Composed sites.** Incremental asks compile to the authored layout so placement can grow
+  without a second terrain renderer. Per-ask random streams keep later additions from
+  moving earlier placements. Supply redundancy is a load-time count, not a per-seed
+  distance certificate; distance curves express preferences rather than bands. Curves
+  interpolate linearly between knots and have zero density beyond their knot range,
+  so authors control both the preference and its finite support without an implicit
+  extrapolation policy adding unwanted distant placements. Directly
+  named templates without eligibility are an author's explicit admission, while declared
+  eligibility still constrains the inherited settlement kind. The start reservation owns
+  the start building and its apron rather than overlapping it with another reservation.
+  Anchors are authored rules, not engine-selected arrival kinds; independent anchor and
+  wave streams keep arrivals reproducible without coupling them to runtime event timing.
+  Wave expansion belongs in Jsonnet so the clock and escalation remain moddable while
+  the session consumes only resolved cells. Composed population admits template markers
+  explicitly; city street pressure has no meaning without city streets and is not part of
+  that contract. See `packages/engine/src/core/composeLayout.ts`, `composeLayout`,
+  `composedSiteIssues` and `guaranteeIssues`;
+  `packages/engine/src/core/schema/scenarios.ts`, `ComposedSiteSchema`; and
+  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+- **City route proof.** The assembled city's code proves that its routes are open, and the row
   supplies the proof's counts and thresholds, such as how many leads a player may miss
   while one stays reachable. The proof's shape is physics a mod cannot safely restate, while
   how forgiving a scenario is belongs to its design. The lead redundancy sits with the
   leads, beside what it counts. Only leads reached by different routes count toward it,
   because two leads behind one blocked street fail together and would overstate how
   forgiving the scenario is. See `packages/engine/src/core/scenarioCertificate.ts`, `scenarioCertificate`.
-- **Start.** The tallest roof opens the run with an overview and a descent. Ways down
+- **City start.** The tallest roof opens the run with an overview and a descent. Ways down
   trade speed against safety or noise, so leaving the roof is a choice. The start
   building is a condo block repurposed during the outbreak. It needs enough room and
   something on every storey to make it interesting, rather than just a staircase.

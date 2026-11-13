@@ -44,6 +44,7 @@ const cityAlternatives = function* (everyStyle = false) {
   const { registry } = BUNDLED_CONTENT;
   const rows = new Map(
     [...registry.scenarios.values()]
+      .filter((scenario) => scenario.kind === 'assembledCity')
       .flatMap((scenario) => cityGridOf(registry, scenario.city).templates)
       .map((row) => [everyStyle ? `${row.id}@${row.style ?? ''}` : row.id, row] as const),
   );
