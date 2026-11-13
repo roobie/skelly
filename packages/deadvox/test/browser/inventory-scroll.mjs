@@ -2063,6 +2063,9 @@ try {
     );
   }
   if (scenarioFlow === 'ui') {
+    await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
+    await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+    logPhase('fresh page after scroll input and tuning trials');
     for (const scenario of ['spill-all', 'lost-room']) {
       await page.evaluate(async (recoveryModule) => {
         const original = document.querySelector('#inventory');

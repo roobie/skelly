@@ -53,7 +53,7 @@ The zombie spawn catalogue follows loaded content, including authored-only types
 
 ## Browser stages
 
-Reuse admitted content across isolated UI scenarios rather than rebuilding it or navigating solely to reset a screen. Content admission is expensive; fresh scenario-owned inventories and sessions provide isolation without repeating it. Keep standalone inventory UI checks separate from live-game handling so their combined startup and interaction costs do not consume one step's budget. See `test/browser/inventory-scroll.mjs`, `bundledRegistry` and `scenarioFlow`.
+Reuse admitted content across UI scenarios with fresh scenario-owned inventories and sessions, because content admission is expensive. Session isolation does not reset page-owned input forwarding or UI tuning: navigate to a fresh fixture after trials that change those, so later native clicks cannot pass through a previous scenario's pointer forwarder. Keep standalone inventory UI checks separate from live-game handling so their combined startup and interaction costs do not consume one step's budget. See `test/browser/inventory-scroll.mjs`, `bundledRegistry` and `scenarioFlow`.
 
 A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `tools/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.
 
