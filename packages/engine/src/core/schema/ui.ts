@@ -211,7 +211,6 @@ const UiScreenTextSchema = strictObject({
     health: ['value'],
     blood: ['value'],
     stamina: ['value'],
-    sprinting: [],
     light: ['value'],
     food: ['value'],
     water: ['value'],

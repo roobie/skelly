@@ -167,7 +167,6 @@
     health: 'health {value}%',
     blood: 'blood {value}%',
     stamina: 'stamina {value}%',
-    sprinting: '(sprinting)',
     light: 'light {value}%',
     food: 'food {value}%',
     water: 'water {value}%',
