@@ -11,7 +11,7 @@ import { buildSkyResult, SkyFields } from '@skelly/engine/sky';
 import { VehicleOccupancy } from '@skelly/engine/vehicles';
 import { BlockEntities, CHUNK, Chunk, sitePalette, toChunk, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
-import { defaultStartOf } from './fixtures/scenario.ts';
+import { placementOf } from './fixtures/scenario.ts';
 import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { terrainFor } from './fixtures/terrain.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';
@@ -231,8 +231,7 @@ const largestAuthoredField = (): { site: Site; box: SkyBounds } => {
   const sites: Site[] = [
     ...[...registry.layouts.values()].map((layout) => new AuthoredSite(seed, registry, scale, layout)),
     ...[...registry.scenarios.values()].map(
-      (scenario) =>
-        new ScenarioCitySite({ seed, registry, scale, scenario, start: defaultStartOf(registry, scenario) }),
+      (scenario) => new ScenarioCitySite({ seed, registry, scale, scenario, start: placementOf(registry, scenario) }),
     ),
   ];
   const cells = ({ min, max }: SkyBounds) => max.reduce((product, value, axis) => product * (value - min[axis]!), 1);

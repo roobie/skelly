@@ -1,0 +1,20 @@
+{
+  "dependencies": ["skelly.deadvox.scenario.holdout"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "holdout-debug.json"
+    }
+  ],
+  "id": "skelly.deadvox.scenario.holdout.debug",
+  "optIn": true,
+  "overrides": [
+    {
+      "entry": "scenarios:holdout",
+      "pack": "skelly.deadvox.scenario.holdout"
+    }
+  ],
+  "product": false,
+  "tier": "scenario",
+  "version": "1"
+}

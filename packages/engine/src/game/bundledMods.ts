@@ -1,7 +1,7 @@
 import { bundledModCatalogue } from '../core/bundledModCatalogue.ts';
 import { isPlainRecord } from '../core/canonicalJson.ts';
 import type { ContentIssue } from '../core/content.ts';
-import { type PackInput, selectFolderClosure } from '../core/packAdmission.ts';
+import { type PackInput, packSources, selectFolderClosure } from '../core/packAdmission.ts';
 import type { AdmittedBundledMod } from '../core/saveFormat.ts';
 import { type BrowserMod, evaluateMods, isFolderPack, type ModEvaluation, type ModIntake } from './browserMods.ts';
 import { optInPackIdentity, type StartupContent } from './bundledContent.ts';
@@ -99,6 +99,12 @@ const startRowIds = (content: unknown): string[] => {
 
 const identity = ({ id, version, data }: AdmittedMod) => ({ id, version, data });
 
+/**
+ * The start rows a pack's manifest-declared content files set. Files of other kinds carry metadata, and starts-shaped
+ * JSON there is not admitted as a start, so it must not count as one either.
+ */
+const packStartRows = (pack: PackInput): string[] => packSources(pack).flatMap(({ data }) => startRowIds(data));
+
 /** The start rows the admitted start mod's own files supply, not those of its dependencies. */
 const ownStartRows = (
   result: ModEvaluation,
@@ -110,14 +116,45 @@ const ownStartRows = (
       ? result.admittedInOrder.filter(isFolderPack).find(({ manifest }) => manifest.id === startMod.id)
       : undefined;
   return startFolder
-    ? startFolder.files.flatMap(({ data }) => startRowIds(data))
+    ? packStartRows(startFolder)
     : startFile && startRowIds((startFile.data as { content: unknown }).content);
+};
+
+/**
+ * The start rows a start mod whose files set none inherits from its dependencies: each pack its dependency closure
+ * reaches supplies the rows its own files set. The walk stops at the entry pack, whose closure is the base stack
+ * every page loads, so it supplies the default start rather than the start mod's row. Why a start mod may supply
+ * its row through a dependency: `packages/deadvox/docs/url-mods.md`, "Start mod".
+ */
+const inheritedStartRows = (
+  result: ModEvaluation,
+  startMod: StartModRequest | undefined,
+  startFile: AdmittedMod | undefined,
+  entryPack: string,
+): string[] => {
+  const startId = startMod?.form === 'id' ? startMod.id : startFile?.id;
+  const root = startId === undefined ? undefined : result.admittedPacks.find(({ manifest }) => manifest.id === startId);
+  const rows: string[] = [];
+  const visited = new Set<string>();
+  const visit = (id: string): void => {
+    const pack =
+      id === entryPack || visited.has(id) ? undefined : result.admittedPacks.find(({ manifest }) => manifest.id === id);
+    if (!pack) {
+      return;
+    }
+    visited.add(id);
+    rows.push(...packStartRows(pack));
+    pack.manifest.dependencies.forEach(visit);
+  };
+  root?.manifest.dependencies.forEach(visit);
+  return rows;
 };
 
 /**
  * Admits the named bundled mods in the order given: an opt-in folder pack with its closure through pack admission, a
  * single-file mod through the same intake as player mods. Unknown ids are issues. The start mod is admitted last,
- * inline data through the same intake and byte limit, and must supply exactly one start row, which begins the run.
+ * inline data through the same intake and byte limit, and must supply exactly one start row, its own or one
+ * reached through its dependencies, which begins the run.
  */
 export const selectBundledMods = (
   intake: ModIntake,
@@ -165,7 +202,9 @@ export const selectBundledMods = (
     issues.push(...list);
   }
   const startFile = result.admitted.find(({ source }) => source === startSource);
-  const startRows = ownStartRows(result, startMod, startFile);
+  const ownRows = ownStartRows(result, startMod, startFile);
+  const startRows =
+    ownRows?.length === 0 ? inheritedStartRows(result, startMod, startFile, intake.content.entryPack) : ownRows;
   const inline = startMod?.form === 'inline' ? startFile : undefined;
   return {
     content: startRows?.length === 1 ? { ...result.content, startModStart: startRows[0] } : result.content,

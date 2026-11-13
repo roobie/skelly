@@ -30,6 +30,7 @@
         "label": "Fast camouflage pattern",
         "options": [false, true]
       },
+      "fogCurveExponent": 2,
       "fogFarPlaneScale": 1.5,
       "furnitureSectorChunks": 4,
       "gore": {
@@ -114,7 +115,8 @@
         "lookaheadColumns": 8,
         "maxOutstandingColumns": 12
       },
-      "unbuiltSkyCap": 0.5
+      "unbuiltSkyCap": 0.5,
+      "viewRadiusM": 128
     }
   ]
 }

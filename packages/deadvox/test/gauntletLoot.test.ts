@@ -6,11 +6,11 @@ import { magazineFits } from '@skelly/engine/inventory';
 import { BLOCK_SIZE, makeScale } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { startupContent } from './baseRegistry.ts';
-import { defaultStartOf } from './fixtures/scenario.ts';
+import { authoredCityScenarios, defaultStartOf } from './fixtures/scenario.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
+const gauntlets = authoredCityScenarios(registry);
 const SEED = 1;
 
 /** Everything a run's loot points deliver, fixed or rolled, as item types with their stack counts. */

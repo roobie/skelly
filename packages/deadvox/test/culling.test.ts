@@ -52,6 +52,7 @@ const setup = () => {
     camera,
     radiusM: RADIUS_M,
     farPlaneScale: FAR_PLANE_SCALE,
+    fogCurveExponent: 1,
   };
   const meshes = new ChunkMeshes(BLOCK_M, BUNDLED_CONTENT.registry);
   scene.add(meshes.batch);

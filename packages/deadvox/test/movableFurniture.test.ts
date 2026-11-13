@@ -172,6 +172,7 @@ describe('movable furniture', () => {
       camera,
       radiusM: 1,
       farPlaneScale: 1,
+      fogCurveExponent: 1,
     };
     const renderPasses = () => {
       const passes: string[] = [];

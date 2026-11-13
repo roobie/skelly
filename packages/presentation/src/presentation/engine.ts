@@ -17,6 +17,7 @@ import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts'
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
+import { freezeMatrices } from '../render/staticMatrices.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
 import { browserTerrainWorkerSource } from '../worker/terrainPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
@@ -98,12 +99,15 @@ export function createEngine(
     camera,
     radiusM,
     farPlaneScale: config.fogFarPlaneScale,
+    fogCurveExponent: config.fogCurveExponent,
   };
   // The sun sits in a rig so shadows can move its box with the player without touching the light's
   // direction (its position within the rig, which the hands' light copies, stays a unit vector).
   const sunRig = new Group();
   sunRig.add(sky.light, sky.light.target);
   scene.add(sky.ambient, sunRig);
+  // The sun rig moves with the player; the ambient light and the chunk batch never move.
+  freezeMatrices(sky.ambient);
   applySky(sky, skyAt(12, requireDayCycle(config.content.registry)));
 
   const meshes = new ChunkMeshes(scale.blockSize, config.content.registry);
@@ -113,6 +117,7 @@ export function createEngine(
     terrainWorkers: browserTerrainWorkerSource,
   });
   scene.add(meshes.batch);
+  freezeMatrices(meshes.batch);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
   const materialPatches = new MaterialPatches();

@@ -32,6 +32,8 @@ export interface ModEvaluation {
   admitted: AdmittedFile[];
   /** Every selected mod that admission kept, in admission order: a folder pack whole, a single-file mod as admitted. */
   admittedInOrder: (AdmittedFile | PackInput)[];
+  /** Every pack admission kept, the entry pack's default stack included, in admission order. */
+  admittedPacks: readonly PackInput[];
 }
 
 type IdentifiedSource = PackInput & { id: string; version: string; data: unknown };
@@ -172,6 +174,7 @@ export const evaluateMods = (intake: ModIntake, entries: readonly (BrowserMod | 
     content,
     admitted: admittedInOrder.filter((entry): entry is AdmittedFile => !isFolderPack(entry)),
     admittedInOrder,
+    admittedPacks: admission.packs,
     issues,
     canStart: content.issues.length === 0 && mods.every((mod) => !(mod.enabled && issues.get(mod.source)?.length)),
   };

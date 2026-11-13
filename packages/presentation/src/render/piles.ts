@@ -34,6 +34,7 @@ import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.t
 import { ModelFlames } from './modelFlame.ts';
 import { type GroundModelPart, groundModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 interface CasePose {
   readonly position: readonly [number, number, number];
@@ -152,6 +153,7 @@ export class PileMeshes {
     this.reveal = reveal;
     this.glowstickGeometry = new BoxGeometry(blockSize * 0.36, blockSize * 0.06, blockSize * 0.06);
     this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, 1);
+    freezeMatrices(this.glowsticks);
   }
 
   /** Redraws the piles whose look changed when inventory, models, or transient throw visibility changed; keeps the rest. */
@@ -246,6 +248,8 @@ export class PileMeshes {
       record = this.buildRecord(inventory, display, looks, signature);
       this.records.set(key, record);
       for (const object of record.objects) {
+        // A record's objects are built where they stand and replaced whole when the pile's look changes.
+        freezeMatrices(object);
         this.group.add(object);
       }
     }
@@ -401,10 +405,13 @@ export class PileMeshes {
   }
 
   private createCaseMeshes(parts: readonly GroundModelPart[] | undefined, fallback: boolean): InstancedMesh[] {
-    if (fallback) {
-      return [new InstancedMesh(CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL, SPENT_CASE_SCATTER_CAP)];
+    const meshes = fallback
+      ? [new InstancedMesh(CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL, SPENT_CASE_SCATTER_CAP)]
+      : parts!.map((part) => new InstancedMesh(part.geometry, part.material, SPENT_CASE_SCATTER_CAP));
+    for (const mesh of meshes) {
+      freezeMatrices(mesh);
     }
-    return parts!.map((part) => new InstancedMesh(part.geometry, part.material, SPENT_CASE_SCATTER_CAP));
+    return meshes;
   }
 
   private updateCaseMatrices(
@@ -461,6 +468,7 @@ export class PileMeshes {
       this.group.remove(this.glowsticks);
       this.glowsticks.dispose();
       this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, sources.length);
+      freezeMatrices(this.glowsticks);
     }
     this.glowsticks.count = sources.length;
     const transform = new Object3D();

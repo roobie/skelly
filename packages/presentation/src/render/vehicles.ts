@@ -12,6 +12,7 @@ import { itemFinishLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
 import { addSkyCellAnchors, skyAnchoredCopy } from './skyAnchor.ts';
+import { freezeMatrices } from './staticMatrices.ts';
 
 interface RenderedVehicle {
   readonly signature: string;
@@ -107,6 +108,8 @@ export class VehicleMeshes {
     if (previous) {
       this.drop(previous);
     }
+    // A vehicle stands where it is built until its render signature changes and it is rebuilt whole.
+    freezeMatrices(group);
     this.group.add(group);
     this.rendered.set(id, {
       signature,

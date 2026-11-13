@@ -55,6 +55,7 @@ export const mainSourceOverlays = [
   'engine:game/bundledContent.ts',
   'engine:game/browserMods.ts',
   'engine:game/config.ts',
+  'engine:session.ts',
   'engine:game/worldSetup.ts',
   'engine:game/streamer.ts',
   // Removed object members and changed constructor arguments cannot be repaired by export shims.
@@ -64,6 +65,7 @@ export const mainSourceOverlays = [
   'engine:core/canonicalTerrain.ts',
   'engine:game/weatheringTestSite.ts',
   'presentation:presentation/engine.ts',
+  'presentation:render/distanceFog.ts',
   'presentation:presentation/graphicsControls.ts',
   'presentation:presentation/play.ts',
   'presentation:presentation/controls.ts',
@@ -576,6 +578,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     for (const source of [
       'index.html',
       'presentation:presentation/engine.ts',
+      'presentation:render/distanceFog.ts',
       'presentation:presentation/play.ts',
       'presentation:render/playView.ts',
       'engine:game/streamer.ts',
