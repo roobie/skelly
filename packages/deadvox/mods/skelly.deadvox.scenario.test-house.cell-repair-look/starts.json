@@ -62,10 +62,18 @@
           "item": "bandage"
         },
         {
+          "condition": 0.80000000000000004,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "pack",
+          "item": "school_backpack"
+        },
+        {
           "destination": {
             "kind": "pocket",
-            "parent": "hoodie",
-            "pocket": 1
+            "parent": "pack",
+            "pocket": 0
           },
           "id": "repair_kit",
           "item": "repair_kit"

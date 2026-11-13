@@ -8,7 +8,8 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
     site: 'testHouseAmalgam',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
     kit+: [
-      { id: 'repair_kit', item: 'repair_kit', destination: { kind: 'pocket', parent: 'hoodie', pocket: 1 } },
+      { id: 'pack', item: 'school_backpack', condition: 0.8, destination: { kind: 'worn' } },
+      { id: 'repair_kit', item: 'repair_kit', destination: { kind: 'pocket', parent: 'pack', pocket: 0 } },
       { id: 'scrap_1', item: 'scrap_metal', destination: { kind: 'pocket', parent: 'jeans', pocket: 0 } },
       { id: 'scrap_2', item: 'scrap_metal', destination: { kind: 'pocket', parent: 'jeans', pocket: 1 } },
     ],
