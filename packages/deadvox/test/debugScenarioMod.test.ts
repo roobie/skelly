@@ -106,7 +106,9 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
     };
     const feet = layout.player.position.map((value) => value / 0.5);
     const eye = Math.floor(feet[1]! + playerTuning(baseContent.registry).eye / 0.5);
-    for (const { cell } of start.blockDamage ?? []) {
+    const staged = start.blockDamage ?? [];
+    expect(staged.length).toBeGreaterThan(0);
+    for (const { cell } of staged) {
       expect(block(cell)).toBe('brick');
       expect(cell[0]).toBe(Math.floor(feet[0]!));
       expect(cell[1]).toBe(eye);
