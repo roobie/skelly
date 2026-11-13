@@ -10,9 +10,9 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status: the power network core, the placed-entity store, the first appliance
-process, world repair work and the first wave rule are built; player placement,
-take-apart, structural collapse, fire and exposure, and the integration proofs are
-open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+process, world repair and take-apart of pieces and the first wave rule are built;
+player placement, the player-facing world-work view, structural collapse, fire and
+exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
@@ -211,9 +211,17 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   a fight. The saved scenario run's calendar then fixes the whole schedule, and no
   rule has to decide when a fight with unloaded zombies has ended. Waves may
   overlap; that is accepted pressure, not a defect.
-- **Wave target:** every wave heads for where the player stands when it fires, as
-  the first wave does. No shelter identity is needed, so an unattended base is never
-  attacked; unattended shelter defence waits on Slice 4b's region work.
+- **Wave target:** the target is content, so a scenario can send a wave at the player,
+  at the shelter or at the nearest player-built piece, because that is what makes waves
+  test the base rather than the player's position. Shelter identity is the dependency:
+  until a scenario can name its shelter, every wave heads for where the player stands
+  when it fires, so an unattended base is never attacked, and unattended shelter defence
+  waits on Slice 4b's region work. See `packages/engine/src/core/eventRules.ts`,
+  `advanceEventRules`.
+- **Wave size budget:** the horde count bound protects actor and performance limits, so
+  it stays as a safety bound, but as a content-side budget rather than a schema literal,
+  so a pack owns the ceiling it can afford. See
+  `packages/engine/src/core/schema/scenarios.ts`, `HordeEffectSchema`.
 - **Escalation:** Jsonnet expands the authored escalation rows, repeating the last
   row as a plateau rather than endless growth. Actor content owns strength; selecting
   actor types avoids a second strength authority in wave effects. The engine receives
@@ -259,6 +267,13 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   take-apart command applied to rubble, so it waits on that command and adds no
   second destruction verb; see
   `DESIGN.md`, "Damage, destruction and dismemberment".
+- **Know-how gates:** mixed. Some recipes are known from the start and others must be
+  discovered through manuals and points of interest, because discovered recipes give
+  exploring a purpose while known ones keep a player from getting hard-stuck. A start
+  row owns what is known and a manual what is found; see
+  `tools/jsonnet/lib/start-kit.libsonnet`, `common`, and
+  `packages/mods/skelly.manuals/manuals-items.jsonnet`, `book`. Which kit recipes start
+  known is decided when the kit's recipes exist; see "Lanes and the next rounds".
 - **Early session:** a first base-building session runs once world repair,
   take-apart and the first wave work, before fire, power controls and the brute
   land, because the building UI is what blocks this playtest and early feedback on
@@ -337,12 +352,57 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
 
 ### Lanes and the next rounds
 
-The open packages run as four lanes, each one PR per round from main. Within a
-lane the order is a dependency; across lanes only the joins named here hold.
+The open packages run as lanes, each one PR per round from main, ordered so the
+first base-building session under "Early session" arrives through the fewest rounds.
+Within a lane the order is a dependency; across lanes only the joins named here hold,
+so rounds in different lanes run in parallel. A round a BR choice blocks names its
+gate; every other round starts now.
 
-- **Destruction.** No BR gate remains, so it starts now. Zombies bash terrain by
-  material strength first, so the brute wrecks walls through its strength rather than
-  an identity flag and ordinary types break doors only because door pieces sit below
+- **Construction, engine.** Three rounds need no gate and no view, so they go first
+  and in parallel. Cell repair, because the first thing a claimed shelter needs mended
+  is a damaged wall and repair reaches only pieces
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`). Break
+  yields in content, because every material's rubble yield is empty, so tearing down
+  gives nothing and the slow fallback under "Break yields" does not exist
+  (`packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`). Bulk-stock
+  pieces that come apart over the existing command
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartEntity`),
+  because the site's supply asks need pieces to place. Rubble clearing waits on a BR
+  gate: take apart targets a piece while fallen material is a terrain cell, so
+  whether the command grows to cells or rubble becomes a piece decides where
+  clearing lives. Placement follows cell repair: crafting gains a world destination,
+  and the kit's pieces and recipes land with it under "First build vocabulary",
+  because a placement round without content shows BR nothing. How much of the kit
+  the first session includes is a BR gate under #1332.
+- **Construction, view.** Repair and take apart reach the engine but no player can
+  reach them: the hold menu offers only moving
+  (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`) and the
+  world-work view queues behind #1469 (`DESIGN.md`, "World repair selection"). This is
+  the round the first session waits on, so whether that view ships ahead of #1469 as
+  the crafting view's first fixed shape, or #1469 settles its layout first, is a BR
+  gate; it blocks only this lane. Picking a cell or spot for placement follows the
+  placement round under the same gate.
+- **Playtest pack.** Holdout composes one shelter and no supply
+  (`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`), so it
+  grows from independently authored asks, each retunable without city-shape
+  constraints. Supply asks with distance weights land once bulk-stock pieces exist,
+  because the asks place those pieces; the material loot usage already exists for
+  them (`mods/skelly.deadvox.loot/loot.jsonnet`, `building_materials`). The kit's
+  known and found split under "Know-how gates" lands with the kit, and is a BR gate
+  until the kit's recipes exist to split. Cadence stays content tuning; its value is a
+  BR choice under #1332. Site tuning stays in content rather than scenario-specific
+  engine rules; see `docs/url-mods.md`, "Committed scenarios". The first session runs
+  when this pack, the view and the construction rounds join; passing a debug fixture
+  is not completion.
+- **Waves as content.** Two rounds follow the first session, because they test the
+  base rather than the player and nothing earlier needs them: the horde count bound
+  becomes a content budget under "Wave size budget", then shelter identity and the
+  content target under "Wave target". The identity source is a BR gate, and targeting
+  the nearest player-built piece also depends on placement recording who built a piece.
+- **Destruction.** No BR gate remains and the first session does not need it, so it
+  runs beside construction without joining it. Zombies bash terrain by material
+  strength first, so the brute wrecks walls through its strength rather than an
+  identity flag and ordinary types break doors only because door pieces sit below
   their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
   support with surface ground follows, and until collapse lands live play refuses a
   blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
@@ -354,23 +414,9 @@ lane the order is a dependency; across lanes only the joins named here hold.
   by share and breach charges follow, then furniture knock-out and push-off, which
   replace the fall refusal with landing crush; see
   `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
-- **Construction.** The radial action menu is built (`INTERFACE.md`, "HUD"); every
-  hold job (Repair, Take apart, Continue, Fortify) enters through it, on building parts
-  as on movable pieces (`DESIGN.md`, "Moving furniture"). Player-facing
-  world work, repair and take apart alike, is one design and queues behind the #1469
-  crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
-  bulk-stock pieces and rubble clearing under "Settled base-building playtest rules",
-  over the take-apart command (`packages/engine/src/core/craftCommands.ts`,
-  `CraftCommands.takeApartEntity`), then cell repair, placement and the kit content.
 - **Built systems.** Appliance controls and processes after placement; brute
   knockback and displacement independently, since nothing above needs it; fire last,
-  under "Settled fire and exposure rules".
-- **Playtest pack.** Holdout grows from independently authored asks so each addition
-  can be retuned without city-shape constraints. #1332's supply affordances join the
-  construction lane's take-apart command because bulk stock and rubble clearing use
-  it; region proofs follow in package 7. Keep site tuning in content rather than
-  scenario-specific engine rules. See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
-  `scenario`, and `docs/url-mods.md`, "Committed scenarios".
+  under "Settled fire and exposure rules". None joins the first session.
 
 ## State and technical proof
 
