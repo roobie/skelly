@@ -25,6 +25,9 @@ const table = {
   bare: { colour, finish: { metallic: 0.6, roughness: 0.5 } },
 };
 
+const gradientTuning = { cubeSize: 16, skyDrift: 0.1, zenithHeight: 0.5, groundEdge: 0.1, strength: 1, horizonGain: 2 };
+const renderer = (domElement: EventTarget = new EventTarget()) => ({ domElement }) as unknown as WebGLRenderer;
+
 const meshOf = (materialId: string) => {
   const material = new MeshStandardMaterial({ metalness: 0.6, roughness: 0.5 });
   material.userData = { materialId };
@@ -111,14 +114,9 @@ it('follows the sky only while the option is on', () => {
 it('redraws the reflection when the sky drifts past the threshold, into the texture materials already hold', () => {
   const target = new WebGLRenderTarget(1, 1);
   const bake = vi.spyOn(PMREMGenerator.prototype, 'fromEquirectangular').mockReturnValue(target);
-  const skyDrift = 0.1;
-  const gradient = new GradientSkyReflection({} as WebGLRenderer, {
-    cubeSize: 16,
-    skyDrift,
-    zenithHeight: 0.5,
-    groundEdge: 0.1,
-    strength: 1,
-    horizonGain: 2,
+  const { skyDrift } = gradientTuning;
+  const gradient = new GradientSkyReflection(renderer(), {
+    ...gradientTuning,
   });
   const skyOf = (red: number) =>
     ({ sky: [red, 0, 0], heightFogColor: [0, 0, 0], ambientGround: [0, 0, 0], ambientIntensity: 1 }) as unknown as Sky;
@@ -130,4 +128,16 @@ it('redraws the reflection when the sky drifts past the threshold, into the text
   gradient.update(skyOf(0.5 + skyDrift * 2));
   expect(bake).toHaveBeenCalledTimes(drawn + 1);
   expect(gradient.texture).toBe(texture);
+  expect(bake.mock.lastCall?.[1]).toBe(target);
+});
+
+it('draws the reflection again once a lost graphics context comes back', () => {
+  const target = new WebGLRenderTarget(1, 1);
+  const bake = vi.spyOn(PMREMGenerator.prototype, 'fromEquirectangular').mockReturnValue(target);
+  const canvas = new EventTarget();
+  new GradientSkyReflection(renderer(canvas), gradientTuning);
+  const drawn = bake.mock.calls.length;
+  canvas.dispatchEvent(new Event('webglcontextrestored'));
+  expect(bake).toHaveBeenCalledTimes(drawn + 1);
+  expect(bake.mock.lastCall?.[1]).toBe(target);
 });

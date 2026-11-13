@@ -69,6 +69,9 @@ export class GradientSkyReflection implements ReflectionMap {
     this.source.needsUpdate = true;
     // Built at load so the generator's own shaders never compile during play.
     this.target = this.generator.fromEquirectangular(this.source);
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+      this.bake();
+    });
   }
 
   get texture(): Texture {
@@ -82,6 +85,11 @@ export class GradientSkyReflection implements ReflectionMap {
     }
     this.shown = readings;
     this.paint(sky);
+    this.bake();
+  }
+
+  /** A lost context takes the target's pixels with it, so the map is drawn again from the source it was made from. */
+  private bake(): void {
     this.generator.fromEquirectangular(this.source, this.target);
   }
 

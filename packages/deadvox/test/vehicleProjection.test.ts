@@ -36,6 +36,7 @@ describe('production vehicle projection', () => {
     finishes.enabled = true;
     rendered.sync(inventory.vehicles);
     expect(rendered.groupFor(id)).not.toBe(plain);
+    expect(finishes.dress).toHaveBeenCalled();
   });
 
   it('keeps a mirrored render holder and its boxes at the loader placement after the vehicle faces east', () => {
