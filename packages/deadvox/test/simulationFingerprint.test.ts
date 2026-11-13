@@ -437,8 +437,14 @@ describe('simulation source fingerprint', () => {
   });
 
   it('rejects a vendor import outside the supply seam', async () => {
+    // The probe source is assembled from its specifier so the import-boundary scan — which reads text for
+    // package-escaping specifiers and owns package escapes, not the seam rule this probe feeds — sees no
+    // escaping import in this file, while the fingerprint parser still receives the bypass spelled exactly
+    // as a real module would write it. A real import here stays flagged; see
+    // `test/importBoundary.test.ts`, "imports no sibling source, allowing only shared root tooling (the Jsonnet compiler and the Lit check)".
+    const bypassSpecifier = '../../vendor/rapier-f64/rapier.js';
     const bypass: FixtureSources = new Map<string, string | Uint8Array>([
-      [`${root}/src/core/bypass.ts`, "export * from '../../vendor/rapier-f64/rapier.js';\n"],
+      [`${root}/src/core/bypass.ts`, `export * from '${bypassSpecifier}';\n`],
       [`${root}/vendor/rapier-f64/rapier.js`, 'export const api = 1;\n'],
       [`${root}/vendor/rapier-f64/provenance.json`, '{}'],
     ]);

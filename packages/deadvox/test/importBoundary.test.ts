@@ -55,13 +55,6 @@ const sharedRootTool = (file: string, specifier: string): boolean => {
   );
 };
 
-// The seam-rejection probe embeds a bypass source whose quoted vendor import must read as a real import to
-// the fingerprint parser; that literal is quarantined here, in this one file and spelling, because it is
-// probe input, not an import of this project — the scan still fails any other vendor import outside the seam.
-// See `test/simulationFingerprint.test.ts`, "rejects a vendor import outside the supply seam".
-const quarantinedProbe = (file: string, specifier: string): boolean =>
-  file === 'test/simulationFingerprint.test.ts' && specifier === '../../vendor/rapier-f64/rapier.js';
-
 describe('deadvox stays independent of its sibling projects', () => {
   const files = ROOTS.flatMap(sourceFiles);
 
@@ -74,10 +67,7 @@ describe('deadvox stays independent of its sibling projects', () => {
     const offenders = files.flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(SPECIFIER)]
         .map((match) => match[2] ?? '')
-        .filter(
-          (specifier) =>
-            escapesProject(file, specifier) && !sharedRootTool(file, specifier) && !quarantinedProbe(file, specifier),
-        )
+        .filter((specifier) => escapesProject(file, specifier) && !sharedRootTool(file, specifier))
         .map((specifier) => `${file}: ${specifier}`),
     );
     expect(offenders).toEqual([]);
@@ -102,14 +92,5 @@ describe('deadvox stays independent of its sibling projects', () => {
     expect(sharedRootTool('test/a.ts', '../../../tools/jsonnet/compile.mjs')).toBe(false);
     expect(sharedRootTool('test/a.ts', '../../../tools/lit-checker/x.ts')).toBe(false);
     expect(sharedRootTool('test/a.ts', '../../../tools/zero-drift-check.mjs')).toBe(false);
-  });
-
-  it('quarantines exactly the seam probe literal, in one file and one spelling', () => {
-    expect(quarantinedProbe('test/simulationFingerprint.test.ts', '../../vendor/rapier-f64/rapier.js')).toBe(true);
-    expect(quarantinedProbe('test/simulationFingerprint.test.ts', '../../vendor/rapier-f64/rapier_wasm3d.js')).toBe(
-      false,
-    );
-    expect(quarantinedProbe('test/rapierBuild.test.ts', '../../vendor/rapier-f64/rapier.js')).toBe(false);
-    expect(quarantinedProbe('src/core/bypass.ts', '../../vendor/rapier-f64/rapier.js')).toBe(false);
   });
 });
