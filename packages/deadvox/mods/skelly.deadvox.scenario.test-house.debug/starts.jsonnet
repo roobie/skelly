@@ -11,7 +11,7 @@ local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
         destination: { kind: 'pocket', parent: 'jeans', pocket: 1 },
       },
       {
-        id: 'buckshot', item: 'shell_12_gauge_00_buck', count: 8,
+        id: 'buckshot', item: 'shell_12_gauge_00_buck', count: 24,
         destination: { kind: 'pocket', parent: 'jeans', pocket: 0 },
       },
     ],

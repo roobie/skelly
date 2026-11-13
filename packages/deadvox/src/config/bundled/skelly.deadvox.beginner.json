@@ -224,6 +224,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -519,6 +520,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -814,6 +816,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -1109,6 +1112,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -1404,6 +1408,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -1699,6 +1704,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -1990,6 +1996,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.10000000000000001,
         "headOnKillChance": 0.20000000000000001
@@ -2247,6 +2254,7 @@
           "torso": 0
         }
       },
+      "deathFall": "ragdoll",
       "dismember": {
         "chance": 0.050000000000000003,
         "headOnKillChance": 0.14999999999999999
@@ -2518,6 +2526,7 @@
           "torso": 0
         }
       },
+      "deathFall": "frozen",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -2876,6 +2885,7 @@
           "torso": 0
         }
       },
+      "deathFall": "baked",
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25

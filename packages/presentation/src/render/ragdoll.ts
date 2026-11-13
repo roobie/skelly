@@ -50,8 +50,6 @@ export interface RagdollConfig {
   readonly angularDamping: number;
   readonly footprintMetres: readonly number[];
   readonly downedDriftMetres: number;
-  /** Body models that fall as ragdolls. */
-  readonly models: readonly string[];
   readonly motion: Readonly<Motion>;
   readonly kindMotion: Readonly<Record<string, Partial<Motion>>>;
   readonly groups: readonly RagdollGroupRule[];

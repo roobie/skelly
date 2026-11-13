@@ -74,6 +74,7 @@ local shambler = {
             moves: [clobber(9, 3), bite] },
   stagger: { impulseThreshold: 12, durationSimSeconds: 0.8 },
   dismember: { chance: 0.15, headOnKillChance: 0.25 },
+  deathFall: 'ragdoll',
   downed: { finishOff: { simSeconds: 3 }, dismember: { simSeconds: 15, quality: 'cutting', level: 1 } },
   abilities: [], loot: 'shambler_pockets',
 };
@@ -126,6 +127,8 @@ local actors = [
   shambler + {
     id: 'amalgam', name: 'Amalgam', cause: 'an amalgam', model: 'fused-mass', canJumpObstacles: false,
     strength: 0, locomotion: 'omnidirectional', bodyScale: 4, soundPitchMultiplier: 0.5, authoredOnly: true,
+    // A fused mass of bodies collapses as one janky physics prop, so its corpse freezes where it died (#1679).
+    deathFall: 'frozen',
     // The built body's collision box; `validate` fails when it no longer matches the pinned body.
     spawnEnvelope: { halfWidthMetres: 3, halfDepthMetres: 2.666666666666667, heightMetres: 4.666666666666666 },
     figureSeeds:: null, footstepSound:: null, stagger:: null, downed:: null,
@@ -140,6 +143,7 @@ local actors = [
   },
   shambler + {
     id: 'acid_zombie', name: 'Acid zombie', cause: 'an acid zombie', model: 'acid', figureSeeds: acidFigureSeeds, authoredOnly: true,
+    deathFall: 'baked',
     acidBody: {
       color: '#9ad21e', charge: { idle: 0.5, charged: 2.5 }, light: { intensity: 0.31, radiusMetres: 3 },
       drips: { perRealSecond: 1.5, sizeMetres: 0.012 },

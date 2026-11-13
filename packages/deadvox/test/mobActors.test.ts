@@ -72,7 +72,7 @@ import {
 import { safeParse } from 'valibot';
 import { describe, expect, it, vi } from 'vitest';
 import { ragdollConfig } from '../src/product/ragdoll.ts';
-import { stackActorFigureFiles } from './baseContentFiles.ts';
+import { stackActorFigureFiles, withFixtureFigures } from './baseContentFiles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -2159,6 +2159,36 @@ describe('MobActorMeshes reactions', () => {
       const before = renderer.boneMatrix(id, 'pelvis');
       renderer.sync(store, ragdollConfig.timestepRealSeconds, 1, frozen);
       expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(before);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('builds no ragdoll for a type whose content freezes its death fall', async () => {
+    const type = { ...SHAMBLER, id: 'fixture_frozen_fall', deathFall: 'frozen' as const };
+    const renderer = new FixtureMobActorMeshes(0.5, 2, {
+      actors: new Map([[type.id, type]]),
+      poolSize: 1,
+      actorFigureFiles: withFixtureFigures(FIGURES, { [type.id]: SHAMBLER.id }),
+    });
+    try {
+      const store = new MapEntityStore<Actor>();
+      const actor = makeActor([0, 0, 0], [0, 0, -1], [], { type });
+      const id = store.add(actor);
+      renderer.sync(store, 1 / 60, 1);
+      store.remove(id);
+      renderer.actorDied(id, actor);
+      await renderer.whenCorpsesReady();
+      const corpse = (
+        renderer as unknown as {
+          readonly corpses: ReadonlyMap<number, { readonly ragdoll?: unknown }>;
+        }
+      ).corpses.get(id);
+      expect(corpse?.ragdoll).toBeUndefined();
+      // No physics means no motion: the corpse keeps the pose it died in.
+      const frozen = renderer.boneMatrix(id, 'pelvis');
+      renderer.sync(store, ragdollConfig.timestepRealSeconds, 1);
+      expect(renderer.boneMatrix(id, 'pelvis')).toEqual(frozen);
     } finally {
       renderer.dispose();
     }

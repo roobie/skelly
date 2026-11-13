@@ -111,6 +111,16 @@ describe('actor figure file checks', () => {
     ]);
   });
 
+  it("reports a type that falls by its baked death fall while its figure bakes no death pair", () => {
+    const { registry, key, body, clips } = shamblerRow();
+    const shambler = registry.actors.get('shambler')!;
+    expect(clips.standing?.death).toBeUndefined(); // the fixture figure bakes no fall
+    const actors = new Map([...registry.actors, [shambler.id, { ...shambler, deathFall: 'baked' as const }]]);
+    expect(actorFigureFileIssues({ ...registry, actors }, key, body, clips)).toEqual([
+      expect.objectContaining({ id: key, path: '.clips.standing.death' }),
+    ]);
+  });
+
   it('reports a hit-box bone that carries no voxels', () => {
     const { registry, key, body, clips } = shamblerRow();
     const boxed = body.boxes!.head![0]!.bone;

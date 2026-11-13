@@ -40,6 +40,7 @@ import { scenarioSources } from './scenarioComposition.ts';
 import {
   type ActorBody,
   ActorBodySchema,
+  type ActorClips,
   ActorClipsSchema,
   actorClipIssues,
   actorFigureKey,
@@ -1624,7 +1625,10 @@ const checkActorFigure = (actor: ActorDef, report: Report): void => {
 interface ActorFigureContent {
   readonly actors: ReadonlyMap<
     string,
-    Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions'>
+    Pick<
+      ActorDef,
+      'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'figureSeeds' | 'regions' | 'deathFall'
+    >
   >;
   readonly figures: ReadonlyMap<string, unknown>;
   readonly actorFigures: ReadonlyMap<string, ActorFigureDef>;
@@ -1640,6 +1644,12 @@ interface ActorFigureIssue {
 /** A fused mass's body keys its regions per member; its type keys them once for every member. */
 const FUSED_MEMBER_PREFIX = /^member\.\d+\./;
 const typeRegionKey = (bodyRegion: string): string => bodyRegion.replace(FUSED_MEMBER_PREFIX, 'member.');
+
+/** A `baked` death fall needs the death pair its figure plays; other falls never read one. */
+const bakesDeathFall = (clips: ActorClips): boolean => {
+  const death = clips.standing?.death;
+  return death !== undefined && 'forward' in death;
+};
 
 const figureTypeIssues = (
   type: Pick<ActorDef, 'id' | 'model' | 'figure' | 'bodyScale' | 'spawnEnvelope' | 'regions'>,
@@ -1739,6 +1749,9 @@ export const actorFigureFileIssues = (
     }
     if (crawlsAfterLegLoss(body.output) && clips.output.crawling === undefined) {
       report('.clips.crawling', `actor type "${type.id}" crawls after losing a leg and needs a crawling set`);
+    }
+    if (type.deathFall === 'baked' && !bakesDeathFall(clips.output)) {
+      report('.clips.standing.death', `actor type "${type.id}" falls by its baked death fall and needs a death pair`);
     }
   } else if (!content.figures.has(body.output.type)) {
     report('.body.type', `no actor type or figure "${body.output.type}"`);
