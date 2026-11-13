@@ -127,6 +127,10 @@ export class ActionMenu {
     return this.parentId !== undefined;
   }
 
+  canReturn(actions: readonly RadialAction[]): boolean {
+    return this.childOpen && actions.length > 1;
+  }
+
   /** Losing alternatives cancels rather than choosing an unseen fallback. */
   ring(actions: readonly RadialAction[]): readonly RadialAction[] | undefined {
     if (!this.target) {
@@ -191,7 +195,7 @@ export class ActionMenu {
       this.close();
       return chosen.children[0];
     }
-    if (!chosen && this.childOpen && actions.length > 1) {
+    if (!chosen && this.canReturn(actions)) {
       this.enter(undefined);
       return undefined;
     }

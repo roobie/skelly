@@ -1351,7 +1351,7 @@ const startPlayWith = (
   const drawActionMenu = (ringVisible: boolean): void => {
     const entries = openMenuEntries() ?? [];
     const ring = ringVisible || actionMenu.childOpen ? (actionMenu.ring(entries) ?? []) : [];
-    const centre = actionMenu.childOpen ? screenText.actionMenu.back : undefined;
+    const centre = actionMenu.canReturn(entries) ? screenText.actionMenu.back : undefined;
     drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, centre);
   };
   /** Closes the held menu once its item leaves the hands or its child ring has nothing left to offer. */
@@ -1359,8 +1359,8 @@ const startPlayWith = (
     const item = openHeldItem();
     const inHand = item && survival.handOf(item) !== undefined ? item : undefined;
     actionMenu.sync('held', inHand?.uid, paused);
-    if (actionMenu.childOpen && !(inHand && actionMenu.ring(heldMenuEntries(inHand)))) {
-      actionMenu.close();
+    if (actionMenu.childOpen && inHand) {
+      actionMenu.ring(heldMenuEntries(inHand));
     }
   };
   const quickbarBox = $('quickbar');

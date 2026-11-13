@@ -185,12 +185,13 @@ describe('held treatment child ring', () => {
     return menu.confirm(held);
   };
 
-  it('skips a sole Treat parent and opens only the wound choices, cancelling at their centre', () => {
+  it('skips a sole Treat parent and offers no centre return when the centre cancels', () => {
     const menu = new ActionMenu();
     const onlyTreat = held.filter((action) => action.id === 'treat');
     expect(menu.open('held', { uid: 3 }, onlyTreat)).toBeUndefined();
     expect(menu.childOpen).toBe(true);
     expect(menu.ring(onlyTreat)).toHaveLength(treatments.length);
+    expect(menu.canReturn(onlyTreat)).toBe(false);
     expect(menu.confirm(onlyTreat)).toBeUndefined();
     expect(menu.opened).toBeUndefined();
   });
@@ -209,8 +210,10 @@ describe('held treatment child ring', () => {
     menu.open('held', { uid: 3 }, held);
     expect(confirmTreat(menu)).toBeUndefined();
     expect(menu.childOpen).toBe(true);
+    expect(menu.canReturn(held)).toBe(true);
     expect(menu.confirm(held)).toBeUndefined();
     expect(menu.childOpen).toBe(false);
+    expect(menu.canReturn(held)).toBe(false);
     expect(menu.isOpen('held', 3)).toBe(true);
     expect(menu.choice(held)).toBeUndefined();
 

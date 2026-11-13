@@ -4338,6 +4338,11 @@ try {
     const releaseAtCentre = await holdDominantUse(page);
     await waitForActionRing(page);
     await ringEntriesShown(treatment.wounds.map(({ id }) => id));
+    assert.equal(
+      await page.locator('#action-radial .radial-centre-label').count(),
+      0,
+      'a shortcut-entered wound ring offers no return label when its centre cancels',
+    );
     await releaseAtCentre();
     await waitForActionRing(page, false);
     assert.notEqual(
