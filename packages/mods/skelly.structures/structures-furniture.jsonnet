@@ -46,6 +46,89 @@ local takeApart(minutes, offcuts, nails) = {
 };
 local rail = function(x) { position: [x, 0, 0.55], size: [0.12, 1, 0.12] };
 local rung = function(y) { position: [0.1, y, 0.6], size: [1.8, 0.08, 0.08] };
+local crate = {
+  id: 'crate',
+  name: 'Crate',
+  size: [2, 2, 2],
+  color: '#9a7b4f',
+  wear: { from: 0.1, to: 0.6 },
+  shape: [
+    { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
+    { position: [0, 0, 0], size: [0.2, 1.84, 0.2] },
+    { position: [1.8, 0, 0], size: [0.2, 1.84, 0.2] },
+    { position: [0, 0, 1.8], size: [0.2, 1.84, 0.2] },
+    { position: [1.8, 0, 1.8], size: [0.2, 1.84, 0.2] },
+    { position: [0.2, 0.1, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.72, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 1.34, 0], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.1, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 0.72, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0.2, 1.34, 1.9], size: [1.6, 0.5, 0.1] },
+    { position: [0, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [1.9, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
+    { position: [0, 1.84, 0], size: [2, 0.16, 2] },
+  ],
+  container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
+} + takeApart(15, 4, 16);
+// Bulk stock for base building (`packages/deadvox/SLICE-5.md`, "Bulk stock"): a stack of material is looted by taking
+// the piece apart, which costs far less time per unit than salvaging built work, so stock stays the efficient path.
+// Each stack's yield is a core material stock item, so `skelly.structures` still validates alone.
+local stockYield(minutes, yields) = {
+  takeApart: { yield: { timeGameMinutes: minutes, skill: 'crafting', yields: yields } },
+};
+local boardLayer = function(y) [
+  { position: [0.05, y, 0.1], size: [0.44, 0.09, 3.8] },
+  { position: [0.55, y, 0.1], size: [0.44, 0.09, 3.8] },
+  { position: [1.05, y, 0.1], size: [0.44, 0.09, 3.8] },
+  { position: [1.55, y, 0.1], size: [0.44, 0.09, 3.8] },
+];
+local bulkStock = [
+  {
+    id: 'board_stack',
+    name: 'Board stack',
+    size: [2, 1, 4],
+    color: '#a0763f',
+    shape: [
+      // Bearers keep the lowest boards off the ground.
+      { position: [0.1, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
+      { position: [1.6, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
+    ] + boardLayer(0.14) + boardLayer(0.23) + [
+      // A partly drawn top layer, so the stack reads as boards rather than a solid block.
+      { position: [0.3, 0.32, 0.5], size: [0.44, 0.09, 2.6] },
+      { position: [1.2, 0.32, 0.9], size: [0.44, 0.09, 2.2] },
+    ],
+  } + stockYield(12, [{ item: 'wood_offcut', count: 8, fractions: recovered, rounding: 'floor' }]),
+  // The crate look with its container dropped: a fastener crate is emptied by taking it apart, not by searching.
+  // Grey paint tells a stock crate from a searchable one at a glance.
+  std.objectRemoveKey(crate, 'container') + {
+    id: 'fastener_crate',
+    name: 'Fastener crate',
+    color: '#7d8a92',
+  } + stockYield(10, [
+    { item: 'nails', count: 60, fractions: recovered, rounding: 'floor' },
+    { item: 'fastener_pack', count: 2, fractions: recovered, rounding: 'floor' },
+  ]),
+  {
+    id: 'sheet_metal_stack',
+    name: 'Sheet metal stack',
+    size: [3, 1, 3],
+    color: '#aab4b8',
+    material: 'steel',
+    shape: [
+      // Galvanized sheets stacked flat, each lying a little off the one below.
+      { position: [0.05, 0, 0.05], size: [2.9, 0.07, 2.9] },
+      { position: [0.12, 0.07, 0.1], size: [2.75, 0.07, 2.8], color: '#98a2a6' },
+      { position: [0.08, 0.14, 0.16], size: [2.85, 0.07, 2.7] },
+      { position: [0.16, 0.21, 0.07], size: [2.7, 0.07, 2.85], color: '#8d9296' },
+      { position: [0.1, 0.28, 0.13], size: [2.8, 0.07, 2.75], color: '#98a2a6' },
+      { position: [0.22, 0.35, 0.2], size: [2.55, 0.07, 2.55] },
+    ],
+  } + stockYield(12, [{ item: 'scrap_metal', count: 10, fractions: recovered, rounding: 'floor' }]),
+];
 local basics = shape.colliding({
   furniture: [
     {
@@ -182,34 +265,8 @@ local basics = shape.colliding({
         workFactorBonus: 0.2,
       },
     },
-    {
-      id: 'crate',
-      name: 'Crate',
-      size: [2, 2, 2],
-      color: '#9a7b4f',
-      wear: { from: 0.1, to: 0.6 },
-      shape: [
-        { position: [0.1, 0.05, 0.1], size: [1.8, 1.79, 1.8] },
-        { position: [0, 0, 0], size: [0.2, 1.84, 0.2] },
-        { position: [1.8, 0, 0], size: [0.2, 1.84, 0.2] },
-        { position: [0, 0, 1.8], size: [0.2, 1.84, 0.2] },
-        { position: [1.8, 0, 1.8], size: [0.2, 1.84, 0.2] },
-        { position: [0.2, 0.1, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.72, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 1.34, 0], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.1, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 0.72, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0.2, 1.34, 1.9], size: [1.6, 0.5, 0.1] },
-        { position: [0, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 0.1, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 0.72, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [1.9, 1.34, 0.2], size: [0.1, 0.5, 1.6] },
-        { position: [0, 1.84, 0], size: [2, 0.16, 2] },
-      ],
-      container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
-    } + takeApart(15, 4, 16),
+    crate,
+  ] + bulkStock + [
     {
       id: 'wood_stove', name: 'Wood stove', size: [2, 3, 2], color: '#343536', material: 'steel',
       shape: [

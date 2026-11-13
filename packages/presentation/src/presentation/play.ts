@@ -1712,6 +1712,18 @@ const startPlayWith = (
         sim.time,
         { sourceLabel: 'debug test noise' },
       ),
+    takeApartTarget: () => {
+      const target = interactionTargetAt();
+      if (target?.kind !== 'furniture') {
+        return 'No piece under the crosshair';
+      }
+      const { entity } = target;
+      const name = registry.furniture.get(entity.type)?.name ?? entity.type;
+      return (
+        router.dispatchScreenCommand({ kind: 'craft.take-apart-entity', entityUid: entity.uid }) ??
+        `Taking apart ${name}`
+      );
+    },
     feet,
     showNotice,
     strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),

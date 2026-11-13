@@ -27,7 +27,7 @@ const place = (runtime: Runtime, type: string, pos: Vec3): BlockEntity =>
   runtime.inventory.furnish({ type, pos, size: [...registry.furniture.get(type)!.size], facing: 'n' })!;
 
 /** The player at the origin with empty hands, beside a piece that can be taken apart. */
-const site = () => {
+const site = (type: string = ROUTED) => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
   placeFloor(runtime);
   const { inventory } = runtime;
@@ -36,7 +36,7 @@ const site = () => {
       throw new Error('Fixture hands did not empty');
     }
   }
-  return { runtime, piece: place(runtime, ROUTED, [2, 1, 0]) };
+  return { runtime, piece: place(runtime, type, [2, 1, 0]) };
 };
 
 const uids = (runtime: Runtime) => new Set([...runtime.inventory.items()].map(({ item }) => item.uid));
@@ -84,6 +84,24 @@ it('takes a piece apart where it stands, removing it and landing its yield once 
   expect(runtime.entities.byUid(piece.uid)).toBeUndefined();
   expect(runtime.sim.actions.job).toBeUndefined();
   expect(runtime.inventory.hands.right ?? runtime.inventory.hands.left).toBeUndefined();
+  const landed = landedYield(runtime, before);
+  expect(landed.elsewhere).toBe(0);
+  expect(landed.totals.size).toBeGreaterThan(0);
+  expect(landed.totals).toEqual(totals(plan!.outputs));
+});
+
+// Bulk stock: the content-authored stacks of building material, taken apart for the material itself
+// (`packages/deadvox/SLICE-5.md`, "Bulk stock").
+const BULK_STOCK = ['board_stack', 'fastener_crate', 'sheet_metal_stack'] as const;
+
+it.each(BULK_STOCK)('takes the bulk-stock %s apart into its authored materials in one ground pile', (kind) => {
+  const { runtime, piece } = site(kind);
+  const { plan, refusal } = runtime.session.crafting.previewTakeApartEntity(piece.uid);
+  expect(refusal).toBeUndefined();
+  const before = uids(runtime);
+  expect(runtime.session.crafting.takeApartEntity(piece.uid)).toBeUndefined();
+  finish(runtime, piece);
+  expect(runtime.entities.byUid(piece.uid)).toBeUndefined();
   const landed = landedYield(runtime, before);
   expect(landed.elsewhere).toBe(0);
   expect(landed.totals.size).toBeGreaterThan(0);
