@@ -3,6 +3,7 @@
     "skelly.crafting",
     "skelly.hand-tools",
     "skelly.inventory",
+    "skelly.light-sources",
     "skelly.materials",
     "skelly.natural-world",
     "skelly.structures"
@@ -26,19 +27,27 @@
     },
     {
       "kind": "json",
+      "path": "things/aa_battery.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/copper_wire.model.json"
     },
     {
       "kind": "json",
-      "path": "things/dead_desk_lamp.model.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/field_patch.model.json"
-    },
-    {
-      "kind": "json",
       "path": "things/fuse.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/night_vision_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/portable_radio.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/aa_battery.glb"
     },
     {
       "kind": "asset",
@@ -62,15 +71,7 @@
     },
     {
       "kind": "asset",
-      "path": "assets/models/dead_desk_lamp.glb"
-    },
-    {
-      "kind": "asset",
       "path": "assets/models/electrical_repair_kit.glb"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/field_patch.glb"
     },
     {
       "kind": "asset",
@@ -83,6 +84,14 @@
     {
       "kind": "asset",
       "path": "assets/models/glass_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/night_vision_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/portable_radio.glb"
     },
     {
       "kind": "asset",

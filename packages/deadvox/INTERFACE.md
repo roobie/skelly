@@ -75,6 +75,8 @@ A debug run neither saves nor loads a save unless the hash `save` key is also se
 
 A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `packages/presentation/src/ui/errorReport.ts`, `errorReportText`, and `packages/presentation/src/presentation/play.ts`, `stopPlayAfterError`.
 
+Startup refusals and content errors that do not halt play land in one error log with one copy button, so a player can paste the whole message into a report. The log sits above the startup screen, because text behind an overlay cannot be selected. Every site logs through the one helper rather than writing the element. See `packages/presentation/src/ui/errorLog.ts`, `appendError`.
+
 ## Layout
 
 The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `packages/presentation/src/ui/style.css`, ":root", and `packages/presentation/src/ui/comboBox.ts`, `comboBox`.

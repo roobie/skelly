@@ -5,10 +5,11 @@
       "changes": null,
       "download": null,
       "files": [
+        "assets/models/aa_battery.glb",
         "assets/models/copper_wire.glb",
-        "assets/models/dead_desk_lamp.glb",
-        "assets/models/field_patch.glb",
-        "assets/models/fuse.glb"
+        "assets/models/fuse.glb",
+        "assets/models/night_vision_goggles.glb",
+        "assets/models/portable_radio.glb"
       ],
       "licence": "CC-BY-NC-SA-4.0",
       "title": "skelly-assets built models",

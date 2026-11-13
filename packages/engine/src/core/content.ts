@@ -11,6 +11,7 @@ import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
+import { composedSiteIssues } from './composeLayout.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
 import { BLOCK_FOOTSTEP_FAMILY, footstepEventForBlock } from './footsteps.ts';
@@ -2130,6 +2131,9 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
 };
 
 const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  if (scenario.kind !== 'assembledCity') {
+    return;
+  }
   for (const [capability, required, field] of [
     ['settlementHorde', scenario.population.hordes > 0, 'hordes'],
     ['settlementWanderer', scenario.population.settlementPressure, 'settlementPressure'],
@@ -2143,7 +2147,9 @@ const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, repo
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
     checkScenarioPopulation(registry, scenario, report);
-    for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
+    for (const [path, message] of scenario.kind === 'assembledCity'
+      ? scenarioPlanIssues(registry, scenario)
+      : composedSiteIssues(registry, scenario)) {
       report('scenarios', scenario.id, path, message);
     }
     if (!registry.body.has(scenario.body)) {
@@ -2298,10 +2304,9 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
     ...ARM_SEGMENTS.map((segment): [string, string] => [`.armRig.${segment}.pivot`, figure.armRig[segment].pivot]),
     ['.armRig.grip', figure.armRig.grip],
   ];
-  const rigParts: [string, string][] = ARM_SEGMENTS.map((segment) => [
-    `.armRig.${segment}.part`,
-    figure.armRig[segment].part,
-  ]);
+  const rigParts = ARM_SEGMENTS.flatMap((segment): [string, string][] =>
+    figure.armRig[segment].parts.map((part, index) => [`.armRig.${segment}.parts[${index}]`, part]),
+  );
   const legAnchors = LEG_SEGMENTS.map((segment): [string, string] => [
     `.legRig.${segment}.pivot`,
     figure.legRig[segment].pivot,

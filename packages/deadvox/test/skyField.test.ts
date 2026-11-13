@@ -230,9 +230,11 @@ const benchRange = { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK
 const largestAuthoredField = (): { site: Site; box: SkyBounds } => {
   const sites: Site[] = [
     ...[...registry.layouts.values()].map((layout) => new AuthoredSite(seed, registry, scale, layout)),
-    ...[...registry.scenarios.values()].map(
-      (scenario) => new ScenarioCitySite({ seed, registry, scale, scenario, start: placementOf(registry, scenario) }),
-    ),
+    ...[...registry.scenarios.values()]
+      .filter((scenario) => scenario.kind === 'assembledCity')
+      .map(
+        (scenario) => new ScenarioCitySite({ seed, registry, scale, scenario, start: placementOf(registry, scenario) }),
+      ),
   ];
   const cells = ({ min, max }: SkyBounds) => max.reduce((product, value, axis) => product * (value - min[axis]!), 1);
   const candidates = sites.flatMap((owner) =>

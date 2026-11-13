@@ -30,12 +30,12 @@ local notSpawnable = [
   'engine_hoist',
 ]
 // A loose gun part has no use until players can assemble guns, so none spawns as loot (`things/WORK.md`, "Decisions").
-+ [entry.id for entry in (import 'packages/skelly-assets/tools/packages/gun-authoring-tool/src/gun/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
++ [entry.id for entry in (import 'packages/skelly-assets/models/guns/tables/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
 local commonItems = [
   'revolver_357', 'cartridge_357_h_magnum', 'cartridge_box_357_h_magnum', 'cartridge_box_9x19',
   'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note',
   'optic_digital_thermal', 'optic_fixed_prism_4x', 'optic_high_mag_5_25x', 'optic_holographic',
-  'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'real_suppressor',
+  'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'rail_rear_sight', 'real_suppressor',
   'tactical_flashlight_mount', 'weapon_sling', 'foregrip', 'frag_grenade',
   'canned_beans', 'canned_soup', 'crackers', 'apple', 'chocolate_bar', 'soda_can', 'water_bottle', 'juice_carton',
   'aa_battery', 'rechargeable_aa_battery', 'bandage', 'antiseptic', 'antibiotics', 'painkillers', 'rag', 'duct_tape', 'nails', 'scrap_metal',

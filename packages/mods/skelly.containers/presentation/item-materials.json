@@ -88,6 +88,7 @@
   },
   "assets/models/extra_large_gym_bag.glb": { "materials": ["cloth-blue", "webbing-black", "plastic-matte-black"] },
   "assets/models/extra_large_propane_tank.glb": { "materials": ["paint-white", "brass", "plastic-black"] },
+  "assets/models/fanny_pack.glb": { "materials": ["plastic-blue", "paint-charcoal"] },
   "assets/models/field_chemistry_kit.glb": {
     "materials": [
       "alu-bare",
@@ -114,7 +115,10 @@
   },
   "assets/models/frame_pack.glb": { "materials": ["wood-oak", "wood-pine", "leather-tan", "brass-dull"] },
   "assets/models/gadget_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green"] },
+  "assets/models/galvanised_trashcan.glb": { "materials": ["steel-galvanised"] },
+  "assets/models/galvanised_trashcan_dented.glb": { "materials": ["steel-galvanised"] },
   "assets/models/garment_bag.glb": { "materials": ["cloth-navy", "plastic-black", "steel", "plastic-clear"] },
+  "assets/models/gas_canister.glb": { "materials": ["steel-grey", "plastic-blue"] },
   "assets/models/gas_mask_pouch.glb": { "materials": ["cloth-olive-drab", "polymer-od-green", "plastic-black"] },
   "assets/models/giant_novelty_backpack.glb": {
     "materials": ["cloth-yellow", "nylon-red", "plastic-matte-black", "cloth-blue"]
@@ -157,6 +161,7 @@
   "assets/models/high_volume_rucksack.glb": {
     "materials": ["leather-brown", "leather-chestnut", "brass-dull", "leather-black"]
   },
+  "assets/models/hiking_backpack.glb": { "materials": ["cord-olive", "paint-charcoal"] },
   "assets/models/hunting_pack.glb": {
     "materials": ["nylon-coyote", "cloth-brown", "plastic-matte-black", "nylon-black"]
   },
@@ -269,6 +274,7 @@
       "rubber-black"
     ]
   },
+  "assets/models/school_backpack.glb": { "materials": ["plastic-red", "paint-charcoal"] },
   "assets/models/sealed_glass_jar.glb": { "materials": ["glass-clear", "steel-grey", "foil-gold"] },
   "assets/models/sealed_hazard_canister.glb": {
     "materials": ["steel-stainless", "steel-grey", "plastic-hivis", "jelly-teal", "steel-blued", "plastic-black"]

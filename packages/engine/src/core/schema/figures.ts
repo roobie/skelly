@@ -3,6 +3,7 @@ import {
   check,
   type InferOutput,
   maxValue,
+  minLength,
   minValue,
   number,
   omit,
@@ -62,8 +63,11 @@ export const ARM_SEGMENTS = ['upper', 'fore', 'hand', 'fingers', 'thumb'] as con
 
 export type ArmSegment = (typeof ARM_SEGMENTS)[number];
 
-/** One segment: the limb model's part, and the model anchor it turns about. */
-const ArmSegmentSchema = strictObject({ part: Id, pivot: Id });
+/** One segment: the model's part, and the model anchor it turns about. */
+const SegmentSchema = strictObject({ part: Id, pivot: Id });
+
+/** One arm segment: the arm model's parts that turn together, and the model anchor they turn about. */
+const ArmSegmentSchema = strictObject({ parts: pipe(array(Id), minLength(1)), pivot: Id });
 
 /** How a hand closes: the fingers curl at the knuckles; the thumb folds across the palm and in toward it. */
 const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegrees: Degrees, thumbInDegrees: Degrees });
@@ -112,7 +116,7 @@ export const LEG_SEGMENTS = ['shin', 'foot'] as const;
 export type LegSegment = (typeof LEG_SEGMENTS)[number];
 
 /** Both leg models' rig, from the hip down; the thigh is the rest of the model. */
-const LegRigSchema = strictObject({ shin: ArmSegmentSchema, foot: ArmSegmentSchema });
+const LegRigSchema = strictObject({ shin: SegmentSchema, foot: SegmentSchema });
 
 export type HandPoseDef = InferOutput<typeof HandPoseSchema>;
 
@@ -158,9 +162,9 @@ export const FigureSchema = strictObject({
   body: strictObject({
     model: Id,
     joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: Id, rightShoulder: Id }),
-    spine: ArmSegmentSchema,
-    neck: ArmSegmentSchema,
-    head: ArmSegmentSchema,
+    spine: SegmentSchema,
+    neck: SegmentSchema,
+    head: SegmentSchema,
     eyes: tuple([Id, Id]),
   }),
   limbs: strictObject({

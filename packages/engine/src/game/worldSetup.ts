@@ -3,6 +3,7 @@ import { BlockEntities } from '../core/blockEntities.ts';
 import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
+import { composeLayout } from '../core/composeLayout.ts';
 import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
@@ -31,7 +32,11 @@ export interface WorldSetup extends ColumnSource {
   config: GameConfig;
   registry: Registry;
   contentErrors: string;
-  scenario: ScenarioDef | undefined;
+  scenario:
+    | (Pick<ScenarioDef, 'id' | 'body' | 'compression' | 'outbreakAgeGameHours' | 'decalLimit'> & {
+        eventRules: readonly import('../core/schema/scenarios.ts').EventRuleDef[];
+      })
+    | undefined;
   readonly attemptPolicy?: AttemptPolicyDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
@@ -48,8 +53,26 @@ export interface WorldSetup extends ColumnSource {
   spawn: { pos: Vec3; yaw: number };
 }
 
-const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof ScenarioCitySite>[0]) => Site> = {
-  assembledCity: (options) => new ScenarioCitySite(options),
+type ScenarioSiteOptions = Omit<ConstructorParameters<typeof ScenarioCitySite>[0], 'scenario'> & {
+  scenario: ScenarioDef;
+};
+const SCENARIO_SITES: Record<ScenarioKind, (options: ScenarioSiteOptions) => Site> = {
+  assembledCity: (options) => {
+    if (options.scenario.kind !== 'assembledCity') {
+      throw new Error('Expected assembledCity scenario');
+    }
+    return new ScenarioCitySite({ ...options, scenario: options.scenario });
+  },
+  composedSite: ({ seed, registry, scale, scenario }) => {
+    if (scenario.kind !== 'composedSite') {
+      throw new Error('Expected composedSite scenario');
+    }
+    const composed = composeLayout(seed, registry, scenario);
+    return new AuthoredSite(seed, registry, scale, composed.layout, {
+      authoredMarkers: scenario.population.authoredMarkers,
+      eventRules: composed.eventRules,
+    });
+  },
 };
 
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {
@@ -131,11 +154,26 @@ export function createWorldSetup(
     ...(stats ? { stats } : {}),
     ...(terrainWorkers ? { terrainWorkers: { source: terrainWorkers, ...tuning.terrainWorkers } } : {}),
   });
+  const scenario = registry.scenarios.get(config.site);
+  const eventRules = scenario?.kind === 'composedSite' ? built?.eventRules : scenario?.eventRules;
+  if (scenario && eventRules === undefined) {
+    throw new Error(`Scenario "${scenario.id}" did not resolve its event rules`);
+  }
   return {
     config,
     registry,
     contentErrors,
-    scenario: registry.scenarios.get(config.site),
+    scenario:
+      scenario && eventRules
+        ? {
+            id: scenario.id,
+            body: scenario.body,
+            compression: scenario.compression,
+            outbreakAgeGameHours: scenario.outbreakAgeGameHours,
+            decalLimit: scenario.decalLimit,
+            eventRules,
+          }
+        : undefined,
     attemptPolicy: row?.attemptPolicy,
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,

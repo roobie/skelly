@@ -44,7 +44,7 @@ const electricItemsWithoutCrafting = (): ContentSource => {
   return { source, data };
 };
 const { registry } = buildRegistry(
-  ['actors-sounds.json', 'actors-items.json', 'models-actors.json']
+  ['actors-sounds.json', 'actors-items.json']
     .map(base)
     .concat(
       [
@@ -77,12 +77,13 @@ const { registry } = buildRegistry(
         'skelly.basic-foods/basic-foods-items.json',
         'skelly.basic-foods/models-basic-foods.json',
         'skelly.packaged-foods/packaged-foods-items.json',
-        'skelly.packaged-foods/models-packaged-foods.json',
+        'skelly.body/models-body.json',
         'skelly.wearables/wearables-sounds.json',
         'skelly.wearables/models-wearables.json',
         'skelly.fuel/fuel-items.json',
-        'skelly.fuel/models-fuel.json',
-        'skelly.electric-power/models-electric-power.json',
+        'skelly.containers/models-containers.json',
+        'skelly.electronics/models-electronics.json',
+        'skelly.light-sources/models-light-sources.json',
       ]
         .map((file) => ({
           source: file,

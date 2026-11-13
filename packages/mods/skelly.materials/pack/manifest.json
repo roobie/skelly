@@ -31,6 +31,14 @@
     },
     {
       "kind": "json",
+      "path": "things/field_patch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hinge_set.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/nails.model.json"
     },
     {
@@ -62,6 +70,10 @@
       "path": "things/wax.model.json"
     },
     {
+      "kind": "json",
+      "path": "things/wooden_plank.model.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/models/cloth_bundle.glb"
     },
@@ -79,7 +91,15 @@
     },
     {
       "kind": "asset",
+      "path": "assets/models/field_patch.glb"
+    },
+    {
+      "kind": "asset",
       "path": "assets/models/glass_shards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hinge_set.glb"
     },
     {
       "kind": "asset",
@@ -120,6 +140,10 @@
     {
       "kind": "asset",
       "path": "assets/models/wood_offcut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wooden_plank.glb"
     }
   ],
   "id": "skelly.materials",

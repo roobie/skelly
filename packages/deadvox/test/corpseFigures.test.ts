@@ -252,7 +252,7 @@ describe('the content check for dead humans', () => {
   const baseSource = (name: string) => baseSources.find(({ source }) => source.endsWith(name))!;
   /** The figure and its own models only, so the check runs without building the whole pack. */
   const figureSources = (): ContentSource[] => {
-    const modelRows = (baseSource('models-items.json').data as { models: { id: string }[] }).models;
+    const modelRows = (baseSource('models-body.json').data as { models: { id: string }[] }).models;
     const figure = registry.figures.get(body.corpse!.figure)!;
     const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
     return [

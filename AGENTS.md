@@ -29,6 +29,12 @@ Before writing or changing player-visible text, apply `packages/deadvox/INTERFAC
 
 The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
 
+## Look fixtures
+
+When work needs BR to eyeball or test something, ship a fixture start mod that sets up the whole check.
+The tester's time goes to the check, not to setup or waiting; see
+`docs/PROCESS.md`, "Reviews by eye and by play" for details.
+
 ## TypeScript symbolic edits
 
 Rename, move or re-import TypeScript symbols through the TypeScript language service (an LSP client, or `tsc`'s language-service API), not by text edits. It resolves each reference by symbol, so it neither misses an aliased or destructured use nor touches a same-named symbol elsewhere, and one call replaces a long run of hand edits. Prose, Jsonnet, JSON, CSS and string keys stay text edits, and the result is still reviewed as a diff.

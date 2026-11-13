@@ -1,13 +1,18 @@
+// A finger is its knuckle phalanx and the two beyond it; the thumb is its three bones (the hand's layout is in
+// `packages/skelly-assets/models/measures/hand.libsonnet`). The first-person view curls them as one rigid hand.
+local digit(name) = [name, name + '2', name + '3'];
+local fingerParts = std.flattenArrays([digit(finger) for finger in ['index', 'middle', 'ring', 'little']]);
+local thumbParts = digit('thumb');
 // Temporary role readability on the underwear base; delete with corpse-owned equipment in #1366.
 local outfit(skin, shirt, pants, shoe) = {
   torso: { skin: shirt }, pelvis: { underwear: pants },
   neck: { skin: skin }, head: { skin: skin },
   upper: { skin: shirt }, fore: { skin: skin }, palm: { skin: skin },
-  fingers: { skin: skin }, thumb: { skin: skin },
   thigh: { skin: pants }, shin: { skin: pants }, foot: { skin: shoe },
-};
-local limb(model, joint) = { model: model, joint: joint };
+} + { [part]: { skin: skin } for part in fingerParts + thumbParts };
 local segment(part, pivot) = { part: part, pivot: pivot };
+local armSegment(parts, pivot) = { parts: parts, pivot: pivot };
+local limb(model, joint) = { model: model, joint: joint };
 local frame(part, pivot=null) = {
   part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
 } + if pivot == null then {} else { pivot: pivot };
@@ -50,11 +55,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
       // pistol grip with the thumb over its top, or wraps the stock wrist with the fingers under it and the thumb over
       // it, and the support hand cups the forend from below with the fingers curling up its far side.
       armRig: {
-        upper: segment('upper', 'shoulder'),
-        fore: segment('fore', 'elbow'),
-        hand: segment('palm', 'wrist'),
-        fingers: segment('fingers', 'knuckles'),
-        thumb: segment('thumb', 'thumb_root'),
+        upper: armSegment(['upper'], 'shoulder'),
+        fore: armSegment(['fore'], 'elbow'),
+        hand: armSegment(['palm'], 'wrist'),
+        fingers: armSegment(fingerParts, 'knuckles'),
+        thumb: armSegment(thumbParts, 'thumb_root'),
         grip: 'grip',
         elbowPole: {
           up: [std.sqrt(0.5), -std.sqrt(0.5), 0],

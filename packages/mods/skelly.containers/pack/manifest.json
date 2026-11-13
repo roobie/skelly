@@ -1,5 +1,5 @@
 {
-  "dependencies": ["skelly.fuel", "skelly.inventory", "skelly.natural-world"],
+  "dependencies": ["skelly.fuel", "skelly.inventory", "skelly.natural-world", "skelly.wearables"],
   "files": [
     {
       "kind": "content",
@@ -23,7 +23,35 @@
     },
     {
       "kind": "json",
+      "path": "things/fanny_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gas_canister.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hiking_backpack.model.json"
+    },
+    {
+      "kind": "json",
       "path": "things/jerry_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/school_backpack.model.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fanny_pack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gas_canister.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hiking_backpack.glb"
     },
     {
       "kind": "asset",
@@ -32,6 +60,10 @@
     {
       "kind": "asset",
       "path": "assets/models/lamp_oil_bottle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/school_backpack.glb"
     }
   ],
   "id": "skelly.containers",

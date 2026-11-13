@@ -35,6 +35,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { fitFixtureOptic } from './fixtures/debugStarts.ts';
 
 import { modFileBytes } from './modFile.ts';
 import { thingModels } from './thingModels.ts';
@@ -670,18 +671,17 @@ describe('fitted attachment model frames', () => {
     }
   });
 
-  it('keeps the default fitted optic along the bore and seated on its rail', async () => {
+  it('keeps a fitted optic along the bore and seated on its rail', async () => {
     const firearm = registry.models.get('rifle_assault')!;
-    const optic = firearm.gun?.attachments?.find(({ kind }) => kind === 'optic');
-    if (!optic) {
-      throw new Error('Exported firearm has no default optic');
-    }
-    const mount = firearm.gun!.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
-    const look = itemLook(registry, new Inventory(registry).create('rifle_assault'))!;
-    const slot = look.slots.find(({ slot: id }) => id === optic.mountedAt)!;
+    const inventory = new Inventory(registry);
+    const rifle = inventory.create('rifle_assault');
+    fitFixtureOptic(inventory, rifle, 'optic_lpvo_1_6x');
+    const look = itemLook(registry, rifle)!;
+    const slot = look.slots.find(({ model }) => model === registry.items.get('optic_lpvo_1_6x')!.model)!;
     if (!(slot.model && slot.mountFrame)) {
-      throw new Error('Default optic look is incomplete');
+      throw new Error('Fitted optic look is incomplete');
     }
+    const mount = firearm.gun!.attachmentSlots!.find(({ id }) => id === slot.slot)!;
     const gunScene = (await parseGlb(modFileBytes(firearm.file))).scene;
     const opticScene = (await parseGlb(modFileBytes(registry.models.get(slot.model)!.file))).scene;
     const { held } = prepareModel(firearm, gunScene);
@@ -745,9 +745,10 @@ describe('fitted magazine model frame', () => {
 describe('base pack melee', () => {
   // Melee models from every mod holding them: a mod's other tools carry no hold pose or strike anchor to check.
   const handToolMelee = ['crowbar', 'hammer', 'kitchen_knife', 'sledgehammer', 'wrench'];
-  const handTools = read('../mods/skelly.hand-tools/models-hand-tools.json').data as { models: { id: string }[] };
+  const meleeSources = ['hand-tools', 'household'].map((mod) => read(`../mods/skelly.${mod}/models-${mod}.json`));
+  const heldModels = meleeSources.flatMap(({ data }) => (data as { models: { id: string }[] }).models);
   for (const id of handToolMelee) {
-    if (!handTools.models.some((model) => model.id === id)) {
+    if (!heldModels.some((model) => model.id === id)) {
       throw new Error(`no hand-tool model "${id}"`);
     }
   }
@@ -755,7 +756,7 @@ describe('base pack melee', () => {
     read('../mods/skelly.melee/models-melee.json'),
     {
       source: 'models-hand-tools.json',
-      data: { models: handTools.models.filter(({ id }) => handToolMelee.includes(id)) },
+      data: { models: heldModels.filter(({ id }) => handToolMelee.includes(id)) },
     },
   ]).registry;
   // A pack may hold models no melee weapon draws yet; only a drawn model must carry a hold and strike anchor.

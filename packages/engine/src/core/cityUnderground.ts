@@ -1,11 +1,11 @@
 import type { lotRect } from './cityLots.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { ScenarioDef } from './schema.ts';
+import type { CityScenarioDef } from './schema.ts';
 import { rectsOverlap } from './site.ts';
 import { footprint, type Placement, placedBlockAt } from './templates.ts';
 
-export type Underground = NonNullable<ScenarioDef['city']['underground']>[number];
+export type Underground = NonNullable<CityScenarioDef['city']['underground']>[number];
 export interface PlannedUnderground {
   readonly definition: Underground;
   readonly placement: Placement;
@@ -38,7 +38,7 @@ const placedRect = (placement: Placement): Rect => {
   };
 };
 
-export const cityUndergroundIssues = (registry: Registry, city: ScenarioDef['city'], bounds: Rect): Issue[] => {
+export const cityUndergroundIssues = (registry: Registry, city: CityScenarioDef['city'], bounds: Rect): Issue[] => {
   const issues: Issue[] = [];
   const ids = new Set<string>();
   for (const [index, element] of (city.underground ?? []).entries()) {
@@ -87,7 +87,7 @@ const overlapIssue = (element: Placement, others: readonly Placement[]): string 
 };
 
 export const placeUnderground = (
-  city: Pick<ScenarioDef['city'], 'underground'>,
+  city: Pick<CityScenarioDef['city'], 'underground'>,
   {
     floor,
     compiled,

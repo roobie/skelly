@@ -3,6 +3,7 @@
     "skelly.basic-recipes",
     "skelly.deadvox.site-generation",
     "skelly.inventory",
+    "skelly.keys",
     "skelly.light-sources",
     "skelly.manufactured-blocks",
     "skelly.medicine",
@@ -23,27 +24,7 @@
     },
     {
       "kind": "content",
-      "path": "models-lock-test.json"
-    },
-    {
-      "kind": "content",
       "path": "starts.json"
-    },
-    {
-      "kind": "json",
-      "path": "assets/manifest.json"
-    },
-    {
-      "kind": "json",
-      "path": "presentation/item-materials.json"
-    },
-    {
-      "kind": "json",
-      "path": "things/shed_key.model.json"
-    },
-    {
-      "kind": "asset",
-      "path": "assets/models/shed_key.glb"
     }
   ],
   "id": "skelly.deadvox.scenario.lock-test",

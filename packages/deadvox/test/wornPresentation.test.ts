@@ -356,7 +356,7 @@ describe('shared worn presentation', () => {
         wearable: { slot, encumbrance: 0 },
         figureModels: specs
           .filter((spec) => spec.slot === slot)
-          .map(({ name, joint }) => ({ ...segment, frame: name, covers: [figure.armRig[joint].part] })),
+          .map(({ name, joint }) => ({ ...segment, frame: name, covers: figure.armRig[joint].parts })),
       }),
     );
     const armRegistry = {
@@ -401,7 +401,7 @@ describe('shared worn presentation', () => {
           expect(visible.has(surface!), `${side}/${joint} garment is drawn`).toBe(true);
           const covered: Object3D[] = [];
           arm.traverse((node) => {
-            if (node.userData.part === armFigure.armRig[joint].part) {
+            if (armFigure.armRig[joint].parts.includes(node.userData.part)) {
               covered.push(node);
             }
           });
@@ -425,7 +425,8 @@ describe('shared worn presentation', () => {
           const visible: Object3D[] = [];
           arm.traverseVisible((node) => visible.push(node));
           expect(visible.some((node) => node.name === 'fixture-garment-surface')).toBe(false);
-          for (const { part } of [armFigure.armRig.upper, armFigure.armRig.fore, armFigure.armRig.hand]) {
+          const { upper, fore, hand } = armFigure.armRig;
+          for (const part of [...upper.parts, ...fore.parts, ...hand.parts]) {
             expect(visible.some((node) => node.userData.part === part)).toBe(true);
           }
         }

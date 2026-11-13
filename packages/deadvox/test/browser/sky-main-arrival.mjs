@@ -341,6 +341,18 @@ export function adaptMainWeather(source) {
     .replaceAll('look.fogginess', 'look.weatherState.fogginess');
 }
 
+// Base figure reads one `part` per arm segment from the branch's figure content; segments now list `parts`
+// (#1676). A missing part resolves to the model root, which the pivot then adopts as its own descendant and
+// the scene graph loops. Content selectors are beyond export shims. Drop once the base carries it.
+export function adaptMainArmParts(source) {
+  return source
+    .replace('parts: [armRig.fore.part]', 'parts: armRig.fore.parts')
+    .replace(
+      'parts: [armRig.hand.part, armRig.fingers.part, armRig.thumb.part]',
+      'parts: [...armRig.hand.parts, ...armRig.fingers.parts, ...armRig.thumb.parts]',
+    );
+}
+
 const adaptMainBenchShadows = (source) =>
   `import { graphicsTuningOf as mainGraphicsTuningOf } from '@skelly/engine/look';\n${source}`
     .replace(
@@ -378,6 +390,7 @@ const OVERLAY_ADAPTERS = {
   'deadvox:bench/post.ts': (source) => adaptMainBenchShadows(adaptMainWeather(source)),
   'deadvox:debug/index.ts': (source) => adaptMainDebugShadows(adaptMainWeather(source)),
   'presentation:render/playView.ts': (source) => adaptMainPlayViewShadows(adaptMainWeather(source)),
+  'presentation:render/playerFigure.ts': adaptMainArmParts,
   'presentation:presentation/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',

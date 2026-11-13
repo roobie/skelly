@@ -168,14 +168,23 @@
         "attachments": [],
         "calibre": "9x19",
         "compatibility": {
-          "slide.rail.0": ["rail-front-sight"],
-          "slide.rail.1": ["optic-mini-reflex", "optic-tube-dot", "rail-front-sight"],
-          "slide.rail.2": ["rail-front-sight"]
+          "slide.rail.0": ["rail-front-sight", "rail-rear-sight"],
+          "slide.rail.1": ["optic-mini-reflex", "optic-tube-dot", "rail-front-sight", "rail-rear-sight"],
+          "slide.rail.2": ["rail-front-sight", "rail-rear-sight"]
         },
         "compatibilityPairs": [
           [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-front-sight"]],
+          [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-rear-sight"]],
           [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]],
-          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]]
+          [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-rear-sight"]],
+          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.1", "rail-front-sight"]],
+          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.1", "rail-rear-sight"]],
+          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.2", "rail-front-sight"]],
+          [["slide.rail.0", "rail-rear-sight"], ["slide.rail.2", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-rear-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.2", "rail-front-sight"]],
+          [["slide.rail.1", "rail-rear-sight"], ["slide.rail.2", "rail-rear-sight"]]
         ],
         "muzzleDirection": [-1.2246467991473532e-16, 1.4997597826618576e-32, 1],
         "sight": {
