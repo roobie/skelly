@@ -1933,12 +1933,7 @@
       ]
     },
     {
-      "actors": [
-        {
-          "position": [-8, 21, 14],
-          "type": "amalgam"
-        }
-      ],
+      "actors": [],
       "attemptPolicy": {
         "compressionThreshold": 1,
         "countHidden": false,
@@ -2590,7 +2585,6 @@
         "bearing": 270,
         "position": [-1, 21, 17]
       },
-      "shamblers": [],
       "showroom": {
         "capacity": 3,
         "catalogue": {

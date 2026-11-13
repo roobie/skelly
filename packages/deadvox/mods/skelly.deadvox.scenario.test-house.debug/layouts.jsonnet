@@ -30,7 +30,7 @@ local debugHouse = layout + {
     // wall, with the house's own hatchback under the garage roof to show a reflection the sky cannot reach.
     debugHouse + {
       id: 'testHouseFinishes',
-      shamblers: [],
+      actors: [],
       vehicles: layout.vehicles + [
         { blueprint: 'hatchback', placementKey: 'testHouse.finishes-gloss', position: [-8, 21, 14], facing: 'e' },
         { blueprint: 'fixture_tactical_vehicle', placementKey: 'testHouse.finishes-flat', position: [-8, 21, 20], facing: 'e' },
