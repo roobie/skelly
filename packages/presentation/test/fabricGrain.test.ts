@@ -27,7 +27,7 @@ it('draws the grain an exported material declares in its fabric extras and leave
   expect(woven.key).not.toBe(plain.key);
   expect(woven.shader.uniforms.fabricGrain?.value).toBe(fabric.grain);
   expect(woven.shader.fragmentShader).toContain('#define FABRIC_TWILL');
-  expect(woven.shader.vertexShader).toContain('vFabricU');
+  expect(woven.shader.vertexShader).toContain('fabricPlane(normal, fabricU, fabricV);');
 
   expect(plain.key).toBe(new MeshPhysicalMaterial().customProgramCacheKey());
   expect(plain.shader.fragmentShader).toBe(ShaderLib.physical.fragmentShader);
