@@ -2792,6 +2792,8 @@ export const createSession = (options: SessionOptions) => {
     /** Explosives' pins and burning fuses; a pin is pulled here, and the fuse lights once the item leaves the hand. */
     fuses,
     aim,
+    /** The gun a running press check checks, so the view can tell the check from a plain raise. */
+    pressCheckedFirearm,
     /** The gun the simulation raises, so the view draws, aims and plays handling on the same one. */
     raisableFirearm,
     get firearmsSkillZeroHandling() {

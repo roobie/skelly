@@ -43,7 +43,6 @@ import {
   type Inventory,
   type Item,
   type ItemAction,
-  isPressCheck,
   offHandUse,
   type Pile,
   pileScatterPlacements,
@@ -2601,7 +2600,7 @@ const startPlayWith = (
     quickbarBox.hidden = debugTools?.buildOn ?? false;
   };
 
-  const updateVisualFeedback = (dt: number): void => {
+  const updateVisualFeedback = (dt: number, held: ReturnType<typeof drawnFirearm>): void => {
     input.controls.advanceFreeLook(dt);
     advanceAdsAim(dt);
     for (const event of damageEvents.read()) {
@@ -2610,7 +2609,7 @@ const startPlayWith = (
       }
     }
     const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled));
-    const look = heldLook();
+    const look = heldLook(held);
     view.updateCamera(
       {
         dt,
@@ -2686,7 +2685,8 @@ const startPlayWith = (
     const gun = session.raisableFirearm();
     // The simulation raises the gun for a press check without the ready input; see
     // `packages/engine/src/game/session.ts`, `raisedFirearm`.
-    const raised = debugGunPose.readyHeld(input.controls.rightMouseActionHeld) || pressChecking();
+    const raised =
+      debugGunPose.readyHeld(input.controls.rightMouseActionHeld) || session.pressCheckedFirearm() !== undefined;
     if (!(gun && raised && hasGunPoseInput())) {
       return;
     }
@@ -2743,18 +2743,10 @@ const startPlayWith = (
     });
   };
 
-  const heldLook = (): { readonly yaw: number; readonly pitch: number } => {
-    const held = drawnFirearm(session);
-    return held ? handlingLook(held.model, held.side, held.frame) : { yaw: 0, pitch: 0 };
-  };
+  const heldLook = (held: ReturnType<typeof drawnFirearm>): { readonly yaw: number; readonly pitch: number } =>
+    held ? handlingLook(held.model, held.side, held.frame) : { yaw: 0, pitch: 0 };
 
-  const pressChecking = (): boolean => {
-    const [job] = queue.jobs;
-    return job !== undefined && isPressCheck(job);
-  };
-
-  const heldFirearmBore = (readiness = firearmReadiness()) => {
-    const held = drawnFirearm(session);
+  const heldFirearmBore = (readiness = firearmReadiness(), held = drawnFirearm(session)) => {
     if (!held) {
       return;
     }
@@ -3146,10 +3138,11 @@ const startPlayWith = (
       frozen: debugTools !== undefined && (actorSystem.isFrozen || gameFrozen),
       perceptionLabels: perceptionLabelsEnabled,
     });
-    updateVisualFeedback(dt);
+    const held = drawnFirearm(session);
+    updateVisualFeedback(dt, held);
     const readiness = firearmReadiness();
     updateHeldItems(dt, readiness);
-    const bore = heldFirearmBore(readiness);
+    const bore = heldFirearmBore(readiness, held);
     updateDebugTargets(bore, now);
     debugTools?.updateTransientDraw(now);
     updateDebugReadout(now);
@@ -3214,7 +3207,7 @@ const startPlayWith = (
     renderPlayHandling(
       handlingBox,
       currentPresentation,
-      !screen.isOpen && visible.handling && !pressChecking(),
+      !screen.isOpen && visible.handling && session.pressCheckedFirearm() === undefined,
       screenText.handling,
     );
     const continuing = finishDraw(sky, now);

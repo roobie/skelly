@@ -482,11 +482,28 @@ it('a press check raises and draws the gun it checks, not the gun in the dominan
   expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
   expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
   original.frame(1 / 60);
-  original.frame(rifle.firearm?.readying?.duration ?? 1);
+  const raise = rifle.firearm?.readying;
+  expect(raise).toBeDefined();
+  original.frame(raise!.duration);
   expect(original.queue.busy).toBe(true);
   expect(original.firearms.isReady(rifle.uid)).toBe(true);
   expect(original.firearms.isReady(pump.uid)).toBe(false);
   expect(drawnFirearm(original)?.item).toBe(rifle);
+});
+
+it('a gun that leaves the hand mid press check ends the check, so the view draws the gun still in hand', () => {
+  const original = session([], undefined, undefined, { readyHeld: false, active: true });
+  const { inventory } = original;
+  const pump = inventory.create('pump_shotgun');
+  const rifle = inventory.create('rifle_assault');
+  expect(inventory.add(pump, { kind: 'hand', side: dominantSide(inventory.character) })).toBe(true);
+  expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  expect(inventory.move(rifle, { kind: 'pile', pos: inventory.dropFeet()! }).ok).toBe(true);
+  original.frame(1 / 60);
+  expect(original.pressCheckedFirearm()).toBeUndefined();
+  expect(drawnFirearm(original)?.item).toBe(pump);
 });
 
 it('a codec save keeps the fitted magazine and the chambered round, so the next shot is the same', async () => {

@@ -1469,8 +1469,17 @@ export class FirearmMechanics {
     this.observedAtSimSeconds = time;
     this.revolvers.advance();
     this.revolvers.cancelUnheld();
+    this.cancelUnheldPressCheck();
     for (const uid of this.active) {
       this.advanceItem(uid, time);
+    }
+  }
+
+  /** Ends a press check whose gun has left the hands, so nothing raises, draws or shows a check of a gun not held. */
+  private cancelUnheldPressCheck(): void {
+    const job = this.queue.jobs.find(isPressCheck);
+    if (job && !(typeof job.params.uid === 'number' && this.held(job.params.uid))) {
+      this.queue.cancelJob(job);
     }
   }
 
