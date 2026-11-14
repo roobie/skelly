@@ -2058,6 +2058,85 @@ try {
     assert.equal(poured.fitted, false, 'the source is not fitted');
     assert.notEqual(await reservoir.textContent(), emptyReadout, 'the opened card displays its changed balance');
     logPhase('liquid reservoir drag');
+
+    // A focused control owns Enter and Space as native activation under the locked menu pointer; with nothing
+    // focused, the keys the inventory binds still reach the screen.
+    const activationKinds = await page.evaluate(async (bindingsModule) => {
+      const { session, screen } = globalThis.foregripFitTest;
+      const inv = session.inventory;
+      if (!document.querySelector('#inventory [data-put-target]')) {
+        const bag = Object.values(inv.worn).find((item) => item?.pockets);
+        if (!(bag && inv.move(bag, { kind: 'pile', pos: screen.hooks.feet() }).ok)) {
+          throw new Error('Cannot set down a container to choose as put target');
+        }
+        screen.update();
+      }
+      const shown = (selector) =>
+        [...document.querySelectorAll(`#inventory ${selector}`)].find(
+          (element) => !element.disabled && element.checkVisibility(),
+        );
+      const kinds = {
+        button: shown('button.inv-tab[aria-selected="true"]'),
+        summary: shown('summary'),
+        checkbox: shown('input[type="checkbox"][data-put-target]'),
+      };
+      globalThis.activationProbe = { clicks: [], actions: [] };
+      for (const [kind, element] of Object.entries(kinds)) {
+        if (!element) {
+          throw new Error(`The inventory shows no ${kind} to activate`);
+        }
+        element.dataset.activationProbe = kind;
+        element.addEventListener('click', () => globalThis.activationProbe.clicks.push(kind));
+      }
+      for (const method of ['onAction', 'onInputCommand']) {
+        const original = screen[method].bind(screen);
+        screen[method] = (command) => {
+          globalThis.activationProbe.actions.push(typeof command === 'string' ? command : command.action);
+          return original(command);
+        };
+      }
+      const { inputBindings } = await import(bindingsModule);
+      const boundTo = (code) =>
+        inputBindings.bindings.find(
+          (binding) =>
+            binding.contexts.includes('inventory') &&
+            !binding.gate &&
+            inputBindings.chords(binding.id).some((chord) => chord.code === code && !chord.modifier),
+        )?.id;
+      return { kinds: Object.keys(kinds), bound: ['Enter', 'Space'].map((code) => [code, boundTo(code)]) };
+    }, '/src/product/input.ts');
+    const probe = () => page.evaluate(() => globalThis.activationProbe);
+    for (const kind of activationKinds.kinds) {
+      // A checkbox has no native Enter activation; Space toggles it.
+      for (const key of kind === 'checkbox' ? ['Space'] : ['Enter', 'Space']) {
+        const control = page.locator(`#inventory [data-activation-probe="${kind}"]`);
+        await control.focus();
+        const previous = await probe();
+        await page.keyboard.press(key);
+        const current = await probe();
+        assert.equal(current.clicks.length, previous.clicks.length + 1, `${key} activates the focused ${kind}`);
+        assert.equal(
+          current.clicks.at(-1),
+          kind,
+          `${key} activates the focused ${kind}, not the control under the cursor`,
+        );
+        assert.deepEqual(current.actions, previous.actions, `${key} on a focused ${kind} reaches no inventory binding`);
+      }
+    }
+    const boundKeys = activationKinds.bound.filter(([, action]) => action);
+    assert.ok(boundKeys.length > 0, 'the inventory binds Enter or Space, so precedence has something to prove');
+    for (const [key, action] of boundKeys) {
+      await page.evaluate(() => document.activeElement?.blur());
+      const previous = await probe();
+      await page.keyboard.press(key);
+      const current = await probe();
+      assert.ok(
+        current.actions.slice(previous.actions.length).includes(action),
+        `${key} with nothing focused runs ${action}`,
+      );
+      assert.equal(current.clicks.length, previous.clicks.length, `${key} with nothing focused activates no control`);
+    }
+    logPhase('focused controls own Enter and Space');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
