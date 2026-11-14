@@ -1587,10 +1587,11 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) .inv-queu
   height: 100%;
   background: var(--accent);
 }
-/* The inventory screen covers the play HUD. */
+/* The inventory screen covers the play HUD; the debug centre X goes with the crosshair it marks. */
 body.inventory-open #hud,
 body.inventory-open #quickbar,
-body.inventory-open #crosshair {
+body.inventory-open #crosshair,
+body.inventory-open #debug-ui-root #debug-center-x {
   display: none;
 }
 body.inventory-open #prompt {
