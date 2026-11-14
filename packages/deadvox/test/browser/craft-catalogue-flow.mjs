@@ -636,10 +636,8 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     page.on('pageerror', raised);
     page
       .waitForFunction((uid) => Boolean(globalThis.foregripFitTest.session.inventory.entities.byUid(uid)?.work), crate)
-      .then(() => {
-        page.off('pageerror', raised);
-        resolve();
-      }, reject);
+      .then(resolve, reject)
+      .finally(() => page.off('pageerror', raised));
   });
   assert.equal(await runningWork(), true, 'the take-apart Start begins the work on the crate');
 };

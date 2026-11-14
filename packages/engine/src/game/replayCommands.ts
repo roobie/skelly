@@ -71,49 +71,53 @@ export type ReplayActionPayload =
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
-// Typed by the payload union, so a new screen command cannot reach the recorder without an encodable id.
-const PAYLOAD_KINDS: Record<ReplayActionPayload['kind'], true> = {
-  'liquid.pour': true,
-  'inventory.move': true,
-  'inventory.to-hands': true,
-  'inventory.inspect': true,
-  'inventory.activate': true,
-  'hand.action': true,
-  'inventory.wield-or-pocket': true,
-  'item.pickup': true,
-  'furniture.interact': true,
-  'furniture.lift': true,
-  'furniture.use': true,
-  'furniture.slide': true,
-  'furniture.place': true,
-  'power.set': true,
-  'charger.start': true,
-  'charger.stop': true,
-  'furniture.turn': true,
-  'furniture.tip': true,
-  'actor.downed': true,
-  'inventory.search': true,
-  'inventory.work': true,
-  'inventory.assign': true,
-  'inventory.cancel-handling': true,
-  'firearm.attachment.fit': true,
-  'firearm.attachment.remove': true,
-  'vehicle.work': true,
-  'light.battery.load': true,
-  'light.battery.unload': true,
-  'craft.start': true,
-  'craft.repair-entity': true,
-  'craft.repair-cell': true,
-  'craft.take-apart-entity': true,
-  'craft.take-apart-cell': true,
-  'craft.continue': true,
-  'craft.stop': true,
-  'action.wait': true,
-  'action.wake-hour': true,
-  'item.throw.cancel': true,
-  'item.throw': true,
-};
-export const REPLAY_PAYLOAD_KINDS = Object.keys(PAYLOAD_KINDS) as readonly ReplayActionPayload['kind'][];
+// Checked against the payload union both ways, so a new screen command cannot reach the recorder without an
+// encodable id: `satisfies` refuses an extra kind, and the exported type names a missing one. A list, not a record
+// keyed by kind, because time-lint reads a property named for a unit as a runtime temporal name.
+const PAYLOAD_KINDS = [
+  'liquid.pour',
+  'inventory.move',
+  'inventory.to-hands',
+  'inventory.inspect',
+  'inventory.activate',
+  'hand.action',
+  'inventory.wield-or-pocket',
+  'item.pickup',
+  'furniture.interact',
+  'furniture.lift',
+  'furniture.use',
+  'furniture.slide',
+  'furniture.place',
+  'power.set',
+  'charger.start',
+  'charger.stop',
+  'furniture.turn',
+  'furniture.tip',
+  'actor.downed',
+  'inventory.search',
+  'inventory.work',
+  'inventory.assign',
+  'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
+  'vehicle.work',
+  'light.battery.load',
+  'light.battery.unload',
+  'craft.start',
+  'craft.repair-entity',
+  'craft.repair-cell',
+  'craft.take-apart-entity',
+  'craft.take-apart-cell',
+  'craft.continue',
+  'craft.stop',
+  'action.wait',
+  'action.wake-hour',
+  'item.throw.cancel',
+  'item.throw',
+] as const satisfies readonly ReplayActionPayload['kind'][];
+type MissingPayloadKind = Exclude<ReplayActionPayload['kind'], (typeof PAYLOAD_KINDS)[number]>;
+export const REPLAY_PAYLOAD_KINDS: [MissingPayloadKind] extends [never] ? typeof PAYLOAD_KINDS : MissingPayloadKind =
+  PAYLOAD_KINDS;
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isTriple = (value: unknown, isPart: (part: unknown) => boolean = Number.isFinite): boolean =>
