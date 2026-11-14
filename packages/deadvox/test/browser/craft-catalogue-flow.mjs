@@ -34,6 +34,38 @@ const setDensity = (page, { hudScale, spacing }) =>
     { hudScale, spacing },
   );
 
+/**
+ * The drawn cursor stays above open panels while pointer lock is held (`packages/deadvox/INTERFACE.md`, "Layout"),
+ * so a shot first parks it over a control, as a player would point, instead of wherever the last step left it.
+ */
+const parkCursorOn = async (page, locator, { drawn = false } = {}) => {
+  const hidden = await page.locator('#game-cursor').evaluate((cursor) => cursor.hidden);
+  assert.ok(!(drawn && hidden), 'world work keeps pointer lock, so its drawn cursor shows');
+  if (hidden) {
+    return;
+  }
+  const box = await locator.boundingBox();
+  assert.ok(box, 'the control the cursor parks on is laid out');
+  const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await page.evaluate(({ x, y }) => {
+    const { input } = globalThis.foregripFitTest;
+    input.moveMenuCursor(x - input.cursorX, y - input.cursorY);
+  }, at);
+  await page.waitForFunction(() => {
+    const { input } = globalThis.foregripFitTest;
+    const shown = new DOMMatrix(getComputedStyle(document.querySelector('#game-cursor')).transform);
+    return Math.abs(shown.m41 - input.cursorX) < 0.5 && Math.abs(shown.m42 - input.cursorY) < 0.5;
+  });
+  assert.equal(
+    await locator.evaluate((node) => {
+      const { input } = globalThis.foregripFitTest;
+      return node.contains(document.elementFromPoint(input.cursorX, input.cursorY));
+    }),
+    true,
+    'the drawn cursor rests on the control before the shot',
+  );
+};
+
 /** The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page. */
 const coldCraftOpenMs = async (page) =>
   page.evaluate(async () => {
@@ -61,6 +93,10 @@ const coldCraftOpenMs = async (page) =>
   });
 
 export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, depicted = false }) => {
+  // Every wait here follows a world boot or a frame, whose duration scales with machine load, so a Playwright timer
+  // only turns a busy runner into a failure. A hung wait ends at the stage's outer `timeout`
+  // (`packages/deadvox/package.json`, "test:ui-browser"); the world-work step lines name the stuck step.
+  page.setDefaultTimeout(0);
   page.on('console', (message) => {
     if (message.type() === 'info') {
       process.stdout.write(`page: ${message.text()}
@@ -228,6 +264,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   const narrow = await page.locator('#crafting').boundingBox();
   assert.ok(narrow && narrow.width <= 900);
   if (output) {
+    await parkCursorOn(page, start);
     await page.locator('#crafting').screenshot({ path: join(output, 'crafting-narrow.png') });
   }
   await setDensity(page, { hudScale: 1.25, spacing: 1.25 });
@@ -239,6 +276,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
   });
   assert.equal(fit, true, 'commitment remains inside the enlarged-density review');
   if (output) {
+    await parkCursorOn(page, start);
     await page.locator('#crafting').screenshot({ path: join(output, 'crafting-enlarged.png') });
   }
   await worldWorkFlow({ page, resizeViewport, output, depicted, activate, fixtureDensity });
@@ -262,11 +300,14 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
           box.bottom <= pane.bottom + 0.5
         );
       };
+      const queue = document.querySelector('.inv-queue').getBoundingClientRect();
       return {
         commitment: inside(document.querySelector('.craft-commitment')),
         turns: inside(document.querySelector('.craft-target-turn')),
         rows: inside(document.querySelector('.craft-requirements')),
         alternatives: inside(document.querySelector('.craft-alternatives')),
+        queueBelow: queue.top >= pane.bottom - 0.5,
+        headAbove: document.querySelector('.inv-head').getBoundingClientRect().bottom <= pane.top + 0.5,
       };
     });
   const marker = () =>
@@ -352,6 +393,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const openWorldWork = async (type, operation) => {
     await aim(type);
     await page.evaluate(() => globalThis.foregripFitTest.input.lock());
+    process.stdout.write(`world work: ${operation} ${type} ring\n`);
     await chooseHeldAction(page, operation, 'world.interact');
     await page.waitForFunction(
       (op) =>
@@ -391,24 +433,20 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     }
     assert.equal(await runningWork(), false, 'turning in either direction starts no work');
   };
+  // Nothing of the inventory screen sits behind the panel: its head stays above, its queue footer below.
+  const fitted = { commitment: true, turns: true, rows: true, alternatives: true, queueBelow: true, headAbove: true };
   const checkFitAndShoot = async (name) => {
     await resizeViewport({ width: 900, height: 800 });
-    assert.deepEqual(
-      await fitsReview(),
-      { commitment: true, turns: true, rows: true, alternatives: true },
-      `${name} fits narrow`,
-    );
+    assert.deepEqual(await fitsReview(), fitted, `${name} fits narrow`);
     if (output) {
+      await parkCursorOn(page, page.locator('.craft-start'), { drawn: true });
       await panel.screenshot({ path: join(output, `${name}-narrow.png`) });
     }
     await setDensity(page, { hudScale: 1.25, spacing: 1.25 });
     await resizeViewport({ width: 1100, height: 900 });
-    assert.deepEqual(
-      await fitsReview(),
-      { commitment: true, turns: true, rows: true, alternatives: true },
-      `${name} fits enlarged density`,
-    );
+    assert.deepEqual(await fitsReview(), fitted, `${name} fits enlarged density`);
     if (output) {
+      await parkCursorOn(page, page.locator('.craft-start'), { drawn: true });
       await panel.screenshot({ path: join(output, `${name}-enlarged.png`) });
     }
     await setDensity(page, fixtureDensity);
@@ -418,6 +456,8 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await pressAction(page, 'ui.inventory-toggle');
   await openWorldWork('chair', 'repair');
   assert.ok((await panel.getAttribute('aria-label'))?.length > 0, 'the pinned review heads with the piece');
+  assert.equal(await panel.locator('.craft-recipe h3').count(), 0, 'the world review does not repeat the panel head');
+  assert.equal(await page.locator('#debug-center-x').isVisible(), false, 'the open screen hides the debug centre X');
   const repairOrder = await walkControls('start');
   assert.ok(repairOrder.includes('turn:-1') && repairOrder.includes('turn:1'), 'the turn controls are keyboard stops');
   assert.ok(repairOrder.indexOf('turn:-1') < repairOrder.indexOf('turn:1'), 'the turn controls follow reading order');
@@ -444,6 +484,11 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await openWorldWork('crate', 'take_apart');
   assert.ok((await page.locator('.craft-yield').count()) >= 1, 'take apart reviews its yield');
   assert.equal(await page.locator('[data-craft-group]').count(), 0, 'the yield rows are read-only');
+  assert.equal(
+    await page.locator('.craft-start').getAttribute('aria-disabled'),
+    'false',
+    `the fixture crate can be taken apart: ${await page.locator('.craft-reason').allTextContents()}`,
+  );
   const takeApartOrder = await walkControls('start');
   assert.ok(
     takeApartOrder.includes('turn:-1') && takeApartOrder.includes('turn:1'),
@@ -539,7 +584,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         );
       },
       undefined,
-      { timeout: 25_000, polling: 100 },
+      { polling: 100 },
     );
   } finally {
     await walk();
