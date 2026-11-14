@@ -5,10 +5,11 @@ import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandl
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
 import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
 import { createCommandRouter, type Session } from '@skelly/engine/session';
-import { dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
+import { Character, dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
+import { fixtureSources } from './economyFixtures.ts';
 import { COMPRESSION_CAPS_FIXTURE } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -113,6 +114,63 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
     cancelHeld: unused,
   },
   ...ports,
+});
+
+describe('command router furniture choices', () => {
+  it('offers Repair on a repairable piece, as the action ring does', () => {
+    const furniture = 'router_repair_furniture';
+    const repairRegistry = baseRegistryWith(
+      fixtureSources([
+        {
+          source: 'router-repair-fixture',
+          data: {
+            items: [
+              { id: 'router_repair_stock', name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 },
+            ],
+            furniture: [{ id: furniture, name: 'Fixture furniture', size: [1, 1, 1], color: '#777777' }],
+            recipes: [
+              {
+                id: 'router_repair',
+                kind: 'repair',
+                result: { item: 'router_repair_stock', count: 1 },
+                repair: { entity: furniture, skill: 'crafting', amount: 0.2, perSkill: 0 },
+                timeGameMinutes: 1,
+                skills: {},
+                qualities: {},
+                components: [[{ item: 'router_repair_stock', count: 1 }]],
+              },
+            ],
+          },
+        },
+      ]),
+    );
+    const character = new Character(repairRegistry);
+    character.initializeProgression({}, ['router_repair']);
+    const inventory = new Inventory(repairRegistry);
+    const piece = inventory.entities.add({ type: furniture, pos: [0, 0, 0], size: [1, 1, 1], facing: 'n' })!;
+    const session = {
+      inventory,
+      entities: inventory.entities,
+      character,
+      isObjective: () => false,
+      rest: { action: undefined },
+      sim: { time: 0, compression: { admitKey: () => true } },
+    } as unknown as Session;
+    const offered: string[][] = [];
+    const ports = routerPorts({
+      registry: repairRegistry,
+      session: () => session,
+      inventory: () => inventory,
+      sim: () => session.sim,
+    });
+    ports.presentation.openFurnitureChoices = (_entity, actions) => {
+      offered.push(actions.map(({ id }) => id));
+    };
+    const router = createCommandRouter(ports);
+    router.applyScreenCommand({ kind: 'furniture.interact', entityUid: piece.uid, alternatives: true });
+    expect(offered).toHaveLength(1);
+    expect(offered[0]).toContain('repair');
+  });
 });
 
 describe('command router', () => {
