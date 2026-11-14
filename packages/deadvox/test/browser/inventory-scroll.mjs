@@ -66,8 +66,7 @@ const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 const [, , engine = 'chromium', scenarioFlow] = process.argv;
 assert.ok(['chromium', 'firefox'].includes(engine));
 assert.ok(
-  scenarioFlow === 'ui' ||
-    ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
+  scenarioFlow === 'ui' || ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
   'choose ui or a Chromium handling/crafting flow',
 );
 const RACK_GRID = [5, 6];

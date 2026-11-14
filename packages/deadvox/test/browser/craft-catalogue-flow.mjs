@@ -75,10 +75,13 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   assert.equal(await page.locator('.craft-close-alternatives').count(), 1);
   const alternatives = await page.locator('.craft-alternatives').textContent();
   assert.equal(
-    await page.locator('.craft-components').last().evaluate((row) => {
-      const box = row.getBoundingClientRect();
-      return row.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
-    }),
+    await page
+      .locator('.craft-components')
+      .last()
+      .evaluate((row) => {
+        const box = row.getBoundingClientRect();
+        return row.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+      }),
     true,
     'the requirements row is unobscured by inventory chrome',
   );
