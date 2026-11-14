@@ -1,5 +1,7 @@
 import { LampReachCache } from '@skelly/engine/internal/core/lampReach.ts';
+import { raycast, type SolidAt } from '@skelly/engine/internal/core/raycast.ts';
 import type { PoweredLight } from '@skelly/engine/internal/core/sitePower.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import { BlockEntities, CHUNK, Chunk, sitePalette, type Vec3, World } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { registry, scale } from './snapshotTestSupport.ts';
@@ -43,7 +45,92 @@ const buildWallAt = (world: World, x: number): void => {
   }
 };
 
+const referenceReaches = (light: PoweredLight, to: Vec3, solid: SolidAt): boolean => {
+  const delta = to.map((value, axis) => value - light.pos[axis]!) as Vec3;
+  const length = Math.hypot(...delta);
+  if (length === 0) {
+    return true;
+  }
+  const ends = new Set([light.pos.map(Math.floor).join(','), to.map(Math.floor).join(',')]);
+  return !raycast(light.pos, delta.map((value) => value / length) as Vec3, length, (x, y, z) => {
+    const inBody =
+      light.body && [x, y, z].every((value, axis) => value >= light.body!.min[axis]! && value < light.body!.max[axis]!);
+    return !(ends.has(`${x},${y},${z}`) || inBody) && solid(x, y, z);
+  });
+};
+
 describe('lamp reach', () => {
+  it.each([
+    { cellBlocks: 1, pos: [-1.5, 2.5, -0.5] as Vec3 },
+    { cellBlocks: 2, pos: [-2.25, 2, -0.25] as Vec3 },
+  ])(
+    'matches reference rays through walls and an opening door, querying each blocker once ($cellBlocks)',
+    ({ cellBlocks, pos }) => {
+      const fixtureRegistry = {
+        ...registry,
+        furniture: new Map(registry.furniture).set('reach_fixture_door', {
+          id: 'reach_fixture_door',
+          name: 'Fixture door',
+          color: '#777777',
+          size: [1, 3, 2],
+          material: 'reach_fixture_material',
+          breach: { minimumStrength: 1, durability: 10 },
+          door: { methods: {}, handlingSimSeconds: simSeconds(1) },
+        }),
+      };
+      const world = new World();
+      const entities = new BlockEntities(fixtureRegistry);
+      const door = entities.add({ type: 'reach_fixture_door', pos: [1, 1, -1], size: [1, 3, 2], facing: 'n' })!;
+      const light = lampAt(pos, { base: [-3, 1, -1], height: 3 });
+      const solid: SolidAt = (x, y, z) =>
+        (x === 1 && y >= -2 && y < 6 && z >= -4 && z < 4 && !(y >= 1 && y < 4 && z >= -1 && z < 1)) ||
+        (z === 2 && x >= -4 && x < 1) ||
+        (x === -3 && y >= 1 && y < 4 && z === -1) ||
+        entities.isSolid(x, y, z);
+      const queries = new Map<string, number>();
+      const cache = new LampReachCache(
+        { world, entities },
+        (x, y, z) => {
+          const key = `${x},${y},${z}`;
+          queries.set(key, (queries.get(key) ?? 0) + 1);
+          return solid(x, y, z);
+        },
+        scale.blockSize,
+        { ...TUNING, cellBlocks },
+      );
+      const check = () => {
+        queries.clear();
+        const reach = cache.reachOf(light)!;
+        const expected = Uint8Array.from({ length: reach.cells.length }, (_, index) => {
+          const cell = [
+            index % reach.size,
+            Math.floor(index / reach.size ** 2),
+            Math.floor(index / reach.size) % reach.size,
+          ];
+          const to = cell.map((value, axis) => (reach.origin[axis]! + value + 0.5) * cellBlocks) as Vec3;
+          return Math.hypot(...to.map((value, axis) => value - pos[axis]!)) <= TUNING.rangeMetres / scale.blockSize
+            ? Number(referenceReaches(light, to, solid))
+            : 1;
+        });
+        expect(reach.cells).toEqual(expected);
+        expect(expected).toContain(0);
+        expect(expected).toContain(1);
+        expect(queries.size).toBeGreaterThan(0);
+        expect([...queries.values()].every((count) => count === 1)).toBe(true);
+        return reach;
+      };
+      try {
+        const closed = check();
+        expect(entities.setOpen(door, true)).toBeUndefined();
+        const open = check();
+        expect(open.cells.some((value, index) => value > closed.cells[index]!)).toBe(true);
+        expect(entities.setOpen(door, false)).toBeUndefined();
+        expect(check().cells).toEqual(closed.cells);
+      } finally {
+        cache.dispose();
+      }
+    },
+  );
   const lamp = lampAt([0.5, 4.5, 0.5]);
   const beside: Vec3 = [3.5, 4.5, 0.5];
   const behind: Vec3 = [6.5, 4.5, 0.5];
@@ -92,6 +179,20 @@ describe('lamp reach', () => {
         expect(reach.at([strip.pos[0] + dx, 2.5, strip.pos[2] + dz])).toBe(1);
       }
     }
+  });
+
+  it('rebuilds a moving source only when its source cell changes, including negative cells', () => {
+    const { cache } = room();
+    const reachSource = {};
+    const moving = { ...lampAt([-0.75, 4.5, 0.5]), reachSource };
+    const before = cache.reachOf(moving)!;
+    const within = { ...moving, pos: [-0.25, 4.5, 0.5] as Vec3 };
+    expect(cache.isCurrent(within)).toBe(true);
+    expect(cache.reachOf(within)).toBe(before);
+    const across = { ...moving, pos: [0.25, 4.5, 0.5] as Vec3 };
+    expect(cache.isCurrent(across)).toBe(false);
+    expect(cache.reachOf(across)).not.toBe(before);
+    cache.dispose();
   });
 
   it('updates a lit lamp the moment a wall goes up beside it', () => {
