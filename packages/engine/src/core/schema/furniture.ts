@@ -277,6 +277,7 @@ export const FurnitureSchema = pipe(
             color: Color,
             intensity: Positive,
             radius: Positive,
+            emissive: optional(NonNegative),
             /** Blocks from the centre of the piece's origin cell, in its own axes; absent, it shines from that centre. */
             offset: optional(tuple([FiniteBlocks, FiniteBlocks, FiniteBlocks])),
           }),
@@ -355,6 +356,10 @@ export const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  check(
+    ({ power, corpse, vehicle }) => power?.light?.emissive === undefined || !(corpse || vehicle),
+    'body glow belongs on furniture meshes, not separately rendered corpses or vehicles',
+  ),
   check(
     ({ corpse, shape, appearance, door, vehicle, solid }) =>
       !corpse || (!(shape || appearance || door || vehicle) && solid === false),

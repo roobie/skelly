@@ -384,6 +384,11 @@ export class BlockEntities {
     return this.nextUid;
   }
 
+  /** Origin claims survive movement; occupancy cannot identify an authored fixture behind a barricade. */
+  atOrigin(origin: Readonly<Vec3>): BlockEntity | undefined {
+    return this.byOrigin.get(key(...origin));
+  }
+
   byUid(uid: number): BlockEntity | undefined {
     return this.uids.get(uid);
   }
