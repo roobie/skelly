@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change the test house, its garage, its fixture stock or its debug scenario mod
+  - you change the prepared action-menu review start or its scenario dependencies
   - you change parking bays or where the test house places vehicles
   - you change the haven's rooms, landscape, lake or south-facing view
   - you add a feature demonstration near the test-house spawn
@@ -125,12 +126,13 @@ downrange of the authored rack so the sample stays out of domestic space. See
 `src/debug/ragdollSweep.ts`, `stageRagdollSweep`; `packages/engine/src/game/ragdollConfig.ts`, `sweepFromUrl`;
 and `src/config/ragdoll.jsonnet`, `sweep`.
 
-The prepared action-menu start is evaluation staging, chosen only by naming its start mod.
-Its full skills, wounds and gathered tools let a reviewer reach every menu path at once,
-which would be a privileged head start in ordinary play. It is a separate pack, not a
-second row in the debug mod, because a start mod supplies exactly one start row; see
-`docs/url-mods.md`, "Start mod". It is not the site's default start, so admitting the
-pack changes no other start. See `mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet`.
+The action-menu start requires explicit selection because its prepared player would
+be a privileged head start in ordinary play. Keep it separate from other starts so
+its mod selects one evaluation state without changing the site's default; see
+`docs/url-mods.md`, "Start mod". Use the ordinary, passive showroom for this review:
+hostile actors would interrupt held-item work and prevent comparisons beside the
+furniture staging. See `mods/skelly.deadvox.scenario.test-house.action-menu/starts.jsonnet`, `starts`,
+and `mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.jsonnet`, `manifest`.
 
 The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
 

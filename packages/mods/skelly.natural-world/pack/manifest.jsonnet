@@ -6,5 +6,5 @@ manifest(
   content=['block-materials', 'natural-blocks', 'vegetation', 'furniture-materials', 'natural-sounds', 'sounds-furniture'],
   assets=assets,
   json=['assets/manifest.json'],
-  dependencies=['skelly.melee-classes', 'skelly.sound-families'],
+  dependencies=['skelly.materials', 'skelly.melee-classes', 'skelly.sound-families'],
 )

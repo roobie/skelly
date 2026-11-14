@@ -5,6 +5,7 @@
 // is skipped whole, so one broken mod can't leave half-applied content behind.
 
 import { type BaseIssue, safeParse } from 'valibot';
+import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { actionMenuIssues } from './actionMenuContent.ts';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
@@ -37,6 +38,7 @@ import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
+import { BLOCK_SIZE } from './scale.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
   type ActorBody,
@@ -83,6 +85,7 @@ import {
 } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 import { vehicleContentIssues } from './vehicleBlueprint.ts';
+import { contentVehicleBlocks } from './vehicleShapeSolid.ts';
 
 export type {
   ActorDef,
@@ -933,13 +936,14 @@ const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry,
       continue;
     }
     const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
-    for (const [coverIndex, part] of (entry.covers ?? []).entries()) {
-      if (!registry.models.get(model)?.parts?.[part]) {
+    const drawn = registry.models.get(model);
+    for (const [coverIndex, name] of (entry.covers ?? []).entries()) {
+      if (!(drawn?.parts?.[name] || drawn?.pieces?.includes(name))) {
         report(
           'items',
           item.id,
           `${path}.covers[${coverIndex}]`,
-          `figure "${figure.id}": model "${model}" has no part "${part}"`,
+          `figure "${figure.id}": model "${model}" has no part or region "${name}"`,
         );
       }
     }
@@ -984,6 +988,16 @@ const checkModelPartItems = (registry: Registry, report: Report): void => {
       const issue = part.item === undefined ? undefined : partItemIssue(registry, part.item, part.massKg);
       if (issue !== undefined) {
         report('models', model.id, `.parts.${id}.item`, issue);
+      }
+    }
+  }
+};
+
+const checkModelPieces = (registry: Registry, report: Report): void => {
+  for (const model of registry.models.values()) {
+    for (const [index, piece] of (model.pieces ?? []).entries()) {
+      if (model.parts?.[piece] !== undefined) {
+        report('models', model.id, `.pieces[${index}]`, `region "${piece}" is also a part`);
       }
     }
   }
@@ -1317,6 +1331,7 @@ const checkFurniture = (registry: Registry, report: Report) => {
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
+    checkFurnitureVehicle(registry, furniture, report);
     const takeApart = furniture.takeApart?.yield;
     if (takeApart) {
       checkRecoveryYields(
@@ -1332,6 +1347,37 @@ const checkFurniture = (registry: Registry, report: Report) => {
       }
     });
     checkCorpse(registry, furniture, report);
+  }
+};
+
+/** A furniture vehicle look over a content blueprint: the blueprint must exist, `removed` must name its fittings, and its parts must block within the piece. */
+const checkFurnitureVehicle = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const look = furniture.vehicle;
+  if (!look || BLUEPRINTS[look.blueprint] !== undefined) {
+    return;
+  }
+  const blueprint = registry.vehicleBlueprints.get(look.blueprint);
+  if (!blueprint) {
+    report('furniture', furniture.id, '.vehicle.blueprint', `no vehicle blueprint "${look.blueprint}"`);
+    return;
+  }
+  if (look.removed.some((id) => !blueprint.fittings.some((fitting) => fitting.id === id))) {
+    report('furniture', furniture.id, '.vehicle.removed', 'removed names a fitting the blueprint lacks');
+    return;
+  }
+  if (
+    blueprint.fittings.some(({ part }) => {
+      const item = registry.items.get(part);
+      const parts = item?.model === undefined ? undefined : registry.models.get(item.model)?.parts;
+      return !(item?.vehicle && parts) || Object.values(parts).some(({ collision }) => collision === undefined);
+    })
+  ) {
+    report('furniture', furniture.id, '.vehicle.blueprint', 'vehicle blueprint has an unsound part');
+    return;
+  }
+  const blocks = contentVehicleBlocks(registry, look, furniture.size, BLOCK_SIZE);
+  if (blocks.length === 0 || blocks.some((block) => block.some((at, axis) => at < 0 || at >= furniture.size[axis]!))) {
+    report('furniture', furniture.id, '.vehicle', 'vehicle piece must block somewhere, and only within its size');
   }
 };
 
@@ -2462,6 +2508,9 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
     if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
       report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
     }
+    if (material.breakable && material.rubble.length === 0) {
+      report('blockMaterials', material.id, '.rubble', 'breakable materials need a yield');
+    }
     material.rubble.forEach(({ item }, i) => {
       if (!registry.items.has(item)) {
         report('blockMaterials', material.id, `.rubble[${i}].item`, `no item "${item}"`);
@@ -2503,6 +2552,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkItems(registry, report);
   checkModelPartItems(registry, report);
+  checkModelPieces(registry, report);
   checkFigures(registry, report);
   checkHeldHands(registry, report);
   checkLoot(registry, report);

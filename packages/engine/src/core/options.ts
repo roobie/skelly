@@ -432,27 +432,6 @@ const canisterOption = (canister: Item, inv: Inventory): UseOption => {
     : refuseUse(inv, coreMessage(inv.registry, 'noToolToFit'));
 };
 
-/** A charged battery held in either hand that `light` would take: the one the refusal may say is there. */
-const usableSpareHeld = (inv: Inventory, light: Item): boolean =>
-  SIDES.some((side) => {
-    const battery = inv.hands[side];
-    return (
-      battery !== undefined &&
-      defOf(inv.registry, battery.type).battery !== undefined &&
-      (chargeOf(inv.registry, battery) ?? 0) > 0 &&
-      batteryHandRefusal(inv, light, battery) === undefined
-    );
-  });
-
-/** Why an empty light refuses. It names a usable spare only when one is held, so the refusal tells the truth. */
-const emptyLightKey = (inv: Inventory, light: Item): CoreMessageKey => {
-  const spare = usableSpareHeld(inv, light);
-  if (light.slots?.battery) {
-    return spare ? 'batteryDeadHeldSpare' : 'batteryDeadNoSpare';
-  }
-  return spare ? 'noBatteryHeldSpare' : 'noBatteryNoSpare';
-};
-
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   if (!item.on && chargeOf(inv.registry, item) === 0) {
@@ -466,7 +445,7 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
     }
-    return refuseUse(inv, coreMessage(inv.registry, emptyLightKey(inv, item)));
+    return refuseUse(inv, coreMessage(inv.registry, 'noBattery'));
   }
   return {
     kind: 'use',

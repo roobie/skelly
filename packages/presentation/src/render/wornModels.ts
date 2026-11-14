@@ -1,7 +1,7 @@
 import type { FigureDef, ItemDef, Registry, WearSlot } from '@skelly/engine/content';
 import { defOf, type Item } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
-import { Group, type Object3D } from 'three';
+import { Group, Mesh, type Object3D } from 'three';
 import { type ItemLook, itemLook, itemStateLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
@@ -18,6 +18,30 @@ interface Attachment {
   group: Group;
   covered: Object3D[];
 }
+
+/**
+ * Files each node of a figure part's model under `<part>/<name>`, by the model part it is and, for a mesh,
+ * by the region (piece) it draws, so a worn model can hide either.
+ */
+export const registerBaseParts = (baseParts: Map<string, Object3D[]>, part: string, scene: Object3D): void => {
+  const file = (name: unknown, node: Object3D): void => {
+    if (typeof name === 'string') {
+      const key = `${part}/${name}`;
+      const nodes = baseParts.get(key);
+      if (nodes) {
+        nodes.push(node);
+      } else {
+        baseParts.set(key, [node]);
+      }
+    }
+  };
+  scene.traverse((node) => {
+    file(node.userData.part, node);
+    if (node instanceof Mesh) {
+      file(node.geometry.userData.piece, node);
+    }
+  });
+};
 
 const wornEntries = (registry: Registry, item: Item, fit?: string): WornEntry[] =>
   [item, ...Object.values(item.slots ?? {}).filter((child): child is Item => child !== undefined)].flatMap((owner) => {

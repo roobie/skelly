@@ -293,6 +293,14 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.start/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.gauntlet.wreck-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.holdout.debug/holdout-debug.json"
     },
