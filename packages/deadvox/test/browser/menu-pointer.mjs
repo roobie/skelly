@@ -39,10 +39,13 @@ export function dispatchMenuPointerMove({
   }
 }
 
-export function dispatchMenuPointerClick({ canvasSelector = 'canvas' } = {}) {
-  const canvas = document.querySelector(canvasSelector);
+// A click driver defaults to the lock element, as a real locked press targets it; a page can name another surface.
+export function dispatchMenuPointerClick({ canvasSelector } = {}) {
+  const canvas = canvasSelector
+    ? document.querySelector(canvasSelector)
+    : (document.pointerLockElement ?? document.querySelector('#view'));
   if (!canvas) {
-    throw new Error(`No menu-pointer canvas matches ${canvasSelector}`);
+    throw new Error(`No menu-pointer canvas matches ${canvasSelector ?? 'the pointer lock element'}`);
   }
   canvas.dispatchEvent(
     new PointerEvent('pointerdown', {
