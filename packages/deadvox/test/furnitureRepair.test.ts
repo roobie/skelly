@@ -1,5 +1,8 @@
+import { claimed } from '@skelly/engine/internal/core/capabilities.ts';
+import { conditionWord, damageAtCondition, repairCeiling } from '@skelly/engine/internal/core/items.ts';
 import { Inventory } from '@skelly/engine/inventory';
 import { expect, it } from 'vitest';
+import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL, fixtureMaterials } from './economyFixtures.ts';
 
 const BREACH = { minimumStrength: 10, durability: 100 };
@@ -97,6 +100,26 @@ it.each([0, -1, Number.POSITIVE_INFINITY, Number.MIN_VALUE])(
     expect(entities.standing).toBe(standing);
   },
 );
+
+it('converts a repair ceiling to damage that reads in the ceiling band for any durability', () => {
+  const base = baseRegistry();
+  const bands = claimed(base.inventory, 'player')!.conditionBands;
+  const ceilings = [repairCeiling(base, undefined), ...bands.slice(1).map(({ from }) => from)];
+  const durabilities = Array.from({ length: 200 }, (_, index) => index + 1);
+  // Some pairs round under the band floor by plain conversion, so the nudge must act for the test to mean anything.
+  const plainReadsLow = ceilings.flatMap((ceiling) =>
+    durabilities.filter((durability) => 1 - (durability * (1 - ceiling)) / durability < ceiling),
+  );
+  expect(plainReadsLow.length, 'some ceiling and durability exercise the nudge').toBeGreaterThan(0);
+  for (const ceiling of ceilings) {
+    for (const durability of durabilities) {
+      const damage = damageAtCondition(ceiling, durability);
+      const condition = 1 - damage / durability;
+      expect(condition, `${ceiling} at ${durability}`).toBeGreaterThanOrEqual(ceiling);
+      expect(conditionWord(base, condition), `${ceiling} at ${durability}`).toBe(conditionWord(base, ceiling));
+    }
+  }
+});
 
 it.each(['removed', 'carried', 'ruined', 'broken', 'intact'])(
   'refuses a %s target without mutation or a change signal',

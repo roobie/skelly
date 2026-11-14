@@ -3931,10 +3931,10 @@ Take apart's yield lands in a ground pile where the disassembling actor stood, t
 
 Every repair raises condition at most to its ceiling: furniture, terrain cells, items through a repair recipe, and
 sharpening alike, through one rule. The ceiling is a condition band named in content: the inventory tuning's default,
-which a repair recipe may replace with a higher band up to the top one. A repair stops at the bottom of its ceiling
-band, except that the top band means full condition. A piece at or above its ceiling is offered no Repair on its
-ring, and an item at or above it is no repair target. The ceiling is BR's ruling. No mechanism raises a ceiling
-yet; a recipe naming a higher band is how one would. See
+which a repair recipe may replace with any band, lower or higher. A repair stops at the bottom of its ceiling band,
+except that the top band means full condition. A piece at or above its ceiling is offered no Repair on its ring, and
+an item at or above it is no repair target. The ceiling is BR's ruling. No game mechanism changes a ceiling at play
+time; a recipe's own band is the only way to depart from the default. See
 `packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
 `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
 `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.
