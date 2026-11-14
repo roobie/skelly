@@ -207,6 +207,40 @@ const recipePractice = (inventory: Inventory, work: NonNullable<Item['work']>) =
   });
 };
 
+/** A finished piece take-apart: a blocker at the last moment keeps the job on its piece, paused, to finish once it clears. */
+const finishPieceTakeApart = (
+  inventory: Inventory,
+  item: Item,
+  pieces: PieceRemoval | undefined,
+  release: { feet: () => Vec3; calendar: () => number },
+): void => {
+  const blocked = pieceTakeApartRefusal(inventory, hostOf(inventory, item), pieces, item);
+  if (blocked || !pieces) {
+    throw new Error(blocked);
+  }
+  inventory.releaseWork(item, true, { feet: release.feet(), calendar: release.calendar(), retirePiece: pieces.remove });
+};
+
+/** A finished craft, disassembly or repair: a gone repair target only drops the job; practice pays the maker. */
+const finishCraftWork = (
+  inventory: Inventory,
+  item: Item,
+  work: NonNullable<Item['work']>,
+  context: { character: Character; snapshot: ReachSnapshot; feet: () => Vec3; calendar: () => number },
+): string | undefined => {
+  const refusal = repairTargetRefusal(inventory, item, context.snapshot);
+  if (refusal) {
+    inventory.releaseWork(item, false, { feet: context.feet() });
+    return refusal;
+  }
+  const practice = recipePractice(inventory, work);
+  inventory.releaseWork(item, true, { feet: context.feet(), calendar: context.calendar() });
+  for (const entry of practice) {
+    context.character.awardPractice(entry.skill, entry.amount, entry.tier);
+  }
+  return undefined;
+};
+
 export const craftActionHooks = (
   inventory: Inventory,
   character: Character,
@@ -283,12 +317,7 @@ export const craftActionHooks = (
       return undefined;
     }
     if (work.kind === 'pieceDisassembly') {
-      // A blocker at the last moment keeps the finished job on its piece, paused, to finish once it clears.
-      const blocked = pieceTakeApartRefusal(inventory, hostOf(inventory, item), pieces, item);
-      if (blocked || !pieces) {
-        throw new Error(blocked);
-      }
-      inventory.releaseWork(item, true, { feet: feet(), calendar: calendar(), retirePiece: pieces.remove });
+      finishPieceTakeApart(inventory, item, pieces, { feet, calendar });
       return undefined;
     }
     if (work.kind === 'cellDisassembly') {
@@ -299,17 +328,12 @@ export const craftActionHooks = (
       });
       return undefined;
     }
-    const refusal = repairTargetRefusal(inventory, item, reach());
-    if (refusal) {
-      inventory.releaseWork(item, false, { feet: feet() });
-      return refusal;
-    }
-    const practice = recipePractice(inventory, work);
-    inventory.releaseWork(item, true, { feet: feet(), calendar: calendar() });
-    for (const entry of practice) {
-      character.awardPractice(entry.skill, entry.amount, entry.tier);
-    }
-    return undefined;
+    return finishCraftWork(inventory, item, work, {
+      character,
+      snapshot: reach(),
+      feet,
+      calendar,
+    });
   },
   cancel: (uid) => {
     const item = inventory.itemByUid(uid);
