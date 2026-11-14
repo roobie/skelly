@@ -13,7 +13,16 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
   rubble: [],
   blowSound: 'fixture_blow',
   broken: { tint: '#555555', strength: 0.5 },
-  damaged: [{ from: 0.5, tint: '#777777', strength: 0.25 }],
+  cracks: {
+    color: '#222222',
+    opacity: 1,
+    widthBlocks: 0.05,
+    strands: 2,
+    segments: 2,
+    jitterRadians: 0,
+    branchChance: 0,
+    steps: [{ from: 0.5, reach: 1 }],
+  },
 });
 
 /** Explicit fixture content, independent of base material tuning and identifiers. */

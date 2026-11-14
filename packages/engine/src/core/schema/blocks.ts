@@ -1,6 +1,7 @@
 import {
   array,
   check,
+  gtValue,
   integer,
   maxValue,
   minValue,
@@ -38,27 +39,46 @@ export const BLOCK_PATTERNS = [
   'camo',
 ] as const;
 
-export const BlockMaterialSchema = pipe(
+const PositiveFraction = pipe(Fraction, gtValue(0, 'must be above 0'));
+
+/**
+ * How damage shows on a cell's exposed faces: each step reveals its share of the crack tree once the damage fraction
+ * reaches `from`, so a crack only grows as damage rises. No steps, no crack.
+ */
+const CrackPatternSchema = pipe(
   strictObject({
-    id: Id,
-    minimumStrength: NonNegative,
-    durability: Positive,
-    resistance: record(Id, Fraction),
-    massKg: Positive,
-    span: Count,
-    fallsTo: Id,
-    /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
-    breakable: vBoolean(),
-    rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
-    blowSound: Id,
-    broken: strictObject({ tint: Color, strength: Fraction }),
-    damaged: array(strictObject({ from: Fraction, tint: Color, strength: Fraction })),
+    color: Color,
+    opacity: Fraction,
+    /** Stroke width at the crack root, in block-face units. */
+    widthBlocks: PositiveFraction,
+    strands: pipe(Count, minValue(1)),
+    segments: pipe(Count, minValue(1)),
+    jitterRadians: NonNegative,
+    branchChance: Fraction,
+    steps: array(strictObject({ from: PositiveFraction, reach: PositiveFraction })),
   }),
   check(
-    ({ damaged }) => damaged.every((step, at) => at === 0 || step.from > damaged[at - 1]!.from),
-    'damage looks need strictly rising thresholds',
+    ({ steps }) =>
+      steps.every((step, at) => at === 0 || (step.from > steps[at - 1]!.from && step.reach > steps[at - 1]!.reach)),
+    'crack steps need strictly rising thresholds and reach',
   ),
 );
+
+export const BlockMaterialSchema = strictObject({
+  id: Id,
+  minimumStrength: NonNegative,
+  durability: Positive,
+  resistance: record(Id, Fraction),
+  massKg: Positive,
+  span: Count,
+  fallsTo: Id,
+  /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
+  breakable: vBoolean(),
+  rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+  blowSound: Id,
+  broken: strictObject({ tint: Color, strength: Fraction }),
+  cracks: CrackPatternSchema,
+});
 
 export const BlockSchema = strictObject({
   id: Id,
