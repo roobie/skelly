@@ -465,25 +465,12 @@ try {
     if (current.width === viewport.width && current.height === viewport.height) {
       return;
     }
-    // Layout can change before the native resize event refits facts. Observe it after the product's
-    // synchronous placement listener, registered when the fixture first renders a fact.
-    const resize = await page.evaluateHandle(({ width, height }) => {
-      const state = { observed: false };
-      window.addEventListener(
-        'resize',
-        () => {
-          state.observed = innerWidth === width && innerHeight === height;
-        },
-        { once: true },
-      );
-      return state;
-    }, viewport);
-    try {
-      await page.setViewportSize(viewport);
-      await page.waitForFunction((state) => state.observed, resize);
-    } finally {
-      await resize.dispose();
-    }
+    await page.setViewportSize(viewport);
+    // Waits on the size itself: a once-listener for the resize event could be spent by an earlier pending event.
+    // The browser runs resize listeners, the product's fact refit among them, before the next frame's callbacks,
+    // so one frame after the size lands the refit has happened.
+    await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
+    await page.evaluate(() => new Promise(requestAnimationFrame));
   };
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
