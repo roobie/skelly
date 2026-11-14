@@ -1,8 +1,10 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
 import { type CraftCharacter, dominantSide } from './character.ts';
+import { blockId, repairTargetName } from './content.ts';
+import type { Vec3 } from './coords.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
-import { entityRepairRefusal } from './craftWork.ts';
+import { cellRepairRefusal, cellTakeApartRefusal, entityRepairRefusal } from './craftWork.ts';
 import {
   type PieceDisassemblyPlan,
   planDisassembly,
@@ -15,6 +17,7 @@ import { damageWord, type Item } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
+import { type CellDisassemblyPlan, type RubbleClearWork, rubbleClearWork } from './rubble.ts';
 import type { Simulation } from './sim.ts';
 
 export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
@@ -45,6 +48,14 @@ export interface WorkOption {
 
 export interface EntityRepairProjection {
   targetUid: number;
+  targetName: string | undefined;
+  damage: string | undefined;
+  requirements: ReturnType<typeof requirementStatus> | undefined;
+  refusal: string | undefined;
+}
+
+export interface CellRepairProjection {
+  targetCell: Vec3;
   targetName: string | undefined;
   damage: string | undefined;
   requirements: ReturnType<typeof requirementStatus> | undefined;
@@ -122,7 +133,7 @@ export class CraftCommands {
     if (recipe.kind !== 'repair') {
       return this.sim.actions.beginCraft(result.plan);
     }
-    if (recipe.repair?.entity !== undefined) {
+    if (recipe.repair?.entity !== undefined || recipe.repair?.block !== undefined) {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
     const target = this.repairTarget(recipe.result.item);
@@ -188,6 +199,63 @@ export class CraftCommands {
     const amount = recipe.repair.amount + recipe.repair.perSkill * skill;
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'entity', uid: entityUid }, amount });
   }
+  previewCellRepair(
+    recipeId: string,
+    cell: Vec3,
+    prefer?: CraftPreference,
+    sources?: CraftSources,
+  ): CellRepairProjection {
+    const { registry } = this.inventory;
+    const recipe = registry.recipes.get(recipeId);
+    const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
+    const snapshot = this.reach();
+    const result = repair?.block ? planCraft(recipe!, snapshot, this.character, { prefer, sources }) : undefined;
+    const skill = repair ? recipeSkillLevel(registry, this.character, repair.skill) : 0;
+    const state = repair?.block ? this.inventory.cellRepair?.state(cell) : undefined;
+    const targetRefusal = repair?.block
+      ? cellRepairRefusal(this.inventory, {
+          cell,
+          epoch: state?.epoch ?? 0,
+          block: repair.block,
+          amount: repair.amount + repair.perSkill * skill,
+        })
+      : coreMessage(registry, 'noRepairTarget');
+    return {
+      targetCell: [...cell],
+      targetName: state ? registry.blocks[blockId(registry, state.block)]!.name : undefined,
+      damage: state ? damageWord(registry, 1 - state.damage / state.durability) : undefined,
+      requirements: repair?.block ? requirementStatus(recipe!, snapshot, this.character) : undefined,
+      refusal:
+        this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
+    };
+  }
+  repairCell(recipeId: string, cell: Vec3, prefer?: CraftPreference, sources?: CraftSources): string | undefined {
+    const reason = this.previewCellRepair(recipeId, cell, prefer, sources).refusal;
+    if (reason) {
+      return reason;
+    }
+    const recipe = this.inventory.registry.recipes.get(recipeId);
+    const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
+    if (!repair?.block) {
+      return coreMessage(this.inventory.registry, 'noRepairTarget');
+    }
+    const state = this.inventory.cellRepair?.state(cell);
+    if (!state) {
+      return coreMessage(this.inventory.registry, 'repairTargetGone');
+    }
+    const result = this.preview(recipeId, prefer, sources);
+    if (!result || 'missing' in result) {
+      return result && 'missing' in result
+        ? result.missing.reason
+        : coreMessage(this.inventory.registry, 'noRepairTarget');
+    }
+    const skill = recipeSkillLevel(this.inventory.registry, this.character, repair.skill);
+    const amount = repair.amount + repair.perSkill * skill;
+    return this.sim.actions.beginCraft(result.plan, {
+      target: { kind: 'cell', cell: [...cell], epoch: state.epoch },
+      amount,
+    });
+  }
   /** The yield taking a piece apart gives now, with why it can't start; the work's admission owns the piece checks. */
   previewTakeApartEntity(entityUid: number): {
     plan: PieceDisassemblyPlan | undefined;
@@ -210,6 +278,45 @@ export class CraftCommands {
     if (refusal || !plan) {
       return refusal;
     }
+    return this.sim.actions.beginCraft(plan);
+  }
+  /** What clearing a rubble cell would give now, with why it can't start; a job's start pins the cell's episode. */
+  previewTakeApartCell(cell: Vec3): {
+    work: (RubbleClearWork & { block: string }) | undefined;
+    refusal: string | undefined;
+  } {
+    const { registry, rubble } = this.inventory;
+    const block = rubble?.standing(cell);
+    const work = block ? rubbleClearWork(registry, block) : undefined;
+    if (!(block && work)) {
+      return { work: undefined, refusal: coreMessage(registry, 'rubbleGone') };
+    }
+    const { craft } = this.sim.actions;
+    return {
+      work: { block, ...work },
+      refusal:
+        this.startReason() ??
+        cellTakeApartRefusal(this.inventory, { cell }) ??
+        (craft ? undefined : 'Missing craft action owner'),
+    };
+  }
+  takeApartCell(cell: Vec3): string | undefined {
+    const { work, refusal } = this.previewTakeApartCell(cell);
+    if (refusal || !work) {
+      return refusal;
+    }
+    const pinned = this.inventory.rubble?.pin(cell);
+    if (!pinned || pinned.block !== work.block) {
+      return coreMessage(this.inventory.registry, 'rubbleGone');
+    }
+    const plan: CellDisassemblyPlan = {
+      kind: 'cellDisassembly',
+      cell: [...cell],
+      block: work.block,
+      epoch: pinned.epoch,
+      outputs: work.outputs.map((output) => ({ ...output })),
+      timeGameMinutes: work.timeGameMinutes,
+    };
     return this.sim.actions.beginCraft(plan);
   }
   private repairTarget(type: string): Item | undefined {
@@ -236,13 +343,14 @@ export class CraftCommands {
     switch (work.kind) {
       case 'craft': {
         const recipe = registry.recipes.get(work.recipe)!;
-        const entity = recipe.repair?.entity;
-        return (entity ? registry.furniture.get(entity)! : registry.items.get(recipe.result.item)!).name;
+        return repairTargetName(registry, recipe);
       }
       case 'disassembly':
         return registry.items.get(work.source)!.name;
       case 'pieceDisassembly':
         return registry.furniture.get(work.furniture)!.name;
+      case 'cellDisassembly':
+        return registry.blocks[registry.blockIds.get(work.block)!]!.name;
       default:
         throw new Error('Unknown work kind');
     }

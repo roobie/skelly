@@ -1190,6 +1190,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let noclip = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, {
     strikeTerrainCell: hooks.strikeTerrainCell,
+    repairCell: hooks.repairCell,
+    takeApartCell: hooks.takeApartCell,
     bindings: inputBindings,
   });
   const spawnMenu = new SpawnMenu(
@@ -1838,9 +1840,33 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     drawShell();
   }
+  function noticeRepairRefusal(): void {
+    if (crosshairRay?.active) {
+      const reason = build.repair(crosshairRay.eye, crosshairRay.dir);
+      if (reason) {
+        hooks.showNotice(reason);
+      }
+    }
+  }
+  function noticeTakeApartRefusal(): void {
+    if (crosshairRay?.active) {
+      const reason = build.takeApart(crosshairRay.eye, crosshairRay.dir);
+      if (reason) {
+        hooks.showNotice(reason);
+      }
+    }
+  }
   function handleBuildAction(action: string): boolean | undefined {
     if (action.startsWith('debug.build-slot.')) {
       return build.selectSlot(Number(action.slice('debug.build-slot.'.length)) - 1);
+    }
+    if (action === 'debug.repair-cell') {
+      noticeRepairRefusal();
+      return true;
+    }
+    if (action === 'debug.take-apart-cell') {
+      noticeTakeApartRefusal();
+      return true;
     }
     if (action !== 'debug.build-damage' && action !== 'debug.build-destroy') {
       return undefined;

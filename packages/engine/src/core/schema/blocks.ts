@@ -1,6 +1,7 @@
 import {
   array,
   check,
+  gtValue,
   integer,
   maxValue,
   minValue,
@@ -15,7 +16,7 @@ import {
 } from 'valibot';
 import { footstepSoundId } from '../footsteps.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
-import { Color, Count, Fraction, Id, Name, NonNegative, Positive } from './primitives.ts';
+import { Color, Count, Fraction, Id, Name, NonNegative, Positive, PositiveGameMinutes } from './primitives.ts';
 
 // ---- blocks ----
 
@@ -38,27 +39,60 @@ export const BLOCK_PATTERNS = [
   'camo',
 ] as const;
 
-export const BlockMaterialSchema = pipe(
+const PositiveFraction = pipe(Fraction, gtValue(0, 'must be above 0'));
+
+/**
+ * How damage shows on a cell's exposed faces: each step reveals its share of the crack tree once the damage fraction
+ * reaches `from`, so a crack only grows as damage rises. No steps, no crack.
+ */
+const CrackPatternSchema = pipe(
   strictObject({
-    id: Id,
-    minimumStrength: NonNegative,
-    durability: Positive,
-    resistance: record(Id, Fraction),
-    massKg: Positive,
-    span: Count,
-    fallsTo: Id,
-    /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
-    breakable: vBoolean(),
-    rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
-    blowSound: Id,
-    broken: strictObject({ tint: Color, strength: Fraction }),
-    damaged: array(strictObject({ from: Fraction, tint: Color, strength: Fraction })),
+    color: Color,
+    opacity: Fraction,
+    /** Stroke width at the crack root, in block-face units. */
+    widthBlocks: PositiveFraction,
+    strands: pipe(Count, minValue(1)),
+    /** Most a strand strays from an even split around the root, as a share of that split; at most half keeps order. */
+    strandSpacingJitter: pipe(NonNegative, maxValue(0.5)),
+    segments: pipe(Count, minValue(1)),
+    jitterRadians: NonNegative,
+    branchChance: Fraction,
+    /** Most the root strays from the face centre along each face axis; at most half a face keeps it on the face. */
+    rootSpreadBlocks: pipe(NonNegative, maxValue(0.5)),
+    strandLengthBlocks: PositiveFraction,
+    branchSwingRadians: pipe(NonNegative, maxValue(Math.PI)),
+    /** A branch's step length as a share of its parent's, so branches stay finer than what they split from. */
+    branchStepFactor: PositiveFraction,
+    /** A branch's segment count as a share of what its parent has left, rounded up so a branch has at least one. */
+    branchSegmentShare: PositiveFraction,
+    /** Stroke width at the crack tip as a share of `widthBlocks`, so a crack tapers as it runs. */
+    tipWidthFactor: Fraction,
+    steps: array(strictObject({ from: PositiveFraction, reach: PositiveFraction })),
   }),
   check(
-    ({ damaged }) => damaged.every((step, at) => at === 0 || step.from > damaged[at - 1]!.from),
-    'damage looks need strictly rising thresholds',
+    ({ steps }) =>
+      steps.every((step, at) => at === 0 || (step.from > steps[at - 1]!.from && step.reach > steps[at - 1]!.reach)),
+    'crack steps need strictly rising thresholds and reach',
   ),
 );
+
+export const BlockMaterialSchema = strictObject({
+  id: Id,
+  minimumStrength: NonNegative,
+  durability: Positive,
+  resistance: record(Id, Fraction),
+  massKg: Positive,
+  span: Count,
+  fallsTo: Id,
+  /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
+  breakable: vBoolean(),
+  rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+  /** Game minutes to take apart one rubble cell of this material's fallen form. */
+  rubbleClearTimeGameMinutes: PositiveGameMinutes,
+  blowSound: Id,
+  broken: strictObject({ tint: Color, strength: Fraction }),
+  cracks: CrackPatternSchema,
+});
 
 export const BlockSchema = strictObject({
   id: Id,

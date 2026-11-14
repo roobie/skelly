@@ -163,6 +163,16 @@ export const pileInReach = (player: ReachGeometry, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= reachTuning(player.inventory.registry).reachMetres &&
   lineInReach(player, [position, position.map((value) => value + 1) as Vec3]);
 
+/** Chest to the nearest point of a terrain cell's box, along a clear line, as furniture is reached. */
+const cellInReach = (player: ReachGeometry, cell: Vec3): boolean => {
+  const chest = chestOf(player);
+  const gaps = chest.map((value, axis) => value - Math.min(Math.max(value, cell[axis]!), cell[axis]! + 1));
+  return (
+    Math.hypot(...gaps) * player.blockSize <= reachTuning(player.inventory.registry).reachMetres &&
+    lineInReach(player, [cell, cell.map((value) => value + 1) as Vec3])
+  );
+};
+
 /**
  * Chest to the nearest point of a vehicle's occupied part boxes (world metres), as furniture is measured: a car is
  * reached at the part beside the player, never at its origin, so whatever F can pick on it is also in reach.
@@ -212,6 +222,7 @@ export const bindReach = (
 ): (() => ReachSnapshot) => {
   player.inventory.canReach = (position) => pileInReach(player, position);
   player.inventory.canReachEntity = (entity) => furnitureInReach(player, entity);
+  player.inventory.canReachCell = (cell) => cellInReach(player, cell);
   if (vehicleParts) {
     player.inventory.canReachVehicle = (vehicleId) =>
       vehicleInReach(player, vehicleId, vehicleParts.boxesOf(vehicleId));

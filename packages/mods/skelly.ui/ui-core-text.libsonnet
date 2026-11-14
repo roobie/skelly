@@ -102,6 +102,8 @@
     alreadyThere: "It's already there",
     repairTargetGone: "I can't repair it now",
     repairTargetOutOfReach: "I can't reach it from here",
+    rubbleGone: "It's already clear",
+    rubbleBlocked: "Something rests on it",
     yieldChanged: 'The item or its yield changed',
     craftInputsChanged: 'Craft inputs changed',
     workNeedsBothHands: 'I need both hands for this',

@@ -62,6 +62,10 @@ export interface DebugHooks {
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;
   readonly strikeTerrainCell: Session['strikeTerrainCell'];
+  /** Starts mending the damaged terrain cell with the player's known recipe that names its block; returns why not. */
+  readonly repairCell: (cell: Vec3) => string | undefined;
+  /** Starts clearing the aimed rubble cell; returns why not, so the panel can say it. */
+  readonly takeApartCell: (cell: Vec3) => string | undefined;
   readonly compress: () => void;
   /** Fast-forwards through compression; real interruptions still end the skip. */
   readonly skipGameHours: (hours: number) => void;
