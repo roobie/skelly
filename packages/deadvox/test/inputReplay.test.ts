@@ -135,6 +135,7 @@ const applyCommand = (
     queue: runtime.handling,
     quickbar: runtime.quickbar,
     vehicleWork: runtime.session.beginVehicleWork,
+    craftTakeApartCell: () => undefined,
     search: (uid) => {
       const entity = runtime.entities.byUid(uid);
       return entity ? runtime.session.search(entity) : 'The container is no longer available';

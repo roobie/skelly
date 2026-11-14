@@ -108,6 +108,8 @@ export const CORE_MESSAGE_SLOTS = {
   alreadyThere: [],
   repairTargetGone: [],
   repairTargetOutOfReach: [],
+  rubbleGone: [],
+  rubbleBlocked: [],
   yieldChanged: [],
   craftInputsChanged: [],
   workNeedsBothHands: [],
