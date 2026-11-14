@@ -17,8 +17,8 @@ describe('request timeline', () => {
   it('names a document request the server received but never answered, and ignores subresources', async () => {
     const timeline = createRequestTimeline();
     const held: ServerResponse[] = [];
-    const server = createServer((_, response) => {
-      if (_.url === '/held') {
+    const server = createServer((incoming, response) => {
+      if (incoming.url === '/held') {
         held.push(response);
         return;
       }
@@ -41,9 +41,16 @@ describe('request timeline', () => {
     }
     await Promise.all([heldRequest, new Promise((resolve) => server.close(resolve))]);
 
-    expect(output).toContain('"event":"answered"');
-    expect(output).not.toContain('script.js');
+    const events = output
+      .split('\n')
+      .filter((line) => line.startsWith('REQUEST_TIMELINE '))
+      .map((line) => JSON.parse(line.slice('REQUEST_TIMELINE '.length)));
+    expect(events.map((event) => `${event.url} ${event.event}`)).toEqual([
+      '/answered received',
+      '/answered answered',
+      '/held received',
+    ]);
     const summary = JSON.parse(output.split('REQUEST_TIMELINE_SUMMARY ')[1] ?? '{}');
-    expect(summary.serverUnanswered).toEqual(['/held']);
+    expect(summary.serverPending).toEqual(['/held']);
   });
 });

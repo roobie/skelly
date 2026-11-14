@@ -1,13 +1,10 @@
-// One timeline of document requests as the stage's preview server and the browser each saw them, printed
-// only when a stage fails. A navigation that times out with no response (#1721) cannot otherwise say
-// whether the server never received the request or received it and never answered, and the browser's
-// own `net::ERR_ABORTED` is only the teardown of the pending request.
+// Failure-only request timeline; the reason is in `docs/browser-ci.md`, "Browser CI ownership and evidence".
 const MAX_ENTRIES = 256;
 
-export const createRequestTimeline = ({ now = () => Date.now() } = {}) => {
+export const createRequestTimeline = () => {
   const entries = [];
   const record = (side, id, event, detail) => {
-    entries.push({ at: now(), side, id, event, ...detail });
+    entries.push({ at: Date.now(), side, id, event, ...detail });
     if (entries.length > MAX_ENTRIES) {
       entries.shift();
     }
@@ -65,7 +62,7 @@ export const createRequestTimeline = ({ now = () => Date.now() } = {}) => {
       ...entries.map(
         (entry) => `REQUEST_TIMELINE ${JSON.stringify({ ...entry, at: new Date(entry.at).toISOString() })}`,
       ),
-      `REQUEST_TIMELINE_SUMMARY ${JSON.stringify({ serverReceived: serverRequests, browserSent: browserRequests, serverUnanswered: unanswered().map((entry) => entry.url) })}`,
+      `REQUEST_TIMELINE_SUMMARY ${JSON.stringify({ serverReceived: serverRequests, browserSent: browserRequests, serverPending: unanswered().map((entry) => entry.url) })}`,
     ].join('\n');
 
   return { watchServer, watchPage, format };

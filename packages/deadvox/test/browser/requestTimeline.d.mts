@@ -1,9 +1,10 @@
 import type { Server } from 'node:http';
+import type { Page } from 'playwright';
 
 export interface RequestTimeline {
   watchServer: (httpServer: Server) => void;
-  watchPage: (page: { on: (event: string, listener: (request: never) => void) => unknown }) => void;
+  watchPage: (page: Page) => void;
   format: () => string;
 }
 
-export function createRequestTimeline(options?: { now?: () => number }): RequestTimeline;
+export function createRequestTimeline(): RequestTimeline;
