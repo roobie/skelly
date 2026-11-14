@@ -12,15 +12,19 @@ local catalogue = import 'catalogue.jsonnet';
     actors: [],
     showroom: base.showroom + {
       row: [-8.5, 21.5, -1],
-      // Placed beside the spawn so the world-work look reaches both; the chair's content wear places it damaged.
+      // The workbench (the repair stock) stands north of the spawn with the chair and crate either side of the
+      // southward walk, so the look reaches every piece from the spawn and one straight walk away from the
+      // workbench leaves the stock out of reach while the work targets stay in it; the chair's content wear
+      // places it damaged.
       slots: [{
         furniture: 'chair',
-        placement: { position: [-9.5, 21.5, 0], facing: 's' },
+        placement: { position: [-9, 21.5, 0], facing: 's' },
       }, {
         furniture: 'crate',
-        placement: { position: [-7, 21.5, 0], facing: 's' },
+        placement: { position: [-6.5, 21.5, 0], facing: 's' },
       }, {
         furniture: 'workbench',
+        placement: { position: [-8.5, 21.5, -2.5], facing: 's' },
         items: [
           { item: 'craft_look_fibre', count: 1, placement: 'surface' },
           { item: 'craft_look_wood', count: 4, placement: 'surface' },

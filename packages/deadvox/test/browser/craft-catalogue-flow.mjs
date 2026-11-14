@@ -446,9 +446,10 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await checkFitAndShoot('take-apart');
   await pressAction(page, 'ui.inventory-toggle');
 
-  // A live refusal: the same chair, opened once the workbench stock is out of reach. Furniture reach is short, so
-  // the walk follows the component of away-from-workbench that is perpendicular to the line on the chair: the
-  // stock leaves reach while the chair keeps its own, and the game's reach measure gates the walk.
+  // A live refusal: the same chair, opened once the workbench stock is out of reach. The fixture stands the
+  // chair and crate either side of the spawn's line directly away from the workbench face, so one straight walk
+  // takes the stock beyond furniture reach while the work targets stay inside it, and the game's reach measure
+  // gates the walk.
   const stockRay = () =>
     page.evaluate(async () => {
       const witness = globalThis.foregripFitTest;
@@ -492,12 +493,8 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       const length = Math.hypot(x, z);
       return [x / length, z / length];
     };
-    const onChair = unit([face(nearest('chair'))[0] - feet[0], face(nearest('chair'))[1] - feet[2]]);
-    const awayFromStock = unit([feet[0] - face(nearest('workbench'))[0], feet[2] - face(nearest('workbench'))[1]]);
-    const along = awayFromStock[0] * onChair[0] + awayFromStock[1] * onChair[1];
-    // A slight chairward bias holds the chair inside reach for the whole walk despite the fixed heading.
-    const [dx, dz] = [awayFromStock[0] - (along + 0.2) * onChair[0], awayFromStock[1] - (along + 0.2) * onChair[1]];
-    const [ux, uz] = unit([dx, dz]);
+    const stock = face(nearest('workbench'));
+    const [ux, uz] = unit([feet[0] - stock[0], feet[2] - stock[1]]);
     witness.input.controls.yaw = Math.atan2(-ux, -uz);
     witness.input.controls.pitch = 0;
     witness.input.lock();

@@ -116,14 +116,14 @@
             "furniture": "chair",
             "placement": {
               "facing": "s",
-              "position": [-9.5, 21.5, 0]
+              "position": [-9, 21.5, 0]
             }
           },
           {
             "furniture": "crate",
             "placement": {
               "facing": "s",
-              "position": [-7, 21.5, 0]
+              "position": [-6.5, 21.5, 0]
             }
           },
           {
@@ -157,7 +157,11 @@
                 },
                 "placement": "surface"
               }
-            ]
+            ],
+            "placement": {
+              "facing": "s",
+              "position": [-8.5, 21.5, -2.5]
+            }
           }
         ],
         "spacing": 1
