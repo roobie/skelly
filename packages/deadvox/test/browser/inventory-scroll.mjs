@@ -436,7 +436,11 @@ ${marker}`,
         assert.ok(code.includes(marker), 'game instrumentation marker still exists');
         return code.replace(
           marker,
-          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [] };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready };
+  const originalWorldCheck = worldLoading.check.bind(worldLoading);
+  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; console.info('ready flip', globalThis.foregripFitTest.readyFlips, 'at', performance.now()); } };
+  const originalScreenClose = screen.close.bind(screen);
+  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; console.info('screen close', globalThis.foregripFitTest.closes, 'at', performance.now()); return originalScreenClose(); };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
         );
       },
     },
@@ -2084,17 +2088,21 @@ try {
   }
   if (scenarioFlow === 'crafting') {
     // The crafting-look start is a second world boot, so it is its own flow and CI step, not a tail on handling.
+    // CI keeps the render-free contract run; a `pixel` argv[5] boots the same flow with rendering for the look
+    // screenshots, since only the item-pictures renderer draws the turnable target.
+    assert.ok(process.argv[5] === undefined || process.argv[5] === 'pixel', 'choose no render override or pixel');
     const catalogueMetrics = await craftCatalogueFlow({
       page,
       resizeViewport,
       output: process.argv[4],
+      depicted: process.argv[5] === 'pixel',
       url: browserStageUrl(
         'inventory-scroll',
         gameUrl(`http://127.0.0.1:${address.port}`, {
           startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
           hash: { debug: true, radius: 32 },
         }),
-        'render-free',
+        process.argv[5] ?? 'render-free',
       ),
     });
     process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
