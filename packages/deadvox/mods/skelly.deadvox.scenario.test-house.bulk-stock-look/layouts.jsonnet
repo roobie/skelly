@@ -17,7 +17,7 @@ local layout = (import '../skelly.deadvox.scenario.test-house/layouts-test-house
           },
           {
             furniture: 'board_stack', placement: { position: [-12, 21.5, -2], facing: 'n' },
-            items: [{ item: 'wooden_plank', count: 4 }],
+            items: [{ item: 'wooden_plank', count: 18 }],
           },
         ],
       },

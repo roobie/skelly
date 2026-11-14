@@ -50,6 +50,32 @@ it('delivers the look fixture stock as removable material in containers without 
   }
 });
 
+it('every stock stack stays within one block of height and holds its full count of accepted material', () => {
+  const stocks = [...registry.furniture.values()].filter((def) => def.stockAppearance);
+  expect(stocks.length).toBeGreaterThan(0);
+  for (const def of stocks) {
+    const look = def.stockAppearance!;
+    for (const { shape } of look.steps) {
+      for (const box of shape) {
+        expect(box.position[1] + box.size[1]).toBeLessThanOrEqual(def.size[1]);
+      }
+    }
+    const inventory = new Inventory(registry);
+    const piece = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: [...def.size], facing: 'n' })!;
+    inventory.entities.markSearched(piece);
+    const type = def.container!.accepts![0]!;
+    for (let remaining = look.fullCount; remaining > 0; ) {
+      const count = Math.min(remaining, registry.items.get(type)!.stack ?? 1);
+      const item = inventory.create(type, count);
+      const placed = def.container!.pockets.some((_, pocket) =>
+        inventory.add(item, { kind: 'furniture', entity: piece, pocket }),
+      );
+      expect(placed).toBe(true);
+      remaining -= count;
+    }
+  }
+});
+
 it('opens the fixture nail box through ordinary unpacking into its authored nail payload', () => {
   const stock = layout
     .showroom!.slots.flatMap(({ items }) => items ?? [])

@@ -261,8 +261,15 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   built furniture back into its components. Boxed small goods are carried and
   opened like any boxed item. A stock container accepts only its material, not
   unrelated stash: see `packages/engine/src/core/schema/items.ts`, `ContainerSchema`.
-  Content-authored shapes shrink in steps by fill share so the player reads how
-  much is left at a glance; an empty stack must not look full. See
+  A stock pile is judged by its height in the world, so capacity follows the
+  material's thickness up to one block: the stack holds as many layers as fit in
+  one block above its bearers, and its container pockets are sized to hold that count.
+  Item thickness lives in the model asset, not in content, so the stack's content
+  states the thickness it was drawn with; see
+  `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
+  Content-authored shapes shrink in steps by fill share, one step per layer across
+  the full height, so the player reads how much is left at a glance; an empty
+  stack must not look full. See
   `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`, and
   `packages/presentation/src/render/stockShape.ts`, `stockShapeStep`.
   Sealed nail boxes show their count in the name, like shell boxes, so the package
