@@ -74,6 +74,9 @@ export const mainSourceOverlays = [
   'presentation:presentation/painCue.ts',
   'presentation:presentation/worldLoading.ts',
   'presentation:render/playView.ts',
+  // The view consumes the pool's slot members and passes them to reach; keep that slot contract together.
+  'presentation:render/lightPool.ts',
+  'presentation:render/fixtureReach.ts',
   // The engine adds the chunk meshes' scene object and play reads its drawn chunks, so the chunk owner stays with
   // them. The shadows keep the branch: they use only the caster selection both revisions share.
   'presentation:render/chunks.ts',

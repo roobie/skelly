@@ -46,6 +46,11 @@ export interface BodyGlow {
   readonly radiusMetres: number;
 }
 
+/** What a light in the world shines with: it follows the world's daylight scale, not the camera's adaptation. */
+function worldIntensity(base: number, { worldDaylightScale, daylightScale }: LightPoolContext): number {
+  return base * (worldDaylightScale ?? daylightScale);
+}
+
 /** The acid sacs' glows as drawn this frame. */
 export function acidGlows(anchors: Iterable<DrawnAnchors>): BodyGlow[] {
   const glows: BodyGlow[] = [];
@@ -92,8 +97,8 @@ export class LightPool {
   readonly flareSkipped: boolean[];
   /** Shader point-light slots: the item partitions plus the content's fixture limit. */
   readonly size: number;
-  /** The lamp in each fixture slot as of the last update, nearest the camera first; undefined where a slot is dark. */
-  readonly fixtureSlots: (PoweredLight | undefined)[];
+  /** Sources in shader-slot order, including carried, dropped and glow lights. */
+  readonly reachSlots: (PoweredLight | undefined)[];
   private readonly fixtureLimit: number;
   private readonly handLights: readonly PointLight[];
   private readonly positions: readonly Vector3[];
@@ -101,7 +106,7 @@ export class LightPool {
   constructor(scene: Scene, fixtureLimit: number, handScene?: Scene) {
     this.fixtureLimit = fixtureLimit;
     this.size = ITEM_POINT_LIGHTS + fixtureLimit;
-    this.fixtureSlots = Array.from({ length: fixtureLimit }, () => undefined);
+    this.reachSlots = Array.from({ length: this.size }, () => undefined);
     this.flareSkipped = Array.from({ length: this.size }, () => false);
     this.positions = Array.from({ length: this.size }, () => new Vector3());
     this.lights = Array.from({ length: this.size }, () => {
@@ -135,14 +140,14 @@ export class LightPool {
 
   private updateFixtureSlot(index: number, fixture: PoweredLight | undefined, context: LightPoolContext): void {
     const light = this.lights[index]!;
-    const { blockSize, daylightScale } = context;
+    const { blockSize } = context;
     this.flareSkipped[index] = false;
     if (!fixture) {
       light.intensity = 0;
       this.syncHandLight(index, light);
       return;
     }
-    light.intensity = fixture.intensity * (context.worldDaylightScale ?? daylightScale);
+    light.intensity = worldIntensity(fixture.intensity, context);
     light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
     light.color.set(fixture.color);
     light.distance = fixture.radius;
@@ -194,9 +199,6 @@ export class LightPool {
         return distance(a) - distance(b);
       })
       .slice(0, this.fixtureLimit);
-    this.fixtureSlots.forEach((_, slot) => {
-      this.fixtureSlots[slot] = fixtures[slot];
-    });
     const glowDistance = ({ position }: BodyGlow) =>
       (position[0] - camera.position.x) ** 2 +
       (position[1] - camera.position.y) ** 2 +
@@ -216,7 +218,7 @@ export class LightPool {
           light.position.set(...glow.position);
           light.color.set(glow.color);
           light.distance = glow.radiusMetres;
-          light.intensity = glow.intensity * daylightScale;
+          light.intensity = worldIntensity(glow.intensity, context);
         } else {
           light.intensity = 0;
         }
@@ -229,9 +231,25 @@ export class LightPool {
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;
-      light.intensity = spec.intensity * (context.worldDaylightScale ?? daylightScale);
+      light.intensity = worldIntensity(spec.intensity, context);
       this.flareSkipped[index] = spec.nightVision !== undefined;
       this.syncHandLight(index, light, spec.intensity * daylightScale);
     }
+    this.lights.forEach((light, slot) => {
+      if (slot >= ITEM_POINT_LIGHTS) {
+        this.reachSlots[slot] = fixtures[slot - ITEM_POINT_LIGHTS];
+        return;
+      }
+      this.reachSlots[slot] =
+        light.intensity > 0
+          ? {
+              reachSource: this.positions[slot]!,
+              pos: [light.position.x / blockSize, light.position.y / blockSize, light.position.z / blockSize],
+              radius: light.distance,
+              color: `#${light.color.getHexString()}`,
+              intensity: light.intensity,
+            }
+          : undefined;
+    });
   }
 }

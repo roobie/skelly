@@ -128,6 +128,24 @@ describe('made-light point pool', () => {
     expect(inventory.move(glow, { kind: 'pocket', owner: backpack, pocket: 0 }).ok).toBe(true);
     expect(compare()).toEqual([]);
   });
+  it('scales a world body glow by the world daylight scale, not the camera adaptation', () => {
+    const pool = new LightPool(new Scene(), FIXTURE_LIMIT);
+    const inventory = new Inventory(registry);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
+    const camera = new PerspectiveCamera();
+    held.update(camera);
+    const glow = { position: [1, 1, 1], color: '#7fff00', intensity: 2, radiusMetres: 5 } as const;
+    const worldDaylightScale = 0.8;
+    const daylightScale = 0.2;
+
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale, worldDaylightScale, glows: [glow] });
+
+    expect(pool.lights[0]!.intensity).toBeCloseTo(glow.intensity * worldDaylightScale);
+  });
+
   it('shares the active point pool with hands without adding shadow casters', () => {
     const scene = new Scene();
     const handScene = new Scene();

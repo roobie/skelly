@@ -143,6 +143,7 @@ import { runningCraftPresentation } from '../ui/craftReadout.ts';
 import { showDeath } from '../ui/death.ts';
 import { appendError } from '../ui/errorLog.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
+import { firstFocusable } from '../ui/focus.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
 import { mountGuidance } from '../ui/guidedSteps.ts';
@@ -1243,6 +1244,7 @@ const startPlayWith = (
   if (!options.restore) {
     applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
       fresh: true,
+      calendar: sim.calendar,
       character: session.character,
       body: sim.body,
       damageCell: (cell, damage) => session.damageTerrainCell(cell, damage),
@@ -1837,12 +1839,17 @@ const startPlayWith = (
     closeMenusFor(state);
     input.menuPointer = state.menuPointer || !worldLoading.ready;
     keyboardInput.sync();
+    const overlayOpened = overlay.hidden && !state.overlayHidden;
     overlay.hidden = state.overlayHidden;
     $('go').hidden = state.showGo === false;
     if (options.saveController) {
       options.saveController.setGoLabel(state.goLabel);
     } else {
       $('go').textContent = state.goLabel;
+    }
+    if (overlayOpened) {
+      // Only on opening, so a sync during play never takes focus.
+      firstFocusable(overlay)?.focus({ preventScroll: true });
     }
     return state;
   };
@@ -2041,7 +2048,7 @@ const startPlayWith = (
     }
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
-  const playContext = (): InputContext => (mainMenuOpen || sim.dead ? 'menu' : activePlayContext());
+  const playContext = (): InputContext => (mainMenuOpen || sim.dead || session.won ? 'menu' : activePlayContext());
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {

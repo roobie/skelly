@@ -14,6 +14,7 @@ const requireValue = (condition, message = 'Invalid browser CI definition') => {
 const requireEqual = (value, expected, message) => requireValue(isDeepStrictEqual(value, expected), message);
 
 export const quarantinedScripts = {
+  'test:browser:chromium:opfs-continue': 'Intermittent production reload timeout after pagehide checkpoint; #1721.',
   'test:browser:chromium:navigation': 'Intermittent bfcache navigation stage timeout; #706.',
   'test:browser:firefox:save-storage': 'OPFS capability-probe deadline; #224.',
   'test:browser:firefox:native': 'Intermittent native pointer-lock refusal; #168.',

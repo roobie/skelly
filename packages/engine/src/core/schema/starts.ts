@@ -57,6 +57,7 @@ export const StartSchema = strictObject({
       item: Id,
       count: optional(pipe(Count, minValue(1))),
       condition: optional(Fraction),
+      lit: optional(literal(true)),
       cartridges: optional(array(Id)),
       cylinder: optional(
         strictObject({

@@ -23,6 +23,18 @@ describe('material patches', () => {
     expect(key(backwards)).toBe(key(forwards));
   });
 
+  it('keep materials with different own compile hooks and no own key on different programs', () => {
+    const patches = new MaterialPatches();
+    patches.add(keyed('patch'));
+    const keyOf = (hook: () => void) => {
+      const material = new MeshStandardMaterial();
+      material.onBeforeCompile = hook;
+      patches.apply(new Scene().add(new Mesh(undefined, material)));
+      return material.customProgramCacheKey();
+    };
+    expect(keyOf(() => undefined)).not.toBe(keyOf(() => 'other'));
+  });
+
   it('install once however many walks reach a material', () => {
     let compiles = 0;
     const counted = materialPatch({

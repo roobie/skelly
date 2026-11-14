@@ -1,0 +1,440 @@
+{
+  "dayCycle": {
+    "clockRatio": 8,
+    "clouds": {
+      "layered": {
+        "layers": [
+          {
+            "angle": 0,
+            "drift": [0.00059999999999999995, 0.00012999999999999999],
+            "opacity": 0.32000000000000001,
+            "scale": 0.34999999999999998,
+            "shade": 1
+          },
+          {
+            "angle": 2.1000000000000001,
+            "drift": [-0.0011000000000000001, 0.00040000000000000002],
+            "opacity": 0.5,
+            "scale": 0.82999999999999996,
+            "shade": 1
+          },
+          {
+            "angle": 4,
+            "drift": [0.0028, -0.0019],
+            "opacity": 0.41999999999999998,
+            "scale": 2.0699999999999998,
+            "shade": 0
+          }
+        ],
+        "warp": 0.59999999999999998
+      },
+      "scatter": {
+        "billow": 0.00040000000000000002,
+        "density": 4.7999999999999998,
+        "drift": [0.0011999999999999999, 0.00050000000000000001],
+        "lining": 0.59999999999999998,
+        "region": {
+          "scale": 0.11,
+          "strength": 0.22
+        },
+        "scale": 0.35999999999999999,
+        "shadow": 0.45000000000000001
+      }
+    },
+    "date": {
+      "day": 25,
+      "month": 12
+    },
+    "defaultStartGameTimeOfDay": "10:00",
+    "domeShape": {
+      "cloudLight": {
+        "ambient": 0.25,
+        "deckLight": 0.5,
+        "facing": 0.40000000000000002,
+        "light": 0.80000000000000004
+      },
+      "cloudShape": {
+        "coverGain": 1.2,
+        "edgeSoftness": 0.29999999999999999,
+        "horizonFade": [0.02, 0.14000000000000001]
+      },
+      "glowBand": [0.12, 0.55000000000000004],
+      "horizonBand": [0.014999999999999999, 0.14000000000000001],
+      "moon": {
+        "disc": [0.99992000000000003, 0.99995000000000001],
+        "discGain": 1.1000000000000001,
+        "limbDarkening": 0.5,
+        "maria": {
+          "depth": 0.29999999999999999,
+          "scale": 2.2000000000000002
+        },
+        "tightHalo": {
+          "gain": 0.315,
+          "power": 350
+        },
+        "wideHalo": {
+          "gain": 0.063,
+          "power": 14
+        }
+      },
+      "physicalBand": [0.29999999999999999, 0.55000000000000004],
+      "starField": {
+        "density": 0.014,
+        "size": 0.12,
+        "twinkle": 0.40000000000000002
+      },
+      "sun": {
+        "disc": [0.99965000000000004, 0.99990000000000001],
+        "discGain": 4,
+        "tightHalo": {
+          "gain": 0.59999999999999998,
+          "power": 900
+        },
+        "wideHalo": {
+          "gain": 0.90000000000000002,
+          "power": 16
+        }
+      },
+      "washOutBand": [-0.20000000000000001, -0.10000000000000001]
+    },
+    "environment": {
+      "faceSize": 64,
+      "rebakeChange": 0.02,
+      "rebakeRealSeconds": 0.5,
+      "strength": 1
+    },
+    "keys": [
+      {
+        "at": 0,
+        "look": "night",
+        "phase": "night"
+      },
+      {
+        "at": 0.29999999999999999,
+        "look": "deepNight",
+        "phase": "night"
+      },
+      {
+        "at": 0.69999999999999996,
+        "look": "deepNight",
+        "phase": "night"
+      },
+      {
+        "at": 0.90000000000000002,
+        "look": "night",
+        "phase": "night"
+      },
+      {
+        "at": 0,
+        "look": "night",
+        "phase": "dawn"
+      },
+      {
+        "at": 1,
+        "look": "dawn",
+        "phase": "dawn"
+      },
+      {
+        "at": 0.12,
+        "look": "day",
+        "phase": "day"
+      },
+      {
+        "at": 0.84999999999999998,
+        "look": "day",
+        "phase": "day"
+      },
+      {
+        "at": 0.94999999999999996,
+        "look": "dusk",
+        "phase": "day"
+      },
+      {
+        "at": 0,
+        "look": "dusk",
+        "phase": "dusk"
+      },
+      {
+        "at": 0.71999999999999997,
+        "look": "night",
+        "phase": "dusk"
+      }
+    ],
+    "latitudeDegrees": 40,
+    "looks": {
+      "dawn": {
+        "ambientGround": "#3c3c40",
+        "ambientIntensity": 0.80000000000000004,
+        "ambientSky": "#a8b0c0",
+        "bloom": 0.20000000000000001,
+        "dome": {
+          "clouds": {
+            "cover": 0.45000000000000001,
+            "opacity": 1
+          },
+          "horizonGlow": "#c0b4b0",
+          "moon": {
+            "brightness": 0,
+            "colour": "#b3bfd9"
+          },
+          "physical": {
+            "exposure": 0.10000000000000001,
+            "mie": 0.0050000000000000001,
+            "mieDirectional": 0.80000000000000004,
+            "rayleigh": 1.3,
+            "turbidity": 3,
+            "weight": 0.5
+          },
+          "stars": 0,
+          "sun": {
+            "brightness": 1,
+            "colour": "#fff0d4",
+            "glow": 1,
+            "glowColour": "#ffa040"
+          },
+          "zenith": "#6c7688"
+        },
+        "fogFar": 0.92000000000000004,
+        "fogNear": 0.050000000000000003,
+        "heightFog": 0.014,
+        "heightFogColor": "#98a0ac",
+        "lightColor": "#e8bca4",
+        "lightIntensity": 0.69999999999999996,
+        "sky": "#7c8494",
+        "tone": 0.84999999999999998
+      },
+      "day": {
+        "ambientGround": "#5a4a3a",
+        "ambientIntensity": 1.3,
+        "ambientSky": "#dfe8f0",
+        "bloom": 0.080000000000000002,
+        "dome": {
+          "clouds": {
+            "cover": 0.45000000000000001,
+            "opacity": 1
+          },
+          "horizonGlow": "#c9c4b8",
+          "moon": {
+            "brightness": 0,
+            "colour": "#b3bfd9"
+          },
+          "physical": {
+            "exposure": 0.10000000000000001,
+            "mie": 0.0050000000000000001,
+            "mieDirectional": 0.80000000000000004,
+            "rayleigh": 1.3,
+            "turbidity": 3,
+            "weight": 1
+          },
+          "stars": 0,
+          "sun": {
+            "brightness": 1,
+            "colour": "#fff0d4",
+            "glow": 0,
+            "glowColour": "#ffa040"
+          },
+          "zenith": "#6f8aa3"
+        },
+        "fogFar": 1,
+        "fogNear": 0.10000000000000001,
+        "heightFog": 0.002,
+        "heightFogColor": "#b4c6d4",
+        "lightColor": "#fff2dd",
+        "lightIntensity": 1.6000000000000001,
+        "sky": "#a9bfd0",
+        "tone": 0
+      },
+      "deepNight": {
+        "ambientGround": "#08080a",
+        "ambientIntensity": 0.20000000000000001,
+        "ambientSky": "#2a3446",
+        "bloom": 0.55000000000000004,
+        "dome": {
+          "clouds": {
+            "cover": 0.45000000000000001,
+            "opacity": 0.59999999999999998
+          },
+          "horizonGlow": "#111824",
+          "moon": {
+            "brightness": 1,
+            "colour": "#b3bfd9"
+          },
+          "physical": {
+            "exposure": 0.10000000000000001,
+            "mie": 0.0050000000000000001,
+            "mieDirectional": 0.80000000000000004,
+            "rayleigh": 1.3,
+            "turbidity": 3,
+            "weight": 0
+          },
+          "stars": 1,
+          "sun": {
+            "brightness": 0,
+            "colour": "#fff0d4",
+            "glow": 0,
+            "glowColour": "#ffa040"
+          },
+          "zenith": "#05070c"
+        },
+        "fogFar": 0.59999999999999998,
+        "fogNear": 0.14999999999999999,
+        "heightFog": 0.0060000000000000001,
+        "heightFogColor": "#18202c",
+        "lightColor": "#6a7690",
+        "lightIntensity": 0.10000000000000001,
+        "sky": "#0b0f16",
+        "tone": 1
+      },
+      "dusk": {
+        "ambientGround": "#30323a",
+        "ambientIntensity": 0.69999999999999996,
+        "ambientSky": "#8090ac",
+        "bloom": 0.25,
+        "dome": {
+          "clouds": {
+            "cover": 0.45000000000000001,
+            "opacity": 1
+          },
+          "horizonGlow": "#a8a4b0",
+          "moon": {
+            "brightness": 0,
+            "colour": "#b3bfd9"
+          },
+          "physical": {
+            "exposure": 0.10000000000000001,
+            "mie": 0.0050000000000000001,
+            "mieDirectional": 0.80000000000000004,
+            "rayleigh": 1.3,
+            "turbidity": 3,
+            "weight": 0.5
+          },
+          "stars": 0,
+          "sun": {
+            "brightness": 1,
+            "colour": "#fff0d4",
+            "glow": 1,
+            "glowColour": "#ffa040"
+          },
+          "zenith": "#56627e"
+        },
+        "fogFar": 0.92000000000000004,
+        "fogNear": 0.050000000000000003,
+        "heightFog": 0.0080000000000000002,
+        "heightFogColor": "#6c7484",
+        "lightColor": "#e0a488",
+        "lightIntensity": 0.59999999999999998,
+        "sky": "#5e6676",
+        "tone": 0.84999999999999998
+      },
+      "night": {
+        "ambientGround": "#100e0c",
+        "ambientIntensity": 0.22,
+        "ambientSky": "#3a465a",
+        "bloom": 0.5,
+        "dome": {
+          "clouds": {
+            "cover": 0.45000000000000001,
+            "opacity": 0.59999999999999998
+          },
+          "horizonGlow": "#141b26",
+          "moon": {
+            "brightness": 1,
+            "colour": "#b3bfd9"
+          },
+          "physical": {
+            "exposure": 0.10000000000000001,
+            "mie": 0.0050000000000000001,
+            "mieDirectional": 0.80000000000000004,
+            "rayleigh": 1.3,
+            "turbidity": 3,
+            "weight": 0
+          },
+          "stars": 1,
+          "sun": {
+            "brightness": 0,
+            "colour": "#fff0d4",
+            "glow": 0,
+            "glowColour": "#ffa040"
+          },
+          "zenith": "#070a10"
+        },
+        "fogFar": 0.59999999999999998,
+        "fogNear": 0.14999999999999999,
+        "heightFog": 0.0070000000000000001,
+        "heightFogColor": "#1c2430",
+        "lightColor": "#7d8ca8",
+        "lightIntensity": 0.12,
+        "sky": "#0a0d12",
+        "tone": 1
+      }
+    },
+    "mainLight": {
+      "fromMoonAt": 1,
+      "lowestHeight": 0.20000000000000001
+    },
+    "midnightGameTimeOfDay": "00:00",
+    "noonGameTimeOfDay": "12:00",
+    "twilight": "nautical",
+    "weather": {
+      "cloudy": {
+        "ambient": 0.94999999999999996,
+        "cloudiness": 0.5,
+        "clouds": {
+          "cover": 0.14999999999999999,
+          "opacity": 1
+        },
+        "kind": "scatter",
+        "light": 0.80000000000000004,
+        "physicalWeight": 0.80000000000000004,
+        "skyColour": {
+          "brightness": 0.96999999999999997,
+          "saturation": 0.84999999999999998
+        },
+        "skyLights": 0.84999999999999998
+      },
+      "defaults": {
+        "cloudiness": 0.20000000000000001,
+        "fogginess": 0.20000000000000001,
+        "rain": 0
+      },
+      "fair": {
+        "cloudiness": 0.20000000000000001,
+        "kind": "layered"
+      },
+      "fog": {
+        "farTighten": 0.59999999999999998,
+        "nearTighten": 0.84999999999999998
+      },
+      "overcast": {
+        "ambient": 0.75,
+        "clouds": {
+          "cover": 0.65000000000000002,
+          "opacity": 1
+        },
+        "kind": "layered",
+        "light": 0.25,
+        "physicalWeight": 0.14999999999999999,
+        "skyColour": {
+          "brightness": 0.90000000000000002,
+          "saturation": 0.45000000000000001
+        },
+        "skyLights": 0.10000000000000001
+      },
+      "rain": {
+        "ambient": 0.69999999999999996,
+        "clouds": {
+          "cover": 1,
+          "opacity": 1
+        },
+        "kind": "layered",
+        "light": 0.20000000000000001,
+        "physicalWeight": 0,
+        "skyColour": {
+          "brightness": 0.69999999999999996,
+          "saturation": 0.59999999999999998
+        },
+        "skyLights": 0
+      }
+    }
+  }
+}
