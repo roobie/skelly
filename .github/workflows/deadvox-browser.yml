@@ -119,7 +119,7 @@ jobs:
         if: ${{ inputs.shard == 'save-other' }}
         timeout-minutes: 1
         run: node test/browser/save-storage.mjs chromium
-      # OPFS Continue's production reload is quarantined pending a proven fix; #1721.
+      # OPFS Continue reinstatement needs a bounded cause and before/after/restored-before evidence; #1721.
       - name: Save autosave — OPFS replacement (Chromium)
         if: ${{ inputs.shard == 'opfs' }}
         timeout-minutes: 8
