@@ -2035,7 +2035,7 @@ const startPlayWith = (
     }
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
-  const playContext = (): InputContext => (mainMenuOpen || sim.dead ? 'menu' : activePlayContext());
+  const playContext = (): InputContext => (mainMenuOpen || sim.dead || session.won ? 'menu' : activePlayContext());
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {

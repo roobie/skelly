@@ -142,15 +142,16 @@ describe('keyboard registry', () => {
       const remove = keyboard.install();
       const button = document.createElement('button');
       document.body.append(button);
-      button.focus();
       try {
-        button.dispatchEvent(new KeyboardEvent('keydown', { ...key, bubbles: true, cancelable: true }));
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { ...key, bubbles: true, cancelable: true }));
+        button.focus();
         const repeated = new KeyboardEvent('keydown', { ...key, repeat: true, bubbles: true, cancelable: true });
         button.dispatchEvent(repeated);
         expect(repeated.defaultPrevented).toBe(true);
         expect(commands.filter(({ phase }) => phase === 'down').map((command) => command.action)).toEqual([action]);
         button.dispatchEvent(new KeyboardEvent('keyup', { ...key, bubbles: true }));
-        button.dispatchEvent(new KeyboardEvent('keydown', { ...key, bubbles: true, cancelable: true }));
+        button.blur();
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { ...key, bubbles: true, cancelable: true }));
         expect(commands.at(-1)?.action).toBe(next);
       } finally {
         remove();
@@ -158,6 +159,69 @@ describe('keyboard registry', () => {
       }
     },
   );
+  it('leaves to a focused control the Enter or Space it activates on, and binds the rest', () => {
+    const activation: readonly Binding[] = ['Enter', 'Space'].map((code) => ({
+      id: `fixture.${code}`,
+      description: `Fixture ${code}`,
+      contexts: ['inventory'],
+      commands: [{ id: `fixture.${code}`, kind: 'press' }],
+      defaults: [{ code }],
+    }));
+    const keyboard = new KeyboardInput(new BindingRegistry(activation, storage()));
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    const commands: string[] = [];
+    keyboard.command = ({ action, phase }) => {
+      commands.push(`${action}:${phase}`);
+    };
+    const remove = keyboard.install();
+    const controls = (
+      [
+        ['<button type="button">', ['Enter', 'Space']],
+        ['<details><summary>', ['Enter', 'Space']],
+        ['<a href="#">', ['Enter']],
+        ['<input type="checkbox">', ['Space']],
+      ] as const
+    ).map(([markup, owned]) => {
+      const host = document.createElement('div');
+      host.innerHTML = markup;
+      document.body.append(host);
+      return {
+        host,
+        owned: owned as readonly string[],
+        control: host.querySelector<HTMLElement>('button, summary, a, input')!,
+      };
+    });
+    const press = (target: EventTarget, code: string) => {
+      const down = new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true });
+      target.dispatchEvent(down);
+      target.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+      return down.defaultPrevented;
+    };
+    try {
+      for (const { control, owned } of controls) {
+        control.focus();
+        for (const code of ['Enter', 'Space']) {
+          commands.length = 0;
+          const ownedByControl = owned.includes(code);
+          expect(press(control, code), `${control.tagName} ${code}`).toBe(!ownedByControl);
+          expect(commands.includes(`fixture.${code}:down`), `${control.tagName} ${code}`).toBe(!ownedByControl);
+        }
+        control.blur();
+      }
+      commands.length = 0;
+      expect(press(document.body, 'Enter')).toBe(true);
+      expect(press(document.body, 'Space')).toBe(true);
+      expect(commands.filter((command) => command.endsWith(':down'))).toEqual([
+        'fixture.Enter:down',
+        'fixture.Space:down',
+      ]);
+    } finally {
+      remove();
+      for (const { host } of controls) {
+        host.remove();
+      }
+    }
+  });
   it('accepts a physical Shift down with a false Shift flag so strafe remains available', () => {
     const keyboard = new KeyboardInput(
       new BindingRegistry(

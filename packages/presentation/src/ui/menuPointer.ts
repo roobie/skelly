@@ -243,7 +243,9 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     document.addEventListener(
       type,
       (e) => {
-        if (forwardingClick || !input.locked || !input.menuPointer) {
+        // A trusted click with no press count is a keyboard activation; it already lands on the focused control.
+        const keyboardActivation = e.isTrusted && (e as MouseEvent).detail === 0;
+        if (forwardingClick || !input.locked || !input.menuPointer || keyboardActivation) {
           return;
         }
         e.preventDefault();
