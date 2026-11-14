@@ -1,8 +1,10 @@
 import { fabricOf } from '@skelly/presentation/internal/render/fabricGrain.ts';
 import { glowingCopy } from '@skelly/presentation/internal/render/itemEmissive.ts';
+import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
 import { applyModelMaterials, modelMaterialWarmUp } from '@skelly/presentation/internal/render/modelMaterials.ts';
 import { prepareModel } from '@skelly/presentation/internal/render/models.ts';
 import { skyAnchoredCopy } from '@skelly/presentation/internal/render/skyAnchor.ts';
+import { VehicleFinishes } from '@skelly/presentation/internal/render/vehicleFinishes.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
 import {
   BoxGeometry,
@@ -15,10 +17,10 @@ import {
   MeshStandardMaterial,
   NormalBlending,
   SRGBColorSpace,
-  type Texture,
+  Texture,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { thingModels } from './thingModels.ts';
 
 const table = {
@@ -79,8 +81,8 @@ it('draws a sheened material with its sheen, keeping one prepared copy per share
 
 const MAP_KEY = /map$/i;
 
-// What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper) and a
-// patch's own key, but with the fabric grain's kind, the one patch whose key a material's content picks.
+// What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper). It includes
+// the material's customProgramCacheKey(), which carries the keys of the patches applied to it.
 const programKey = (mesh: Mesh, material: Material): string => {
   const fields = material as unknown as Record<string, unknown>;
   const maps = Object.keys(fields)
@@ -101,12 +103,14 @@ const programKey = (mesh: Mesh, material: Material): string => {
     fields.flatShading,
     fields.fog,
     Number(fields.sheen ?? 0) > 0,
+    Number(fields.clearcoat ?? 0) > 0,
     maps,
     mesh instanceof InstancedMesh && mesh.instanceColor !== null,
     mesh.constructor.name,
     ['normal', 'tangent', 'color'].map((name) => geometry.getAttribute(name)?.itemSize),
     Object.keys(geometry.morphAttributes).sort(),
     Object.keys(material.defines ?? {}).sort(),
+    material.customProgramCacheKey(),
     fabricOf(material)?.kind,
   ]);
 };
@@ -163,6 +167,33 @@ it('warm-up stand-ins share a program with every material the pack models draw, 
     ];
     expect([...new Set(keys)].filter((key) => !warmed.has(key))).toEqual([]);
   }
+  const patches = new MaterialPatches();
+  const finishes = new VehicleFinishes({ texture: new Texture(), update: vi.fn() }, 0.25, patches);
+  finishes.setEnabled(true);
+  const finishedMeshes = meshes.map((mesh) => mesh.clone());
+  const finishedModel = new Group().add(...finishedMeshes);
+  finishes.dress(finishedModel);
+  expect(finishedMeshes.some((mesh) => Number((mesh.material as MeshPhysicalMaterial).clearcoat ?? 0) > 0)).toBe(true);
+  // Vehicles draw sky-anchored copies of what they are dressed in.
+  for (const mesh of finishedMeshes) {
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(skyAnchoredCopy) : skyAnchoredCopy(mesh.material);
+  }
+  const warmUp = modelMaterialWarmUp({
+    instanced: false,
+    skyAnchored: true,
+    finishedVariants: finishes.warmUpVariants,
+  });
+  patches.apply(warmUp);
+  patches.apply(finishedModel);
+  const warmedFinishes = new Set(
+    (warmUp.children as Mesh[]).map((mesh) => programKey(mesh, mesh.material as Material)),
+  );
+  const finishedKeys = finishedMeshes.flatMap((mesh) =>
+    (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map((material: Material) =>
+      programKey(mesh, material),
+    ),
+  );
+  expect([...new Set(finishedKeys)].filter((key) => !warmedFinishes.has(key))).toEqual([]);
 });
 
 describe('material reference validation', () => {
