@@ -123,6 +123,39 @@ describe('inventory bound control navigation', () => {
     }
   });
 
+  it('closing the screen from a crafting query field leaves the next world key to play', () => {
+    const { screen, hooks } = setup();
+    const review = document.createElement('section');
+    review.innerHTML = '<input aria-label="Query">';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    const input = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS));
+    input.context = () => ({ context: screen.isOpen ? 'inventory' : 'play', debug: false });
+    input.command = ({ action, phase }) => {
+      if (action === 'ui.inventory-toggle' && phase === 'down') {
+        screen.close();
+      }
+    };
+    const remove = input.install();
+    const key = (code: string, phase: 'keydown' | 'keyup') =>
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent(phase, { code, key: code, bubbles: true, cancelable: true }),
+      );
+    try {
+      screen.selectTab('crafting');
+      review.querySelector('input')!.focus();
+      key('Tab', 'keydown');
+      key('Tab', 'keyup');
+      expect(screen.isOpen).toBe(false);
+      key('KeyF', 'keydown');
+      expect(input.held('world.interact')).toBe(true);
+      key('KeyF', 'keyup');
+    } finally {
+      remove();
+      review.remove();
+    }
+  });
+
   it('uses rebound navigation from a query field and leaves native caret keys alone', () => {
     const { root, screen, lastPayload } = setup();
     const bindings = new BindingRegistry(INPUT_BINDINGS);

@@ -1165,6 +1165,15 @@ export class InventoryScreen {
   }
 
   close(): void {
+    // A field left focused inside the hidden screen would still take the next keys as text, so play's keys would
+    // be refused until the browser moved focus off it, if it ever does.
+    const focused = document.activeElement;
+    if (
+      focused instanceof HTMLElement &&
+      (this.root.contains(focused) || this.hooks.reviewControls?.().contains(focused))
+    ) {
+      focused.blur();
+    }
     this.cancelInput();
     this.targetKey = undefined;
     this.currentContainer = undefined;
