@@ -875,12 +875,12 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- emotes ----
 
-  const EMOTES: Readonly<Record<Emote, { offered: () => boolean; perform: () => void }>> = {
+  const emoteActions: Readonly<Record<Emote, { offered: () => boolean; perform: () => void }>> = {
     'press-check': { offered: () => pressCheckUid() !== undefined, perform: pressCheck },
   };
   const emotes: CommandRouter['emotes'] = {
-    offered: () => (Object.keys(EMOTES) as Emote[]).filter((emote) => EMOTES[emote].offered()),
-    perform: (emote) => EMOTES[emote].perform(),
+    offered: () => (Object.keys(emoteActions) as Emote[]).filter((emote) => emoteActions[emote].offered()),
+    perform: (emote) => emoteActions[emote].perform(),
   };
 
   // ---- furniture ----
