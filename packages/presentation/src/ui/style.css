@@ -30,9 +30,27 @@
   --muted: #98a0aa;
   --line: #333a42;
   --accent: #e0b04a;
-  --focus-ring-color: var(--accent);
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
+  /* Boot-safe controls must remain usable when the theme itself cannot load. */
+  --control-surface: #202020;
+  --control-hover-surface: #383838;
+  --control-ink: #ffffff;
+  --control-muted-ink: #bbbbbb;
+  --control-edge: #888888;
+  --control-focus-edge: #ffffff;
+  --control-light-focus-edge: #202020;
+  --control-focus-separation: #000000;
+  --control-selected-edge: #ffffff;
+  --control-refusal-edge: #bbbbbb;
+  --control-refusal-ink: #ffffff;
+  --control-disabled-ink: #bbbbbb;
+  --control-accent: #ffffff;
+  --control-corner-rem: 0.25rem;
+  --control-edge-width-px: 1px;
+  --control-focus-width-px: 3px;
+  --control-focus-gap-px: 2px;
+  --control-padding-block-rem: 0.3125rem;
+  --control-padding-inline-rem: 0.5rem;
+  --focus-ring-color: var(--control-focus-edge);
   color-scheme: dark;
 }
 * {
@@ -43,11 +61,68 @@
    holds focus for keys; the controls inside it show focus. */
 :focus-visible:not([tabindex="-1"]),
 body.menu-pointer-locked :focus:not([tabindex="-1"]) {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
+  outline: var(--control-focus-width-px) solid var(--focus-ring-color);
+  outline-offset: var(--control-focus-gap-px);
+  box-shadow:
+    0 0 0 var(--control-focus-gap-px) var(--control-focus-separation),
+    var(--control-pressed-edge, 0 0 transparent);
 }
 [tabindex="-1"]:focus {
   outline: none;
+}
+:where(button, input, select, textarea, summary, .combo-box-option, .inv-item) {
+  font: inherit;
+  color: var(--control-ink);
+  accent-color: var(--control-accent);
+  border: var(--control-edge-width-px) solid var(--control-edge);
+  border-radius: var(--control-corner-rem);
+  background-color: var(--control-surface);
+  box-shadow: var(--control-pressed-edge, 0 0 transparent);
+}
+:where(
+  button,
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+  select,
+  textarea,
+  summary,
+  .combo-box-option
+) {
+  padding: calc(var(--ui-spacing, 1) * var(--control-padding-block-rem))
+    calc(var(--ui-spacing, 1) * var(--control-padding-inline-rem));
+}
+:where(button, summary, .combo-box-option) {
+  cursor: pointer;
+}
+:where(a) {
+  color: var(--control-ink);
+}
+:where(input)::placeholder {
+  color: var(--control-muted-ink);
+  opacity: 1;
+}
+:where(button, input, select, textarea, summary, .combo-box-option, .inv-item):not(:disabled):is(.game-cursor-hover),
+body:not(.menu-pointer-locked)
+  :where(button, input, select, textarea, summary, .combo-box-option, .inv-item):not(:disabled):hover {
+  background-color: var(--control-hover-surface);
+}
+:is(button, .combo-box-option, .inv-item):is([aria-selected="true"], [aria-pressed="true"], .selected) {
+  border-color: var(--control-selected-edge);
+}
+:where(button, summary):not(:disabled):active {
+  --control-pressed-edge: inset 0 0 0 var(--control-edge-width-px) var(--control-edge);
+}
+:where(button, input, select, textarea):disabled {
+  color: var(--control-disabled-ink);
+  cursor: not-allowed;
+}
+:where(button)[aria-disabled="true"],
+button.inv-option-no {
+  border-style: dashed;
+  border-color: var(--control-refusal-edge);
+  color: var(--control-refusal-ink);
+}
+:where(input[type="checkbox"], input[type="range"]) {
+  accent-color: var(--control-accent);
 }
 /* The UI is measured in rem and scales through the root size, so the browser's font setting still counts and
    client coordinates stay true for hit testing; the world canvas sizes from the viewport (`packages/deadvox/DESIGN.md`, "UI principles"). */
@@ -387,12 +462,12 @@ body.unconscious::after {
   width: calc(var(--radial-dead-zone) * 2);
   height: calc(var(--radial-dead-zone) * 2);
   transform: translate(-50%, -50%);
-  border: var(--radial-stroke) dashed var(--muted);
+  border: var(--radial-stroke) dashed var(--control-edge);
   border-radius: 50%;
 }
 .radial-centre.selected {
   border-style: solid;
-  border-color: var(--accent);
+  border-color: var(--control-selected-edge);
 }
 .radial-centre-label {
   position: absolute;
@@ -412,8 +487,8 @@ body.unconscious::after {
   height: var(--radial-pull-size);
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: var(--text);
-  box-shadow: 0 0 0 var(--radial-stroke) var(--panel);
+  background: var(--control-ink);
+  box-shadow: 0 0 0 var(--radial-stroke) var(--control-surface);
 }
 .radial-pointer {
   position: absolute;
@@ -425,21 +500,21 @@ body.unconscious::after {
   width: max(0px, calc(var(--radial-radius) - var(--radial-dead-zone)));
   height: var(--radial-stroke);
   transform: translateY(-50%);
-  background: var(--accent);
+  background: var(--control-selected-edge);
 }
 .radial-entry {
   position: absolute;
   width: max-content;
   padding: calc(var(--ui-spacing) * var(--radial-label-padding));
-  border: var(--radial-stroke) solid var(--line);
-  border-radius: var(--radial-label-radius);
-  background: var(--panel);
-  color: var(--muted);
+  border: var(--radial-stroke) solid var(--control-edge);
+  border-radius: var(--control-corner-rem);
+  background: var(--control-surface);
+  color: var(--control-ink);
 }
 .radial-entry.selected {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--panel);
+  border-color: var(--control-selected-edge);
+  background: var(--control-selected-edge);
+  color: var(--control-surface);
   font-size: calc(1em * var(--radial-selected-label-scale));
 }
 
@@ -597,12 +672,6 @@ body.unconscious::after {
   margin-bottom: calc(var(--ui-spacing) * 0.25rem);
 }
 #overlay .go {
-  border: 0;
-  padding: 0;
-  background: none;
-  font: inherit;
-  cursor: pointer;
-  color: var(--text);
   font-weight: 600;
   margin: 0;
 }
@@ -644,11 +713,7 @@ body.unconscious::after {
 }
 #overlay.startup-ready .go {
   width: 100%;
-  padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--accent);
-  border-radius: 0.375rem;
-  color: var(--accent);
 }
 #overlay.startup-ready.saved-choice {
   place-items: center;
@@ -679,17 +744,6 @@ body.unconscious::after {
 #save-replace-confirm,
 #save-replace-cancel {
   margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
-  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.875rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  background: var(--text);
-  color: #121418;
-  font: inherit;
-  cursor: pointer;
-}
-#continue:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 /* ---- death screen ---- */
@@ -717,15 +771,6 @@ body.unconscious::after {
 #death p {
   margin: 0 0 calc(var(--ui-spacing) * 0.75rem);
   color: var(--muted);
-}
-#death button {
-  font: inherit;
-  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.875rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  background: var(--text);
-  color: #121418;
-  cursor: pointer;
 }
 
 /* ---- inventory screen ---- */
@@ -785,19 +830,6 @@ body.unconscious::after {
   display: flex;
   flex-wrap: wrap;
   gap: calc(var(--ui-spacing) * 0.375rem);
-}
-.inv-tab {
-  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.75rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  background: #22262c;
-  color: var(--muted);
-  font: inherit;
-  cursor: pointer;
-}
-.inv-tab[aria-selected="true"] {
-  border-color: var(--accent);
-  color: var(--text);
 }
 .inv-body {
   flex: 1;
@@ -901,19 +933,20 @@ body.unconscious::after {
   touch-action: none;
   background: linear-gradient(
     90deg,
-    transparent calc(50% - 1px),
-    #39414b calc(50% - 1px),
-    #39414b calc(50% + 1px),
-    transparent calc(50% + 1px)
+    transparent calc(50% - var(--control-edge-width-px)),
+    var(--control-edge) calc(50% - var(--control-edge-width-px)),
+    var(--control-edge) calc(50% + var(--control-edge-width-px)),
+    transparent calc(50% + var(--control-edge-width-px))
   );
 }
-#inventory .inv-body[data-tab-panel="items"] .inv-splitter:hover {
+#inventory .inv-body[data-tab-panel="items"] .inv-splitter.game-cursor-hover,
+body:not(.menu-pointer-locked) #inventory .inv-body[data-tab-panel="items"] .inv-splitter:hover {
   background: linear-gradient(
     90deg,
-    transparent calc(50% - 2px),
-    var(--accent) calc(50% - 2px),
-    var(--accent) calc(50% + 2px),
-    transparent calc(50% + 2px)
+    transparent calc(50% - var(--control-edge-width-px)),
+    var(--control-ink) calc(50% - var(--control-edge-width-px)),
+    var(--control-ink) calc(50% + var(--control-edge-width-px)),
+    transparent calc(50% + var(--control-edge-width-px))
   );
 }
 #inventory .inv-body[data-tab-panel="items"] [data-pane="details"] {
@@ -1125,8 +1158,8 @@ body.unconscious::after {
 .inv-ghost {
   box-sizing: border-box;
   padding: calc(var(--ui-spacing) * 0.125rem) calc(var(--ui-spacing) * 0.25rem);
-  border: 1px solid #4a525c;
-  border-radius: 0.1875rem;
+  border: var(--control-edge-width-px) solid var(--control-edge);
+  border-radius: var(--control-corner-rem);
   font-size: 0.6875rem;
   line-height: 1.15;
   overflow: hidden;
@@ -1144,17 +1177,8 @@ body.unconscious::after {
   padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
   font-size: 0.8125rem;
 }
-.inv-item.selected {
-  border: 2px solid var(--accent);
-}
 .inv-find {
   min-width: 9rem;
-  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.5rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  background: #22262c;
-  color: var(--text);
-  font: inherit;
 }
 .inv-item.inv-item-unmatched {
   opacity: 0.3;
@@ -1342,25 +1366,8 @@ body.unconscious::after {
   display: flex;
   justify-content: space-between;
   gap: calc(var(--ui-spacing) * 0.5rem);
-  padding: calc(var(--ui-spacing) * 0.3125rem) calc(var(--ui-spacing) * 0.5rem);
-  border-radius: 0.375rem;
   font-size: 0.8125rem;
   text-align: left;
-}
-button.inv-option {
-  border: 1px solid #39414b;
-  background: #22262c;
-  color: var(--text);
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-button.inv-option:hover,
-button.inv-option.game-cursor-hover {
-  border-color: var(--accent);
-}
-.inv-option-no {
-  color: #8a929c;
 }
 .inv-wake-step {
   display: flex;
@@ -1698,9 +1705,6 @@ body:has(#handling:not([hidden])) #prompt {
   margin: calc(var(--ui-spacing) * 0.1875rem) 0;
   cursor: pointer;
 }
-.hud-options input {
-  accent-color: var(--accent);
-}
 .graphics-options {
   margin-top: 1rem;
   text-align: left;
@@ -1744,7 +1748,6 @@ body:has(#handling:not([hidden])) #prompt {
 }
 .audio-options__row input {
   width: 100%;
-  accent-color: var(--accent);
 }
 .audio-options__row output {
   text-align: right;
@@ -1756,9 +1759,6 @@ body:has(#handling:not([hidden])) #prompt {
 #overlay .scale {
   margin: calc(var(--ui-spacing) * 0.75rem) 0 0;
   font-size: 0.8125rem;
-}
-#overlay a {
-  color: var(--accent);
 }
 #credits {
   max-height: calc(100vh - 5rem);
@@ -1803,14 +1803,6 @@ body:has(#handling:not([hidden])) #prompt {
 #spawn p {
   color: var(--muted);
 }
-#spawn input {
-  font: inherit;
-  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.5rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  background: #0e1013;
-  color: var(--text);
-}
 #spawn .spawn-list {
   min-height: 0;
   overflow: auto;
@@ -1822,23 +1814,8 @@ body:has(#handling:not([hidden])) #prompt {
   display: flex;
   justify-content: space-between;
   gap: calc(var(--ui-spacing) * 0.5rem);
-  padding: calc(var(--ui-spacing) * 0.3125rem) calc(var(--ui-spacing) * 0.5rem);
-  border: 1px solid #39414b;
-  border-radius: 0.375rem;
-  background: #22262c;
-  color: var(--text);
-  font: inherit;
   font-size: 0.8125rem;
   text-align: left;
-  cursor: pointer;
-}
-#spawn button:hover,
-#spawn button.game-cursor-hover,
-#spawn button.selected {
-  border-color: var(--accent);
-}
-#spawn button.selected {
-  background-color: rgba(255, 255, 255, 0.08);
 }
 #spawn button span:last-child {
   color: var(--muted);
@@ -1891,23 +1868,10 @@ body.bench #quickbar {
   gap: calc(var(--ui-spacing) * 0.5rem);
   align-items: center;
 }
-#overlay .card.report button {
-  font: inherit;
-  padding: calc(var(--ui-spacing) * 0.375rem) calc(var(--ui-spacing) * 0.75rem);
-  border-radius: 0.375rem;
-  border: 1px solid var(--line);
-  background: #2a3038;
-  color: var(--text);
-  cursor: pointer;
-}
 #overlay .card.report textarea {
   width: 100%;
   min-height: 8.75rem;
   margin-top: calc(var(--ui-spacing) * 0.5rem);
-  background: #0e1013;
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
   font:
     0.6875rem / 1.4 ui-monospace,
     monospace;
@@ -1968,9 +1932,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .craft-start {
   margin-top: calc(var(--ui-spacing) * 0.625rem);
 }
-.craft-start[aria-disabled="true"] {
-  border-style: dashed;
-}
 .craft-use {
   display: flex;
   align-items: center;
@@ -1998,19 +1959,11 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: calc(var(--ui-spacing) * 0.25rem) 1.375rem calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
-  background: #0e1013;
-  color: var(--text);
-  font: inherit;
+  padding-right: calc(var(--control-padding-inline-rem) + 1em);
   cursor: pointer;
 }
 .combo-box-field:focus {
   cursor: text;
-}
-.combo-box-field.game-cursor-hover {
-  border-color: var(--accent);
 }
 /* Fixed to the viewport so a scrolling panel can't clip it. It has its own layer so later sibling detail
    content in the host panel does not paint over it. */
@@ -2033,20 +1986,12 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 .combo-box-option {
   overflow: hidden;
-  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.5rem);
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
 }
-.combo-box-option[aria-selected="true"],
-.combo-box-option.game-cursor-hover {
-  border-color: var(--accent);
-  background: rgb(255 255 255 / 8%);
-}
 .combo-box-chosen {
-  color: var(--accent);
+  color: var(--control-selected-edge);
 }
 .combo-box-empty {
   color: var(--muted);
@@ -2176,8 +2121,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   box-sizing: border-box;
   width: 100%;
   min-height: 4em;
-  color: var(--text);
-  background: rgb(0 0 0 / 35%);
   font:
     0.6875rem / 1.4 ui-monospace,
     monospace;
@@ -2194,19 +2137,9 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root #copy-snapshot-result {
   flex: none;
-  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
-  border: 1px solid var(--line);
-  border-radius: 0.25rem;
-  background: rgb(0 0 0 / 22%);
-  color: var(--text);
   font:
     0.6875rem ui-monospace,
     monospace;
-  cursor: pointer;
-}
-#debug-ui-root #copy-snapshot-result:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 #debug-ui-root .debug-panel .debug-readout span,
 #debug-ui-root .debug-panel .debug-readout button,
@@ -2214,11 +2147,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 #debug-ui-root .debug-panel .debug-actor-count output,
 #debug-ui-root .debug-panel .debug-actions button,
 #debug-ui-root .debug-panel .debug-panel-header button {
-  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
-  border: 1px solid var(--line);
-  border-radius: 0.25rem;
-  background: rgb(0 0 0 / 22%);
-  color: var(--text);
   font:
     0.6875rem ui-monospace,
     monospace;
@@ -2231,16 +2159,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 #debug-ui-root .debug-panel .debug-actor-count {
   align-items: center;
 }
-#debug-ui-root .debug-panel .debug-actor-count button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-#debug-ui-root .debug-panel .debug-actions button:hover,
-#debug-ui-root .debug-panel .debug-actions button.game-cursor-hover,
-#debug-ui-root .debug-panel .debug-group-header:hover,
-#debug-ui-root .debug-panel .debug-group-header.game-cursor-hover {
-  border-color: var(--accent);
-}
 /* A group: a full-width header button (title left, keys right) over its buttons. */
 #debug-ui-root .debug-panel .debug-group {
   margin-top: calc(var(--ui-spacing) * 0.375rem);
@@ -2251,11 +2169,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   align-items: baseline;
   justify-content: space-between;
   gap: calc(var(--ui-spacing) * 0.625rem);
-  padding: calc(var(--ui-spacing) * 0.25rem) calc(var(--ui-spacing) * 0.4375rem);
-  border: 1px solid var(--line);
-  border-radius: 0.25rem;
-  background: rgb(0 0 0 / 35%);
-  color: var(--text);
   font:
     0.6875rem ui-monospace,
     monospace;
@@ -2457,10 +2370,8 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   overflow-wrap: anywhere;
 }
 .reading-paper .reading-dismiss {
-  color: #282117;
-  background: #e0d1aa;
-  border: 1px solid #8e7d58;
   white-space: nowrap;
+  --focus-ring-color: var(--control-focus-edge);
 }
 .reading-progress {
   width: 100%;
@@ -2483,10 +2394,9 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   font: 0.8125rem / 1.4 sans-serif;
   color: #65553b;
 }
-/* The accent ring is too faint on light paper. */
+/* Paper needs contrast against its light surface, not the surrounding dark panels. */
 .reading-paper {
-  --focus-ring-color: #735e31;
-  --focus-ring-offset: 3px;
+  --focus-ring-color: var(--control-light-focus-edge);
 }
 #error-report h1 {
   margin-top: 0;
@@ -2494,7 +2404,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 #error-report .error-report-card .error-report-actions button,
 #error-report .error-report-card .error-report-actions a {
   min-height: 2.5rem;
-  padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.75rem);
 }
 /* An unusable save is the player's first decision, so its notice, choice and raw export lead the title. */
 #overlay.startup-ready.save-refused #about {

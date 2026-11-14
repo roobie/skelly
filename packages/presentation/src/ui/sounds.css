@@ -42,10 +42,6 @@ body {
 .sound-page-header nav {
   margin-top: 14px;
 }
-.sound-page-header a,
-.variant-credit a {
-  color: var(--accent);
-}
 .sound-count {
   flex: 0 0 auto;
   color: var(--muted);
@@ -149,18 +145,7 @@ body {
   font-size: 11px;
 }
 .sound-variants button {
-  padding: 5px 9px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #252b33;
-  color: var(--text);
-  font: inherit;
   font-size: 11px;
-  cursor: pointer;
-}
-.sound-variants button:hover,
-.sound-variants button:focus-visible {
-  border-color: var(--accent);
 }
 @media (max-width: 700px) {
   #sound-sheet {

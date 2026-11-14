@@ -251,6 +251,27 @@
         "world": 0.80000000000000004
       },
       "capability": "interface",
+      "controlTheme": {
+        "accent": "#e0b04a",
+        "cornerRem": 0.25,
+        "disabledInk": "#a6b1bb",
+        "edge": "#63717f",
+        "edgeWidthPx": 1,
+        "focusEdge": "#a9dcff",
+        "focusGapPx": 2,
+        "focusSeparation": "#090c10",
+        "focusWidthPx": 3,
+        "hoverSurface": "#34414d",
+        "ink": "#edf2f5",
+        "lightFocusEdge": "#285575",
+        "mutedInk": "#a6b1bb",
+        "paddingBlockRem": 0.3125,
+        "paddingInlineRem": 0.5,
+        "refusalEdge": "#d9aa8c",
+        "refusalInk": "#f0c5a8",
+        "selectedEdge": "#e0b04a",
+        "surface": "#242b33"
+      },
       "coreActionLabels": {
         "batteryIn": "Put a battery in the {item}",
         "batteryOut": "Take the battery out",

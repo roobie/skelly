@@ -2137,6 +2137,118 @@ try {
       assert.equal(current.clicks.length, previous.clicks.length, `${key} with nothing focused activates no control`);
     }
     logPhase('focused controls own Enter and Space');
+
+    await page.evaluate(() => {
+      const { screen } = globalThis.foregripFitTest;
+      screen.open();
+      screen.selectTab('items');
+    });
+    const selectedTab = page.locator('#inventory .inv-tab[aria-selected="true"]');
+    await selectedTab.focus();
+    const selectedEdge = await selectedTab.evaluate((element) => getComputedStyle(element).borderColor);
+    await selectedTab.evaluate((element) => element.blur());
+    assert.equal(
+      await selectedTab.evaluate((element) => getComputedStyle(element).borderColor),
+      selectedEdge,
+      'selection marker survives blur',
+    );
+    assert.equal(await selectedTab.getAttribute('aria-selected'), 'true', 'blur keeps the chosen tab');
+
+    // Leave the native pointer over one tab while the drawn cursor enters another.
+    const otherTab = page.locator('#inventory .inv-tab[data-tab="skills"]');
+    const nativeBox = await selectedTab.boundingBox();
+    await page.mouse.move(nativeBox.x + nativeBox.width / 2, nativeBox.y + nativeBox.height / 2);
+    const otherBox = await otherTab.boundingBox();
+    const drawn = await page.evaluate(() => ({
+      x: globalThis.foregripFitTest.input.cursorX,
+      y: globalThis.foregripFitTest.input.cursorY,
+    }));
+    await page.evaluate(dispatchMenuPointerMove, {
+      canvasSelector: '#view',
+      movementX: otherBox.x + otherBox.width / 2 - drawn.x,
+      movementY: otherBox.y + otherBox.height / 2 - drawn.y,
+    });
+    await page.waitForFunction(() =>
+      document.querySelector('#inventory .inv-tab[data-tab="skills"]')?.classList.contains('game-cursor-hover'),
+    );
+    const hoverState = await page.evaluate(() => {
+      const native = document.querySelector('#inventory .inv-tab[aria-selected="true"]');
+      const drawnTab = document.querySelector('#inventory .inv-tab[data-tab="skills"]');
+      const sample = document.createElement('span');
+      document.body.append(sample);
+      const resolveColor = (role) => {
+        sample.style.backgroundColor = `var(--control-${role})`;
+        return getComputedStyle(sample).backgroundColor;
+      };
+      const result = {
+        locked: document.body.classList.contains('menu-pointer-locked'),
+        nativeHover: native.matches(':hover'),
+        drawnHover: drawnTab.classList.contains('game-cursor-hover'),
+        nativeFill: getComputedStyle(native).backgroundColor,
+        drawnFill: getComputedStyle(drawnTab).backgroundColor,
+        rest: resolveColor('surface'),
+        hover: resolveColor('hover-surface'),
+      };
+      sample.remove();
+      return result;
+    });
+    assert.ok(
+      hoverState.locked && hoverState.nativeHover && hoverState.drawnHover,
+      `both pointer paths are exercised: ${JSON.stringify(hoverState)}`,
+    );
+    assert.notEqual(hoverState.rest, hoverState.hover, 'the theme distinguishes hover from rest');
+    assert.equal(hoverState.nativeFill, hoverState.rest, 'native hover cannot stick under the drawn cursor');
+    assert.equal(hoverState.drawnFill, hoverState.hover, 'drawn cursor owns hover fill');
+
+    await page.evaluate(() => globalThis.foregripFitTest.screen.selectTab('crafting'));
+    const refusedStart = page.locator('#crafting .craft-start[aria-disabled="true"]').first();
+    await refusedStart.waitFor({ state: 'visible' });
+    await refusedStart.scrollIntoViewIfNeeded();
+    await refusedStart.focus();
+    const focusRefusal = await refusedStart.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      const paint = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
+      const clips = [];
+      for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+        const css = getComputedStyle(parent);
+        const bounds = parent.getBoundingClientRect();
+        if (['auto', 'scroll', 'hidden', 'clip'].includes(css.overflowX)) {
+          clips.push(box.left - paint >= bounds.left && box.right + paint <= bounds.right);
+        }
+        if (['auto', 'scroll', 'hidden', 'clip'].includes(css.overflowY)) {
+          clips.push(box.top - paint >= bounds.top && box.bottom + paint <= bounds.bottom);
+        }
+      }
+      return {
+        focused: document.activeElement === element,
+        disabled: element.disabled,
+        border: style.borderStyle,
+        outline: style.outlineStyle,
+        width: Number.parseFloat(style.outlineWidth),
+        independent: style.outlineColor !== style.borderColor,
+        clips,
+      };
+    });
+    assert.ok(focusRefusal.focused && !focusRefusal.disabled, 'refusal remains focusable');
+    assert.equal(focusRefusal.border, 'dashed', 'refusal keeps its independent dashed edge');
+    assert.ok(
+      focusRefusal.outline === 'solid' && focusRefusal.width > 0 && focusRefusal.independent,
+      'focus ring composes with refusal rather than replacing its edge',
+    );
+    assert.ok(
+      focusRefusal.clips.length > 0 && focusRefusal.clips.every(Boolean),
+      `pane edges do not clip focus paint: ${JSON.stringify(focusRefusal)}`,
+    );
+    const beforeRefusal = await page.evaluate(() => globalThis.foregripFitTest.dispatches.length);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Space');
+    assert.equal(
+      await page.evaluate(() => globalThis.foregripFitTest.dispatches.length),
+      beforeRefusal,
+      'native activation cannot start refused work',
+    );
+    logPhase('shared control states under locked pointer');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
