@@ -84,8 +84,8 @@ const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, act
 // Loading owns its work-scaled deadline and ends in `ready` or `failed`; a stage deadline on top of it fails on
 // runner speed, because software GL spends tens of seconds compiling the game's shaders. A mounted debug panel
 // is not a readiness signal.
-const waitForWorldLoaded = (page) =>
-  page.evaluate(
+const waitForWorldLoaded = (loadingPage) =>
+  loadingPage.evaluate(
     () =>
       new Promise((done, reject) => {
         const loading = document.querySelector('#world-loading');
