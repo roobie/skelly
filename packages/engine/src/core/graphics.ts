@@ -100,6 +100,7 @@ export const GRAPHICS_KNOBS = {
   fastCamo: { kind: 'toggle', schema: ToggleOptionSchema },
   coarseWeathering: { kind: 'toggle', schema: ToggleOptionSchema },
   cachedSurfaceNoise: { kind: 'toggle', schema: ToggleOptionSchema },
+  vehicleFinishes: { kind: 'toggle', schema: ToggleOptionSchema },
   /** Samples per pixel of the scene's edge smoothing; 0 is none. */
   msaaSamples: { kind: 'choice', schema: ChoiceOptionSchema },
 } as const;

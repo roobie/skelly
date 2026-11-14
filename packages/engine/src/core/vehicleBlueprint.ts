@@ -3,7 +3,8 @@
  * part's mass, centre of mass, baked collision and datums. Loading places those in the vehicle frame.
  */
 import { modelMassKg } from '@skelly/thing-core/mass';
-import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
+import { mirrorMotion } from '@skelly/thing-core/motion';
+import type { ModelBox, ModelParts, Motion } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
 import { claimed } from './capabilities.ts';
 import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
@@ -172,6 +173,8 @@ export interface PlacedFitting {
   readonly centreOfMass: Vec3;
   readonly collision: readonly ModelBox[];
   readonly datums: Readonly<Record<string, Vec3>>;
+  /** How it moves from rest to its stop, in the vehicle frame; absent for a fitting that stays put. */
+  readonly motion?: Motion;
   /** The voxel lattice its drawn collision lies on: planes `grain` metres apart through `origin`. */
   readonly lattice?: { readonly grain: number; readonly origin: Vec3 };
   readonly addon?: NonNullable<NonNullable<ItemDef['vehicle']>['addon']>;
@@ -252,6 +255,14 @@ const cargoBody = (registry: Registry, fitting: VehicleFittingDef, [x, y, z]: Ca
   };
 };
 
+/** A part's motion in the vehicle frame: reflected when the fitting is mirrored, its axis ends moved to where it stands. */
+const placeMotion = (fitting: VehicleFittingDef, motion: Motion): Motion => {
+  const shifted = ([x, y, z]: Vec3): Vec3 => [fitting.at[0] + x, fitting.at[1] + y, fitting.at[2] + z];
+  return (fitting.mirror ? mirrorMotion(motion) : motion).map((stage) =>
+    stage.kind === 'hinge' ? { ...stage, axis: { from: shifted(stage.axis.from), to: shifted(stage.axis.to) } } : stage,
+  ) as unknown as Motion;
+};
+
 /** Places a fitting of validated content; mass and centre come only from the part's export. */
 export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): PlacedFitting => {
   const item = registry.items.get(fitting.part);
@@ -273,6 +284,7 @@ export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): Pl
     datums: Object.fromEntries(
       Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, grow(point))]),
     ),
+    ...(model.motion ? { motion: placeMotion(fitting, model.motion) } : {}),
     ...(cells && space ? { cargo: { cells, grid: cargoGrid(cells, space) } } : {}),
   };
 };

@@ -14,7 +14,8 @@ export interface RuntimeClosurePolicy {
   /** Local directories the runtime may reach without following their source files; named here, never implied. */
   readonly leaves: readonly string[];
   /**
-   * The runtime package's manifest. The workspaces its `dependencies` name are the libraries the runtime
+   * The runtime package's manifest. The workspaces its `dependencies` name, and those the libraries it follows
+   * name in turn, are the libraries the runtime
    * follows: a file of one is allowed when reached by the package name or from inside that library. A runtime
    * file may import only the npm packages it names there.
    */
@@ -140,6 +141,24 @@ interface Workspace {
   readonly name: string;
   readonly dir: string;
   readonly exports: unknown;
+  readonly dependencies: readonly string[];
+}
+
+/**
+ * The workspaces the runtime follows: those its manifest names, and those each followed library names in turn, so a
+ * library's own manifest is the one place that declares what it builds on.
+ */
+function followedLibraries(workspaces: readonly Workspace[], named: readonly string[]): string[] {
+  const followed = new Set<Workspace>();
+  const pending = [...named];
+  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+    const library = workspaces.find((workspace) => workspace.name === name);
+    if (library && !followed.has(library)) {
+      followed.add(library);
+      pending.push(...library.dependencies);
+    }
+  }
+  return [...followed].map(({ dir }) => dir);
 }
 
 const within = (path: string, dir: string): boolean => path === dir || path.startsWith(`${dir}/`);
@@ -155,8 +174,14 @@ function workspacesOf(repoRoot: string): Workspace[] {
       const manifest = JSON.parse(readFileSync(join(repoRoot, dir, 'package.json'), 'utf8')) as {
         name: string;
         exports?: unknown;
+        dependencies?: Record<string, string>;
       };
-      return { name: manifest.name, dir: dir.split(sep).join('/'), exports: manifest.exports };
+      return {
+        name: manifest.name,
+        dir: dir.split(sep).join('/'),
+        exports: manifest.exports,
+        dependencies: Object.keys(manifest.dependencies ?? {}),
+      };
     });
 }
 
@@ -771,7 +796,7 @@ class ClosureWalk {
     const dependencies = Object.keys(manifest.dependencies ?? {});
     this.dependencies = dependencies;
     this.ownName = manifest.name;
-    this.libraries = this.workspaces.filter(({ name }) => dependencies.includes(name)).map(({ dir }) => dir);
+    this.libraries = followedLibraries(this.workspaces, dependencies);
     const roots = policy.start.map((dir) => sourceFilesUnder(root, dir));
     this.queue = roots.flatMap(({ files }) => files);
     for (const link of roots.flatMap(({ links }) => links)) {
