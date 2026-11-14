@@ -244,6 +244,26 @@ describe('new-game application', () => {
     expect(context.body.health).toBe(health);
   });
 
+  it('lights an authored start lamp through the light owner at the start calendar and rejects non-lights', () => {
+    const start = makeStart({
+      kit: [{ id: 'lamp', item: 'oil_lamp', lit: true, destination: { kind: 'hand', role: 'dominant' } }],
+    });
+    expect(parse(StartSchema, start).kit[0]!.lit).toBe(true);
+    const context = setup(start);
+    const calendar = 12_345;
+    applyStartState(context.inventory, start, { ...context, calendar });
+    expect(context.inventory.hands.right?.on).toBe(true);
+    expect(context.inventory.hands.right?.litAtGameTimestamp).toBe(calendar);
+    context.registry.starts.set(start.id, start);
+    expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
+    start.kit[0]!.item = 'fixture_start_stock';
+    expect(startIssues(context.registry)).toContainEqual(
+      expect.objectContaining({ id: start.id, path: '.kit[0].lit' }),
+    );
+    const refused = setup(makeStart({ kit: [] }));
+    expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "lamp"');
+  });
+
   it('fills a magazine from authored rounds without sharing the row array', () => {
     const start = makeStart({ kit: [] });
     const context = setup(start);

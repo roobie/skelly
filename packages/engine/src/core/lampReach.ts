@@ -1,4 +1,4 @@
-// Where a powered lamp's light reaches, computed with the rules' own wall check (`illumination.ts`, `reaches`) so the
+// Where a point light reaches, computed with the rules' own wall check (`illumination.ts`, `reaches`) so the
 // picture cannot disagree with the rules (`packages/deadvox/DESIGN.md`, "Light"). The renderer uploads these grids; a
 // lamp's light is dropped wherever its grid says blocked.
 
@@ -49,11 +49,11 @@ const boxesOverlap = (aMin: Readonly<Vec3>, aMax: Readonly<Vec3>, bMin: Readonly
   [0, 1, 2].every((axis) => aMin[axis]! < bMax[axis]! && bMin[axis]! < aMax[axis]!);
 
 /**
- * One reach grid per lit lamp, kept current: a changed chunk or standing piece marks stale only the lamps whose grid
- * it overlaps, so putting up a wall beside a lamp rebuilds that lamp and no other.
+ * Shared reach for point lights (`packages/deadvox/DESIGN.md`, "Light"). Moving renderer slots keep a bounded
+ * identity instead of caching every frame's position; subcell motion reuses reach to keep held lights cheap.
  */
 export class LampReachCache {
-  private readonly entries = new Map<string, Entry>();
+  private readonly entries = new Map<string | object, Entry>();
   private readonly isBlocking: SolidAt;
   private readonly tuning: LampReachTuning;
   private readonly blockSize: number;
@@ -107,8 +107,8 @@ export class LampReachCache {
   /** Whether a lamp's grid is built and no change since has touched it. */
   isCurrent(light: PoweredLight): boolean {
     this.catchUpWithPieces();
-    const entry = this.entries.get(keyOf(light));
-    return entry?.reach !== undefined && !entry.stale;
+    const entry = this.entries.get(light.reachSource ?? keyOf(light));
+    return entry?.reach !== undefined && !entry.stale && this.sameCell(entry.light, light);
   }
 
   /**
@@ -117,20 +117,28 @@ export class LampReachCache {
    */
   reachOf(light: PoweredLight, mayBuild = true): LampReach | undefined {
     this.catchUpWithPieces();
-    const key = keyOf(light);
+    const key = light.reachSource ?? keyOf(light);
     let entry = this.entries.get(key);
+    const revision = entry?.revision ?? 0;
+    if (entry && !this.sameCell(entry.light, light)) {
+      if (!mayBuild) {
+        return entry.reach;
+      }
+      this.entries.delete(key);
+      entry = undefined;
+    }
     if (!entry) {
       const cells = Math.ceil(
         Math.min(light.radius, this.tuning.rangeMetres) / this.blockSize / this.tuning.cellBlocks,
       );
       const reachBlocks = (cells + 1) * this.tuning.cellBlocks;
       entry = {
-        light,
+        light: { ...light, pos: [...light.pos] },
         min: light.pos.map((value) => Math.floor(value) - reachBlocks) as Vec3,
         max: light.pos.map((value) => Math.floor(value) + reachBlocks + 1) as Vec3,
         reach: undefined,
         stale: true,
-        revision: 0,
+        revision,
       };
       this.entries.set(key, entry);
     }
@@ -142,6 +150,16 @@ export class LampReachCache {
     return entry.reach;
   }
 
+  private sameCell(previous: PoweredLight, light: PoweredLight): boolean {
+    return (
+      previous.radius === light.radius &&
+      previous.pos.every(
+        (value, axis) =>
+          Math.floor(value / this.tuning.cellBlocks) === Math.floor(light.pos[axis]! / this.tuning.cellBlocks),
+      )
+    );
+  }
+
   private build({ light, revision }: Entry): LampReach {
     const { cellBlocks, rangeMetres } = this.tuning;
     const range = Math.min(light.radius, rangeMetres) / this.blockSize;
@@ -149,13 +167,31 @@ export class LampReachCache {
     const size = 2 * half + 1;
     const origin = light.pos.map((value) => Math.floor(value / cellBlocks) - half) as Vec3;
     const cells = new Uint8Array(size ** 3).fill(1);
+    // Rays share blocking queries, not visibility: a clear receiver does not prove its neighbours clear.
+    // Pad the bounds for a ray ending exactly on a voxel boundary in the negative direction.
+    const min = light.pos.map((value) => Math.floor(value - range) - 1) as Vec3;
+    const extent = Math.ceil(2 * range) + 3;
+    const blocking = new Uint8Array(extent ** 3);
+    const isBlocking: SolidAt = (x, y, z) => {
+      const index = x - min[0] + extent * (z - min[2] + extent * (y - min[1]));
+      let value = blocking[index]!;
+      if (value === 0) {
+        value = this.isBlocking(x, y, z) ? 2 : 1;
+        blocking[index] = value;
+      }
+      return value === 2;
+    };
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
         for (let x = 0; x < size; x++) {
-          const centre = [x, y, z].map((cell, axis) => (origin[axis]! + cell + 0.5) * cellBlocks) as Vec3;
-          const distance = Math.hypot(...centre.map((value, axis) => value - light.pos[axis]!));
+          const centre: Vec3 = [
+            (origin[0] + x + 0.5) * cellBlocks,
+            (origin[1] + y + 0.5) * cellBlocks,
+            (origin[2] + z + 0.5) * cellBlocks,
+          ];
+          const distance = Math.hypot(centre[0] - light.pos[0], centre[1] - light.pos[1], centre[2] - light.pos[2]);
           // Past the range no light is drawn, so the cell is never read; it keeps the default.
-          if (distance <= range && !reaches(light.pos, centre, this.isBlocking, light.body)) {
+          if (distance <= range && !reaches(light.pos, centre, isBlocking, light.body)) {
             cells[x + size * (z + size * y)] = 0;
           }
         }

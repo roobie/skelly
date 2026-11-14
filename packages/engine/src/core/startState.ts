@@ -3,6 +3,7 @@ import { type Character, dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { type Item, setInitialCylinder } from './items.ts';
+import { toggleLight } from './lights.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 
 const placeEntry = (
@@ -45,7 +46,7 @@ const startFailure = (inventory: Inventory, start: StartDef, path: string, reaso
   throw new Error(`Start "${start.id}" (${origin?.source ?? 'unattributed start'}) ${path}: ${String(reason)}`);
 };
 
-export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
+export const applyStartKit = (inventory: Inventory, start: StartDef, calendar = 0): void => {
   const parents = new Map<string, Item>();
   for (const entry of start.kit) {
     try {
@@ -57,6 +58,12 @@ export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
         setInitialCylinder(inventory.registry, item, entry.cylinder);
       }
       placeEntry(inventory, entry, item, parents);
+      if (entry.lit) {
+        const refusal = toggleLight(inventory.registry, item, calendar);
+        if (refusal !== undefined) {
+          throw new Error(refusal);
+        }
+      }
       parents.set(entry.id, item);
     } catch (error) {
       startFailure(inventory, start, `kit entry "${entry.id}"`, error);
@@ -83,6 +90,7 @@ export const applyStartState = (
   start: StartDef,
   context: {
     fresh: boolean;
+    calendar?: number;
     character: Character;
     body: Body;
     /** Records authored damage on a terrain cell, through the session's own damage owner. */
@@ -92,7 +100,7 @@ export const applyStartState = (
   if (!context.fresh) {
     return;
   }
-  applyStartKit(inventory, start);
+  applyStartKit(inventory, start, context.calendar);
   try {
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
   } catch (error) {
