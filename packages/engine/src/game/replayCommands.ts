@@ -55,6 +55,13 @@ export type ReplayActionPayload =
       preference: CraftPreference;
       sources?: CraftSources;
     }
+  | {
+      kind: 'craft.repair-cell';
+      recipeId: string;
+      cell: [number, number, number];
+      preference: CraftPreference;
+      sources?: CraftSources;
+    }
   | { kind: 'craft.take-apart-entity'; entityUid: number }
   | { kind: 'craft.take-apart-cell'; cell: [number, number, number] }
   | { kind: 'craft.continue' }
@@ -221,6 +228,13 @@ const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
         isCraftStartPayload(payload) &&
         Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference', 'sources'].includes(key))
       );
+    case 'craft.repair-cell':
+      return (
+        isTriple(payload.cell, Number.isSafeInteger) &&
+        payload.preference !== undefined &&
+        isCraftStartPayload(payload) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'cell', 'preference', 'sources'].includes(key))
+      );
     case 'craft.take-apart-entity':
       return isUid(payload.entityUid) && Object.keys(payload).length === 2;
     case 'craft.take-apart-cell':
@@ -316,6 +330,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'craft.start':
     case 'craft.repair-entity':
+    case 'craft.repair-cell':
     case 'craft.take-apart-entity':
     case 'craft.take-apart-cell':
       return isCraftCommandPayload(payload);
@@ -367,6 +382,13 @@ export interface ReplayCommandOwners {
   craftRepairEntity: (
     recipeId: string,
     entityUid: number,
+    preference: CraftPreference,
+    sources?: CraftSources,
+  ) => string | undefined;
+  /** Starts mending one damaged terrain cell, as work held in the dominant hand; the command revalidates the cell. */
+  craftRepairCell: (
+    recipeId: string,
+    cell: [number, number, number],
     preference: CraftPreference,
     sources?: CraftSources,
   ) => string | undefined;
@@ -480,6 +502,8 @@ export const applyReplayActionPayload = (
       return owners.craftStart(payload.recipeId, payload.preference, payload.sources);
     case 'craft.repair-entity':
       return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
+    case 'craft.repair-cell':
+      return owners.craftRepairCell(payload.recipeId, payload.cell, payload.preference, payload.sources);
     case 'craft.take-apart-entity':
       return owners.craftTakeApartEntity(payload.entityUid);
     case 'craft.take-apart-cell':

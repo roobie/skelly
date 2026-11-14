@@ -29,7 +29,7 @@ import {
   playerAimTuning,
 } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
-import type { BlockBlow } from '../core/blockDamage.ts';
+import { type BlockBlow, worldCellRepair } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
@@ -39,7 +39,7 @@ import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
-import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
@@ -983,6 +983,7 @@ export const createSession = (options: SessionOptions) => {
   inventory.landing = (pos) => settleCell(pos, s, scale.minCy * CHUNK, physicalSolid);
   inventory.dropFeet = feet;
   inventory.foodClock = () => foodMillisecondsAt(sim.calendar);
+  inventory.cellRepair = worldCellRepair(world, registry);
   /** Why something resting on a rubble cell blocks clearing it: the piece or pile would lose its floor. */
   const restingOnRubble = (cell: Readonly<Vec3>): string | undefined => {
     const above: Vec3 = [cell[0], cell[1] + 1, cell[2]];
@@ -1621,6 +1622,20 @@ export const createSession = (options: SessionOptions) => {
       return bashPiece(piece, weapon.impulse);
     }
     return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
+  };
+  /** Records authored start damage on a cell, admitted like a strike's retained damage: the column's supply is
+   * read and published before the damage lands, so the damaged world survives streaming and saves. */
+  const damageTerrainCell = (cell: Vec3, damage: number): void => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      throw new Error('Start damaged a cell with no terrain destruction owner');
+    }
+    const supply = columnSupply.project(context.source);
+    const ensure = (cx: number, cz: number): void => context.terrain.ensureColumn(cx, cz);
+    supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
+    supply.publish(supply.revision, ensure, () => {
+      world.blockDamage.record(context.terrain, registry, cell, damage);
+    });
   };
   const traps = new BearTraps(inventory);
   const actorReady = actorReadinessFor(options);
@@ -2917,6 +2932,7 @@ export const createSession = (options: SessionOptions) => {
       return playerEyeHeightMetres();
     },
     strikeTerrainCell,
+    damageTerrainCell,
     projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {

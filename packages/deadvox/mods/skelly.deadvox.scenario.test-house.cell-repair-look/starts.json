@@ -1,0 +1,132 @@
+{
+  "starts": [
+    {
+      "allSkills": 10,
+      "blockDamage": [
+        {
+          "cell": [-22, 45, 28],
+          "damage": 120
+        }
+      ],
+      "debugOnly": true,
+      "defaultForSite": true,
+      "density": null,
+      "id": "cellrepairlook",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "pack",
+          "item": "school_backpack"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "pack",
+            "pocket": 0
+          },
+          "id": "repair_kit",
+          "item": "repair_kit"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 0
+          },
+          "id": "scrap_1",
+          "item": "scrap_metal"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 1
+          },
+          "id": "scrap_2",
+          "item": "scrap_metal"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete",
+        "repair_brick",
+        "repair_planks"
+      ],
+      "seed": 1,
+      "site": "testHouseCellRepairLook",
+      "skills": {},
+      "startTimeGameTimeOfDay": "12:00",
+      "storeys": 1,
+      "wounds": []
+    }
+  ]
+}

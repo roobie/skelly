@@ -1,4 +1,5 @@
 import { buildRegistry, requireDayCycle } from '@skelly/engine/content';
+import { placementOf } from '@skelly/engine/internal/core/authoredPlacement.ts';
 import { AuthoredSite } from '@skelly/engine/internal/core/authoredSite.ts';
 import { bindReach } from '@skelly/engine/internal/core/reach.ts';
 import { rubbleBlockIds } from '@skelly/engine/internal/core/rubble.ts';
@@ -8,6 +9,9 @@ import { Inventory } from '@skelly/engine/inventory';
 import { admitPacks, bundledModIdsFromUrl, selectBundledMods } from '@skelly/engine/packs';
 import { makeScale, placedPoint, raycast, toChunk, type Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
+import cellRepairLookManifest from '../mods/skelly.deadvox.scenario.test-house.cell-repair-look/pack/manifest.json' with {
+  type: 'json',
+};
 import debugMod from '../mods/skelly.deadvox.scenario.test-house.debug/layouts.json' with { type: 'json' };
 import debugManifest from '../mods/skelly.deadvox.scenario.test-house.debug/pack/manifest.json' with { type: 'json' };
 import lookManifest from '../mods/skelly.deadvox.scenario.test-house.rubble-look/pack/manifest.json' with {
@@ -88,6 +92,37 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
     const config = configFromUrl(query, { debug: true }, linked.content, ragdollSweepViewer);
     expect(config.startId).toBe(linked.content.startModStart);
     expect(config.site).toBe(linked.content.registry.starts.get(config.startId)?.site);
+  });
+
+  // The cell-repair look's whole staging is the damaged brick the start ships in front of the spawn; a cell that
+  // points anywhere else refuses the start at boot, so its geometry is checked here rather than by eye.
+  it("ships the cell-repair look start damage on the alcove brick at the spawn's eye height", () => {
+    const admitted = admitPacks(readBundledPacks('.', cellRepairLookManifest.id));
+    expect(admitted.issues).toEqual([]);
+    const { registry, issues } = buildRegistry(admitted.sources);
+    expect(issues).toEqual([]);
+    const layout = registry.layouts.get('testHouseCellRepairLook')!;
+    const alcove = layout.buildings.find(({ template }) => template === 'test_house_repair_alcove')!;
+    const placement = placementOf(registry, alcove, layout.lootContext);
+    const start = registry.starts.get('cellrepairlook')!;
+    const block = (cell: readonly number[]): string | undefined => {
+      const id = placedBlockAt(placement, [...cell] as [number, number, number]);
+      return id === undefined ? undefined : registry.blocks[id]!.id;
+    };
+    const feet = layout.player.position.map((value) => value / 0.5);
+    const eye = Math.floor(feet[1]! + playerTuning(baseContent.registry).eye / 0.5);
+    const staged = start.blockDamage ?? [];
+    expect(staged.length).toBeGreaterThan(0);
+    for (const { cell } of staged) {
+      expect(block(cell)).toBe('brick');
+      expect(cell[0]).toBe(Math.floor(feet[0]!));
+      expect(cell[1]).toBe(eye);
+      // In front: every cell between the spawn and the brick is air, so nothing hides the crack.
+      expect(cell[2]).toBeLessThan(Math.floor(feet[2]!));
+      for (let z = cell[2] + 1; z <= Math.floor(feet[2]!); z += 1) {
+        expect(block([cell[0], cell[1], z])).toBe('air');
+      }
+    }
   });
 
   // The rubble look's whole staging is the heap its start aims at, so its geometry is checked as the start's
