@@ -2664,11 +2664,10 @@ const startPlayWith = (
 
   const firearmReadiness = () => {
     const selected = selectPrimaryAction(inventory);
-    if (
-      selected.kind !== 'firearm' ||
-      !debugGunPose.readyHeld(input.controls.rightMouseActionHeld) ||
-      !hasGunPoseInput()
-    ) {
+    // The simulation raises the gun for a press check without the ready input; see
+    // `packages/engine/src/game/session.ts`, `raisedFirearm`.
+    const raised = debugGunPose.readyHeld(input.controls.rightMouseActionHeld) || pressChecking();
+    if (selected.kind !== 'firearm' || !raised || !hasGunPoseInput()) {
       return;
     }
     return {
