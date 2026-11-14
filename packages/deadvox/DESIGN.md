@@ -2610,6 +2610,19 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   different because breaking a leaf need not remove its support. See
   `packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `ruinFurniture`; and
   `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`.
+- **Damaged terrain cracks.** A terrain cell that holds damage shows a crack on
+  its exposed faces, and the crack reaches further as damage nears durability;
+  undamaged and fully repaired cells show none. A damaged wall must read damaged
+  in the world, and a crack reads as damage where a colour tint does not. The
+  crack is presentation drawn from saved damage, so it adds no save state and
+  never changes a blow or a repair. Each cell's crack is seeded by the world seed
+  and the cell, so it looks the same on every visit and reload, and a growing
+  crack extends the one already drawn instead of redrawing it. It is an overlay
+  rebuilt only when damage, blocks or revealed columns change, so it costs no
+  chunk remesh and nothing per frame. Its pattern, colour and damage steps are
+  content on the block material. See `packages/engine/src/core/schema/blocks.ts`,
+  `BlockMaterialSchema` (`cracks`), and `packages/presentation/src/render/terrainCracks.ts`,
+  `TerrainCracks` and `crackStrokes`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
@@ -2681,7 +2694,7 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
 Still open: the full list of damage types and each material's resistances,
-shambler bleeding consequences, partial block damage (cracked looks),
+shambler bleeding consequences,
 explosives damaging blocks, breach charges, and the sounds for severing and
 destruction (the audio manifest). Blast damage by distance is the hand grenade's
 rule ("Hand grenade").
