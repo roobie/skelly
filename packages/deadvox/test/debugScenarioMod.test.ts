@@ -89,7 +89,7 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
     expect(config.site).toBe(linked.content.registry.starts.get(config.startId)?.site);
   });
 
-  // The cell-repair look's whole staging is the damaged brick the start ships beside the spawn; a cell that
+  // The cell-repair look's whole staging is the damaged brick the start ships in front of the spawn; a cell that
   // points anywhere else refuses the start at boot, so its geometry is checked here rather than by eye.
   it("ships the cell-repair look start damage on the alcove brick at the spawn's eye height", () => {
     const admitted = admitPacks(readBundledPacks('.', lookManifest.id));
@@ -112,8 +112,11 @@ describe('authored debug scenario mod', { timeout: 0 }, () => {
       expect(block(cell)).toBe('brick');
       expect(cell[0]).toBe(Math.floor(feet[0]!));
       expect(cell[1]).toBe(eye);
-      expect(cell[2]).toBe(Math.floor(feet[2]!) - 1);
-      expect(block([cell[0], cell[1], cell[2] + 1])).toBe('air');
+      // In front: every cell between the spawn and the brick is air, so nothing hides the crack.
+      expect(cell[2]).toBeLessThan(Math.floor(feet[2]!));
+      for (let z = cell[2] + 1; z <= Math.floor(feet[2]!); z += 1) {
+        expect(block([cell[0], cell[1], z])).toBe('air');
+      }
     }
   });
 
