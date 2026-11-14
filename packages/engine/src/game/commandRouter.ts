@@ -67,6 +67,7 @@ const isGestureAction = (action: string): boolean =>
   action === 'player.throw' ||
   action === 'light.worn-toggle' ||
   action === 'world.interact' ||
+  action === 'emote.menu' ||
   action.startsWith('quickbar.use.');
 
 const isPayloadBackedScreenAction = (context: InputContext, action: string): boolean =>

@@ -266,6 +266,51 @@ describe('command router', () => {
     expect(recogniserPresses).toEqual([]);
   });
 
+  it('records no raw emote key, so a replay cannot reopen the ring and perform an emote the run never chose', () => {
+    const recorded: string[] = [];
+    const ring: string[] = [];
+    const session = {
+      sim: {
+        actions: { cancelWaitForMovement: () => undefined },
+        dead: false,
+        compression: { locksInput: false, admitKey: () => true },
+      },
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({
+        session: () => session,
+        sim: () => ({ time: 0, body: { actionRefusal: undefined } }) as unknown as Pick<Simulation, 'time' | 'body'>,
+        worldReady: () => true,
+        inputContext: () => 'play',
+        recorder: () =>
+          ({ queueAction: (action: string) => recorded.push(action) }) as unknown as ReturnType<
+            CommandRouterPorts['recorder']
+          >,
+        presentation: {
+          ...routerPorts({}).presentation,
+          spectatorAllows: () => true,
+          locomotionPressed: () => undefined,
+          modal: {
+            ...routerPorts({}).presentation.modal,
+            readingOpen: () => false,
+            screenOpen: () => false,
+            mainMenuOpen: () => false,
+          },
+          debugCommand: () => false,
+          hintCommand: () => false,
+        },
+        liveGestures: {
+          ...routerPorts({}).liveGestures,
+          emote: { keyDown: () => ring.push('open'), keyUp: () => ring.push('release') },
+        },
+      }),
+    );
+    router.dispatchInputCommand({ action: 'emote.menu', phase: 'down', at: 0 });
+    router.dispatchInputCommand({ action: 'emote.menu', phase: 'up', at: 100 });
+    expect(ring).toEqual(['open', 'release']);
+    expect(recorded).toEqual([]);
+  });
+
   describe('reload press during a compression ramp-down', () => {
     const rampingDown = (): Compression => {
       const compression = new Compression(longActionLimits(COMPRESSION_CAPS_FIXTURE.wait));
