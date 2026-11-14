@@ -155,7 +155,7 @@ export class LampReachCache {
           const centre = [x, y, z].map((cell, axis) => (origin[axis]! + cell + 0.5) * cellBlocks) as Vec3;
           const distance = Math.hypot(...centre.map((value, axis) => value - light.pos[axis]!));
           // Past the range no light is drawn, so the cell is never read; it keeps the default.
-          if (distance <= range && !reaches(light.pos, centre, this.isBlocking)) {
+          if (distance <= range && !reaches(light.pos, centre, this.isBlocking, light.body)) {
             cells[x + size * (z + size * y)] = 0;
           }
         }
