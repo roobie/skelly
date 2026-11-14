@@ -428,6 +428,10 @@ body.unconscious::after {
   color: var(--panel);
   font-size: calc(1em * var(--radial-selected-label-scale));
 }
+.radial-entry.unavailable {
+  border-style: dashed;
+  opacity: 0.45;
+}
 
 /* A bound key shown beside its action; every hint draws it through `keyCap` in src/ui/keyCap.ts. */
 .keycap {

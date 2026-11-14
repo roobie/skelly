@@ -14,8 +14,9 @@ import {
   type SaveVersionComponents,
 } from '@skelly/engine/save';
 import { createSession, IDLE } from '@skelly/engine/session';
-import { reachTuning } from '@skelly/engine/sim';
+import { dominantSide, offSide, reachTuning } from '@skelly/engine/sim';
 import { makeScale, World } from '@skelly/engine/world';
+import { drawnFirearm } from '@skelly/presentation/internal/presentation/drawnFirearm.ts';
 import { contentLookup as lookupSaveContent } from '@skelly/presentation/ui';
 import { expect, it } from 'vitest';
 import { stackActorFigureFiles } from './baseContentFiles.ts';
@@ -438,7 +439,7 @@ it('loading a magazine round, changing the magazine and charging each train fire
   expect(trains(() => firearms.cock(rifle.uid, runtime.sim.time))).toBe(true);
 });
 
-it('keeps a ready rifle ready through a magazine change and a charge', () => {
+it('keeps a ready rifle ready through a magazine change, a charge and a press check', () => {
   const original = session([], undefined, undefined, { readyHeld: true, active: true });
   // Inserting into the empty rifle is the same magazine-change job as a swap.
   const { rifle, magazine } = rifleInHand(original.inventory, original.queue, { magazines: original.magazines });
@@ -453,6 +454,58 @@ it('keeps a ready rifle ready through a magazine change and a charge', () => {
   expect(readyAfter(() => original.firearms.loadNext(rifle.uid, original.sim.time))).toBe(true);
   expect(rifle.slots?.magazine).toBe(magazine);
   expect(readyAfter(() => original.firearms.cock(rifle.uid, original.sim.time))).toBe(true);
+  expect(readyAfter(() => original.firearms.pressCheck(rifle.uid))).toBe(true);
+});
+
+it('a press check raises a lowered rifle to unsighted fire and lowers it after', () => {
+  const original = session([], undefined, undefined, { readyHeld: false, active: true });
+  const { rifle } = rifleInHand(original.inventory, original.queue, { magazines: original.magazines });
+  original.frame(1 / 60);
+  expect(original.firearms.isReady(rifle.uid)).toBe(false);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  original.frame(rifle.firearm!.readying!.duration);
+  expect(original.queue.busy).toBe(true);
+  expect(original.firearms.isReady(rifle.uid)).toBe(true);
+  settle(original.queue, () => original.frame(1 / 60));
+  original.frame(rifle.firearm!.readying!.duration);
+  expect(original.firearms.isReady(rifle.uid)).toBe(false);
+});
+
+it('a press check raises and draws the gun it checks, not the gun in the dominant hand', () => {
+  const original = session([], undefined, undefined, { readyHeld: false, active: true });
+  const { inventory } = original;
+  // A gun without a magazine has no press check, so the rifle in the off hand is the only one to check.
+  const pump = inventory.create('pump_shotgun');
+  const rifle = inventory.create('rifle_assault');
+  expect(inventory.add(pump, { kind: 'hand', side: dominantSide(inventory.character) })).toBe(true);
+  expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  const raise = rifle.firearm?.readying;
+  expect(raise).toBeDefined();
+  original.frame(raise!.duration);
+  expect(original.queue.busy).toBe(true);
+  expect(original.firearms.isReady(rifle.uid)).toBe(true);
+  expect(original.firearms.isReady(pump.uid)).toBe(false);
+  expect(drawnFirearm(original)?.item).toBe(rifle);
+});
+
+it('a gun that leaves the hand mid press check is no longer drawn, and its check ends', () => {
+  const original = session([], undefined, undefined, { readyHeld: false, active: true });
+  const { inventory } = original;
+  const pump = inventory.create('pump_shotgun');
+  const rifle = inventory.create('rifle_assault');
+  expect(inventory.add(pump, { kind: 'hand', side: dominantSide(inventory.character) })).toBe(true);
+  expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+  expect(original.firearms.pressCheck(rifle.uid)).toBeUndefined();
+  original.frame(1 / 60);
+  expect(original.pressCheckedFirearm()).toBe(rifle);
+  expect(inventory.move(rifle, { kind: 'pile', pos: inventory.dropFeet()! }).ok).toBe(true);
+  // A screen move applies between ticks, so the view must drop the gun before the firearm tick ends the check.
+  expect(drawnFirearm(original)?.item).toBe(pump);
+  original.frame(1 / 60);
+  expect(original.queue.busy).toBe(false);
 });
 
 it('a codec save keeps the fitted magazine and the chambered round, so the next shot is the same', async () => {

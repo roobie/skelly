@@ -1,6 +1,7 @@
 import type { ActionMenuTuning } from '@skelly/engine/content';
 import type { RadialAction } from '@skelly/engine/sim';
 import { html, nothing, render } from 'lit-html';
+import { classMap } from 'lit-html/directives/class-map.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 
 export const radialLabelRadius = (
@@ -75,7 +76,7 @@ export const mountActionRadial =
           const y = -Math.cos(entry.angleRadians) * tuning.radiusPixels;
           return html`<div
             data-action=${entry.id}
-            class=${entry === selected ? 'radial-entry selected' : 'radial-entry'}
+            class=${classMap({ 'radial-entry': true, selected: entry === selected, unavailable: entry.unavailable === true })}
             style=${styleMap({ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` })}
           >${entry.label}</div>`;
         })}

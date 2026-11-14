@@ -3,7 +3,8 @@
 import type { ModelDef } from '@skelly/engine/content';
 import type { HandSide } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
-import { magazineMotion, rackCant, rackGrip } from './firearmModel.ts';
+import { MathUtils } from 'three';
+import { magazineMotion, pressCheckAt, rackCant, rackGrip } from './firearmModel.ts';
 import type { HeldFirearmPose } from './hands.ts';
 
 /** Presentation: how far a full turn takes a rifle, up and turned and rolled. */
@@ -33,7 +34,7 @@ const revolverTurn = (side: HandSide, frame: HeldFirearmPose): Vec3 => {
  * View-space pitch, yaw and roll use the weapon's Z, Y and X axes respectively, with the view's z reversed
  * from the bore. A rack turns the rifle's far side toward the player and rolls its handle toward the off hand,
  * with a larger roll for a handle farther from that hand. The motion mirrors for a left-hander. A magazine job
- * turns the muzzle inward. Shot trajectories keep the unturned bore because this motion is presentation only.
+ * turns the muzzle inward. A press check plays its clip's turn. Shot trajectories keep the unturned bore because this motion is presentation only.
  */
 export const handlingRotation = (
   model: ModelDef | undefined,
@@ -52,6 +53,10 @@ export const handlingRotation = (
   }
   // +1 when the off hand is on the left.
   const toward = side === 'right' ? 1 : -1;
+  if (frame.mode === 'press-check' && model.gun?.pressCheck) {
+    const { pitch, yaw, roll } = pressCheckAt(model.gun.pressCheck, frame).turnDegrees;
+    return [MathUtils.degToRad(pitch), toward * MathUtils.degToRad(yaw), toward * MathUtils.degToRad(roll)];
+  }
   const { pitch, yaw, roll } = HANDLING_TURN_RADIANS;
   if (frame.mode === 'magazine' && frame.magazine && frame.duration !== undefined) {
     const turn = magazineMotion(frame.elapsed, frame.duration, frame.magazine.removeShare).reach;
@@ -64,4 +69,37 @@ export const handlingRotation = (
     return [turn * pitch, -toward * turn * yaw, toward * turn * handleRoll];
   }
   return [0, 0, 0];
+};
+
+/**
+ * How far handling moves a gun held in `side` off its hold, in view axes and metres: a press check lifts it by its
+ * clip, across toward the off hand for either hand. Like the turn, shots never see it.
+ */
+export const handlingShift = (
+  model: ModelDef | undefined,
+  side: HandSide,
+  frame: HeldFirearmPose | undefined,
+): Vec3 => {
+  if (!(frame?.mode === 'press-check' && model?.gun?.pressCheck)) {
+    return [0, 0, 0];
+  }
+  const { up, back, across } = pressCheckAt(model.gun.pressCheck, frame).liftMetres;
+  return [(side === 'right' ? -1 : 1) * across, up, back];
+};
+
+/**
+ * How far handling turns the eyes off the aim, in radians (yaw left, pitch up): a press check looks toward the port by
+ * its clip, whose yaw counts toward the off hand so a left-hander mirrors it. Only the view turns; the aim and the held
+ * gun stay where they are.
+ */
+export const handlingLook = (
+  model: ModelDef | undefined,
+  side: HandSide,
+  frame: HeldFirearmPose | undefined,
+): { readonly yaw: number; readonly pitch: number } => {
+  if (!(frame?.mode === 'press-check' && model?.gun?.pressCheck)) {
+    return { yaw: 0, pitch: 0 };
+  }
+  const { pitch, yaw } = pressCheckAt(model.gun.pressCheck, frame).lookDegrees;
+  return { yaw: (side === 'right' ? 1 : -1) * MathUtils.degToRad(yaw), pitch: MathUtils.degToRad(pitch) };
 };

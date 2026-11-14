@@ -4,7 +4,7 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { claimed } from '../core/capabilities.ts';
-import { dominantSide } from '../core/character.ts';
+import { dominantSide, offSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
@@ -21,7 +21,7 @@ import {
   firearmsSkillEffects,
   skillZeroHandlingForFirearm,
 } from '../core/firearmsSkill.ts';
-import type { HandlingQueue, Job } from '../core/handling.ts';
+import type { ActionJob, HandlingQueue, Job } from '../core/handling.ts';
 import {
   type HeldFirearmTransformInput,
   type HeldSeatFrame,
@@ -36,6 +36,7 @@ import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazin
 import { countText } from '../core/numberText.ts';
 import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
+import { pressCheckSeconds } from '../core/pressCheck.ts';
 import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
@@ -50,6 +51,7 @@ const COCK_ACTION = 'firearm.cock';
 const LOAD_ACTION = 'firearm.load';
 const MAGAZINE_ACTION = 'firearm.magazine';
 const STRIP_ACTION = 'firearm.strip';
+const PRESS_CHECK_ACTION = 'firearm.press-check';
 const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
   COCK_ACTION,
   LOAD_ACTION,
@@ -59,6 +61,16 @@ const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
 ]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && (TRAINING_ACTIONS.has(job.jobType) || job.jobType.startsWith('revolver.'));
+export const isPressCheck = (job: Job): job is ActionJob => job.kind === 'action' && job.jobType === PRESS_CHECK_ACTION;
+
+/**
+ * The guns in either hand, dominant hand first, so the gun the player raises and the guns whose gestures are offered
+ * come from one order, whichever went into the hands first.
+ */
+export const heldFirearms = ({ hands, character, registry }: Inventory): Item[] =>
+  [hands[dominantSide(character)], hands[offSide(character)]].filter(
+    (item): item is Item => item !== undefined && registry.items.get(item.type)?.firearm !== undefined,
+  );
 /**
  * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`packages/deadvox/DESIGN.md`, "Combat and
@@ -241,7 +253,7 @@ interface ShotCommit {
 }
 export interface FirearmCycleFrame {
   readonly uid: number;
-  readonly mode: 'fire' | 'hand' | 'load' | 'magazine' | 'revolver';
+  readonly mode: 'fire' | 'hand' | 'load' | 'magazine' | 'press-check' | 'revolver';
   readonly revolver?: RevolverFrame;
   readonly elapsed: number;
   readonly duration?: number;
@@ -420,6 +432,10 @@ export class FirearmMechanics {
       return undefined;
     });
     queue.registerAction(MAGAZINE_ACTION, (params) => this.completeMagazineChange(params.uid, params.magazineUid));
+    // A press check shows the chamber and lets the carrier return, so it changes nothing.
+    queue.registerAction(PRESS_CHECK_ACTION, (params) =>
+      typeof params.uid === 'number' && this.held(params.uid) ? undefined : this.text.common.notHeld,
+    );
     queue.registerAction(STRIP_ACTION, (params): string | undefined => {
       const gun = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
       const type = gun?.firearm?.retainedRoundType ?? gun?.firearm?.tube?.[0];
@@ -1366,6 +1382,45 @@ export class FirearmMechanics {
     return undefined;
   }
 
+  holdsFirearm(): boolean {
+    return heldFirearms(this.inventory).length > 0;
+  }
+
+  /** The held gun a press check would check: any gun fed by a magazine, once its model carries a clip to play. */
+  pressCheckableUid(): number | undefined {
+    return heldFirearms(this.inventory).find(
+      (item) =>
+        magazineWellCalibre(this.inventory.registry, item.type) !== undefined &&
+        this.pressCheckClip(item) !== undefined,
+    )?.uid;
+  }
+
+  private pressCheckClip(gun: Item) {
+    return firearmModelFor(gun, this.inventory.registry)?.gun?.pressCheck;
+  }
+
+  /** Plays the held gun's press check as a handling job, chosen from the emote menu (`packages/deadvox/CONTROLS.md`, "Emotes"). */
+  pressCheck(uid: number): string | undefined {
+    const item = this.inventory.itemByUid(uid);
+    if (!(item && this.held(uid))) {
+      return this.text.common.notHeld;
+    }
+    const clip = this.pressCheckableUid() === uid ? this.pressCheckClip(item) : undefined;
+    if (!clip) {
+      return this.text.firearm.noPressCheck;
+    }
+    if (this.queue.busy || item.firearm?.cycle) {
+      return this.text.common.busy;
+    }
+    this.queue.enqueueAction(
+      PRESS_CHECK_ACTION,
+      fillText(this.text.firearm.pressCheck, { gun: defOf(this.inventory.registry, item.type).name }),
+      pressCheckSeconds(clip) * this.handlingFactor('rackFactor'),
+      { uid },
+    );
+    return undefined;
+  }
+
   private startHandCycle(item: Item, time: number, phase?: 'open' | 'close', preserveRound = false): void {
     const { uid } = item;
     const data = firearmHandlingFor(item, this.inventory.registry);
@@ -1412,8 +1467,17 @@ export class FirearmMechanics {
     this.observedAtSimSeconds = time;
     this.revolvers.advance();
     this.revolvers.cancelUnheld();
+    this.cancelUnheldPressCheck();
     for (const uid of this.active) {
       this.advanceItem(uid, time);
+    }
+  }
+
+  /** Ends a press check whose gun has left the hands, so nothing raises, draws or shows a check of a gun not held. */
+  private cancelUnheldPressCheck(): void {
+    const job = this.queue.jobs.find(isPressCheck);
+    if (job && !(typeof job.params.uid === 'number' && this.held(job.params.uid))) {
+      this.queue.cancelJob(job);
     }
   }
 
@@ -1540,6 +1604,9 @@ export class FirearmMechanics {
             : {}),
         },
       ];
+    }
+    if (job.jobType === PRESS_CHECK_ACTION) {
+      return [{ ...clock, mode: 'press-check' }];
     }
     if (job.jobType === MAGAZINE_ACTION) {
       return [{ ...clock, mode: 'magazine', magazine: this.magazineMotion(gun, job.params.magazineUid) }];

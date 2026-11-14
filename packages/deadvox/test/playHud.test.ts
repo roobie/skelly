@@ -349,13 +349,19 @@ it('projects a bore hit into the crosshair screen position', () => {
   });
   expect(Number.parseFloat(roots.crosshair.style.left)).toBeCloseTo(projected.left, 5);
   expect(Number.parseFloat(roots.crosshair.style.top)).toBeCloseTo(projected.top, 5);
-  expect(playCrosshairFrame(true, true, projected, false)).toEqual({ visible: true, screenPosition: projected });
+  expect(playCrosshairFrame(true, true, projected)).toEqual({ visible: true, screenPosition: projected });
+});
+
+it('hides the HUD crosshair while a press check plays and shows it again after', () => {
+  const projected = { left: 30, top: 20 };
+  expect(playCrosshairFrame(true, true, projected, { pressCheck: true }).visible).toBe(false);
+  expect(playCrosshairFrame(true, true, projected).visible).toBe(true);
 });
 
 it('lets a presented optic reticle replace the overlapping firearm HUD crosshair', () => {
   const projected = { left: 30, top: 20 };
-  expect(playCrosshairFrame(true, true, projected, true).visible).toBe(false);
-  expect(playCrosshairFrame(true, true, projected, false).visible).toBe(true);
+  expect(playCrosshairFrame(true, true, projected, { opticReticle: true }).visible).toBe(false);
+  expect(playCrosshairFrame(true, true, projected).visible).toBe(true);
 });
 
 it('hides off-screen and behind-camera firearm crosshairs but keeps the no-firearm crosshair centered', () => {
@@ -367,10 +373,10 @@ it('hides off-screen and behind-camera firearm crosshairs but keeps the no-firea
 
   expect(offScreen).toBeUndefined();
   expect(behindCamera).toBeUndefined();
-  expect(playCrosshairFrame(true, true, offScreen, false)).toEqual({ visible: false });
-  expect(playCrosshairFrame(true, true, behindCamera, false)).toEqual({ visible: false });
+  expect(playCrosshairFrame(true, true, offScreen)).toEqual({ visible: false });
+  expect(playCrosshairFrame(true, true, behindCamera)).toEqual({ visible: false });
 
-  const defaultCrosshair = playCrosshairFrame(true, false, undefined, false);
+  const defaultCrosshair = playCrosshairFrame(true, false, undefined);
   expect(defaultCrosshair).toEqual({ visible: true });
   const roots = { hud: root(), prompt: root(), crosshair: root() };
   renderPlayHud(roots, {
@@ -388,7 +394,7 @@ it('keeps an in-view firearm crosshair beyond the camera far plane', () => {
   const beyondFarPlane = projectCrosshairScreenPosition(camera, viewport, [0, 0, -101], 1);
 
   expect(beyondFarPlane).toBeDefined();
-  expect(playCrosshairFrame(true, true, beyondFarPlane, false)).toMatchObject({ visible: true });
+  expect(playCrosshairFrame(true, true, beyondFarPlane)).toMatchObject({ visible: true });
 });
 
 it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {

@@ -55,11 +55,11 @@ export const playCrosshairFrame = (
   enabled: boolean,
   firearmWielded: boolean,
   screenPosition: { readonly left: number; readonly top: number } | undefined,
-  opticReticleVisible: boolean,
+  hiddenBy: { readonly opticReticle?: boolean; readonly pressCheck?: boolean } = {},
 ): PlayCrosshairFrame => {
   const position = firearmWielded ? screenPosition : undefined;
   return {
-    visible: enabled && !opticReticleVisible && (!firearmWielded || position !== undefined),
+    visible: enabled && !hiddenBy.opticReticle && !hiddenBy.pressCheck && (!firearmWielded || position !== undefined),
     ...(position === undefined ? {} : { screenPosition: position }),
   };
 };

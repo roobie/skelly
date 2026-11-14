@@ -1632,6 +1632,18 @@ describe('input replay', () => {
     ]);
   });
 
+  it('round-trips a press check chosen from the emote ring, which no key names', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    recorder.queueAction('firearm.press-check', 'down', 'play');
+    recorder.recordTick(replaySample);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+
+    expect(decoded.inputs.actions.map(({ action }) => action)).toEqual(['firearm.press-check']);
+  });
+
   it('replays recorded compression through the replay driver', async () => {
     const runtime = createRuntime();
     expect(runtime.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();

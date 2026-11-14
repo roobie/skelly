@@ -1,11 +1,12 @@
 import { PlayerControls, RELOAD_GESTURE_MS, type ReplayControlSample } from '@skelly/engine/input';
 import { Compression, longActionLimits } from '@skelly/engine/internal/core/compression.ts';
+import { simSeconds } from '@skelly/engine/internal/core/time.ts';
 import type { CommandRouterPorts } from '@skelly/engine/internal/game/commandRouter.ts';
-import type { FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
+import { FirearmMechanics, type FirearmShotInput } from '@skelly/engine/internal/game/firearmHandling.ts';
 import { planRealFrame } from '@skelly/engine/internal/game/frameDriver.ts';
-import { firearmHandlingFor, Inventory } from '@skelly/engine/inventory';
+import { firearmHandlingFor, HandlingQueue, Inventory } from '@skelly/engine/inventory';
 import { createCommandRouter, type Session } from '@skelly/engine/session';
-import { dominantSide, realSeconds, type Simulation } from '@skelly/engine/sim';
+import { dominantSide, offSide, realSeconds, type Simulation } from '@skelly/engine/sim';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
@@ -110,6 +111,7 @@ const routerPorts = (ports: Partial<CommandRouterPorts>): CommandRouterPorts => 
     interact: unusedGesture,
     offHandUse: { keyDown: () => false, keyUp: unused },
     quickbar: unusedGesture,
+    emote: unusedGesture,
     cancelHeld: unused,
   },
   ...ports,
@@ -263,6 +265,91 @@ describe('command router', () => {
     router.dispatchReplayAction({ tick: 1, action: 'player.crouch-toggle', phase: 'down', context: 'play' }, sample);
     expect(controls.consumeStanceToggle()).toBe('crouch');
     expect(recogniserPresses).toEqual([]);
+  });
+
+  it('records no raw emote key, so a replay cannot reopen the ring and perform an emote the run never chose', () => {
+    const recorded: string[] = [];
+    const ring: string[] = [];
+    const session = {
+      sim: {
+        actions: { cancelWaitForMovement: () => undefined },
+        dead: false,
+        compression: { locksInput: false, admitKey: () => true },
+      },
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({
+        session: () => session,
+        sim: () => ({ time: 0, body: { actionRefusal: undefined } }) as unknown as Pick<Simulation, 'time' | 'body'>,
+        worldReady: () => true,
+        inputContext: () => 'play',
+        recorder: () =>
+          ({ queueAction: (action: string) => recorded.push(action) }) as unknown as ReturnType<
+            CommandRouterPorts['recorder']
+          >,
+        presentation: {
+          ...routerPorts({}).presentation,
+          spectatorAllows: () => true,
+          locomotionPressed: () => undefined,
+          modal: {
+            ...routerPorts({}).presentation.modal,
+            readingOpen: () => false,
+            screenOpen: () => false,
+            mainMenuOpen: () => false,
+          },
+          debugCommand: () => false,
+          hintCommand: () => false,
+        },
+        liveGestures: {
+          ...routerPorts({}).liveGestures,
+          emote: { keyDown: () => ring.push('open'), keyUp: () => ring.push('release') },
+        },
+      }),
+    );
+    router.dispatchInputCommand({ action: 'emote.menu', phase: 'down', at: 0 });
+    router.dispatchInputCommand({ action: 'emote.menu', phase: 'up', at: 100 });
+    expect(ring).toEqual(['open', 'release']);
+    expect(recorded).toEqual([]);
+  });
+
+  it("enters the emote ring's gun mode and offers its press check for a gun held only in the off hand", () => {
+    // The fixture clip makes the rifle press-checkable whatever clip its shipped model carries.
+    const clipped = baseRegistry();
+    const rifleModelId = clipped.items.get('rifle_assault')!.model!;
+    const rifleModel = clipped.models.get(rifleModelId)!;
+    const still = { turnDegrees: { pitch: 0, yaw: 0, roll: 0 }, offHand: 'grip' as const };
+    const pressCheck = { easing: 'linear' as const, keys: [still, { ...still, intoSimSeconds: simSeconds(1) }] };
+    clipped.models.set(rifleModelId, { ...rifleModel, gun: { ...rifleModel.gun!, pressCheck } });
+    const inventory = new Inventory(clipped);
+    const rifle = inventory.create('rifle_assault');
+    expect(inventory.add(rifle, { kind: 'hand', side: offSide(inventory.character) })).toBe(true);
+    const firearms = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 1,
+      isSolid: () => false,
+      pose: () => undefined,
+      onEjection: () => undefined,
+      onCommittedShot: () => undefined,
+    });
+    const session = {
+      sim: {
+        compression: { locksInput: false, refusesKeys: false },
+        paused: false,
+        dead: false,
+        body: { actionRefusal: undefined },
+      },
+      throwCharge: { startedAt: undefined },
+      firearms,
+    } as unknown as Session;
+    const router = createCommandRouter(
+      routerPorts({
+        session: () => session,
+        inventory: () => inventory,
+        pointerLocked: () => true,
+        menuPointer: () => false,
+      }),
+    );
+    expect(router.emotes.mode('gun')).toBe(true);
+    expect(router.emotes.emote('press-check')).toBe(true);
   });
 
   describe('reload press during a compression ramp-down', () => {

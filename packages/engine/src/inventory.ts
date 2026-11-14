@@ -148,6 +148,7 @@ export {
   type FirearmOutcome,
   type FirearmShotEffect,
   firearmHandlingFor,
+  isPressCheck,
   spentCaseItemId,
 } from './game/firearmHandling.ts';
 export type { ItemAction } from './game/itemActions.ts';

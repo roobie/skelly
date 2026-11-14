@@ -10,7 +10,7 @@ import {
   type FirearmMode,
   type HandSide,
 } from '@skelly/engine/inventory';
-import { heldAnchorOffset } from '@skelly/engine/pose';
+import { heldAnchorOffset, type PressCheckSample, pressCheckSeconds, samplePressCheck } from '@skelly/engine/pose';
 import { Matrix4, type Object3D, Quaternion, Vector3 } from 'three';
 import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -302,7 +302,7 @@ export const rackCant = (
   hand: HandSide,
   frame:
     | {
-        readonly mode: FirearmMode | 'load' | 'magazine' | 'revolver';
+        readonly mode: FirearmCycleFrame['mode'];
         readonly elapsed: number;
         readonly duration?: number;
       }
@@ -360,6 +360,23 @@ export const poseActionParts = (
       part.node.position.addScaledVector(part.travel, stroke);
     }
   }
+};
+
+/** Each part slid by its own share of its stroke, as a press check moves the handle and the carrier apart. */
+export const posePartShares = (parts: readonly HeldActionPart[], shares: Readonly<Record<string, number>>): void => {
+  for (const part of parts) {
+    part.node.position.copy(part.rest).addScaledVector(part.travel, shares[part.id] ?? 0);
+    part.node.quaternion.copy(part.restRotation);
+  }
+};
+
+/** The press check where its job has reached: the job runs the clip scaled by the skill's handling factor. */
+export const pressCheckAt = (
+  clip: NonNullable<GunModelDef['pressCheck']>,
+  frame: Pick<FirearmCycleFrame, 'elapsed' | 'duration'>,
+): PressCheckSample => {
+  const progress = frame.duration ? Math.min(1, Math.max(0, frame.elapsed / frame.duration)) : 0;
+  return samplePressCheck(clip, progress * pressCheckSeconds(clip));
 };
 
 const rotationAbout = (pivot: readonly number[], axis: readonly number[], angle: number): Matrix4 =>

@@ -286,36 +286,47 @@ describe('keyboard registry', () => {
   });
   it('dispatches the crouch action in play but not in menus or text entry', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
-    expect(bindings.rebind('player.crouch-toggle', [{ code: 'KeyY' }])).toBeUndefined();
+    expect(bindings.rebind('player.crouch-toggle', [{ code: 'KeyU' }])).toBeUndefined();
     const keyboard = new KeyboardInput(bindings);
     let context: InputContext = 'play';
     keyboard.context = () => ({ context, debug: false });
     const commands: InputCommand[] = [];
     keyboard.command = (command) => commands.push(command);
 
-    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(keyboard.press(event('KeyU'))).toBe(true);
     expect(commands).toEqual([{ action: 'player.crouch-toggle', phase: 'down', at: 0 }]);
-    keyboard.release(event('KeyY'));
+    keyboard.release(event('KeyU'));
     commands.length = 0;
-    expect(keyboard.press(event('KeyY'), true)).toBe(false);
+    expect(keyboard.press(event('KeyU'), true)).toBe(false);
     expect(commands).toEqual([]);
     let captured: Chord | string | undefined;
     keyboard.capture = (chord) => {
       captured = chord;
     };
-    expect(keyboard.press(event('KeyY'))).toBe(true);
-    expect(captured).toEqual({ code: 'KeyY' });
+    expect(keyboard.press(event('KeyU'))).toBe(true);
+    expect(captured).toEqual({ code: 'KeyU' });
     expect(commands).toEqual([]);
-    keyboard.release(event('KeyY'));
+    keyboard.release(event('KeyU'));
     keyboard.capture = undefined;
 
     context = 'menu';
     keyboard.sync();
-    expect(keyboard.press(event('KeyY'))).toBe(false);
+    expect(keyboard.press(event('KeyU'))).toBe(false);
     context = 'noclip';
     keyboard.sync();
-    expect(keyboard.press(event('KeyY'))).toBe(false);
+    expect(keyboard.press(event('KeyU'))).toBe(false);
     expect(commands).toEqual([]);
+  });
+  it('routes the rebound emote key down and up in play, so a release confirms the ring', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    expect(bindings.rebind('emote.menu', [{ code: 'KeyJ' }])).toBeUndefined();
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    expect(keyboard.press(event('KeyJ'))).toBe(true);
+    keyboard.release(event('KeyJ'));
+    expect(commands.map(({ action, phase }) => `${action}:${phase}`)).toEqual(['emote.menu:down', 'emote.menu:up']);
   });
   it('passes held movement through the reading-to-play context change', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
@@ -401,8 +412,8 @@ describe('keyboard registry', () => {
     keyboard.releasePointer(4, 3);
     commands.length = 0;
 
-    expect(bindings.rebind('aim.ads-toggle', [{ code: 'KeyY' }])).toBeUndefined();
-    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(bindings.rebind('aim.ads-toggle', [{ code: 'KeyU' }])).toBeUndefined();
+    expect(keyboard.press(event('KeyU'))).toBe(true);
     expect(commands).toEqual([{ action: 'aim.ads-toggle', phase: 'down', at: 0 }]);
   });
   it('routes ready stance through a rebindable held pointer action', () => {

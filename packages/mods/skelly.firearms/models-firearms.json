@@ -3637,6 +3637,147 @@
           [["receiver.rail.5", "rail-rear-sight"], ["receiver.rail.6", "rail-rear-sight"]]
         ],
         "muzzleDirection": [-1.2246467991473532e-16, 0, 1],
+        "pressCheck": {
+          "easing": "minimum-jerk",
+          "keys": [
+            {
+              "holdSimSeconds": 0.29999999999999999,
+              "offHand": "grip",
+              "turnDegrees": {
+                "pitch": 0,
+                "roll": 0,
+                "yaw": 0
+              }
+            },
+            {
+              "intoSimSeconds": 0.5,
+              "liftMetres": {
+                "across": 0.16,
+                "back": 0,
+                "up": 0.080000000000000002
+              },
+              "lookDegrees": {
+                "pitch": -5,
+                "yaw": -3
+              },
+              "offHand": "grip",
+              "turnDegrees": {
+                "pitch": -3,
+                "roll": 40,
+                "yaw": 0
+              }
+            },
+            {
+              "intoSimSeconds": 0.45000000000000001,
+              "liftMetres": {
+                "across": 0.23999999999999999,
+                "back": 0,
+                "up": 0.12
+              },
+              "lookDegrees": {
+                "pitch": -8,
+                "yaw": -5
+              },
+              "offHand": "handle",
+              "turnDegrees": {
+                "pitch": -4,
+                "roll": 55,
+                "yaw": 0
+              }
+            },
+            {
+              "intoSimSeconds": 0.20000000000000001,
+              "liftMetres": {
+                "across": 0.28000000000000003,
+                "back": 0,
+                "up": 0.14000000000000001
+              },
+              "lookDegrees": {
+                "pitch": -10,
+                "yaw": -6
+              },
+              "offHand": "handle",
+              "parts": {
+                "carrier": 0.29999999999999999,
+                "handle": 0.29999999999999999
+              },
+              "turnDegrees": {
+                "pitch": -5,
+                "roll": 60,
+                "yaw": 0
+              }
+            },
+            {
+              "intoSimSeconds": 0.59999999999999998,
+              "liftMetres": {
+                "across": 0.28000000000000003,
+                "back": 0,
+                "up": 0.14000000000000001
+              },
+              "lookDegrees": {
+                "pitch": -10,
+                "yaw": -6
+              },
+              "offHand": "handle",
+              "parts": {
+                "carrier": 0.29999999999999999,
+                "handle": 0.29999999999999999
+              },
+              "turnDegrees": {
+                "pitch": -5,
+                "roll": 60,
+                "yaw": 0
+              }
+            },
+            {
+              "intoSimSeconds": 0.12,
+              "liftMetres": {
+                "across": 0.23999999999999999,
+                "back": 0,
+                "up": 0.12
+              },
+              "lookDegrees": {
+                "pitch": -8,
+                "yaw": -5
+              },
+              "offHand": "handle",
+              "turnDegrees": {
+                "pitch": -4,
+                "roll": 55,
+                "yaw": 0
+              }
+            },
+            {
+              "holdSimSeconds": 0.10000000000000001,
+              "intoSimSeconds": 0.34999999999999998,
+              "liftMetres": {
+                "across": 0.16,
+                "back": 0,
+                "up": 0.080000000000000002
+              },
+              "lookDegrees": {
+                "pitch": -5,
+                "yaw": -3
+              },
+              "offHand": "port",
+              "turnDegrees": {
+                "pitch": -3,
+                "roll": 40,
+                "yaw": 0
+              }
+            },
+            {
+              "holdSimSeconds": 0.40000000000000002,
+              "intoSimSeconds": 0.5,
+              "offHand": "grip",
+              "turnDegrees": {
+                "pitch": 0,
+                "roll": 0,
+                "yaw": 0
+              }
+            }
+          ]
+        },
         "sight": {
           "direction": [0, 0.0022440336205405576, 0.99999748215338513],
           "eye": [0, 0.057000000000000002, -0.13800000000000001],

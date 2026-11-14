@@ -120,8 +120,8 @@ export const observationPlugin = {
     observedCode = `import { QuickbarActions as PrimaryActionQuickbarActions } from '@skelly/engine/internal/game/quickbarActions.ts';\n${observedCode}`;
     // The landing probe measures a throw as the router does.
     observedCode = `import { throwDistanceForItem as primaryActionThrowDistance } from '@skelly/engine/internal/core/itemThrow.ts';\n${observedCode}`;
-    // The ignition probe finds the hand's target as the router's hand use does.
-    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
+    // The ignition probe finds the hand's target as the router's hand use does, and the action probe reads the selection.
+    observedCode = `import { ignitionTargetForHand as primaryActionIgnitionTarget, selectPrimaryAction as primaryActionSelection } from '@skelly/engine/internal/game/primaryAction.ts';\n${observedCode}`;
     return observedCode.replace(
       marker,
       `
@@ -216,7 +216,7 @@ export const observationPlugin = {
       itemUid: session.throwCharge.itemUid,
       hand: session.throwCharge.hand,
     }),
-    selectPrimaryAction,
+    selectPrimaryAction: primaryActionSelection,
     nextTimeOfDay,
     ignitionTargetForHand: primaryActionIgnitionTarget,
     interactionTargetAt,

@@ -71,6 +71,7 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'light.battery.unload',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
+  'firearm.press-check',
   'liquid.pour',
   'power.set',
   'furniture.use',

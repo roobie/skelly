@@ -133,6 +133,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   row('hand.use-off', 'Use off hand', world),
   row('light.worn-toggle', 'Hold to switch worn lights on or off', world, 'hold'),
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it or lift furniture', world),
+  row('emote.menu', 'Hold to choose an emote; release to perform it', ['play', 'noclip'], 'held-state'),
   row(
     'firearm.reload',
     'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
