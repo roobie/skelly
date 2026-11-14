@@ -139,13 +139,13 @@ export const takeApartRow = (
   const text = craftingText(registry);
   const { plan, refusal } = crafting.previewTakeApartEntity(target.uid);
   const itemName = registry.furniture.get(target.type)!.name;
-  const minutes = plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type)?.timeGameMinutes ?? 0;
+  const gameSeconds = plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type)?.timeGameMinutes ?? 0;
   return {
     id: `take_apart:${target.uid}`,
     name: fillText(text.takeApartName, { item: itemName }),
     itemName,
     kind: 'take_apart',
-    length: craftTime(minutes * 60, text),
+    length: craftTime(gameSeconds, text),
     yields: (plan?.outputs ?? []).map(({ item, count }) => ({ name: registry.items.get(item)!.name, count })),
     reason: refusal,
     components: [],

@@ -1,8 +1,21 @@
 import { BindingRegistry } from '@skelly/engine/input';
-import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
+import {
+  CraftCommands,
+  HandlingQueue,
+  Inventory,
+  pieceRecoveryWork,
+  planCraft,
+  requirementStatus,
+} from '@skelly/engine/inventory';
 import { bindReach, Character } from '@skelly/engine/sim';
-import { fillText } from '@skelly/engine/text';
-import { craftingText, craftRows, runningCraftPresentation } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { decimalText, fillText } from '@skelly/engine/text';
+import type { BlockEntity } from '@skelly/engine/world';
+import {
+  craftingText,
+  craftRows,
+  runningCraftPresentation,
+  takeApartRow,
+} from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
@@ -137,6 +150,16 @@ describe('crafting read-only presentation', () => {
     } finally {
       root.remove();
     }
+  });
+
+  it('shows take-apart length from the runtime game seconds without converting again', () => {
+    const furniture = [...registry.furniture.values()].find((piece) => piece.takeApart)!;
+    const gameSeconds = pieceRecoveryWork(registry, furniture.id)!.timeGameMinutes;
+    const target = { uid: 1, type: furniture.id } as BlockEntity;
+    const row = takeApartRow(registry, target, {
+      previewTakeApartEntity: () => ({ plan: undefined, refusal: 'refused' }),
+    });
+    expect(row.length).toBe(fillText(craftingText(registry).mins, { value: decimalText(gameSeconds / 60) }));
   });
 
   it.each([true, false])('keeps item repair admission and routing based on a damaged item in reach: %s', (withItem) => {
