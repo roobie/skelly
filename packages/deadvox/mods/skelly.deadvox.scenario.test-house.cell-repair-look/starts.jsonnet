@@ -1,8 +1,9 @@
 local kit = import 'tools/jsonnet/lib/start-kit.libsonnet';
 // Cell repair by eye: the alcove layout stands the tester inside a brick alcove, facing its north wall, and
-// the start ships that wall's eye-height brick already cracked, so the look is only the build tool (B) and
-// the repair key (Shift+R) through the repair recipe the kit teaches; cell repair has no crafting view until
-// #1469. The damage amount is content here, not code.
+// the start ships that wall's eye-height brick already damaged, so the look is only the debug build tool and
+// its repair key through the repair recipe the kit teaches; cell repair has no crafting view until #1469, and
+// terrain shows no damage look while `DESIGN.md`, "Damage, destruction and dismemberment", leaves cracked looks open, so the build tool's target
+// readout is where the damage shows. The damage amount is content here, not code.
 {
   starts: [kit.fixture + {
     id: 'cellrepairlook',
