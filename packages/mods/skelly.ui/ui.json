@@ -506,7 +506,6 @@
           "disassembly": "{item} disassembly",
           "find": "Find",
           "found": "{item}: {found} found / {needed} needed",
-          "group": "{recipe} material group {group}",
           "heading": "Crafting",
           "headingFact": "Starting a recipe requires both hands free.",
           "inProgress": "{item} in progress",
@@ -532,8 +531,7 @@
           "sources": "Source vessels",
           "station": "Station: {station}",
           "tagFind": "Find tag",
-          "tags": "Tags",
-          "use": "Use {choice}"
+          "tags": "Tags"
         },
         "credits": {
           "back": "Back",

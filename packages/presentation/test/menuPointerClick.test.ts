@@ -1,5 +1,5 @@
 import { Window } from 'happy-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 
 const dom = new Window();
@@ -20,6 +20,7 @@ let forwarded = 0;
 elsewhere.addEventListener('click', () => {
   forwarded += 1;
 });
+afterAll(() => dom.happyDOM.abort());
 
 describe('menu pointer click forwarding', () => {
   beforeEach(() => {

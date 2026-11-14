@@ -136,8 +136,6 @@
     headingFact: 'Starting a recipe requires both hands free.',
     length: '{span} game time',
     found: '{item}: {found} found / {needed} needed',
-    use: 'Use {choice}',
-    group: '{recipe} material group {group}',
     quality: '{quality}: best {best} / needs {required}',
     skill: '{skill}: level {level} / needs {required}',
     station: 'Station: {station}',

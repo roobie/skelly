@@ -178,8 +178,6 @@ const UiScreenTextSchema = strictObject({
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
-    use: ['choice'],
-    group: ['recipe', 'group'],
     quality: ['quality', 'best', 'required'],
     skill: ['skill', 'level', 'required'],
     station: ['station'],
