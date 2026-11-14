@@ -210,6 +210,8 @@ const thirdPersonCameraPosition = ({
 export interface ViewProbes extends MannequinRequest {
   /** Forces the torch spill light on or off; absent follows content. */
   readonly torchspill?: boolean | undefined;
+  /** Prototype item-light wall rays; F9 toggles this in debug play. */
+  readonly gpuRays?: boolean | undefined;
   /** Model ids the debug avatar study stands beside the player figure. */
   readonly avatarStudy?: readonly string[] | undefined;
 }
@@ -409,6 +411,7 @@ export const createPlayView = (
     blockSize: s,
     tuning: lightTuning.illumination.reach,
   });
+  fixtureReach?.installDebug(page, config.debug, probes.gpuRays);
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(
     piles.group,

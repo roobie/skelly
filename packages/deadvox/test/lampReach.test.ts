@@ -131,6 +131,39 @@ describe('lamp reach', () => {
       }
     },
   );
+  it('reuses the GPU blocking volume until a block owner changes, then samples the same wall predicate', () => {
+    const world = new World();
+    world.addChunk(new Chunk(-1, 0, 0));
+    const entities = new BlockEntities(registry);
+    const solid: SolidAt = (x, y, z) => world.getBlock(x, y, z) !== 0;
+    const cache = new LampReachCache({ world, entities }, solid, scale.blockSize, TUNING);
+    const check = () => {
+      const volume = cache.blockers();
+      expect(volume.cells.some(Boolean)).toBe([...world.chunks.values()].some((chunk) => !chunk.isEmpty()));
+      for (let z = 0; z < volume.size[2]; z++) {
+        for (let y = 0; y < volume.size[1]; y++) {
+          for (let x = 0; x < volume.size[0]; x++) {
+            expect(volume.cells[x + volume.size[0] * (y + volume.size[1] * z)] !== 0).toBe(
+              solid(x + volume.origin[0], y + volume.origin[1], z + volume.origin[2]),
+            );
+          }
+        }
+      }
+      return volume;
+    };
+    try {
+      const empty = check();
+      expect(cache.blockers()).toBe(empty);
+      world.setBlock(-1, 1, 1, wall);
+      const blocked = check();
+      expect(blocked).not.toBe(empty);
+      expect(cache.blockers()).toBe(blocked);
+      world.setBlock(-1, 1, 1, 0);
+      expect(check().cells).toEqual(empty.cells);
+    } finally {
+      cache.dispose();
+    }
+  });
   const lamp = lampAt([0.5, 4.5, 0.5]);
   const beside: Vec3 = [3.5, 4.5, 0.5];
   const behind: Vec3 = [6.5, 4.5, 0.5];

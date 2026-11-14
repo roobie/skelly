@@ -70,6 +70,15 @@
           "id": "lantern",
           "item": "oil_lamp",
           "lit": true
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "off"
+          },
+          "id": "other_lantern",
+          "item": "oil_lamp",
+          "lit": true
         }
       ],
       "recipes": [
