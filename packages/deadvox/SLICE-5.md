@@ -204,11 +204,11 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   The expanded schedule is finite; exhausting it is the trigger for adding a repeating
   event mechanism, not a reason to put a second clock in the session. Survival time
   is not a pass threshold; see "Playtest questions and exit".
-- **Wave gap:** predictable arrivals leave room to plan excursions. The gap is five
+- **Wave gap:** predictable arrivals leave room to plan excursions. The gap spans
   scenario days, chosen on its grading: a content number with no debt, whose negative
   space is a sitting that never reaches wave two. Keep timing in scenario content so a
-  mod changes one authority; see `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`,
-  `rules`.
+  mod changes one authority; the holdout scenario owns it, see
+  `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 - **Repeat clock:** the gap counts from one arrival to the next, not from the end of
   a fight. The saved scenario run's calendar then fixes the whole schedule, and no
   rule has to decide when a fight with unloaded zombies has ended. Waves may
@@ -324,11 +324,11 @@ The base-building playtest, the third playtest round, is scoped in #1332.
 These are work packages, not new work-item IDs. Every stateful package includes
 validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
 
-1. **Readiness and decisions: closed, except position triggers and the rubble look.**
-   The construction, destruction, wave and playtest choices this slice waited on are
-   ruled; only "Remaining event gate — issue #313" and
-   "Remaining construction gate — issue #1332" stay open, and neither blocks a
-   package. Run the
+1. **Readiness and decisions: closed, except position triggers, the rubble look and
+   body dig-out.** The construction, destruction, wave and playtest choices this slice
+   waited on are ruled; only "Remaining event gate — issue #313",
+   "Remaining construction gate — issue #1332" and the body dig-out question in the
+   Destruction lane stay open, and none blocks a package. Run the
    small spikes below where a package's claim has no owning benchmark yet.
 2. **Power network core: built.** Topology, cache invalidation, saved identity,
    split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
@@ -383,9 +383,8 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
 The open packages run as lanes, each one PR per round from main, ordered so the
 first base-building session under "Early session" arrives through the fewest rounds.
 Within a lane the order is a dependency; across lanes only the joins named here hold,
-so rounds in different lanes run in parallel. No BR choice blocks a round any more;
-the one wait left is the #1469 layout, and the rounds named as starting now need
-nothing that is not on main.
+so rounds in different lanes run in parallel. No BR choice blocks a round any more,
+and the rounds named as starting now need nothing that is not on main.
 
 - **Construction, engine.** Four rounds start now. Three of them in parallel: cell
   repair, because the first thing a claimed shelter needs mended is a damaged wall
@@ -408,14 +407,13 @@ nothing that is not on main.
 - **Construction, view.** Repair and take apart reach the engine but no player can
   reach them: the hold menu offers only moving
   (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`) and the
-  world-work view queues behind #1469 (`DESIGN.md`, "World repair selection"). #1469
-  settles its layout first and both views ship together, chosen on its grading: one
-  owner for the rows pane and no second shape to replace, at the cost that the first
-  session waits on that layout. The layout is recorded under #1469 by PR #1706 in a
-  crafting-layout doc of deadvox's docs, which owns it; this plan cues it and does not
-  repeat it. The world-work view round starts when that doc is on main, and it is the
-  first session's critical path; picking a cell or spot for placement follows it and
-  the placement round.
+  world-work view shares the #1469 layout (`DESIGN.md`, "World repair selection").
+  #1469 settles its layout first and both views ship together, chosen on its grading:
+  one owner for the rows pane and no second shape to replace, at the cost that the
+  first session waits on that layout. The layout is settled and owned by
+  `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
+  it. The world-work view round starts now, and it is the first session's critical
+  path; picking a cell or spot for placement follows it and the placement round.
 - **Playtest pack.** Holdout composes one shelter and no supply
   (`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`), so it
   grows from independently authored asks, each retunable without city-shape
@@ -434,19 +432,22 @@ nothing that is not on main.
   building is the point of this playtest, so it yields its place to the rounds the
   first session needs. Shelter identity and the content target under "Wave target"
   are not a round until the first session's findings reopen them.
-- **Destruction.** No BR gate remains and the first session does not need it, so it
-  runs beside construction without joining it. Zombies bash terrain by material
+- **Destruction.** One narrow BR question remains (below) and the first session does
+  not need the lane, so it runs beside construction without joining it. Zombies bash terrain by material
   strength first, so the brute wrecks walls through its strength rather than an
   identity flag and ordinary types break doors only because door pieces sit below
   their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
   support with surface ground follows, and until collapse lands live play refuses a
   blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
   in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
-  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies and
-  contents that clearing digs out under "Rubble", and hurts every body, generating
-  terrain on demand wherever it reaches, so no region departure-and-return work
-  precedes it; its PR reports collapse time at the largest authored roof rather than
-  gating on it. Blast by share and breach charges follow, then furniture knock-out and
+  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies to
+  be dug out by ordinary strikes, buries contents that clearing digs out under
+  "Rubble", and hurts every body, generating terrain on demand wherever it reaches, so
+  no region departure-and-return work precedes it; its PR reports collapse time at the
+  largest authored roof rather than gating on it. Open for BR: whether take apart also
+  digs out bodies, so one verb empties a cell of all it buried. The question gates only
+  the collapse PR's body-recovery step; the contents rule under "Rubble" stands either
+  way. Blast by share and breach charges follow, then furniture knock-out and
   push-off, which replace the fall refusal with landing crush; see
   `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
 - **Built systems.** Appliance controls and processes after placement; brute
