@@ -1,4 +1,4 @@
-import type { ActionMenuSource, ActionMenuTuning } from '../core/actionMenuContent.ts';
+import type { ActionMenuSource, ActionMenuTuning, Emote } from '../core/actionMenuContent.ts';
 import type { ItemAction } from './itemActions.ts';
 
 export interface RadialAction extends ItemAction {
@@ -13,12 +13,18 @@ type PointTuning = Pick<ActionMenuTuning, 'radiusPixels' | 'deadZonePixels' | 's
 const radians = (degrees: number): number => (degrees * Math.PI) / 180;
 
 /**
+ * Whether a menu's lone entry acts at once instead of opening a ring. The emote menu has no ordinary action a lone
+ * entry could stand for, so it always shows its ring and a release at the centre performs nothing.
+ */
+const LONE_ENTRY_ACTS: Readonly<Record<ActionMenuSource, boolean>> = { furniture: true, held: true, emote: false };
+
+/**
  * Each action at its authored direction, so a menu's entries keep their places whatever else it shows. `key` names
  * the direction an action takes, its id unless the menu places entries by something else.
  */
 export const radialEntries = (
   actions: readonly ItemAction[],
-  directions: Readonly<Record<string, number>>,
+  directions: Readonly<Partial<Record<string, number>>>,
   key: (action: ItemAction) => string | undefined = (action) => action.id,
 ): RadialAction[] =>
   actions.map((action) => {
@@ -79,21 +85,41 @@ export const heldRadialEntries = (
   return [...direct, { ...treat!, children }];
 };
 
+/** The emotes on offer that content places on the ring, in its order; one content leaves out is never offered. */
+export const emoteRadialEntries = (
+  offered: readonly Emote[],
+  labels: Readonly<Record<Emote, string>>,
+  directions: ActionMenuTuning['directions']['emote'],
+): RadialAction[] =>
+  radialEntries(
+    offered.filter((id) => directions[id] !== undefined).map((id) => ({ id, label: labels[id] })),
+    directions,
+  );
+
 /**
  * The one open action menu, for a furniture piece or a held item. Callers pass the current entries on every call, so
  * an action that went away since the menu opened is never chosen. With alternatives, nothing is chosen until the
  * player points at or steps to an entry. Child rings keep the same choice grammar without adding a lone-entry step.
  */
 export class ActionMenu {
-  private target: Readonly<{ source: ActionMenuSource; uid: number }> | undefined;
+  /** `uid` is the furniture piece or held item the menu acts on; an emote menu acts on no thing. */
+  private target: Readonly<{ source: ActionMenuSource; uid: number | undefined }> | undefined;
   private x = 0;
   private y = 0;
   private selectedId: string | undefined;
   private parentId: string | undefined;
 
   /** Returns a lone action to its caller to run; only alternatives need a menu. */
-  open(source: ActionMenuSource, target: { uid: number }, actions: readonly RadialAction[]): RadialAction | undefined {
+  open(
+    source: ActionMenuSource,
+    target: { uid: number } | undefined,
+    actions: readonly RadialAction[],
+  ): RadialAction | undefined {
     this.close();
+    if (!LONE_ENTRY_ACTS[source]) {
+      this.target = actions.length > 0 ? { source, uid: undefined } : undefined;
+      return undefined;
+    }
     const sole = actions.length === 1 ? actions[0] : undefined;
     if (sole && !sole.children) {
       return sole;
@@ -104,14 +130,14 @@ export class ActionMenu {
     if (actions.length === 0 || sole?.children?.length === 0) {
       return undefined;
     }
-    this.target = { source, uid: target.uid };
+    this.target = { source, uid: target?.uid };
     if (sole) {
       this.enter(sole.id);
     }
     return undefined;
   }
 
-  get opened(): Readonly<{ source: ActionMenuSource; uid: number }> | undefined {
+  get opened(): Readonly<{ source: ActionMenuSource; uid: number | undefined }> | undefined {
     return this.target;
   }
 
@@ -137,7 +163,7 @@ export class ActionMenu {
       return undefined;
     }
     const ring = this.childOpen ? actions.find((action) => action.id === this.parentId)?.children : actions;
-    if (ring && ring.length > 1) {
+    if (ring && ring.length > (LONE_ENTRY_ACTS[this.target.source] ? 1 : 0)) {
       return ring;
     }
     this.close();

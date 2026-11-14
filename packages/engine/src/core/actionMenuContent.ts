@@ -1,4 +1,4 @@
-import { check, type InferOutput, integer, maxValue, minValue, number, pipe, strictObject } from 'valibot';
+import { check, type InferOutput, integer, maxValue, minValue, number, partial, pipe, strictObject } from 'valibot';
 import { BODY_REGIONS } from './body.ts';
 import { Positive } from './schema/primitives.ts';
 
@@ -9,9 +9,12 @@ import { Positive } from './schema/primitives.ts';
 export const ACTION_MENU_ACTIONS = {
   furniture: ['push', 'drag', 'lift', 'repair', 'continue', 'take_apart'],
   held: ['own', 'sharpen', 'open-can', 'magazine:strip', 'battery:unload', 'continue-work', 'treat'],
+  /** Each emote needs code that performs it; which of them the menu offers is content. */
+  emote: ['press-check'],
 } as const;
 
 export type ActionMenuSource = keyof typeof ACTION_MENU_ACTIONS;
+export type Emote = (typeof ACTION_MENU_ACTIONS.emote)[number];
 
 /** Degrees clockwise from straight up. */
 const Direction = pipe(
@@ -36,6 +39,8 @@ export const ActionMenuTuningSchema = strictObject({
   directions: strictObject({
     furniture: directionsFor(ACTION_MENU_ACTIONS.furniture),
     held: directionsFor(ACTION_MENU_ACTIONS.held),
+    /** The emotes the menu offers: one left out is never offered, so a pack can drop or move an emote. */
+    emote: partial(directionsFor(ACTION_MENU_ACTIONS.emote)),
     /** The child ring of the held menu's `treat` entry, one wound per body region. */
     treat: directionsFor(BODY_REGIONS),
   }),
@@ -59,7 +64,9 @@ export const actionMenuIssues = (tuning: ActionMenuTuning, path: string): [strin
     out.push([`${path}.deadZonePixels`, `must be less than radiusPixels ${tuning.radiusPixels}`]);
   }
   for (const [menu, directions] of Object.entries(tuning.directions)) {
-    const entries = Object.entries(directions);
+    const entries = Object.entries<number | undefined>(directions).filter(
+      (entry): entry is [string, number] => entry[1] !== undefined,
+    );
     entries.forEach(([action, degrees], index) => {
       const crowded = entries
         .slice(0, index)

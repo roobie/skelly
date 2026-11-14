@@ -1,11 +1,10 @@
 // Transient keyboard intent only. Existing HandlingQueue owns shell/rack jobs.
 /**
  * Real milliseconds. A press held for `hold` loads; a second press starting within `doublePress` of a tap racks
- * if released before `hold`. Held for `hold`, it removes the magazine, or on a gun without one keeps racking. On a gun
- * with a press check, a third press starting within `thirdPress` of the second's release and held for `hold` checks
- * the chamber instead of the rack (`packages/deadvox/CONTROLS.md`, "Reload, rack, remove").
+ * if released before `hold`. Held for `hold`, it removes the magazine, or on a gun without one keeps racking
+ * (`packages/deadvox/CONTROLS.md`, "Reload, rack, remove").
  */
-export const RELOAD_GESTURE_MS = { hold: 250, doublePress: 250, thirdPress: 250 } as const;
+export const RELOAD_GESTURE_MS = { hold: 250, doublePress: 250 } as const;
 
 export interface ReloadBinding {
   readonly uid: number;
@@ -17,11 +16,6 @@ export interface ReloadBinding {
   /** True only when the rack was admitted. */
   readonly rack: () => boolean;
   readonly remove: () => void;
-  /**
-   * Only on a gun with a press check: true only when it was admitted. Its presence holds a released second press's
-   * rack until no third press follows, since racking first would eject the round the check is for.
-   */
-  readonly pressCheck?: () => boolean;
   /**
    * Only on a gun without a detachable magazine, such as the pump: whether a rack would still take anything out. A
    * held second press racks instead of removing, and racks again after each rack while this holds.
@@ -45,8 +39,6 @@ export interface ReloadTarget {
   readonly load: (time: number) => string | undefined;
   readonly rack: (time: number) => string | undefined;
   readonly remove: (time: number) => string | undefined;
-  /** See `ReloadBinding.pressCheck`. */
-  readonly pressCheck?: () => string | undefined;
   /** See `ReloadBinding.stillLoaded`. */
   readonly stillLoaded?: () => boolean;
   readonly cancelLoad: () => void;
@@ -60,8 +52,6 @@ export const reloadTarget = (
     readonly cock: (uid: number, time: number) => string | undefined;
     readonly removeMagazine: (uid: number, time: number) => string | undefined;
     readonly stillLoaded: (uid: number) => boolean;
-    readonly pressChecks: (uid: number) => boolean;
-    readonly pressCheck: (uid: number) => string | undefined;
     readonly unloadsByRacking?: (uid: number) => boolean;
     readonly releaseLoad?: (uid: number, time: number) => void;
   },
@@ -78,7 +68,6 @@ export const reloadTarget = (
       load: (time) => firearms.loadNext(gun, time),
       rack: (time) => firearms.cock(gun, time),
       remove: (time) => firearms.removeMagazine(gun, time),
-      ...(firearms.pressChecks(gun) ? { pressCheck: () => firearms.pressCheck(gun) } : {}),
       ...(oneAction || firearms.unloadsByRacking?.(gun) === false
         ? {}
         : { stillLoaded: () => firearms.stillLoaded(gun) }),
@@ -102,14 +91,9 @@ export const reloadTarget = (
 interface Press {
   readonly binding: ReloadBinding;
   readonly at: number;
-  /**
-   * `second` followed a tap: it racks on an early release, or once held removes or keeps racking. `third` followed a
-   * tap-tap whose rack waits on it: held, it press-checks; released early, it racks.
-   */
-  readonly step: 'first' | 'second' | 'third';
+  /** A press that followed a tap: it racks on an early release, or once held removes or keeps racking. */
+  readonly second: boolean;
   released: boolean;
-  /** When a released second press's rack waits on a third press: the real milliseconds it was released at. */
-  rackWaitsFrom?: number;
   loading: boolean;
   /** A held second press on a gun without a detachable magazine, racking until release or nothing is left. */
   racking: boolean;
@@ -126,24 +110,21 @@ export class ReloadInput {
     }
     this.down = true;
     const previous = this.press;
-    const same = binding !== undefined && previous?.binding.uid === binding.uid;
-    if (same && previous?.rackWaitsFrom !== undefined && now - previous.rackWaitsFrom < RELOAD_GESTURE_MS.thirdPress) {
-      // Only this press's length tells a press check from the waiting rack.
-      this.press = this.fresh(binding, now, 'third');
-      return;
-    }
-    if (same && previous?.step === 'first' && previous.released && now - previous.at < RELOAD_GESTURE_MS.doublePress) {
+    if (
+      binding &&
+      previous?.released &&
+      previous.binding.uid === binding.uid &&
+      now - previous.at < RELOAD_GESTURE_MS.doublePress
+    ) {
       // Only this press's length tells a rack from a removal, so neither acts until it is released or held.
-      this.press = this.fresh(binding, now, 'second');
+      this.press = { binding, at: now, second: true, released: false, loading: false, racking: false };
       return;
     }
     this.advance(now, binding);
     this.down = true;
-    this.press = binding ? this.fresh(binding, now, 'first') : undefined;
-  }
-
-  private fresh(binding: ReloadBinding, now: number, step: Press['step']): Press {
-    return { binding, at: now, step, released: false, loading: false, racking: false };
+    this.press = binding
+      ? { binding, at: now, second: false, released: false, loading: false, racking: false }
+      : undefined;
   }
 
   keyUp(now: number): void {
@@ -152,39 +133,20 @@ export class ReloadInput {
     if (!press) {
       return;
     }
-    const early = now - press.at < RELOAD_GESTURE_MS.hold;
-    if (press.step === 'third') {
-      this.press = undefined;
-      if (early) {
-        press.binding.rack();
+    if (press.second) {
+      if (!press.racking) {
+        this.secondPress(press, now - press.at >= RELOAD_GESTURE_MS.hold);
       }
-    } else if (press.step === 'second') {
-      this.releaseSecond(press, now, early);
-    } else {
-      this.releaseFirst(press, early);
-    }
-  }
-
-  private releaseFirst(press: Press, early: boolean): void {
-    if (early && !press.loading) {
-      press.released = true;
-    } else if (press.binding.releaseLoad) {
-      press.binding.releaseLoad();
-      this.press = undefined;
-    } else {
-      this.cancel();
-    }
-  }
-
-  private releaseSecond(press: Press, now: number, early: boolean): void {
-    if (press.racking) {
       this.press = undefined; // Releasing a held rack lets the cycle under way finish and starts no other.
-    } else if (early && press.binding.pressCheck) {
-      press.released = true;
-      press.rackWaitsFrom = now;
+    } else if (press.loading || now - press.at >= RELOAD_GESTURE_MS.hold) {
+      if (press.binding.releaseLoad) {
+        press.binding.releaseLoad();
+        this.press = undefined;
+      } else {
+        this.cancel();
+      }
     } else {
-      this.secondPress(press, !early);
-      this.press = undefined;
+      press.released = true;
     }
   }
 
@@ -197,29 +159,14 @@ export class ReloadInput {
       this.cancel();
       return;
     }
-    const held = now - press.at >= RELOAD_GESTURE_MS.hold;
-    if (press.rackWaitsFrom !== undefined) {
-      if (now - press.rackWaitsFrom >= RELOAD_GESTURE_MS.thirdPress) {
-        this.press = undefined; // No third press came: the tap-tap racks after all.
-        press.binding.rack();
-      }
-    } else if (press.step === 'third') {
-      if (held) {
-        this.press = undefined;
-        press.binding.pressCheck?.();
-      }
-    } else if (press.step === 'second') {
+    if (press.second) {
       if (press.racking) {
         this.rackAgain(press);
-      } else if (held) {
+      } else if (now - press.at >= RELOAD_GESTURE_MS.hold) {
         this.secondPress(press, true);
       }
-    } else {
-      this.advanceFirst(press, now);
+      return;
     }
-  }
-
-  private advanceFirst(press: Press, now: number): void {
     if (now - press.at < Math.max(RELOAD_GESTURE_MS.hold, RELOAD_GESTURE_MS.doublePress)) {
       return;
     }

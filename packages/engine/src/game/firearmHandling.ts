@@ -1373,23 +1373,23 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  /** Whether R can press-check the held `uid`: its model carries a press-check clip. */
-  pressChecks(uid: number): boolean {
-    const item = this.inventory.itemByUid(uid);
-    return (
-      item !== undefined &&
-      this.held(uid) &&
-      firearmModelFor(item, this.inventory.registry)?.gun?.pressCheck !== undefined
-    );
+  /** The held gun a press check would check: any gun fed by a magazine, once its model carries a clip to play. */
+  pressCheckableUid(): number | undefined {
+    const gun = this.heldMagazineFed();
+    return gun && this.pressCheckClip(gun) ? gun.uid : undefined;
   }
 
-  /** Plays the held gun's press check as a handling job: tap, tap, hold R (`packages/deadvox/CONTROLS.md`, "Reload, rack, remove"). */
+  private pressCheckClip(gun: Item) {
+    return firearmModelFor(gun, this.inventory.registry)?.gun?.pressCheck;
+  }
+
+  /** Plays the held gun's press check as a handling job, chosen from the emote menu (`packages/deadvox/CONTROLS.md`, "Emotes"). */
   pressCheck(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
     if (!(item && this.held(uid))) {
       return this.text.common.notHeld;
     }
-    const clip = firearmModelFor(item, this.inventory.registry)?.gun?.pressCheck;
+    const clip = this.pressCheckableUid() === uid ? this.pressCheckClip(item) : undefined;
     if (!clip) {
       return this.text.firearm.noPressCheck;
     }

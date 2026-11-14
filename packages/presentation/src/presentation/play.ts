@@ -80,7 +80,9 @@ import {
   crosshairTarget,
   discoveryForPlan,
   dominantSide,
+  EmotePress,
   type EntityId,
+  emoteRadialEntries,
   firearmBoreRay,
   firearmBoreTarget,
   firearmsCombatTuning,
@@ -855,6 +857,13 @@ const startPlayWith = (
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
   const heldMenuEntries = (item: Item): RadialAction[] =>
     heldRadialEntries(survival.availableItemActions(item), screenText.actionMenu.treat, actionMenuTuning.directions);
+  const emoteMenuEntries = (): RadialAction[] =>
+    emoteRadialEntries(router.emotes.offered(), screenText.emote, actionMenuTuning.directions.emote);
+  const emotePress = new EmotePress({
+    menu: actionMenu,
+    entries: emoteMenuEntries,
+    perform: (emote) => router.emotes.perform(emote),
+  });
   const openTarget = (source: 'furniture' | 'held'): number | undefined => {
     const { opened } = actionMenu;
     return opened?.source === source ? opened.uid : undefined;
@@ -865,6 +874,9 @@ const startPlayWith = (
   };
   /** The open menu's entries, or nothing once its target has gone. */
   const openMenuEntries = (): RadialAction[] | undefined => {
+    if (actionMenu.opened?.source === 'emote') {
+      return emoteMenuEntries();
+    }
     const item = openHeldItem();
     if (item) {
       return heldMenuEntries(item);
@@ -1018,6 +1030,10 @@ const startPlayWith = (
       quickbar: {
         keyDown: (slot, at) => quickbarInput.keyDown(slot, at),
         keyUp: (slot, at) => quickbarInput.keyUp(slot, at),
+      },
+      emote: {
+        keyDown: () => emotePress.press(),
+        keyUp: () => emotePress.release(),
       },
       cancelHeld: () => cancelHeldInput(),
     },
@@ -1346,12 +1362,13 @@ const startPlayWith = (
   const actionRadialRoot = $('action-radial');
   const drawActionRadial = mountActionRadial(actionRadialRoot, actionMenuTuning);
   /**
-   * Draws the open menu's ring, which follows the interaction hints' visibility, or its child ring, which owns input
-   * like any other menu and so always shows.
+   * Draws the open menu's ring, which follows the interaction hints' visibility, or a child ring or the emote ring,
+   * which own input with no ordinary action behind them and so always show.
    */
   const drawActionMenu = (ringVisible: boolean): void => {
     const entries = openMenuEntries() ?? [];
-    const ring = ringVisible || actionMenu.childOpen ? (actionMenu.ring(entries) ?? []) : [];
+    const ownsInput = actionMenu.childOpen || actionMenu.opened?.source === 'emote';
+    const ring = ringVisible || ownsInput ? (actionMenu.ring(entries) ?? []) : [];
     const centre = actionMenu.canReturn(entries) ? screenText.actionMenu.back : undefined;
     drawActionRadial(ring, actionMenu.choice(entries)?.id, actionMenu.pull, centre);
   };
@@ -1989,6 +2006,7 @@ const startPlayWith = (
     throwStanceInput.cancel();
     interactInput.cancel();
     heldActionPress.cancel();
+    emotePress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -2043,6 +2061,7 @@ const startPlayWith = (
     crouchProneInput.cancel();
     quickbarInput.cancel();
     heldActionPress.cancel();
+    emotePress.cancel();
   };
   keyboardInput.escape = () => {
     if (actionMenu.opened) {
@@ -2085,6 +2104,7 @@ const startPlayWith = (
     quickbarInput.cancel();
     interactInput.cancel();
     heldActionPress.cancel();
+    emotePress.cancel();
     wornLightInput.cancel();
     interactionPressTarget = undefined;
     cancelBackquoteGesture(backquoteGesture);
@@ -2936,6 +2956,7 @@ const startPlayWith = (
       wornLightInput.cancel();
       interactionPressTarget = undefined;
       heldActionPress.cancel();
+      emotePress.cancel();
     } else {
       quickbarInput.update(now);
       interactInput.update(now);

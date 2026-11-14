@@ -2,6 +2,7 @@
 // modal UI takes a press, the input sample and session controls and trigger at the player tick, replayed actions,
 // screen commands, furniture use and the item throw, with the firearm and melee readiness gate those read.
 
+import type { Emote } from '../core/actionMenuContent.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
@@ -44,7 +45,7 @@ import { selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { stopReadingOnClose } from './readingClose.ts';
-import { type ReloadBinding, type ReloadTarget, reloadTarget } from './reloadInput.ts';
+import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
@@ -154,6 +155,8 @@ interface LiveGesturePorts {
   /** Takes the off-hand use press when the held item offers a choice; false leaves it to the ordinary use. */
   offHandUse: { keyDown: (at: number) => boolean; keyUp: (at: number) => void };
   quickbar: { keyDown: (slot: number, at: number) => void; keyUp: (slot: number, at: number) => void };
+  /** Holds the emote menu open while the emote key is down; the release performs its choice. */
+  emote: { keyDown: () => void; keyUp: () => void };
   /** Cancels every held live gesture, as a refusal does. */
   cancelHeld: () => void;
 }
@@ -249,6 +252,8 @@ export interface CommandRouter {
   compress: () => void;
   /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
   reloadBinding: () => ReloadBinding | undefined;
+  /** The emotes the player can perform now, and performing one, recorded like any gesture it makes. */
+  emotes: { offered: () => readonly Emote[]; perform: (emote: Emote) => void };
   /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
   enqueueDoorBar: (entity: BlockEntity, barring: boolean) => string | undefined;
   /** The held item's primary use in this hand, as the player tick runs it. */
@@ -790,27 +795,14 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     return compression.admitKey();
   };
 
-  // ---- reload ----
+  // ---- reload and press check ----
 
-  /**
-   * Building the binding never changes state: a ramp-down alone leaves it available, and only an admitted
-   * gesture ends the ramp, so a short tap or an owner refusal does not.
-   */
-  /** Present only on a gun with a press check, so only that gun's tap-tap waits for a third press. */
-  const pressCheckOf = (
-    target: ReloadTarget,
-    admit: (action: 'firearm.press-check', reason: string | undefined) => boolean,
-    ladder: () => string | undefined,
-  ): Pick<ReloadBinding, 'pressCheck'> => {
-    const { pressCheck } = target;
-    return pressCheck ? { pressCheck: () => admit('firearm.press-check', ladder() ?? pressCheck()) } : {};
-  };
-
-  function reloadBinding(): ReloadBinding | undefined {
+  /** Input reaches a held firearm's gestures: play has the pointer, or a replay drives it, and nothing else owns the hands. */
+  const firearmGesturesReachable = (): boolean => {
     const session = ports.session();
-    const { sim, queue, firearms } = session;
+    const { sim } = session;
     const { compression } = sim;
-    if (
+    return !(
       !(ports.pointerLocked() || ports.replaying()) ||
       (ports.menuPointer() && !ports.replaying()) ||
       (ports.replaying() ? compression.locksInput : compression.refusesKeys) ||
@@ -819,46 +811,77 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       sim.body.actionRefusal ||
       ports.buildMode() ||
       session.throwCharge.startedAt !== undefined
-    ) {
+    );
+  };
+  // An admitted gesture is recorded; replay drives it back.
+  const admitFirearmGesture = (
+    action: 'firearm.load' | 'firearm.rack' | 'firearm.remove' | 'firearm.press-check',
+    reason: string | undefined,
+  ): boolean => {
+    const { sim } = ports.session();
+    if (reason) {
+      presentation.refusal(reason, sim.time);
+    } else {
+      ports.recorder()?.queueAction(action, 'down', ports.inputContext());
+      if (!ports.replaying()) {
+        sim.compression.admitKey();
+      }
+    }
+    return reason === undefined;
+  };
+  // A reload or a press check works the firearm with both hands, so a hand on a ladder refuses it.
+  const ladderRefusal = (): string | undefined => {
+    const { ladderHold } = ports.session();
+    const hand = ladderHold.hand();
+    return hand && ladderHold.refusal(hand);
+  };
+
+  /**
+   * Building the binding never changes state: a ramp-down alone leaves it available, and only an admitted
+   * gesture ends the ramp, so a short tap or an owner refusal does not.
+   */
+  function reloadBinding(): ReloadBinding | undefined {
+    if (!firearmGesturesReachable()) {
       return;
     }
+    const session = ports.session();
+    const { sim, queue, firearms } = session;
     const target = reloadTarget(firearms, session.magazines, lines.play.notHoldingGun);
     if (!target) {
       return;
     }
-    // An admitted gesture is recorded; replay drives it back through this binding.
-    const admit = (
-      action: 'firearm.load' | 'firearm.rack' | 'firearm.remove' | 'firearm.press-check',
-      reason: string | undefined,
-    ): boolean => {
-      if (reason) {
-        presentation.refusal(reason, sim.time);
-      } else {
-        ports.recorder()?.queueAction(action, 'down', ports.inputContext());
-        if (!ports.replaying()) {
-          compression.admitKey();
-        }
-      }
-      return reason === undefined;
-    };
-    // A reload works the firearm with both hands, so a hand on a ladder refuses it.
-    const ladder = (): string | undefined => {
-      const hand = session.ladderHold.hand();
-      return hand && session.ladderHold.refusal(hand);
-    };
     return {
       uid: target.uid,
       busy: () => queue.busy || firearms.busy,
       oneAction: target.oneAction,
-      load: () => admit('firearm.load', ladder() ?? target.load(sim.time)),
-      rack: () => admit('firearm.rack', ladder() ?? target.rack(sim.time)),
-      remove: () => admit('firearm.remove', ladder() ?? target.remove(sim.time)),
-      ...pressCheckOf(target, admit, ladder),
+      load: () => admitFirearmGesture('firearm.load', ladderRefusal() ?? target.load(sim.time)),
+      rack: () => admitFirearmGesture('firearm.rack', ladderRefusal() ?? target.rack(sim.time)),
+      remove: () => admitFirearmGesture('firearm.remove', ladderRefusal() ?? target.remove(sim.time)),
       ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
       cancelLoad: target.cancelLoad,
       ...(target.releaseLoad ? { releaseLoad: () => target.releaseLoad!(sim.time) } : {}),
     };
   }
+
+  /** The held gun a press check would check, while input reaches it. */
+  const pressCheckUid = (): number | undefined =>
+    firearmGesturesReachable() ? ports.session().firearms.pressCheckableUid() : undefined;
+  const pressCheck = (): void => {
+    const uid = pressCheckUid();
+    if (uid !== undefined) {
+      admitFirearmGesture('firearm.press-check', ladderRefusal() ?? ports.session().firearms.pressCheck(uid));
+    }
+  };
+
+  // ---- emotes ----
+
+  const EMOTES: Readonly<Record<Emote, { offered: () => boolean; perform: () => void }>> = {
+    'press-check': { offered: () => pressCheckUid() !== undefined, perform: pressCheck },
+  };
+  const emotes: CommandRouter['emotes'] = {
+    offered: () => (Object.keys(EMOTES) as Emote[]).filter((emote) => EMOTES[emote].offered()),
+    perform: (emote) => EMOTES[emote].perform(),
+  };
 
   // ---- furniture ----
 
@@ -1097,6 +1120,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       case 'firearm.reload':
         controls.reload.keyDown(at, reloadBinding());
         break;
+      case 'emote.menu':
+        withUnlockedInput(() => liveGestures.emote.keyDown());
+        break;
       case 'world.interact':
         withUnlockedInput(() => liveGestures.interact.keyDown(action, at));
         break;
@@ -1132,6 +1158,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     ['firearm.reload', (_action, at) => controls.reload.keyUp(at)],
     ['world.interact', (action, at) => liveGestures.interact.keyUp(action, at)],
     ['hand.use-off', (_action, at) => liveGestures.offHandUse.keyUp(at)],
+    ['emote.menu', () => liveGestures.emote.keyUp()],
     ['player.crouch-toggle', (action, at) => liveGestures.crouchProne.keyUp(action, at)],
     ['player.throw', (action, at) => liveGestures.throwStance.keyUp(action, at)],
     ['light.worn-toggle', (action, at) => liveGestures.wornLight.keyUp(action, at)],
@@ -1374,7 +1401,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         reloadBinding()?.remove();
         return true;
       case 'firearm.press-check':
-        reloadBinding()?.pressCheck?.();
+        pressCheck();
         return true;
       case 'throw.stance.toggle':
         toggleThrowingStance();
@@ -1578,6 +1605,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
     stopAction,
     compress,
     reloadBinding,
+    emotes,
     enqueueDoorBar,
     performHandUse: handUse.perform,
     interactionTargetAt: handUse.interactionTargetAt,

@@ -4,6 +4,9 @@
       "actionMenu": {
         "deadZonePixels": 30,
         "directions": {
+          "emote": {
+            "press-check": 0
+          },
           "furniture": {
             "continue": 135,
             "drag": 180,
@@ -545,6 +548,9 @@
           "spanLong": "{hrs} h {mins} min",
           "spanShort": "{mins} min",
           "summary": "Containers searched: {searched} · Loot: {loot}"
+        },
+        "emote": {
+          "press-check": "Press check"
         },
         "handling": {
           "minimumRelease": "Minimum release {percent}%",
