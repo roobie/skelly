@@ -1546,6 +1546,23 @@ try {
     await pressAction(page, 'inventory.find');
     const findField = page.locator('#inventory [data-inventory-find]');
     await findField.fill('fixture-filter-no-match');
+    await pressAction(page, 'inventory.control-next');
+    assert.equal(
+      await page.locator('#inventory .inv-help summary').evaluate((node) => document.activeElement === node),
+      true,
+      'bound next control leaves a text field for the next visible control',
+    );
+    await pressAction(page, 'inventory.control-previous');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), true);
+    assert.equal(await findField.inputValue(), 'fixture-filter-no-match', 'focus navigation retains the query');
+    await pressAction(page, 'inventory.control-activate');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), false);
+    assert.equal(
+      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      beforeFind,
+      'focused query activation spends nothing',
+    );
+    await findField.focus();
     await findField.press('Enter');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false, 'Enter leaves find');
     assert.equal(

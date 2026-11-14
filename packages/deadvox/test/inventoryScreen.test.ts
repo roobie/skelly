@@ -84,6 +84,82 @@ const { InventoryScreen, targetForPackedFloorDrop } = await import(
 
 afterAll(() => dom.happyDOM.abort());
 
+describe('inventory bound control navigation', () => {
+  it('steps visible controls in DOM order and keeps refused review controls reachable', () => {
+    const { root, screen, hooks, lastPayload } = setup();
+    const review = document.createElement('section');
+    review.innerHTML =
+      '<input aria-label="Query"><button aria-disabled="true">Start</button><details><summary>Sources</summary><button>Hidden source</button></details><button disabled>Unavailable</button><div hidden><button>Hidden</button></div>';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    screen.selectTab('crafting');
+    const field = review.querySelector('input')!;
+    const refused = review.querySelector('button')!;
+    const summary = review.querySelector('summary')!;
+    const click = vi.fn();
+    refused.addEventListener('click', click);
+    try {
+      field.focus();
+      screen.onAction('inventory.control-activate');
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+      field.focus();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(refused);
+      screen.onAction('inventory.control-activate');
+      expect(click).toHaveBeenCalledOnce();
+      expect(lastPayload()).toBeUndefined();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(summary);
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+      screen.onAction('inventory.control-previous');
+      expect(document.activeElement).toBe(summary);
+      screen.selectTab('items');
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+    } finally {
+      review.remove();
+    }
+  });
+
+  it('uses rebound navigation from a query field and leaves native caret keys alone', () => {
+    const { root, screen, lastPayload } = setup();
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    expect(bindings.rebind('inventory.control-next', [{ code: 'Insert' }])).toBeUndefined();
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: 'inventory', debug: false });
+    input.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        screen.onAction(action);
+      }
+    };
+    const remove = input.install();
+    const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    const key = (code: string, shiftKey = false) => {
+      const down = new KeyboardEvent('keydown', { code, key: code, shiftKey, bubbles: true, cancelable: true });
+      document.activeElement!.dispatchEvent(down);
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keyup', { code, shiftKey, bubbles: true }));
+      return down;
+    };
+    try {
+      field.focus();
+      expect(key('Home').defaultPrevented).toBe(false);
+      expect(key('End').defaultPrevented).toBe(false);
+      expect(key('PageDown').defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(field);
+      expect(key('Insert').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(root.querySelector('.inv-help summary'));
+      field.focus();
+      expect(key('Enter', true).defaultPrevented).toBe(true);
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+    } finally {
+      remove();
+    }
+  });
+});
+
 function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
   const character = new Character(contentRegistry, { handedness });
@@ -1573,7 +1649,8 @@ describe('inventory screen Lit rendering', () => {
           received.push(action);
         }
       };
-      const event = new KeyboardEvent('keydown', bindings.chords(binding.id)[0]);
+      const chord = bindings.chords(binding.id)[0]!;
+      const event = new KeyboardEvent('keydown', { ...chord, shiftKey: chord.modifier === 'shift' });
       expect(keyboard.press(event)).toBe(true);
       expect(received.at(-1)).toBe(binding.id);
       keyboard.release(event);

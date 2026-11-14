@@ -80,6 +80,34 @@ const cellPx = (node: Element): number => {
 };
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
 
+const inventoryControlVisible = (node: HTMLElement): boolean => {
+  if (
+    (node.tabIndex < 0 && !node.matches('summary:not([tabindex])')) ||
+    node.matches(':disabled') ||
+    node.closest('[hidden],[inert]')
+  ) {
+    return false;
+  }
+  for (let ancestor: HTMLElement | null = node; ancestor; ancestor = ancestor.parentElement) {
+    const style = node.ownerDocument.defaultView!.getComputedStyle(ancestor);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false;
+    }
+    if (ancestor.matches('details:not([open])') && !ancestor.querySelector('summary')?.contains(node)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const activateInventoryControl = (control: HTMLElement): void => {
+  if (control.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,select')) {
+    control.blur();
+  } else {
+    control.click();
+  }
+};
+
 export const targetForPackedFloorDrop = (
   inventory: Pick<Inventory, 'locate' | 'plan'>,
   dragged: Item,
@@ -113,6 +141,8 @@ import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPaylo
 export interface ScreenHooks {
   /** The page's key bindings: hints show their keys and inventory gestures read their commands. */
   bindings: BindingRegistry;
+  /** The existing crafting/world-work pane joins the screen's control order while that tab is active. */
+  reviewControls?: () => HTMLElement;
   charger?: (entity: BlockEntity) => ChargerPanel | undefined;
   chargerRevision?: () => number;
   /** The vehicle the player opened by interacting with it, while it stays in reach. */
@@ -698,7 +728,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
       <summary>${text.controls}</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(keys, id), action: keys.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(keys, `quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
+      <span>${['inventory.control-previous', 'inventory.control-next', 'inventory.control-activate', 'inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(keys, id), action: keys.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(keys, `quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -1279,7 +1309,7 @@ export class InventoryScreen {
     if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
-    if (this.navigationAction(action)) {
+    if (this.controlAction(action) || this.navigationAction(action)) {
       return true;
     }
     const digit = this.quickbarDigit(action);
@@ -1296,6 +1326,41 @@ export class InventoryScreen {
       return true;
     }
     return this.selectedAction(action, item);
+  }
+
+  private controlAction(action: string): boolean {
+    if (!['inventory.control-previous', 'inventory.control-next', 'inventory.control-activate'].includes(action)) {
+      return false;
+    }
+    if (!this.isOpen) {
+      return true;
+    }
+    const roots = [this.root];
+    if (this.tabs.active === 'crafting' || this.tabs.active === 'repair') {
+      const review = this.hooks.reviewControls?.();
+      if (review) {
+        roots.push(review);
+      }
+    }
+    const controls = roots.flatMap((root) =>
+      [...root.querySelectorAll<HTMLElement>('button,input,textarea,select,summary,a[href],[tabindex]')].filter(
+        inventoryControlVisible,
+      ),
+    );
+    const active = this.root.ownerDocument.activeElement as HTMLElement | null;
+    const index = active ? controls.indexOf(active) : -1;
+    if (action === 'inventory.control-activate') {
+      if (index >= 0) {
+        activateInventoryControl(active!);
+      }
+      return true;
+    }
+    const step = action === 'inventory.control-next' ? 1 : -1;
+    const initial = step === 1 ? 0 : controls.length - 1;
+    const next = controls[index < 0 ? initial : (index + step + controls.length) % controls.length];
+    next?.focus();
+    next?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    return true;
   }
 
   private navigationAction(action: string): boolean {

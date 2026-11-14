@@ -1427,6 +1427,7 @@ const startPlayWith = (
     recovery: (uid, choices) => session.crafting.recovery(uid, choices),
     character: () => session.character,
     body: () => sim.body,
+    reviewControls: () => $('crafting'),
     slotLabels: claimed(registry.ui, 'interface')!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
