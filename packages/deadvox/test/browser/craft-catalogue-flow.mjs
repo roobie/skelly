@@ -64,7 +64,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   await activate(page.locator('[data-craft-result="craft_look_result_1"]'));
   const group = page.locator('[data-craft-group="0"]');
   assert.ok(
-    (await group.textContent()).includes('Look wood'),
+    (await group.textContent()).includes('Wood look'),
     'automatic choice reflects competing stock, not the first alternative',
   );
   await activate(group);

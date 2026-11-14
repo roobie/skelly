@@ -2,10 +2,10 @@ local sample(i) = 'craft_look_result_' + i;
 local indices = std.range(1, 3072);
 {
   items: [
-    { id: 'craft_look_fibre', workInProgress: true, name: 'Look fibre', category: 'material', size: [1, 1], weight: 1 },
-    { id: 'craft_look_wood', workInProgress: true, name: 'Look wood', category: 'material', size: [1, 1], weight: 1 },
+    { id: 'craft_look_fibre', workInProgress: false, name: 'Fibre look', category: 'material', size: [1, 1], weight: 1 },
+    { id: 'craft_look_wood', workInProgress: false, name: 'Wood look', category: 'material', size: [1, 1], weight: 1 },
   ] + [
-    { id: sample(i), workInProgress: true, name: std.format('Catalogue sample %04d', i), category: 'material', size: [1, 1], weight: 1 }
+    { id: sample(i), workInProgress: false, name: std.format('%04d Catalogue sample', i), category: 'material', size: [2, 2], weight: 1 }
     for i in indices
   ],
   recipeCategories: [{ id: 'craft_look', label: 'Catalogue look', order: 0 }] + [
@@ -21,7 +21,7 @@ local indices = std.range(1, 3072);
       id: sample(i), category: 'craft_look_category_' + (i % 24),
       tags: ['craft_look_tag_' + (i % 16)], searchTerms: ['synthetic', 'sample ' + i],
       result: { item: sample(i), count: 1 }, timeGameMinutes: 1, skills: {},
-      qualities: if i == 2 then { craft_look_press: 1 } else {},
+      qualities: if i == 2 then { opening: 5 } else {},
       components: [
         [{ item: 'craft_look_fibre', count: 1 }, { item: 'craft_look_wood', count: 1 }],
         [{ item: 'craft_look_fibre', count: 1 }],
