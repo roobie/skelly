@@ -30,6 +30,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   const activate = async (locator) => {
     await locator.focus();
     await pressAction(page, 'inventory.control-activate');
+    await page.evaluate(() => new Promise(requestAnimationFrame));
   };
   const query = page.locator('.craft-query');
   await query.fill('synthetic');
@@ -70,6 +71,8 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
     `automatic choice reflects competing stock, not the first alternative: ${await page.locator('.craft-recipe').textContent()}`,
   );
   await activate(group);
+  assert.equal(await group.getAttribute('aria-expanded'), 'true');
+  assert.equal(await page.locator('.craft-close-alternatives').count(), 1);
   const alternatives = await page.locator('.craft-alternatives').textContent();
   await page.locator('.craft-components').last().hover();
   assert.equal(
