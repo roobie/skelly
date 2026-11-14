@@ -391,7 +391,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     return target.uid;
   };
   const openWorldWork = async (type, operation) => {
-    await aim(type);
+    const uid = await aim(type);
     await page.evaluate(() => globalThis.foregripFitTest.input.lock());
     process.stdout.write(`world work: ${operation} ${type} ring\n`);
     await chooseHeldAction(page, operation, 'world.interact');
@@ -402,6 +402,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         document.querySelector('#crafting').dataset.worldOperation === op,
       operation,
     );
+    return uid;
   };
   const checkTurnControls = async () => {
     const turnLeft = page.locator('[data-craft-turn="-1"]');
@@ -621,4 +622,24 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     ((await page.locator('.craft-reason').textContent()) ?? '').length > 0,
     'the refusal reason stays visible beside its Start',
   );
+  await pressAction(page, 'ui.inventory-toggle');
+
+  // A Start that commits: the crate stays in reach after the walk, and its take apart needs nothing from the stock.
+  // Pressing it goes through the live input recorder, so a command the recorder cannot encode raises here.
+  const crate = await openWorldWork('crate', 'take_apart');
+  await activate(page.locator('.craft-start'));
+  await new Promise((resolve, reject) => {
+    const raised = (error) => {
+      page.off('pageerror', raised);
+      reject(new Error(`the take-apart Start raised: ${error.message}`));
+    };
+    page.on('pageerror', raised);
+    page
+      .waitForFunction((uid) => Boolean(globalThis.foregripFitTest.session.inventory.entities.byUid(uid)?.work), crate)
+      .then(() => {
+        page.off('pageerror', raised);
+        resolve();
+      }, reject);
+  });
+  assert.equal(await runningWork(), true, 'the take-apart Start begins the work on the crate');
 };
