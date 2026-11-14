@@ -93,7 +93,12 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
           ].map((p) => [p.tagName, p.className, getComputedStyle(p).display, getComputedStyle(p).visibility, p.hidden]),
         })),
       });
-      const result = original(action);
+      let result;
+      try {
+        result = original(action);
+      } catch (error) {
+        globalThis.chooserProbe.push({ action, error: error.message });
+      }
       globalThis.chooserProbe.push({
         action,
         after: document.activeElement?.outerHTML,
