@@ -72,6 +72,27 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   );
   await page.evaluate(() => {
     globalThis.chooserProbe = [];
+    const { screen } = globalThis.foregripFitTest;
+    const original = screen.onAction.bind(screen);
+    screen.onAction = (action) => {
+      globalThis.chooserProbe.push({
+        action,
+        tab: screen.activeTab,
+        refusal: screen.hooks.actionRefusal?.(),
+        viewer: screen.viewer.viewedUid,
+        ancestors: [
+          ...document.activeElement.parentElement.closest('#crafting').querySelectorAll('[data-craft-group]'),
+        ].map((node) => ({
+          tab: node.tabIndex,
+          styles: [
+            ...(function* () {
+              for (let p = node; p; p = p.parentElement) yield p;
+            })(),
+          ].map((p) => [p.tagName, p.className, getComputedStyle(p).display, getComputedStyle(p).visibility, p.hidden]),
+        })),
+      });
+      return original(action);
+    };
     for (const type of ['focusin', 'focusout', 'keydown', 'click']) {
       document.addEventListener(
         type,
