@@ -316,6 +316,8 @@ local pills(weight, least, parts, of) =
         item('nails', 4, count=[5, 20]),
         item('nail_box', 2),
         item('scrap_metal', 3, count=[1, 2]),
+        item('sheet_metal_small', 2, count=[1, 2]),
+        item('sheet_metal', 1),
         item('rag', 2, count=[1, 3]),
         item('stick', 2, count=[1, 3]),
         item('wax', 1, count=[1, 3]),

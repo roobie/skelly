@@ -76,6 +76,20 @@ it('every stock stack stays within one block of height and holds its full count 
   }
 });
 
+it('the sheet-metal stack accepts both sheet sizes but not scrap, and a sheet-metal fridge takes apart into sheet', () => {
+  const stack = registry.furniture.get('sheet_metal_stack')!;
+  const inventory = new Inventory(registry);
+  const piece = inventory.furnish({ type: stack.id, pos: [0, 0, 0], size: [...stack.size], facing: 'n' })!;
+  inventory.entities.markSearched(piece);
+  const target = { kind: 'furniture', entity: piece, pocket: 0 } as const;
+  expect(inventory.add(inventory.create('sheet_metal'), target)).toBe(true);
+  expect(inventory.add(inventory.create('sheet_metal_small'), target)).toBe(true);
+  expect(inventory.add(inventory.create('scrap_metal'), target)).toBe(false);
+  const yields = registry.furniture.get('fridge')!.takeApart!.yield!.yields.map(({ item }) => item);
+  expect(yields).toEqual(expect.arrayContaining(['sheet_metal', 'sheet_metal_small']));
+  expect(yields).not.toContain('scrap_metal');
+});
+
 it('opens the fixture nail box through ordinary unpacking into its authored nail payload', () => {
   const stock = layout
     .showroom!.slots.flatMap(({ items }) => items ?? [])

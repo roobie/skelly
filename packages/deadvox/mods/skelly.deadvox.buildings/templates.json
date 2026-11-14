@@ -1061,8 +1061,12 @@
           "furniture": "sheet_metal_stack",
           "items": [
             {
-              "count": 10,
-              "item": "scrap_metal"
+              "count": 24,
+              "item": "sheet_metal"
+            },
+            {
+              "count": 7,
+              "item": "sheet_metal_small"
             }
           ]
         },

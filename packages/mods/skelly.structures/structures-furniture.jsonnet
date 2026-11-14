@@ -75,6 +75,28 @@ local crate = {
   container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
 } + takeApart(15, 4, 16);
 // Ready-to-use stock is taken out, not taken apart (`packages/deadvox/SLICE-5.md`, "Bulk stock").
+// A stock pile is judged by its height in the world, so capacity follows sheet thickness up to one block
+// (`packages/deadvox/SLICE-5.md`, "Bulk stock"). No sheet model carries a thickness, and a true 1 mm sheet is
+// finer than the pile can show, so `sheetThickness` is the drawn thickness of one sheet, chosen to read as a
+// separate sheet in the pile.
+local blockHeight = 1;
+local bearerHeight = 0.06;
+local sheetThickness = 0.03;
+local sheetLayers = std.floor((blockHeight - bearerHeight) / sheetThickness);
+// A pocket may not exceed the inventory's container width nor the furniture's two largest sides; the stack splits
+// its full count of large sheets across as many pockets as that needs (the board stack in
+// `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet` follows the same rule). A pocket shorter
+// than a sheet's 10-cell length keeps sheets lying one way, so its capacity is exact, not a packing guess.
+local largeSheetCells = [10, 3];
+local pocketGrid = [10, 9];
+local sheetsPerPocket = std.floor(pocketGrid[1] / largeSheetCells[1]);
+local sheetPocketCount = std.ceil(sheetLayers / sheetsPerPocket);
+local sheetBox = function(layer) {
+  // Each sheet lies a little off the one below.
+  position: [0.05 + 0.07 * (layer % 4), bearerHeight + layer * sheetThickness, 0.05 + 0.05 * ((layer * 3) % 5)],
+  size: [2.7, sheetThickness, 2.7],
+  color: ['#aab4b8', '#98a2a6', '#a2acb0', '#8d9296'][layer % 4],
+};
 local bulkStock = [
   {
     local fullShape = self.shape,
@@ -84,25 +106,19 @@ local bulkStock = [
     color: '#aab4b8',
     material: 'steel',
     shape: [
-      // Galvanized sheets stacked flat, each lying a little off the one below.
-      { position: [0.05, 0, 0.05], size: [2.9, 0.07, 2.9] },
-      { position: [0.12, 0.07, 0.1], size: [2.75, 0.07, 2.8], color: '#98a2a6' },
-      { position: [0.08, 0.14, 0.16], size: [2.85, 0.07, 2.7] },
-      { position: [0.16, 0.21, 0.07], size: [2.7, 0.07, 2.85], color: '#8d9296' },
-      { position: [0.1, 0.28, 0.13], size: [2.8, 0.07, 2.75], color: '#98a2a6' },
-      { position: [0.22, 0.35, 0.2], size: [2.55, 0.07, 2.55] },
-    ],
-    container: { accepts: ['scrap_metal'], pockets: [{ grid: [2, 2], handlingSimSeconds: 1.2 }] },
+      { position: [0.1, 0, 0.1], size: [0.15, bearerHeight, 2.8], color: '#6a4e33' },
+      { position: [2.75, 0, 0.1], size: [0.15, bearerHeight, 2.8], color: '#6a4e33' },
+    ] + [sheetBox(layer) for layer in std.range(0, sheetLayers - 1)],
+    container: {
+      accepts: ['sheet_metal', 'sheet_metal_small'],
+      pockets: [{ grid: pocketGrid, handlingSimSeconds: 1.2 } for _ in std.range(1, sheetPocketCount)],
+    },
     stockAppearance: {
-      fullCount: 10,
-      steps: [
-        { from: 0, shape: [
-          { position: [0.1, 0, 0.1], size: [0.15, 0.03, 2.8], color: '#6a4e33' },
-          { position: [2.75, 0, 0.1], size: [0.15, 0.03, 2.8], color: '#6a4e33' },
-        ] },
-        { from: 0.01, shape: fullShape[:2] },
-        { from: 0.5, shape: fullShape[:4] },
-        { from: 0.9, shape: fullShape },
+      fullCount: sheetLayers,
+      // One step per sheet, so the pile grows across the full height.
+      steps: [{ from: 0, shape: fullShape[:2] }] + [
+        { from: (layer - 1) / sheetLayers + 0.001, shape: fullShape[:2 + layer] }
+        for layer in std.range(1, sheetLayers)
       ],
     },
   },

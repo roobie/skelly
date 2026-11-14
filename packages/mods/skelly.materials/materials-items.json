@@ -54,6 +54,25 @@
     },
     {
       "category": "material",
+      "description": "A hand-sized sheet of mild steel.",
+      "id": "sheet_metal_small",
+      "name": "Small sheet metal",
+      "size": [2, 2],
+      "stack": 10,
+      "weight": 250,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A large thin sheet of mild steel, rolled up to carry.",
+      "id": "sheet_metal",
+      "name": "Sheet metal",
+      "size": [10, 3],
+      "weight": 6000,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
       "id": "rubble_stone",
       "model": "stone_eggshell_shard",
       "name": "Rubble stone",

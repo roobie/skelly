@@ -883,7 +883,7 @@
         "W": { "furniture": "workbench" },
         "b": { "furniture": "board_stack", "items": [{ "item": "wooden_plank", "count": 36 }] },
         "f": { "furniture": "crate", "items": [{ "item": "nail_box", "placement": "surface" }] },
-        "m": { "furniture": "sheet_metal_stack", "items": [{ "item": "scrap_metal", "count": 10 }] }
+        "m": { "furniture": "sheet_metal_stack", "items": [{ "item": "sheet_metal", "count": 24 }, { "item": "sheet_metal_small", "count": 7 }] }
       },
       "layers": [
         [

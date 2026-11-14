@@ -37,6 +37,18 @@
       "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
     },
     {
+      "id": "sheet_metal_small",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
+      "id": "sheet_metal",
+      "notLoot": false,
+      "tiers": ["Tier1", "Tier2", "Tier3"],
+      "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+    },
+    {
       "id": "rubble_stone",
       "notLoot": false,
       "tiers": [],

@@ -41,6 +41,25 @@
       size: [1, 2],
       stack: 5,
     },
+    // Sheet metal follows Cataclysm: DDA's `sheet_metal_small` (about 20 cm square, 250 g) and `sheet_metal`
+    // (up to 1 m square, 6 kg, rolled to carry). No model exists for either yet, so they draw as plain items.
+    {
+      id: 'sheet_metal_small',
+      name: 'Small sheet metal',
+      category: 'material',
+      weight: 250,
+      size: [2, 2],
+      stack: 10,
+      description: 'A hand-sized sheet of mild steel.',
+    },
+    {
+      id: 'sheet_metal',
+      name: 'Sheet metal',
+      category: 'material',
+      weight: 6000,
+      size: [10, 3],
+      description: 'A large thin sheet of mild steel, rolled up to carry.',
+    },
     {
       id: 'rubble_stone',
       name: 'Rubble stone',

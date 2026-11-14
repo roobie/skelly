@@ -267,6 +267,14 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   Item thickness lives in the model asset, not in content, so the stack's content
   states the thickness it was drawn with; see
   `packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet`, `plankThickness`.
+  Sheet metal is real stock beside scrap: a large and a small sheet, each distinct
+  from scrap metal, because Cataclysm: DDA, which BR named as the inspiration,
+  carries both sizes; a sheet-metal stack holds sheet only. Taking apart sheet-metal
+  furniture yields sheet where that game's equivalent does. Scrap and sheet both
+  stay because some items need scrap and some need sheet. Cutting, joining and
+  forging sheet wait on a metal-cutting tool and a forging feature; see
+  `packages/mods/skelly.materials/materials-items.jsonnet`, `sheet_metal`, and
+  `packages/mods/skelly.structures/structures-furniture.jsonnet`, `sheetThickness`.
   Content-authored shapes shrink in steps by fill share, one step per layer across
   the full height, so the player reads how much is left at a glance; an empty
   stack must not look full. See
