@@ -32,7 +32,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@skelly/construct": "*",
     "@skelly/thing-core": "*",
     "jfxr": "0.13.0",
     "valibot": "^1.5.0"

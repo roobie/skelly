@@ -579,10 +579,11 @@ const placeContentFitting = (
   const body = new Group().add(holder);
   for (const rider of carried.get(def.id) ?? []) {
     const object = placeContentFitting(rider, carried);
-    if (!object) {
-      return undefined;
+    if (object) {
+      body.add(object);
+    } else {
+      modelsPending = true;
     }
-    body.add(object);
   }
   if (!placed.motion) {
     return body;

@@ -81,8 +81,8 @@ it('draws a sheened material with its sheen, keeping one prepared copy per share
 
 const MAP_KEY = /map$/i;
 
-// What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper) and a
-// patch's own key, but with the fabric grain's kind, the one patch whose key a material's content picks.
+// What three.js keys a mesh's program on, short of scene-wide state (lights, fog, target, tone mapper). It includes
+// the material's customProgramCacheKey(), which carries the keys of the patches applied to it.
 const programKey = (mesh: Mesh, material: Material): string => {
   const fields = material as unknown as Record<string, unknown>;
   const maps = Object.keys(fields)

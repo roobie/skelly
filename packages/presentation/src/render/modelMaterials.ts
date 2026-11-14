@@ -140,7 +140,7 @@ const fabricStandIn = (kind: (typeof FABRIC_KINDS)[number]): MeshPhysicalMateria
  * uniforms), and a lit item's glow adds its own. Fabric warms only opaque and one-sided, the form models wear it in,
  * because each grain program is costly to compile. `instanced` adds the instanced copies ground piles draw with,
  * `skyAnchored` the sky-anchored copies vehicles draw with, and `finishedVariants` the finished copies vehicles draw
- * with while that option is on, anchored as vehicles anchor them, so turning it on compiles nothing. Content outside
+ * with while that option is on (of the base variants only, since no finish has a fabric), anchored as vehicles anchor them, so turning it on compiles nothing. Content outside
  * these variants compiles on first draw, which `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
 export const modelMaterialWarmUp = ({
@@ -153,15 +153,13 @@ export const modelMaterialWarmUp = ({
   finishedVariants?: ((plain: MeshStandardMaterial) => readonly Material[]) | undefined;
 }): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-  const variants = [
-    ...[false, true].flatMap((transparent) =>
-      [FrontSide, DoubleSide].flatMap((side) => [
-        ...[null, texture].map((map) => new MeshStandardMaterial({ transparent, side, map })),
-        new MeshPhysicalMaterial({ transparent, side, sheen: 1 }),
-      ]),
-    ),
-    ...FABRIC_KINDS.map(fabricStandIn),
-  ];
+  const base = [false, true].flatMap((transparent) =>
+    [FrontSide, DoubleSide].flatMap((side) => [
+      ...[null, texture].map((map) => new MeshStandardMaterial({ transparent, side, map })),
+      new MeshPhysicalMaterial({ transparent, side, sheen: 1 }),
+    ]),
+  );
+  const variants = [...base, ...FABRIC_KINDS.map(fabricStandIn)];
   // Exported models carry positions and normals, and three.js keys a program on both.
   const geometry = new BufferGeometry()
     .setAttribute('position', new Float32BufferAttribute([], 3))
@@ -176,7 +174,7 @@ export const modelMaterialWarmUp = ({
   if (skyAnchored) {
     meshes.push(...variants.map((plain) => new Mesh(geometry, skyAnchoredCopy(plain))));
   }
-  for (const material of finishedVariants ? variants.flatMap(finishedVariants) : []) {
+  for (const material of finishedVariants ? base.flatMap(finishedVariants) : []) {
     meshes.push(new Mesh(geometry, skyAnchoredCopy(material)));
   }
   const group = new Group();

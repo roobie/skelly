@@ -236,6 +236,31 @@ describe('runtime closure', () => {
     expect(importers(violations)).toEqual([thingCoreStep]);
   });
 
+  it('follows a workspace that a followed library depends on, and still forbids what that workspace reaches', () => {
+    const base = kitWorkspace({});
+    const dependent = {
+      ...base,
+      [thingCoreSchema]: "import { grain } from '@skelly/kit-math';\nexport const schema = grain;\n",
+      'packages/skelly-assets/tools/packages/thing-core/package.json': JSON.stringify({
+        name: '@skelly/thing-core',
+        type: 'module',
+        exports: { './schema': './src/schema.ts' },
+        dependencies: { '@skelly/kit-math': '*' },
+      }),
+      'packages/kit/package.json': JSON.stringify({
+        name: '@skelly/kit-math',
+        type: 'module',
+        exports: { '.': './src/math.ts' },
+      }),
+    };
+    expect(violationsIn({ ...dependent, 'packages/kit/src/math.ts': 'export const grain = 1;\n' })).toEqual([]);
+    const reaching = violationsIn({
+      ...dependent,
+      'packages/kit/src/math.ts': `import { view } from '${'../'.repeat(3)}deadvox/src/render/view.ts';\nexport const grain = view;\n`,
+    });
+    expect(importers(reaching)).toEqual(['packages/kit/src/math.ts']);
+  });
+
   it('fails a runtime file that imports product configuration JSON (W3)', () => {
     const violations = violationsIn({
       [catalog]: "import tuning from '../config/tuning.json' with { type: 'json' };\nexport const t = tuning;\n",
