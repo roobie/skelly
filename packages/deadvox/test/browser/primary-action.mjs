@@ -121,6 +121,16 @@ const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
+/** A pressed F commits its tap at a player tick, so only the job itself says the press has started prying. */
+const pryStartedSample = ({ uid }) => {
+  const { session } = globalThis.primaryActionTest;
+  const { job } = session.sim.actions;
+  return {
+    time: session.sim.time,
+    paused: session.sim.paused,
+    reached: job?.jobType === 'forceDoor' && job.entityUid === uid,
+  };
+};
 const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
@@ -4200,8 +4210,8 @@ try {
       await pressAction(lockedPage, 'world.interact');
       await waitForSimulation(
         lockedPage,
-        progressingSample,
-        { start: toolDoor.start },
+        pryStartedSample,
+        { uid: toolDoor.uid },
         {
           seconds: 0.5,
           label: 'locked-door F action enters the simulation',
