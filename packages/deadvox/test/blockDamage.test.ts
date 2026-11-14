@@ -233,6 +233,30 @@ describe('block damage foundation', () => {
     expect(() => canonical.ensureColumn(0, 0)).toThrow('Incomplete touched column');
     expect(() => new World().touchColumn(0, 0)).toThrow('absent column');
   });
+
+  it('moves the damage version on each record, mend and clear, and not on a refused one', () => {
+    const { world, registry, canonical } = fixture();
+    const versions = [world.blockDamage.version];
+    const moved = () => {
+      versions.push(world.blockDamage.version);
+      return versions.at(-1) !== versions.at(-2);
+    };
+    const { epoch } = world.blockDamage.record(canonical, registry, cell, 2);
+    expect(moved()).toBe(true);
+    expect(world.blockDamage.repair(cell, epoch + 1, 1)).toBe(false);
+    expect(moved()).toBe(false);
+    world.blockDamage.repair(cell, epoch, 1);
+    expect(moved()).toBe(true);
+    world.blockDamage.repair(cell, epoch, 1);
+    expect(world.blockDamage.get(cell)).toBeUndefined();
+    expect(moved()).toBe(true);
+    world.blockDamage.clear(cell);
+    expect(moved()).toBe(false);
+    world.blockDamage.record(canonical, registry, cell, 1);
+    moved();
+    world.blockDamage.clear(cell);
+    expect(moved()).toBe(true);
+  });
 });
 
 describe('block material admission', () => {

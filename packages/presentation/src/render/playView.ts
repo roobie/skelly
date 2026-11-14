@@ -74,6 +74,7 @@ import { applySky } from './sky.ts';
 import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
+import { TerrainCracks } from './terrainCracks.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
 
@@ -224,6 +225,8 @@ type PlayViewEngine = Readonly<
     | 'shadows'
     | 'sky'
     | 'isSolid'
+    | 'isOpaque'
+    | 'world'
     | 'entities'
     | 'skylight'
     | 'materialPatches'
@@ -309,6 +312,8 @@ export const createPlayView = (
   if (decals) {
     scene.add(decals.mesh);
   }
+  const cracks = new TerrainCracks({ seed: config.seed, blockSize: s, registry });
+  scene.add(cracks.mesh);
   const itemThrows = new ItemThrows(registry, models, s, config.seed);
   const targetCell = config.debug
     ? (block: Vec3) => {
@@ -355,6 +360,7 @@ export const createPlayView = (
     caseEffects.dispose();
     gore.dispose();
     decals?.dispose();
+    cracks.dispose();
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
@@ -618,6 +624,7 @@ export const createPlayView = (
       furniture.sync(entities);
       corpses.sync(entities);
       decals?.sync(entities);
+      cracks.sync(engine.world, engine.isOpaque, meshes);
       const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
       actorMeshes.setCamera?.(camera);

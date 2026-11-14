@@ -15,6 +15,7 @@ local skillCurve = import 'tools/jsonnet/lib/skill-curve.libsonnet';
     { id: 'repair_tools', label: 'Tools and weapons', parent: 'repairs', order: 10 },
     { id: 'repair_clothing', label: 'Clothing and bags', parent: 'repairs', order: 20 },
     { id: 'repair_electrical', label: 'Electrical equipment', parent: 'repairs', order: 30 },
+    { id: 'repair_structures', label: 'Walls and floors', parent: 'repairs', order: 40 },
   ],
   recipeTags: [
     { id: 'wood', label: 'Wood', searchTerms: ['timber'] },
