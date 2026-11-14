@@ -848,7 +848,7 @@ const startPlayWith = (
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
-  const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s);
+  const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s, session.character.knownRecipes);
   const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
@@ -1439,6 +1439,11 @@ const startPlayWith = (
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: router.dispatchScreenCommand,
+    // Render-free play has no pictures, so the target keeps its name and rows without a second rendering path.
+    targetView: view.pictures && {
+      pictures: view.pictures,
+      model: (entity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
+    },
   });
 
   let revealActors = false;
@@ -2253,9 +2258,9 @@ const startPlayWith = (
   };
 
   const furnitureChoicePayload = (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
-    if (selected.id === 'repair') {
+    if (selected.id === 'repair' || selected.id === 'take_apart') {
       quickbarInput.cancel();
-      screen.openRepair(entity.uid);
+      screen.openWorldWork(entity.uid, selected.id);
       mainMenuOpen = false;
       syncMenuState();
       return undefined;
@@ -3183,7 +3188,7 @@ const startPlayWith = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.repairTarget : undefined);
+    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.worldWork : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);

@@ -533,7 +533,12 @@
           "sources": "Source vessels",
           "station": "Station: {station}",
           "tagFind": "Find tag",
-          "tags": "Tags"
+          "tags": "Tags",
+          "takeApart": "Take apart {item}",
+          "takeApartName": "Take apart: {item}",
+          "turnLeft": "Turn left",
+          "turnRight": "Turn right",
+          "yieldRow": "{item}: {count}"
         },
         "credits": {
           "back": "Back",
@@ -689,6 +694,7 @@
           "tabItems": "Items",
           "tabRepair": "Repair",
           "tabSkills": "Skills",
+          "tabTakeApart": "Take apart",
           "tabsLabel": "Character screen",
           "taking": "Taking {count} {category} items",
           "takingApart": "Taking apart: {item}",
@@ -915,7 +921,9 @@
         "worldService": {
           "drag": "Drag",
           "lift": "Lift",
-          "push": "Push"
+          "push": "Push",
+          "repair": "Repair",
+          "takeApart": "Take apart"
         }
       },
       "spacing": 1,

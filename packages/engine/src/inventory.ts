@@ -17,6 +17,7 @@ export {
   requirementStatus,
 } from './core/crafting.ts';
 export { craftActionHooks } from './core/craftWork.ts';
+export { pieceRecoveryWork } from './core/disassembly.ts';
 export {
   actionCycleSeconds,
   actionOpenSeconds,

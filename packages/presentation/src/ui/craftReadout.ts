@@ -7,6 +7,7 @@ import {
   type Inventory,
   type Item,
   indexCraftReach,
+  pieceRecoveryWork,
   planCraft,
   requirementStatus,
 } from '@skelly/engine/inventory';
@@ -87,8 +88,10 @@ export interface CraftRow {
   name: string;
   /** The repair subject or craft result name, for the start button. */
   itemName: string;
-  kind: 'craft' | 'repair';
+  kind: 'craft' | 'repair' | 'take_apart';
   time: string;
+  /** Take apart's read-only yield; crafting and repair choose inputs instead. */
+  yields?: { name: string; count: number }[];
   reason: string | undefined;
   components: {
     group: number;
@@ -124,6 +127,31 @@ const recipeStartReason = (
     return noRepairTarget;
   }
   return undefined;
+};
+
+/** Taking a pinned piece apart: the command owner's preview yield and refusal, read-only. */
+export const takeApartRow = (
+  registry: Registry,
+  target: BlockEntity,
+  crafting: Pick<CraftCommands, 'previewTakeApartEntity'>,
+): CraftRow => {
+  const text = craftingText(registry);
+  const { plan, refusal } = crafting.previewTakeApartEntity(target.uid);
+  const itemName = registry.furniture.get(target.type)!.name;
+  const minutes = plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type)?.timeGameMinutes ?? 0;
+  return {
+    id: `take_apart:${target.uid}`,
+    name: fillText(text.takeApartName, { item: itemName }),
+    itemName,
+    kind: 'take_apart',
+    time: craftTime(minutes * 60, text),
+    yields: (plan?.outputs ?? []).map(({ item, count }) => ({ name: registry.items.get(item)!.name, count })),
+    reason: refusal,
+    components: [],
+    qualities: [],
+    skills: [],
+    workstation: null,
+  };
 };
 
 export const craftRows = ({

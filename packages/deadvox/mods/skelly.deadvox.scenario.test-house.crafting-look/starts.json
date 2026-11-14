@@ -113,6 +113,20 @@
         "row": [-8.5, 21.5, -1],
         "slots": [
           {
+            "furniture": "chair",
+            "placement": {
+              "facing": "s",
+              "position": [-9.5, 21.5, 0]
+            }
+          },
+          {
+            "furniture": "crate",
+            "placement": {
+              "facing": "s",
+              "position": [-7, 21.5, 0]
+            }
+          },
+          {
             "furniture": "workbench",
             "items": [
               {
@@ -299,6 +313,7 @@
         "hone_kabar",
         "grind_machete",
         "hone_machete",
+        "craft_look_chair_repair",
         "craft_look_result_1",
         "craft_look_result_2",
         "craft_look_result_3",

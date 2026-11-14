@@ -24828,6 +24828,38 @@
   ],
   "recipes": [
     {
+      "category": "craft_look",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "craft_look_wood"
+          },
+          {
+            "count": 1,
+            "item": "craft_look_fibre"
+          }
+        ]
+      ],
+      "id": "craft_look_chair_repair",
+      "kind": "repair",
+      "qualities": {},
+      "repair": {
+        "amount": 0.5,
+        "entity": "chair",
+        "perSkill": 0,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "craft_look_wood"
+      },
+      "searchTerms": [],
+      "skills": {},
+      "tags": [],
+      "timeGameMinutes": 5
+    },
+    {
       "category": "craft_look_category_1",
       "components": [
         [

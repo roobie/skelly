@@ -16,6 +16,13 @@ export interface CraftPanelActions {
   browse?: (change: Partial<CraftCatalogueState>) => void;
   openGroup?: (group: number) => void;
   closeGroup?: () => void;
+  /** Turns the pinned world target's view by one step; it never selects another target. */
+  turn?: (step: 1 | -1) => void;
+}
+/** The pinned world piece: its review heading, and whether a model view sits beside the rows. */
+export interface CraftWorldView {
+  heading: string;
+  depicted: boolean;
 }
 export interface CraftCatalogueView {
   state: CraftCatalogueState;
@@ -89,17 +96,27 @@ const catalogueTemplate = (view: CraftCatalogueView, actions: CraftPanelActions,
     ${pageControls(view.results, text, (page) => browse({ page }))}
   </section>`;
 };
+const targetTemplate = (world: CraftWorldView, actions: CraftPanelActions, text: CraftingText) =>
+  html`<figure class="craft-target">
+    ${world.depicted ? html`<canvas class="craft-target-canvas" aria-hidden="true"></canvas>` : nothing}
+    <div class="craft-target-turn">
+      <button type="button" data-craft-turn="-1" @click=${() => actions.turn?.(-1)}>${text.turnLeft}</button>
+      <button type="button" data-craft-turn="1" @click=${() => actions.turn?.(1)}>${text.turnRight}</button>
+    </div>
+  </figure>`;
 const reviewTemplate = (
   row: CraftRow,
   groupNumber: number | undefined,
   actions: CraftPanelActions,
   text: CraftingText,
+  world: CraftWorldView | undefined,
 ) => {
   const open = row.components.find((group) => group.group === groupNumber);
   return html`<article class="craft-recipe" data-recipe=${row.id}>
     <h3>${row.name}</h3>
     <div class="craft-review-scroll">
-      <div class="craft-rows-pane"><div class="craft-requirements">
+      <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
+        ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);
           const label = chosen ? alternativeLabel(chosen, text) : text.noPlan;
@@ -142,7 +159,7 @@ const reviewTemplate = (
           if (row.reason === undefined) {
             actions.start(row.id);
           }
-        }}>${fillText(row.kind === 'repair' ? text.repair : text.craft, { item: row.itemName.toLowerCase() })}</button>
+        }}>${fillText({ craft: text.craft, repair: text.repair, take_apart: text.takeApart }[row.kind], { item: row.itemName.toLowerCase() })}</button>
       ${row.reason === undefined ? nothing : html`<p id=${`craft-reason-${row.id}`} class="craft-gap craft-reason">${row.reason}</p>`}
     </footer>
   </article>`;
@@ -153,19 +170,19 @@ export const renderCrafting = (
   actions: CraftPanelActions,
   {
     text,
-    targetName,
+    world,
     catalogue,
     openGroup,
-  }: { text: CraftingText; targetName?: string; catalogue?: CraftCatalogueView; openGroup?: number },
+  }: { text: CraftingText; world?: CraftWorldView; catalogue?: CraftCatalogueView; openGroup?: number },
 ): void => {
   render(
-    html`<header><h2>${targetName === undefined ? factDetail(text.heading, text.headingFact) : fillText(text.repairName, { item: targetName })}</h2></header>
+    html`<header><h2>${world === undefined ? factDetail(text.heading, text.headingFact) : world.heading}</h2></header>
     <div class=${catalogue ? 'craft-layout' : 'craft-layout craft-world'}>
       ${catalogue ? catalogueTemplate(catalogue, actions, text) : nothing}
       <section class="craft-review">${repeat(
         rows,
         (row) => row.id,
-        (row) => reviewTemplate(row, openGroup, actions, text),
+        (row) => reviewTemplate(row, openGroup, actions, text, world),
       )}</section>
     </div>`,
     root,

@@ -18,6 +18,14 @@ local indices = std.range(1, 3072);
   ],
   recipes: [
     {
+      id: 'craft_look_chair_repair', kind: 'repair', category: 'craft_look', tags: [], searchTerms: [],
+      result: { item: 'craft_look_wood', count: 1 },
+      repair: { entity: 'chair', skill: 'crafting', amount: 0.5, perSkill: 0 },
+      timeGameMinutes: 5, skills: {}, qualities: {},
+      components: [[{ item: 'craft_look_wood', count: 2 }, { item: 'craft_look_fibre', count: 1 }]],
+    },
+  ] + [
+    {
       id: sample(i), category: 'craft_look_category_' + (i % 24),
       tags: ['craft_look_tag_' + (i % 16)], searchTerms: ['synthetic', 'sample ' + i],
       result: { item: sample(i), count: 1 }, timeGameMinutes: 1, skills: {},

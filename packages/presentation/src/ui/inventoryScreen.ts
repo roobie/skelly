@@ -69,7 +69,7 @@ import { comboBox } from './comboBox.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
-import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
+import { type InventoryTab, InventoryTabState, type WorldOperation } from './inventoryTabs.ts';
 import { ItemViewer, type ItemViewSource, isViewItemPress } from './itemViewer.ts';
 import { fillHint, type KeyLabels, keyCap } from './keyCap.ts';
 
@@ -677,11 +677,17 @@ const inventoryTemplate = (
   vm: InventoryScreenViewModel,
   {
     tab,
-    repairAvailable,
+    worldOperation,
     splitRatio,
     text,
     keys,
-  }: { tab: InventoryTab; repairAvailable: boolean; splitRatio: number; text: InventoryText; keys: BindingRegistry },
+  }: {
+    tab: InventoryTab;
+    worldOperation: WorldOperation | undefined;
+    splitRatio: number;
+    text: InventoryText;
+    keys: BindingRegistry;
+  },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
@@ -706,10 +712,10 @@ const inventoryTemplate = (
   <header class="inv-head">
     <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
     <nav class="inv-tabs" aria-label=${text.tabsLabel}>
-      ${(['items', 'skills', 'crafting', 'actions', ...(repairAvailable ? ['repair' as const] : [])] as const).map(
+      ${(['items', 'skills', 'crafting', 'actions', ...(worldOperation ? ['repair' as const] : [])] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: worldOperation === 'take_apart' ? text.tabTakeApart : text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -1018,7 +1024,8 @@ export class InventoryScreen {
   private readonly hooks: ScreenHooks;
   private readonly bindings: BindingRegistry;
   private readonly tabs = new InventoryTabState();
-  private repairUid: number | undefined;
+  /** The pinned world-work target: Repair or Take apart of one chosen piece. */
+  private world: { uid: number; operation: WorldOperation } | undefined;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
@@ -1124,15 +1131,26 @@ export class InventoryScreen {
     return this.tabs.active;
   }
 
+  /** The pinned world-work target and operation, while its piece still exists. */
+  get worldWork(): { target: BlockEntity; operation: WorldOperation } | undefined {
+    const target = this.world && this.inv.entities.byUid(this.world.uid);
+    return target && this.world && { target, operation: this.world.operation };
+  }
+
   get repairTarget(): BlockEntity | undefined {
-    return this.repairUid === undefined ? undefined : this.inv.entities.byUid(this.repairUid);
+    return this.worldWork?.target;
   }
 
   openRepair(uid: number): void {
+    this.openWorldWork(uid, 'repair');
+  }
+
+  openWorldWork(uid: number, operation: WorldOperation): void {
     if (!this.inv.entities.byUid(uid)) {
       return;
     }
-    this.repairUid = uid;
+    this.world = { uid, operation };
+    this.drawn = '';
     this.openOnTab('repair');
   }
 
@@ -1151,7 +1169,7 @@ export class InventoryScreen {
     this.targetKey = undefined;
     this.currentContainer = undefined;
     this.tabs.close();
-    this.repairUid = undefined;
+    this.world = undefined;
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
     this.findQuery = '';
@@ -1202,8 +1220,8 @@ export class InventoryScreen {
       return;
     }
     const { repairTarget } = this;
-    if (this.repairUid !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
-      this.repairUid = undefined;
+    if (this.world !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
+      this.world = undefined;
       if (this.tabs.active === 'repair') {
         this.tabs.select('items');
         this.root.dataset.tab = this.tabs.active;
@@ -1642,7 +1660,7 @@ export class InventoryScreen {
         vm,
         {
           tab: this.tabs.active,
-          repairAvailable: this.repairTarget !== undefined,
+          worldOperation: this.worldWork?.operation,
           splitRatio: this.splitRatio,
           text: this.text(),
           keys: this.bindings,

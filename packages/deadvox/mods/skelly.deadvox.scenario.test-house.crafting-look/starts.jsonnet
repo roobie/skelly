@@ -12,7 +12,14 @@ local catalogue = import 'catalogue.jsonnet';
     actors: [],
     showroom: base.showroom + {
       row: [-8.5, 21.5, -1],
+      // Placed beside the spawn so the world-work look reaches both; the chair's content wear places it damaged.
       slots: [{
+        furniture: 'chair',
+        placement: { position: [-9.5, 21.5, 0], facing: 's' },
+      }, {
+        furniture: 'crate',
+        placement: { position: [-7, 21.5, 0], facing: 's' },
+      }, {
         furniture: 'workbench',
         items: [
           { item: 'craft_look_fibre', count: 1, placement: 'surface' },

@@ -111,6 +111,8 @@ export const GraphicsTuningSchema = strictObject({
       startPitchDegrees: Degrees,
       pitchLimitDegrees: pipe(number(), minValue(0), maxValue(90)),
       degreesPerPixel: Positive,
+      /** One press of a world-work target's turn control; the target view shares this pose and renderer. */
+      turnStepDegrees: Positive,
       zoomPerWheelPixel: Positive,
       zoomMin: Positive,
       zoomMax: Positive,
