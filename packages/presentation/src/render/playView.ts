@@ -30,6 +30,7 @@ import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/en
 import {
   type BlockEntities,
   type Body,
+  type LampReachCache,
   type PoweredLight,
   raycast,
   type SolidAt,
@@ -50,6 +51,7 @@ import { CaseEffects } from './caseEffects.ts';
 import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
+import { installFixtureReach } from './fixtureReach.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
@@ -245,6 +247,7 @@ export const createPlayView = (
     ragdoll,
     page = globalThis,
     poweredLights = () => [],
+    lampReach,
     physicalSolid = engine.isSolid,
     probes = {},
   }: {
@@ -256,6 +259,8 @@ export const createPlayView = (
     ragdoll: RagdollConfig;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
+    /** Where the rules' wall check stops each powered lamp; without it lamp light is not walled. */
+    lampReach?: LampReachCache;
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
     physicalSolid?: (x: number, y: number, z: number) => boolean;
     /** The developer's view probes, as the product read them from its page. */
@@ -367,6 +372,7 @@ export const createPlayView = (
     leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
+    fixtureReach?.dispose();
     held.dispose();
     playerMeshes.dispose();
     avatarMannequin?.dispose();
@@ -398,6 +404,11 @@ export const createPlayView = (
   );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
+  const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
+    slots: lightTuning.renderedFixtureLimit,
+    blockSize: s,
+    tuning: lightTuning.illumination.reach,
+  });
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(
     piles.group,
@@ -621,7 +632,7 @@ export const createPlayView = (
       piles.sync(inventory, itemThrows.hiddenItemUids);
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles);
-      furniture.sync(entities);
+      furniture.sync(entities, poweredLights());
       corpses.sync(entities);
       decals?.sync(entities);
       cracks.sync(engine.world, engine.isOpaque, meshes);
@@ -753,6 +764,7 @@ export const createPlayView = (
         fixtures: poweredLights(),
         glows: acidGlows(actorMeshes.anchors?.() ?? []),
       });
+      fixtureReach?.update(lightPool.fixtureSlots);
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {
