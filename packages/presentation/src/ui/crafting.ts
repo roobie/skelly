@@ -104,13 +104,26 @@ const targetTemplate = (world: CraftWorldView, actions: CraftPanelActions, text:
       <button type="button" data-craft-turn="1" @click=${() => actions.turn?.(1)}>${text.turnRight}</button>
     </div>
   </figure>`;
+/** The Start button's verb for this review's kind; content owns each label. */
+const startVerb = (text: CraftingText, kind: CraftRow['kind']) => {
+  if (kind === 'repair') {
+    return text.repair;
+  }
+  if (kind === 'take_apart') {
+    return text.takeApart;
+  }
+  return text.craft;
+};
 const reviewTemplate = (
   row: CraftRow,
-  groupNumber: number | undefined,
   actions: CraftPanelActions,
-  text: CraftingText,
-  world: CraftWorldView | undefined,
+  {
+    text,
+    world,
+    openGroup,
+  }: { text: CraftingText; world?: CraftWorldView | undefined; openGroup?: number | undefined },
 ) => {
+  const groupNumber = openGroup;
   const open = row.components.find((group) => group.group === groupNumber);
   return html`<article class="craft-recipe" data-recipe=${row.id}>
     <h3>${row.name}</h3>
@@ -153,13 +166,13 @@ const reviewTemplate = (
       </details>`,
         )}
     </div>
-    <footer class="craft-commitment"><div class="craft-time">${fillText(text.length, { span: row.time })}</div>
+    <footer class="craft-commitment"><div class="craft-time">${fillText(text.length, { span: row.length })}</div>
       <button class="craft-start" type="button" aria-disabled=${row.reason === undefined ? 'false' : 'true'} aria-describedby=${row.reason === undefined ? nothing : `craft-reason-${row.id}`}
         @click=${() => {
           if (row.reason === undefined) {
             actions.start(row.id);
           }
-        }}>${fillText({ craft: text.craft, repair: text.repair, take_apart: text.takeApart }[row.kind], { item: row.itemName.toLowerCase() })}</button>
+        }}>${fillText(startVerb(text, row.kind), { item: row.itemName.toLowerCase() })}</button>
       ${row.reason === undefined ? nothing : html`<p id=${`craft-reason-${row.id}`} class="craft-gap craft-reason">${row.reason}</p>`}
     </footer>
   </article>`;
@@ -182,7 +195,7 @@ export const renderCrafting = (
       <section class="craft-review">${repeat(
         rows,
         (row) => row.id,
-        (row) => reviewTemplate(row, openGroup, actions, text, world),
+        (row) => reviewTemplate(row, actions, { text, world, openGroup }),
       )}</section>
     </div>`,
     root,

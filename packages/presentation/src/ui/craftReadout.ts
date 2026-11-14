@@ -89,7 +89,8 @@ export interface CraftRow {
   /** The repair subject or craft result name, for the start button. */
   itemName: string;
   kind: 'craft' | 'repair' | 'take_apart';
-  time: string;
+  /** The commitment strip's formatted length line, from `craftTime`. */
+  length: string;
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
   yields?: { name: string; count: number }[];
   reason: string | undefined;
@@ -144,7 +145,7 @@ export const takeApartRow = (
     name: fillText(text.takeApartName, { item: itemName }),
     itemName,
     kind: 'take_apart',
-    time: craftTime(minutes * 60, text),
+    length: craftTime(minutes * 60, text),
     yields: (plan?.outputs ?? []).map(({ item, count }) => ({ name: registry.items.get(item)!.name, count })),
     reason: refusal,
     components: [],
@@ -198,7 +199,7 @@ export const craftRows = ({
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
-        time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
+        length: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
         reason: entityRepair
           ? entityRepair.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]).refusal
           : recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),

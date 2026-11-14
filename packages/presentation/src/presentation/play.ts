@@ -161,6 +161,7 @@ import {
   writeHudOptions,
 } from '../ui/hudOptions.ts';
 import { InventoryScreen, type ScreenHooks } from '../ui/inventoryScreen.ts';
+import type { WorldOperation } from '../ui/inventoryTabs.ts';
 import { fillHint, type HintText, hintHtml as html, type KeyLabels, keyCap } from '../ui/keyCap.ts';
 import { shouldConfirmPageLeave } from '../ui/leaveConfirmation.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
@@ -791,6 +792,35 @@ const listenForwardRelease = (release: (at: number) => void): void => {
   }
 };
 
+/** The ring choices that pin the world-work review instead of dispatching a replayable payload. */
+const isWorldWorkChoice = (action: ItemAction): action is ItemAction & { id: WorldOperation } =>
+  action.id === 'repair' || action.id === 'take_apart';
+
+/** A chosen furniture ring entry as the replayable payload it dispatches, or the world-work review it opens. */
+const furnitureChoicePlanner =
+  (owners: {
+    screen: { openWorldWork: (uid: number, operation: WorldOperation) => void };
+    cancelQuickbar: () => void;
+    closeMainMenu: () => void;
+  }) =>
+  (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
+    if (isWorldWorkChoice(selected)) {
+      owners.cancelQuickbar();
+      owners.screen.openWorldWork(entity.uid, selected.id);
+      owners.closeMainMenu();
+      return undefined;
+    }
+    if (selected.workUid !== undefined) {
+      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
+    }
+    if (selected.id === 'lift') {
+      return { kind: 'furniture.lift', entityUid: entity.uid };
+    }
+    return selected.id === 'drag'
+      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+  };
+
 const startPlayWith = (
   engine: Engine,
   debugModule: DebugModule | undefined,
@@ -848,7 +878,8 @@ const startPlayWith = (
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const actionMenu = new ActionMenu();
-  const furnitureActions = (entity: BlockEntity): ItemAction[] => furnitureActionsFor(inventory, entity, s, session.character.knownRecipes);
+  const furnitureActions = (entity: BlockEntity): ItemAction[] =>
+    furnitureActionsFor(inventory, entity, s, session.character.knownRecipes);
   const actionMenuTuning = claimed(registry.ui, 'interface')!.actionMenu;
   const furnitureMenuEntries = (entity: BlockEntity): RadialAction[] =>
     radialEntries(furnitureActions(entity), actionMenuTuning.directions.furniture);
@@ -1436,14 +1467,18 @@ const startPlayWith = (
   };
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
+  // Render-free play has no pictures, so the target keeps its name and rows without a second rendering path.
+  const worldTargetView = () =>
+    view.pictures
+      ? {
+          pictures: view.pictures,
+          model: (entity: BlockEntity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
+        }
+      : undefined;
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: router.dispatchScreenCommand,
-    // Render-free play has no pictures, so the target keeps its name and rows without a second rendering path.
-    targetView: view.pictures && {
-      pictures: view.pictures,
-      model: (entity) => view.furniture.pieceMesh(entity, entities.defOf(entity)),
-    },
+    targetView: worldTargetView(),
   });
 
   let revealActors = false;
@@ -2257,24 +2292,14 @@ const startPlayWith = (
     );
   };
 
-  const furnitureChoicePayload = (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
-    if (selected.id === 'repair' || selected.id === 'take_apart') {
-      quickbarInput.cancel();
-      screen.openWorldWork(entity.uid, selected.id);
+  const furnitureChoicePayload = furnitureChoicePlanner({
+    screen,
+    cancelQuickbar: () => quickbarInput.cancel(),
+    closeMainMenu: () => {
       mainMenuOpen = false;
       syncMenuState();
-      return undefined;
-    }
-    if (selected.workUid !== undefined) {
-      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
-    }
-    if (selected.id === 'lift') {
-      return { kind: 'furniture.lift', entityUid: entity.uid };
-    }
-    return selected.id === 'drag'
-      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
-      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
-  };
+    },
+  });
   const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
     const selected = actionMenu.confirm(furnitureMenuEntries(entity));
     return selected && furnitureChoicePayload(entity, selected);
