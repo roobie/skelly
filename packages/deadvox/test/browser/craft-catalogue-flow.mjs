@@ -124,12 +124,10 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   if (output) {
     await page.locator('#crafting').screenshot({ path: join(output, 'crafting-narrow.png') });
   }
-  await page.evaluate(async () => {
+  await page.evaluate(`async () => {
     const { session } = globalThis.foregripFitTest;
     const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
-    // biome-ignore lint/correctness/noUnresolvedImports: the browser stage server resolves this module URL.
     const { applyUiTokens } = await import('/@stage/@skelly/presentation/ui');
-    // biome-ignore lint/correctness/noUnresolvedImports: Vite resolves this browser module URL.
     const { productAssets } = await import('/src/product/assets.ts');
     // UI tuning is content; this layout probe enlarges the fixture's UI density, never browser zoom.
     ui.hudScale = 1.25;
@@ -140,7 +138,7 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
       },
       files: productAssets.cursors,
     });
-  });
+  }`);
   await resizeViewport({ width: 1100, height: 900 });
   const fit = await page.evaluate(() => {
     const strip = document.querySelector('.craft-commitment').getBoundingClientRect();
