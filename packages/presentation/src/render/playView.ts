@@ -626,7 +626,7 @@ export const createPlayView = (
       piles.sync(inventory, itemThrows.hiddenItemUids);
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles);
-      furniture.sync(entities);
+      furniture.sync(entities, poweredLights());
       corpses.sync(entities);
       decals?.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));

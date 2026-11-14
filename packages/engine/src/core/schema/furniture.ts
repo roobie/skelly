@@ -264,6 +264,7 @@ export const FurnitureSchema = pipe(
             color: Color,
             intensity: Positive,
             radius: Positive,
+            emissive: optional(NonNegative),
             /** Blocks from the centre of the piece's origin cell, in its own axes; absent, it shines from that centre. */
             offset: optional(tuple([FiniteBlocks, FiniteBlocks, FiniteBlocks])),
           }),

@@ -9,6 +9,7 @@ import {
   doorBarBox,
   type Facing,
   isBodyDoor,
+  type PoweredLight,
   panelFor,
   poseKey,
   rotationOf,
@@ -110,6 +111,7 @@ export class FurnitureMeshes {
   private markedUid: string | undefined;
   private markedOpen: boolean | undefined;
   private drawn = -1;
+  private glowing = new Set<BlockEntity>();
   private drawnReveal = -1;
   private readonly reveal: ColumnReveal | undefined;
   private readonly sectorBlocks: number | undefined;
@@ -202,7 +204,8 @@ export class FurnitureMeshes {
    * piece stays in memory, so a sync looks only at the pieces `standingChangesSince` names and the columns whose
    * reveal changed, and draws what looking at every piece would.
    */
-  sync(entities: BlockEntities): void {
+  sync(entities: BlockEntities, poweredLights: readonly PoweredLight[] = []): void {
+    const glowChanged = this.updateGlow(entities, poweredLights);
     const revealVersion = this.reveal?.revealVersion ?? 0;
     const modelsVersion = this.content?.models.version ?? 0;
     const modelsArrived = modelsVersion !== this.drawnModels;
@@ -210,7 +213,8 @@ export class FurnitureMeshes {
       entities === this.entities &&
       entities.standing === this.drawn &&
       revealVersion === this.drawnReveal &&
-      !modelsArrived
+      !modelsArrived &&
+      glowChanged.size === 0
     ) {
       return;
     }
@@ -220,6 +224,9 @@ export class FurnitureMeshes {
     this.drawn = entities.standing;
     const redraw = new Set<string>();
     const changed = new Set(since === undefined ? [...this.pieces.keys(), ...entities.all] : since);
+    for (const entity of glowChanged) {
+      changed.add(entity);
+    }
     if (modelsArrived) {
       for (const [entity] of [...this.pieces].filter(([, piece]) => piece.models !== undefined)) {
         changed.add(entity);
@@ -240,9 +247,26 @@ export class FurnitureMeshes {
     }
   }
 
+  private updateGlow(entities: BlockEntities, poweredLights: readonly PoweredLight[]): Set<BlockEntity> {
+    const glowing = new Set<BlockEntity>();
+    for (const { body } of poweredLights) {
+      const entity = body && entities.at(...body.min);
+      if (entity && entities.defOf(entity).power?.light?.emissive) {
+        glowing.add(entity);
+      }
+    }
+    const changed = new Set(
+      [...this.glowing, ...glowing].filter((entity) => this.glowing.has(entity) !== glowing.has(entity)),
+    );
+    this.glowing = glowing;
+    return changed;
+  }
+
   /** Keeps an entity's piece while its pose is unchanged and its mesh is current, else rebuilds it, or drops it once the entity stops standing. */
   private restage(entity: BlockEntity, entities: BlockEntities, modelsVersion: number, redraw: Set<string>): void {
-    const pose = entities.stands(entity) ? poseKey(entity, entities.wearOf(entity)) : undefined;
+    const pose = entities.stands(entity)
+      ? `${poseKey(entity, entities.wearOf(entity))}:${this.glowing.has(entity)}`
+      : undefined;
     const kept = this.pieces.get(entity);
     if (kept !== undefined && kept.pose === pose && (kept.models === undefined || kept.models === modelsVersion)) {
       return;
@@ -377,6 +401,7 @@ export class FurnitureMeshes {
     this.batches.clear();
     this.batched.clear();
     this.pieces.clear();
+    this.glowing.clear();
     this.columns.clear();
     this.group.clear();
     const geometries = new Set<BufferGeometry>([
@@ -432,14 +457,35 @@ export class FurnitureMeshes {
 
   /** The one mesh of a piece that `standsStill`. */
   private standingMesh(entity: BlockEntity, def: FurnitureDef): Mesh<BufferGeometry, MeshLambertMaterial> {
-    if (def.appearance || def.shape?.some((box) => box.color)) {
-      return this.shaped(entity, def, this.damageLook(entity, this.material('#ffffff', true), def));
+    const vertexColors = Boolean(def.appearance || def.shape?.some((box) => box.color));
+    const base = this.damageLook(entity, this.material(vertexColors ? '#ffffff' : def.color, vertexColors), def);
+    const material = this.bodyGlow(entity, def, base);
+    if (def.appearance || def.shape) {
+      return this.shaped(entity, def, material);
     }
-    const material = this.material(def.color);
-    if (def.shape) {
-      return this.shaped(entity, def, this.damageLook(entity, material, def));
+    return this.box(entity, material);
+  }
+
+  private bodyGlow(entity: BlockEntity, def: FurnitureDef, base: MeshLambertMaterial): MeshLambertMaterial {
+    const light = def.power?.light;
+    if (!(this.glowing.has(entity) && light?.emissive)) {
+      return base;
     }
-    return this.box(entity, this.damageLook(entity, material, def));
+    const key = `${base.uuid}:${light.color}:${light.emissive}`;
+    let material = this.materials.get(key);
+    if (!material) {
+      material = withHeightFog(
+        new MeshLambertMaterial({
+          color: base.color,
+          vertexColors: base.vertexColors,
+          emissive: light.color,
+          emissiveIntensity: light.emissive,
+        }),
+        'furniture',
+      );
+      this.materials.set(key, material);
+    }
+    return material;
   }
 
   private material(color: string, vertexColors = false): MeshLambertMaterial {
@@ -457,7 +503,12 @@ export class FurnitureMeshes {
     let result = this.anchoredMaterials.get(material);
     if (!result) {
       result = withHeightFog(
-        new MeshLambertMaterial({ color: material.color, vertexColors: material.vertexColors }),
+        new MeshLambertMaterial({
+          color: material.color,
+          vertexColors: material.vertexColors,
+          emissive: material.emissive,
+          emissiveIntensity: material.emissiveIntensity,
+        }),
         'furniture',
       );
       result.defines = { SKY_ANCHOR: '' };

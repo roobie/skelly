@@ -2788,6 +2788,12 @@ cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such
 authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
 `packages/engine/src/core/schema/furniture.ts`, `offset`.
 
+A lit fixture shows its own body as lit through content-tuned glow: its light sits inside the opaque body,
+so a point light cannot light the body's outward-facing surfaces. Unpowered pieces must not borrow that glow
+through shared materials. This is a presentation cue, not extra reach or lit cells for the rules. See
+`packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.bodyGlow`, and
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
+
 A wall stops a powered fixture's light in the picture by the same check that stops it in the rules, because a room
 the rules call dark must not look lit by a lamp behind brick. Fixture point lights cast no shadows, so the rules own
 the answer: one owner samples the rules' wall check into a reach grid per lamp, and the renderer only uploads the grids

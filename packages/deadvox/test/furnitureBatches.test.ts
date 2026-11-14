@@ -123,6 +123,57 @@ const drawnState = (furniture: FurnitureMeshes) => {
 };
 
 describe('furniture batches', () => {
+  it('isolates powered body glow and removes it from batches when power goes off', () => {
+    const { registry, issues } = buildFixtureRegistry([
+      {
+        source: 'glowing-fixture.json',
+        data: {
+          powerDevices: [{ id: 'fixture_light', kind: 'consumer', priority: 1, demandWatts: 10 }],
+          furniture: [plain, shaped].map((base) => ({
+            ...base,
+            power: {
+              device: 'fixture_light',
+              fuelLitres: 0,
+              enabled: true,
+              light: { color: '#ffd080', intensity: 1, radius: 2, emissive: 0.7 },
+            },
+          })),
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(registry);
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    for (const [index, id] of [plain.id, shaped.id].entries()) {
+      const def = registry.furniture.get(id)!;
+      const lit = entities.add({ type: id, size: def.size, pos: [index * 8, 1, 0], facing: 'n' })!;
+      const unlit = entities.add({ type: id, size: def.size, pos: [index * 8 + 3, 1, 0], facing: 'n' })!;
+      furniture.sync(entities, [
+        {
+          ...def.power!.light!,
+          pos: [lit.pos[0] + 0.5, lit.pos[1] + 2.5, lit.pos[2] + 0.5],
+          body: { min: lit.pos, max: lit.pos.map((value, axis) => value + lit.size[axis]!) as Vec3 },
+        },
+      ]);
+      const materialOf = (entity: BlockEntity) => {
+        const drawn = drawsOf(furniture, entity, def);
+        expect(drawn).toHaveLength(1);
+        return drawn[0]!.material as MeshLambertMaterial;
+      };
+      const emission = (entity: BlockEntity) => {
+        const material = materialOf(entity);
+        return Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * material.emissiveIntensity;
+      };
+      expect(emission(lit)).toBeGreaterThan(0);
+      expect(emission(unlit)).toBe(0);
+      expect(materialOf(lit)).not.toBe(materialOf(unlit));
+      furniture.sync(entities, []);
+      expect(emission(lit)).toBe(0);
+      expect(emission(unlit)).toBe(0);
+      expect(materialOf(lit)).toBe(materialOf(unlit));
+    }
+    furniture.dispose();
+  });
   it('keeps a plain piece mesh and batch identical when a model arrives', async () => {
     const { ModelLibrary } = await import('@skelly/presentation/internal/render/models.ts');
     const { registry, entities } = fixture();
