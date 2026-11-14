@@ -242,7 +242,16 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     document.addEventListener(
       type,
       (e) => {
-        if (forwardingClick || !input.locked || !input.menuPointer) {
+        // Only a press on the bare locked surface has no meaningful target of its own, so only it
+        // needs re-aiming at the drawn cursor: a click already targeting menu UI is that control's
+        // activation (bound activation calls HTMLElement.click), and re-aiming it would swallow the
+        // activation and press whatever the drawn cursor happens to cover.
+        if (
+          forwardingClick ||
+          !input.locked ||
+          !input.menuPointer ||
+          !(e.target === canvas || (e.target instanceof Element && e.target.contains(canvas)))
+        ) {
           return;
         }
         e.preventDefault();
