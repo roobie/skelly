@@ -4411,7 +4411,6 @@ try {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
     const replayArtifact = JSON.parse(replayText);
     assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
@@ -4527,6 +4526,7 @@ try {
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
   } else {
+    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
     await timePhase('forward-button-replay-case', () =>
       verifyForwardButtonReplay(browser, address.port, renderOverride),
     );
