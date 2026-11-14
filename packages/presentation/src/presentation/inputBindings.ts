@@ -3,7 +3,6 @@ import {
   BindingRegistry,
   type Chord,
   chordIssue,
-  INPUT_ACTIONS,
   INVENTORY_TAB_BINDINGS,
   type InputContext,
   isHeld,
@@ -21,9 +20,6 @@ const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
   ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
 ]);
-const INVENTORY_CHECKBOX_BINDINGS: ReadonlySet<string> = new Set(
-  INPUT_ACTIONS.filter((action) => action.contexts.includes('inventory')).map(({ id }) => id),
-);
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
 export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
 const browserStorage = (): PreferenceStorage | undefined => {
@@ -136,17 +132,22 @@ export const blursFindField = (event: Event): boolean =>
   event instanceof KeyboardEvent && (event.key === 'Escape' || event.key === 'Enter');
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
+/** Controls the browser activates on Enter. */
+const ENTER_ACTIVATED = 'button,a[href],summary';
+/** Choices the browser toggles on Space; they take no typing. */
+const CHOICE_INPUT = 'input[type="checkbox"],input[type="radio"]';
+const SPACE_ACTIVATED = `button,summary,${CHOICE_INPUT}`;
 const pageControl = (target: EventTarget | null): boolean =>
   target instanceof Element &&
-  Boolean(
-    target.closest('button,a[href],input,select,textarea,summary,label,[role="button"],[contenteditable="true"]'),
-  );
+  Boolean(target.closest(`${ENTER_ACTIVATED},[role="button"],input,select,textarea,label,[contenteditable="true"]`));
+/** A focused control owns the Enter or Space its native activation answers, ahead of any binding on that key. */
+const nativeControlKey = (event: KeyboardEvent): boolean =>
+  nativeActivation(event) &&
+  event.target instanceof Element &&
+  event.target.matches(event.code === 'Enter' ? ENTER_ACTIVATED : SPACE_ACTIVATED);
 const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | undefined => {
   if (!(event.target instanceof HTMLElement)) {
     return undefined;
-  }
-  if (event.target.matches('input[type="checkbox"][data-put-target]')) {
-    return INVENTORY_CHECKBOX_BINDINGS;
   }
   if (typesCharacter(event)) {
     return undefined;
@@ -157,9 +158,11 @@ const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | u
   }
   return event.target.matches('[role="combobox"]') ? INVENTORY_COMBO_BOX_BINDINGS : undefined;
 };
+/** Text entry owns typed keys; a checkbox or radio is a choice, so focusing one leaves the bindings live. */
 const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
+  !target.matches(CHOICE_INPUT) &&
   (target.isContentEditable || Boolean(target.closest('input,textarea,select,[contenteditable="true"]')));
 export type InputCancellationReason =
   | 'manual'
@@ -563,6 +566,11 @@ export class KeyboardInput {
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
         this.traceDown(event, false, 'native-control');
         event.preventDefault();
+        return;
+      }
+      // A key blocked since before focus moved is refused by `press` instead, so a held edge clicks nothing.
+      if (nativeControlKey(event) && !this.capture && !this.blocked.has(event.code)) {
+        this.traceDown(event, false, 'native-control');
         return;
       }
       const text = editable(event.target);

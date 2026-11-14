@@ -1,0 +1,501 @@
+{
+  "items": [
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_bed_floor",
+      "model": "light_tactical_vehicle_bed_floor",
+      "name": "Fixture bed floor",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_bonnet",
+      "model": "light_tactical_vehicle_bonnet",
+      "name": "Fixture bonnet",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_brush_guard",
+      "model": "light_tactical_vehicle_brush_guard",
+      "name": "Fixture brush guard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_dashboard",
+      "model": "light_tactical_vehicle_dashboard",
+      "name": "Fixture dashboard",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_frame",
+      "model": "light_tactical_vehicle_frame",
+      "name": "Fixture frame",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_front_door",
+      "model": "light_tactical_vehicle_front_door",
+      "name": "Fixture front door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_grille",
+      "model": "light_tactical_vehicle_grille",
+      "name": "Fixture grille",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_headlamp",
+      "model": "light_tactical_vehicle_headlamp",
+      "name": "Fixture headlamp",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_hull",
+      "model": "light_tactical_vehicle_hull",
+      "name": "Fixture hull",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_portal_axle",
+      "model": "light_tactical_vehicle_portal_axle",
+      "name": "Fixture portal axle",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_rear_door",
+      "model": "light_tactical_vehicle_rear_door",
+      "name": "Fixture rear door",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_rear_prop_shaft",
+      "model": "light_tactical_vehicle_rear_prop_shaft",
+      "name": "Fixture rear prop shaft",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_roof_hatch",
+      "model": "light_tactical_vehicle_roof_hatch",
+      "name": "Fixture roof hatch",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_steering_box",
+      "model": "light_tactical_vehicle_steering_box",
+      "name": "Fixture steering box",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_tailgate",
+      "model": "light_tactical_vehicle_tailgate",
+      "name": "Fixture tailgate",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_wheel",
+      "model": "light_tactical_vehicle_wheel",
+      "name": "Fixture wheel",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "id": "light_tactical_vehicle_windscreen",
+      "model": "light_tactical_vehicle_windscreen",
+      "name": "Fixture windscreen",
+      "size": [12, 6],
+      "vehicle": {
+        "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
+        "obstruction": {
+          "combat": true,
+          "light": 0.34999999999999998,
+          "sight": true,
+          "sound": true
+        }
+      },
+      "workInProgress": false
+    }
+  ],
+  "vehicleBlueprints": [
+    {
+      "fittings": [
+        {
+          "at": [0, 0, 0],
+          "id": "frame",
+          "part": "light_tactical_vehicle_frame",
+          "supportedBy": []
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "hull",
+          "part": "light_tactical_vehicle_hull",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bonnet",
+          "part": "light_tactical_vehicle_bonnet",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "grille",
+          "part": "light_tactical_vehicle_grille",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "brush_guard",
+          "part": "light_tactical_vehicle_brush_guard",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "bed_floor",
+          "part": "light_tactical_vehicle_bed_floor",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "tailgate",
+          "part": "light_tactical_vehicle_tailgate",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "windscreen",
+          "part": "light_tactical_vehicle_windscreen",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "dashboard",
+          "part": "light_tactical_vehicle_dashboard",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "roof_hatch",
+          "part": "light_tactical_vehicle_roof_hatch",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "steering_box",
+          "part": "light_tactical_vehicle_steering_box",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 1.6499999999999999],
+          "id": "front_axle",
+          "part": "light_tactical_vehicle_portal_axle",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, -1.95],
+          "id": "rear_axle",
+          "part": "light_tactical_vehicle_portal_axle",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0.54000000000000004, -0.87],
+          "id": "rear_prop_shaft",
+          "part": "light_tactical_vehicle_rear_prop_shaft",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [-0.92000000000000004, 0.46999999999999997, 1.6499999999999999],
+          "id": "front_wheel_near",
+          "part": "light_tactical_vehicle_wheel",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0.92000000000000004, 0.46999999999999997, 1.6499999999999999],
+          "id": "front_wheel_far",
+          "mirror": true,
+          "part": "light_tactical_vehicle_wheel",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [-0.92000000000000004, 0.46999999999999997, -1.95],
+          "id": "rear_wheel_near",
+          "part": "light_tactical_vehicle_wheel",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0.92000000000000004, 0.46999999999999997, -1.95],
+          "id": "rear_wheel_far",
+          "mirror": true,
+          "part": "light_tactical_vehicle_wheel",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_door_near",
+          "part": "light_tactical_vehicle_front_door",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "front_door_far",
+          "mirror": true,
+          "part": "light_tactical_vehicle_front_door",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_door_near",
+          "part": "light_tactical_vehicle_rear_door",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0, 0, 0],
+          "id": "rear_door_far",
+          "mirror": true,
+          "part": "light_tactical_vehicle_rear_door",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [-0.71999999999999997, 0.85999999999999999, 2.2599999999999998],
+          "id": "headlamp_near",
+          "part": "light_tactical_vehicle_headlamp",
+          "supportedBy": ["frame"]
+        },
+        {
+          "at": [0.71999999999999997, 0.85999999999999999, 2.2599999999999998],
+          "id": "headlamp_far",
+          "mirror": true,
+          "part": "light_tactical_vehicle_headlamp",
+          "supportedBy": ["frame"]
+        }
+      ],
+      "id": "fixture_tactical_vehicle",
+      "name": "Fixture tactical vehicle"
+    }
+  ]
+}

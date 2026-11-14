@@ -20,21 +20,36 @@ import { glowingCopy } from './itemEmissive.ts';
 import { skyAnchoredCopy } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
 
-/** Only the physical material draws a sheen, so a sheened definition swaps the loader's standard one for it. */
-const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
-  if (material instanceof MeshPhysicalMaterial) {
-    return material;
-  }
+/** Three.js's own copy cannot cross from standard to physical: it reads physical fields the source lacks. */
+export const physicalCopy = (material: MeshStandardMaterial): MeshPhysicalMaterial => {
   const physical = new MeshPhysicalMaterial({
     name: material.name,
+    color: material.color,
     map: material.map,
     side: material.side,
     vertexColors: material.vertexColors,
     flatShading: material.flatShading,
+    roughness: material.roughness,
+    metalness: material.metalness,
+    opacity: material.opacity,
+    transparent: material.transparent,
+    depthWrite: material.depthWrite,
   });
   physical.userData = material.userData;
   return physical;
 };
+
+/** Only the physical material draws a sheen, so a sheened definition swaps the loader's standard one for it. */
+const sheenable = (material: MeshStandardMaterial): MeshPhysicalMaterial =>
+  material instanceof MeshPhysicalMaterial ? material : physicalCopy(material);
+
+export type Coat = NonNullable<MaterialDef['finish']['clearcoat']>;
+
+/** Kept in user data, which every copy of a material carries, so a paint's coat, or its lack of one, travels with it. */
+const COAT = 'clearcoat';
+
+/** The clear coat of the library entry `material` wears, which only vehicle finishes draw. */
+export const coatOf = (material: Material): Coat | undefined => material.userData[COAT] as Coat | undefined;
 
 /** Draws a library entry on `loaded`, the one way an authored material and a painted copy both get their surface. */
 const surfaced = (
@@ -42,7 +57,7 @@ const surfaced = (
   definition: MaterialDef,
   colourMultiplier: readonly [number, number, number],
 ): MeshStandardMaterial => {
-  const { opacity, transparent, depthWrite, sheen } = surfaceOf(definition.finish);
+  const { opacity, transparent, depthWrite, sheen, clearcoat } = surfaceOf(definition.finish);
   const material = sheen ? sheenable(loaded) : loaded;
   if (sheen && material instanceof MeshPhysicalMaterial) {
     material.sheen = 1;
@@ -60,6 +75,11 @@ const surfaced = (
   material.opacity = opacity;
   material.transparent = transparent;
   material.depthWrite = depthWrite;
+  if (clearcoat) {
+    material.userData[COAT] = clearcoat;
+  } else {
+    delete material.userData[COAT];
+  }
   // A painted copy draws its new finish's grain, not the one the export wrote in the extras.
   material.userData.fabric = definition.finish.fabric;
   return material;
@@ -118,32 +138,34 @@ const fabricStandIn = (kind: (typeof FABRIC_KINDS)[number]): MeshPhysicalMateria
  * scene's warm-up compiles them before any model has loaded. A model material varies the program only by see-through,
  * double-sidedness, a colour texture, a sheen and a fabric's kind of grain (colour, finish, grain numbers and texels are
  * uniforms), and a lit item's glow adds its own. Fabric warms only opaque and one-sided, the form models wear it in,
- * because each grain program is costly to compile. `instanced` adds the instanced copies ground piles draw with, and
- * `skyAnchored` the sky-anchored copies vehicles draw with. Content outside these variants compiles on first draw,
- * which `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
+ * because each grain program is costly to compile. `instanced` adds the instanced copies ground piles draw with,
+ * `skyAnchored` the sky-anchored copies vehicles draw with, and `finishedVariants` the finished copies vehicles draw
+ * with while that option is on, anchored as vehicles anchor them, so turning it on compiles nothing. Finished copies
+ * come from the base variants only, because the modelMaterials test refuses a finish that has a fabric. Content outside
+ * these variants compiles on first draw, which `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
 export const modelMaterialWarmUp = ({
   instanced,
   skyAnchored,
+  finishedVariants,
 }: {
   instanced: boolean;
   skyAnchored: boolean;
+  finishedVariants?: ((plain: MeshStandardMaterial) => readonly Material[]) | undefined;
 }): Group => {
   const texture = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-  const variants = [
-    ...[false, true].flatMap((transparent) =>
-      [FrontSide, DoubleSide].flatMap((side) => [
-        ...[null, texture].map((map) => new MeshStandardMaterial({ transparent, side, map })),
-        new MeshPhysicalMaterial({ transparent, side, sheen: 1 }),
-      ]),
-    ),
-    ...FABRIC_KINDS.map(fabricStandIn),
-  ];
+  const base = [false, true].flatMap((transparent) =>
+    [FrontSide, DoubleSide].flatMap((side) => [
+      ...[null, texture].map((map) => new MeshStandardMaterial({ transparent, side, map })),
+      new MeshPhysicalMaterial({ transparent, side, sheen: 1 }),
+    ]),
+  );
+  const variants = [...base, ...FABRIC_KINDS.map(fabricStandIn)];
   // Exported models carry positions and normals, and three.js keys a program on both.
   const geometry = new BufferGeometry()
     .setAttribute('position', new Float32BufferAttribute([], 3))
     .setAttribute('normal', new Float32BufferAttribute([], 3));
-  const meshes = variants.flatMap((plain) =>
+  const meshes: Mesh[] = variants.flatMap((plain) =>
     [plain, glowingCopy(plain, 0xff_ff_ff, 1)].flatMap((material) =>
       instanced
         ? [new Mesh(geometry, material), new InstancedMesh(geometry, material, 1)]
@@ -152,6 +174,9 @@ export const modelMaterialWarmUp = ({
   );
   if (skyAnchored) {
     meshes.push(...variants.map((plain) => new Mesh(geometry, skyAnchoredCopy(plain))));
+  }
+  for (const material of finishedVariants ? base.flatMap(finishedVariants) : []) {
+    meshes.push(new Mesh(geometry, skyAnchoredCopy(material)));
   }
   const group = new Group();
   for (const mesh of meshes) {

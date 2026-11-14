@@ -30,10 +30,24 @@
   --muted: #98a0aa;
   --line: #333a42;
   --accent: #e0b04a;
+  --focus-ring-color: var(--accent);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
   color-scheme: dark;
 }
 * {
   box-sizing: border-box;
+}
+/* One ring for every control. A click through the drawn cursor focuses by script, which browsers need not
+   count as focus-visible, so under pointer lock plain focus shows the ring too. A tabindex=-1 element only
+   holds focus for keys; the controls inside it show focus. */
+:focus-visible:not([tabindex="-1"]),
+body.menu-pointer-locked :focus:not([tabindex="-1"]) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+[tabindex="-1"]:focus {
+  outline: none;
 }
 /* The UI is measured in rem and scales through the root size, so the browser's font setting still counts and
    client coordinates stay true for hit testing; the world canvas sizes from the viewport (`packages/deadvox/DESIGN.md`, "UI principles"). */
@@ -522,10 +536,6 @@ body.unconscious::after {
   border-radius: 0.625rem;
   background: rgb(18 20 24);
 }
-#overlay .card:focus-within {
-  outline: 2px solid var(--muted);
-  outline-offset: 2px;
-}
 #overlay .card-scroll-cue {
   position: absolute;
   z-index: var(--ui-layer-card-scroll-cue);
@@ -826,8 +836,6 @@ body.unconscious::after {
   padding: calc(var(--ui-spacing) * 1rem);
   border-radius: inherit;
   background: rgb(10 11 14 / 92%);
-  /* It holds focus only so keys leave the covered inventory; its own controls show focus. */
-  outline: none;
 }
 #inventory .inv-viewer-card {
   display: flex;
@@ -1148,9 +1156,6 @@ body.unconscious::after {
   color: var(--text);
   font: inherit;
 }
-.inv-find:focus {
-  border-color: var(--accent);
-}
 .inv-item.inv-item-unmatched {
   opacity: 0.3;
 }
@@ -1351,7 +1356,6 @@ button.inv-option {
   cursor: pointer;
 }
 button.inv-option:hover,
-button.inv-option:focus-visible,
 button.inv-option.game-cursor-hover {
   border-color: var(--accent);
 }
@@ -1829,7 +1833,6 @@ body:has(#handling:not([hidden])) #prompt {
   cursor: pointer;
 }
 #spawn button:hover,
-#spawn button:focus-visible,
 #spawn button.game-cursor-hover,
 #spawn button.selected {
   border-color: var(--accent);
@@ -2004,10 +2007,8 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   cursor: pointer;
 }
 .combo-box-field:focus {
-  outline: none;
   cursor: text;
 }
-.combo-box-field:focus,
 .combo-box-field.game-cursor-hover {
   border-color: var(--accent);
 }
@@ -2482,9 +2483,10 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   font: 0.8125rem / 1.4 sans-serif;
   color: #65553b;
 }
-.reading-paper :focus-visible {
-  outline: 2px solid #735e31;
-  outline-offset: 3px;
+/* The accent ring is too faint on light paper. */
+.reading-paper {
+  --focus-ring-color: #735e31;
+  --focus-ring-offset: 3px;
 }
 #error-report h1 {
   margin-top: 0;
