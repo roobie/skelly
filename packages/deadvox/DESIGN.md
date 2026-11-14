@@ -3256,8 +3256,9 @@ hearing and carried-light reach; nearer targets still use ordinary occlusion and
 crouch rules. See `packages/engine/src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise` and
 `seesPlayer`.
 
-- **Senses:** The base pack's late-June, mid-latitude day cycle gives long daylight
-  without modeling seasonal change. A missing day cycle must fail admission rather
+- **Senses:** The base pack's late-June, mid-latitude day cycle gives long daylight;
+  the opt-in winter pack gives short daylight. Neither models seasonal change within
+  a run. A missing day cycle must fail admission rather
   than silently playing under a hidden sun. Solar boundaries, not fixed clock hours,
   should govern sight, roaming and named spawn windows. Terrain height alone should
   not end a clear pursuit: occlusion, not vertical range cost, bounds sight over a rise.

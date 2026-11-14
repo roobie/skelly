@@ -1,0 +1,20 @@
+{
+  "dependencies": ["skelly.day-cycle"],
+  "files": [
+    {
+      "kind": "content",
+      "path": "dayCycle.json"
+    }
+  ],
+  "id": "skelly.day-cycle.winter",
+  "optIn": true,
+  "overrides": [
+    {
+      "entry": "dayCycle:dayCycle",
+      "pack": "skelly.day-cycle"
+    }
+  ],
+  "product": false,
+  "tier": "core",
+  "version": "1"
+}
