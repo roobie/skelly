@@ -1,6 +1,7 @@
 import type { RecipeDef, Registry, ScreenText } from '@skelly/engine/content';
 import { repairTargetName } from '@skelly/engine/content';
 import {
+  type ConditionBand,
   type CraftCommands,
   type CraftPreference,
   type CraftSources,
@@ -92,8 +93,8 @@ export interface CraftRow {
   kind: 'craft' | 'repair' | 'take_apart';
   /** The commitment strip's formatted length line, from `craftTime`. */
   length: string;
-  /** A world repair's condition line, its band now and after the repair. */
-  condition?: string;
+  /** A world repair's condition bands now and after the repair. */
+  condition?: { now: ConditionBand; after: ConditionBand };
   /** Take apart's read-only yield; crafting and repair choose inputs instead. */
   yields?: { name: string; count: number }[];
   reason: string | undefined;
@@ -208,7 +209,7 @@ export const craftRows = ({
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         length: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-        ...(world?.condition ? { condition: fillText(text.repairCondition, world.condition) } : {}),
+        ...(world?.condition ? { condition: world.condition } : {}),
         reason: world
           ? world.refusal
           : recipeStartReason(recipe, result, reach, {

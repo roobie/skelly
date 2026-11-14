@@ -57,8 +57,11 @@ export { GRID_CELL_REM } from './core/inventoryGridName.ts';
 export { PILE_GRID } from './core/inventoryScale.ts';
 export {
   assertSavedLiquidContents,
+  type ConditionBand,
   cellCount,
+  conditionBand,
   conditionWord,
+  damageBand,
   damageWord,
   defOf,
   footprint,

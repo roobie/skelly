@@ -21,7 +21,7 @@ import { type LiquidAmount, type LiquidRecoveryChoices, vesselAccepts } from './
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
-import type { LiquidContents } from './schema.ts';
+import type { InventoryTuningDef, LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export type WorkTarget =
@@ -803,11 +803,17 @@ export const craftComponentEligible = (item: Item, consumeFitted = false): boole
   isEmpty(item) ||
   (consumeFitted && !holdsLiquid(item) && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
 
-/** Condition as a word, from the content band table (`packages/deadvox/DESIGN.md`, "The item model"). */
-export const conditionWord = (registry: Registry, condition: number): string => {
+/** One row of the content condition band table: where it starts, its word and its blip colour. */
+export type ConditionBand = InventoryTuningDef['conditionBands'][number];
+
+/** The content band a condition falls in (`packages/deadvox/DESIGN.md`, "The item model"). */
+export const conditionBand = (registry: Registry, condition: number): ConditionBand => {
   const bands = claimed(registry.inventory, 'player')!.conditionBands;
-  return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
+  return bands.findLast((band) => band.from <= condition) ?? bands[0]!;
 };
+
+/** Condition as a word, from the content band table. */
+export const conditionWord = (registry: Registry, condition: number): string => conditionBand(registry, condition).word;
 
 /**
  * The condition a repair restores at most, one rule for every repair path (`packages/deadvox/DESIGN.md`, "Repair
@@ -837,11 +843,15 @@ export const damageAtCondition = (condition: number, durability: number): number
   return damage;
 };
 
-/** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
-export const damageWord = (registry: Registry, condition: number): string | undefined => {
+/** The band for a condition below the top band; a thing in the top band reads by its plain name. */
+export const damageBand = (registry: Registry, condition: number): ConditionBand | undefined => {
   const bands = claimed(registry.inventory, 'player')!.conditionBands;
-  return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
+  return condition < bands.at(-1)!.from ? conditionBand(registry, condition) : undefined;
 };
+
+/** The band word for a condition below the top band (`damageBand`). */
+export const damageWord = (registry: Registry, condition: number): string | undefined =>
+  damageBand(registry, condition)?.word;
 
 export const sameRecoveryState = (a: Item, b: Item): boolean =>
   a.on !== true &&

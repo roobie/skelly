@@ -10,7 +10,9 @@ import {
   batterySlotRefusal,
   bestPocket,
   GRID_CELL_REM as CELL_REM,
+  type ConditionBand,
   claimed,
+  conditionBand,
   conditionWord,
   defOf,
   dropTarget,
@@ -66,6 +68,7 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { blursFindField, type InputCommand } from '../presentation/inputBindings.ts';
 import { comboBox } from './comboBox.ts';
+import { conditionMark } from './conditionMark.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
@@ -272,7 +275,7 @@ interface VehicleSiteViewModel {
   readonly item?: ItemViewModel | undefined;
   readonly label: string;
   readonly site?: string | undefined;
-  readonly condition?: string | undefined;
+  readonly condition?: ConditionBand | undefined;
   readonly options: readonly VehicleOptionViewModel[];
   readonly noPart?: string | undefined;
 }
@@ -313,7 +316,7 @@ interface DetailsViewModel {
   readonly empty: boolean;
   readonly category?: string;
   readonly name?: string;
-  readonly condition?: string;
+  readonly condition?: ConditionBand;
   readonly description?: string | undefined;
   readonly lines: readonly string[];
   readonly options: readonly OptionViewModel[];
@@ -537,7 +540,7 @@ const vehicleTemplate = (
         <div class="inv-vehicle-site" data-vehicle-site=${site.id} data-occupied=${site.item !== undefined}>
           ${site.item ? itemTemplate(site.item) : html`<span class="inv-muted">${site.label}</span>`}
           ${site.site ? html`<span class="inv-muted">${site.site}</span>` : nothing}
-          ${site.condition ? html`<span class="inv-condition">${site.condition}</span>` : nothing}
+          ${site.condition ? html`<span class="inv-condition">${conditionMark(site.condition)}</span>` : nothing}
           ${site.options.map((option) => vehicleOptionTemplate(option, dispatch))}
           ${site.noPart ? html`<span class="inv-muted">${site.noPart}</span>` : nothing}
         </div>
@@ -621,7 +624,7 @@ const detailsTemplate = (
     <aside class="inv-details" data-pane="details" data-selected-uid=${item.uid}>
       <div class="inv-kicker">${vm.category}</div>
       <h3>${vm.name}</h3>
-      <div class="inv-condition">${vm.condition}</div>
+      <div class="inv-condition">${vm.condition ? conditionMark(vm.condition) : nothing}</div>
       ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
@@ -975,7 +978,7 @@ const openedVehicleKey = (opened: ReturnType<NonNullable<ScreenHooks['openedVehi
     ? `${opened.view.vehicleId}@${opened.distanceMetres.toFixed(1)}:${opened.view.sites
         .map(
           (site) =>
-            `${site.id}=${site.item?.uid ?? ''}/${site.condition ?? ''}/${site.actions
+            `${site.id}=${site.item?.uid ?? ''}/${site.condition?.word ?? ''}/${site.actions
               .map((action) => `${action.payload.itemUid}${action.refusal ?? ''}`)
               .join(',')}`,
         )
@@ -2110,7 +2113,7 @@ export class InventoryScreen {
       ...(battery ? { battery } : {}),
       category: def.category,
       name: item.count > 1 ? fillText(text.count, { item: name, count: countText(item.count) }) : name,
-      condition: conditionWord(this.inv.registry, item.condition),
+      condition: conditionBand(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),

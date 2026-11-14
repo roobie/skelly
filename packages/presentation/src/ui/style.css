@@ -446,6 +446,22 @@ body.unconscious::after {
   text-transform: uppercase;
 }
 
+/* A condition word's band colour, from content (`conditionMark.ts`, `conditionMark`). */
+.condition-mark {
+  white-space: nowrap;
+}
+
+.condition-blip {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  margin-right: 0.3em;
+  border-radius: 50%;
+  background: var(--blip);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 55%);
+  vertical-align: 0.05em;
+}
+
 #save-recovery {
   position: fixed;
   z-index: var(--ui-layer-save-recovery);

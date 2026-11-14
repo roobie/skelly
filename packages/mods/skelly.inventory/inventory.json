@@ -7,22 +7,27 @@
       "chestHeightMetres": 1,
       "conditionBands": [
         {
+          "color": "#d23c32",
           "from": 0,
           "word": "ruined"
         },
         {
+          "color": "#e8862a",
           "from": 0.10000000000000001,
           "word": "badly damaged"
         },
         {
+          "color": "#e3c832",
           "from": 0.29999999999999999,
           "word": "damaged"
         },
         {
+          "color": "#6f9a5a",
           "from": 0.59999999999999998,
           "word": "worn"
         },
         {
+          "color": "#3ee05a",
           "from": 0.90000000000000002,
           "word": "pristine"
         }

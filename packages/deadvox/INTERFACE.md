@@ -10,6 +10,7 @@ read_if:
   - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
   - you're changing how a player picks among a crafting or world-work input group's alternatives
   - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
+  - you're showing a condition band or changing its colour blip
 ---
 
 # Deadvox interface
@@ -41,6 +42,10 @@ The interface affords actions rather than writing procedures. Control labels com
 The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. A line marks each value code fills in as a `{slot}`, so a pack can reword or reorder around it; validation rejects a line that drops a slot or names one code never fills, and a slot holding a bound key is drawn as its key cap. See `packages/engine/src/core/schema/ui.ts`, `UiScreenTextSchema`, and `packages/presentation/src/ui/keyCap.ts`, `fillHint`.
 
 Every number a player reads is formatted through one precision table, `packages/engine/src/core/numberText.ts`, whose kinds (`countText`, `decimalText` and the rest) own each value's precision, because accumulated simulation values carry float noise no line should show and precision belongs in one place, not in literals at call sites. Every text-slot boundary takes only formatted values — action text (`packages/engine/src/core/actionText.ts`, `fillText`), core messages and labels (`packages/engine/src/core/coreText.ts`, `coreMessage`), and hint lines (`packages/presentation/src/ui/keyCap.ts`, `fillHint`, whose slots take text, rendered templates and directives like the liquid-recovery receiver combo box, but no primitive) — so the compiler rejects a raw number reaching a line.
+
+## Condition
+
+Wherever a condition band's word shows, a small colour blip sits beside it, because colour reads condition at a glance before the word is read. Each band's colour is content beside its word, from green for the top band through yellow and orange to red for ruined, so a pack that adds or retunes a band recolours every surface together. One render draws it, so no screen picks its own colours. A native tooltip cannot hold the blip, so a band word inside one stays plain. See `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`, and `packages/presentation/src/ui/conditionMark.ts`, `conditionMark`.
 
 ## Class 3: the character's voice
 

@@ -129,7 +129,9 @@ describe('crafting read-only presentation', () => {
     const fixture = repairFixture();
     const row = fixture.rows(true).find(({ id }) => id === ENTITY_REPAIR)!;
     const { condition } = fixture.crafting.previewEntityRepair(ENTITY_REPAIR, fixture.target.uid);
-    expect(condition?.now).toBe(conditionWord(repairRegistry, fixture.inventory.entities.conditionOf(fixture.target)));
+    expect(condition?.now.word).toBe(
+      conditionWord(repairRegistry, fixture.inventory.entities.conditionOf(fixture.target)),
+    );
     const root = document.createElement('section');
     document.body.append(root);
     try {
@@ -143,8 +145,17 @@ describe('crafting read-only presentation', () => {
         },
       );
       expect(root.querySelector('.craft-condition')?.textContent).toBe(
-        fillText(craftingText(repairRegistry).repairCondition, condition!),
+        fillText(craftingText(repairRegistry).repairCondition, {
+          now: condition!.now.word,
+          after: condition!.after.word,
+        }),
       );
+      // Each word's blip takes its band's colour from content.
+      expect(
+        [...root.querySelectorAll<HTMLElement>('.craft-condition .condition-blip')].map((blip) =>
+          blip.style.getPropertyValue('--blip'),
+        ),
+      ).toEqual([condition!.now.color, condition!.after.color]);
     } finally {
       root.remove();
     }

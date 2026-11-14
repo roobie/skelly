@@ -13,7 +13,7 @@ import {
 } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { Inventory, Plan } from './inventory.ts';
-import { conditionWord, damageWord, type Item, repairCeiling } from './items.ts';
+import { type ConditionBand, conditionBand, damageWord, type Item, repairCeiling } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
@@ -49,8 +49,8 @@ export interface WorkOption {
 export interface EntityRepairProjection {
   targetUid: number;
   targetName: string | undefined;
-  /** The piece's condition band word now and after this repair (`conditionWord`). */
-  condition: { now: string; after: string } | undefined;
+  /** The piece's condition band now and after this repair (`conditionBand`). */
+  condition: { now: ConditionBand; after: ConditionBand } | undefined;
   requirements: ReturnType<typeof requirementStatus> | undefined;
   refusal: string | undefined;
 }
@@ -170,8 +170,8 @@ export class CraftCommands {
       condition:
         entity && repair?.entity === entity.type
           ? {
-              now: conditionWord(registry, entities.conditionOf(entity)),
-              after: conditionWord(registry, entities.conditionAfterRepair(entity, amount, ceiling)),
+              now: conditionBand(registry, entities.conditionOf(entity)),
+              after: conditionBand(registry, entities.conditionAfterRepair(entity, amount, ceiling)),
             }
           : undefined,
       requirements: repair?.entity ? requirementStatus(recipe!, snapshot, this.character) : undefined,

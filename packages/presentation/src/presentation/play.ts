@@ -34,7 +34,7 @@ import {
 import {
   chargeShare,
   claimed,
-  damageWord,
+  damageBand,
   defOf,
   doorOptions,
   doorPlan,
@@ -2307,7 +2307,7 @@ const startPlayWith = (
         searched: entity.searched,
         name: nameOf(entity),
         fullName: entities.defOf(entity).name,
-        damage: damageWord(entities.registry, entities.conditionOf(entity)),
+        damage: damageBand(entities.registry, entities.conditionOf(entity)),
       },
       screenText.interaction,
       inputBindings,

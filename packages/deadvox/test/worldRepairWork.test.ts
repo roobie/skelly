@@ -390,12 +390,12 @@ it('one repair raises the condition to the band its review promised', () => {
   const r = prepare();
   const before = r.inventory.entities.conditionOf(r.target);
   const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid);
-  expect(projection.condition?.now).toBe(conditionWord(registry, before));
+  expect(projection.condition?.now.word).toBe(conditionWord(registry, before));
   expect(r.commands.repairEntity(RECIPE, r.target.uid)).toBeUndefined();
   finish(r, r.target.work!.uid);
   const after = r.inventory.entities.conditionOf(r.target);
   expect(after).toBeGreaterThan(before);
-  expect(projection.condition?.after).toBe(conditionWord(registry, after));
+  expect(projection.condition?.after.word).toBe(conditionWord(registry, after));
 });
 
 it.each(['gone', 'reserved', 'out of reach'] as const)(

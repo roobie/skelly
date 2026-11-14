@@ -1,10 +1,21 @@
 import { array, check, integer, minValue, nonEmpty, number, pipe, rawCheck, strictObject, tuple } from 'valibot';
 import { Cells } from './items.ts';
-import { Fraction, Id, Name, NonNegative, Positive, PositiveSimSeconds, SimRate, SimSeconds } from './primitives.ts';
+import {
+  Color,
+  Fraction,
+  Id,
+  Name,
+  NonNegative,
+  Positive,
+  PositiveSimSeconds,
+  SimRate,
+  SimSeconds,
+} from './primitives.ts';
 
 /** Ordered lower bounds with a word each; the first starts at 0 and each rises, so every value in [0, 1] reads as one band. */
 const ConditionBandsSchema = pipe(
-  array(strictObject({ from: Fraction, word: Name })),
+  /** `color` is the blip drawn beside the band's word wherever it shows (`packages/deadvox/INTERFACE.md`, "Condition"). */
+  array(strictObject({ from: Fraction, word: Name, color: Color })),
   nonEmpty('needs at least one band'),
   rawCheck(({ dataset, addIssue }) => {
     if (!dataset.typed) {

@@ -1730,7 +1730,19 @@ describe('condition bands', () => {
     repairCeiling = conditionBands.at(-1)?.word ?? baseRow.repairCeiling,
   ) =>
     buildRegistry([
-      { source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands, repairCeiling }] } },
+      {
+        source: 'bands.json',
+        data: {
+          inventory: [
+            {
+              ...baseRow,
+              // Every band carries a blip colour; these cases are about bounds and words, so any valid one serves.
+              conditionBands: conditionBands.map((band) => ({ color: '#808080', ...band })),
+              repairCeiling,
+            },
+          ],
+        },
+      },
     ]).issues.map(({ path }) => path);
 
   it('refuses a repair ceiling that names no band', () => {

@@ -4,9 +4,11 @@ import { countText, fillText, volumeText } from '@skelly/engine/text';
 import { html, nothing, render } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { repeat } from 'lit-html/directives/repeat.js';
+import { conditionMark } from './conditionMark.ts';
 import type { CatalogueEntry, CataloguePage, CraftCatalogueState } from './craftCatalogue.ts';
 import type { CraftRow } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
+import { fillHint } from './keyCap.ts';
 
 type CraftingText = ScreenText['crafting'];
 export interface CraftPanelActions {
@@ -129,7 +131,7 @@ const reviewTemplate = (
     ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
       <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
-        ${row.condition === undefined ? nothing : html`<div class="craft-condition">${row.condition}</div>`}
+        ${row.condition === undefined ? nothing : html`<div class="craft-condition">${fillHint(text.repairCondition, { now: conditionMark(row.condition.now), after: conditionMark(row.condition.after) })}</div>`}
         ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
         ${row.components.map((group) => {
           const chosen = group.alternatives.find((a) => a.id === group.selected);

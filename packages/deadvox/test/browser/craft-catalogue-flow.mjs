@@ -462,7 +462,54 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
     (uid) => globalThis.foregripFitTest.session.crafting.previewEntityRepair('craft_look_chair_repair', uid).condition,
     chair,
   );
-  assert.notEqual(chairCondition.now, chairCondition.after, "one repair moves the look chair's condition band");
+  assert.notEqual(
+    chairCondition.now.word,
+    chairCondition.after.word,
+    "one repair moves the look chair's condition band",
+  );
+  if (output) {
+    // Every content band through the review's own condition line, in the open panel's styles, for the look's per-band
+    // shot: one read-only row per band, drawn beside the live review and removed after.
+    await page.evaluate(async () => {
+      const [{ renderCrafting }, { craftingText }] = await Promise.all([
+        import('/@stage/@skelly/presentation/internal/ui/crafting.ts'),
+        import('/@stage/@skelly/presentation/internal/ui/craftReadout.ts'),
+      ]);
+      const { registry } = globalThis.foregripFitTest.session.inventory;
+      const bands = [...registry.inventory.values()].find((row) => row.capability === 'player').conditionBands;
+      const strip = document.createElement('div');
+      strip.id = 'condition-band-strip';
+      document.querySelector('#crafting').append(strip);
+      const rows = bands.map((band, index) => ({
+        id: `band-${index}`,
+        name: band.word,
+        itemName: band.word,
+        kind: 'repair',
+        length: '',
+        reason: undefined,
+        condition: { now: band, after: band },
+        components: [],
+        qualities: [],
+        skills: [],
+        workstation: null,
+      }));
+      const ignore = () => undefined;
+      renderCrafting(
+        strip,
+        rows,
+        { start: ignore, prefer: ignore, source: ignore },
+        {
+          text: craftingText(registry),
+          world: { heading: '', depicted: false },
+        },
+      );
+    });
+    await page.locator('#condition-band-strip .craft-condition').first().waitFor();
+    for (const [index, line] of (await page.locator('#condition-band-strip .craft-condition').all()).entries()) {
+      await line.screenshot({ path: join(output, `condition-band-${index}.png`) });
+    }
+    await page.evaluate(() => document.querySelector('#condition-band-strip').remove());
+  }
   assert.equal(await panel.locator('.craft-recipe h3').count(), 0, 'the world review does not repeat the panel head');
   assert.equal(await page.locator('#debug-center-x').isVisible(), false, 'the open screen hides the debug centre X');
   const repairOrder = await walkControls('start');
