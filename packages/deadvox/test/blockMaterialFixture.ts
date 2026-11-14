@@ -26,6 +26,8 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
     branchSwingRadians: 0,
     branchStepFactor: 0.5,
     tipWidthFactor: 1,
+    strandSpacingJitter: 0,
+    branchSegmentShare: 0.5,
     steps: [{ from: 0.5, reach: 1 }],
   },
 });

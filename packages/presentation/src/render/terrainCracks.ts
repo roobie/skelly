@@ -88,7 +88,11 @@ const crackTree = ({ seed, cell, face }: CrackSite, pattern: CrackPattern): Crac
       if (at < count && !onEdge(tip) && rng.next() < pattern.branchChance) {
         const swing =
           (rng.next() < 0.5 ? -1 : 1) * (pattern.branchSwingRadians + rng.range(0, 1) * pattern.jitterRadians);
-        grow({ ...tip, angle: tip.angle + swing }, Math.ceil((count - at) / 2), length * pattern.branchStepFactor);
+        grow(
+          { ...tip, angle: tip.angle + swing },
+          Math.ceil((count - at) * pattern.branchSegmentShare),
+          length * pattern.branchStepFactor,
+        );
       }
     }
   };
@@ -96,7 +100,9 @@ const crackTree = ({ seed, cell, face }: CrackSite, pattern: CrackPattern): Crac
   const y = 0.5 + rng.range(-pattern.rootSpreadBlocks, pattern.rootSpreadBlocks);
   const turn = rng.range(0, Math.PI * 2);
   for (let strand = 0; strand < pattern.strands; strand++) {
-    const angle = turn + ((strand + rng.range(-0.25, 0.25)) * Math.PI * 2) / pattern.strands;
+    const angle =
+      turn +
+      ((strand + rng.range(-pattern.strandSpacingJitter, pattern.strandSpacingJitter)) * Math.PI * 2) / pattern.strands;
     grow({ x, y, angle, depth: 0 }, pattern.segments, pattern.strandLengthBlocks / pattern.segments);
   }
   return tree;

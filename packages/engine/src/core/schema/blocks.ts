@@ -52,6 +52,8 @@ const CrackPatternSchema = pipe(
     /** Stroke width at the crack root, in block-face units. */
     widthBlocks: PositiveFraction,
     strands: pipe(Count, minValue(1)),
+    /** Most a strand strays from an even split around the root, as a share of that split; at most half keeps order. */
+    strandSpacingJitter: pipe(NonNegative, maxValue(0.5)),
     segments: pipe(Count, minValue(1)),
     jitterRadians: NonNegative,
     branchChance: Fraction,
@@ -61,6 +63,8 @@ const CrackPatternSchema = pipe(
     branchSwingRadians: pipe(NonNegative, maxValue(Math.PI)),
     /** A branch's step length as a share of its parent's, so branches stay finer than what they split from. */
     branchStepFactor: PositiveFraction,
+    /** A branch's segment count as a share of what its parent has left, rounded up so a branch has at least one. */
+    branchSegmentShare: PositiveFraction,
     /** Stroke width at the crack tip as a share of `widthBlocks`, so a crack tapers as it runs. */
     tipWidthFactor: Fraction,
     steps: array(strictObject({ from: PositiveFraction, reach: PositiveFraction })),

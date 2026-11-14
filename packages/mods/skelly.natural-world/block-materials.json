@@ -9,6 +9,7 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
         "branchStepFactor": 0.59999999999999998,
         "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
@@ -31,6 +32,7 @@
           }
         ],
         "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
         "strands": 3,
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
@@ -67,6 +69,7 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
         "branchStepFactor": 0.59999999999999998,
         "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
@@ -89,6 +92,7 @@
           }
         ],
         "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
         "strands": 3,
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
@@ -125,6 +129,7 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
         "branchStepFactor": 0.59999999999999998,
         "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
@@ -147,6 +152,7 @@
           }
         ],
         "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
         "strands": 3,
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
@@ -183,6 +189,7 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
         "branchStepFactor": 0.59999999999999998,
         "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
@@ -205,6 +212,7 @@
           }
         ],
         "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
         "strands": 3,
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
@@ -241,6 +249,7 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
         "branchStepFactor": 0.59999999999999998,
         "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
@@ -263,6 +272,7 @@
           }
         ],
         "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
         "strands": 3,
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
@@ -299,6 +309,7 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
         "branchStepFactor": 0.59999999999999998,
         "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
@@ -308,6 +319,7 @@
         "segments": 5,
         "steps": [],
         "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
         "strands": 3,
         "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003

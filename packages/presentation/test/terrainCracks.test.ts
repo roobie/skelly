@@ -14,6 +14,8 @@ const pattern: CrackPattern = {
   branchSwingRadians: 0.8,
   branchStepFactor: 0.5,
   tipWidthFactor: 0.5,
+  strandSpacingJitter: 0.25,
+  branchSegmentShare: 0.5,
   steps: [
     { from: 0.2, reach: 0.25 },
     { from: 0.5, reach: 0.5 },
