@@ -125,12 +125,13 @@ uniform float fabricCrease;
 uniform float fabricFold;
 ${PLANE}
 ${PATTERNS}
-// The narrow side of the patch of surface a pixel covers, at \`p\`: the smaller singular value of p's screen derivatives.
+// The narrow side of the patch of surface a pixel covers, at \`p\`: the smaller singular value of p's screen derivatives,
+// its square taken as the determinant over the larger eigenvalue, which does not cancel to noise on a grazing face.
 float fabricNarrowSide(vec3 p) {
   vec3 dx = dFdx(p), dy = dFdy(p);
   float xx = dot(dx, dx), yy = dot(dy, dy), xy = dot(dx, dy);
   float mean = 0.5 * (xx + yy), spread = sqrt(0.25 * (xx - yy) * (xx - yy) + xy * xy);
-  return sqrt(max(mean - spread, 0.0));
+  return sqrt(max(xx * yy - xy * xy, 0.0) / max(mean + spread, 1e-30));
 }
 `;
 
