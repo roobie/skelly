@@ -110,7 +110,23 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   process.stdout.write(
     `ownership ${JSON.stringify(await page.evaluate(() => globalThis.chooserProbe.filter((entry) => entry.action)))}\n`,
   );
-  assert.equal(await group.getAttribute('aria-expanded'), 'true');
+  assert.equal(
+    await group.getAttribute('aria-expanded'),
+    'true',
+    JSON.stringify(
+      await group.evaluate((node) => {
+        const { screen } = globalThis.foregripFitTest;
+        return {
+          actions: globalThis.chooserProbe.filter((entry) => entry.action),
+          open: screen.isOpen,
+          review: screen.hooks.reviewControls?.() === node.closest('#crafting'),
+          disabled: node.matches(':disabled'),
+          hidden: node.closest('[hidden],[inert]')?.outerHTML.slice(0, 100),
+          ownerActive: screen.root.ownerDocument.activeElement === node,
+        };
+      }),
+    ),
+  );
   assert.equal(await page.locator('.craft-close-alternatives').count(), 1);
   const alternatives = await page.locator('.craft-alternatives').textContent();
   await page.locator('.craft-components').last().hover();
