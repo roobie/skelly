@@ -29,8 +29,7 @@ interface LightPoolContext {
   daylightScale: number;
   /**
    * World output must not inherit the viewer's daylight washout through a bright doorway.
-   * The hand scene's item lights still adapt to the viewer through `daylightScale`. Its fixture lights copy the
-   * world's: the hand scene compiles with the world's patches, so it fades them wherever the world does.
+   * The hand scene's lights copy the world's, so a carried lamp matches the world it is in.
    */
   worldDaylightScale?: number;
   fixtures?: readonly PoweredLight[];
@@ -126,7 +125,7 @@ export class LightPool {
     scene.add(this.group);
   }
 
-  private syncHandLight(index: number, source: PointLight, intensity = source.intensity): void {
+  private syncHandLight(index: number, source: PointLight): void {
     const handLight = this.handLights[index];
     if (!handLight) {
       return;
@@ -134,7 +133,7 @@ export class LightPool {
     handLight.position.copy(source.position);
     handLight.color.copy(source.color);
     handLight.distance = source.distance;
-    handLight.intensity = intensity;
+    handLight.intensity = source.intensity;
     handLight.decay = source.decay;
   }
 
@@ -155,7 +154,7 @@ export class LightPool {
   }
 
   update(inventory: Inventory, context: LightPoolContext): void {
-    const { camera, blockSize, daylightScale } = context;
+    const { camera, blockSize } = context;
     const tuning = claimed(inventory.registry.senses, 'player')!.light;
     const groundLiftMetres = tuning.groundLight.renderLiftMetres;
     const { pointDecay } = tuning.illumination;
@@ -236,7 +235,7 @@ export class LightPool {
       light.distance = spec.radius;
       light.intensity = worldIntensity(spec.intensity, context);
       this.flareSkipped[index] = spec.nightVision !== undefined;
-      this.syncHandLight(index, light, spec.intensity * daylightScale);
+      this.syncHandLight(index, light);
     }
   }
 }
