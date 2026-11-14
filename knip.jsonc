@@ -10,11 +10,15 @@
     "packages/engine": {
       // The entries are the package's exports; the test-only subpath serves deadvox tests.
       "entry": ["src/*.ts", "src/*.mjs"],
+      // thing-core's motion helpers import it; the runtime closure follows only the libraries a manifest declares.
+      "ignoreDependencies": ["@skelly/construct"],
       "project": ["src/**/*.{mjs,ts}", "test/**/*.ts"]
     },
     "packages/presentation": {
       // The entries are the package's exports; the test-only subpath serves deadvox tests and stages.
       "entry": ["src/*.ts"],
+      // thing-core's motion helpers import it through the engine; see the engine workspace above.
+      "ignoreDependencies": ["@skelly/construct"],
       "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "packages/deadvox": {
