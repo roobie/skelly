@@ -10,9 +10,9 @@ read_if:
 # Slice 5 — Holding ground
 
 **Status: the power network core, the placed-entity store, the first appliance
-process, world repair work and the first wave rule are built; player placement,
-take-apart, structural collapse, fire and exposure, and the integration proofs are
-open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
+process, world repair and take-apart of pieces and the first wave rule are built;
+player placement, the player-facing world-work view, structural collapse, fire and
+exposure, and the integration proofs are open.** See `packages/engine/src/core/powerGraph.ts`, `PowerGraph`;
 `packages/engine/src/core/power.ts`, `PowerNetwork`; `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities`; `packages/engine/src/core/batteryChargers.ts`, `BatteryChargers`;
 `packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`; and
@@ -204,16 +204,28 @@ belong to content under `PILLARS.md`, "Content forward compatibility" (repo root
   The expanded schedule is finite; exhausting it is the trigger for adding a repeating
   event mechanism, not a reason to put a second clock in the session. Survival time
   is not a pass threshold; see "Playtest questions and exit".
-- **Wave gap:** predictable arrivals leave room to plan excursions. Keep timing in
-  scenario content so a mod changes one authority; see
-  `mods/skelly.deadvox.scenario.holdout/waves.libsonnet`, `rules`.
+- **Wave gap:** predictable arrivals leave room to plan excursions. The gap spans
+  scenario days, chosen on its grading: a content number with no debt, whose negative
+  space is a sitting that never reaches wave two. Keep timing in scenario content so a
+  mod changes one authority; the holdout scenario owns it, see
+  `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`.
 - **Repeat clock:** the gap counts from one arrival to the next, not from the end of
   a fight. The saved scenario run's calendar then fixes the whole schedule, and no
   rule has to decide when a fight with unloaded zombies has ended. Waves may
   overlap; that is accepted pressure, not a defect.
-- **Wave target:** every wave heads for where the player stands when it fires, as
-  the first wave does. No shelter identity is needed, so an unattended base is never
-  attacked; unattended shelter defence waits on Slice 4b's region work.
+- **Wave target:** the target is content, so a scenario can one day send a wave at the
+  shelter or at the nearest player-built piece, because that is what makes waves test
+  the base rather than the player's position. Shelter identity is deferred, and the
+  player is the only valid target until then: every wave heads for where the player
+  stands when it fires, so an unattended base is never attacked, and unattended shelter
+  defence waits on Slice 4b's region work. The first base-building session's findings
+  under #1332 reopen shelter identity. See `packages/engine/src/core/eventRules.ts`,
+  `advanceEventRules`.
+- **Wave size budget:** the horde count bound protects actor and performance limits, so
+  it stays as a safety bound, but as a per-pack budget beside the scenario's wave rows
+  rather than a schema literal, chosen on its grading: each pack owns the ceiling it can
+  afford and validate checks its rows against it; the negative space is no product-wide
+  bound. See `packages/engine/src/core/schema/scenarios.ts`, `HordeEffectSchema`.
 - **Escalation:** Jsonnet expands the authored escalation rows, repeating the last
   row as a plateau rather than endless growth. Actor content owns strength; selecting
   actor types avoids a second strength authority in wave effects. The engine receives
@@ -256,14 +268,35 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   hardware store or construction site keeps a place-specific promise and the stock
   does not drift into workshop crates.
 - **Rubble:** fallen material stays solid until cleared, and clearing is the
-  take-apart command applied to rubble, so it waits on that command and adds no
-  second destruction verb; see
-  `DESIGN.md`, "Damage, destruction and dismemberment".
-- **Early session:** a first base-building session runs once world repair,
-  take-apart and the first wave work, before fire, power controls and the brute
-  land, because the building UI is what blocks this playtest and early feedback on
-  it is cheaper than a long wait. Slice exit still needs the whole slice; see
-  "Playtest questions and exit".
+  take-apart command grown to terrain cells, with rubble the first cell kind that
+  comes apart, so clearing adds no second destruction verb and fallen material keeps
+  one representation, solid for cover and pathing; see
+  `DESIGN.md`, "Damage, destruction and dismemberment". A rubble cell is not a damaged
+  wall in another coat. It carries conserved buried contents from the collapse, damaged
+  items among them become parts, and take-apart steps dig them out, so a collapse loses
+  nothing it did not break. The first clearing round may yield material only, but the
+  cell's data shape leaves room for buried contents from the start, so the contents
+  round extends the shape rather than replacing it. How rubble reads apart from a
+  damaged wall is an open choice; see "Remaining construction gate — issue #1332".
+- **Know-how gates:** mixed. Some recipes are known from the start and others must be
+  discovered through manuals and points of interest, because discovered recipes give
+  exploring a purpose while known ones keep a player from getting hard-stuck. A start
+  row owns what is known and a manual what is found; see
+  `tools/jsonnet/lib/start-kit.libsonnet`, `common`, and
+  `packages/mods/skelly.manuals/manuals-items.jsonnet`, `book`. The whole
+  repair-and-fortify kit starts known, and only recipes outside it, traps and powered
+  devices among them, are found, chosen on its grading: content lists with no debt,
+  and no tester is hard-stuck before the first wave for want of a book; the negative
+  space is that exploring has no construction reward in the first session.
+- **Early session:** a first base-building session runs once world repair, take-apart,
+  placement of the whole repair-and-fortify kit and the first wave work, before fire,
+  power controls and the brute land, because base building is the point of this
+  playtest and early feedback on its UI is cheaper than a long wait. The whole kit,
+  free-standing walls and floors included, is in the first session, chosen on its
+  grading: it is the settled vocabulary under "First build vocabulary", so it carries
+  no debt once built; its cost is that "Support" becomes a prerequisite of the session,
+  so no wall floats and no floor hangs in front of a tester. Slice exit still needs the
+  whole slice; see "Playtest questions and exit".
 
 ### Remaining event gate — issue #313
 
@@ -278,14 +311,24 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   transitions before use. Neither option is recommended; this gate blocks only
   position-trigger implementation, not the scenario wave.
 
+### Remaining construction gate — issue #1332
+
+- **Rubble look.** Context: a rubble cell comes apart and holds buried contents, and
+  a damaged wall is a cracked cell that mends, so the two must read apart at a glance
+  or a player tries the wrong verb on each. Question: what makes a rubble cell read as
+  rubble rather than as a damaged wall? The graded options wait on BR's choice; this
+  gate blocks only how rubble is drawn, not clearing or its yield.
+
 ## Reviewable build order
 
 These are work packages, not new work-item IDs. Every stateful package includes
 validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
 
-1. **Readiness and decisions: closed, except position triggers.** The construction,
-   destruction, wave and playtest choices this slice waited on are ruled; only
-   "Remaining event gate — issue #313" stays open, and it blocks no package. Run the
+1. **Readiness and decisions: closed, except position triggers, the rubble look and
+   body dig-out.** The construction, destruction, wave and playtest choices this slice
+   waited on are ruled; only "Remaining event gate — issue #313",
+   "Remaining construction gate — issue #1332" and the body dig-out question in the
+   Destruction lane stay open, and none blocks a package. Run the
    small spikes below where a package's claim has no owning benchmark yet.
 2. **Power network core: built.** Topology, cache invalidation, saved identity,
    split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
@@ -337,40 +380,79 @@ validation, saves, replay evidence and reason-doc updates, not a later save retr
 
 ### Lanes and the next rounds
 
-The open packages run as four lanes, each one PR per round from main. Within a
-lane the order is a dependency; across lanes only the joins named here hold.
+The open packages run as lanes, each one PR per round from main, ordered so the
+first base-building session under "Early session" arrives through the fewest rounds.
+Within a lane the order is a dependency; across lanes only the joins named here hold,
+so rounds in different lanes run in parallel. No BR choice blocks a round any more,
+and the rounds named as starting now need nothing that is not on main.
 
-- **Destruction.** No BR gate remains, so it starts now. Zombies bash terrain by
-  material strength first, so the brute wrecks walls through its strength rather than
-  an identity flag and ordinary types break doors only because door pieces sit below
+- **Construction, engine.** Four rounds start now. Three of them in parallel: cell
+  repair, because the first thing a claimed shelter needs mended is a damaged wall
+  and repair reaches only pieces
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.repairEntity`); break
+  yields in content, because every material's rubble yield is empty, so tearing down
+  gives nothing and the slow fallback under "Break yields" does not exist
+  (`packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`); and bulk-stock
+  pieces that come apart over the existing command
+  (`packages/engine/src/core/craftCommands.ts`, `CraftCommands.takeApartEntity`),
+  because the site's supply asks need pieces to place. Rubble clearing is the fourth,
+  under "Rubble": take apart grows to terrain cells, and the round shows its yield
+  once break yields land, so it starts now and joins them to be checked by eye.
+  Placement follows cell repair and bulk stock: crafting gains a world destination,
+  and the whole kit's pieces and recipes land with it under "First build vocabulary"
+  and "Early session", because a placement round without content shows BR nothing.
+  Support follows placement under "Support", persisted dependencies and destructive
+  cascades, because free-standing walls and floors are in the first session and a
+  wall that floats would be judged before the kit is.
+- **Construction, view.** Repair and take apart reach the engine but no player can
+  reach them: the hold menu offers only moving
+  (`packages/engine/src/game/furnitureActions.ts`, `furnitureActionsFor`) and the
+  world-work view shares the #1469 layout (`DESIGN.md`, "World repair selection").
+  #1469 settles its layout first and both views ship together, chosen on its grading:
+  one owner for the rows pane and no second shape to replace, at the cost that the
+  first session waits on that layout. The layout is settled and owned by
+  `docs/crafting-layout.md`, "Decided layout"; this plan cues it and does not repeat
+  it. The world-work view round starts now, and it is the first session's critical
+  path; picking a cell or spot for placement follows it and the placement round.
+- **Playtest pack.** Holdout composes one shelter and no supply
+  (`mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`, `scenario`), so it
+  grows from independently authored asks, each retunable without city-shape
+  constraints. Supply asks with distance weights land once bulk-stock pieces exist,
+  because the asks place those pieces; the material loot usage already exists for
+  them (`mods/skelly.deadvox.loot/loot.jsonnet`, `building_materials`). The kit's
+  recipes join the start row under "Know-how gates" in the placement round, and the
+  manuals at supply sites teach what lies outside the kit. Cadence is settled under
+  "Wave gap" and already authored, so the pack round carries no tuning question. Site
+  tuning stays in content rather than scenario-specific engine rules; see
+  `docs/url-mods.md`, "Committed scenarios". The first session runs when this pack,
+  the view and the construction rounds join; passing a debug fixture is not completion.
+- **Waves as content.** One round follows the first session, because it tests the
+  base rather than the player and nothing earlier needs it: the horde count bound
+  becomes a per-pack budget under "Wave size budget". It could start now, but base
+  building is the point of this playtest, so it yields its place to the rounds the
+  first session needs. Shelter identity and the content target under "Wave target"
+  are not a round until the first session's findings reopen them.
+- **Destruction.** One narrow BR question remains (below) and the first session does
+  not need the lane, so it runs beside construction without joining it. Zombies bash terrain by material
+  strength first, so the brute wrecks walls through its strength rather than an
+  identity flag and ordinary types break doors only because door pieces sit below
   their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
   support with surface ground follows, and until collapse lands live play refuses a
   blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
   in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
   then lands as a separate PR: rubble that keeps its crack fraction, buries bodies to
-  be dug out by ordinary strikes and hurts every body, generating terrain on demand
-  wherever it reaches, so no region departure-and-return work precedes it; its PR
-  reports collapse time at the largest authored roof rather than gating on it. Blast
-  by share and breach charges follow, then furniture knock-out and push-off, which
-  replace the fall refusal with landing crush; see
+  be dug out by ordinary strikes, buries contents that clearing digs out under
+  "Rubble", and hurts every body, generating terrain on demand wherever it reaches, so
+  no region departure-and-return work precedes it; its PR reports collapse time at the
+  largest authored roof rather than gating on it. Open for BR: whether take apart also
+  digs out bodies, so one verb empties a cell of all it buried. The question gates only
+  the collapse PR's body-recovery step; the contents rule under "Rubble" stands either
+  way. Blast by share and breach charges follow, then furniture knock-out and
+  push-off, which replace the fall refusal with landing crush; see
   `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
-- **Construction.** The radial action menu is built (`INTERFACE.md`, "HUD"); every
-  hold job (Repair, Take apart, Continue, Fortify) enters through it, on building parts
-  as on movable pieces (`DESIGN.md`, "Moving furniture"). Player-facing
-  world work, repair and take apart alike, is one design and queues behind the #1469
-  crafting view; see `DESIGN.md`, "World repair selection". Engine rounds do not wait:
-  bulk-stock pieces and rubble clearing under "Settled base-building playtest rules",
-  over the take-apart command (`packages/engine/src/core/craftCommands.ts`,
-  `CraftCommands.takeApartEntity`), then cell repair, placement and the kit content.
 - **Built systems.** Appliance controls and processes after placement; brute
   knockback and displacement independently, since nothing above needs it; fire last,
-  under "Settled fire and exposure rules".
-- **Playtest pack.** Holdout grows from independently authored asks so each addition
-  can be retuned without city-shape constraints. #1332's supply affordances join the
-  construction lane's take-apart command because bulk stock and rubble clearing use
-  it; region proofs follow in package 7. Keep site tuning in content rather than
-  scenario-specific engine rules. See `mods/skelly.deadvox.scenario.holdout/holdout-site.libsonnet`,
-  `scenario`, and `docs/url-mods.md`, "Committed scenarios".
+  under "Settled fire and exposure rules". None joins the first session.
 
 ## State and technical proof
 
