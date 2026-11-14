@@ -124,9 +124,9 @@ const DomeShapeSchema = strictObject({
    */
   horizonBand: Band,
   /**
-   * How far the band leans from the fog colour toward the dome's own horizon colour, at and below the horizon too: 0
-   * is the fog colour, 1 leaves no band. A look's fog colour can sit well below its horizon glow, and the dome below
-   * the horizon shows past the world's edge, so a full fog colour there reads as a grey stripe.
+   * How far the band's colour leans from the fog colour toward the dome's bare gradient, without its bodies or
+   * clouds: 0 is the fog colour. A look's fog colour can sit well below its horizon glow, and the dome below the
+   * horizon shows past the world's edge, so a full fog colour there reads as a grey stripe.
    */
   horizonTint: UnitFraction,
   /** Where the horizon glow eases into the zenith, as the sine of the elevation. */

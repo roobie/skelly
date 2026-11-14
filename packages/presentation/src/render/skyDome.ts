@@ -369,6 +369,7 @@ const fragmentShader = (layers: number): string => /* glsl */ `
     if ( uPhysicalWeight > 0.0 ) {
       col = mix( keyed, physicalSky( dir ), uPhysicalWeight );
     }
+    vec3 gradient = col;
     vec3 painted = vec3( 0.0 );
     if ( uStars > 0.0 ) {
       painted += vec3( stars( dir ) * uStars );
@@ -410,9 +411,11 @@ const fragmentShader = (layers: number): string => /* glsl */ `
 
     col = toDisplay( col, keyed );
     col *= uSkyVisibility;
-    // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the fog with
-    // the sky behind it instead of ending in a crisp line.
-    col = mix( col, uFogColor, ( 1.0 - uHorizonTint ) * ( 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) ) );
+    // One band for the gradient and the lights over it, so a glow or a halo near the horizon thins into the band with
+    // the sky behind it instead of ending in a crisp line, and a body below the horizon never shows past the world's
+    // edge. The band's colour leans toward the bare gradient rather than the drawn sky for the same reason.
+    vec3 band = mix( uFogColor, toDisplay( gradient, keyed ) * uSkyVisibility, uHorizonTint );
+    col = mix( col, band, 1.0 - smoothstep( uHorizonBand.x, uHorizonBand.y, dir.y ) );
     gl_FragColor = vec4( col * uSkyColorScale, 1.0 );
     #include <colorspace_fragment>
   }
