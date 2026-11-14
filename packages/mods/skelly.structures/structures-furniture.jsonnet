@@ -76,32 +76,12 @@ local crate = {
 } + takeApart(15, 4, 16);
 // Bulk stock for base building (`packages/deadvox/SLICE-5.md`, "Bulk stock"): a stack of material is looted by taking
 // the piece apart, which costs far less time per unit than salvaging built work, so stock stays the efficient path.
-// Each stack's yield is a core material stock item, so `skelly.structures` still validates alone.
+// Core keeps only stock of core-owned material; the board stack lives in the plank's theme pack
+// (`packages/deadvox/docs/content.md`, "Core-pack integrity").
 local stockYield(minutes, yields) = {
   takeApart: { yield: { timeGameMinutes: minutes, skill: 'crafting', yields: yields } },
 };
-local boardLayer = function(y) [
-  { position: [0.05, y, 0.1], size: [0.44, 0.09, 3.8] },
-  { position: [0.55, y, 0.1], size: [0.44, 0.09, 3.8] },
-  { position: [1.05, y, 0.1], size: [0.44, 0.09, 3.8] },
-  { position: [1.55, y, 0.1], size: [0.44, 0.09, 3.8] },
-];
 local bulkStock = [
-  {
-    id: 'board_stack',
-    name: 'Board stack',
-    size: [2, 1, 4],
-    color: '#a0763f',
-    shape: [
-      // Bearers keep the lowest boards off the ground.
-      { position: [0.1, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
-      { position: [1.6, 0, 0.15], size: [0.3, 0.14, 3.7], color: '#6a4e33' },
-    ] + boardLayer(0.14) + boardLayer(0.23) + [
-      // A partly drawn top layer, so the stack reads as boards rather than a solid block.
-      { position: [0.3, 0.32, 0.5], size: [0.44, 0.09, 2.6] },
-      { position: [1.2, 0.32, 0.9], size: [0.44, 0.09, 2.2] },
-    ],
-  } + stockYield(12, [{ item: 'wood_offcut', count: 8, fractions: recovered, rounding: 'floor' }]),
   // The crate look with its container dropped: a fastener crate is emptied by taking it apart, not by searching.
   // Grey paint tells a stock crate from a searchable one at a glance.
   std.objectRemoveKey(crate, 'container') + {

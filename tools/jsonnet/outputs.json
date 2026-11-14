@@ -701,6 +701,10 @@
       "output": "packages/mods/skelly.basic-foods/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.basic-recipes/basic-recipes-furniture.jsonnet",
+      "output": "packages/mods/skelly.basic-recipes/basic-recipes-furniture.json"
+    },
+    {
       "source": "packages/mods/skelly.basic-recipes/basic-recipes-items.jsonnet",
       "output": "packages/mods/skelly.basic-recipes/basic-recipes-items.json"
     },
