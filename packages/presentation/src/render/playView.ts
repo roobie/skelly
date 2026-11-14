@@ -405,7 +405,7 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
-    slots: lightTuning.renderedFixtureLimit,
+    slots: lightPool.size,
     blockSize: s,
     tuning: lightTuning.illumination.reach,
   });
@@ -764,7 +764,7 @@ export const createPlayView = (
         fixtures: poweredLights(),
         glows: acidGlows(actorMeshes.anchors?.() ?? []),
       });
-      fixtureReach?.update(lightPool.fixtureSlots);
+      fixtureReach?.update(lightPool.reachSlots);
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {
