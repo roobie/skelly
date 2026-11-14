@@ -15,13 +15,14 @@ local catalogue = import 'catalogue.jsonnet';
       // The workbench (the repair stock) stands north of the spawn with the chair and crate either side of the
       // southward walk, so the look reaches every piece from the spawn and one straight walk away from the
       // workbench leaves the stock out of reach while the work targets stay in it; the chair's content wear
-      // places it damaged.
+      // places it damaged. The showroom's charging station has a crate of its own with stock on top, so this crate
+      // stands nearer the spawn than that one: the crate the look meets first is the one it can take apart.
       slots: [{
         furniture: 'chair',
         placement: { position: [-9, 21.5, 0], facing: 's' },
       }, {
         furniture: 'crate',
-        placement: { position: [-6.5, 21.5, 0], facing: 's' },
+        placement: { position: [-7, 21.5, -0.5], facing: 's' },
       }, {
         furniture: 'workbench',
         placement: { position: [-8.5, 21.5, -2.5], facing: 's' },
