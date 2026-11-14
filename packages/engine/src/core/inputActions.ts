@@ -16,7 +16,7 @@ export type InputContext = keyof typeof INPUT_CONTEXTS;
 export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set(
   (Object.keys(INPUT_CONTEXTS) as InputContext[]).filter((context) => INPUT_CONTEXTS[context]),
 );
-type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold' | 'tap-or-hold';
+type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold' | 'tap-tap-hold' | 'tap-or-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
   readonly code: string;
@@ -135,7 +135,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it or lift furniture', world),
   row(
     'firearm.reload',
-    'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
+    'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap twice, then hold to press-check; tap does nothing',
     ['play', 'noclip'],
     'hold',
     {
@@ -143,6 +143,7 @@ export const INPUT_ACTIONS: readonly Action[] = [
         { id: 'firearm.load', kind: 'hold' },
         { id: 'firearm.rack', kind: 'double-press' },
         { id: 'firearm.remove', kind: 'tap-then-hold' },
+        { id: 'firearm.press-check', kind: 'tap-tap-hold' },
       ],
     },
   ),

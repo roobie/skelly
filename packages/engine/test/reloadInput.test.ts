@@ -132,3 +132,62 @@ describe('R hold/double discrimination', () => {
     expect(f.calls).toEqual({ loads: 1, racks: 0, removes: 0, cancelled: 1 });
   });
 });
+
+describe('R tap-tap-hold press check', () => {
+  const pressChecking = (f: ReturnType<typeof fixture>) => {
+    let checks = 0;
+    const binding: ReloadBinding = {
+      ...f.binding,
+      pressCheck: () => {
+        checks += 1;
+        return true;
+      },
+    };
+    return { binding, checks: () => checks };
+  };
+  /** Tap, tap, then the third press at the last moment the third window allows. */
+  const tapTapThenPress = (f: ReturnType<typeof fixture>, binding: ReloadBinding): number => {
+    f.input.keyDown(0, binding);
+    f.input.keyUp(shortTap);
+    const second = RELOAD_GESTURE_MS.doublePress - 1;
+    f.input.keyDown(second, binding);
+    f.input.keyUp(second + shortTap);
+    const third = second + shortTap + RELOAD_GESTURE_MS.thirdPress - 1;
+    f.input.keyDown(third, binding);
+    return third;
+  };
+  it('a third press held to the hold threshold press-checks once and never racks', () => {
+    const f = fixture();
+    const gun = pressChecking(f);
+    const third = tapTapThenPress(f, gun.binding);
+    f.input.advance(third + RELOAD_GESTURE_MS.hold - 1, gun.binding);
+    expect(gun.checks()).toBe(0);
+    f.input.advance(third + RELOAD_GESTURE_MS.hold, gun.binding);
+    f.input.advance(third + afterWindows, gun.binding);
+    f.input.keyUp(third + afterWindows + 1);
+    expect({ ...f.calls, checks: gun.checks() }).toEqual({ loads: 0, racks: 0, removes: 0, cancelled: 0, checks: 1 });
+  });
+  it('a third press released early racks once instead', () => {
+    const f = fixture();
+    const gun = pressChecking(f);
+    const third = tapTapThenPress(f, gun.binding);
+    f.input.keyUp(third + RELOAD_GESTURE_MS.hold - 1);
+    f.input.advance(third + afterWindows, gun.binding);
+    expect({ ...f.calls, checks: gun.checks() }).toEqual({ loads: 0, racks: 1, removes: 0, cancelled: 0, checks: 0 });
+  });
+  it('with no third press, the waiting rack fires once the third window expires, unseen by a key event', () => {
+    const f = fixture();
+    const gun = pressChecking(f);
+    f.input.keyDown(0, gun.binding);
+    f.input.keyUp(shortTap);
+    const second = RELOAD_GESTURE_MS.doublePress - 1;
+    f.input.keyDown(second, gun.binding);
+    const released = second + shortTap;
+    f.input.keyUp(released);
+    f.input.advance(released + RELOAD_GESTURE_MS.thirdPress - 1, gun.binding);
+    expect(f.calls.racks).toBe(0);
+    f.input.advance(released + RELOAD_GESTURE_MS.thirdPress, gun.binding);
+    f.input.advance(released + afterWindows, gun.binding);
+    expect({ ...f.calls, checks: gun.checks() }).toEqual({ loads: 0, racks: 1, removes: 0, cancelled: 0, checks: 0 });
+  });
+});

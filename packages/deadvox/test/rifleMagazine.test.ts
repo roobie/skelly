@@ -7,7 +7,7 @@ import { HandlingQueue, Inventory, type Item } from '@skelly/engine/inventory';
 import type { Vec3 } from '@skelly/engine/world';
 import { describe, expect, it, vi } from 'vitest';
 import { baseRegistry } from './baseRegistry.ts';
-import { chargedRifle, rifleAmmunition, settle } from './rifleFixture.ts';
+import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const registry = baseRegistry();
 const pose = {
@@ -210,6 +210,22 @@ describe('magazine-fed rifles', () => {
     expect(binding.load).toHaveBeenCalledOnce();
     expect(binding.cancelLoad).not.toHaveBeenCalled();
     expect(binding.remove).not.toHaveBeenCalled();
+  });
+
+  it('press-checks a rifle whose model has the clip as a handling job that changes nothing, and refuses one without', () => {
+    const { inventory, queue, mechanics } = rig();
+    const { rifle } = chargedRifle(inventory, queue, mechanics);
+    const before = inventory.snapshotState();
+    expect(mechanics.pressChecks(rifle.uid)).toBe(true);
+    expect(mechanics.pressCheck(rifle.uid)).toBeUndefined();
+    expect(queue.busy).toBe(true);
+    settle(queue);
+    expect(inventory.snapshotState()).toEqual(before);
+    const other = rig();
+    const { rifle: plain } = rifleInHand(other.inventory, other.queue, { type: 'rifle_ak' });
+    expect(other.mechanics.pressChecks(plain.uid)).toBe(false);
+    expect(other.mechanics.pressCheck(plain.uid)).toBeDefined();
+    expect(other.queue.busy).toBe(false);
   });
 
   it('restores the fitted magazine and chamber, and refuses a magazine or round of another calibre', () => {

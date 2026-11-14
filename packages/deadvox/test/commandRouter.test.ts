@@ -289,6 +289,8 @@ describe('command router', () => {
           loadNext: () => loadRefusal,
           cock: () => undefined,
           removeMagazine: () => undefined,
+          pressChecks: () => false,
+          pressCheck: () => undefined,
           stillLoaded: () => false,
           cancelLoad: () => undefined,
         },

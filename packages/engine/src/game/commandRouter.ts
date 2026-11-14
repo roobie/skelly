@@ -44,7 +44,7 @@ import { selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { stopReadingOnClose } from './readingClose.ts';
-import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
+import { type ReloadBinding, type ReloadTarget, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
@@ -796,6 +796,16 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
    * Building the binding never changes state: a ramp-down alone leaves it available, and only an admitted
    * gesture ends the ramp, so a short tap or an owner refusal does not.
    */
+  /** Present only on a gun with a press check, so only that gun's tap-tap waits for a third press. */
+  const pressCheckOf = (
+    target: ReloadTarget,
+    admit: (action: 'firearm.press-check', reason: string | undefined) => boolean,
+    ladder: () => string | undefined,
+  ): Pick<ReloadBinding, 'pressCheck'> => {
+    const { pressCheck } = target;
+    return pressCheck ? { pressCheck: () => admit('firearm.press-check', ladder() ?? pressCheck()) } : {};
+  };
+
   function reloadBinding(): ReloadBinding | undefined {
     const session = ports.session();
     const { sim, queue, firearms } = session;
@@ -817,7 +827,10 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       return;
     }
     // An admitted gesture is recorded; replay drives it back through this binding.
-    const admit = (action: 'firearm.load' | 'firearm.rack' | 'firearm.remove', reason: string | undefined): boolean => {
+    const admit = (
+      action: 'firearm.load' | 'firearm.rack' | 'firearm.remove' | 'firearm.press-check',
+      reason: string | undefined,
+    ): boolean => {
       if (reason) {
         presentation.refusal(reason, sim.time);
       } else {
@@ -840,6 +853,7 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
       load: () => admit('firearm.load', ladder() ?? target.load(sim.time)),
       rack: () => admit('firearm.rack', ladder() ?? target.rack(sim.time)),
       remove: () => admit('firearm.remove', ladder() ?? target.remove(sim.time)),
+      ...pressCheckOf(target, admit, ladder),
       ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
       cancelLoad: target.cancelLoad,
       ...(target.releaseLoad ? { releaseLoad: () => target.releaseLoad!(sim.time) } : {}),
@@ -1356,6 +1370,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
         return true;
       case 'firearm.remove':
         reloadBinding()?.remove();
+        return true;
+      case 'firearm.press-check':
+        reloadBinding()?.pressCheck?.();
         return true;
       case 'throw.stance.toggle':
         toggleThrowingStance();
