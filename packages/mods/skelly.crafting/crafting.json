@@ -56,6 +56,12 @@
       "label": "Electrical equipment",
       "order": 30,
       "parent": "repairs"
+    },
+    {
+      "id": "repair_structures",
+      "label": "Walls and floors",
+      "order": 40,
+      "parent": "repairs"
     }
   ],
   "recipeTags": [

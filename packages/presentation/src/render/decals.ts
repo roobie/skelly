@@ -6,6 +6,7 @@ import { BufferGeometry, Color, Float32BufferAttribute, Mesh, MeshLambertMateria
 import { STAIN_NOISE_GLSL } from './bloodStain.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { freezeMatrices } from './staticMatrices.ts';
+import { strokeQuads } from './strokeQuads.ts';
 
 const faceNormals = {
   n: [0, 0, -1],
@@ -34,21 +35,7 @@ const decalVertices = (
     }
     return;
   }
-  for (const [x0, y0, x1, y1, width] of strokes) {
-    const length = Math.hypot(x1 - x0, y1 - y0);
-    const dx = ((-(y1 - y0) / length) * width) / 2;
-    const dy = (((x1 - x0) / length) * width) / 2;
-    for (const [x, y] of [
-      [x0 + dx, y0 + dy],
-      [x0 - dx, y0 - dy],
-      [x1 - dx, y1 - dy],
-      [x0 + dx, y0 + dy],
-      [x1 - dx, y1 - dy],
-      [x1 + dx, y1 + dy],
-    ]) {
-      vertex(x!, y!, 0);
-    }
-  }
+  strokeQuads(strokes, (x, y) => vertex(x, y, 0));
 };
 
 /** Static, one-draw presentation. No entities, occupancy or saved state. */

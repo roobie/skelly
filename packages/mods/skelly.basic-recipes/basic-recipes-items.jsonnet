@@ -22,6 +22,12 @@ local repair(id, category, tags, item, skill, minutes, qualities, components) =
     kind: 'repair',
     repair: { skill: skill, amount: 0.2, perSkill: 0.1 },
   };
+// Terrain repair names a block; `amount` and `perSkill` are durability points of that block's material
+// (`packages/mods/skelly.natural-world/block-materials.jsonnet`), never fractions as item repair uses.
+local repairBlock(id, tags, block, item, amount, perSkill, minutes, components) =
+  repair(id, 'repair_structures', tags, item, 'crafting', minutes, { repairing: 1 }, components) + {
+    repair: { skill: 'crafting', amount: amount, perSkill: perSkill, block: block },
+  };
 local mendClothing(item, minutes, patch=[{ item: 'sewing_thread', count: 1 }]) = repair(
   'repair_' + item, 'repair_clothing', ['textile'], item, 'crafting', minutes, { sewing: 1 },
   [[{ item: 'cloth_strip', count: 1 }], patch],
@@ -113,6 +119,8 @@ local mendClothing(item, minutes, patch=[{ item: 'sewing_thread', count: 1 }]) =
       [{ item: 'scrap_metal', count: 1 }],
       [{ item: 'duct_tape', count: 1 }],
     ]),
+    repairBlock('repair_brick', ['metal'], 'brick', 'scrap_metal', 60, 30, 20, [[{ item: 'scrap_metal', count: 1 }]]),
+    repairBlock('repair_planks', ['wood'], 'planks', 'wooden_plank', 20, 10, 15, [[{ item: 'wooden_plank', count: 1 }]]),
     recipe('sawn_plank', 'materials', ['wood'], 'wooden_plank', 1, 4, crafting, { sawing: 1 }, [[{ item: 'stick', count: 2 }]]) + bench + { searchTerms: ['saw'] },
     recipe('door_bar', 'fixtures', ['wood'], 'door_bar', 1, 10, crafting, { sawing: 1 }, [[{ item: 'wooden_plank', count: 2 }]]) + bench,
   ] + (import 'tools/jsonnet/lib/sharpen-recipes.libsonnet').sharpenRecipes(

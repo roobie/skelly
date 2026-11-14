@@ -71,10 +71,18 @@ jobs:
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
+      - name: Cell-repair crack pixel contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 3
+        run: node test/browser/cell-repair-crack.mjs
       - name: Primary-action interaction flow contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2
         run: node test/browser/primary-action.mjs flow
+      - name: Primary-action fixture-write replay divergence contract
+        if: ${{ inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/primary-action.mjs replay-divergence
       - name: Primary-action search and look replay contract
         if: ${{ inputs.shard == 'input' }}
         timeout-minutes: 2

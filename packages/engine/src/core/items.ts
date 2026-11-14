@@ -6,6 +6,7 @@ import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import { claimed } from './capabilities.ts';
 import { compareCodeUnits } from './codeUnitOrder.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
+import type { Vec3 } from './coords.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
@@ -23,9 +24,16 @@ import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
 import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export type WorkTarget = { kind: 'item'; uid: number } | { kind: 'entity'; uid: number };
+export type WorkTarget =
+  | { kind: 'item'; uid: number }
+  | { kind: 'entity'; uid: number }
+  | { kind: 'cell'; cell: Vec3; epoch: number };
+export const copyWorkTarget = (target: WorkTarget): WorkTarget =>
+  target.kind === 'cell'
+    ? { kind: 'cell', cell: [...target.cell], epoch: target.epoch }
+    : { kind: target.kind, uid: target.uid };
 const repairTargetFields = ({ repairTarget }: { repairTarget?: WorkTarget }) =>
-  repairTarget ? { repairTarget: { ...repairTarget } } : {};
+  repairTarget ? { repairTarget: copyWorkTarget(repairTarget) } : {};
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
 interface WorkProgress<Node> {
@@ -73,6 +81,12 @@ const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> => {
         outputs: work.outputs.map((output) => ({ ...output })),
         toolLevels: { ...work.toolLevels },
       };
+    case 'cellDisassembly':
+      return {
+        ...work,
+        cell: [...work.cell] as Vec3,
+        outputs: work.outputs.map((output) => ({ ...output })),
+      };
     default:
       throw new Error('Unknown work kind');
   }
@@ -100,6 +114,14 @@ type CraftWork<Node> =
       furniture: string;
       skillLevel: number;
       toolLevels: Record<string, number>;
+      outputs: { item: string; count: number }[];
+    })
+  /** Clearing the rubble cell it names; the standing block is the source, so it has no inputs and no skill rolls. */
+  | (WorkProgress<Node> & {
+      kind: 'cellDisassembly';
+      cell: Vec3;
+      block: string;
+      epoch: number;
       outputs: { item: string; count: number }[];
     });
 

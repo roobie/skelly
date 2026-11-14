@@ -7,18 +7,36 @@
         "strength": 0.59999999999999998,
         "tint": "#685744"
       },
-      "damaged": [
-        {
-          "from": 0.25,
-          "strength": 0.14999999999999999,
-          "tint": "#685744"
-        },
-        {
-          "from": 0.59999999999999998,
-          "strength": 0.34999999999999998,
-          "tint": "#685744"
-        }
-      ],
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [
+          {
+            "from": 0.10000000000000001,
+            "reach": 0.34999999999999998
+          },
+          {
+            "from": 0.34999999999999998,
+            "reach": 0.69999999999999996
+          },
+          {
+            "from": 0.65000000000000002,
+            "reach": 1
+          }
+        ],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
       "durability": 30,
       "fallsTo": "soil_rubble",
       "id": "soil",
@@ -40,6 +58,7 @@
           "item": "rubble_stone"
         }
       ],
+      "rubbleClearTimeGameMinutes": 3,
       "span": 0
     },
     {
@@ -49,18 +68,36 @@
         "strength": 0.59999999999999998,
         "tint": "#827b71"
       },
-      "damaged": [
-        {
-          "from": 0.25,
-          "strength": 0.14999999999999999,
-          "tint": "#827b71"
-        },
-        {
-          "from": 0.59999999999999998,
-          "strength": 0.34999999999999998,
-          "tint": "#827b71"
-        }
-      ],
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [
+          {
+            "from": 0.10000000000000001,
+            "reach": 0.34999999999999998
+          },
+          {
+            "from": 0.34999999999999998,
+            "reach": 0.69999999999999996
+          },
+          {
+            "from": 0.65000000000000002,
+            "reach": 1
+          }
+        ],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
       "durability": 300,
       "fallsTo": "masonry_rubble",
       "id": "masonry",
@@ -82,6 +119,7 @@
           "item": "rubble_stone"
         }
       ],
+      "rubbleClearTimeGameMinutes": 12,
       "span": 2
     },
     {
@@ -91,18 +129,36 @@
         "strength": 0.59999999999999998,
         "tint": "#776144"
       },
-      "damaged": [
-        {
-          "from": 0.25,
-          "strength": 0.14999999999999999,
-          "tint": "#776144"
-        },
-        {
-          "from": 0.59999999999999998,
-          "strength": 0.34999999999999998,
-          "tint": "#776144"
-        }
-      ],
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [
+          {
+            "from": 0.10000000000000001,
+            "reach": 0.34999999999999998
+          },
+          {
+            "from": 0.34999999999999998,
+            "reach": 0.69999999999999996
+          },
+          {
+            "from": 0.65000000000000002,
+            "reach": 1
+          }
+        ],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
       "durability": 100,
       "fallsTo": "timber_rubble",
       "id": "timber",
@@ -124,6 +180,7 @@
           "item": "wood_offcut"
         }
       ],
+      "rubbleClearTimeGameMinutes": 6,
       "span": 3
     },
     {
@@ -133,18 +190,36 @@
         "strength": 0.59999999999999998,
         "tint": "#6e6965"
       },
-      "damaged": [
-        {
-          "from": 0.25,
-          "strength": 0.14999999999999999,
-          "tint": "#6e6965"
-        },
-        {
-          "from": 0.59999999999999998,
-          "strength": 0.34999999999999998,
-          "tint": "#6e6965"
-        }
-      ],
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [
+          {
+            "from": 0.10000000000000001,
+            "reach": 0.34999999999999998
+          },
+          {
+            "from": 0.34999999999999998,
+            "reach": 0.69999999999999996
+          },
+          {
+            "from": 0.65000000000000002,
+            "reach": 1
+          }
+        ],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
       "durability": 400,
       "fallsTo": "metal_rubble",
       "id": "metal",
@@ -166,6 +241,7 @@
           "item": "scrap_metal"
         }
       ],
+      "rubbleClearTimeGameMinutes": 12,
       "span": 4
     },
     {
@@ -175,18 +251,36 @@
         "strength": 0.59999999999999998,
         "tint": "#68604e"
       },
-      "damaged": [
-        {
-          "from": 0.25,
-          "strength": 0.14999999999999999,
-          "tint": "#68604e"
-        },
-        {
-          "from": 0.59999999999999998,
-          "strength": 0.34999999999999998,
-          "tint": "#68604e"
-        }
-      ],
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [
+          {
+            "from": 0.10000000000000001,
+            "reach": 0.34999999999999998
+          },
+          {
+            "from": 0.34999999999999998,
+            "reach": 0.69999999999999996
+          },
+          {
+            "from": 0.65000000000000002,
+            "reach": 1
+          }
+        ],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
       "durability": 15,
       "fallsTo": "textile_rubble",
       "id": "textile",
@@ -208,6 +302,7 @@
           "item": "cloth_strip"
         }
       ],
+      "rubbleClearTimeGameMinutes": 2,
       "span": 1
     },
     {
@@ -217,18 +312,23 @@
         "strength": 0.59999999999999998,
         "tint": "#52616b"
       },
-      "damaged": [
-        {
-          "from": 0.25,
-          "strength": 0.14999999999999999,
-          "tint": "#52616b"
-        },
-        {
-          "from": 0.59999999999999998,
-          "strength": 0.34999999999999998,
-          "tint": "#52616b"
-        }
-      ],
+      "cracks": {
+        "branchChance": 0.34999999999999998,
+        "branchSegmentShare": 0.5,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
+        "color": "#1c1712",
+        "jitterRadians": 0.59999999999999998,
+        "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
+        "segments": 5,
+        "steps": [],
+        "strandLengthBlocks": 0.5,
+        "strandSpacingJitter": 0.25,
+        "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
+        "widthBlocks": 0.035000000000000003
+      },
       "durability": 1,
       "fallsTo": "soil_rubble",
       "id": "liquid",
@@ -245,6 +345,7 @@
         "pierce": 1
       },
       "rubble": [],
+      "rubbleClearTimeGameMinutes": 3,
       "span": 0
     }
   ],
