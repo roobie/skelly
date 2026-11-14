@@ -1409,7 +1409,7 @@ try {
     );
     logPhase('render-free scroll contracts');
   }
-  if (scenarioFlow === 'handling') {
+  if (scenarioFlow === 'handling' || scenarioFlow === 'crafting') {
     await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       let locked = null;
@@ -1424,6 +1424,8 @@ try {
         document.dispatchEvent(new Event('pointerlockchange'));
       };
     });
+  }
+  if (scenarioFlow === 'handling') {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
