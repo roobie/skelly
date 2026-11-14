@@ -62,6 +62,15 @@ const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
 export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && (TRAINING_ACTIONS.has(job.jobType) || job.jobType.startsWith('revolver.'));
 export const isPressCheck = (job: Job): job is ActionJob => job.kind === 'action' && job.jobType === PRESS_CHECK_ACTION;
+
+/**
+ * The guns in either hand, dominant hand first, so the gun the player raises and the guns whose gestures are offered
+ * come from one order, whichever went into the hands first.
+ */
+export const heldFirearms = ({ hands, character, registry }: Inventory): Item[] =>
+  [hands[dominantSide(character)], hands[offSide(character)]].filter(
+    (item): item is Item => item !== undefined && registry.items.get(item.type)?.firearm !== undefined,
+  );
 /**
  * A magazine change is two halves, each its own content time: taking the fitted magazine out and stowing it, then
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`packages/deadvox/DESIGN.md`, "Combat and
@@ -1373,24 +1382,13 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  /**
-   * The guns in either hand, dominant hand first as the session raises them, so whatever offers a gun's gestures sees
-   * the same guns its gestures act on, whichever went into the hands first.
-   */
-  private heldFirearms(): Item[] {
-    const { hands, character, registry } = this.inventory;
-    return [hands[dominantSide(character)], hands[offSide(character)]].filter(
-      (item): item is Item => item !== undefined && registry.items.get(item.type)?.firearm !== undefined,
-    );
-  }
-
   holdsFirearm(): boolean {
-    return this.heldFirearms().length > 0;
+    return heldFirearms(this.inventory).length > 0;
   }
 
   /** The held gun a press check would check: any gun fed by a magazine, once its model carries a clip to play. */
   pressCheckableUid(): number | undefined {
-    return this.heldFirearms().find(
+    return heldFirearms(this.inventory).find(
       (item) =>
         magazineWellCalibre(this.inventory.registry, item.type) !== undefined &&
         this.pressCheckClip(item) !== undefined,

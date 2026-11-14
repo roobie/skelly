@@ -158,6 +158,7 @@ import {
   type FirearmShotEffect,
   type FirearmShotInput,
   type FirearmTrajectory,
+  heldFirearms,
   isFirearmTrainingAction,
   isPressCheck,
 } from './firearmHandling.ts';
@@ -916,10 +917,7 @@ export const createSession = (options: SessionOptions) => {
       inventory.version += 1; // The item now draws with or without its pin.
     },
   );
-  const firearmInHands = () =>
-    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
-      (item) => item && registry.items.get(item.type)?.firearm,
-    );
+  const firearmInHands = (): Item | undefined => heldFirearms(inventory)[0];
   const aim = createSessionAim({
     registry,
     tuning: currentFirearmsCombatTuning(),
