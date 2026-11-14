@@ -3162,12 +3162,10 @@ const startPlayWith = (
       !isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled) &&
       view.held.opticLensFrame?.reticle !== undefined;
     const pressChecking = session.pressCheckedFirearm() !== undefined;
-    const crosshair = playCrosshairFrame(
-      visible.crosshair,
-      bore !== undefined,
-      crosshairScreenPosition(bore),
-      { opticReticle: opticReticleVisible, pressCheck: pressChecking },
-    );
+    const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore), {
+      opticReticle: opticReticleVisible,
+      pressCheck: pressChecking,
+    });
     debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible && !pressChecking);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
