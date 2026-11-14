@@ -31,6 +31,7 @@
       "ignoreUnresolved": [
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/product/input.ts",
+        "/src/product/assets.ts",
         "/test/fixtures/capabilityIds.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
@@ -60,7 +61,8 @@
         "/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts",
         "/@stage/@skelly/presentation/internal/presentation/saveStorage.ts",
         "/@stage/@skelly/presentation/internal/ui/guidedSteps.ts",
-        "/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts"
+        "/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts",
+        "/@stage/@skelly/presentation/ui"
       ],
       "entry": [
         "index.html!",

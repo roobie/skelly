@@ -149,7 +149,7 @@ it('sends a crafting material choice to the recipe preference', () => {
     name: 'Bandage',
     itemName: 'Bandage',
     kind: 'craft',
-    time: '5 min',
+    length: '5 min',
     reason: undefined,
     components: [
       {
