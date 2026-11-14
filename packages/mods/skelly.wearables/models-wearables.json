@@ -23,6 +23,24 @@
       }
     },
     {
+      "file": "assets/models/tank_top.glb",
+      "id": "tank_top",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "tank_top": {
+          "centreOfMass": [6.1739111251905362e-20, 0.010597104045379903, -0.0031595760561277794],
+          "massKg": 0.19,
+          "node": "tank_top:compound"
+        }
+      }
+    },
+    {
       "file": "assets/models/jeans.glb",
       "grip": {
         "at": [0, 0.025000000000000001, 0],
@@ -237,6 +255,25 @@
         }
       },
       "roll": 0
+    },
+    {
+      "covers": ["trunk"],
+      "file": "assets/models/tank_top_worn_body.glb",
+      "id": "tank_top_worn_body",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "tank_top_worn_body": {
+          "centreOfMass": [5.5336839635340103e-21, 0.30661773737130466, 0],
+          "massKg": 0.10000000000000001,
+          "node": "tank_top_worn_body:compound"
+        }
+      }
     },
     {
       "covers": ["torso"],

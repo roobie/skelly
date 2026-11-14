@@ -11,6 +11,7 @@ import { skyAt } from '@skelly/engine/sky';
 import { CHUNK, createWorldSetup, type StreamerStats, type WorldSetup } from '@skelly/engine/world';
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { ChunkMeshes } from '../render/chunks.ts';
+import { fabricGrain } from '../render/fabricGrain.ts';
 import { MaterialPatches } from '../render/materialPatches.ts';
 import { Mood } from '../render/mood.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
@@ -121,6 +122,7 @@ export function createEngine(
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
   const materialPatches = new MaterialPatches();
+  materialPatches.add(fabricGrain);
   const skylight =
     skyFields.fields.length > 0
       ? new Skylight(
