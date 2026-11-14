@@ -3166,8 +3166,7 @@ const startPlayWith = (
       visible.crosshair,
       bore !== undefined,
       crosshairScreenPosition(bore),
-      opticReticleVisible,
-      pressChecking,
+      { opticReticle: opticReticleVisible, pressCheck: pressChecking },
     );
     debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible && !pressChecking);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
