@@ -805,6 +805,14 @@
       "output": "packages/mods/skelly.crafting/pack/manifest.json"
     },
     {
+      "source": "packages/mods/skelly.day-cycle.winter/dayCycle.jsonnet",
+      "output": "packages/mods/skelly.day-cycle.winter/dayCycle.json"
+    },
+    {
+      "source": "packages/mods/skelly.day-cycle.winter/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.day-cycle.winter/pack/manifest.json"
+    },
+    {
       "source": "packages/mods/skelly.day-cycle/dayCycle.jsonnet",
       "output": "packages/mods/skelly.day-cycle/dayCycle.json"
     },
