@@ -26,9 +26,9 @@ import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 import { createStageServer } from './stageServer.mjs';
 
-// The flow group is the long live-page journey; the replays groups are the independent replay and search contexts,
-// split so each CI step keeps headroom under its own timeout.
-const groups = ['flow', 'replays-search-look', 'replays-motion-fire'];
+// The flow group is the long live-page journey and ends by importing its own recording; the other groups are
+// independent contexts, split so each CI step keeps headroom under its own timeout.
+const groups = ['flow', 'replay-divergence', 'replays-search-look', 'replays-motion-fire'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
@@ -117,6 +117,17 @@ const optionsModule = '/@stage/@skelly/engine/internal/core/options.ts';
 const itemLookModule = '/@stage/@skelly/presentation/internal/render/itemLook.ts';
 const pileLayoutModule = '/@stage/@skelly/engine/internal/core/pileLayout.ts';
 const vehicleProjectionModule = '/@stage/@skelly/engine/internal/core/vehicleProjection.ts';
+const dispatchPlayerCommand = async (page, action) =>
+  page.evaluate(
+    async ({ id, moduleUrl }) => {
+      const { keyboardInput } = await import(moduleUrl);
+      if (!keyboardInput.command) {
+        throw new Error('Player command dispatcher is unavailable');
+      }
+      keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+    },
+    { id: action, moduleUrl: inputBindingsModule },
+  );
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -2046,7 +2057,7 @@ try {
       renderMode: renderOverride,
     }),
   );
-  if (group === 'flow') {
+  const newFlowPage = async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -2092,6 +2103,10 @@ try {
         };
       });
     }
+    return { page, pageErrors };
+  };
+  if (group === 'flow') {
+    const { page, pageErrors } = await newFlowPage();
     await timePhase('initial-testHouse-boot', async () => {
       await page.goto(
         browserStageUrl(
@@ -2122,6 +2137,12 @@ try {
           document.querySelector('#world-loading').hidden,
       );
     });
+    // Phases whose statements share bindings with later code log their elapsed time here instead of wrapping.
+    let segmentStart = performance.now();
+    const endSegment = (phase) => {
+      logPhase(phase, segmentStart);
+      segmentStart = performance.now();
+    };
     assert.equal(
       await page.evaluate(() => globalThis.primaryActionTest.engine.config.startId),
       debugHouseStart.id,
@@ -2817,6 +2838,7 @@ try {
     assert.equal(roundTrip.restoredOn, true);
     assert.equal(roundTrip.restoredHand, 'left');
     await toggleLight('hand.use-off', false);
+    endSegment('hand-action-cases');
     await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
     const interactionHintsBeforeThrowStance = await page.evaluate(
       () => globalThis.primaryActionTest.hudOptions.interaction,
@@ -3678,6 +3700,7 @@ try {
     assert.ok(menu.stamina >= blockedBefore.stamina);
     await pressAction(page, 'ui.inventory-toggle');
 
+    endSegment('throw-cases');
     // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
     const firearm = await page.evaluate(async () => {
       const moduleUrl = '/@stage/@skelly/engine/inventory';
@@ -3998,6 +4021,7 @@ try {
       undefined,
       { timeout: 10_000 },
     );
+    endSegment('firearm-optic-grenade-case');
     const pryPreview = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.session.sim.actions.cancel();
@@ -4113,6 +4137,7 @@ try {
     await page.screenshot({ path: pryingScreenshot });
     await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.cancel());
 
+    endSegment('prying-case');
     const lockedDoorStart = performance.now();
     const lockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     await lockedPage.addInitScript(() => {
@@ -4320,6 +4345,7 @@ try {
       logPhase('locked-door-input-case', lockedDoorStart);
     }
 
+    segmentStart = performance.now();
     const treatment = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -4390,17 +4416,8 @@ try {
     );
     const treatmentRegion = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.region);
     assert.equal(treatmentRegion, selected);
-    const command = async (action) =>
-      page.evaluate(
-        async ({ id, moduleUrl }) => {
-          const { keyboardInput } = await import(moduleUrl);
-          if (!keyboardInput.command) {
-            throw new Error('Player command dispatcher is unavailable');
-          }
-          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
-        },
-        { id: action, moduleUrl: inputBindingsModule },
-      );
+    const command = (action) => dispatchPlayerCommand(page, action);
+    endSegment('treatment-case');
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
     await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
@@ -4411,7 +4428,6 @@ try {
       }
       return fetch(link.href).then((response) => response.text());
     });
-    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
     const replayArtifact = JSON.parse(replayText);
     assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
@@ -4432,6 +4448,11 @@ try {
       assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
     });
 
+    assert.deepEqual(pageErrors, []);
+    await page.close();
+  } else if (group === 'replay-divergence') {
+    const { page, pageErrors } = await newFlowPage();
+    const command = (action) => dispatchPlayerCommand(page, action);
     await page.goto(
       browserStageUrl(
         'primary-action',
@@ -4527,6 +4548,7 @@ try {
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
   } else {
+    await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
     await timePhase('forward-button-replay-case', () =>
       verifyForwardButtonReplay(browser, address.port, renderOverride),
     );
