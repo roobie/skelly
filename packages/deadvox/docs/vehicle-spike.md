@@ -99,7 +99,7 @@ Capabilities are a closed vocabulary because each one needs game code to mean an
 
 Driven and steered belong to the part type, not the fitting. Converting a vehicle's drive then means swapping a part, which is also a gameplay hook: finding a driven axle.
 
-A frame, tray or mount that other fittings rest on names the `structure` capability. Marking structure explicitly lets code tell it apart from a part whose capabilities were forgotten, so an empty list can later be refused as an authoring mistake. A door or hatch a player gets in through names `entry`; its hinge is the axis through its `hinge_a` and `hinge_b` datums. A road wheel, the part a vehicle rolls on, names `wheel`.
+A frame, tray or mount that other fittings rest on names the `structure` capability. Marking structure explicitly lets code tell it apart from a part whose capabilities were forgotten, so an empty list can later be refused as an authoring mistake. A door or hatch a player gets in through names `entry`; how it opens is its `motion`, which is independent of `entry`: a bonnet moves without it, and an open cart has it without moving. The spike plays every part's motion at its stop, and a part carries the fittings that rest on it. A road wheel, the part a vehicle rolls on, names `wheel`.
 
 Left and right parts are one item, mirrored by the slot, so one inventory item fits either side; a handed part therefore cannot refuse the wrong side. Part collision is one axis-aligned box per solid until the physics solver needs a convex hull per solid; the move is cheap because the schema slot is already per part. Attachment points get an optional direction and fittings a rotation the first time a fitting must align; the change only adds fields.
 

@@ -6,6 +6,7 @@ import {
   type Registry,
 } from '@skelly/engine/content';
 import { modelMassKg } from '@skelly/thing-core/mass';
+import { posePoint } from '@skelly/thing-core/motion';
 import { describe, expect, it } from 'vitest';
 import { baseSources } from '../src/product/content.ts';
 import battery from './fixtures/vehicle-part.model.json' with { type: 'json' };
@@ -88,6 +89,34 @@ describe('vehicle export contract', () => {
     });
     expect(issues).toEqual([]);
     expect(fittingOf(registry, 'fixture_cart', 'cell').capabilities).toEqual(['electricity']);
+  });
+
+  it('opens a mirrored fitting to the reflection of its unmirrored open pose', () => {
+    const door = {
+      ...battery,
+      id: 'fixture_door',
+      motion: [
+        { kind: 'hinge', axis: { from: [0.25, 0, 0.5], to: [0.25, 1, 0.5] }, angle: 70, share: 0.5 },
+        { kind: 'slide', direction: [1, 0, 0], travel: 0.3, share: 0.5 },
+      ],
+    };
+    const at = [2, 0.5, -1];
+    const { issues, registry } = withMod({
+      ...modPart('fixture_door', [], door),
+      ...blueprint({ ...fitting('near', 'fixture_door'), at }, { ...fitting('far', 'fixture_door'), at, mirror: true }),
+    });
+    expect(issues).toEqual([]);
+    const near = fittingOf(registry, 'fixture_cart', 'near').motion!;
+    const far = fittingOf(registry, 'fixture_cart', 'far').motion!;
+    const reflect = ([x, y, z]: readonly number[]): [number, number, number] => [2 * at[0]! - x!, y!, z!];
+    for (const point of [
+      [2.4, 1, -0.7],
+      [1.6, 0.2, -1.4],
+    ] as const) {
+      const unmirrored = posePoint(near, point);
+      expect(unmirrored).not.toEqual(point);
+      expect(posePoint(far, reflect(point))).toEqual(reflect(unmirrored).map((value) => expect.closeTo(value, 9)));
+    }
   });
 
   const bare = { ...battery, id: 'fixture_cell', parts: { body: { massKg: 1, centreOfMass: [0, 0, 0] } } };

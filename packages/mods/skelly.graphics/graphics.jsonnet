@@ -23,6 +23,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     columnsPerFrame: 2,
     terrainWorkers: { count: 1, lookaheadColumns: 8, maxOutstandingColumns: 12 },
     unbuiltSkyCap: 0.5,
+    vehicleReflection: { cubeSize: 32, skyDrift: 0.02, zenithHeight: 0.08, groundEdge: 0.3, strength: 0.6, horizonGain: 4.5, coatGrazing: 0.05 },
     sunShadow: {
       defaultReachMetres: 36,
       debugReachMetres: [12, 16, 24, 36, 40, 64],
@@ -61,6 +62,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     fastCamo: toggle('Fast camouflage pattern'),
     coarseWeathering: toggle('Coarse weathering grid'),
     cachedSurfaceNoise: toggle('Cached surface noise', true),
+    vehicleFinishes: toggle('Vehicle reflections'),
     msaaSamples: {
       label: 'Edge smoothing',
       default: 4,

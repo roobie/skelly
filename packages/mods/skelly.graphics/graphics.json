@@ -116,6 +116,20 @@
         "maxOutstandingColumns": 12
       },
       "unbuiltSkyCap": 0.5,
+      "vehicleFinishes": {
+        "default": false,
+        "label": "Vehicle reflections",
+        "options": [false, true]
+      },
+      "vehicleReflection": {
+        "coatGrazing": 0.050000000000000003,
+        "cubeSize": 32,
+        "groundEdge": 0.29999999999999999,
+        "horizonGain": 4.5,
+        "skyDrift": 0.02,
+        "strength": 0.59999999999999998,
+        "zenithHeight": 0.080000000000000002
+      },
       "viewRadiusM": 128
     }
   ]

@@ -308,6 +308,8 @@
     "materials": ["cloth-olive-drab", "webbing-olive-dark", "plastic-matte-black", "webbing-black"]
   },
   "assets/models/spray_can.glb": { "materials": ["alu-bare", "paint-red", "paper-white", "plastic-red"] },
+  "assets/models/stash_chest.glb": { "materials": ["bark", "wood-weathered", "iron-cast", "brass-dull", "steel-grey"] },
+  "assets/models/stash_chest_open.glb": { "materials": ["bark", "wood-weathered", "iron-cast"] },
   "assets/models/steel_drum_100.glb": { "materials": ["paint-red", "steel", "steel-grey"] },
   "assets/models/steel_drum_200.glb": { "materials": ["paint-olive", "steel-grey"] },
   "assets/models/steel_water_bottle.glb": { "materials": ["steel-stainless", "steel-grey", "plastic-black"] },

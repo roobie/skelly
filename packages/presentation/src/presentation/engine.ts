@@ -18,7 +18,9 @@ import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts'
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
+import { GradientSkyReflection } from '../render/skyReflection.ts';
 import { freezeMatrices } from '../render/staticMatrices.ts';
+import { VehicleFinishes } from '../render/vehicleFinishes.ts';
 import { browserMesherSource } from '../worker/mesherPort.ts';
 import { browserTerrainWorkerSource } from '../worker/terrainPort.ts';
 import { GraphicsControls } from './graphicsControls.ts';
@@ -28,6 +30,7 @@ export interface Engine extends WorldSetup {
   /** Patches for the main scene's materials, installed in one walk before each draw. */
   materialPatches: MaterialPatches;
   skylight?: Skylight;
+  vehicleFinishes?: VehicleFinishes;
   renderer?: WebGLRenderer;
   scene: Scene;
   camera: PerspectiveCamera;
@@ -151,18 +154,23 @@ export function createEngine(
     meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 
-  const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;
-  mood?.setMsaaSamples(msaaSamples);
-  const shadows = renderer ? new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes) : undefined;
-  const graphics = new GraphicsControls(
-    graphicsTuning,
-    { meshes, ...(mood ? { mood } : {}), ...(shadows ? { shadows } : {}) },
-    { source: graphicsSource },
-  );
+  const drawing: Pick<Engine, 'mood' | 'shadows' | 'vehicleFinishes'> = renderer
+    ? {
+        mood: new Mood(renderer, scene, camera, graphicsTuning),
+        shadows: new Shadows(renderer, scene, { light: sky.light, rig: sunRig }, meshes),
+        vehicleFinishes: new VehicleFinishes(
+          new GradientSkyReflection(renderer, graphicsTuning.vehicleReflection),
+          graphicsTuning.vehicleReflection.coatGrazing,
+          materialPatches,
+        ),
+      }
+    : {};
+  drawing.mood?.setMsaaSamples(msaaSamples);
+  const graphics = new GraphicsControls(graphicsTuning, { meshes, ...drawing }, { source: graphicsSource });
 
   const resize = () => {
     renderer?.setSize(view.clientWidth, view.clientHeight);
-    mood?.setSize(view.clientWidth, view.clientHeight);
+    drawing.mood?.setSize(view.clientWidth, view.clientHeight);
     camera.aspect = view.clientWidth / Math.max(view.clientHeight, 1);
     camera.updateProjectionMatrix();
   };
@@ -179,7 +187,6 @@ export function createEngine(
     meshes,
     graphics,
     sky,
-    ...(mood ? { mood } : {}),
-    ...(shadows ? { shadows } : {}),
+    ...drawing,
   };
 }

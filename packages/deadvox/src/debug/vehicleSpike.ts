@@ -442,7 +442,8 @@ const scene = new Scene();
 let vehicleGroup = new Group();
 let liftGroup: Group | undefined;
 let wheelPivots: Group[] = [];
-let doorPivots: { readonly pivot: Group; readonly axis: Vector3; readonly sign: number }[] = [];
+/** Each hinged or sliding part's way of taking its closed or open pose, whichever way it was placed. */
+let doorPivots: ((open: boolean) => void)[] = [];
 const UP = new Vector3(0, 1, 0);
 
 /** A fitting in vehicle space: wheels spin about their axle and doors swing about their hinge line. */
@@ -464,8 +465,9 @@ const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fittin
     wheelPivots.push(pivot);
   } else {
     const sign = fitting.mirror ? -1 : 1;
-    pivot.rotation.y = doorsOpen ? sign * DOOR_OPEN : 0;
-    doorPivots.push({ pivot, axis: UP, sign });
+    const pose = (open: boolean) => pivot.quaternion.setFromAxisAngle(UP, open ? sign * DOOR_OPEN : 0);
+    pose(doorsOpen);
+    doorPivots.push(pose);
   }
   return pivot;
 };
@@ -513,8 +515,54 @@ const presentContent = (spec: ContentBuildSpec): readonly ContentFitting[] => {
 /** Set while a content build waits on part models, which load after the page starts. */
 let modelsPending = false;
 
-/** A content fitting at its place; an entry swings about its exported hinge line, its far twin the other way. */
-const placeContentFitting = ({ def, placed }: ContentFitting): Object3D | undefined => {
+/**
+ * The groups that play a motion in the vehicle frame: stage groups nested with the first outermost, each turned about
+ * its axis or moved along its direction, and the `rest` group inside them all, where whatever the part carries is added
+ * in vehicle coordinates. A hinge group sits at its axis start relative to the stage outside it, and `rest` undoes the
+ * last, so every stage turns about its own line as it stands at rest.
+ */
+const motionRig = (motion: NonNullable<PlacedFitting['motion']>) => {
+  const root = new Group();
+  let tip = root;
+  let pivot = new Vector3();
+  const poses = motion.map((move) => {
+    const group = new Group();
+    tip.add(group);
+    tip = group;
+    if (move.kind === 'slide') {
+      const step = new Vector3(...move.direction).multiplyScalar(move.travel);
+      return (open: boolean): void => {
+        group.position.copy(step).multiplyScalar(open ? 1 : 0);
+      };
+    }
+    const from = new Vector3(...move.axis.from);
+    group.position.copy(from).sub(pivot);
+    pivot = from;
+    const axis = new Vector3(...move.axis.to).sub(from).normalize();
+    return (open: boolean): void => {
+      group.quaternion.setFromAxisAngle(axis, open ? (move.angle * Math.PI) / 180 : 0);
+    };
+  });
+  const rest = new Group();
+  rest.position.copy(pivot).negate();
+  tip.add(rest);
+  return {
+    root,
+    rest,
+    pose: (open: boolean): void => {
+      for (const pose of poses) {
+        pose(open);
+      }
+    },
+  };
+};
+
+/** A content fitting at its place, opened by playing its motion; the fittings resting on it ride with it. */
+const placeContentFitting = (
+  fitting: ContentFitting,
+  carried: ReadonlyMap<string, ContentFitting[]>,
+): Object3D | undefined => {
+  const { def, placed } = fitting;
   const model = partModels.part(placed.part);
   if (!model) {
     return undefined;
@@ -528,19 +576,52 @@ const placeContentFitting = ({ def, placed }: ContentFitting): Object3D | undefi
   if (def.mirror) {
     holder.scale.x = -1;
   }
-  const { hinge_a: hingeA, hinge_b: hingeB } = placed.datums;
-  if (!(placed.capabilities.includes('entry') && hingeA && hingeB)) {
-    return holder;
+  const body = new Group().add(holder);
+  for (const rider of carried.get(def.id) ?? []) {
+    const object = placeContentFitting(rider, carried);
+    if (object) {
+      body.add(object);
+    } else {
+      modelsPending = true;
+    }
   }
-  const pivot = new Group();
-  pivot.position.set(...hingeA);
-  holder.position.sub(pivot.position);
-  pivot.add(holder);
-  const axis = new Vector3(...hingeB).sub(pivot.position).normalize();
-  const sign = def.mirror ? -1 : 1;
-  pivot.quaternion.setFromAxisAngle(axis, doorsOpen ? sign * DOOR_OPEN : 0);
-  doorPivots.push({ pivot, axis, sign });
-  return pivot;
+  if (!placed.motion) {
+    return body;
+  }
+  const rig = motionRig(placed.motion);
+  rig.rest.add(body);
+  rig.pose(doorsOpen);
+  doorPivots.push(rig.pose);
+  return rig.root;
+};
+
+/**
+ * Who carries whom: a fitting rides the first fitting it rests on that moves, or that rides one, so a rider of a rider
+ * follows too. Fittings carried by none stay at the root.
+ */
+const carriersOf = (present: readonly ContentFitting[]): Map<string, ContentFitting[]> => {
+  const byId = new Map(present.map((fitting) => [fitting.def.id, fitting]));
+  const carrierOf = new Map<string, string | undefined>();
+  const carrier = (fitting: ContentFitting): string | undefined => {
+    const { id, supportedBy } = fitting.def;
+    if (!carrierOf.has(id)) {
+      carrierOf.set(id, undefined);
+      carrierOf.set(
+        id,
+        supportedBy.find((support) => {
+          const held = byId.get(support);
+          return held && (held.placed.motion || carrier(held) !== undefined);
+        }),
+      );
+    }
+    return carrierOf.get(id);
+  };
+  const carried = new Map<string, ContentFitting[]>();
+  for (const fitting of present) {
+    const by = carrier(fitting);
+    carried.set(by ?? '', [...(carried.get(by ?? '') ?? []), fitting]);
+  }
+  return carried;
 };
 
 /** A part on the floor, drawn from its type in the given paint, its voxels centred on the item's position. */
@@ -654,8 +735,9 @@ const assembleContentBuild = (spec: ContentBuildSpec): string => {
   const frame = new Group();
   frame.rotation.y = Math.PI / 2;
   vehicleGroup.add(frame);
-  for (const fitting of present) {
-    const object = placeContentFitting(fitting);
+  const carried = carriersOf(present);
+  for (const fitting of carried.get('') ?? []) {
+    const object = placeContentFitting(fitting, carried);
     if (object) {
       frame.add(object);
     } else {
@@ -1094,8 +1176,8 @@ const scheduleRender = (): void => {
 
 const setDoors = (open: boolean): void => {
   doorsOpen = open;
-  for (const { pivot, axis, sign } of doorPivots) {
-    pivot.quaternion.setFromAxisAngle(axis, open ? sign * DOOR_OPEN : 0);
+  for (const pose of doorPivots) {
+    pose(open);
   }
   renderPanel();
   scheduleRender();
