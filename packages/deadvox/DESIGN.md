@@ -2611,18 +2611,15 @@ application rather than weapon-class special cases. See `packages/engine/src/cor
   different because breaking a leaf need not remove its support. See
   `packages/engine/src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `ruinFurniture`; and
   `packages/engine/src/core/blockEntities.ts`, `BlockEntities.bash`.
-- **Damaged terrain cracks.** A terrain cell that holds damage shows a crack on
-  its exposed faces, and the crack reaches further as damage nears durability;
-  undamaged and fully repaired cells show none. A damaged wall must read damaged
-  in the world, and a crack reads as damage where a colour tint does not. The
-  crack is presentation drawn from saved damage, so it adds no save state and
-  never changes a blow or a repair. Each cell's crack is seeded by the world seed
-  and the cell, so it looks the same on every visit and reload, and a growing
-  crack extends the one already drawn instead of redrawing it. It is an overlay
-  rebuilt only when damage, blocks or revealed columns change, so it costs no
-  chunk remesh and nothing per frame. Its pattern, colour and damage steps are
-  content on the block material. See `packages/engine/src/core/schema/blocks.ts`,
-  `BlockMaterialSchema` (`cracks`), and `packages/presentation/src/render/terrainCracks.ts`,
+- **Damaged terrain cracks.** A damaged terrain cell shows a crack on its
+  exposed faces, because a damaged wall must read damaged in the world and a
+  crack reads as damage where a colour tint does not. Content decides when it
+  shows: the block material's crack steps set the damage thresholds and how far
+  the crack reaches at each, and a material with no steps never cracks. The crack
+  is presentation drawn from saved damage, so it never changes a blow or a repair,
+  and a cell's crack stays the same across visits and only extends as damage
+  rises. See `packages/engine/src/core/schema/blocks.ts`, `BlockMaterialSchema`
+  (`cracks`), and `packages/presentation/src/render/terrainCracks.ts`,
   `TerrainCracks` and `crackStrokes`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
