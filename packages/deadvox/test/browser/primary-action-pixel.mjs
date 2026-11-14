@@ -1140,6 +1140,8 @@ const lakeSurfaceCheck = async (lake, level, lakeErrors) => {
 // material hidden. Higher up the dome must differ from it, or the horizon match could pass with no dome drawn.
 // The page runs a tone mapper at an exposure other than 1 with bloom, so the post chain's colour scale and the
 // sky's bloom rule are in play: a dome left unscaled, or bright enough to bloom, would not meet the fog colour.
+// The content's horizon tint leans the band away from the fog colour on purpose, so the check zeroes it: only an
+// untinted band has the fog colour as its exact target.
 const HORIZON_PITCH = 0;
 const HIGH_PITCH = 0.7;
 const horizonTolerance = 3;
@@ -1152,6 +1154,9 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
       // Film grain is a fresh per-pixel hash each frame, which would swamp the tolerance.
       engine.mood.setFilm(false);
       const dome = engine.scene.getObjectByName('skyDome');
+      const tint = dome.material.uniforms.uHorizonTint;
+      const shippedTint = tint.value;
+      tint.value = 0;
       const byMode = {};
       for (const post of [false, true]) {
         engine.mood.setPost(post);
@@ -1169,6 +1174,7 @@ const skyHorizonCheck = async (lake, level, lakeErrors) => {
         dome.material.visible = true;
         byMode[post ? 'post' : 'direct'] = view;
       }
+      tint.value = shippedTint;
       return byMode;
     },
     { surface: level, horizonPitch: HORIZON_PITCH, highPitch: HIGH_PITCH },
