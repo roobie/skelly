@@ -16,7 +16,7 @@ const densityOf = (page) =>
   });
 const setDensity = (page, { hudScale, spacing }) =>
   page.evaluate(
-    `async ([hudScale, spacing]) => {
+    async ({ hudScale, spacing }) => {
       const { session } = globalThis.foregripFitTest;
       const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
       ui.hudScale = hudScale;
@@ -27,29 +27,27 @@ const setDensity = (page, { hudScale, spacing }) =>
         report: (message) => { throw new Error(message); },
         files: productAssets.cursors,
       });
-    }`,
-    [hudScale, spacing],
+    },
+    { hudScale, spacing },
   );
 
 /** The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page. */
 const coldCraftOpenMs = async (page) =>
-  page.evaluate(`async () => {
+  page.evaluate(async () => {
     const { inputBindings } = await import('/src/product/input.ts');
     const { code } = inputBindings.chords('ui.inventory-tab-crafting')[0];
     const key = { code, key: code.replace(/^Key/, '').toLowerCase(), bubbles: true };
     const start = performance.now();
-    console.info('cold dispatch at', start);
     document.dispatchEvent(new KeyboardEvent('keydown', key));
     document.dispatchEvent(new KeyboardEvent('keyup', key));
     for (let frames = 0; frames < 300; frames += 1) {
       if (document.querySelector('.craft-query') && document.querySelector('[data-craft-result]') && document.querySelector('.craft-recipe')) {
-        console.info('cold rendered at', performance.now());
         return performance.now() - start;
       }
       await new Promise(requestAnimationFrame);
     }
     throw new Error('the bound crafting key never rendered a first page');
-  }`);
+  });
 
 export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, depicted = false }) => {
   page.on('console', (message) => {
@@ -69,8 +67,8 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output, de
       document.querySelector('#world-loading')?.dataset.state === 'ready',
   );
   // The cold cost of the crafting context: the first open, from the bound key's dispatch to the first rendered page.
-  // Spawn streaming can flip the world's ready flag more than once, and each flip re-runs the boot's replay-state
-  // restore, which closes open screens; the cold dispatch waits for those flips to settle first.
+  // The boot's ready transition applies the replay start state, whose non-replay default closes any open screen; a
+  // player cannot have one open that early (input is gated until ready), so the cold dispatch waits for ready to hold.
   await page.evaluate(async () => {
     for (;;) {
       const flips = globalThis.foregripFitTest.readyFlips;
@@ -296,12 +294,21 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   const aim = async (type) => {
     const target = await page.evaluate((id) => {
       const { session, input, eye } = globalThis.foregripFitTest;
-      const entity = [...session.inventory.entities.all].find((value) => value.type === id);
-      if (!entity) {
+      const origin = eye();
+      // The fixture places its piece beside the spawn, but the base site may hold more of the same type further
+      // away; the look's piece is the nearest one.
+      const nearest = [...session.inventory.entities.all]
+        .filter((value) => value.type === id)
+        .map((entity) => ({ entity, at: entity.pos.map((value, axis) => value + entity.size[axis] / 2) }))
+        .sort(
+          (a, b) =>
+            a.at.reduce((sum, value, axis) => sum + (value - origin[axis]) ** 2, 0) -
+            b.at.reduce((sum, value, axis) => sum + (value - origin[axis]) ** 2, 0),
+        )[0];
+      if (!nearest) {
         throw new Error(`fixture start lacks ${id}`);
       }
-      const at = entity.pos.map((value, axis) => value + entity.size[axis] / 2);
-      const origin = eye();
+      const { entity, at } = nearest;
       const [dx, dy, dz] = at.map((value, axis) => value - origin[axis]);
       input.controls.yaw = Math.atan2(-dx, -dz);
       input.controls.pitch = Math.atan2(dy, Math.hypot(dx, dz));
@@ -320,7 +327,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         return {
           aim: { yaw: witness.input.controls.yaw, pitch: witness.input.controls.pitch },
           eye: witness.eye(),
-          feet: witness.session.sim.body.pos,
+          feet: witness.session.body.pos,
           hit: hit ? { kind: hit.kind, type: hit.entity?.type ?? hit.item?.type } : null,
           near: [...witness.session.inventory.entities.all]
             .map((entity) => ({ type: entity.type, pos: entity.pos, size: entity.size }))
@@ -439,19 +446,91 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   await checkFitAndShoot('take-apart');
   await pressAction(page, 'ui.inventory-toggle');
 
-  // A live refusal: the same chair, opened once the workbench stock is out of reach.
-  await page.evaluate(() => {
-    globalThis.foregripFitTest.input.lock();
-    globalThis.foregripFitTest.input.controls.yaw = Math.PI / 2;
-  });
-  const walkWest = await holdAction(page, 'movement.forward');
-  try {
-    await page.waitForFunction((limit) => globalThis.foregripFitTest.session.sim.body.pos[0] <= limit, -10.6, {
-      timeout: 20_000,
+  // A live refusal: the same chair, opened once the workbench stock is out of reach. Furniture reach is short, so
+  // the walk follows the component of away-from-workbench that is perpendicular to the line on the chair: the
+  // stock leaves reach while the chair keeps its own, and the game's reach measure gates the walk.
+  const stockRay = () =>
+    page.evaluate(async () => {
+      const witness = globalThis.foregripFitTest;
+      globalThis.reachLib ??= await import('/@stage/@skelly/engine/internal/core/reach.ts');
+      const { furnitureDistance, reachTuning } = globalThis.reachLib;
+      const player = {
+        inventory: witness.session.inventory,
+        position: witness.session.body.pos,
+        blockSize: witness.blockSize,
+      };
+      const reach = reachTuning(player.inventory.registry).reachMetres;
+      const of = (type) => {
+        const entity = [...witness.session.inventory.entities.all]
+          .filter((value) => value.type === type)
+          .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b))[0];
+        return entity
+          ? { distance: furnitureDistance(player, entity), pos: [...entity.pos], size: [...entity.size] }
+          : undefined;
+      };
+      return { reach, chair: of('chair'), workbench: of('workbench') };
     });
+  const start = await stockRay();
+  assert.ok(start.workbench.distance <= start.reach, `the stock starts in reach: ${JSON.stringify({ reach: start.reach, chair: start.chair.distance, workbench: start.workbench.distance })}`);
+  await page.evaluate(() => {
+    const witness = globalThis.foregripFitTest;
+    const feet = witness.session.body.pos;
+    const nearest = (type) =>
+      [...witness.session.inventory.entities.all]
+        .filter((value) => value.type === type)
+        .sort(
+          (a, b) =>
+            Math.hypot(Math.max(Math.abs(a.pos[0] - feet[0]) - a.size[0] / 2, 0), Math.max(Math.abs(a.pos[2] - feet[2]) - a.size[2] / 2, 0)) -
+            Math.hypot(Math.max(Math.abs(b.pos[0] - feet[0]) - b.size[0] / 2, 0), Math.max(Math.abs(b.pos[2] - feet[2]) - b.size[2] / 2, 0)),
+        )[0];
+    // The nearest point of each box, as the game's reach measure sees it.
+    const face = (entity) => [
+      Math.min(Math.max(feet[0], entity.pos[0]), entity.pos[0] + entity.size[0]),
+      Math.min(Math.max(feet[2], entity.pos[2]), entity.pos[2] + entity.size[2]),
+    ];
+    const unit = ([x, z]) => {
+      const length = Math.hypot(x, z);
+      return [x / length, z / length];
+    };
+    const onChair = unit([face(nearest('chair'))[0] - feet[0], face(nearest('chair'))[1] - feet[2]]);
+    const awayFromStock = unit([feet[0] - face(nearest('workbench'))[0], feet[2] - face(nearest('workbench'))[1]]);
+    const along = awayFromStock[0] * onChair[0] + awayFromStock[1] * onChair[1];
+    // A slight chairward bias holds the chair inside reach for the whole walk despite the fixed heading.
+    const [dx, dz] = [awayFromStock[0] - (along + 0.2) * onChair[0], awayFromStock[1] - (along + 0.2) * onChair[1]];
+    const [ux, uz] = unit([dx, dz]);
+    witness.input.controls.yaw = Math.atan2(-ux, -uz);
+    witness.input.controls.pitch = 0;
+    witness.input.lock();
+  });
+  const walk = await holdAction(page, 'movement.forward');
+  try {
+    await page.waitForFunction(
+      () => {
+        const witness = globalThis.foregripFitTest;
+        const { furnitureDistance, reachTuning } = globalThis.reachLib;
+        const player = {
+          inventory: witness.session.inventory,
+          position: witness.session.body.pos,
+          blockSize: witness.blockSize,
+        };
+        const workbench = [...witness.session.inventory.entities.all]
+          .filter((value) => value.type === 'workbench')
+          .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b))[0];
+        return (
+          workbench !== undefined &&
+          furnitureDistance(player, workbench) > reachTuning(player.inventory.registry).reachMetres + 0.3
+        );
+      },
+      undefined,
+      { timeout: 25_000, polling: 100 },
+    );
   } finally {
-    await walkWest();
+    await walk();
   }
+  const separated = await stockRay();
+  const walkedTo = { reach: separated.reach, chair: separated.chair.distance, workbench: separated.workbench.distance };
+  assert.ok(separated.workbench.distance > separated.reach + 0.3, `the walk takes the stock out of reach: ${JSON.stringify(walkedTo)}`);
+  assert.ok(separated.chair.distance < separated.reach - 0.3, `the chair stays within reach: ${JSON.stringify(walkedTo)}`);
   await openWorldWork('chair', 'repair');
   const refusedStart = page.locator('.craft-start');
   assert.equal(

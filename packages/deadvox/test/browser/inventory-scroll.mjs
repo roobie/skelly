@@ -436,11 +436,11 @@ ${marker}`,
         assert.ok(code.includes(marker), 'game instrumentation marker still exists');
         return code.replace(
           marker,
-          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready };
+          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
   const originalWorldCheck = worldLoading.check.bind(worldLoading);
-  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; console.info('ready flip', globalThis.foregripFitTest.readyFlips, 'at', performance.now()); } };
+  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; } };
   const originalScreenClose = screen.close.bind(screen);
-  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; console.info('screen close', globalThis.foregripFitTest.closes, 'at', performance.now()); return originalScreenClose(); };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
         );
       },
     },
