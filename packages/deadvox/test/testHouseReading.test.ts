@@ -48,6 +48,7 @@ describe('test house reading booth', () => {
     const doorway: Vec3 = [ox + 5.5, holder[1], oz + 0.5];
     expect(readingLightRefusal({ ...scene, holder: doorway }, doorway)).toBeUndefined();
     expect(readingLightRefusal(scene, holder)).toBeDefined();
+    expect(scene.sky.visibilityAt(holder)).toBe(0);
     const lamp = inventory.create('flashlight');
     expect(inventory.add(lamp, { kind: 'hand', side: 'right' })).toBe(true);
     expect(readingLightRefusal(scene, holder)).toBeDefined();

@@ -59,6 +59,25 @@ const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 
 describe('content-owned item and world policies', () => {
+  it.each([
+    { corpse: { figure: 'fixture_figure', outfit: 'fixture_outfit' }, solid: false },
+    { vehicle: { blueprint: 'fixture_vehicle', removed: [], solidFill: 0.5 } },
+  ])('refuses body glow on a separately rendered furniture path: %j', (look) => {
+    const light = { color: '#ffd080', intensity: 1, radius: 2 };
+    const furniture = {
+      id: 'fixture_glow',
+      name: 'Fixture',
+      size: [2, 3, 1],
+      color: '#888888',
+      material: FIXTURE_MATERIAL,
+      breach: fixtureBreach(),
+      ...look,
+      power: { device: 'fixture_power', fuelLitres: 0, enabled: true, light },
+    };
+    expect(validateContent({ source: 'fixture.json', data: { furniture: [furniture] } })).toEqual([]);
+    const glowing = { ...furniture, power: { ...furniture.power, light: { ...light, emissive: 0.7 } } };
+    expect(validateContent({ source: 'fixture.json', data: { furniture: [glowing] } }).length).toBeGreaterThan(0);
+  });
   it('refuses zombie abilities without a runtime mechanism', () => {
     const actor = [...baseRegistry.actors.values()][0]!;
     for (const ability of [

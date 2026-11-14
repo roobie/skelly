@@ -1243,6 +1243,7 @@ const startPlayWith = (
   if (!options.restore) {
     applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
       fresh: true,
+      calendar: sim.calendar,
       character: session.character,
       body: sim.body,
       damageCell: (cell, damage) => session.damageTerrainCell(cell, damage),
@@ -1291,6 +1292,7 @@ const startPlayWith = (
     ragdoll: options.ragdoll,
     probes: options.page.probes,
     poweredLights: () => session.power?.lights() ?? [],
+    lampReach: session.lampReach,
     physicalSolid: session.physicalSolid,
   });
   input.setMouseLookOverride((movementX, movementY) => {

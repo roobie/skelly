@@ -64,7 +64,14 @@ export const SenseSchema = strictObject({
     /**
      * Light at a point, in the renderer's light units (`packages/deadvox/DESIGN.md`, "Light"): the distance decay and near-field
      * offset every punctual light is drawn and measured with, and the least light a page or sign needs to be read.
+     * `reach` sizes the per-lamp wall-reach grid the picture drops light by: blocks per cell and the farthest it
+     * extends from a lamp (`packages/engine/src/core/lampReach.ts`, `LampReachCache`).
      */
-    illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
+    illumination: strictObject({
+      pointDecay: NonNegative,
+      nearFieldMetres: NonNegative,
+      readingThreshold: Positive,
+      reach: strictObject({ cellBlocks: pipe(Count, minValue(1)), rangeMetres: Positive }),
+    }),
   }),
 });

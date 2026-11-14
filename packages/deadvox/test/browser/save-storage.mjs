@@ -11,6 +11,7 @@ import { build as viteBuild, preview as vitePreview } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
+import { createRequestTimeline } from './requestTimeline.mjs';
 import { outgoingCancellation } from './save-request-cancellation.mjs';
 import { createSaveStorageStartup } from './saveStorageStartup.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
@@ -93,6 +94,7 @@ const { expect } = await import('playwright/test');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
+const requestTimeline = createRequestTimeline();
 const { navigationPhase, navigationPhaseLog, startStageServer, withTimeout } = createSaveStorageStartup({
   browserName,
   productionBundleStage,
@@ -106,6 +108,7 @@ const { navigationPhase, navigationPhaseLog, startStageServer, withTimeout } = c
       logLevel: 'error',
       preview: { host: '127.0.0.1', port: 0 },
     });
+    requestTimeline.watchServer(vite.httpServer);
     return vite.httpServer.address();
   },
   devServer: async () => {
@@ -116,6 +119,7 @@ const { navigationPhase, navigationPhaseLog, startStageServer, withTimeout } = c
       server: { host: '127.0.0.1', port: 0 },
     });
     await vite.listen();
+    requestTimeline.watchServer(vite.httpServer);
     return vite.httpServer.address();
   },
 });
@@ -274,6 +278,7 @@ try {
       navigationByGeneration: new Map(),
     };
     navigationDiagnostics.set(trackedPage, state);
+    requestTimeline.watchPage(trackedPage);
     trackedPage.on('request', (request) => {
       if (!request.isNavigationRequest()) {
         state.requestGeneration.set(request, state.generation);
@@ -1397,6 +1402,9 @@ try {
       `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
     );
   }
+} catch (error) {
+  process.stderr.write(`${requestTimeline.format()}\n`);
+  throw error;
 } finally {
   await withTimeout('browser shutdown', browser?.close() ?? Promise.resolve(), 5000).catch((error) => {
     process.stderr.write(`Cleanup warning: ${String(error)}\n`);

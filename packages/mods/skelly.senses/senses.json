@@ -32,6 +32,10 @@
         "illumination": {
           "nearFieldMetres": 1.3,
           "pointDecay": 1,
+          "reach": {
+            "cellBlocks": 1,
+            "rangeMetres": 12
+          },
           "readingThreshold": 0.59999999999999998
         },
         "lureRangeScale": 0.5,

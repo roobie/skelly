@@ -481,6 +481,18 @@
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.cell-repair-look/starts.json"
     },
     {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.darkness-look/starts.json"
+    },
+    {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.debug/layouts.json"
     },
@@ -503,6 +515,18 @@
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/starts.jsonnet",
       "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.finishes/starts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.item-light-look/layouts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.item-light-look/layouts.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.item-light-look/pack/manifest.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.item-light-look/pack/manifest.json"
+    },
+    {
+      "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.item-light-look/starts.jsonnet",
+      "output": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.item-light-look/starts.json"
     },
     {
       "source": "packages/deadvox/mods/skelly.deadvox.scenario.test-house.light-look/layouts.jsonnet",
@@ -803,6 +827,14 @@
     {
       "source": "packages/mods/skelly.crafting/pack/manifest.jsonnet",
       "output": "packages/mods/skelly.crafting/pack/manifest.json"
+    },
+    {
+      "source": "packages/mods/skelly.day-cycle.winter/dayCycle.jsonnet",
+      "output": "packages/mods/skelly.day-cycle.winter/dayCycle.json"
+    },
+    {
+      "source": "packages/mods/skelly.day-cycle.winter/pack/manifest.jsonnet",
+      "output": "packages/mods/skelly.day-cycle.winter/pack/manifest.json"
     },
     {
       "source": "packages/mods/skelly.day-cycle/dayCycle.jsonnet",

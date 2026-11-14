@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
@@ -2799,6 +2800,31 @@ cell, which keeps a piece nobody tuned sane; one whose bulb sits elsewhere, such
 authors an offset, and the offset turns with the piece. See `packages/engine/src/core/sitePower.ts`, `emitterOf`, and
 `packages/engine/src/core/schema/furniture.ts`, `offset`.
 
+A lit fixture shows its own body as lit through content-tuned glow: its light sits inside the opaque body,
+so a point light cannot light the body's outward-facing surfaces. Unpowered pieces must not borrow that glow
+through shared materials. Figures and vehicles own their looks separately, so a furniture glow selection
+must not silently promise emission those look owners never render.
+This is a presentation cue, not extra reach or lit cells for the rules. See
+`packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.bodyGlow`, and
+`packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
+
+Every point light, including a held or dropped item, uses the rules' wall check in the picture: a room the rules
+call dark must not look lit from behind brick. The shared reach grid keeps one truth instead of a second wall model
+in the shader. Moving sources rebuild reach only on a source-cell crossing, not every frame, to keep held lights
+cheap. A deferred rebuild keeps the last grid so scheduling cannot briefly remove wall occlusion.
+Nearby construction must still change reach for base building to work. Sharing blocking answers within a build
+avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear neighbours
+do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining a shut
+door or removed wall after invalidation. Parked vehicle moves remain outside invalidation. See
+`packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
+`packages/presentation/src/render/lightPool.ts`, `LightPool`; `packages/presentation/src/render/fixtureReach.ts`,
+`FixtureReach`; and `packages/engine/src/core/schema/senses.ts`, `illumination`.
+
+A light fixture start can author an already-lit hand item so a look spends the tester's time on the wall check,
+not on ignition setup. The ordinary light owner admits and lights it at the start calendar, rather than a fixture
+writing runtime light state. See `packages/engine/src/core/startState.ts`, `applyStartKit`, and
+`packages/engine/src/core/startIssues.ts`, `startIssues`.
+
 Lights form pools: the near field stays low so brightness falls off across a room instead of flooding it. That fixes
 the cause, so an intensity means something physical rather than compensating for a flat falloff light by light. One
 near-field value serves the renderer and the rules, so what the player sees keeps predicting whether they can read.
@@ -3234,8 +3260,9 @@ hearing and carried-light reach; nearer targets still use ordinary occlusion and
 crouch rules. See `packages/engine/src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise` and
 `seesPlayer`.
 
-- **Senses:** The base pack's late-June, mid-latitude day cycle gives long daylight
-  without modeling seasonal change. A missing day cycle must fail admission rather
+- **Senses:** The base pack's late-June, mid-latitude day cycle gives long daylight;
+  the opt-in winter pack gives short daylight. Neither models seasonal change within
+  a run. A missing day cycle must fail admission rather
   than silently playing under a hidden sun. Solar boundaries, not fixed clock hours,
   should govern sight, roaming and named spawn windows. Terrain height alone should
   not end a clear pursuit: occlusion, not vertical range cost, bounds sight over a rise.
