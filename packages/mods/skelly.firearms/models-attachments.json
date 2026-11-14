@@ -873,7 +873,8 @@
           "kind": "none"
         },
         "wear": "core"
-      }
+      },
+      "pieces": ["optic-ads-housing", "optic-near-frame"]
     },
     {
       "collision": [

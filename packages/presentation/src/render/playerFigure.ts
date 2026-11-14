@@ -44,7 +44,7 @@ import {
   PLAYER_FIGURE_LAYER,
   PLAYER_SELF_MASK_LAYER,
 } from './shadowFlags.ts';
-import { WornModels } from './wornModels.ts';
+import { registerBaseParts, WornModels } from './wornModels.ts';
 
 export interface PlayerFigurePlacement {
   bodyPosition: Vec3;
@@ -667,14 +667,7 @@ export class PlayerMeshes {
       const chain = this.pivotedParts[pivotedKind(part.name)];
       this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
       this.addNeckSkin(part);
-      scene.traverse((node) => {
-        if (typeof node.userData.part === 'string') {
-          const key = `${part.name}/${node.userData.part}`;
-          const nodes = this.baseParts.get(key) ?? [];
-          nodes.push(node);
-          this.baseParts.set(key, nodes);
-        }
-      });
+      registerBaseParts(this.baseParts, part.name, scene);
       model.add(scene);
       model.traverse((object) => object.layers.set(this.layer));
       this.drawn.set(part, model);

@@ -161,7 +161,10 @@
     ]
   },
   "assets/models/makeshift_wire_sieve.glb": { "materials": ["steel-bright", "steel-grey", "steel-stainless"] },
-  "assets/models/mannequin.glb": { "materials": ["plastic-gloss-white", "steel-grey"] },
+  "assets/models/mannequin.glb": {
+    "materials": ["plastic-gloss-white", "steel-grey"],
+    "pieces": ["shoulders", "trunk"]
+  },
   "assets/models/mannequin_decoy.glb": {
     "materials": [
       "leather-patent",
@@ -175,7 +178,8 @@
       "paint-red",
       "plastic-gloss-white",
       "steel-grey"
-    ]
+    ],
+    "pieces": ["shoulders", "trunk"]
   },
   "assets/models/mess_kit.glb": { "materials": ["alu-bare", "steel-grey", "paint-charcoal", "rubber-black"] },
   "assets/models/metal_butcher_rack.glb": {
