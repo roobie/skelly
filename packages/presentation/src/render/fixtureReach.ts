@@ -4,7 +4,7 @@ import { ITEM_POINT_LIGHTS } from './lightPool.ts';
 import { type MaterialPatches, materialPatch } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
-/** A play view's reach, patched into the materials; none where the session has no lamp reach cache. */
+/** A play view's reach, patched into the materials; none where the session has no reach cache. */
 export function installFixtureReach(
   patches: MaterialPatches,
   cache: LampReachCache | undefined,
@@ -22,9 +22,9 @@ const LIGHTS_FRAGMENT_BEGIN = '#include <lights_fragment_begin>';
 const POINT_LIGHT_INFO_CALL = /getPointLightInfo\([^;]+\);/;
 
 /**
- * Drops each powered lamp's light where the rules' wall check says a wall stops it
+ * Drops each point light where the rules' wall check says a wall stops it
  * (`packages/engine/src/core/lampReach.ts`, `LampReachCache`), so the picture and the rules share one truth for light
- * (`packages/deadvox/DESIGN.md`, "Light"). It uploads one reach grid per lamp that has a fixture slot, and its patch
+ * (`packages/deadvox/DESIGN.md`, "Light"). It uploads one reach grid per occupied point-light slot, and its patch
  * multiplies a slot's direct light by the grid's cell at the receiver; outside a lamp's grid the light is untouched.
  */
 export class FixtureReach {
@@ -34,13 +34,13 @@ export class FixtureReach {
   });
   private readonly texture: Data3DTexture;
   private readonly data: Uint8Array;
-  /** Per fixture slot: the lamp grid's lowest corner in metres, and its layer in the texture. */
+  /** Per point-light slot: the grid's lowest corner in metres, and its layer in the texture. */
   private readonly boxes: { value: Vector4[] };
-  /** Per fixture slot: cells along each axis of the slot's grid, 0 where it has none (so nothing is dropped). */
+  /** Per point-light slot: cells along each axis of the grid, 0 where it has none. */
   private readonly sizes: { value: Float32Array };
   private readonly grid: { value: Data3DTexture };
   /** Texture layer groups: each lamp keeps its layer while it holds a slot, so a lamp's upload is not redone. */
-  private readonly layers: { lamp: string; reach: LampReach | undefined }[];
+  private readonly layers: { lamp: string | object; reach: LampReach | undefined }[];
   /** Cells along every axis of the texture: the largest grid content allows. */
   private readonly edge: number;
   private readonly cellMetres: number;
@@ -71,7 +71,7 @@ export class FixtureReach {
 
   /** Each lamp keeps the layer it had; a new lamp takes one no current lamp holds. */
   private assignLayers(lamps: readonly (PoweredLight | undefined)[]): (number | undefined)[] {
-    const keys = lamps.map((lamp) => lamp?.pos.join(','));
+    const keys = lamps.map((lamp) => lamp && (lamp.reachSource ?? lamp.pos.join(',')));
     const layers = keys.map((key) => (key === undefined ? undefined : this.layers.findIndex((l) => l.lamp === key)));
     const free = this.layers.map((_, index) => index).filter((index) => !layers.includes(index));
     return layers.map((layer) => (layer === undefined || layer >= 0 ? layer : free.shift()));
@@ -93,7 +93,7 @@ export class FixtureReach {
   }
 
   /**
-   * Takes up the lamps now holding the fixture slots (`LightPool.fixtureSlots`). A lamp whose grid a block edit
+   * Takes up the sources in shader-slot order (`LightPool.reachSlots`). A lamp whose grid a block edit
    * touched is rebuilt here, one per call so a burst of edits spreads over frames; until then its last grid draws.
    */
   update(fixtures: readonly (PoweredLight | undefined)[]): void {
@@ -106,13 +106,13 @@ export class FixtureReach {
         return;
       }
       const state = this.layers[layer]!;
-      if (state.lamp !== lamp.pos.join(',')) {
+      if (state.lamp !== (lamp.reachSource ?? lamp.pos.join(','))) {
         state.reach = undefined;
       }
       const stale = !this.cache.isCurrent(lamp);
       const reach = this.cache.reachOf(lamp, !rebuilt);
       rebuilt ||= stale;
-      state.lamp = lamp.pos.join(',');
+      state.lamp = lamp.reachSource ?? lamp.pos.join(',');
       if (reach && reach !== state.reach) {
         this.upload(layer, reach);
       }
@@ -143,9 +143,7 @@ export class FixtureReach {
       chunk.replace(
         POINT_LIGHT_INFO_CALL,
         `$&
-#if UNROLLED_LOOP_INDEX >= ${ITEM_POINT_LIGHTS}
-        directLight.color *= fixtureReach(UNROLLED_LOOP_INDEX - ${ITEM_POINT_LIGHTS}, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);
-#endif`,
+        directLight.color *= fixtureReach(UNROLLED_LOOP_INDEX, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);`,
       );
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',

@@ -94,6 +94,20 @@ describe('lamp reach', () => {
     }
   });
 
+  it('rebuilds a moving source only when its source cell changes, including negative cells', () => {
+    const { cache } = room();
+    const reachSource = {};
+    const moving = { ...lampAt([-0.75, 4.5, 0.5]), reachSource };
+    const before = cache.reachOf(moving)!;
+    const within = { ...moving, pos: [-0.25, 4.5, 0.5] as Vec3 };
+    expect(cache.isCurrent(within)).toBe(true);
+    expect(cache.reachOf(within)).toBe(before);
+    const across = { ...moving, pos: [0.25, 4.5, 0.5] as Vec3 };
+    expect(cache.isCurrent(across)).toBe(false);
+    expect(cache.reachOf(across)).not.toBe(before);
+    cache.dispose();
+  });
+
   it('updates a lit lamp the moment a wall goes up beside it', () => {
     const { world, cache } = room();
     expect(cache.reachOf(lamp)!.at(behind)).toBe(1);

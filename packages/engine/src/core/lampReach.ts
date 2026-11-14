@@ -1,4 +1,4 @@
-// Where a powered lamp's light reaches, computed with the rules' own wall check (`illumination.ts`, `reaches`) so the
+// Where a point light reaches, computed with the rules' own wall check (`illumination.ts`, `reaches`) so the
 // picture cannot disagree with the rules (`packages/deadvox/DESIGN.md`, "Light"). The renderer uploads these grids; a
 // lamp's light is dropped wherever its grid says blocked.
 
@@ -49,11 +49,11 @@ const boxesOverlap = (aMin: Readonly<Vec3>, aMax: Readonly<Vec3>, bMin: Readonly
   [0, 1, 2].every((axis) => aMin[axis]! < bMax[axis]! && bMin[axis]! < aMax[axis]!);
 
 /**
- * One reach grid per lit lamp, kept current: a changed chunk or standing piece marks stale only the lamps whose grid
- * it overlaps, so putting up a wall beside a lamp rebuilds that lamp and no other.
+ * Shared reach for point lights (`packages/deadvox/DESIGN.md`, "Light"). Moving renderer slots keep a bounded
+ * identity instead of caching every frame's position; subcell motion reuses reach to keep held lights cheap.
  */
 export class LampReachCache {
-  private readonly entries = new Map<string, Entry>();
+  private readonly entries = new Map<string | object, Entry>();
   private readonly isBlocking: SolidAt;
   private readonly tuning: LampReachTuning;
   private readonly blockSize: number;
@@ -107,8 +107,8 @@ export class LampReachCache {
   /** Whether a lamp's grid is built and no change since has touched it. */
   isCurrent(light: PoweredLight): boolean {
     this.catchUpWithPieces();
-    const entry = this.entries.get(keyOf(light));
-    return entry?.reach !== undefined && !entry.stale;
+    const entry = this.entries.get(light.reachSource ?? keyOf(light));
+    return entry?.reach !== undefined && !entry.stale && this.sameCell(entry.light, light);
   }
 
   /**
@@ -117,20 +117,25 @@ export class LampReachCache {
    */
   reachOf(light: PoweredLight, mayBuild = true): LampReach | undefined {
     this.catchUpWithPieces();
-    const key = keyOf(light);
+    const key = light.reachSource ?? keyOf(light);
     let entry = this.entries.get(key);
+    const revision = entry?.revision ?? 0;
+    if (entry && !this.sameCell(entry.light, light)) {
+      this.entries.delete(key);
+      entry = undefined;
+    }
     if (!entry) {
       const cells = Math.ceil(
         Math.min(light.radius, this.tuning.rangeMetres) / this.blockSize / this.tuning.cellBlocks,
       );
       const reachBlocks = (cells + 1) * this.tuning.cellBlocks;
       entry = {
-        light,
+        light: { ...light, pos: [...light.pos] },
         min: light.pos.map((value) => Math.floor(value) - reachBlocks) as Vec3,
         max: light.pos.map((value) => Math.floor(value) + reachBlocks + 1) as Vec3,
         reach: undefined,
         stale: true,
-        revision: 0,
+        revision,
       };
       this.entries.set(key, entry);
     }
@@ -140,6 +145,16 @@ export class LampReachCache {
       entry.stale = false;
     }
     return entry.reach;
+  }
+
+  private sameCell(previous: PoweredLight, light: PoweredLight): boolean {
+    return (
+      previous.radius === light.radius &&
+      previous.pos.every(
+        (value, axis) =>
+          Math.floor(value / this.tuning.cellBlocks) === Math.floor(light.pos[axis]! / this.tuning.cellBlocks),
+      )
+    );
   }
 
   private build({ light, revision }: Entry): LampReach {
