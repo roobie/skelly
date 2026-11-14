@@ -1291,6 +1291,7 @@ const startPlayWith = (
     ragdoll: options.ragdoll,
     probes: options.page.probes,
     poweredLights: () => session.power?.lights() ?? [],
+    lampReach: session.lampReach,
     physicalSolid: session.physicalSolid,
   });
   input.setMouseLookOverride((movementX, movementY) => {

@@ -6,7 +6,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayCycle } from './dayPhase.ts';
 import type { Inventory } from './inventory.ts';
-import { rotatedPoint, rotationOf } from './orientation.ts';
+import { rotatedPoint, rotatedSize, rotationOf } from './orientation.ts';
 import { PowerNetwork, type PowerState } from './power.ts';
 import { exactUnits, POWER_UNITS } from './powerContent.ts';
 import { type Placement, placedPieces } from './templates.ts';
@@ -23,6 +23,8 @@ export interface PoweredLight {
   readonly color: string;
   readonly intensity: number;
   readonly radius: number;
+  /** The cells of the fixture's own body, which never stop its light (`illumination.ts`, `reaches`). */
+  readonly body?: { readonly min: Vec3; readonly max: Vec3 };
 }
 
 const identity = ({ type, pos }: PlacedPowerDevice): string => `${type}:${pos.join(',')}`;
@@ -74,7 +76,9 @@ export class SitePower {
       const id = identity(device);
       if (spec.light) {
         const { offset, ...shine } = spec.light;
-        this.lamps.push({ id, light: { pos: emitterOf(device, def.size, offset), ...shine } });
+        const size = rotatedSize(def.size, rotationOf(device.entitySpec ?? { facing: 'n' }));
+        const body = { min: device.pos, max: device.pos.map((value, axis) => value + size[axis]!) as Vec3 };
+        this.lamps.push({ id, light: { pos: emitterOf(device, def.size, offset), body, ...shine } });
       }
       return {
         id,
