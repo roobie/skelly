@@ -3926,10 +3926,8 @@ Every repair raises condition at most to its ceiling: furniture, terrain cells, 
 sharpening alike, through one rule. The ceiling is a condition band named in content: the inventory tuning's default,
 which a repair recipe may replace with a higher band up to the top one. A repair stops at the bottom of its ceiling
 band, except that the top band means full condition. A piece at or above its ceiling is offered no Repair on its
-ring, and an item at or above it is no repair target. The ceiling is BR's ruling; BR gave no reason. The rulings:
-"okay well, 'worn' should be the ceiling of repair - so a 'worn' chair shouldn't offer the option of being repaired",
-then "generally", then "there might be some mechanisms that allow for 'repairing' a thing to 100%=pristine". No
-mechanism raises a ceiling yet; a recipe naming a higher band is how one would. See
+ring, and an item at or above it is no repair target. The ceiling is BR's ruling. No mechanism raises a ceiling
+yet; a recipe naming a higher band is how one would. See
 `packages/engine/src/core/items.ts`, `repairCeiling` and `repairedCondition`;
 `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`; and
 `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`.
