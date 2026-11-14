@@ -136,6 +136,8 @@ and `mods/skelly.deadvox.scenario.test-house.action-menu/pack/manifest.jsonnet`,
 
 The battery-slot look start is evaluation staging of the same kind: a flashlight and a spare battery in the pockets, so the item card's battery slot is judged by loading and unloading it. See `mods/skelly.deadvox.scenario.test-house.battery-slot-look/starts.jsonnet`.
 
+The rubble look start is staging for clearing terrain by eye: its own heap stands a stepped row of masonry rubble in front of the spawn with its top at eye height, and the start ships nothing else staged, because clearing rubble needs no tool and no recipe — the check is the heap at start, then the debug build tool and its take-apart key, because rubble clearing reaches players with the world-work view, not a crafting view. The heap and its clear time are content, never code, so the look keeps working when tuning moves; its geometry is checked as a property in `test/debugScenarioMod.test.ts` — the start's own aim meets a supported rubble cell along a clear sight line, inside the reach the take-apart command admits — so the heap may move or be re-materialized without breaking the look. See `mods/skelly.deadvox.scenario.test-house.rubble-look/layouts.jsonnet`, `test_house_rubble_heap`, and `mods/skelly.deadvox.scenario.test-house.rubble-look/starts.jsonnet`, `starts`.
+
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather
 than privileged test equipment. The generator switch saves fuel; the main breaker

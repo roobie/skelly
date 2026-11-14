@@ -11,6 +11,7 @@ import { craftComponentEligible, type Item, isEmpty } from './items.ts';
 import { countText } from './numberText.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 import { recipeSkillRequirements } from './recipeSkills.ts';
+import type { CellDisassemblyPlan } from './rubble.ts';
 
 interface CraftComponent {
   item: Item;
@@ -29,7 +30,7 @@ interface CraftPlan {
   gather: number;
   work: number;
 }
-export type WorkPlan = CraftPlan | DisassemblyPlan | PieceDisassemblyPlan;
+export type WorkPlan = CraftPlan | DisassemblyPlan | PieceDisassemblyPlan | CellDisassemblyPlan;
 interface CraftMissing {
   reason: string;
   knowledge: boolean;

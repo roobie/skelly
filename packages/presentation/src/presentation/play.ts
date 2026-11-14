@@ -1729,6 +1729,11 @@ const startPlayWith = (
     feet,
     showNotice,
     strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
+    // A look reaches rubble clearing with no player-facing view: the trigger is the aimed rubble cell itself.
+    takeApartCell: (cell) =>
+      replayPlayer
+        ? 'Input replay owns this run'
+        : router.dispatchScreenCommand({ kind: 'craft.take-apart-cell', cell: [cell[0], cell[1], cell[2]] }),
     compress: () => router.compress(),
     skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {

@@ -32,7 +32,8 @@ local room = {
   blockMaterials: [{
     id: 'fixture_material', minimumStrength: 1, durability: 10, massKg: 1, span: 1,
     resistance: { blunt: 0, cut: 0, pierce: 0, blast: 0, fragment: 0, breach: 0, crush: 0, acid: 0 },
-    fallsTo: 'fixture_floor', breakable: false, rubble: [], blowSound: 'fixture_blow',
+    fallsTo: 'fixture_floor', breakable: false, rubble: [], rubbleClearTimeGameMinutes: 1,
+    blowSound: 'fixture_blow',
     broken: { tint: '#555555', strength: 0.5 }, damaged: [],
   }],
   sounds: [{
