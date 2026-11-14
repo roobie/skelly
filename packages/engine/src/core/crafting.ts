@@ -21,6 +21,7 @@ interface CraftPlan {
   kind: 'craft';
   recipe: string;
   components: CraftComponent[];
+  selectedAlternatives: CraftPreference;
   liquids: CraftLiquid[];
   tools: { item: Item; quality: string }[];
   workstation?: BlockEntity;
@@ -72,6 +73,9 @@ const cachedPlans = (snapshot: ReachSnapshot, recipe: RecipeDef): Map<string, Cr
 // Copy plan records, not owned Items. A caller cannot mutate a later cached allocation.
 const copyPlan = (plan: CraftPlan): CraftPlan => ({
   ...plan,
+  selectedAlternatives: Object.fromEntries(
+    Object.entries(plan.selectedAlternatives).map(([group, choice]) => [group, { ...choice }]),
+  ),
   components: plan.components.map((component) => ({ ...component, from: { ...component.from } })),
   tools: plan.tools.map((tool) => ({ ...tool })),
   liquids: plan.liquids.map((draw) => ({
@@ -269,14 +273,20 @@ interface Combination {
   group: number;
   requirements: Map<string, number>;
   demands: LiquidDemand[];
+  selected: CraftPreference;
 }
 function* componentAlternatives(
   context: { recipe: RecipeDef; index: ReachIndex; prefer: CraftPreference; sources: CraftSources },
-  { group, requirements, demands }: Combination = { group: 0, requirements: new Map(), demands: [] },
+  { group, requirements, demands, selected }: Combination = {
+    group: 0,
+    requirements: new Map(),
+    demands: [],
+    selected: {},
+  },
 ): Generator<Omit<Combination, 'group'>> {
   const { recipe, index, prefer, sources } = context;
   if (group === recipe.components.length) {
-    yield { requirements, demands };
+    yield { requirements, demands, selected };
     return;
   }
   for (const alternative of recipe.components[group]!) {
@@ -284,9 +294,10 @@ function* componentAlternatives(
       continue;
     }
     const next = new Map(requirements);
+    const choices = { ...selected, [group]: alternativeRef(alternative) };
     if ('item' in alternative) {
       next.set(alternative.item, (next.get(alternative.item) ?? 0) + alternative.count);
-      yield* componentAlternatives(context, { group: group + 1, requirements: next, demands });
+      yield* componentAlternatives(context, { group: group + 1, requirements: next, demands, selected: choices });
     } else {
       const candidates = index.byLiquid.get(alternative.liquid) ?? [];
       const allowed =
@@ -296,6 +307,7 @@ function* componentAlternatives(
       yield* componentAlternatives(context, {
         group: group + 1,
         requirements: next,
+        selected: choices,
         demands: [
           ...demands,
           { group, liquid: alternative.liquid, volumeMicrolitres: alternative.volumeMicrolitres, allowed },
@@ -402,7 +414,12 @@ export const craftWorkDuration = (
 const craftPlan = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
-  { allocation, tools, character }: { allocation: Allocation; tools: CraftPlan['tools']; character: CraftCharacter },
+  {
+    allocation,
+    tools,
+    character,
+    selected,
+  }: { allocation: Allocation; tools: CraftPlan['tools']; character: CraftCharacter; selected: CraftPreference },
 ): CraftPlan => {
   const workstation = recipe.workstation
     ? snapshot.workstations
@@ -413,6 +430,7 @@ const craftPlan = (
   return {
     kind: 'craft',
     recipe: recipe.id,
+    selectedAlternatives: selected,
     liquids: [],
     ...allocation,
     tools,
@@ -559,7 +577,7 @@ const bestCraftAllocation = (
   const toolNeeds = Object.entries(recipe.qualities)
     .filter(([quality, level]) => !snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level))
     .sort(([a], [b]) => compareCodeUnits(a, b));
-  for (const { requirements, demands } of componentAlternatives({ recipe, prefer, index, sources })) {
+  for (const { requirements, demands, selected } of componentAlternatives({ recipe, prefer, index, sources })) {
     const liquids = allocateLiquids(demands);
     if (!liquids) {
       continue;
@@ -571,7 +589,7 @@ const bestCraftAllocation = (
       }
       allocation.gather += liquidGather(liquids, allocation, snapshot);
       if (!best || compareAllocation(allocation, best) < 0) {
-        best = { ...craftPlan(recipe, snapshot, { allocation, tools, character }), liquids };
+        best = { ...craftPlan(recipe, snapshot, { allocation, tools, character, selected }), liquids };
       }
     }
   }

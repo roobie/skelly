@@ -420,6 +420,10 @@
         "wrongKey": "The key doesn't fit",
         "yieldChanged": "The item or its yield changed"
       },
+      "crafting": {
+        "facetPageSize": 6,
+        "pageSize": 8
+      },
       "doorCloseBlockedMessages": {
         "other": "Something's in the way",
         "player": "You're in the way"
@@ -491,9 +495,12 @@
         },
         "crafting": {
           "all": "All",
+          "alternatives": "{count} other options",
           "categories": "Categories",
+          "categoryFind": "Find category",
           "cheapestAvailable": "Cheapest available",
           "clearFind": "Clear find",
+          "closeAlternatives": "Close alternatives",
           "craft": "Craft {item}",
           "defaultSources": "Automatic",
           "disassembly": "{item} disassembly",
@@ -506,10 +513,16 @@
           "length": "{span} game time",
           "liquidDraw": "{liquid}: {volume} ml — {vessel}",
           "liquidFound": "{item}: {found} / {needed} ml",
+          "makeable": "Makeable only",
           "mins": "{value} min",
+          "nextPage": "Next page",
           "noMatches": "No matches",
+          "noPlan": "Automatic · no plan",
           "noRepairTarget": "No damaged repair target in reach",
+          "pagePosition": "{first}–{last} / {total}",
+          "previousPage": "Previous page",
           "quality": "{quality}: best {best} / needs {required}",
+          "removeTag": "Remove {tag}",
           "repair": "Repair {item}",
           "repairName": "Repair: {item}",
           "repairing": "Repairing {item}",
@@ -518,6 +531,7 @@
           "sourceVessel": "{vessel} ({volume} ml)",
           "sources": "Source vessels",
           "station": "Station: {station}",
+          "tagFind": "Find tag",
           "tags": "Tags",
           "use": "Use {choice}"
         },

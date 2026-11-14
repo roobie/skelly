@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { craftCatalogueFlow } from './craft-catalogue-flow.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
@@ -2263,6 +2264,21 @@ try {
     assert.equal(await chargerButton('inventory.to-hands').count(), 0, 'the cell cannot be collected twice');
     assert.deepEqual(collected.refusals, [], 'every offered charger operation succeeds');
     logPhase('charger leave, blackout, save/reload and collect');
+    const catalogueMetrics = await craftCatalogueFlow({
+      page,
+      resizeViewport,
+      output: process.argv[4],
+      url: browserStageUrl(
+        'inventory-scroll',
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
+          hash: { debug: true, radius: 32 },
+        }),
+        'render-free',
+      ),
+    });
+    process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
+    logPhase('crafting catalogue, retained review and density');
   }
   process.stdout.write(`${engine}: inventory ${scenarioFlow} contracts passed\n`);
 } finally {

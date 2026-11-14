@@ -1913,7 +1913,10 @@ body.bench #quickbar {
 /* ---- crafting tab ---- */
 #crafting {
   padding: calc(var(--ui-spacing) * 1rem);
-  overflow-y: auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 0.625rem;
   background: rgb(16 18 22 / 96%);
@@ -1932,7 +1935,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   width: auto;
   min-width: 0;
   padding: calc(var(--ui-spacing) * 0.875rem);
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 #crafting[hidden] {
@@ -1946,9 +1949,100 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .craft-time {
   color: var(--muted);
 }
+.craft-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 2.2fr);
+  gap: calc(var(--ui-spacing) * 0.75rem);
+  min-height: 0;
+}
+.craft-world {
+  grid-template-columns: minmax(0, 1fr);
+}
+.craft-facets,
+.craft-catalogue,
+.craft-review {
+  min-width: 0;
+  min-height: 0;
+}
+.craft-facets,
+.craft-catalogue {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.craft-facets h3 {
+  margin: calc(var(--ui-spacing) * 0.5rem) 0;
+}
+.craft-layout input[type="search"] {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.craft-layout button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.craft-layout button[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+.craft-results,
+.craft-category-options,
+.craft-tag-options,
+.craft-active-tags,
+.craft-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+}
+.craft-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--ui-spacing) * 0.375rem);
+  margin-block: calc(var(--ui-spacing) * 0.5rem);
+}
+.craft-active-category {
+  overflow-wrap: anywhere;
+  margin-block: calc(var(--ui-spacing) * 0.375rem);
+}
 .craft-recipe {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+}
+.craft-review-scroll {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  min-height: 0;
+}
+.craft-rows-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--ui-spacing) * 0.5rem);
+}
+.craft-requirements,
+.craft-alternatives {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.craft-components button {
+  width: 100%;
+}
+.craft-components small {
+  display: block;
+  color: var(--muted);
+}
+.craft-sources {
+  margin-top: calc(var(--ui-spacing) * 0.75rem);
+}
+.craft-sources label {
+  display: block;
+}
+.craft-commitment {
   border-top: 1px solid var(--line);
-  padding: calc(var(--ui-spacing) * 0.875rem) 0;
+  padding-top: calc(var(--ui-spacing) * 0.5rem);
+  overflow-wrap: anywhere;
 }
 .craft-recipe h3 {
   margin: 0 0 calc(var(--ui-spacing) * 0.375rem);

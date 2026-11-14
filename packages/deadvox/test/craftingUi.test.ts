@@ -171,10 +171,12 @@ describe('crafting read-only presentation', () => {
     const torchRecipe = registry.recipes.get('torch')!;
     const torch = rows.find((row) => row.id === torchRecipe.id)!;
     const requirements = requirementStatus(torchRecipe, reachSnapshot, character);
+    const projection = planCraft(torchRecipe, reachSnapshot, character);
     expect(torch.components).toEqual(
       requirements.components.map(({ group, alternatives }) => ({
         group,
         preferred: '',
+        selected: 'plan' in projection ? JSON.stringify(projection.plan.selectedAlternatives[group]) : '',
         draws: [],
         automatic: true,
         vessels: [],

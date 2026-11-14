@@ -165,6 +165,16 @@ const UiScreenTextSchema = strictObject({
     find: [],
     tags: [],
     clearFind: [],
+    previousPage: [],
+    nextPage: [],
+    pagePosition: ['first', 'last', 'total'],
+    makeable: [],
+    categoryFind: [],
+    tagFind: [],
+    removeTag: ['tag'],
+    alternatives: ['count'],
+    closeAlternatives: [],
+    noPlan: [],
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
@@ -456,6 +466,16 @@ export const UiTuningSchema = strictObject({
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  crafting: strictObject({
+    pageSize: pipe(
+      Positive,
+      check((value: number) => Number.isInteger(value), 'must be an integer'),
+    ),
+    facetPageSize: pipe(
+      Positive,
+      check((value: number) => Number.isInteger(value), 'must be an integer'),
+    ),
+  }),
   /** The radial action menu's geometry and each action's fixed direction. */
   actionMenu: ActionMenuTuningSchema,
   /** The sound event played when the player tries an action that cannot be completed. */

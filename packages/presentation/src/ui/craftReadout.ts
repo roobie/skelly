@@ -93,6 +93,7 @@ export interface CraftRow {
   components: {
     group: number;
     preferred: string;
+    selected: string;
     alternatives: { kind: 'item' | 'liquid'; id: string; name: string; needed: number; found: number }[];
     draws: string[];
     automatic: boolean;
@@ -133,6 +134,7 @@ export const craftRows = ({
   sources = {},
   startReason,
   entityRepair,
+  recipeIds,
 }: {
   registry: Registry;
   character: CraftCharacter;
@@ -141,11 +143,13 @@ export const craftRows = ({
   sources?: Readonly<Record<string, CraftSources>>;
   startReason: string | undefined;
   entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
+  recipeIds?: readonly string[];
 }): CraftRow[] =>
-  [...character.knownRecipes]
+  [...(recipeIds ?? character.knownRecipes)]
     .filter((id) => {
       const recipe = registry.recipes.get(id)!;
       return (
+        character.knownRecipes.has(id) &&
         !recipe.activation &&
         (entityRepair ? recipe.repair?.entity === entityRepair.target.type : recipe.repair?.entity === undefined)
       );
@@ -156,6 +160,7 @@ export const craftRows = ({
       const prefer = preferences[id];
       const result = planCraft(recipe, reach, character, { prefer, sources: sources[id] });
       const status = requirementStatus(recipe, reach, character);
+      const selected = 'plan' in result ? result.plan.selectedAlternatives : {};
       const text = craftingText(registry);
       const itemName = recipe.repair?.entity
         ? registry.furniture.get(recipe.repair.entity)!.name
@@ -172,6 +177,7 @@ export const craftRows = ({
         components: status.components.map(({ alternatives, group }) => ({
           group,
           preferred: prefer?.[group] ? JSON.stringify(prefer[group]) : '',
+          selected: prefer?.[group] || selected[group] ? JSON.stringify(prefer?.[group] ?? selected[group]) : '',
           alternatives: alternatives.map((a) => ({
             kind: a.kind,
             id: JSON.stringify(a.kind === 'item' ? { kind: a.kind, item: a.item } : { kind: a.kind, liquid: a.liquid }),
