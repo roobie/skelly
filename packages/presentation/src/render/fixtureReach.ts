@@ -1,7 +1,7 @@
 import type { LampReach, LampReachCache, LampReachTuning, PoweredLight } from '@skelly/engine/world';
 import { Data3DTexture, NearestFilter, RedFormat, ShaderChunk, UnsignedByteType, Vector4 } from 'three';
 import { ITEM_POINT_LIGHTS } from './lightPool.ts';
-import { type MaterialPatches, materialPatch } from './materialPatches.ts';
+import { type MaterialPatches, materialPatch, replaceHook } from './materialPatches.ts';
 import { SKY_RECEIVER_STEP } from './skyAnchor.ts';
 
 /** A play view's reach, patched into the materials; none where the session has no reach cache. */
@@ -140,12 +140,14 @@ export class FixtureReach {
     shader.uniforms.uReachSize = this.sizes;
     const offset = `float(${this.blockSize * SKY_RECEIVER_STEP})`;
     const dropped = (chunk: string) =>
-      chunk.replace(
+      replaceHook(
+        chunk,
         POINT_LIGHT_INFO_CALL,
         `$&
         directLight.color *= fixtureReach(UNROLLED_LOOP_INDEX, transpose(mat3(viewMatrix)) * (geometryPosition + geometryNormal * ${offset}) + cameraPosition);`,
       );
-    shader.fragmentShader = shader.fragmentShader.replace(
+    shader.fragmentShader = replaceHook(
+      shader.fragmentShader,
       '#include <common>',
       `#include <common>
 uniform highp sampler3D uReachGrid;
@@ -161,7 +163,7 @@ float fixtureReach(int slot, vec3 point) {
 }`,
     );
     shader.fragmentShader = shader.fragmentShader.includes(LIGHTS_FRAGMENT_BEGIN)
-      ? shader.fragmentShader.replace(LIGHTS_FRAGMENT_BEGIN, dropped(ShaderChunk.lights_fragment_begin))
+      ? replaceHook(shader.fragmentShader, LIGHTS_FRAGMENT_BEGIN, dropped(ShaderChunk.lights_fragment_begin))
       : dropped(shader.fragmentShader);
   }
 }
