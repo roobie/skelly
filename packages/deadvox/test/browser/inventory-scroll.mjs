@@ -2076,6 +2076,21 @@ try {
     assert.equal(poured.fitted, false, 'the source is not fitted');
     assert.notEqual(await reservoir.textContent(), emptyReadout, 'the opened card displays its changed balance');
     logPhase('liquid reservoir drag');
+    const catalogueMetrics = await craftCatalogueFlow({
+      page,
+      resizeViewport,
+      output: process.argv[4],
+      url: browserStageUrl(
+        'inventory-scroll',
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
+          hash: { debug: true, radius: 32 },
+        }),
+        'render-free',
+      ),
+    });
+    process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
+    logPhase('crafting catalogue, retained review and density');
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
@@ -2264,21 +2279,6 @@ try {
     assert.equal(await chargerButton('inventory.to-hands').count(), 0, 'the cell cannot be collected twice');
     assert.deepEqual(collected.refusals, [], 'every offered charger operation succeeds');
     logPhase('charger leave, blackout, save/reload and collect');
-    const catalogueMetrics = await craftCatalogueFlow({
-      page,
-      resizeViewport,
-      output: process.argv[4],
-      url: browserStageUrl(
-        'inventory-scroll',
-        gameUrl(`http://127.0.0.1:${address.port}`, {
-          startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
-          hash: { debug: true, radius: 32 },
-        }),
-        'render-free',
-      ),
-    });
-    process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
-    logPhase('crafting catalogue, retained review and density');
   }
   process.stdout.write(`${engine}: inventory ${scenarioFlow} contracts passed\n`);
 } finally {
