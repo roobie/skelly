@@ -566,7 +566,7 @@ items read, and it shows no number, following `INTERFACE.md`, "Text". A view red
 piece only when its damage crosses into a different step, not on every blow. See
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureMaterialSchema`, `packages/engine/src/core/blockEntities.ts`,
 `BlockEntities.wearOf`, `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
-`packages/engine/src/core/items.ts`, `damageWord`.
+`packages/engine/src/core/items.ts`, `damageBand`.
 
 Repair preserves a surviving piece rather than replacing it, so mending does not
 lose its identity or contents. Ruin is final: a destroyed piece or a broken door

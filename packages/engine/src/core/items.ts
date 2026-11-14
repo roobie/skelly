@@ -849,10 +849,6 @@ export const damageBand = (registry: Registry, condition: number): ConditionBand
   return condition < bands.at(-1)!.from ? conditionBand(registry, condition) : undefined;
 };
 
-/** The band word for a condition below the top band (`damageBand`). */
-export const damageWord = (registry: Registry, condition: number): string | undefined =>
-  damageBand(registry, condition)?.word;
-
 export const sameRecoveryState = (a: Item, b: Item): boolean =>
   a.on !== true &&
   b.on !== true &&

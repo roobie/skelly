@@ -60,6 +60,8 @@
         "/@stage/@skelly/presentation/internal/presentation/controls.ts",
         "/@stage/@skelly/presentation/internal/presentation/guidedSteps.ts",
         "/@stage/@skelly/presentation/internal/presentation/saveStorage.ts",
+        "/@stage/@skelly/presentation/internal/ui/craftReadout.ts",
+        "/@stage/@skelly/presentation/internal/ui/crafting.ts",
         "/@stage/@skelly/presentation/internal/ui/guidedSteps.ts",
         "/@stage/@skelly/presentation/internal/ui/inventoryScreen.ts",
         "/@stage/@skelly/presentation/ui"

@@ -62,7 +62,6 @@ export {
   conditionBand,
   conditionWord,
   damageBand,
-  damageWord,
   defOf,
   footprint,
   type GridSize,

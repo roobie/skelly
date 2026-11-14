@@ -45,7 +45,7 @@ Every number a player reads is formatted through one precision table, `packages/
 
 ## Condition
 
-Wherever a condition band's word shows, a small colour blip sits beside it, because colour reads condition at a glance before the word is read. Each band's colour is content beside its word, from green for the top band through yellow and orange to red for ruined, so a pack that adds or retunes a band recolours every surface together. One render draws it, so no screen picks its own colours. A native tooltip cannot hold the blip, so a band word inside one stays plain. See `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`, and `packages/presentation/src/ui/conditionMark.ts`, `conditionMark`.
+Wherever a condition band's word shows, a small colour blip sits beside it, because colour reads condition at a glance before the word is read. Each band's colour is content beside its word, so a pack that adds or retunes a band recolours every surface together. One render draws it, so no screen picks its own colours. A native tooltip cannot hold the blip, so a band word inside one stays plain. See `packages/engine/src/core/schema/inventory.ts`, `InventoryTuningSchema`, and `packages/presentation/src/ui/conditionMark.ts`, `conditionMark`.
 
 ## Class 3: the character's voice
 

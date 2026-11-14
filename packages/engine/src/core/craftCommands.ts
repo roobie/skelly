@@ -13,7 +13,7 @@ import {
 } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { Inventory, Plan } from './inventory.ts';
-import { type ConditionBand, conditionBand, damageWord, type Item, repairCeiling } from './items.ts';
+import { type ConditionBand, conditionBand, type Item, repairCeiling } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { recipeSkillLevel } from './recipeSkills.ts';
@@ -58,7 +58,6 @@ export interface EntityRepairProjection {
 export interface CellRepairProjection {
   targetCell: Vec3;
   targetName: string | undefined;
-  damage: string | undefined;
   requirements: ReturnType<typeof requirementStatus> | undefined;
   refusal: string | undefined;
 }
@@ -229,7 +228,6 @@ export class CraftCommands {
     return {
       targetCell: [...cell],
       targetName: state ? registry.blocks[blockId(registry, state.block)]!.name : undefined,
-      damage: state ? damageWord(registry, 1 - state.damage / state.durability) : undefined,
       requirements: repair?.block ? requirementStatus(recipe!, snapshot, this.character) : undefined,
       refusal:
         this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
