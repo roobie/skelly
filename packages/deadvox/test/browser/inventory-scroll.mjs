@@ -2084,7 +2084,6 @@ try {
   }
   if (scenarioFlow === 'crafting') {
     // The crafting-look start is a second world boot, so it is its own flow and CI step, not a tail on handling.
-    await resizeViewport({ width: 1280, height: 720 });
     const catalogueMetrics = await craftCatalogueFlow({
       page,
       resizeViewport,
