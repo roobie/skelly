@@ -74,25 +74,10 @@ local crate = {
   ],
   container: { pockets: [{ grid: [10, 10], handlingSimSeconds: 1.2 }] },
 } + takeApart(15, 4, 16);
-// Bulk stock for base building (`packages/deadvox/SLICE-5.md`, "Bulk stock"): a stack of material is looted by taking
-// the piece apart, which costs far less time per unit than salvaging built work, so stock stays the efficient path.
-// Core keeps only stock of core-owned material; the board stack lives in the plank's theme pack
-// (`packages/deadvox/docs/content.md`, "Core-pack integrity").
-local stockYield(minutes, yields) = {
-  takeApart: { yield: { timeGameMinutes: minutes, skill: 'crafting', yields: yields } },
-};
+// Ready-to-use stock is taken out, not taken apart (`packages/deadvox/SLICE-5.md`, "Bulk stock").
 local bulkStock = [
-  // The crate look with its container dropped: a fastener crate is emptied by taking it apart, not by searching.
-  // Grey paint tells a stock crate from a searchable one at a glance.
-  std.objectRemoveKey(crate, 'container') + {
-    id: 'fastener_crate',
-    name: 'Fastener crate',
-    color: '#7d8a92',
-  } + stockYield(10, [
-    { item: 'nails', count: 60, fractions: recovered, rounding: 'floor' },
-    { item: 'fastener_pack', count: 2, fractions: recovered, rounding: 'floor' },
-  ]),
   {
+    local fullShape = self.shape,
     id: 'sheet_metal_stack',
     name: 'Sheet metal stack',
     size: [3, 1, 3],
@@ -107,7 +92,20 @@ local bulkStock = [
       { position: [0.1, 0.28, 0.13], size: [2.8, 0.07, 2.75], color: '#98a2a6' },
       { position: [0.22, 0.35, 0.2], size: [2.55, 0.07, 2.55] },
     ],
-  } + stockYield(12, [{ item: 'scrap_metal', count: 10, fractions: recovered, rounding: 'floor' }]),
+    container: { accepts: ['scrap_metal'], pockets: [{ grid: [2, 2], handlingSimSeconds: 1.2 }] },
+    stockAppearance: {
+      fullCount: 10,
+      steps: [
+        { from: 0, shape: [
+          { position: [0.1, 0, 0.1], size: [0.15, 0.03, 2.8], color: '#6a4e33' },
+          { position: [2.75, 0, 0.1], size: [0.15, 0.03, 2.8], color: '#6a4e33' },
+        ] },
+        { from: 0.01, shape: fullShape[:2] },
+        { from: 0.5, shape: fullShape[:4] },
+        { from: 0.9, shape: fullShape },
+      ],
+    },
+  },
 ];
 local basics = shape.colliding({
   furniture: [

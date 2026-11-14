@@ -212,6 +212,19 @@ export const FurnitureSchema = pipe(
     corpse: optional(strictObject({ figure: Id, outfit: Id })),
     /** Boxes in cell coordinates that the piece is drawn as. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
+    stockAppearance: optional(
+      strictObject({
+        fullCount: pipe(Count, minValue(1)),
+        steps: pipe(
+          array(strictObject({ from: Fraction, shape: pipe(array(FurnitureShapeBoxSchema), nonEmpty()) })),
+          nonEmpty(),
+          check(
+            (steps) => steps[0]!.from === 0 && steps.every((step, at) => at === 0 || step.from > steps[at - 1]!.from),
+            'stock looks start at zero with strictly rising fill shares',
+          ),
+        ),
+      }),
+    ),
     /**
      * A solid shaped piece that isn't a door stops movement and light only in the blocks its `shape` fills to at least
      * this fraction, so a player can walk where it looks open.
@@ -291,6 +304,22 @@ export const FurnitureSchema = pipe(
       }),
     ),
   }),
+  check(
+    ({ stockAppearance, container, shape, door, appearance, corpse, vehicle, size }) =>
+      !stockAppearance ||
+      (container?.accepts !== undefined &&
+        shape !== undefined &&
+        !door &&
+        !appearance &&
+        !corpse &&
+        !vehicle &&
+        stockAppearance.steps.every((step) =>
+          step.shape.every(
+            ({ position: [x, y, z], size: [w, h, d] }) => x + w <= size[0] && y + h <= size[1] && z + d <= size[2],
+          ),
+        )),
+    'stock looks need a filtered shaped container and boxes within its size',
+  ),
   check(
     ({ size, shape }) =>
       shape === undefined ||

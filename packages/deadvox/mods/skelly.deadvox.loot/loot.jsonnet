@@ -314,6 +314,7 @@ local pills(weight, least, parts, of) =
         item('wooden_plank', 2),
         item('door_bar', 1),
         item('nails', 4, count=[5, 20]),
+        item('nail_box', 2),
         item('scrap_metal', 3, count=[1, 2]),
         item('rag', 2, count=[1, 3]),
         item('stick', 2, count=[1, 3]),

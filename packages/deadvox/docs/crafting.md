@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
+  - you change the distinction between ready-to-use stock and built furniture
   - you change craft ownership, progression, reading or save behavior
   - you change the repair progress arc or presentation between compressed scheduler ticks
   - you change furniture repair start, hand admission or completion refusal
@@ -44,7 +45,7 @@ A craft, including furniture repair, refuses when either hand is occupied and ne
 
 Escrow prevents other actions consuming inputs mid-craft. Lost tools or stations must not erase the player's investment, and cancellation owes the exact inputs rather than equivalent replacements. A refused repair completion must return its reason as well as its inputs, because silently losing the work would hide why the piece was not repaired. See `packages/engine/src/core/craftWork.ts`, `craftActionHooks`, and `packages/engine/src/core/longAction.ts`, `LongActions.finishJob`.
 
-Disassembly promises its yield when work starts, so stopping, skill changes or tool changes must not alter it. A take-apart yield is skill-rolled only; the tool in hand never changes what a piece gives up. The engine keeps tool-modifier support for yields so content can adopt one later. Repair improves an existing target rather than supplying disassembly results. Craft completion earns practice; take-apart does not. Books and skill levels teach recipes independently, so a book can shortcut the skill grind without changing item ownership. Practice may come from any activity. See `packages/engine/src/core/disassembly.ts`, `planDisassembly`, and `packages/engine/src/core/character.ts`, `Character.awardPractice` and `Character.learnSkillRecipes`.
+Disassembly promises its yield when work starts, so stopping, skill changes or tool changes must not alter it. Taking apart built furniture recovers components through work; ready-to-use stock is already material, so it is taken out of containers instead. Boxed small goods use unpacking, not furniture disassembly; see `packages/mods/skelly.materials/materials-items.jsonnet`, `nail_box`. Repair improves an existing target rather than supplying disassembly results. Craft completion earns practice; take-apart does not. Books and skill levels teach recipes independently, so a book can shortcut the skill grind without changing item ownership. Practice may come from any activity. See `packages/engine/src/core/disassembly.ts`, `planDisassembly`, and `packages/engine/src/core/character.ts`, `Character.awardPractice` and `Character.learnSkillRecipes`.
 
 Blades already dull with use, so each wearing blade has two sharpening repairs: a grind at a grinding wheel found in garages and workshops, and a weaker hone with a carried whetstone. A fixed wheel at a base and a weaker field stone make keeping an edge a trip-or-carry decision. See `packages/engine/src/core/wear.ts`, `wearMeleeWeaponOnHit`, and `tools/jsonnet/lib/sharpen-recipes.libsonnet`, `sharpenRecipes`.
 

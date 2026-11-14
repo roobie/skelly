@@ -90,24 +90,6 @@ it('takes a piece apart where it stands, removing it and landing its yield once 
   expect(landed.totals).toEqual(totals(plan!.outputs));
 });
 
-// Bulk stock: the content-authored stacks of building material, taken apart for the material itself
-// (`packages/deadvox/SLICE-5.md`, "Bulk stock").
-const BULK_STOCK = ['board_stack', 'fastener_crate', 'sheet_metal_stack'] as const;
-
-it.each(BULK_STOCK)('takes the bulk-stock %s apart into its authored materials in one ground pile', (kind) => {
-  const { runtime, piece } = site(kind);
-  const { plan, refusal } = runtime.session.crafting.previewTakeApartEntity(piece.uid);
-  expect(refusal).toBeUndefined();
-  const before = uids(runtime);
-  expect(runtime.session.crafting.takeApartEntity(piece.uid)).toBeUndefined();
-  finish(runtime, piece);
-  expect(runtime.entities.byUid(piece.uid)).toBeUndefined();
-  const landed = landedYield(runtime, before);
-  expect(landed.elsewhere).toBe(0);
-  expect(landed.totals.size).toBeGreaterThan(0);
-  expect(landed.totals).toEqual(totals(plan!.outputs));
-});
-
 const refusals = {
   'hands full': (runtime: Runtime) => {
     arrange(runtime.inventory.add(runtime.inventory.create('rag'), { kind: 'hand', side: 'right' }), 'hold a rag');

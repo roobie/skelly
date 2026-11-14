@@ -122,6 +122,8 @@ const PocketSchema = strictObject({
 
 export const ContainerSchema = strictObject({
   takeSound: optional(Id),
+  /** Only these item types may be put in any pocket; absent accepts every type. */
+  accepts: optional(pipe(array(Id), nonEmpty('needs at least one accepted item'))),
   pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
   /** Why its pockets need more than the inventory width tuning allows. */
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),

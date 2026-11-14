@@ -1039,14 +1039,32 @@
         },
         "^": "roof",
         "b": {
-          "furniture": "board_stack"
+          "furniture": "board_stack",
+          "items": [
+            {
+              "count": 8,
+              "item": "wooden_plank"
+            }
+          ]
         },
         "f": {
-          "furniture": "fastener_crate"
+          "furniture": "crate",
+          "items": [
+            {
+              "item": "nail_box",
+              "placement": "surface"
+            }
+          ]
         },
         "k": "concrete",
         "m": {
-          "furniture": "sheet_metal_stack"
+          "furniture": "sheet_metal_stack",
+          "items": [
+            {
+              "count": 10,
+              "item": "scrap_metal"
+            }
+          ]
         },
         "w": "window_frame"
       },

@@ -1398,6 +1398,9 @@ export class Inventory {
   /** Settles before copying, so the parts share the history they had together. */
   private split(item: Item, count: number, from: Location): Item {
     this.settleFood(item, from);
+    if (from.kind === 'furniture') {
+      this.entities.contentsChanged(from.entity);
+    }
     return this.factory.split(item, count);
   }
 
@@ -1411,6 +1414,10 @@ export class Inventory {
       throw new Error('Only equal unlit recovery states can join a stack');
     }
     target.count += source.count;
+    const location = this.locate(target);
+    if (location?.kind === 'furniture') {
+      this.entities.contentsChanged(location.entity);
+    }
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
     if (lootedCount > 0) {
       target.lootedCount = lootedCount;
@@ -2357,6 +2364,17 @@ export class Inventory {
     item: Item,
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
   ): string | undefined {
+    let container: ItemDef['container'];
+    if (target.kind === 'furniture') {
+      ({ container } = this.entities.defOf(target.entity));
+    } else if (target.kind === 'pocket') {
+      ({ container } = defOf(this.registry, target.owner.type));
+    }
+    if (container?.accepts && !container.accepts.includes(item.type)) {
+      return coreMessage(this.registry, 'containerAcceptsOnly', {
+        items: container.accepts.map((type) => defOf(this.registry, type).name.toLowerCase()).join(', '),
+      });
+    }
     const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
     if (target.kind !== 'pile' && hasNestedContents && !defOf(this.registry, item.type).container?.rigid) {
       return coreMessage(this.registry, 'softBagNested');
@@ -2465,6 +2483,9 @@ export class Inventory {
     }
     if (count < item.count) {
       item.count -= count;
+      if (at.kind === 'furniture') {
+        this.entities.contentsChanged(at.entity);
+      }
       if (item.lootedCount !== undefined) {
         item.lootedCount = Math.min(item.lootedCount, item.count);
       }
@@ -2510,6 +2531,7 @@ export class Inventory {
       case 'furniture': {
         const grid = from.entity.pockets![from.pocket]!;
         grid.splice(grid.indexOf(from.placed), 1);
+        this.entities.contentsChanged(from.entity);
         return;
       }
       case 'pieceWork':
@@ -2544,6 +2566,7 @@ export class Inventory {
         return;
       case 'furniture':
         target.entity.pockets![target.pocket]!.push({ item, ...spot });
+        this.entities.contentsChanged(target.entity);
         return;
       default: {
         const key = pileKey(target.pos);
@@ -2619,6 +2642,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     type: string,
     saved: PlacedState[][] | undefined,
     specs: { grid: [number, number] }[] | undefined,
+    accepts?: readonly string[],
   ) => {
     if (!specs) {
       if (saved !== undefined) {
@@ -2630,6 +2654,9 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
       throw new Error(`${type} must have ${specs.length} pocket grids`);
     }
     for (const [index, spec] of specs.entries()) {
+      if (accepts && saved[index]!.some(({ item }) => !accepts.includes(item.type))) {
+        throw new Error('Saved container holds a rejected item');
+      }
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }
   };
@@ -2638,7 +2665,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     const def = defOf(registry, item.type);
     const container =
       item.cargo && def.vehicle?.cargoSpace ? cargoGrid(item.cargo, def.vehicle.cargoSpace) : def.container;
-    pockets(item.type, item.pockets, container?.pockets);
+    pockets(item.type, item.pockets, container?.pockets, def.container?.accepts);
     if (defOf(registry, item.type).workInProgress && !item.work) {
       throw new Error('Missing craft work payload');
     }
@@ -2654,7 +2681,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState, vehicl
     if (!def) {
       throw new Error(`Unknown furniture ${entity.type}`);
     }
-    pockets(entity.type, entity.pockets, def.container?.pockets);
+    pockets(entity.type, entity.pockets, def.container?.pockets, def.container?.accepts);
   }
 };
 

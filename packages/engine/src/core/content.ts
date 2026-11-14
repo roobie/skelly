@@ -854,6 +854,11 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
+  container.accepts?.forEach((type, index) => {
+    if (!registry.items.has(type)) {
+      report(section, id, `.container.accepts[${index}]`, `no item "${type}"`);
+    }
+  });
   const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;

@@ -1,9 +1,11 @@
 {
   "dependencies": [
     "skelly.basic-recipes",
+    "skelly.deadvox",
     "skelly.deadvox.scenario.test-house",
     "skelly.hand-tools",
     "skelly.light-sources",
+    "skelly.materials",
     "skelly.medicine",
     "skelly.melee",
     "skelly.packaged-foods",

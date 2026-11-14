@@ -118,8 +118,7 @@ entry replacement survive extraction into topics. A missing dependency, cycle or
 undeclared cross-pack override refuses the stack; filename order must never choose a
 winner between packs. The tier grants no privilege. A pack owns its definitions and
 names other packs' content only through declared dependencies, and core stays
-independent of theme-owned content; the board stack lives in the plank's theme pack
-because core cannot name the theme-owned plank. See `packages/engine/src/core/packAdmission.ts`,
+independent of theme-owned content. See `packages/engine/src/core/packAdmission.ts`,
 `PackManifestSchema` and `admitPacks`, and `packages/engine/src/game/bundledContent.ts`, `createBundledContent`.
 Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
 silently remove authored content from validation and the game. See

@@ -104,7 +104,7 @@
       },
       "player": {
         "bearing": 90,
-        "position": [-7.5, 21.5, -0.5]
+        "position": [-10.5, 21.5, -1]
       },
       "showroom": {
         "capacity": 3,
@@ -113,24 +113,42 @@
         "row": [-12, 21.5, -1],
         "slots": [
           {
-            "furniture": "board_stack",
-            "placement": {
-              "facing": "n",
-              "position": [-12, 21.5, -2]
-            }
-          },
-          {
             "furniture": "sheet_metal_stack",
+            "items": [
+              {
+                "count": 10,
+                "item": "scrap_metal"
+              }
+            ],
             "placement": {
               "facing": "n",
               "position": [-11.5, 21.5, 0.5]
             }
           },
           {
-            "furniture": "fastener_crate",
+            "furniture": "crate",
+            "items": [
+              {
+                "item": "nail_box",
+                "placement": "surface"
+              }
+            ],
             "placement": {
               "facing": "n",
               "position": [-8.5, 21.5, 0.5]
+            }
+          },
+          {
+            "furniture": "board_stack",
+            "items": [
+              {
+                "count": 4,
+                "item": "wooden_plank"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [-12, 21.5, -2]
             }
           }
         ],

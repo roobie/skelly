@@ -87,6 +87,7 @@ export const CORE_MESSAGE_SLOTS = {
   loadedInHardCase: [],
   tooBig: [],
   noRoomThere: [],
+  containerAcceptsOnly: ['items'],
   noRoom: [],
   hurt: [],
   busy: [],

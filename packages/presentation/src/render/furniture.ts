@@ -36,6 +36,7 @@ import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { addSkyAnchors } from './skyAnchor.ts';
 import { freezeMatrices } from './staticMatrices.ts';
+import { stockShapeStep } from './stockShape.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { type ContentVehicleView, vehicleModel, workshopLift } from './workshopVehicle.ts';
 
@@ -242,7 +243,9 @@ export class FurnitureMeshes {
 
   /** Keeps an entity's piece while its pose is unchanged and its mesh is current, else rebuilds it, or drops it once the entity stops standing. */
   private restage(entity: BlockEntity, entities: BlockEntities, modelsVersion: number, redraw: Set<string>): void {
-    const pose = entities.stands(entity) ? poseKey(entity, entities.wearOf(entity)) : undefined;
+    const definition = entities.defOf(entity);
+    const step = definition.stockAppearance ? `:stock:${stockShapeStep(entity, definition)}` : '';
+    const pose = entities.stands(entity) ? `${poseKey(entity, entities.wearOf(entity))}${step}` : undefined;
     const kept = this.pieces.get(entity);
     if (kept !== undefined && kept.pose === pose && (kept.models === undefined || kept.models === modelsVersion)) {
       return;
@@ -432,7 +435,7 @@ export class FurnitureMeshes {
 
   /** The one mesh of a piece that `standsStill`. */
   private standingMesh(entity: BlockEntity, def: FurnitureDef): Mesh<BufferGeometry, MeshLambertMaterial> {
-    if (def.appearance || def.shape?.some((box) => box.color)) {
+    if (def.stockAppearance || def.appearance || def.shape?.some((box) => box.color)) {
       return this.shaped(entity, def, this.damageLook(entity, this.material('#ffffff', true), def));
     }
     const material = this.material(def.color);
@@ -481,11 +484,14 @@ export class FurnitureMeshes {
     def: FurnitureDef,
     material: MeshLambertMaterial,
   ): Mesh<BufferGeometry, MeshLambertMaterial> {
-    let geometry = this.shapeGeometries.get(def.id);
+    const step = stockShapeStep(entity, def);
+    const key = def.stockAppearance ? `${def.id}:stock:${step}` : def.id;
+    const shape = def.stockAppearance ? def.stockAppearance.steps[step]!.shape : def.shape;
+    let geometry = this.shapeGeometries.get(key);
     if (!geometry) {
       const [width, , depth] = def.size;
-      const tinted = def.shape?.some((box) => box.color) ?? false;
-      const parts = (def.shape ?? []).map(({ position, size, color }) => {
+      const tinted = def.stockAppearance !== undefined || (shape?.some((box) => box.color) ?? false);
+      const parts = (shape ?? []).map(({ position, size, color }) => {
         const [x, y, z] = position;
         const [w, h, d] = size;
         const part = new BoxGeometry(w, h, d).translate(x + w / 2 - width / 2, y + h / 2, z + d / 2 - depth / 2);
@@ -509,7 +515,7 @@ export class FurnitureMeshes {
       addSkyAnchors(geometry, def.size);
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
-      this.shapeGeometries.set(def.id, geometry);
+      this.shapeGeometries.set(key, geometry);
     }
 
     const [x, y, z] = entity.pos;

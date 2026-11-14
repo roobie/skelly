@@ -80,6 +80,7 @@
     loadedInHardCase: "I can't put a loaded container inside a hard case",
     tooBig: "It's too big for that",
     noRoomThere: "There's no room there",
+    containerAcceptsOnly: 'That holds only {items}',
     noRoom: "There's no room",
     hurt: "I'm hurt",
     busy: "I'm busy",

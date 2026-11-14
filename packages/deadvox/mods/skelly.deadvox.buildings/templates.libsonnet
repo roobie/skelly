@@ -881,9 +881,9 @@
         "D": { "furniture": "wood_door" },
         "S": { "furniture": "shelf", "loot": "hardware_store_stock" },
         "W": { "furniture": "workbench" },
-        "b": { "furniture": "board_stack" },
-        "f": { "furniture": "fastener_crate" },
-        "m": { "furniture": "sheet_metal_stack" }
+        "b": { "furniture": "board_stack", "items": [{ "item": "wooden_plank", "count": 8 }] },
+        "f": { "furniture": "crate", "items": [{ "item": "nail_box", "placement": "surface" }] },
+        "m": { "furniture": "sheet_metal_stack", "items": [{ "item": "scrap_metal", "count": 10 }] }
       },
       "layers": [
         [

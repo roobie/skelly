@@ -1,10 +1,6 @@
-// The board stack lives with the plank it yields: each pack owns what it names, so the theme pack that owns
-// `wooden_plank` owns the boards stacked for building (`packages/deadvox/docs/content.md`, "Core-pack integrity").
-// Bulk stock is looted by taking the piece apart, which costs far less time per unit than salvaging built work
-// (`packages/deadvox/SLICE-5.md`, "Bulk stock"); a take-apart yield is skill-rolled only, so no tool changes it.
+// Ready-to-use boards are taken out, not taken apart (`packages/deadvox/SLICE-5.md`, "Bulk stock").
 local breach = import 'tools/jsonnet/lib/furniture-breach.libsonnet';
 local shape = import 'tools/jsonnet/lib/furniture-shape.libsonnet';
-local recovered = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
 local boardLayer = function(y) [
   { position: [0.05, y, 0.1], size: [0.44, 0.09, 3.8] },
   { position: [0.55, y, 0.1], size: [0.44, 0.09, 3.8] },
@@ -14,6 +10,7 @@ local boardLayer = function(y) [
 breach.breaking(shape.colliding({
   furniture: [
     {
+      local fullShape = self.shape,
       id: 'board_stack',
       name: 'Board stack',
       size: [2, 1, 4],
@@ -27,12 +24,15 @@ breach.breaking(shape.colliding({
         { position: [0.3, 0.32, 0.5], size: [0.44, 0.09, 2.6] },
         { position: [1.2, 0.32, 0.9], size: [0.44, 0.09, 2.2] },
       ],
-      takeApart: {
-        yield: {
-          timeGameMinutes: 12,
-          skill: 'crafting',
-          yields: [{ item: 'wooden_plank', count: 8, fractions: recovered, rounding: 'floor' }],
-        },
+      container: { accepts: ['wooden_plank'], pockets: [{ grid: [8, 8], handlingSimSeconds: 1.2 }] },
+      stockAppearance: {
+        fullCount: 8,
+        steps: [
+          { from: 0, shape: fullShape[:2] },
+          { from: 0.01, shape: fullShape[:2] + boardLayer(0.14) },
+          { from: 0.5, shape: fullShape[:2] + boardLayer(0.14) + boardLayer(0.23) },
+          { from: 0.9, shape: fullShape },
+        ],
       },
     },
   ],

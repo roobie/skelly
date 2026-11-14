@@ -31,6 +31,7 @@ import { describe, expect, it } from 'vitest';
 import { baseContentSources } from './baseContentFiles.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixtures.ts';
 import { terrainFor } from './fixtures/terrain.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const sources = baseContentSources().filter(({ source }) => !source.startsWith('layouts') && source !== 'starts.json');
 const layout = (
@@ -355,12 +356,14 @@ const gapToBounds = (x: number, z: number, rect: Bounds): number =>
   Math.hypot(Math.max(rect.x0 - x, 0, x - rect.x1), Math.max(rect.z0 - z, 0, z - rect.z1));
 
 describe('authored fixed loot', () => {
-  it('grounds every authored building on solid terrain', () => {
-    const site = new AuthoredSite(73, result.registry, scale, layout);
-    expect(site.placements.length).toBeGreaterThan(0);
-    for (const placement of site.placements) {
-      expectGroundedPlacement(site, placement);
-    }
+  sweepGroup('whole-site grounding', () => {
+    it('grounds every authored building on solid terrain', () => {
+      const site = new AuthoredSite(73, result.registry, scale, layout);
+      expect(site.placements.length).toBeGreaterThan(0);
+      for (const placement of site.placements) {
+        expectGroundedPlacement(site, placement);
+      }
+    });
   });
 
   it('delivers fixed loot beside seed filler, leaves placed firearms unloaded, and is chunk-order independent', () => {

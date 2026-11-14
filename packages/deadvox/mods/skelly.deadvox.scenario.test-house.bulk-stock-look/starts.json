@@ -60,6 +60,14 @@
           },
           "id": "bandages",
           "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "refused_stock",
+          "item": "rag"
         }
       ],
       "recipes": [
