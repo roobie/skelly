@@ -13,10 +13,9 @@ read_if:
 
 The #1469 crafting tab and world-work view ship together, after their layout is
 settled, because shipping world work first would establish a second shape for
-crafting to replace. This document owns the layout decisions and remaining
-questions, separate from the game's broader rules in `../DESIGN.md`.
-Q1, Q2, Q3, Q5 and Q6 are decided. Only Q4 and Q7 offer alternatives; neither has
-a selected option. Implementation trims intent into reasons and code cues.
+crafting to replace. This document owns the decided layout, separate from the
+game's broader rules in `../DESIGN.md`. All layout choices are settled.
+Implementation trims intent into reasons and code cues.
 
 This is the construction-view gate for #1332. Placement picking follows the
 shared view and placement engine; see `../SLICE-5.md`, "Lanes and the next rounds".
@@ -176,12 +175,7 @@ avoids category-specific catalogues and copied affordability logic. Visible
 browsing supports discovery, accepting the space cost even when the name is
 known and the need to clear a visible branch filter before searching elsewhere.
 
-## Open choices
-
-Neither Q4 nor Q7 is selected. Grades use `GLOSSARY.md`, "Tech debt" (repo root):
-future shortcut rework is not build cost. Negative space names omissions.
-
-### Q4. Keyboard navigation without Tab traversal
+### Q4. Page keys step every control — A
 
 Tab keeps opening/closing the inventory menu, never moving within it. Do not
 borrow arrows or plain Enter as though they were free: their inventory actions
@@ -192,10 +186,10 @@ in `packages/mods/skelly.controls/controls.jsonnet`, `controls`, resolved by
 `BindingRegistry`. `packages/presentation/src/presentation/play.ts`,
 `activePlayContext`, uses the inventory context for this screen.
 
-The candidate local controls below use PageUp/PageDown and Shift+Enter; B also
-uses Home/End. These have no ungated inventory binding in the base controls.
-Debug-gated commands retain priority. No control-file binding is changed by
-these proposals. They require screen-local focus handling, not pretending that
+The local controls use PageUp/PageDown and Shift+Enter. These have no ungated
+inventory binding in the base controls. Debug-gated commands retain priority.
+No control-file binding changes are required. They require screen-local focus
+handling, not pretending that
 browser Tab traversal already provides it. See
 `packages/presentation/src/presentation/inputBindings.ts`, `KeyboardInput.press`
 and `KeyboardInput.unmatchedDown`, and
@@ -203,71 +197,46 @@ and `KeyboardInput.unmatchedDown`, and
 Stored rebindings must not be shadowed: the shared input owner checks active
 bindings before a local navigation handler. Prove that precedence in the build.
 
-Both schemes keep one focused control, focusable refused commitment, explicit
+Navigation keeps one focused control, focusable refused commitment, explicit
 row entry, and a keyboard-reachable Close alternatives control that returns to
 its row. Tab closes the menu even with a chooser open; it is not a chooser-only
 exit. Text fields retain caret/editing keys, including Home/End; PageUp/PageDown
 can leave the field for the previous/next control and Shift+Enter finishes query
 entry without starting work. Start/Continue require their own focused activation.
 Inspection turns only through its explicitly focused controls, never through
-row movement. The depicted keys are fixed local-control candidates, not a new
-inventory binding preset; pointer controls remain available under either scheme.
+row movement. These keys are fixed local controls, not a new inventory binding
+preset; pointer controls remain available.
 
-**A. Page keys step every control.** PageUp/PageDown move focus through category
+PageUp/PageDown move focus through category
 and query controls, the bounded results page, inspection, rows, alternatives,
 source detail and commitment in reading order. Shift+Enter activates the focused
 control. Result-page buttons are ordinary stops, not keys that spend materials.
-- Tech debt: none inherent with one shared focus owner; a separate world-work
-  focus list would be shortcut debt and is excluded.
-- Negative space: no fast jump between regions; PageUp/PageDown no longer scroll
-  the focused review directly, though focus revelation and wheel scrolling remain.
-- WTF (keyboard player): page keys move control focus, and a long result page
-  takes many presses before Start; Shift+Enter is less familiar than Enter.
-- Build cost: moderate; focus ordering, text-field exit, chooser return and
-  active-binding precedence, without region memory.
 
-**B. Home/End change region; page keys move within it.** Outside text entry,
-Home selects the previous region and End the next: finding controls, results,
-inspection, rows, alternatives, sources and commitment. PageUp/PageDown move
-among the focused region's controls; Shift+Enter activates. Returning to a
-region restores its focused control by identity, not row position.
-- Tech debt: none inherent with one shared region/focus owner; storing a second
-  selected recipe or work target in navigation would create drift and is excluded.
-- Negative space: more navigation concepts; Home/End cannot also mean the first
-  and last control outside text entry. No direct page-key scrolling.
-- WTF (keyboard player): Home/End switch regions but move the caret in a query;
-  the player must leave text entry before using the region shortcut.
-- Build cost: higher; region focus memory and restoration under filtering in
-  addition to A's precedence, editing and chooser-return proofs.
+**Reason from the option grading:** one shared focus owner avoids separate
+world-work navigation and needs no region memory. The accepted costs are no
+fast region jump, many presses through a long page and less familiar activation.
+Page keys no longer scroll the review directly; focus revelation and wheel
+scrolling remain. The build must prove focus ordering, text-field exit, chooser
+return and active-binding precedence.
 
-### Q7. When does placement choose its destination?
+### Q7. Order authored per placement recipe — C
 
-This gates placement picking under #1332, not the joint view shipment. Every
-option requires the placement engine, explicit Start after review, a destination
-pin without borrowing piece identity, and occupancy revalidation. Kit scope and
-the picking gesture remain construction decisions outside this choice.
+Placement picking under #1332 requires the placement engine, explicit Start
+after review, a destination pin without borrowing piece identity, and occupancy
+revalidation. Kit scope and the picking gesture remain construction decisions
+outside this layout.
 
-**A. Destination before review.** Selecting a placement recipe enters picking,
-then opens the pinned review.
-- Tech debt: none inherent; the review receives complete target context.
-- Negative space: no full requirements review before choosing a spot.
-- WTF (player): choosing a spot can end in a review showing missing supplies.
-- Build cost: moderate; return from picking and cancellation without spending.
+The recipe field `placementReviewOrder` selects `spot-first` or `review-first`;
+it is not derived from an ID, category or name. Spot-first enters picking before
+opening the pinned review. Review-first exposes a destination control in the
+review; Start stays refused until a valid pin exists, and picking returns for
+commitment.
 
-**B. Requirements before destination.** Review exposes a destination control;
-Start stays refused until a valid pin exists. Picking returns for commitment.
-- Tech debt: none inherent; incomplete selection is presentation, not saved work.
-- Negative space: no immediate world-first placement from recipe selection.
-- WTF (player): the recipe is affordable but Start still needs a destination.
-- Build cost: moderate; unpinned/pinned states with focus restoration.
-
-**C. Order authored per placement recipe.** A proposed recipe field,
-`placementReviewOrder`, selects `spot-first` or `review-first`; it is not derived
-from an ID, category or item name.
-A Jsonnet authoring default supplies review-first, while validation requires the
-compiled field on every placement recipe. Non-placement recipes do not gain a
-meaningless order field. The proposed field is part of the placement contract,
-not a claim that `RecipeSchema` already has it; see
+A Jsonnet authoring default supplies `review-first`, while validation requires
+the compiled field on every placement recipe. Missing metadata is an error,
+with no runtime fallback. Non-placement recipes get no order field. This is a
+placement contract to implement, not a claim that `RecipeSchema` already has
+it; see
 `packages/engine/src/core/schema/recipes.ts`, `RecipeSchema`, and
 `PILLARS.md`, "Content forward compatibility" (repo root).
 
@@ -275,18 +244,18 @@ Spot-first suits fitting to an existing opening or gap: window boards, a door
 barricade or wall fill, where inspecting the place determines whether the work
 makes sense. Review-first suits free-standing walls, floors or furnishings,
 where the player can weigh inputs and time before hunting for a spot. These are
-proposed authoring examples, not an engine classification or an expansion of
+content examples, not an engine classification or an expansion of
 the first-session kit. An author may choose either order for any placement
 recipe; review-first is the conservative authoring default because requirements
 remain inspectable without first committing to a location.
-- Tech debt: none inherent with one content selector and the same two flow
-  mechanisms; inferring exceptions from recipe identity would be debt and is excluded.
-- Negative space: no universal order to learn; no automatic inference or runtime
-  fallback for missing recipe metadata.
-- WTF (player): one recipe enters the world immediately while another opens
-  requirements; the author must make that distinction sensible in play.
-- Build cost: higher; schema/admission and authoring default, content assignments,
-  both navigation paths, and cancellation/pin/focus proofs for both.
+
+The reason is that placement order depends on the recipe:
+
+> I think some recipes make sense for A and others for B
+
+Content selects between shared flow mechanisms rather than recipe-ID exceptions.
+The accepted cost is no universal order: authors must make the distinction
+sensible in play, and both paths need cancellation, pin and focus proofs.
 
 ## Build slices after the decisions
 
@@ -295,7 +264,7 @@ Each needs a testHouse fixture start under `docs/PROCESS.md`, "Reviews by eye an
 (repo root), with the reviewer beside the target and carrying the required gear.
 This documentation plan itself changes no UI and needs no playable fixture.
 
-- **Joint first look.** Q4 is the remaining layout gate. Show both contexts with
+- **Joint first look.** Show both contexts with
   the decided catalogue beside review, category browser, fixed commitment strip,
   source detail below rows, fixed alternatives and turnable target. Include a
   damaged chair, take-apart crate, competing materials, liquids and a missing
@@ -313,10 +282,9 @@ This documentation plan itself changes no UI and needs no playable fixture.
   contracts exist, extend the same review rather than adding a terrain screen.
   Its fixture starts beside a cracked wall and rubble with supplies; it must
   not fake cells as piece identities while those engine decisions are open.
-- **Placement picking.** After the placement engine, joint delivery and Q7,
-  join destination picking to the shared rows and commit shape. The fixture has
-  a window, doorway, wall gap, kit and occupied destination. If C is selected,
-  include one recipe of each authored order and one using the authoring default;
-  do not silently implement C while the choice remains open. The picking gesture
+- **Placement picking.** After the placement engine and joint delivery, join
+  destination picking to the shared rows and commit shape. The fixture has a
+  window, doorway, wall gap, kit and occupied destination. Include one recipe of
+  each authored order and one using the authoring default. The picking gesture
   remains a #1332 construction decision; see
   `../SLICE-5.md`, "Lanes and the next rounds".
