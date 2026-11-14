@@ -56,6 +56,7 @@ export type ReplayActionPayload =
       sources?: CraftSources;
     }
   | { kind: 'craft.take-apart-entity'; entityUid: number }
+  | { kind: 'craft.take-apart-cell'; cell: [number, number, number] }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -222,6 +223,8 @@ const isCraftCommandPayload = (payload: Record<string, unknown>): boolean => {
       );
     case 'craft.take-apart-entity':
       return isUid(payload.entityUid) && Object.keys(payload).length === 2;
+    case 'craft.take-apart-cell':
+      return isTriple(payload.cell, Number.isSafeInteger) && Object.keys(payload).length === 2;
     default:
       return false;
   }
@@ -314,6 +317,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'craft.start':
     case 'craft.repair-entity':
     case 'craft.take-apart-entity':
+    case 'craft.take-apart-cell':
       return isCraftCommandPayload(payload);
     default:
       return false;
@@ -368,6 +372,8 @@ export interface ReplayCommandOwners {
   ) => string | undefined;
   /** Starts taking a world piece apart where it stands, as work hosted on the piece. */
   craftTakeApartEntity: (entityUid: number) => string | undefined;
+  /** Starts clearing the rubble cell aimed at, as work held in the dominant hand; the command revalidates the cell. */
+  craftTakeApartCell: (cell: [number, number, number]) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -476,6 +482,8 @@ export const applyReplayActionPayload = (
       return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
     case 'craft.take-apart-entity':
       return owners.craftTakeApartEntity(payload.entityUid);
+    case 'craft.take-apart-cell':
+      return owners.craftTakeApartCell(payload.cell);
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':

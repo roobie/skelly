@@ -15,7 +15,7 @@ import {
 } from 'valibot';
 import { footstepSoundId } from '../footsteps.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
-import { Color, Count, Fraction, Id, Name, NonNegative, Positive } from './primitives.ts';
+import { Color, Count, Fraction, Id, Name, NonNegative, Positive, PositiveGameMinutes } from './primitives.ts';
 
 // ---- blocks ----
 
@@ -50,6 +50,8 @@ export const BlockMaterialSchema = pipe(
     /** Whether blows can break blocks of this material; `false` keeps every block standing through any strike. */
     breakable: vBoolean(),
     rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+    /** Game minutes to take apart one rubble cell of this material's fallen form. */
+    rubbleClearTimeGameMinutes: PositiveGameMinutes,
     blowSound: Id,
     broken: strictObject({ tint: Color, strength: Fraction }),
     damaged: array(strictObject({ from: Fraction, tint: Color, strength: Fraction })),

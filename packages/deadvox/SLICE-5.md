@@ -276,7 +276,9 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   items among them become parts, and take-apart steps dig them out, so a collapse loses
   nothing it did not break. The first clearing round may yield material only, but the
   cell's data shape leaves room for buried contents from the start, so the contents
-  round extends the shape rather than replacing it. How rubble reads apart from a
+  round extends the shape rather than replacing it; see
+  `packages/engine/src/core/rubble.ts`, `SavedRubble`, and `packages/engine/src/core/craftCommands.ts`,
+  `takeApartCell`. How rubble reads apart from a
   damaged wall is an open choice; see "Remaining construction gate — issue #1332".
 - **Know-how gates:** mixed. Some recipes are known from the start and others must be
   discovered through manuals and points of interest, because discovered recipes give
