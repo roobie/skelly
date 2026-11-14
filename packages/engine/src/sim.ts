@@ -135,6 +135,7 @@ export {
 } from './core/time.ts';
 export {
   ActionMenu,
+  type EmoteAvailability,
   emoteRadialEntries,
   heldRadialEntries,
   type RadialAction,

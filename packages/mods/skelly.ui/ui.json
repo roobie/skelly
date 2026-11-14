@@ -5,7 +5,7 @@
         "deadZonePixels": 30,
         "directions": {
           "emote": {
-            "press-check": 0
+            "gun": 0
           },
           "furniture": {
             "continue": 135,
@@ -14,6 +14,9 @@
             "push": 0,
             "repair": 90,
             "take_apart": 225
+          },
+          "gun": {
+            "press-check": 0
           },
           "held": {
             "battery:unload": 180,
@@ -550,7 +553,8 @@
           "summary": "Containers searched: {searched} · Loot: {loot}"
         },
         "emote": {
-          "press-check": "Press check"
+          "gun": "Gun",
+          "press-check": "Press-check"
         },
         "handling": {
           "minimumRelease": "Minimum release {percent}%",

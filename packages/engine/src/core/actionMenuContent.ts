@@ -9,12 +9,16 @@ import { Positive } from './schema/primitives.ts';
 export const ACTION_MENU_ACTIONS = {
   furniture: ['push', 'drag', 'lift', 'repair', 'continue', 'take_apart'],
   held: ['own', 'sharpen', 'open-can', 'magazine:strip', 'battery:unload', 'continue-work', 'treat'],
-  /** Each emote needs code that performs it; which of them the menu offers is content. */
-  emote: ['press-check'],
+  /** The emote ring's modes, each opening a child ring of the emotes content places under it. */
+  emote: ['gun'],
 } as const;
 
 export type ActionMenuSource = keyof typeof ACTION_MENU_ACTIONS;
-export type Emote = (typeof ACTION_MENU_ACTIONS.emote)[number];
+export type EmoteMode = (typeof ACTION_MENU_ACTIONS.emote)[number];
+
+/** Each emote needs code that performs it; which mode's ring it sits on, if any, is content. */
+export const EMOTES = ['press-check'] as const;
+export type Emote = (typeof EMOTES)[number];
 
 /** Degrees clockwise from straight up. */
 const Direction = pipe(
@@ -39,8 +43,10 @@ export const ActionMenuTuningSchema = strictObject({
   directions: strictObject({
     furniture: directionsFor(ACTION_MENU_ACTIONS.furniture),
     held: directionsFor(ACTION_MENU_ACTIONS.held),
-    /** The emotes the menu offers: one left out is never offered, so a pack can drop or move an emote. */
+    /** The emote ring's modes: one left out is never offered. */
     emote: partial(directionsFor(ACTION_MENU_ACTIONS.emote)),
+    /** The child ring of the emote ring's `gun` mode: an emote placed here sits under it, so a pack can drop or move one. */
+    gun: partial(directionsFor(EMOTES)),
     /** The child ring of the held menu's `treat` entry, one wound per body region. */
     treat: directionsFor(BODY_REGIONS),
   }),

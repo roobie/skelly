@@ -1,4 +1,11 @@
-import type { ActionMenuSource, ActionMenuTuning, Emote } from '../core/actionMenuContent.ts';
+import {
+  ACTION_MENU_ACTIONS,
+  type ActionMenuSource,
+  type ActionMenuTuning,
+  EMOTES,
+  type Emote,
+  type EmoteMode,
+} from '../core/actionMenuContent.ts';
 import type { ItemAction } from './itemActions.ts';
 
 export interface RadialAction extends ItemAction {
@@ -6,6 +13,8 @@ export interface RadialAction extends ItemAction {
   readonly angleRadians: number;
   /** The child ring this entry opens instead of acting itself. */
   readonly children?: readonly RadialAction[];
+  /** Shown greyed out and never selected, for a ring entered on purpose that shows what it cannot do now. */
+  readonly unavailable?: true;
 }
 
 type PointTuning = Pick<ActionMenuTuning, 'radiusPixels' | 'deadZonePixels' | 'selectionHalfAngleDegrees'>;
@@ -14,7 +23,8 @@ const radians = (degrees: number): number => (degrees * Math.PI) / 180;
 
 /**
  * Whether a menu's lone entry acts at once instead of opening a ring. The emote menu has no ordinary action a lone
- * entry could stand for, so it always shows its ring and a release at the centre performs nothing.
+ * entry could stand for, so it always shows its ring, a mode's lone emote still opens the mode's ring, and a release
+ * at the centre performs nothing.
  */
 const LONE_ENTRY_ACTS: Readonly<Record<ActionMenuSource, boolean>> = { furniture: true, held: true, emote: false };
 
@@ -85,16 +95,36 @@ export const heldRadialEntries = (
   return [...direct, { ...treat!, children }];
 };
 
-/** The emotes on offer that content places on the ring, in its order; one content leaves out is never offered. */
+/** What the player can do now on the emote ring. */
+export interface EmoteAvailability {
+  mode: (mode: EmoteMode) => boolean;
+  emote: (emote: Emote) => boolean;
+}
+
+const greyedUnless = (available: boolean, entry: RadialAction): RadialAction =>
+  available ? entry : { ...entry, unavailable: true };
+
+/**
+ * The modes content places on the emote ring, each holding the emotes content places under it. A mode is entered on
+ * purpose, so what it cannot do now is greyed out rather than hidden; a mode holding no emote is left off.
+ */
 export const emoteRadialEntries = (
-  offered: readonly Emote[],
-  labels: Readonly<Record<Emote, string>>,
-  directions: ActionMenuTuning['directions']['emote'],
+  available: EmoteAvailability,
+  labels: Readonly<Record<EmoteMode | Emote, string>>,
+  directions: Pick<ActionMenuTuning['directions'], 'emote' | EmoteMode>,
 ): RadialAction[] =>
-  radialEntries(
-    offered.filter((id) => directions[id] !== undefined).map((id) => ({ id, label: labels[id] })),
-    directions,
-  );
+  ACTION_MENU_ACTIONS.emote.flatMap((mode) => {
+    const placed = directions[mode];
+    const children = radialEntries(
+      EMOTES.filter((emote) => placed[emote] !== undefined).map((id) => ({ id, label: labels[id] })),
+      placed,
+    ).map((entry) => greyedUnless(available.emote(entry.id as Emote), entry));
+    if (children.length === 0 || directions.emote[mode] === undefined) {
+      return [];
+    }
+    const [modeEntry] = radialEntries([{ id: mode, label: labels[mode] }], directions.emote);
+    return [greyedUnless(available.mode(mode), { ...modeEntry!, children })];
+  });
 
 /**
  * The one open action menu, for a furniture piece or a held item. Callers pass the current entries on every call, so
@@ -184,16 +214,18 @@ export class ActionMenu {
       this.y *= tuning.radiusPixels / length;
     }
     const index = radialEntryIndex(this.x, this.y, ring, tuning);
-    this.selectedId = index === undefined ? undefined : ring[index]!.id;
+    const entry = index === undefined ? undefined : ring[index];
+    this.selectedId = entry?.unavailable ? undefined : entry?.id;
   }
 
   /** Selects the next entry clockwise, or anticlockwise for a negative `direction`. */
   step(actions: readonly RadialAction[], direction: number): boolean {
-    const ring = this.ring(actions);
-    if (!ring || direction === 0 || ring.length === 0) {
+    const sorted = (this.ring(actions) ?? [])
+      .filter((action) => !action.unavailable)
+      .sort((a, b) => a.angleRadians - b.angleRadians);
+    if (direction === 0 || sorted.length === 0) {
       return false;
     }
-    const sorted = [...ring].sort((a, b) => a.angleRadians - b.angleRadians);
     const index = sorted.findIndex((action) => action.id === this.selectedId);
     let next = direction > 0 ? 0 : sorted.length - 1;
     if (index >= 0) {
@@ -204,17 +236,18 @@ export class ActionMenu {
   }
 
   choice(actions: readonly RadialAction[]): RadialAction | undefined {
-    return this.ring(actions)?.find((action) => action.id === this.selectedId);
+    return this.ring(actions)?.find((action) => action.id === this.selectedId && !action.unavailable);
   }
 
   /**
-   * Returns the chosen action or its sole child; child alternatives open their own ring.
-   * An unchosen child ring returns to a parent with alternatives, otherwise closes without acting.
+   * Returns the chosen action or its sole child; child alternatives, or any child of a menu whose lone entry does not
+   * act, open their own ring. An unchosen child ring returns to a parent with alternatives, otherwise closes without
+   * acting.
    */
   confirm(actions: readonly RadialAction[]): RadialAction | undefined {
     const chosen = this.choice(actions);
     if (chosen?.children) {
-      if (chosen.children.length > 1) {
+      if (chosen.children.length > 1 || !LONE_ENTRY_ACTS[this.target!.source]) {
         this.enter(chosen.id);
         return undefined;
       }

@@ -2,7 +2,7 @@
 // modal UI takes a press, the input sample and session controls and trigger at the player tick, replayed actions,
 // screen commands, furniture use and the item throw, with the firearm and melee readiness gate those read.
 
-import type { Emote } from '../core/actionMenuContent.ts';
+import type { Emote, EmoteMode } from '../core/actionMenuContent.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
@@ -23,6 +23,7 @@ import { doorOptions, doorPlan, dropTarget, pocketGroundItem, toHands, wieldOrPo
 import { pryPlan } from '../core/prying.ts';
 import type { Simulation } from '../core/sim.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
+import type { EmoteAvailability } from './actionMenu.ts';
 import { continueActionResumesJob } from './continueAction.ts';
 import { dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DOOR_ACTION } from './doorAction.ts';
@@ -253,8 +254,8 @@ export interface CommandRouter {
   compress: () => void;
   /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
   reloadBinding: () => ReloadBinding | undefined;
-  /** The emotes the player can perform now, and performing one, recorded like any gesture it makes. */
-  emotes: { offered: () => readonly Emote[]; perform: (emote: Emote) => void };
+  /** Which emote modes and emotes the player can use now, and performing one, recorded like any gesture it makes. */
+  emotes: EmoteAvailability & { perform: (emote: Emote) => void };
   /** Sets a held bar across the door or lifts the bar off it, from the side the player stands on. */
   enqueueDoorBar: (entity: BlockEntity, barring: boolean) => string | undefined;
   /** The held item's primary use in this hand, as the player tick runs it. */
@@ -876,11 +877,16 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- emotes ----
 
-  const emoteActions: Readonly<Record<Emote, { offered: () => boolean; perform: () => void }>> = {
-    'press-check': { offered: () => pressCheckUid() !== undefined, perform: pressCheck },
+  // A mode is what the hands hold, so its ring opens whenever the player holds one; each emote decides for itself.
+  const emoteModes: Readonly<Record<EmoteMode, () => boolean>> = {
+    gun: () => selectPrimaryAction(ports.inventory()).kind === 'firearm',
+  };
+  const emoteActions: Readonly<Record<Emote, { available: () => boolean; perform: () => void }>> = {
+    'press-check': { available: () => pressCheckUid() !== undefined, perform: pressCheck },
   };
   const emotes: CommandRouter['emotes'] = {
-    offered: () => (Object.keys(emoteActions) as Emote[]).filter((emote) => emoteActions[emote].offered()),
+    mode: (mode) => emoteModes[mode](),
+    emote: (emote) => emoteActions[emote].available(),
     perform: (emote) => emoteActions[emote].perform(),
   };
 

@@ -17,7 +17,8 @@
       directions: {
         furniture: { push: 0, drag: 180, lift: 270, repair: 90, continue: 135, take_apart: 225 },
         held: { own: 0, sharpen: 45, 'open-can': 90, 'magazine:strip': 135, 'battery:unload': 180, 'continue-work': 225, treat: 270 },
-        emote: { 'press-check': 0 },
+        emote: { gun: 0 },
+        gun: { 'press-check': 0 },
         treat: { head: 0, rightArm: 60, rightLeg: 135, torso: 180, leftLeg: 225, leftArm: 300 },
       },
     },

@@ -858,7 +858,7 @@ const startPlayWith = (
   const heldMenuEntries = (item: Item): RadialAction[] =>
     heldRadialEntries(survival.availableItemActions(item), screenText.actionMenu.treat, actionMenuTuning.directions);
   const emoteMenuEntries = (): RadialAction[] =>
-    emoteRadialEntries(router.emotes.offered(), screenText.emote, actionMenuTuning.directions.emote);
+    emoteRadialEntries(router.emotes, screenText.emote, actionMenuTuning.directions);
   const emotePress = new EmotePress({
     menu: actionMenu,
     entries: emoteMenuEntries,

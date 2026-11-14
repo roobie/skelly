@@ -835,8 +835,12 @@ try {
     }
   }
   await page.waitForFunction(() => !globalThis.fullAutoRuntime.session.queue.busy);
-  const releaseEmote = await holdAction(page, 'emote.menu');
+  const releaseMode = await holdAction(page, 'emote.menu');
   await waitForActionRing(page);
+  await pointActionMenu(page, 'gun');
+  await releaseMode();
+  await page.locator('#action-radial .radial-entry[data-action="press-check"]').waitFor({ state: 'attached' });
+  const releaseEmote = await holdAction(page, 'emote.menu');
   await pointActionMenu(page, 'press-check');
   await releaseEmote();
   await waitForActionRing(page, false);

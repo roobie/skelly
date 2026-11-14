@@ -116,7 +116,7 @@
     lift: 'Lift',
   },
   actionMenu: { treat: 'Treat', back: 'Back' },
-  emote: { 'press-check': 'Press check' },
+  emote: { gun: 'Gun', 'press-check': 'Press-check' },
   crafting: {
     heading: 'Crafting',
     all: 'All',
