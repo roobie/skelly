@@ -33,7 +33,6 @@
       strokePixels: 3,
       selectedLabelScale: 1.25,
       labelPaddingRem: 0.5,
-      labelRadiusRem: 0.375,
       entryCap: 8,
       directions: {
         furniture: { push: 0, drag: 180, lift: 270, repair: 90, continue: 135, take_apart: 225 },

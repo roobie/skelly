@@ -32,7 +32,6 @@
         },
         "entryCap": 8,
         "labelPaddingRem": 0.5,
-        "labelRadiusRem": 0.375,
         "pullIndicatorPixels": 6,
         "radiusPixels": 110,
         "selectedLabelScale": 1.25,

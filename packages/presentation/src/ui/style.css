@@ -115,8 +115,7 @@ body:not(.menu-pointer-locked)
   color: var(--control-disabled-ink);
   cursor: not-allowed;
 }
-:where(button)[aria-disabled="true"],
-button.inv-option-no {
+:where(button)[aria-disabled="true"] {
   border-style: dashed;
   border-color: var(--control-refusal-edge);
   color: var(--control-refusal-ink);
