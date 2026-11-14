@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change point-light wall reach, moving-source grid caching or already-lit fixture starts
+  - you change point-light wall reach, build-local blocking reuse, moving-source grid caching or already-lit fixture starts
   - you add a composed-site generation layer or decide which site format should grow
   - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
@@ -2812,8 +2812,10 @@ Every point light, including a held or dropped item, uses the rules' wall check 
 call dark must not look lit from behind brick. The shared reach grid keeps one truth instead of a second wall model
 in the shader. Moving sources rebuild reach only on a source-cell crossing, not every frame, to keep held lights
 cheap. A deferred rebuild keeps the last grid so scheduling cannot briefly remove wall occlusion.
-Nearby construction must still change reach for base building to work. Edges remain cell-wide because
-smoothing is not worth its cost yet; parked vehicle moves remain outside invalidation. See
+Nearby construction must still change reach for base building to work. Sharing blocking answers within a build
+avoids repeated world and furniture queries without inferring visibility from neighbouring rays: clear neighbours
+do not prove a clear path around a corner. Keeping that reuse local to a build prevents it from retaining a shut
+door or removed wall after invalidation. Parked vehicle moves remain outside invalidation. See
 `packages/engine/src/core/lampReach.ts`, `LampReachCache`; `packages/engine/src/core/illumination.ts`, `reaches`;
 `packages/presentation/src/render/lightPool.ts`, `LightPool`; `packages/presentation/src/render/fixtureReach.ts`,
 `FixtureReach`; and `packages/engine/src/core/schema/senses.ts`, `illumination`.

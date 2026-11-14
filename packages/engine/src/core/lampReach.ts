@@ -167,13 +167,31 @@ export class LampReachCache {
     const size = 2 * half + 1;
     const origin = light.pos.map((value) => Math.floor(value / cellBlocks) - half) as Vec3;
     const cells = new Uint8Array(size ** 3).fill(1);
+    // Rays share blocking queries, not visibility: a clear receiver does not prove its neighbours clear.
+    // Pad the bounds for a ray ending exactly on a voxel boundary in the negative direction.
+    const min = light.pos.map((value) => Math.floor(value - range) - 1) as Vec3;
+    const extent = Math.ceil(2 * range) + 3;
+    const blocking = new Uint8Array(extent ** 3);
+    const isBlocking: SolidAt = (x, y, z) => {
+      const index = x - min[0] + extent * (z - min[2] + extent * (y - min[1]));
+      let value = blocking[index]!;
+      if (value === 0) {
+        value = this.isBlocking(x, y, z) ? 2 : 1;
+        blocking[index] = value;
+      }
+      return value === 2;
+    };
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
         for (let x = 0; x < size; x++) {
-          const centre = [x, y, z].map((cell, axis) => (origin[axis]! + cell + 0.5) * cellBlocks) as Vec3;
-          const distance = Math.hypot(...centre.map((value, axis) => value - light.pos[axis]!));
+          const centre: Vec3 = [
+            (origin[0] + x + 0.5) * cellBlocks,
+            (origin[1] + y + 0.5) * cellBlocks,
+            (origin[2] + z + 0.5) * cellBlocks,
+          ];
+          const distance = Math.hypot(centre[0] - light.pos[0], centre[1] - light.pos[1], centre[2] - light.pos[2]);
           // Past the range no light is drawn, so the cell is never read; it keeps the default.
-          if (distance <= range && !reaches(light.pos, centre, this.isBlocking, light.body)) {
+          if (distance <= range && !reaches(light.pos, centre, isBlocking, light.body)) {
             cells[x + size * (z + size * y)] = 0;
           }
         }
