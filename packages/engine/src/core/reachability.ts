@@ -110,6 +110,7 @@ const qualityReady = (
 
 interface ClosureInput {
   registry: Registry;
+  recipes: readonly RecipeDef[];
   found: ReadonlySet<string>;
   tools: boolean;
   knowledge: ReadonlySet<string>;
@@ -134,14 +135,22 @@ const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
 };
 
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
-const closure = ({ registry, found, tools, knowledge, skills, workstationQualities }: ClosureInput): Set<string> => {
+const closure = ({
+  registry,
+  recipes,
+  found,
+  tools,
+  knowledge,
+  skills,
+  workstationQualities,
+}: ClosureInput): Set<string> => {
   const items = new Set(found);
   let previous: number;
   do {
     previous = items.size;
     addItemOutputs(registry, items);
     addDisassemblyOutputs(registry, items);
-    for (const recipe of registry.recipes.values()) {
+    for (const recipe of recipes) {
       if (
         recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
@@ -219,6 +228,8 @@ export interface ReachabilityScope {
   readonly sites?: ReadonlySet<string>;
   /** Start rows whose placements add their building and promised stock; absent means every start. */
   readonly starts?: readonly StartDef[];
+  /** Recipes diagnosed and craftable in this scope; absent means every authored recipe. */
+  readonly recipes?: ReadonlySet<string>;
   readonly items?: ReadonlySet<string>;
   readonly skills?: ReadonlyMap<string, number>;
 }
@@ -313,6 +324,20 @@ const addTemplateSources = (registry: Registry, template: CompiledTemplate, sour
   }
 };
 
+/** A home showcase's props: their fixture stock and the workstation a prop provides. */
+const addShowroomSources = (registry: Registry, layout: SiteLayoutDef, sources: WorldSourceAccumulator): void => {
+  for (const slot of layout.showroom?.slots ?? []) {
+    addWorkstationSource(
+      registry.furniture.get(slot.furniture)?.workstation,
+      sources.workstations,
+      sources.workstationQualities,
+    );
+    for (const item of slot.items ?? []) {
+      sources.placed.add(item.item);
+    }
+  }
+};
+
 const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   const roots = new Set<string>();
   const placed = new Set<string>();
@@ -320,15 +345,27 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   const workstationQualities = new Map<string, number>();
   const selected = (id: string) => scope.sites === undefined || scope.sites.has(id);
   const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo && selected(layout.id));
+  // A validated start's home site stays its world source even as a demo showcase: its buildings and
+  // showroom stock are what that start plays beside, while demo keeps the layout out of every other
+  // start's world.
+  const homeLayouts = [
+    ...new Set(
+      (scope.starts ?? []).flatMap(({ site }) => {
+        const layout = registry.layouts.get(site);
+        return layout?.demo ? [layout] : [];
+      }),
+    ),
+  ];
+  const layouts = [...authoredLayouts, ...homeLayouts];
   const scenarios = [...registry.scenarios.values()].filter((scenario) => selected(scenario.id));
   const sources: WorldSourceAccumulator = {
     roots,
     placed,
     workstations,
     workstationQualities,
-    actorTypes: worldActorTypes(registry, authoredLayouts, scenarios),
+    actorTypes: worldActorTypes(registry, layouts, scenarios),
   };
-  const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
+  const authoredTemplates = layouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenarioContent = scenarioSources(registry, scenarios, scope.starts);
   // Compilation follows every positive-weight kit alternative, not unused palette declarations.
   for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
@@ -341,11 +378,14 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
     }
   }
   const rolled = addLoot(registry, roots);
-  for (const item of authoredFixedLootItems(authoredLayouts)) {
+  for (const item of authoredFixedLootItems(layouts)) {
     placed.add(item);
   }
   for (const fixed of scenarioContent.fixedLoot.flatMap((source) => source.items)) {
     placed.add(fixed.item);
+  }
+  for (const layout of homeLayouts) {
+    addShowroomSources(registry, layout, sources);
   }
   const found = new Set([...rolled, ...placed, ...(scope.items ?? [])]);
   addItemOutputs(registry, found);
@@ -354,6 +394,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
 
 interface RecipeDiagnosticContext {
   registry: Registry;
+  recipes: readonly RecipeDef[];
   components: ReadonlySet<string>;
   toolReachable: ReadonlySet<string>;
   workstations: ReadonlySet<string>;
@@ -446,7 +487,7 @@ const workstationIssues = (recipe: RecipeDef, workstations: ReadonlySet<string>)
 
 const recipeDiagnostics = (context: RecipeDiagnosticContext): { issues: RecipeDiagnostic[] } => {
   const issues: RecipeDiagnostic[] = [];
-  for (const recipe of context.registry.recipes.values()) {
+  for (const recipe of context.recipes) {
     issues.push(
       ...knowledgeIssues(recipe, context.knowledge),
       ...componentIssues(context.registry, recipe, context.components),
@@ -486,9 +527,14 @@ const canPracticeRecipe = (
   ) &&
   (typeof recipe.workstation !== 'string' || workstations.has(recipe.workstation));
 
-const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: ReadonlySet<string>) => {
+const knownRecipes = (
+  registry: Registry,
+  recipes: readonly RecipeDef[],
+  found: ReadonlySet<string>,
+  known: ReadonlySet<string>,
+) => {
   const knowledge = new Set(known);
-  for (const recipe of registry.recipes.values()) {
+  for (const recipe of recipes) {
     if (recipe.skillUnlock && (!claimed(registry.skills, recipe.skillUnlock.skill) || recipe.skillUnlock.level === 0)) {
       knowledge.add(recipe.id);
     }
@@ -503,6 +549,7 @@ const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: Rea
 
 interface ReachableKnowledgeAndSkillsContext {
   registry: Registry;
+  recipes: readonly RecipeDef[];
   found: ReadonlySet<string>;
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
@@ -523,26 +570,27 @@ const addPracticeSkills = (registry: Registry, recipe: RecipeDef, skills: Map<st
 
 const reachableKnowledgeAndSkills = ({
   registry,
+  recipes,
   found,
   workstations,
   workstationQualities,
   known,
   startingSkills,
 }: ReachableKnowledgeAndSkillsContext) => {
-  const knowledge = knownRecipes(registry, found, known);
+  const knowledge = knownRecipes(registry, recipes, found, known);
   const skills = new Map(startingSkills);
   let changed: boolean;
   do {
     changed = false;
     const previousKnowledge = knowledge.size;
-    const tools = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
-    for (const recipe of registry.recipes.values()) {
+    const tools = closure({ registry, recipes, found, tools: true, knowledge, skills, workstationQualities });
+    for (const recipe of recipes) {
       if (!canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations, workstationQualities })) {
         continue;
       }
       changed = addPracticeSkills(registry, recipe, skills) || changed;
     }
-    for (const recipe of registry.recipes.values()) {
+    for (const recipe of recipes) {
       if (recipe.skillUnlock && (skills.get(recipe.skillUnlock.skill) ?? 0) >= recipe.skillUnlock.level) {
         knowledge.add(recipe.id);
       }
@@ -557,19 +605,25 @@ export const checkReachability = (
   known: ReadonlySet<string> = new Set(),
   scope?: ReachabilityScope,
 ) => {
+  const recipes =
+    scope?.recipes === undefined
+      ? [...registry.recipes.values()]
+      : [...registry.recipes.values()].filter(({ id }) => scope.recipes!.has(id));
   const { found, placed, rolled, workstations, workstationQualities } = worldSources(registry, scope);
   const { knowledge, skills } = reachableKnowledgeAndSkills({
     registry,
+    recipes,
     found,
     workstations,
     workstationQualities,
     known,
     startingSkills: scope?.skills ?? new Map(),
   });
-  const components = closure({ registry, found, tools: false, knowledge, skills, workstationQualities });
-  const toolReachable = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
+  const components = closure({ registry, recipes, found, tools: false, knowledge, skills, workstationQualities });
+  const toolReachable = closure({ registry, recipes, found, tools: true, knowledge, skills, workstationQualities });
   const { issues } = recipeDiagnostics({
     registry,
+    recipes,
     components,
     toolReachable,
     workstations,

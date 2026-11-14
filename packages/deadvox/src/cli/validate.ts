@@ -69,9 +69,53 @@ const figureFileIssues = (registry: Registry, read: (contentFile: string, file: 
     return found.map(({ path, message }) => ({ source: origin.source, path: origin.path + path, message }));
   });
 
-const playableStartIssues = (registry: Registry, write: (line: string) => void): ContentIssue[] =>
-  [...registry.starts.values()].flatMap((start) => {
-    const reachable = checkStartReachability(registry, start);
+/** Each start is diagnosed against the recipes its own pack's dependency closure offers, not the whole stack. */
+const startRecipeScope = (
+  registry: Registry,
+  packs: readonly { source: string; manifest: { id: string; dependencies: readonly string[] } }[],
+) => {
+  const packOfContent = (source: string | undefined): string | undefined =>
+    packs.find(({ source: root }) => source === root || source?.startsWith(`${root}/`))?.manifest.id;
+  const closures = new Map<string, ReadonlySet<string>>();
+  const closureOf = (id: string): ReadonlySet<string> => {
+    const cached = closures.get(id);
+    if (cached) {
+      return cached;
+    }
+    const closure = new Set<string>([id]);
+    for (const dependency of packs.find((pack) => pack.manifest.id === id)?.manifest.dependencies ?? []) {
+      for (const reachable of closureOf(dependency)) {
+        closure.add(reachable);
+      }
+    }
+    closures.set(id, closure);
+    return closure;
+  };
+  return (start: { id: string }): ReadonlySet<string> | undefined => {
+    const owner = packOfContent(registry.contentOrigins.get(`starts:${start.id}`)?.source);
+    if (!owner) {
+      // A start outside every pack is diagnosed against every recipe, as a directly supplied fragment is.
+      return undefined;
+    }
+    const closure = closureOf(owner);
+    return new Set(
+      [...registry.recipes.keys()].filter((id) => {
+        const pack = packOfContent(registry.contentOrigins.get(`recipes:${id}`)?.source);
+        return pack === undefined || closure.has(pack);
+      }),
+    );
+  };
+};
+
+const playableStartIssues = (
+  registry: Registry,
+  packs: readonly { source: string; manifest: { id: string; dependencies: readonly string[] } }[],
+  write: (line: string) => void,
+): ContentIssue[] => {
+  const recipeScope = startRecipeScope(registry, packs);
+  return [...registry.starts.values()].flatMap((start) => {
+    const recipes = recipeScope(start);
+    const reachable = checkStartReachability(registry, start, recipes === undefined ? {} : { recipes });
     write(
       `Start "${start.id}": component closure ${reachable.components.size} item types (${reachable.found.size} found)`,
     );
@@ -86,6 +130,7 @@ const playableStartIssues = (registry: Registry, write: (line: string) => void):
       };
     });
   });
+};
 
 /** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
 export const validate = (
@@ -170,7 +215,7 @@ export const validate = (
   }
   const { registry, issues, origins } = buildRegistry(sources);
   issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
-  issues.push(...playableStartIssues(registry, write));
+  issues.push(...playableStartIssues(registry, admitted.packs, write));
   issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins, new Set(base)));
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {
