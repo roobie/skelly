@@ -2801,7 +2801,9 @@ authors an offset, and the offset turns with the piece. See `packages/engine/src
 
 A lit fixture shows its own body as lit through content-tuned glow: its light sits inside the opaque body,
 so a point light cannot light the body's outward-facing surfaces. Unpowered pieces must not borrow that glow
-through shared materials. This is a presentation cue, not extra reach or lit cells for the rules. See
+through shared materials. Figures and vehicles own their looks separately, so a furniture glow selection
+must not silently promise emission those look owners never render.
+This is a presentation cue, not extra reach or lit cells for the rules. See
 `packages/presentation/src/render/furniture.ts`, `FurnitureMeshes.bodyGlow`, and
 `packages/engine/src/core/schema/furniture.ts`, `FurnitureSchema`.
 

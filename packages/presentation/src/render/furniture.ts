@@ -250,8 +250,12 @@ export class FurnitureMeshes {
   private updateGlow(entities: BlockEntities, poweredLights: readonly PoweredLight[]): Set<BlockEntity> {
     const glowing = new Set<BlockEntity>();
     for (const { body } of poweredLights) {
-      const entity = body && entities.at(...body.min);
-      if (entity && entities.defOf(entity).power?.light?.emissive) {
+      const entity = body && entities.atOrigin(body.min);
+      if (
+        entity &&
+        body?.min.every((value, axis) => entity.pos[axis] === value) &&
+        entities.defOf(entity).power?.light?.emissive
+      ) {
         glowing.add(entity);
       }
     }
@@ -436,7 +440,7 @@ export class FurnitureMeshes {
   private meshFor(entity: BlockEntity, def: FurnitureDef, wait = true): Group | Mesh {
     const material = this.material(def.color);
     if (def.id === 'workshop_lift') {
-      return workshopLift(entity, this.blockSize);
+      return this.bodyGlowMesh(entity, def, workshopLift(entity, this.blockSize));
     }
     if (def.vehicle) {
       return vehicleModel(entity, def.vehicle, def.size[1], {
@@ -450,7 +454,7 @@ export class FurnitureMeshes {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).
     }
     if (def.door) {
-      return this.door(entity, material, def);
+      return this.bodyGlowMesh(entity, def, this.door(entity, material, def));
     }
     return this.standingMesh(entity, def);
   }
@@ -464,6 +468,15 @@ export class FurnitureMeshes {
       return this.shaped(entity, def, material);
     }
     return this.box(entity, material);
+  }
+
+  private bodyGlowMesh(entity: BlockEntity, def: FurnitureDef, mesh: Group | Mesh): Group | Mesh {
+    mesh.traverse((part) => {
+      if (part instanceof Mesh && part.material instanceof MeshLambertMaterial) {
+        part.material = this.bodyGlow(entity, def, part.material);
+      }
+    });
+    return mesh;
   }
 
   private bodyGlow(entity: BlockEntity, def: FurnitureDef, base: MeshLambertMaterial): MeshLambertMaterial {
@@ -483,6 +496,7 @@ export class FurnitureMeshes {
         }),
         'furniture',
       );
+      material.defines = { ...base.defines };
       this.materials.set(key, material);
     }
     return material;

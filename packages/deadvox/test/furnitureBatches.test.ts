@@ -174,6 +174,105 @@ describe('furniture batches', () => {
     }
     furniture.dispose();
   });
+  it('does not lend an open powered doorway glow to its overlapping unpowered barricade', () => {
+    const power = {
+      device: 'fixture_light',
+      fuelLitres: 0,
+      enabled: true,
+      light: { color: '#ffd080', intensity: 1, radius: 2, emissive: 0.7 },
+    };
+    const { registry, issues } = buildFixtureRegistry([
+      {
+        source: 'doorway-glow.json',
+        data: {
+          powerDevices: [{ id: 'fixture_light', kind: 'consumer', priority: 1, demandWatts: 10 }],
+          furniture: [plain, door].map((base) => ({ ...base, size: [2, 3, 1], power })),
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(registry);
+    const leaf = entities.add({ type: door.id, size: [2, 3, 1], pos: [1, 0, 0], facing: 'n' })!;
+    expect(entities.setOpen(leaf, true)).toBeUndefined();
+    const box = entities.add({ type: plain.id, size: [2, 3, 1], pos: [0, 0, 0], facing: 'n' })!;
+    expect(box).toBeDefined();
+    expect(entities.at(...leaf.pos)).toBe(box);
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities, [{ ...power.light, pos: [1.5, 2.5, 0.5], body: { min: leaf.pos, max: [3, 3, 1] } }]);
+    const material = (furniture.pieceMesh(box, registry.furniture.get(box.type)!) as Mesh)
+      .material as MeshLambertMaterial;
+    expect(Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * material.emissiveIntensity).toBe(
+      0,
+    );
+    furniture.dispose();
+  });
+
+  it.each([
+    { door: { handlingSimSeconds: 0.5, methods: {} } },
+    {
+      door: {
+        handlingSimSeconds: 0.5,
+        methods: {},
+        detail: {
+          hardware: '#888888',
+          relief: 0.01,
+          frame: 0.02,
+          seam: 0.01,
+          fields: [1, 1],
+          hinges: { count: 2, length: 0.1, width: 0.02 },
+          handle: { kind: 'knob', fromFreeEdge: 0.08, along: 0.5, length: 0.04, thickness: 0.02 },
+        },
+      },
+    },
+    { door: { handlingSimSeconds: 0.5, methods: {}, hatch: true } },
+    {
+      door: { handlingSimSeconds: 0.5, methods: {} },
+      shape: [{ position: [0, 0, 0], size: [2, 3, 1], color: '#7a6248' }],
+      container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 1 }] },
+    },
+  ])('powers and extinguishes every door-body render path without lighting the unpowered twin: %j', (look) => {
+    const power = {
+      device: 'fixture_light',
+      fuelLitres: 0,
+      enabled: true,
+      light: { color: '#ffd080', intensity: 1, radius: 2, emissive: 0.7 },
+    };
+    const { registry, issues } = buildFixtureRegistry([
+      {
+        source: 'door-glow.json',
+        data: {
+          powerDevices: [{ id: 'fixture_light', kind: 'consumer', priority: 1, demandWatts: 10 }],
+          furniture: [{ ...door, ...look, power }],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const entities = new BlockEntities(registry);
+    const def = registry.furniture.get(door.id)!;
+    const leaf = entities.add({ type: def.id, size: def.size, pos: [0, 0, 0], facing: 'n' })!;
+    const twin = entities.add({ type: def.id, size: def.size, pos: [4, 0, 0], facing: 'n' })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    const emissions = (entity: BlockEntity) => {
+      const values: number[] = [];
+      furniture.pieceMesh(entity, def).traverse((part) => {
+        if (part instanceof MeshClass) {
+          const material = part.material as MeshLambertMaterial;
+          values.push(
+            Math.max(material.emissive.r, material.emissive.g, material.emissive.b) * material.emissiveIntensity,
+          );
+        }
+      });
+      expect(values.length).toBeGreaterThan(0);
+      return values;
+    };
+    furniture.sync(entities, [{ ...power.light, pos: [0.5, 2.5, 0.5], body: { min: leaf.pos, max: [2, 3, 1] } }]);
+    expect(emissions(leaf).every((value) => value > 0)).toBe(true);
+    expect(emissions(twin).every((value) => value === 0)).toBe(true);
+    furniture.sync(entities, []);
+    expect(emissions(leaf).every((value) => value === 0)).toBe(true);
+    furniture.dispose();
+  });
+
   it('keeps a plain piece mesh and batch identical when a model arrives', async () => {
     const { ModelLibrary } = await import('@skelly/presentation/internal/render/models.ts');
     const { registry, entities } = fixture();
