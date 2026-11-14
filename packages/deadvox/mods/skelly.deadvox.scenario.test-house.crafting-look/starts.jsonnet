@@ -5,13 +5,13 @@ local catalogue = import 'catalogue.jsonnet';
   starts: [kit.fixture + kit.notSiteDefault + {
     id: 'craftinglook', site: 'testHouseCraftingLook',
     startTimeGameTimeOfDay: kit.day.noonGameTimeOfDay,
-    recipes: [recipe.id for recipe in catalogue.recipes],
+    recipes: kit.common.recipes + [recipe.id for recipe in catalogue.recipes],
   }],
   layouts: [base + {
     id: 'testHouseCraftingLook',
     actors: [],
     showroom: base.showroom + {
-      row: [-12, 21.5, -1],
+      row: [-8.5, 21.5, -1],
       slots: [{
         furniture: 'workbench',
         items: [

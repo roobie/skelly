@@ -110,7 +110,7 @@
         "capacity": 3,
         "facing": "s",
         "focusDistance": 1,
-        "row": [-12, 21.5, -1],
+        "row": [-8.5, 21.5, -1],
         "slots": [
           {
             "furniture": "workbench",
@@ -286,6 +286,19 @@
         }
       ],
       "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete",
         "craft_look_result_1",
         "craft_look_result_2",
         "craft_look_result_3",

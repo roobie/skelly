@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import process from 'node:process';
 import { pressAction } from './input-actions.mjs';
 
 export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) => {
@@ -61,11 +62,12 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
     };
     return { emptyToAllRenderMs: measure(''), narrowedFilterRenderMs: measure('Catalogue sample 0001') };
   });
+  process.stdout.write(`craft catalogue timing ${JSON.stringify(timings)}\n`);
   await activate(page.locator('[data-craft-result="craft_look_result_1"]'));
   const group = page.locator('[data-craft-group="0"]');
   assert.ok(
     (await group.textContent()).includes('Wood look'),
-    'automatic choice reflects competing stock, not the first alternative',
+    `automatic choice reflects competing stock, not the first alternative: ${await page.locator('.craft-recipe').textContent()}`,
   );
   await activate(group);
   const alternatives = await page.locator('.craft-alternatives').textContent();
