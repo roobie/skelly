@@ -272,6 +272,10 @@ try {
       { timeout: 60_000 },
     );
     if (mode === 'lighting-cellar') {
+      const pointLightRays = await timePhase('point-light-ray-equality', () =>
+        page.evaluate(async (path) => (await import(path)).pointLightRayProof(), '/test/browser/point-light-ray.ts'),
+      );
+      process.stdout.write(`POINT_LIGHT_RAYS ${JSON.stringify(pointLightRays)}\n`);
       const undergroundSun = await timePhase('buried-sun-receiver-rule', () =>
         page.evaluate(async (path) => (await import(path)).undergroundSunProof(), '/test/browser/underground-sun.ts'),
       );

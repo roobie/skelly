@@ -58,6 +58,12 @@ export class LampReachCache {
   private readonly tuning: LampReachTuning;
   private readonly blockSize: number;
   private readonly entities: BlockEntities;
+  private readonly world: World;
+  private readonly blockingChunks = new Map<string, Uint8Array>();
+  private readonly dirtyBlockingChunks = new Set<string>();
+  private blockingVolume:
+    | { version: number; standing: number; origin: Vec3; size: Vec3; cells: Uint8Array }
+    | undefined;
   private standing: number;
   private readonly unwatch: () => void;
 
@@ -71,10 +77,90 @@ export class LampReachCache {
     this.blockSize = blockSize;
     this.tuning = tuning;
     this.entities = owner.entities;
+    this.world = owner.world;
     this.standing = owner.entities.standing;
     this.unwatch = owner.world.watchChunks((cx, cy, cz) => {
+      if (this.blockingVolume) {
+        this.dirtyBlockingChunks.add(`${cx},${cy},${cz}`);
+      }
       this.markStale([cx * CHUNK, cy * CHUNK, cz * CHUNK], [(cx + 1) * CHUNK, (cy + 1) * CHUNK, (cz + 1) * CHUNK]);
     });
+  }
+
+  /** Prototype GPU input: the same blocking predicate as the rules, rebuilt only when its owners change. */
+  blockers(): { origin: Vec3; size: Vec3; cells: Uint8Array } {
+    if (
+      this.blockingVolume?.version === this.world.version &&
+      this.blockingVolume.standing === this.entities.standing
+    ) {
+      return this.blockingVolume;
+    }
+    const pieces = this.entities.standingChangesSince(this.blockingVolume?.standing ?? -1);
+    const { origin, size } = this.blockerBounds();
+    const cells = new Uint8Array(size[0] * size[1] * size[2]);
+    for (const key of this.blockingChunks.keys()) {
+      if (!this.world.chunks.has(key)) {
+        this.blockingChunks.delete(key);
+      }
+    }
+    for (const [key, { cx, cy, cz }] of this.world.chunks) {
+      const min: Vec3 = [cx * CHUNK, cy * CHUNK, cz * CHUNK];
+      const max: Vec3 = min.map((v) => v + CHUNK) as Vec3;
+      const pieceChanged =
+        pieces === undefined ||
+        pieces.some(({ pos, size: s }) => boxesOverlap(min, max, pos, pos.map((v, axis) => v + s[axis]!) as Vec3));
+      let chunk = this.blockingChunks.get(key);
+      if (!chunk || pieceChanged || this.dirtyBlockingChunks.has(key)) {
+        chunk = this.sampleBlockingChunk(min);
+        this.blockingChunks.set(key, chunk);
+      }
+      this.packBlockingChunk(chunk, min, { cells, origin, size });
+    }
+    this.dirtyBlockingChunks.clear();
+    this.blockingVolume = { version: this.world.version, standing: this.entities.standing, origin, size, cells };
+    return this.blockingVolume;
+  }
+
+  private sampleBlockingChunk(min: Vec3): Uint8Array {
+    const cells = new Uint8Array(CHUNK ** 3);
+    for (let z = 0; z < CHUNK; z++) {
+      for (let y = 0; y < CHUNK; y++) {
+        for (let x = 0; x < CHUNK; x++) {
+          cells[x + CHUNK * (y + CHUNK * z)] = this.isBlocking(x + min[0], y + min[1], z + min[2]) ? 255 : 0;
+        }
+      }
+    }
+    return cells;
+  }
+
+  private packBlockingChunk(
+    chunk: Uint8Array,
+    min: Vec3,
+    { cells, origin, size }: { cells: Uint8Array; origin: Vec3; size: Vec3 },
+  ): void {
+    for (let z = 0; z < CHUNK; z++) {
+      for (let y = 0; y < CHUNK; y++) {
+        const source = CHUNK * (y + CHUNK * z);
+        const target = min[0] - origin[0] + size[0] * (min[1] - origin[1] + y + size[1] * (min[2] - origin[2] + z));
+        cells.set(chunk.subarray(source, source + CHUNK), target);
+      }
+    }
+  }
+
+  private blockerBounds(): { origin: Vec3; size: Vec3 } {
+    const origin: Vec3 = [0, 0, 0];
+    const end: Vec3 = [1, 1, 1];
+    let first = true;
+    for (const { cx, cy, cz } of this.world.chunks.values()) {
+      const chunk = [cx, cy, cz];
+      for (let axis = 0; axis < 3; axis++) {
+        const low = chunk[axis]! * CHUNK;
+        origin[axis] = first ? low : Math.min(origin[axis]!, low);
+        end[axis] = first ? low + CHUNK : Math.max(end[axis]!, low + CHUNK);
+      }
+      first = false;
+    }
+    return { origin, size: end.map((value, axis) => value - origin[axis]!) as Vec3 };
   }
 
   /** Stops watching the world. */
