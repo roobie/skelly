@@ -46,6 +46,11 @@ export interface BodyGlow {
   readonly radiusMetres: number;
 }
 
+/** What a light in the world shines with: it follows the world's daylight scale, not the camera's adaptation. */
+function worldIntensity(base: number, { worldDaylightScale, daylightScale }: LightPoolContext): number {
+  return base * (worldDaylightScale ?? daylightScale);
+}
+
 /** The acid sacs' glows as drawn this frame. */
 export function acidGlows(anchors: Iterable<DrawnAnchors>): BodyGlow[] {
   const glows: BodyGlow[] = [];
@@ -135,14 +140,14 @@ export class LightPool {
 
   private updateFixtureSlot(index: number, fixture: PoweredLight | undefined, context: LightPoolContext): void {
     const light = this.lights[index]!;
-    const { blockSize, daylightScale } = context;
+    const { blockSize } = context;
     this.flareSkipped[index] = false;
     if (!fixture) {
       light.intensity = 0;
       this.syncHandLight(index, light);
       return;
     }
-    light.intensity = fixture.intensity * (context.worldDaylightScale ?? daylightScale);
+    light.intensity = worldIntensity(fixture.intensity, context);
     light.position.set(...(fixture.pos.map((value) => value * blockSize) as [number, number, number]));
     light.color.set(fixture.color);
     light.distance = fixture.radius;
@@ -216,7 +221,7 @@ export class LightPool {
           light.position.set(...glow.position);
           light.color.set(glow.color);
           light.distance = glow.radiusMetres;
-          light.intensity = glow.intensity * daylightScale;
+          light.intensity = worldIntensity(glow.intensity, context);
         } else {
           light.intensity = 0;
         }
@@ -229,7 +234,7 @@ export class LightPool {
       light.position.copy(position);
       light.color.set(spec.color);
       light.distance = spec.radius;
-      light.intensity = spec.intensity * (context.worldDaylightScale ?? daylightScale);
+      light.intensity = worldIntensity(spec.intensity, context);
       this.flareSkipped[index] = spec.nightVision !== undefined;
       this.syncHandLight(index, light, spec.intensity * daylightScale);
     }
