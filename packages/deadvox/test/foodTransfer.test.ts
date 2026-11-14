@@ -197,7 +197,9 @@ describe('food exposure across ownership changes', () => {
 
   it('ruined furniture settles its pocket food before the contents fall', () => {
     const { inventory, clock, exposure } = world();
-    const [type, def] = [...registry.furniture.entries()].find(([, f]) => f.container && !f.container.accepts && !f.door)!;
+    const [type, def] = [...registry.furniture.entries()].find(
+      ([, f]) => f.container && !f.container.accepts && !f.door,
+    )!;
     const entity = inventory.furnish({ type, pos: [20, FLOOR, 20], size: [...def.size], facing: 'n' })!;
     const apples = inventory.create(fixtureFood.id, 2);
     expect(inventory.add(apples, { kind: 'furniture', entity, pocket: 0 })).toBe(true);

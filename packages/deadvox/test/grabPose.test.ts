@@ -73,7 +73,9 @@ describe('world grab progress', () => {
     const sources: Record<string, (inventory: Inventory) => Target> = {
       ground: () => ({ kind: 'pile', pos: FLOOR }),
       furniture: (inventory) => {
-        const [type, def] = [...registry.furniture.entries()].find(([, f]) => f.container && !f.container.accepts && !f.door)!;
+        const [type, def] = [...registry.furniture.entries()].find(
+          ([, f]) => f.container && !f.container.accepts && !f.door,
+        )!;
         const entity = inventory.furnish({ type, pos: [8, 1, 8], size: [...def.size], facing: 'n' })!;
         inventory.entities.markSearched(entity);
         return { kind: 'furniture', entity, pocket: 0 };
