@@ -25,9 +25,11 @@ export function runSkySelectionProof() {
   const witness = new Scene();
   fixture.update();
   const compiled = fixture.shader();
-  const declarations = compiled.fragmentShader
-    .slice(0, compiled.fragmentShader.indexOf('irradiance *='))
-    .replace('#include <common>', '');
+  const { fragmentShader } = compiled;
+  const declarations = fragmentShader.slice(
+    fragmentShader.indexOf('uniform float uSkyDaylight'),
+    fragmentShader.indexOf('\n}', fragmentShader.indexOf('vec2 skyVisibility(')) + 2,
+  );
   const material = new ShaderMaterial({
     uniforms: { ...compiled.uniforms, point: { value: new Vector3() } },
     vertexShader:
