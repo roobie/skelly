@@ -485,6 +485,14 @@ body.unconscious::after {
 #world-loading[hidden] {
   display: none;
 }
+.craft-layout button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.craft-components button {
+  width: 100%;
+}
 #overlay {
   position: fixed;
   z-index: var(--ui-layer-menu-overlay);
@@ -1977,11 +1985,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   min-width: 0;
   box-sizing: border-box;
 }
-.craft-layout button {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  text-align: left;
-}
 .craft-layout button[aria-pressed="true"] {
   border-color: var(--accent);
 }
@@ -2025,9 +2028,6 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 .craft-alternatives {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-.craft-components button {
-  width: 100%;
 }
 .craft-components small {
   display: block;
