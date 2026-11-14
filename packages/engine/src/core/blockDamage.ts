@@ -124,6 +124,8 @@ const materialAt = (world: World, registry: Registry, cell: Readonly<Vec3>): Blo
 export class BlockDamage {
   private readonly entries = new Map<string, DamageEntry>();
   private nextEpoch = 1;
+  /** Goes up whenever any cell's damage changes, so a view redraws damage only then. */
+  version = 0;
 
   private readonly world: World;
 
@@ -133,6 +135,13 @@ export class BlockDamage {
 
   get(cell: Readonly<Vec3>): Readonly<DamageEntry> | undefined {
     return this.entries.get(keyOf(cell));
+  }
+
+  /** Every damaged cell with its damage, in no set order. */
+  *damaged(): Generator<readonly [Vec3, Readonly<DamageEntry>]> {
+    for (const [key, entry] of this.entries) {
+      yield [key.split(',').map(Number) as Vec3, entry];
+    }
   }
 
   record(terrain: CanonicalTerrain, registry: Registry, cell: Readonly<Vec3>, damage: number): Readonly<DamageEntry> {
@@ -154,6 +163,7 @@ export class BlockDamage {
     }
     const entry = Object.freeze({ damage, epoch });
     this.entries.set(keyOf(cell), entry);
+    this.version += 1;
     this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     return entry;
   }
@@ -161,6 +171,7 @@ export class BlockDamage {
   /** Replacement and completed repair end the identity, even when the same block is later rebuilt here. */
   clear(cell: Readonly<Vec3>): void {
     if (this.entries.delete(keyOf(cell))) {
+      this.version += 1;
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
   }
@@ -178,6 +189,7 @@ export class BlockDamage {
       return true;
     }
     this.entries.set(keyOf(cell), Object.freeze({ damage: remaining, epoch: entry.epoch }));
+    this.version += 1;
     this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     return true;
   }
@@ -222,6 +234,7 @@ export class BlockDamage {
         continue;
       }
       this.entries.set(key, Object.freeze({ damage, epoch }));
+      this.version += 1;
       epochs.add(epoch);
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
