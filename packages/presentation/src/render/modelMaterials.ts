@@ -140,7 +140,8 @@ const fabricStandIn = (kind: (typeof FABRIC_KINDS)[number]): MeshPhysicalMateria
  * uniforms), and a lit item's glow adds its own. Fabric warms only opaque and one-sided, the form models wear it in,
  * because each grain program is costly to compile. `instanced` adds the instanced copies ground piles draw with,
  * `skyAnchored` the sky-anchored copies vehicles draw with, and `finishedVariants` the finished copies vehicles draw
- * with while that option is on (of the base variants only, since no finish has a fabric), anchored as vehicles anchor them, so turning it on compiles nothing. Content outside
+ * with while that option is on, anchored as vehicles anchor them, so turning it on compiles nothing. Finished copies
+ * come from the base variants only, because the modelMaterials test refuses a finish that has a fabric. Content outside
  * these variants compiles on first draw, which `packages/deadvox/test/modelMaterials.test.ts` checks the pack against.
  */
 export const modelMaterialWarmUp = ({

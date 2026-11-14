@@ -256,9 +256,9 @@ describe('runtime closure', () => {
     expect(violationsIn({ ...dependent, 'packages/kit/src/math.ts': 'export const grain = 1;\n' })).toEqual([]);
     const reaching = violationsIn({
       ...dependent,
-      'packages/kit/src/math.ts': `import { view } from '${'../'.repeat(3)}deadvox/src/render/view.ts';\nexport const grain = view;\n`,
+      'packages/kit/src/math.ts': `import { view } from '${'../'.repeat(2)}deadvox/src/render/view.ts';\nexport const grain = view;\n`,
     });
-    expect(importers(reaching)).toEqual(['packages/kit/src/math.ts']);
+    expect(reasons(reaching)).toEqual([['packages/kit/src/math.ts', 'reaches a forbidden directory']]);
   });
 
   it('fails a runtime file that imports product configuration JSON (W3)', () => {
