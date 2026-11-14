@@ -2199,10 +2199,13 @@ export const createSession = (options: SessionOptions) => {
       : undefined;
   };
 
+  /** The gun the player would raise: the one a running press check checks, else the gun in hand. */
+  const raisableFirearm = (): Item | undefined => pressCheckedFirearm() ?? firearmInHands();
+
   /** The firearm in hand, whether the player readies it by gait, and the one raised this step if any. */
   const raisedFirearm = (moving: boolean) => {
     const checked = pressCheckedFirearm();
-    const heldFirearm = checked ?? firearmInHands();
+    const heldFirearm = raisableFirearm();
     const firearmHand =
       inventory.hands[dominantSide(character)] === heldFirearm ? dominantSide(character) : offSide(character);
     // A firearm is raised in the hand that holds it; on a ladder that hand must be free of it.
@@ -2789,6 +2792,8 @@ export const createSession = (options: SessionOptions) => {
     /** Explosives' pins and burning fuses; a pin is pulled here, and the fuse lights once the item leaves the hand. */
     fuses,
     aim,
+    /** The gun the simulation raises, so the view draws, aims and plays handling on the same one. */
+    raisableFirearm,
     get firearmsSkillZeroHandling() {
       return sessionFirearmsSkillZeroHandling(
         firearms,

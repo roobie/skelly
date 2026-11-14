@@ -38,7 +38,6 @@ import {
   defOf,
   doorOptions,
   doorPlan,
-  firearmHandlingFor,
   type HandSide,
   heldDoorBar,
   type Inventory,
@@ -59,7 +58,6 @@ import {
   playerEyePosition,
   playerHeldSeatFrame,
   playerLookPose,
-  sightedFirearmModel,
 } from '@skelly/engine/pose';
 import type { SaveSnapshot } from '@skelly/engine/save';
 import {
@@ -110,7 +108,6 @@ import {
   realSeconds as realDuration,
   realTimestamp,
   restKindForFurniture,
-  selectPrimaryAction,
   stageMarkArea,
   unarmedMeleeWeapon,
 } from '@skelly/engine/sim';
@@ -200,6 +197,7 @@ import type {
   SkyRouteAttachment,
 } from './debugInterface.ts';
 import { debugTargetRay } from './debugTargetRay.ts';
+import { drawnFirearm } from './drawnFirearm.ts';
 import type { Engine } from './engine.ts';
 import { GuidedSteps } from './guidedSteps.ts';
 import { Input } from './input.ts';
@@ -1199,15 +1197,12 @@ const startPlayWith = (
   } = session;
   const playHalted = { value: false };
   const opticZoom = new OpticZoom(registry);
-  const zoomFirearm = () => {
-    const selected = selectPrimaryAction(inventory);
-    return selected.kind === 'firearm' ? selected.item : undefined;
-  };
+  const zoomFirearm = () => session.raisableFirearm();
   const { hasGunPoseInput, isFirearmReady, isAimingDownSights, shouldPlayerBlock } = router.readiness;
   /** Effective ADS: wanted and, for a long gun, acquired through its Combat-owned acquisition time. */
   const isAimedDownSights = (): boolean => {
-    const action = selectPrimaryAction(inventory);
-    return action.kind === 'firearm' && isAimingDownSights() && firearms.isAdsAcquired(action.item.uid);
+    const gun = session.raisableFirearm();
+    return gun !== undefined && isAimingDownSights() && firearms.isAdsAcquired(gun.uid);
   };
   /**
    * The view's share of the aim from hip to sights: it rides the sim's acquisition progress while the
@@ -1217,11 +1212,11 @@ const startPlayWith = (
   const adsViewBlend = claimed(registry.figures, 'player')!.aimPose.ads.viewBlend;
   let adsAimShown = 0;
   const adsAimTarget = (): number => {
-    const action = selectPrimaryAction(inventory);
-    if (!(action.kind === 'firearm' && isAimingDownSights())) {
+    const gun = session.raisableFirearm();
+    if (!(gun && isAimingDownSights())) {
       return 0;
     }
-    const progress = firearms.adsAcquisitionProgress(action.item.uid);
+    const progress = firearms.adsAcquisitionProgress(gun.uid);
     const eased = adsViewBlend.easing === 'smoothstep' ? progress * progress * (3 - 2 * progress) : progress;
     return eased;
   };
@@ -2688,16 +2683,16 @@ const startPlayWith = (
   };
 
   const firearmReadiness = () => {
-    const selected = selectPrimaryAction(inventory);
+    const gun = session.raisableFirearm();
     // The simulation raises the gun for a press check without the ready input; see
     // `packages/engine/src/game/session.ts`, `raisedFirearm`.
     const raised = debugGunPose.readyHeld(input.controls.rightMouseActionHeld) || pressChecking();
-    if (selected.kind !== 'firearm' || !raised || !hasGunPoseInput()) {
+    if (!(gun && raised && hasGunPoseInput())) {
       return;
     }
     return {
-      uid: selected.item.uid,
-      progress: firearms.readyProgress(selected.item.uid),
+      uid: gun.uid,
+      progress: firearms.readyProgress(gun.uid),
       aimingDownSights: isAimedDownSights(),
       adsAim: adsAimShown,
     };
@@ -2748,23 +2743,8 @@ const startPlayWith = (
     });
   };
 
-  /** The firearm the primary action uses, with the model it is drawn as and the hand holding it. */
-  const heldFirearm = () => {
-    const selected = selectPrimaryAction(inventory);
-    if (selected.kind !== 'firearm') {
-      return;
-    }
-    const { item } = selected;
-    return {
-      item,
-      model: sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model,
-      side: inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const),
-      frame: firearms.frames().find((entry) => entry.uid === item.uid),
-    };
-  };
-
   const heldLook = (): { readonly yaw: number; readonly pitch: number } => {
-    const held = heldFirearm();
+    const held = drawnFirearm(session);
     return held ? handlingLook(held.model, held.side, held.frame) : { yaw: 0, pitch: 0 };
   };
 
@@ -2774,7 +2754,7 @@ const startPlayWith = (
   };
 
   const heldFirearmBore = (readiness = firearmReadiness()) => {
-    const held = heldFirearm();
+    const held = drawnFirearm(session);
     if (!held) {
       return;
     }
@@ -2907,8 +2887,8 @@ const startPlayWith = (
     if (!debugTools) {
       return;
     }
-    const selected = selectPrimaryAction(inventory);
-    const firearmReady = selected.kind === 'firearm' && isFirearmReady(selected.item.uid);
+    const gun = session.raisableFirearm();
+    const firearmReady = gun !== undefined && isFirearmReady(gun.uid);
     const ray = debugTargetRay({
       bore,
       eye: eye(),
