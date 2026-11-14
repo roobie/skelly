@@ -89,7 +89,8 @@ export const handlingShift = (
 
 /**
  * How far handling turns the eyes off the aim, in radians (yaw left, pitch up): a press check looks toward the port by
- * its clip, toward the off hand for either hand. Only the view turns; the aim and the held gun stay where they are.
+ * its clip, whose yaw counts toward the off hand so a left-hander mirrors it. Only the view turns; the aim and the held
+ * gun stay where they are.
  */
 export const handlingLook = (
   model: ModelDef | undefined,

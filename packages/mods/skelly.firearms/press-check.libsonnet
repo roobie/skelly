@@ -5,44 +5,45 @@
 local check = import 'packages/skelly-assets/models/poses/press-check.libsonnet';
 
 // Per pose frame, in its numbered order: the turn off the hold in degrees, the lift off it in metres (up, back toward
-// the eye and across toward the off hand) that brings the ejection port into view, the eyes' small turn toward the port
-// that the view takes while the aim stays put, and what the off hand holds.
+// the eye and across toward the off hand), the eyes' small turn that the view takes while the aim stays put, and what
+// the off hand holds. Unsighted fire holds the receiver below the view, so the lift carries it up and across to the
+// middle rather than back toward the eye, where the dominant arm would fill the view.
 local firstPerson = {
   'press-1-fire': { turnDegrees: { pitch: 0, yaw: 0, roll: 0 }, offHand: 'grip' },
   'press-2-turned': {
-    turnDegrees: { pitch: 8, yaw: 12, roll: 50 },
-    liftMetres: { up: 0.08, back: 0.06, across: 0.06 },
-    lookDegrees: { pitch: -3, yaw: 3 },
+    turnDegrees: { pitch: -3, yaw: 0, roll: 40 },
+    liftMetres: { up: 0.08, back: 0, across: 0.16 },
+    lookDegrees: { pitch: -5, yaw: -3 },
     offHand: 'grip',
   },
   'press-3-handle': {
-    turnDegrees: { pitch: 8, yaw: 12, roll: 50 },
-    liftMetres: { up: 0.1, back: 0.08, across: 0.08 },
-    lookDegrees: { pitch: -4, yaw: 4 },
+    turnDegrees: { pitch: -4, yaw: 0, roll: 55 },
+    liftMetres: { up: 0.12, back: 0, across: 0.24 },
+    lookDegrees: { pitch: -8, yaw: -5 },
     offHand: 'handle',
   },
   'press-4-retracted': {
-    turnDegrees: { pitch: 8, yaw: 14, roll: 55 },
-    liftMetres: { up: 0.12, back: 0.1, across: 0.1 },
-    lookDegrees: { pitch: -5, yaw: 5 },
+    turnDegrees: { pitch: -5, yaw: 0, roll: 60 },
+    liftMetres: { up: 0.14, back: 0, across: 0.28 },
+    lookDegrees: { pitch: -10, yaw: -6 },
     offHand: 'handle',
   },
   'press-5-inspect': {
-    turnDegrees: { pitch: 10, yaw: 16, roll: 58 },
-    liftMetres: { up: 0.14, back: 0.12, across: 0.1 },
-    lookDegrees: { pitch: -6, yaw: 6 },
+    turnDegrees: { pitch: -5, yaw: 0, roll: 60 },
+    liftMetres: { up: 0.14, back: 0, across: 0.28 },
+    lookDegrees: { pitch: -10, yaw: -6 },
     offHand: 'handle',
   },
   'press-6-released': {
-    turnDegrees: { pitch: 8, yaw: 14, roll: 55 },
-    liftMetres: { up: 0.12, back: 0.1, across: 0.1 },
-    lookDegrees: { pitch: -5, yaw: 5 },
+    turnDegrees: { pitch: -4, yaw: 0, roll: 55 },
+    liftMetres: { up: 0.12, back: 0, across: 0.24 },
+    lookDegrees: { pitch: -8, yaw: -5 },
     offHand: 'handle',
   },
   'press-7-cover': {
-    turnDegrees: { pitch: 6, yaw: 10, roll: 45 },
-    liftMetres: { up: 0.08, back: 0.06, across: 0.06 },
-    lookDegrees: { pitch: -3, yaw: 3 },
+    turnDegrees: { pitch: -3, yaw: 0, roll: 40 },
+    liftMetres: { up: 0.08, back: 0, across: 0.16 },
+    lookDegrees: { pitch: -5, yaw: -3 },
     offHand: 'port',
   },
   'press-8-fire': { turnDegrees: { pitch: 0, yaw: 0, roll: 0 }, offHand: 'grip' },

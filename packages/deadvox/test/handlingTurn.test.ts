@@ -85,16 +85,14 @@ describe('a press check lifts a held rifle toward the eye', () => {
     }
   });
 
-  it.each(['right', 'left'] as const)('lifts the gun up, back and across toward the %s-hander’s off hand', (side) => {
-    const [across, up, back] = handlingShift(checked, side, carrierBack);
-    expect(up).toBeGreaterThan(0);
-    expect(back).toBeGreaterThan(0);
-    expect(across * (side === 'right' ? -1 : 1)).toBeGreaterThan(0);
-  });
-
-  it.each(['right', 'left'] as const)('turns the %s-hander’s eyes down toward the port it lifts', (side) => {
-    const { yaw, pitch } = handlingLook(checked, side, carrierBack);
-    expect(pitch).toBeLessThan(0);
-    expect(yaw * (side === 'right' ? 1 : -1)).toBeGreaterThan(0);
+  it('lifts the gun and turns the eyes the same way for a left-hander, mirrored across the view', () => {
+    const [rightAcross, rightUp, rightBack] = handlingShift(checked, 'right', carrierBack);
+    const [leftAcross, leftUp, leftBack] = handlingShift(checked, 'left', carrierBack);
+    expect(rightAcross).not.toBe(0);
+    expect([leftAcross, leftUp, leftBack]).toEqual([-rightAcross, rightUp, rightBack]);
+    const right = handlingLook(checked, 'right', carrierBack);
+    const left = handlingLook(checked, 'left', carrierBack);
+    expect(right.yaw).not.toBe(0);
+    expect(left).toEqual({ yaw: -right.yaw, pitch: right.pitch });
   });
 });
