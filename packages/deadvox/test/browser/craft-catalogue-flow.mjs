@@ -1,5 +1,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract shared by the inventory stage
 // biome-ignore-all lint/performance/noAwaitInLoops: each step must land before the next one is judged
+// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,15 +17,17 @@ const densityOf = (page) =>
   });
 const setDensity = (page, { hudScale, spacing }) =>
   page.evaluate(
-    async ({ hudScale, spacing }) => {
+    async (density) => {
       const { session } = globalThis.foregripFitTest;
       const ui = [...session.inventory.registry.ui.values()].find((row) => row.capability === 'interface');
-      ui.hudScale = hudScale;
-      ui.spacing = spacing;
+      ui.hudScale = density.hudScale;
+      ui.spacing = density.spacing;
       const { applyUiTokens } = await import('/@stage/@skelly/presentation/ui');
       const { productAssets } = await import('/src/product/assets.ts');
       applyUiTokens(session.inventory.registry, document.documentElement, {
-        report: (message) => { throw new Error(message); },
+        report: (message) => {
+          throw new Error(message);
+        },
         files: productAssets.cursors,
       });
     },
@@ -36,12 +39,20 @@ const coldCraftOpenMs = async (page) =>
   page.evaluate(async () => {
     const { inputBindings } = await import('/src/product/input.ts');
     const { code } = inputBindings.chords('ui.inventory-tab-crafting')[0];
-    const key = { code, key: code.replace(/^Key/, '').toLowerCase(), bubbles: true };
+    const key = {
+      code,
+      key: code.startsWith('Key') ? code.slice('Key'.length).toLowerCase() : code,
+      bubbles: true,
+    };
     const start = performance.now();
     document.dispatchEvent(new KeyboardEvent('keydown', key));
     document.dispatchEvent(new KeyboardEvent('keyup', key));
     for (let frames = 0; frames < 300; frames += 1) {
-      if (document.querySelector('.craft-query') && document.querySelector('[data-craft-result]') && document.querySelector('.craft-recipe')) {
+      if (
+        document.querySelector('.craft-query') &&
+        document.querySelector('[data-craft-result]') &&
+        document.querySelector('.craft-recipe')
+      ) {
         return performance.now() - start;
       }
       await new Promise(requestAnimationFrame);
@@ -297,14 +308,14 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       const origin = eye();
       // The fixture places its piece beside the spawn, but the base site may hold more of the same type further
       // away; the look's piece is the nearest one.
-      const nearest = [...session.inventory.entities.all]
+      const [nearest] = [...session.inventory.entities.all]
         .filter((value) => value.type === id)
-        .map((entity) => ({ entity, at: entity.pos.map((value, axis) => value + entity.size[axis] / 2) }))
+        .map((piece) => ({ entity: piece, at: piece.pos.map((value, axis) => value + piece.size[axis] / 2) }))
         .sort(
           (a, b) =>
             a.at.reduce((sum, value, axis) => sum + (value - origin[axis]) ** 2, 0) -
             b.at.reduce((sum, value, axis) => sum + (value - origin[axis]) ** 2, 0),
-        )[0];
+        );
       if (!nearest) {
         throw new Error(`fixture start lacks ${id}`);
       }
@@ -321,7 +332,7 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         return hit?.kind === 'furniture' && hit.entity.type === id;
       }, type);
     } catch (error) {
-      const state = await page.evaluate((id) => {
+      const state = await page.evaluate(() => {
         const witness = globalThis.foregripFitTest;
         const hit = witness.lookedAt();
         return {
@@ -462,9 +473,9 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       };
       const reach = reachTuning(player.inventory.registry).reachMetres;
       const of = (type) => {
-        const entity = [...witness.session.inventory.entities.all]
+        const [entity] = [...witness.session.inventory.entities.all]
           .filter((value) => value.type === type)
-          .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b))[0];
+          .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
         return entity
           ? { distance: furnitureDistance(player, entity), pos: [...entity.pos], size: [...entity.size] }
           : undefined;
@@ -472,7 +483,10 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
       return { reach, chair: of('chair'), workbench: of('workbench') };
     });
   const start = await stockRay();
-  assert.ok(start.workbench.distance <= start.reach, `the stock starts in reach: ${JSON.stringify({ reach: start.reach, chair: start.chair.distance, workbench: start.workbench.distance })}`);
+  assert.ok(
+    start.workbench.distance <= start.reach,
+    `the stock starts in reach: ${JSON.stringify({ reach: start.reach, chair: start.chair.distance, workbench: start.workbench.distance })}`,
+  );
   await page.evaluate(() => {
     const witness = globalThis.foregripFitTest;
     const feet = witness.session.body.pos;
@@ -481,8 +495,14 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
         .filter((value) => value.type === type)
         .sort(
           (a, b) =>
-            Math.hypot(Math.max(Math.abs(a.pos[0] - feet[0]) - a.size[0] / 2, 0), Math.max(Math.abs(a.pos[2] - feet[2]) - a.size[2] / 2, 0)) -
-            Math.hypot(Math.max(Math.abs(b.pos[0] - feet[0]) - b.size[0] / 2, 0), Math.max(Math.abs(b.pos[2] - feet[2]) - b.size[2] / 2, 0)),
+            Math.hypot(
+              Math.max(Math.abs(a.pos[0] - feet[0]) - a.size[0] / 2, 0),
+              Math.max(Math.abs(a.pos[2] - feet[2]) - a.size[2] / 2, 0),
+            ) -
+            Math.hypot(
+              Math.max(Math.abs(b.pos[0] - feet[0]) - b.size[0] / 2, 0),
+              Math.max(Math.abs(b.pos[2] - feet[2]) - b.size[2] / 2, 0),
+            ),
         )[0];
     // The nearest point of each box, as the game's reach measure sees it.
     const face = (entity) => [
@@ -510,9 +530,9 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
           position: witness.session.body.pos,
           blockSize: witness.blockSize,
         };
-        const workbench = [...witness.session.inventory.entities.all]
+        const [workbench] = [...witness.session.inventory.entities.all]
           .filter((value) => value.type === 'workbench')
-          .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b))[0];
+          .sort((a, b) => furnitureDistance(player, a) - furnitureDistance(player, b));
         return (
           workbench !== undefined &&
           furnitureDistance(player, workbench) > reachTuning(player.inventory.registry).reachMetres + 0.3
@@ -526,8 +546,14 @@ const worldWorkFlow = async ({ page, resizeViewport, output, depicted, activate,
   }
   const separated = await stockRay();
   const walkedTo = { reach: separated.reach, chair: separated.chair.distance, workbench: separated.workbench.distance };
-  assert.ok(separated.workbench.distance > separated.reach + 0.3, `the walk takes the stock out of reach: ${JSON.stringify(walkedTo)}`);
-  assert.ok(separated.chair.distance < separated.reach - 0.3, `the chair stays within reach: ${JSON.stringify(walkedTo)}`);
+  assert.ok(
+    separated.workbench.distance > separated.reach + 0.3,
+    `the walk takes the stock out of reach: ${JSON.stringify(walkedTo)}`,
+  );
+  assert.ok(
+    separated.chair.distance < separated.reach - 0.3,
+    `the chair stays within reach: ${JSON.stringify(walkedTo)}`,
+  );
   await openWorldWork('chair', 'repair');
   const refusedStart = page.locator('.craft-start');
   assert.equal(
