@@ -877,9 +877,9 @@ export function createCommandRouter(ports: CommandRouterPorts): CommandRouter {
 
   // ---- emotes ----
 
-  // A mode is what the hands hold, so its ring opens whenever the player holds one; each emote decides for itself.
+  // A mode is what either hand holds, so its ring opens whenever the player holds one; each emote decides for itself.
   const emoteModes: Readonly<Record<EmoteMode, () => boolean>> = {
-    gun: () => selectPrimaryAction(ports.inventory()).kind === 'firearm',
+    gun: () => ports.session().firearms.holdsFirearm(),
   };
   const emoteActions: Readonly<Record<Emote, { available: () => boolean; perform: () => void }>> = {
     'press-check': { available: () => pressCheckUid() !== undefined, perform: pressCheck },

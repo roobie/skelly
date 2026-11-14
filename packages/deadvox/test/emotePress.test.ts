@@ -6,14 +6,19 @@ const tuning = { radiusPixels: 100, deadZonePixels: 20, selectionHalfAngleDegree
 const labels = { gun: 'Gun', 'press-check': 'Press-check' } as const;
 const up = { x: 0, y: -tuning.radiusPixels };
 
-const fixture = (available: { gun: boolean; pressCheck: boolean } = { gun: true, pressCheck: true }) => {
+const placed = { emote: { gun: 0 }, gun: { 'press-check': 0 } } as const;
+
+const fixture = (
+  available: { gun: boolean; pressCheck: boolean } = { gun: true, pressCheck: true },
+  directions: Parameters<typeof emoteRadialEntries>[2] = placed,
+) => {
   const menu = new ActionMenu();
   const performed: Emote[] = [];
   const entries = () =>
     emoteRadialEntries(
       { mode: (_mode: EmoteMode) => available.gun, emote: (_emote: Emote) => available.pressCheck },
       labels,
-      { emote: { gun: 0 }, gun: { 'press-check': 0 } },
+      directions,
     );
   const press = new EmotePress({ menu, entries, perform: (emote) => performed.push(emote) });
   /** One press of the emote key that points straight up before its release. */
@@ -64,6 +69,12 @@ describe('emote press', () => {
     expect(entries().map((entry) => entry.unavailable)).toEqual([true]);
     expect(menu.opened).toBeUndefined();
     expect(performed).toEqual([]);
+  });
+
+  it('opens no ring when content places no emote under any mode', () => {
+    const { menu, press } = fixture(undefined, { emote: { gun: 0 }, gun: {} });
+    press.press();
+    expect(menu.opened).toBeUndefined();
   });
 
   it('releasing at the centre performs nothing and closes the ring', () => {

@@ -1373,11 +1373,21 @@ export class FirearmMechanics {
     return undefined;
   }
 
+  /** The guns in either hand, so whatever offers a gun's gestures sees the same guns its gestures act on. */
+  private heldFirearms(): Item[] {
+    return Object.values(this.inventory.hands).filter(
+      (item): item is Item => item !== undefined && this.inventory.registry.items.get(item.type)?.firearm !== undefined,
+    );
+  }
+
+  holdsFirearm(): boolean {
+    return this.heldFirearms().length > 0;
+  }
+
   /** The held gun a press check would check: any gun fed by a magazine, once its model carries a clip to play. */
   pressCheckableUid(): number | undefined {
-    return Object.values(this.inventory.hands).find(
+    return this.heldFirearms().find(
       (item) =>
-        item &&
         magazineWellCalibre(this.inventory.registry, item.type) !== undefined &&
         this.pressCheckClip(item) !== undefined,
     )?.uid;
