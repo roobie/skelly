@@ -71,6 +71,50 @@ export type ReplayActionPayload =
   | { kind: 'item.throw.cancel' }
   | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
+// Typed by the payload union, so a new screen command cannot reach the recorder without an encodable id.
+const PAYLOAD_KINDS: Record<ReplayActionPayload['kind'], true> = {
+  'liquid.pour': true,
+  'inventory.move': true,
+  'inventory.to-hands': true,
+  'inventory.inspect': true,
+  'inventory.activate': true,
+  'hand.action': true,
+  'inventory.wield-or-pocket': true,
+  'item.pickup': true,
+  'furniture.interact': true,
+  'furniture.lift': true,
+  'furniture.use': true,
+  'furniture.slide': true,
+  'furniture.place': true,
+  'power.set': true,
+  'charger.start': true,
+  'charger.stop': true,
+  'furniture.turn': true,
+  'furniture.tip': true,
+  'actor.downed': true,
+  'inventory.search': true,
+  'inventory.work': true,
+  'inventory.assign': true,
+  'inventory.cancel-handling': true,
+  'firearm.attachment.fit': true,
+  'firearm.attachment.remove': true,
+  'vehicle.work': true,
+  'light.battery.load': true,
+  'light.battery.unload': true,
+  'craft.start': true,
+  'craft.repair-entity': true,
+  'craft.repair-cell': true,
+  'craft.take-apart-entity': true,
+  'craft.take-apart-cell': true,
+  'craft.continue': true,
+  'craft.stop': true,
+  'action.wait': true,
+  'action.wake-hour': true,
+  'item.throw.cancel': true,
+  'item.throw': true,
+};
+export const REPLAY_PAYLOAD_KINDS = Object.keys(PAYLOAD_KINDS) as readonly ReplayActionPayload['kind'][];
+
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isTriple = (value: unknown, isPart: (part: unknown) => boolean = Number.isFinite): boolean =>
   Array.isArray(value) && value.length === 3 && value.every(isPart);

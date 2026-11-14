@@ -5,7 +5,7 @@ import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } f
 import type { SaveSnapshot } from '../core/saveState.ts';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
-import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
+import { isReplayActionPayload, REPLAY_PAYLOAD_KINDS, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
@@ -32,84 +32,14 @@ const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
 const MAGIC = 'SKELLY_REPLAY';
 const PENDING_REPLAY_KEY = 'skelly.pending-replay';
-const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
-  'liquid.pour',
-  'power.set',
-  'furniture.use',
-  'furniture.slide',
-  'charger.start',
-  'charger.stop',
-  'inventory.inspect',
-  'hand.action',
-  'inventory.move',
-  'inventory.to-hands',
-  'item.pickup',
-  'furniture.interact',
-  'furniture.lift',
-  'furniture.place',
-  'furniture.turn',
-  'furniture.tip',
-  'actor.downed',
-  'inventory.search',
-  'inventory.work',
-  'inventory.assign',
-  'inventory.cancel-handling',
-  'firearm.attachment.fit',
-  'firearm.attachment.remove',
-  'vehicle.work',
-  'craft.start',
-  'craft.repair-entity',
-  'craft.repair-cell',
-  'craft.take-apart-cell',
-  'action.wait',
-  'action.wake-hour',
-  'craft.continue',
-  'craft.stop',
-  'item.throw.cancel',
-  'item.throw',
-  'light.battery.load',
-  'light.battery.unload',
-]);
+// A screen records each command with its payload; a bound press of the same id records nothing (`commandRouter.ts`,
+// `isPayloadBackedScreenAction`), so every payload kind requires its payload.
+const REPLAY_PAYLOAD_ACTIONS = new Set<string>(REPLAY_PAYLOAD_KINDS);
 const REPLAY_SEMANTIC_ACTIONS = [
-  'liquid.pour',
-  'power.set',
-  'furniture.use',
-  'furniture.slide',
-  'charger.start',
-  'charger.stop',
-  'item.throw',
-  'item.throw.cancel',
+  ...REPLAY_PAYLOAD_KINDS,
   'throw.stance.toggle',
   'item.drop',
-  'inventory.inspect',
   'hand.use-forward',
-  'hand.action',
-  'inventory.move',
-  'inventory.to-hands',
-  'item.pickup',
-  'furniture.interact',
-  'furniture.lift',
-  'furniture.place',
-  'furniture.turn',
-  'furniture.tip',
-  'actor.downed',
-  'inventory.search',
-  'inventory.work',
-  'inventory.assign',
-  'inventory.cancel-handling',
-  'firearm.attachment.fit',
-  'firearm.attachment.remove',
-  'vehicle.work',
-  'craft.start',
-  'craft.repair-entity',
-  'craft.repair-cell',
-  'craft.take-apart-cell',
-  'action.wait',
-  'action.wake-hour',
-  'craft.continue',
-  'craft.stop',
-  'light.battery.load',
-  'light.battery.unload',
   ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [
     `quickbar.tap.${index + 1}`,
     `quickbar.hold.${index + 1}`,
@@ -264,7 +194,7 @@ const isValidQueuedAction = (
   if (!(isReplayAction(action) && CONTEXT_INDEX.has(context))) {
     return false;
   }
-  const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) ? payload !== undefined : true;
+  const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action) ? payload !== undefined : true;
   return validPayload && (payload === undefined || (isReplayActionPayload(payload) && payload.kind === action));
 };
 
@@ -277,7 +207,7 @@ type ReplayActionRecord = Record<string, unknown> & {
 
 const hasValidActionPayload = (action: string, candidate: Record<string, unknown>): boolean => {
   const hasPayload = Object.hasOwn(candidate, 'payload');
-  if (REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) && !hasPayload) {
+  if (REPLAY_PAYLOAD_ACTIONS.has(action) && !hasPayload) {
     return false;
   }
   return !hasPayload || (isReplayActionPayload(candidate.payload) && candidate.payload.kind === action);
