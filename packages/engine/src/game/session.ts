@@ -158,6 +158,7 @@ import {
   type FirearmShotInput,
   type FirearmTrajectory,
   isFirearmTrainingAction,
+  keepsFirearmReady,
 } from './firearmHandling.ts';
 import { MagazineHandling } from './magazineHandling.ts';
 import {
@@ -2182,7 +2183,7 @@ export const createSession = (options: SessionOptions) => {
       readyInput &&
       queue.busy &&
       activeJob !== undefined &&
-      isFirearmTrainingAction(activeJob) &&
+      keepsFirearmReady(activeJob) &&
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid);
     const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;

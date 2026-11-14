@@ -438,7 +438,7 @@ it('loading a magazine round, changing the magazine and charging each train fire
   expect(trains(() => firearms.cock(rifle.uid, runtime.sim.time))).toBe(true);
 });
 
-it('keeps a ready rifle ready through a magazine change and a charge', () => {
+it('keeps a ready rifle ready through a magazine change, a charge and a press check', () => {
   const original = session([], undefined, undefined, { readyHeld: true, active: true });
   // Inserting into the empty rifle is the same magazine-change job as a swap.
   const { rifle, magazine } = rifleInHand(original.inventory, original.queue, { magazines: original.magazines });
@@ -453,6 +453,7 @@ it('keeps a ready rifle ready through a magazine change and a charge', () => {
   expect(readyAfter(() => original.firearms.loadNext(rifle.uid, original.sim.time))).toBe(true);
   expect(rifle.slots?.magazine).toBe(magazine);
   expect(readyAfter(() => original.firearms.cock(rifle.uid, original.sim.time))).toBe(true);
+  expect(readyAfter(() => original.firearms.pressCheck(rifle.uid))).toBe(true);
 });
 
 it('a codec save keeps the fitted magazine and the chambered round, so the next shot is the same', async () => {
