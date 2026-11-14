@@ -126,7 +126,7 @@ const reviewTemplate = (
   const groupNumber = openGroup;
   const open = row.components.find((group) => group.group === groupNumber);
   return html`<article class="craft-recipe" data-recipe=${row.id}>
-    <h3>${row.name}</h3>
+    ${world ? nothing : html`<h3>${row.name}</h3>`}
     <div class="craft-review-scroll">
       <div class=${world ? 'craft-rows-pane craft-rows-world' : 'craft-rows-pane'}>${world ? targetTemplate(world, actions, text) : nothing}<div class="craft-requirements">
         ${(row.yields ?? []).map((output) => html`<div class="craft-yield">${fillText(text.yieldRow, { item: output.name, count: countText(output.count) })}</div>`)}
