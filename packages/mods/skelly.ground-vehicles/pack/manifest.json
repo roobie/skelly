@@ -10,6 +10,10 @@
       "path": "ground-vehicles-items.json"
     },
     {
+      "kind": "content",
+      "path": "models-ground-vehicles.json"
+    },
+    {
       "kind": "json",
       "path": "assets/manifest.json"
     },
@@ -332,6 +336,74 @@
     {
       "kind": "json",
       "path": "things/hoist_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_bed_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_bonnet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_brush_guard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_frame.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_front_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_grille.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_headlamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_hull.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_portal_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_rear_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_rear_prop_shaft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_roof_hatch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_steering_box.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_tailgate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/light_tactical_vehicle_windscreen.model.json"
     },
     {
       "kind": "json",
@@ -796,6 +868,74 @@
     {
       "kind": "asset",
       "path": "assets/models/hoist_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_bed_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_bonnet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_brush_guard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_frame.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_front_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_grille.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_headlamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_hull.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_portal_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_rear_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_rear_prop_shaft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_roof_hatch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_steering_box.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_tailgate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/light_tactical_vehicle_windscreen.glb"
     },
     {
       "kind": "asset",

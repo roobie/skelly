@@ -2,9 +2,7 @@
 // place them by item id in the model frame (metres; z forward, y up, the near side at -x).
 local finishes = (import 'packages/skelly-assets/built/manifest.json').finishes;
 local surfaces = import 'packages/skelly-assets/models/finishes.jsonnet';
-// A body's half-metre sky cells are mostly air between thin panels, so a cell stops only part of the sky light:
-// the ground under a car and its cabin read shaded, not enclosed.
-local bodyShade = 0.35;
+local bodyShade = (import 'packages/mods/skelly.ground-vehicles/vehicles.libsonnet').bodyShade;
 local part(id, name, size, capabilities, description=null) = {
   id: id,
   name: name,

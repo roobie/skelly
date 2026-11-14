@@ -6,7 +6,7 @@ manifest(
   id='skelly.deadvox.scenario.test-house.debug',
   tier='scenario',
   optIn=true,
-  content=['layouts', 'starts'],
+  content=['layouts', 'starts', 'vehicles-look'],
   dependencies=kit.dependencies([
     scenario, 'skelly.containers', 'skelly.deadvox.buildings', 'skelly.deadvox.site-generation',
     'skelly.electric-power', 'skelly.electronics', 'skelly.firearms', 'skelly.flame-tools', 'skelly.fuel',
