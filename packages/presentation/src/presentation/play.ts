@@ -44,6 +44,7 @@ import {
   type Inventory,
   type Item,
   type ItemAction,
+  isPressCheck,
   offHandUse,
   type Pile,
   pileScatterPlacements,
@@ -130,7 +131,7 @@ import {
 } from '@skelly/engine/world';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
-import { handlingRotation } from '../render/handlingTurn.ts';
+import { handlingLook, handlingRotation, handlingShift } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView, type ViewProbes } from '../render/playView.ts';
@@ -2589,6 +2590,7 @@ const startPlayWith = (
       }
     }
     const orbitAngle = thirdPersonOrbit.angle(isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled));
+    const look = heldLook();
     view.updateCamera(
       {
         dt,
@@ -2597,8 +2599,8 @@ const startPlayWith = (
         noclip: debugTools?.noclip ?? false,
         yaw: spectator.avatarYaw(input.controls.yaw),
         pitch: spectator.avatarPitch(input.controls.pitch),
-        headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw,
-        headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch,
+        headYaw: spectator.enabled ? 0 : input.controls.freeLook.yaw + look.yaw,
+        headPitch: spectator.enabled ? 0 : input.controls.viewPitch - input.controls.pitch + look.pitch,
         stridePhase: session.playerStridePhase,
         stance: session.stance,
         lean: session.lean,
@@ -2722,16 +2724,39 @@ const startPlayWith = (
     });
   };
 
-  const heldFirearmBore = (readiness = firearmReadiness()) => {
+  /** The firearm the primary action uses, with the model it is drawn as and the hand holding it. */
+  const heldFirearm = () => {
     const selected = selectPrimaryAction(inventory);
     if (selected.kind !== 'firearm') {
       return;
     }
-    const tuning = firearmsCombatTuning(registry);
     const { item } = selected;
+    return {
+      item,
+      model: sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model,
+      side: inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const),
+      frame: firearms.frames().find((entry) => entry.uid === item.uid),
+    };
+  };
+
+  const heldLook = (): { readonly yaw: number; readonly pitch: number } => {
+    const held = heldFirearm();
+    return held ? handlingLook(held.model, held.side, held.frame) : { yaw: 0, pitch: 0 };
+  };
+
+  const pressChecking = (): boolean => {
+    const [job] = queue.jobs;
+    return job !== undefined && isPressCheck(job);
+  };
+
+  const heldFirearmBore = (readiness = firearmReadiness()) => {
+    const held = heldFirearm();
+    if (!held) {
+      return;
+    }
+    const tuning = firearmsCombatTuning(registry);
+    const { item, model, side, frame: heldFirearmFrame } = held;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
-    const model = sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model;
-    const side = inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const);
     const progress = firearmPose?.progress ?? 0;
     const viewpoint = { eye: eye(), yaw: input.controls.yaw, pitch: input.controls.pitch };
     const leadingSide = dominantSide(inventory.character);
@@ -2751,7 +2776,6 @@ const startPlayWith = (
       loweredPitchRadians: tuning.loweredPitchRadians,
     };
     const basePose = heldFirearmTransform(poseInput);
-    const heldFirearmFrame = firearms.frames().find((entry) => entry.uid === item.uid);
     const handlingTurn = handlingRotation(model, side, heldFirearmFrame, {
       x: basePose.rootOffset[0],
       y: basePose.rootOffset[1],
@@ -2761,6 +2785,7 @@ const startPlayWith = (
       ...viewpoint,
       blockSize: s,
       handlingTurn,
+      handlingShift: handlingShift(model, side, heldFirearmFrame),
     });
   };
 
@@ -3180,7 +3205,13 @@ const startPlayWith = (
     craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.repairTarget : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);
+    // A press check shows its own progress, and the label would cover the ejection port it shows.
+    renderPlayHandling(
+      handlingBox,
+      currentPresentation,
+      !screen.isOpen && visible.handling && !pressChecking(),
+      screenText.handling,
+    );
     const continuing = finishDraw(sky, now);
     frameWork.record(now, realNow() - workStart);
     return continuing;

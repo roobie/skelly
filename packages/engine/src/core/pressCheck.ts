@@ -4,9 +4,14 @@ export type PressCheckClip = NonNullable<GunModelDef['pressCheck']>;
 type PressCheckKey = PressCheckClip['keys'][number];
 type OffHandTarget = PressCheckKey['offHand'];
 
-/** A press check at one moment: the gun's turn, each part's share of its stroke and the off hand's weight on each target. */
+/**
+ * A press check at one moment: the gun's turn and lift, the eyes' turn, each part's share of its stroke and the off
+ * hand's weight on each target.
+ */
 export interface PressCheckSample {
   readonly turnDegrees: { readonly pitch: number; readonly yaw: number; readonly roll: number };
+  readonly liftMetres: { readonly up: number; readonly back: number; readonly across: number };
+  readonly lookDegrees: { readonly pitch: number; readonly yaw: number };
   readonly parts: Readonly<Record<string, number>>;
   readonly offHand: Readonly<Record<OffHandTarget, number>>;
 }
@@ -26,17 +31,30 @@ const weights = (target: OffHandTarget): Record<OffHandTarget, number> => ({
   port: target === 'port' ? 1 : 0,
 });
 
+const NO_LIFT = { up: 0, back: 0, across: 0 } as const;
+const NO_LOOK = { pitch: 0, yaw: 0 } as const;
+
 const blend = (from: PressCheckKey, to: PressCheckKey, t: number): PressCheckSample => {
   const mix = (start: number, end: number): number => start + (end - start) * t;
   const ids = new Set([...Object.keys(from.parts ?? {}), ...Object.keys(to.parts ?? {})]);
   const held = weights(from.offHand);
   const next = weights(to.offHand);
+  const lift = from.liftMetres ?? NO_LIFT;
+  const nextLift = to.liftMetres ?? NO_LIFT;
+  const look = from.lookDegrees ?? NO_LOOK;
+  const nextLook = to.lookDegrees ?? NO_LOOK;
   return {
     turnDegrees: {
       pitch: mix(from.turnDegrees.pitch, to.turnDegrees.pitch),
       yaw: mix(from.turnDegrees.yaw, to.turnDegrees.yaw),
       roll: mix(from.turnDegrees.roll, to.turnDegrees.roll),
     },
+    liftMetres: {
+      up: mix(lift.up, nextLift.up),
+      back: mix(lift.back, nextLift.back),
+      across: mix(lift.across, nextLift.across),
+    },
+    lookDegrees: { pitch: mix(look.pitch, nextLook.pitch), yaw: mix(look.yaw, nextLook.yaw) },
     parts: Object.fromEntries([...ids].map((id) => [id, mix(from.parts?.[id] ?? 0, to.parts?.[id] ?? 0)])),
     offHand: {
       grip: mix(held.grip, next.grip),

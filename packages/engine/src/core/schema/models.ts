@@ -412,16 +412,22 @@ const attachmentRangesDoNotOverlap = (
 };
 
 const Degrees = pipe(number(), minValue(-180), maxValue(180));
+/** A held gun moves within arm's reach of its hold. */
+const ReachMetres = pipe(number(), minValue(-1), maxValue(1));
 
 /**
  * One key of a press check: the seconds the move into it takes and how long it holds, the gun's turn off its hold
- * (pitch raises the muzzle; yaw turns the muzzle, and roll the top, toward the off hand), each action part's share of
- * its stroke, and what the off hand holds: its own grip, the charging handle or the ejection port.
+ * (pitch raises the muzzle; yaw turns the muzzle, and roll the top, toward the off hand), its lift off the hold (up,
+ * back toward the eye and across toward the off hand), the eyes' turn off the aim (pitch looks up, yaw toward the off
+ * hand), each action part's share of its stroke, and what the off hand holds: its own grip, the charging handle or the
+ * ejection port.
  */
 const PressCheckKeySchema = strictObject({
   intoSimSeconds: optional(PositiveSimSeconds),
   holdSimSeconds: optional(SimSeconds),
   turnDegrees: strictObject({ pitch: Degrees, yaw: Degrees, roll: Degrees }),
+  liftMetres: optional(strictObject({ up: ReachMetres, back: ReachMetres, across: ReachMetres })),
+  lookDegrees: optional(strictObject({ pitch: Degrees, yaw: Degrees })),
   parts: optional(record(Id, Fraction)),
   offHand: picklist(['grip', 'handle', 'port']),
 });

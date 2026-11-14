@@ -3651,6 +3651,15 @@
             },
             {
               "intoSimSeconds": 0.5,
+              "liftMetres": {
+                "across": 0.059999999999999998,
+                "back": 0.059999999999999998,
+                "up": 0.080000000000000002
+              },
+              "lookDegrees": {
+                "pitch": -3,
+                "yaw": 3
+              },
               "offHand": "grip",
               "turnDegrees": {
                 "pitch": 8,
@@ -3660,6 +3669,15 @@
             },
             {
               "intoSimSeconds": 0.45000000000000001,
+              "liftMetres": {
+                "across": 0.080000000000000002,
+                "back": 0.080000000000000002,
+                "up": 0.10000000000000001
+              },
+              "lookDegrees": {
+                "pitch": -4,
+                "yaw": 4
+              },
               "offHand": "handle",
               "turnDegrees": {
                 "pitch": 8,
@@ -3669,10 +3687,19 @@
             },
             {
               "intoSimSeconds": 0.20000000000000001,
+              "liftMetres": {
+                "across": 0.10000000000000001,
+                "back": 0.10000000000000001,
+                "up": 0.12
+              },
+              "lookDegrees": {
+                "pitch": -5,
+                "yaw": 5
+              },
               "offHand": "handle",
               "parts": {
-                "carrier": 1,
-                "handle": 1
+                "carrier": 0.29999999999999999,
+                "handle": 0.29999999999999999
               },
               "turnDegrees": {
                 "pitch": 8,
@@ -3682,10 +3709,19 @@
             },
             {
               "intoSimSeconds": 0.59999999999999998,
+              "liftMetres": {
+                "across": 0.10000000000000001,
+                "back": 0.12,
+                "up": 0.14000000000000001
+              },
+              "lookDegrees": {
+                "pitch": -6,
+                "yaw": 6
+              },
               "offHand": "handle",
               "parts": {
-                "carrier": 1,
-                "handle": 1
+                "carrier": 0.29999999999999999,
+                "handle": 0.29999999999999999
               },
               "turnDegrees": {
                 "pitch": 10,
@@ -3695,6 +3731,15 @@
             },
             {
               "intoSimSeconds": 0.12,
+              "liftMetres": {
+                "across": 0.10000000000000001,
+                "back": 0.10000000000000001,
+                "up": 0.12
+              },
+              "lookDegrees": {
+                "pitch": -5,
+                "yaw": 5
+              },
               "offHand": "handle",
               "turnDegrees": {
                 "pitch": 8,
@@ -3705,6 +3750,15 @@
             {
               "holdSimSeconds": 0.10000000000000001,
               "intoSimSeconds": 0.34999999999999998,
+              "liftMetres": {
+                "across": 0.059999999999999998,
+                "back": 0.059999999999999998,
+                "up": 0.080000000000000002
+              },
+              "lookDegrees": {
+                "pitch": -3,
+                "yaw": 3
+              },
               "offHand": "port",
               "turnDegrees": {
                 "pitch": 6,

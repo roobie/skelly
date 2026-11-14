@@ -38,7 +38,7 @@ import {
   sampleActionPose,
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
-import { handlingRotation } from './handlingTurn.ts';
+import { handlingRotation, handlingShift } from './handlingTurn.ts';
 import type { HeldPresentation, HeldPresentationFrame } from './heldPresentation.ts';
 import {
   createMagazineLoadFrame,
@@ -526,7 +526,7 @@ export class ActorAnimator {
     }
   }
 
-  /** The view's firearm pose: the aim's share of the hip pose and the sighted one, handling turn included. */
+  /** The view's firearm pose: the aim's share of the hip pose and the sighted one, handling turn and shift included. */
   private blendedFirearmPose(
     poseInput:
       | {
@@ -542,14 +542,14 @@ export class ActorAnimator {
         }
       | undefined,
     adsAim: number,
-    handlingTurn: Vec3 | undefined,
+    handling: { readonly turn: Vec3; readonly shift: Vec3 } | undefined,
   ) {
     const poseAt = (aiming: boolean) =>
       poseInput
         ? this.presentation.firearmTransform({
             ...poseInput,
             aimingDownSights: aiming,
-            ...(handlingTurn ? { handlingTurn } : {}),
+            ...(handling ? { handlingTurn: handling.turn, handlingShift: handling.shift } : {}),
           })
         : undefined;
     const hip = poseAt(false);
@@ -600,7 +600,10 @@ export class ActorAnimator {
       x: shown?.rootOffset[0] ?? 0,
       y: shown?.rootOffset[1] ?? 0,
     });
-    const firearmPose = this.blendedFirearmPose(poseInput, adsAim, handlingTurn);
+    const firearmPose = this.blendedFirearmPose(poseInput, adsAim, {
+      turn: handlingTurn,
+      shift: handlingShift(modelDefinition, side, frame),
+    });
     return { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition };
   }
 

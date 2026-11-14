@@ -70,3 +70,35 @@ export const handlingRotation = (
   }
   return [0, 0, 0];
 };
+
+/**
+ * How far handling moves a gun held in `side` off its hold, in view axes and metres: a press check lifts it by its
+ * clip, across toward the off hand for either hand. Like the turn, shots never see it.
+ */
+export const handlingShift = (
+  model: ModelDef | undefined,
+  side: HandSide,
+  frame: HeldFirearmPose | undefined,
+): Vec3 => {
+  if (!(frame?.mode === 'press-check' && model?.gun?.pressCheck)) {
+    return [0, 0, 0];
+  }
+  const { up, back, across } = pressCheckAt(model.gun.pressCheck, frame).liftMetres;
+  return [(side === 'right' ? -1 : 1) * across, up, back];
+};
+
+/**
+ * How far handling turns the eyes off the aim, in radians (yaw left, pitch up): a press check looks toward the port by
+ * its clip, toward the off hand for either hand. Only the view turns; the aim and the held gun stay where they are.
+ */
+export const handlingLook = (
+  model: ModelDef | undefined,
+  side: HandSide,
+  frame: HeldFirearmPose | undefined,
+): { readonly yaw: number; readonly pitch: number } => {
+  if (!(frame?.mode === 'press-check' && model?.gun?.pressCheck)) {
+    return { yaw: 0, pitch: 0 };
+  }
+  const { pitch, yaw } = pressCheckAt(model.gun.pressCheck, frame).lookDegrees;
+  return { yaw: (side === 'right' ? 1 : -1) * MathUtils.degToRad(yaw), pitch: MathUtils.degToRad(pitch) };
+};

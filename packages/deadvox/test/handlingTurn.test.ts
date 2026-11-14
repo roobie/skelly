@@ -6,7 +6,8 @@ import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
-import { handlingRotation } from '@skelly/presentation/internal/render/handlingTurn.ts';
+import { pressCheckAt } from '@skelly/presentation/internal/render/firearmModel.ts';
+import { handlingLook, handlingRotation, handlingShift } from '@skelly/presentation/internal/render/handlingTurn.ts';
 
 const { registry } = BUNDLED_CONTENT;
 // A racked rifle with a detachable magazine; the fixtures differ only in where the charging handle sits.
@@ -59,5 +60,41 @@ describe('a rack turns a held rifle for its off hand', () => {
       expect.closeTo(rightYaw, 12),
       expect.closeTo(rightRoll, 12),
     ]);
+  });
+});
+
+describe('a press check lifts a held rifle toward the eye', () => {
+  const checked = [...registry.models.values()].find(({ gun }) => gun?.pressCheck)!;
+  const at = (elapsed: number) => ({ uid: 1, mode: 'press-check' as const, elapsed, duration: 1 });
+  // The moment the clip draws the carrier furthest back, which is when the port must show.
+  const stroke = (elapsed: number) =>
+    Math.max(...Object.values(pressCheckAt(checked.gun!.pressCheck!, at(elapsed)).parts));
+  const carrierBack = at(
+    Array.from({ length: 101 }, (_, step) => step / 100).reduce((best, elapsed) =>
+      stroke(elapsed) > stroke(best) ? elapsed : best,
+    ),
+  );
+
+  it('starts and ends at the hold, with no turn, no lift and no look', () => {
+    for (const elapsed of [0, 1]) {
+      for (const side of ['right', 'left'] as const) {
+        expect(handlingShift(checked, side, at(elapsed)).map(Math.abs)).toEqual([0, 0, 0]);
+        expect(handlingRotation(checked, side, at(elapsed), NO_GRIP).map(Math.abs)).toEqual([0, 0, 0]);
+        expect(Object.values(handlingLook(checked, side, at(elapsed))).map(Math.abs)).toEqual([0, 0]);
+      }
+    }
+  });
+
+  it.each(['right', 'left'] as const)('lifts the gun up, back and across toward the %s-hander’s off hand', (side) => {
+    const [across, up, back] = handlingShift(checked, side, carrierBack);
+    expect(up).toBeGreaterThan(0);
+    expect(back).toBeGreaterThan(0);
+    expect(across * (side === 'right' ? -1 : 1)).toBeGreaterThan(0);
+  });
+
+  it.each(['right', 'left'] as const)('turns the %s-hander’s eyes down toward the port it lifts', (side) => {
+    const { yaw, pitch } = handlingLook(checked, side, carrierBack);
+    expect(pitch).toBeLessThan(0);
+    expect(yaw * (side === 'right' ? 1 : -1)).toBeGreaterThan(0);
   });
 });
