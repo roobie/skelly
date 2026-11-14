@@ -1395,9 +1395,8 @@ button.inv-option.game-cursor-hover {
   margin-top: auto;
 }
 body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) .inv-queue {
-  max-height: calc(
-    var(--crafting-panel-bottom) - 1.5rem - 1px - var(--ui-spacing) * 0.875rem - var(--ui-spacing) * 0.5rem
-  );
+  /* The panel's bottom offset less the screen's inset, border and bottom padding, and a gap. */
+  max-height: calc(var(--crafting-panel-bottom) - 1.5rem - 1px - var(--ui-spacing) * 1.375rem);
   overflow: auto;
 }
 .inv-queue-title {
@@ -1587,11 +1586,10 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) .inv-queu
   height: 100%;
   background: var(--accent);
 }
-/* The inventory screen covers the play HUD; the debug centre X goes with the crosshair it marks. */
+/* The inventory screen covers the play HUD. */
 body.inventory-open #hud,
 body.inventory-open #quickbar,
-body.inventory-open #crosshair,
-body.inventory-open #debug-ui-root #debug-center-x {
+body.inventory-open #crosshair {
   display: none;
 }
 body.inventory-open #prompt {
@@ -2231,6 +2229,10 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
 }
 #debug-ui-root #debug-center-x::after {
   transform: rotate(-45deg);
+}
+/* The debug centre X goes with the crosshair it marks, which the inventory screen hides. */
+body.inventory-open #debug-ui-root #debug-center-x {
+  display: none;
 }
 #debug-ui-root .debug-marker {
   position: fixed;
