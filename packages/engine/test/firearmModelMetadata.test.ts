@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../src/core/content.ts';
+import { buildRegistry, validateContent } from '../src/core/content.ts';
 
 const source = 'models.json';
 const validate = (model: unknown) => validateContent({ source, data: { models: [model] } });
@@ -46,5 +46,11 @@ describe('firearm model metadata', () => {
     const tooFew = { ...magazine, gun: { ...magazine.gun, rounds: magazine.gun.rounds.slice(1) } };
     expect(validate(tooFew)).not.toEqual([]);
     expect(validate({ ...magazine, gun: { ...magazine.gun, capacity: 1.5 } })).not.toEqual([]);
+  });
+
+  it('rejects a region named like a part of the same model, which would share one render key', () => {
+    const build = (pieces: string[]) => buildRegistry([{ source, data: { models: [{ ...base, pieces }] } }]).issues;
+    expect(build(['sleeve'])).toEqual([]);
+    expect(build(['body'])).not.toEqual([]);
   });
 });

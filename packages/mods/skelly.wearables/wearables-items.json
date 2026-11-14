@@ -219,6 +219,31 @@
     },
     {
       "category": "clothing",
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["trunk"],
+          "frame": "clothing_body",
+          "model": "tank_top_worn_body",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "tank_top",
+      "model": "tank_top",
+      "name": "Tank top",
+      "size": [2, 2],
+      "wearable": {
+        "encumbrance": 2,
+        "figureFit": "jacket",
+        "slot": "torso",
+        "warmth": 3,
+        "wearPerDamage": 0.0011999999999999999
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
       "container": {
         "pockets": [
           {

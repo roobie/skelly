@@ -30,7 +30,7 @@ import { itemLook } from './itemLook.ts';
 import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import type { WornPresentation } from './playerFigure.ts';
-import { WornModels } from './wornModels.ts';
+import { registerBaseParts, WornModels } from './wornModels.ts';
 
 const HOLD_STATES = { lowered: false, ready: true } as const;
 
@@ -363,14 +363,7 @@ export class HeldPresentation {
     const definition = this.registry.models.get(this.figure.limbs[part].model);
     const scene = definition && this.models?.has(definition.id) ? this.models.part(definition.id) : undefined;
     if (definition && scene) {
-      scene.traverse((node) => {
-        if (typeof node.userData.part === 'string') {
-          const key = `${part}/${node.userData.part}`;
-          const nodes = this.baseParts.get(key) ?? [];
-          nodes.push(node);
-          this.baseParts.set(key, nodes);
-        }
-      });
+      registerBaseParts(this.baseParts, part, scene);
       const rig = buildArmRig({ definition, scene }, this.figure.armRig, side, this.figure.armRig.handPoses[pose]);
       arm.add(rig.shoulder, rig.elbow, rig.hand);
       this.armRigs.set(side, rig);
