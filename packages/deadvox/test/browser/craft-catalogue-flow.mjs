@@ -107,6 +107,9 @@ export const craftCatalogueFlow = async ({ page, url, resizeViewport, output }) 
   process.stdout.write(
     `chooser state ${JSON.stringify(await group.evaluate((node) => ({ events: globalThis.chooserProbe, active: document.activeElement?.outerHTML, row: node.outerHTML, hidden: node.closest('[hidden]')?.outerHTML.slice(0, 200) })))}\n`,
   );
+  process.stdout.write(
+    `ownership ${JSON.stringify(await page.evaluate(() => globalThis.chooserProbe.filter((entry) => entry.action)))}\n`,
+  );
   assert.equal(await group.getAttribute('aria-expanded'), 'true');
   assert.equal(await page.locator('.craft-close-alternatives').count(), 1);
   const alternatives = await page.locator('.craft-alternatives').textContent();
