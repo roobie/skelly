@@ -279,7 +279,7 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   round extends the shape rather than replacing it; see
   `packages/engine/src/core/rubble.ts`, `SavedRubble`, and `packages/engine/src/core/craftCommands.ts`,
   `takeApartCell`. How rubble reads apart from a
-  damaged wall is an open choice; see "Remaining construction gate — issue #1332".
+  damaged wall is ruled under "Rubble look".
 - **Know-how gates:** mixed. Some recipes are known from the start and others must be
   discovered through manuals and points of interest, because discovered recipes give
   exploring a purpose while known ones keep a player from getting hard-stuck. A start
@@ -313,24 +313,23 @@ The base-building playtest, the third playtest round, is scoped in #1332.
   transitions before use. Neither option is recommended; this gate blocks only
   position-trigger implementation, not the scenario wave.
 
-### Remaining construction gate — issue #1332
+### Rubble look
 
-- **Rubble look.** Context: a rubble cell comes apart and holds buried contents, and
-  a damaged wall is a cracked cell that mends, so the two must read apart at a glance
-  or a player tries the wrong verb on each. Question: what makes a rubble cell read as
-  rubble rather than as a damaged wall? The graded options wait on BR's choice; this
-  gate blocks only how rubble is drawn, not clearing or its yield.
+- **Rubble look.** A rubble cell stays a full solid cube drawn with a per-material
+  rubble texture, and loose fragments spill onto the neighbouring floor cells when it
+  falls. Rubble must read apart from a damaged wall so the player picks the right verb
+  (take apart for rubble, repair for a cracked wall), and a textured cube with spill
+  does that on the existing block path, with no separate render path and no new block
+  shape. Fragment instances inside a solid cell remain a possible later render.
 
 ## Reviewable build order
 
 These are work packages, not new work-item IDs. Every stateful package includes
 validation, saves, replay evidence and reason-doc updates, not a later save retrofit.
 
-1. **Readiness and decisions: closed, except position triggers, the rubble look and
-   body dig-out.** The construction, destruction, wave and playtest choices this slice
-   waited on are ruled; only "Remaining event gate — issue #313",
-   "Remaining construction gate — issue #1332" and the body dig-out question in the
-   Destruction lane stay open, and none blocks a package. Run the
+1. **Readiness and decisions: closed, except position triggers.** The construction,
+   destruction, wave and playtest choices this slice waited on are ruled; only
+   "Remaining event gate — issue #313" stays open, and it blocks no package. Run the
    small spikes below where a package's claim has no owning benchmark yet.
 2. **Power network core: built.** Topology, cache invalidation, saved identity,
    split/merge, deterministic restoration, closed-form balance, fuel exhaustion and
@@ -434,22 +433,21 @@ and the rounds named as starting now need nothing that is not on main.
   building is the point of this playtest, so it yields its place to the rounds the
   first session needs. Shelter identity and the content target under "Wave target"
   are not a round until the first session's findings reopen them.
-- **Destruction.** One narrow BR question remains (below) and the first session does
-  not need the lane, so it runs beside construction without joining it. Zombies bash terrain by material
+- **Destruction.** The first session does not need the lane, so it runs beside
+  construction without joining it. Zombies bash terrain by material
   strength first, so the brute wrecks walls through its strength rather than an
   identity flag and ordinary types break doors only because door pieces sit below
   their strength; see `packages/engine/src/game/session.ts`, `bashObstacle`. Span
   support with surface ground follows, and until collapse lands live play refuses a
   blow whose ruin would leave a block unsupported, a temporary gate whose reason goes
   in `DESIGN.md`, "Damage, destruction and dismemberment", not in a flag. Collapse
-  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies to
-  be dug out by ordinary strikes, buries contents that clearing digs out under
-  "Rubble", and hurts every body, generating terrain on demand wherever it reaches, so
+  then lands as a separate PR: rubble that keeps its crack fraction, buries bodies and
+  contents, and hurts every body, generating terrain on demand wherever it reaches, so
   no region departure-and-return work precedes it; its PR reports collapse time at the
-  largest authored roof rather than gating on it. Open for BR: whether take apart also
-  digs out bodies, so one verb empties a cell of all it buried. The question gates only
-  the collapse PR's body-recovery step; the contents rule under "Rubble" stands either
-  way. Blast by share and breach charges follow, then furniture knock-out and
+  largest authored roof rather than gating on it. Taking rubble apart digs out buried
+  bodies too, one clearing verb for everything a cell buried, and ordinary strikes
+  never clear rubble. One verb and one rule let the player clear a heap one way and
+  find whatever is under it. Blast by share and breach charges follow, then furniture knock-out and
   push-off, which replace the fall refusal with landing crush; see
   `packages/engine/src/core/furnitureMove.ts`, `fallRefusal`.
 - **Built systems.** Appliance controls and processes after placement; brute

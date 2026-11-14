@@ -1,15 +1,18 @@
 local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
   blunt: blunt, cut: cut, pierce: pierce, blast: blast, fragment: fragment, breach: breach, crush: crush, acid: acid,
 };
+local cracks = {
+  color: '#1c1712', opacity: 0.9, widthBlocks: 0.035, strands: 3, segments: 5, jitterRadians: 0.6, branchChance: 0.35,
+  rootSpreadBlocks: 0.15, strandLengthBlocks: 0.5, branchSwingRadians: 0.7853981633974483, branchStepFactor: 0.6,
+  tipWidthFactor: 0.4, strandSpacingJitter: 0.25, branchSegmentShare: 0.5,
+  steps: [{ from: 0.1, reach: 0.35 }, { from: 0.35, reach: 0.7 }, { from: 0.65, reach: 1 }],
+};
 local material(id, minimum, durability, mass, span, resist, tint, yield, clearTime) = {
   id: id, minimumStrength: minimum, durability: durability, massKg: mass, span: span,
   resistance: resist, fallsTo: id + '_rubble', breakable: true, rubble: [{ item: yield, count: 1 }],
   rubbleClearTimeGameMinutes: clearTime, blowSound: 'door_bash',
   broken: { tint: tint, strength: 0.6 },
-  damaged: [
-    { from: 0.25, tint: tint, strength: 0.15 },
-    { from: 0.6, tint: tint, strength: 0.35 },
-  ],
+  cracks: cracks,
 };
 local materials = [
   material('soil', 2, 30, 180, 0, resistance(0, 0.1, 0.4, 0, 0.4, 0, 0, 0.4), '#685744', 'rubble_stone', 3),
@@ -17,7 +20,7 @@ local materials = [
   material('timber', 3.5, 100, 65, 3, resistance(0.1, 0, 0.5, 0.1, 0.4, 0, 0.1, 0.5), '#776144', 'wood_offcut', 6),
   material('metal', 9, 400, 180, 4, resistance(0.4, 0.7, 0.6, 0.2, 0.6, 0, 0.3, 0.6), '#6e6965', 'scrap_metal', 12),
   material('textile', 0, 15, 8, 1, resistance(0.5, 0, 0.1, 0, 0.1, 0, 0, 0), '#68604e', 'cloth_strip', 2),
-  material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone', 3) + { fallsTo: 'soil_rubble', breakable: false, rubble: [] },
+  material('liquid', 0, 1, 125, 0, resistance(1, 1, 1, 1, 1, 1, 1, 1), '#52616b', 'rubble_stone', 3) + { fallsTo: 'soil_rubble', breakable: false, rubble: [], cracks+: { steps: [] } },
 ];
 {
   blockMaterials: materials,

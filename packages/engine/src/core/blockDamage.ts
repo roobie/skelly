@@ -2,6 +2,7 @@ import type { DamageKind } from './body.ts';
 import type { CanonicalTerrain } from './canonicalTerrain.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
+import { coreMessage } from './coreText.ts';
 import type { BlockMaterialDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { World } from './world.ts';
@@ -45,6 +46,54 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   return { outcome: total === material.durability ? 'broken' : 'damaged', damage: total };
 };
 
+/** What stands at a cell the repair owner reads: the block's id and the damage it retains. */
+export interface CellDamageState {
+  readonly block: string;
+  readonly damage: number;
+  readonly durability: number;
+  /** The damage episode's identity: replacement clears it and fresh damage mints a new one. */
+  readonly epoch: number;
+}
+
+/** The world's say over repairing a damaged terrain cell, bound to one world and registry by the game. */
+export interface CellRepair {
+  /** The solid block at the cell and the damage it retains, or undefined where no solid block stands there. */
+  readonly state: (cell: Readonly<Vec3>) => CellDamageState | undefined;
+  /** Why the cell cannot be repaired now, at Start, at each resume and at completion alike; `epoch` pins the damage
+   * episode the job is for, so a replacement block's fresh damage is a different target. */
+  readonly refusal: (
+    cell: Readonly<Vec3>,
+    epoch: number,
+    block: string | undefined,
+    amount: number,
+  ) => string | undefined;
+  /** Applies the repair to the pinned damage episode; false leaves the world's damage untouched. */
+  readonly repair: (cell: Readonly<Vec3>, epoch: number, amount: number) => boolean;
+}
+
+/** Binds the cell-repair owner to a world: the named block must still stand there, damaged, for a job to touch it. */
+export const worldCellRepair = (world: World, registry: Registry): CellRepair => {
+  const state = (cell: Readonly<Vec3>): CellDamageState | undefined => {
+    const block = registry.blocks[world.getBlock(...cell)];
+    const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
+    const entry = world.blockDamage.get(cell);
+    return block && material && entry
+      ? { block: block.id, damage: entry.damage, durability: material.durability, epoch: entry.epoch }
+      : undefined;
+  };
+  return {
+    state,
+    refusal: (cell, epoch, block, amount) => {
+      const at = state(cell);
+      if (at && at.block === block && at.epoch === epoch && Number.isFinite(amount) && amount > 0) {
+        return;
+      }
+      return coreMessage(registry, 'repairTargetGone');
+    },
+    repair: (cell, epoch, amount) => world.blockDamage.repair(cell, epoch, amount),
+  };
+};
+
 export interface DamageEntry {
   readonly damage: number;
   readonly epoch: number;
@@ -75,6 +124,8 @@ const materialAt = (world: World, registry: Registry, cell: Readonly<Vec3>): Blo
 export class BlockDamage {
   private readonly entries = new Map<string, DamageEntry>();
   private nextEpoch = 1;
+  /** Goes up whenever any cell's damage changes, so a view redraws damage only then. */
+  version = 0;
 
   private readonly world: World;
 
@@ -84,6 +135,13 @@ export class BlockDamage {
 
   get(cell: Readonly<Vec3>): Readonly<DamageEntry> | undefined {
     return this.entries.get(keyOf(cell));
+  }
+
+  /** Every damaged cell with its damage, in no set order. */
+  *damaged(): Generator<readonly [Vec3, Readonly<DamageEntry>]> {
+    for (const [key, entry] of this.entries) {
+      yield [key.split(',').map(Number) as Vec3, entry];
+    }
   }
 
   record(terrain: CanonicalTerrain, registry: Registry, cell: Readonly<Vec3>, damage: number): Readonly<DamageEntry> {
@@ -105,6 +163,7 @@ export class BlockDamage {
     }
     const entry = Object.freeze({ damage, epoch });
     this.entries.set(keyOf(cell), entry);
+    this.version += 1;
     this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     return entry;
   }
@@ -112,8 +171,27 @@ export class BlockDamage {
   /** Replacement and completed repair end the identity, even when the same block is later rebuilt here. */
   clear(cell: Readonly<Vec3>): void {
     if (this.entries.delete(keyOf(cell))) {
+      this.version += 1;
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }
+  }
+
+  /** Mending reduces retained damage without a new identity; a fully mended cell ends the identity, as replacement
+   * does. `epoch` pins which damage episode may be mended, so a replacement block's fresh damage refuses. */
+  repair(cell: Readonly<Vec3>, epoch: number, amount: number): boolean {
+    const entry = this.entries.get(keyOf(cell));
+    if (!(validCell(cell) && entry && entry.epoch === epoch && Number.isFinite(amount) && amount > 0)) {
+      return false;
+    }
+    const remaining = Math.max(0, entry.damage - amount);
+    if (remaining === 0) {
+      this.clear(cell);
+      return true;
+    }
+    this.entries.set(keyOf(cell), Object.freeze({ damage: remaining, epoch: entry.epoch }));
+    this.version += 1;
+    this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
+    return true;
   }
 
   snapshotState(): Readonly<SavedBlockDamage> {
@@ -156,6 +234,7 @@ export class BlockDamage {
         continue;
       }
       this.entries.set(key, Object.freeze({ damage, epoch }));
+      this.version += 1;
       epochs.add(epoch);
       this.world.touchColumn(toChunk(cell[0]), toChunk(cell[2]));
     }

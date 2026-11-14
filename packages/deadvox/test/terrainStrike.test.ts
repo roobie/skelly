@@ -387,6 +387,7 @@ const debugBuild = (f: Fixture) => {
       blows.push(blow);
       return f.session.strikeTerrainCell(target, blow);
     },
+    repairCell: () => undefined,
     takeApartCell: () => undefined,
     bindings: new BindingRegistry(INPUT_BINDINGS),
   });

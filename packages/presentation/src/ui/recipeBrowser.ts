@@ -1,4 +1,5 @@
 import type { RecipeCategoryDef, Registry } from '@skelly/engine/content';
+import { repairTargetName } from '@skelly/engine/content';
 import { fillText } from '@skelly/engine/text';
 import { craftingText } from './craftReadout.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
@@ -70,9 +71,7 @@ export const recipeBrowser = (
     if (!query.tags.every((id) => recipe.tags.includes(id))) {
       return [];
     }
-    const itemName = recipe.repair?.entity
-      ? registry.furniture.get(recipe.repair.entity)!.name
-      : registry.items.get(recipe.result.item)!.name;
+    const itemName = repairTargetName(registry, recipe);
     const name = recipe.kind === 'repair' ? fillText(craftingText(registry).repairName, { item: itemName }) : itemName;
     if (!matchesFind(words, [name, ...recipe.searchTerms])) {
       return [];

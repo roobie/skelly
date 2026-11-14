@@ -646,6 +646,15 @@
       ]
     },
     {
+      "id": "debug.repair-cell",
+      "keys": [
+        {
+          "code": "KeyR",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
       "id": "debug.take-apart-cell",
       "keys": [
         {

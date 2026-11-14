@@ -1,4 +1,5 @@
 import type { RecipeDef, Registry, ScreenText } from '@skelly/engine/content';
+import { repairTargetName } from '@skelly/engine/content';
 import {
   type CraftCommands,
   type CraftPreference,
@@ -32,10 +33,9 @@ export const workName = (registry: Registry, item: Item): string => {
   if (!recipe) {
     return registry.items.get(item.type)!.name;
   }
-  const { name } = recipe.repair?.entity
-    ? registry.furniture.get(recipe.repair.entity)!
-    : registry.items.get(recipe.result.item)!;
-  return fillText(recipe.kind === 'repair' ? text.repairing : text.inProgress, { item: name });
+  return fillText(recipe.kind === 'repair' ? text.repairing : text.inProgress, {
+    item: repairTargetName(registry, recipe),
+  });
 };
 /** A running craft is progress in the handling HUD; a paused one has none, so a dropped work item shows nothing. */
 export const runningCraftPresentation = (
@@ -180,7 +180,9 @@ export const craftRows = ({
       return (
         character.knownRecipes.has(id) &&
         !recipe.activation &&
-        (entityRepair ? recipe.repair?.entity === entityRepair.target.type : recipe.repair?.entity === undefined)
+        (entityRepair
+          ? recipe.repair?.entity === entityRepair.target.type
+          : recipe.repair?.entity === undefined && recipe.repair?.block === undefined)
       );
     })
     .sort()
@@ -191,9 +193,7 @@ export const craftRows = ({
       const status = requirementStatus(recipe, reach, character);
       const selected = 'plan' in result ? result.plan.selectedAlternatives : {};
       const text = craftingText(registry);
-      const itemName = recipe.repair?.entity
-        ? registry.furniture.get(recipe.repair.entity)!.name
-        : registry.items.get(recipe.result.item)!.name;
+      const itemName = repairTargetName(registry, recipe);
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,

@@ -7,7 +7,7 @@ import { Inventory, toggleLight } from '@skelly/engine/inventory';
 import { graphicsTuningOf } from '@skelly/engine/look';
 import { type Actor, realTimestamp } from '@skelly/engine/sim';
 import { buildSkyResult, SkyFields, type SkyResult, skyAt } from '@skelly/engine/sky';
-import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3 } from '@skelly/engine/world';
+import { BlockEntities, type Body, type PoweredLight, raycast, type Vec3, World } from '@skelly/engine/world';
 import { ThirdPersonOrbit } from '@skelly/presentation/internal/presentation/thirdPersonOrbit.ts';
 import { ITEM_POINT_LIGHTS } from '@skelly/presentation/internal/render/lightPool.ts';
 import { MaterialPatches } from '@skelly/presentation/internal/render/materialPatches.ts';
@@ -145,6 +145,8 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
       fogCurveExponent: FOG_CURVE_EXPONENT,
     },
     isSolid,
+    isOpaque: isSolid,
+    world: new World(),
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), {
     models: productAssets.models,

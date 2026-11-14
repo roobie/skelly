@@ -813,6 +813,70 @@
       "timeGameMinutes": 15
     },
     {
+      "category": "repair_structures",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "scrap_metal"
+          }
+        ]
+      ],
+      "id": "repair_brick",
+      "kind": "repair",
+      "qualities": {
+        "repairing": 1
+      },
+      "repair": {
+        "amount": 60,
+        "block": "brick",
+        "perSkill": 30,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "scrap_metal"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["metal"],
+      "timeGameMinutes": 20
+    },
+    {
+      "category": "repair_structures",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "wooden_plank"
+          }
+        ]
+      ],
+      "id": "repair_planks",
+      "kind": "repair",
+      "qualities": {
+        "repairing": 1
+      },
+      "repair": {
+        "amount": 20,
+        "block": "planks",
+        "perSkill": 10,
+        "skill": "crafting"
+      },
+      "result": {
+        "count": 1,
+        "item": "wooden_plank"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood"],
+      "timeGameMinutes": 15
+    },
+    {
       "category": "materials",
       "components": [
         [

@@ -178,7 +178,18 @@ describe('debug and fixture starts', () => {
       const character = new Character(registry, { handedness: 'right' });
       const inventory = new Inventory(registry, undefined, undefined, character);
       const body = new Body(claimed(registry.body, 'player')!);
-      applyStartState(inventory, { ...start, kit: [], wounds: [] }, { fresh: true, character, body });
+      applyStartState(
+        inventory,
+        { ...start, kit: [], wounds: [], blockDamage: [] },
+        {
+          fresh: true,
+          character,
+          body,
+          damageCell: () => {
+            throw new Error('Unexpected start cell damage');
+          },
+        },
+      );
       for (const skill of registry.skills.keys()) {
         expect([start.id, skill, character.skills[skill]]).toEqual([start.id, skill, SKILL_LEVEL_MAX]);
       }
@@ -192,7 +203,16 @@ describe('new-game application', () => {
     const character = new Character(registry, { handedness });
     const inventory = new Inventory(registry, undefined, undefined, character);
     const body = new Body(claimed(registry.body, 'player')!);
-    return { registry, inventory, character, body, fresh: true };
+    return {
+      registry,
+      inventory,
+      character,
+      body,
+      fresh: true,
+      damageCell: () => {
+        throw new Error('Unexpected start cell damage');
+      },
+    };
   };
 
   it.each(['left', 'right'] as const)('uses ordinary inventory ownership and %s-handed roles', (handedness) => {

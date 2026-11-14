@@ -56,6 +56,8 @@ local book(id, name, weight, readingGameMinutes, recipes, text) = {
         'sew_cloth_strip',
         'repair_crowbar',
         'repair_hammer',
+        'repair_brick',
+        'repair_planks',
         'repair_machete',
         'repair_kabar',
         'repair_baseball_bat',
