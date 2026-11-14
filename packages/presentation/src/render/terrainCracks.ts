@@ -23,13 +23,6 @@ export type CrackFace = keyof typeof FACES;
 
 const FACE_NAMES = Object.keys(FACES) as CrackFace[];
 
-// The crack's form; content shapes it only through the pattern. A straight strand just reaches the face edge.
-const ROOT_SPREAD = 0.15;
-const STRAND_LENGTH = 0.5;
-const BRANCH_SWING_RADIANS = Math.PI / 4;
-const BRANCH_STEP = 0.6;
-const TIP_WIDTH = 0.4;
-
 /** One face of one cell; the crack it shows depends on nothing else but its pattern. */
 export interface CrackSite {
   readonly seed: number;
@@ -86,21 +79,25 @@ const crackTree = ({ seed, cell, face }: CrackSite, pattern: CrackPattern): Crac
       const next = advance(tip, rng.range(-1, 1) * pattern.jitterRadians, length);
       const t = next.depth / pattern.segments;
       if (next.x !== tip.x || next.y !== tip.y) {
-        tree.push({ stroke: [tip.x, tip.y, next.x, next.y, pattern.widthBlocks * (1 - (1 - TIP_WIDTH) * t)], t });
+        tree.push({
+          stroke: [tip.x, tip.y, next.x, next.y, pattern.widthBlocks * (1 - (1 - pattern.tipWidthFactor) * t)],
+          t,
+        });
       }
       tip = next;
       if (at < count && !onEdge(tip) && rng.next() < pattern.branchChance) {
-        const swing = (rng.next() < 0.5 ? -1 : 1) * (BRANCH_SWING_RADIANS + rng.range(0, 1) * pattern.jitterRadians);
-        grow({ ...tip, angle: tip.angle + swing }, Math.ceil((count - at) / 2), length * BRANCH_STEP);
+        const swing =
+          (rng.next() < 0.5 ? -1 : 1) * (pattern.branchSwingRadians + rng.range(0, 1) * pattern.jitterRadians);
+        grow({ ...tip, angle: tip.angle + swing }, Math.ceil((count - at) / 2), length * pattern.branchStepFactor);
       }
     }
   };
-  const x = 0.5 + rng.range(-ROOT_SPREAD, ROOT_SPREAD);
-  const y = 0.5 + rng.range(-ROOT_SPREAD, ROOT_SPREAD);
+  const x = 0.5 + rng.range(-pattern.rootSpreadBlocks, pattern.rootSpreadBlocks);
+  const y = 0.5 + rng.range(-pattern.rootSpreadBlocks, pattern.rootSpreadBlocks);
   const turn = rng.range(0, Math.PI * 2);
   for (let strand = 0; strand < pattern.strands; strand++) {
     const angle = turn + ((strand + rng.range(-0.25, 0.25)) * Math.PI * 2) / pattern.strands;
-    grow({ x, y, angle, depth: 0 }, pattern.segments, STRAND_LENGTH / pattern.segments);
+    grow({ x, y, angle, depth: 0 }, pattern.segments, pattern.strandLengthBlocks / pattern.segments);
   }
   return tree;
 };

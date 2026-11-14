@@ -34,7 +34,7 @@ local room = {
     resistance: { blunt: 0, cut: 0, pierce: 0, blast: 0, fragment: 0, breach: 0, crush: 0, acid: 0 },
     fallsTo: 'fixture_floor', breakable: false, rubble: [], blowSound: 'fixture_blow',
     broken: { tint: '#555555', strength: 0.5 },
-    cracks: { color: '#222222', opacity: 1, widthBlocks: 0.05, strands: 1, segments: 1, jitterRadians: 0, branchChance: 0, steps: [] },
+    cracks: { color: '#222222', opacity: 1, widthBlocks: 0.05, strands: 1, segments: 1, jitterRadians: 0, branchChance: 0, rootSpreadBlocks: 0, strandLengthBlocks: 0.5, branchSwingRadians: 0, branchStepFactor: 0.5, tipWidthFactor: 1, steps: [] },
   }],
   sounds: [{
     id: 'fixture_blow', description: 'fixture blow', variants: ['assets/audio/fixture-blow.ogg'], gain: 1,

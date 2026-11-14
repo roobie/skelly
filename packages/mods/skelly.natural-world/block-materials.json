@@ -9,9 +9,12 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
         "jitterRadians": 0.59999999999999998,
         "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
         "segments": 5,
         "steps": [
           {
@@ -27,7 +30,9 @@
             "reach": 1
           }
         ],
+        "strandLengthBlocks": 0.5,
         "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
       "durability": 30,
@@ -62,9 +67,12 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
         "jitterRadians": 0.59999999999999998,
         "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
         "segments": 5,
         "steps": [
           {
@@ -80,7 +88,9 @@
             "reach": 1
           }
         ],
+        "strandLengthBlocks": 0.5,
         "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
       "durability": 300,
@@ -115,9 +125,12 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
         "jitterRadians": 0.59999999999999998,
         "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
         "segments": 5,
         "steps": [
           {
@@ -133,7 +146,9 @@
             "reach": 1
           }
         ],
+        "strandLengthBlocks": 0.5,
         "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
       "durability": 100,
@@ -168,9 +183,12 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
         "jitterRadians": 0.59999999999999998,
         "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
         "segments": 5,
         "steps": [
           {
@@ -186,7 +204,9 @@
             "reach": 1
           }
         ],
+        "strandLengthBlocks": 0.5,
         "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
       "durability": 400,
@@ -221,9 +241,12 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
         "jitterRadians": 0.59999999999999998,
         "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
         "segments": 5,
         "steps": [
           {
@@ -239,7 +262,9 @@
             "reach": 1
           }
         ],
+        "strandLengthBlocks": 0.5,
         "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
       "durability": 15,
@@ -274,12 +299,17 @@
       },
       "cracks": {
         "branchChance": 0.34999999999999998,
+        "branchStepFactor": 0.59999999999999998,
+        "branchSwingRadians": 0.78539816339744828,
         "color": "#1c1712",
         "jitterRadians": 0.59999999999999998,
         "opacity": 0.90000000000000002,
+        "rootSpreadBlocks": 0.14999999999999999,
         "segments": 5,
         "steps": [],
+        "strandLengthBlocks": 0.5,
         "strands": 3,
+        "tipWidthFactor": 0.40000000000000002,
         "widthBlocks": 0.035000000000000003
       },
       "durability": 1,

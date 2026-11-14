@@ -3,6 +3,8 @@ local resistance(blunt, cut, pierce, blast, fragment, breach, crush, acid) = {
 };
 local cracks = {
   color: '#1c1712', opacity: 0.9, widthBlocks: 0.035, strands: 3, segments: 5, jitterRadians: 0.6, branchChance: 0.35,
+  rootSpreadBlocks: 0.15, strandLengthBlocks: 0.5, branchSwingRadians: 0.7853981633974483, branchStepFactor: 0.6,
+  tipWidthFactor: 0.4,
   steps: [{ from: 0.1, reach: 0.35 }, { from: 0.35, reach: 0.7 }, { from: 0.65, reach: 1 }],
 };
 local material(id, minimum, durability, mass, span, resist, tint, yield) = {
