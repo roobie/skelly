@@ -3,6 +3,7 @@ import { startReservationIssues } from './cityPlan.ts';
 import type { Registry } from './content.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
 import { ItemFactory, setInitialCylinder } from './items.ts';
+import { toggleLight } from './lights.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
 import { startFixedLootIssues } from './scenarioComposition.ts';
 import { scenarioStartIssues } from './scenarioStart.ts';
@@ -43,6 +44,21 @@ const destinationIssues = (
   }
 };
 
+const litIssue = (registry: Registry, entry: StartKitEntry, fail: (message: string) => void): void => {
+  if (!entry.lit) {
+    return;
+  }
+  try {
+    const item = new ItemFactory().create(registry, entry.item, entry.count);
+    const refusal = toggleLight(registry, item, 0);
+    if (refusal !== undefined) {
+      fail(refusal);
+    }
+  } catch (error) {
+    fail(String(error));
+  }
+};
+
 const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, message: string) => void): void => {
   const parents = new Map<string, StartKitEntry>();
   const hands = new Set<string>();
@@ -68,6 +84,7 @@ const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, mes
         fail(`${path}.cylinder`, String(error));
       }
     }
+    litIssue(registry, entry, (message) => fail(`${path}.lit`, message));
     destinationIssues(registry, entry, { parents, hands }, (suffix, message) => fail(`${path}${suffix}`, message));
     parents.set(entry.id, entry);
   });

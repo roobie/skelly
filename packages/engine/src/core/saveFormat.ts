@@ -477,7 +477,12 @@ itemSchema = obj({
           ),
         ),
         ...workProgress,
-        repairTarget: opt(obj({ kind: enumeration(['item', 'entity']), uid: positiveInt })),
+        repairTarget: opt(
+          union(
+            obj({ kind: enumeration(['item', 'entity']), uid: positiveInt }),
+            obj({ kind: enumeration(['cell']), cell: tuple(safeInt, safeInt, safeInt), epoch: positiveInt }),
+          ),
+        ),
         repairAmount: opt(positive),
         components: arr(lazy(() => itemSchema)),
       }),

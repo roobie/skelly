@@ -155,7 +155,18 @@ describe('debug and fixture starts', () => {
       const character = new Character(registry, { handedness: 'right' });
       const inventory = new Inventory(registry, undefined, undefined, character);
       const body = new Body(claimed(registry.body, 'player')!);
-      applyStartState(inventory, { ...start, kit: [], wounds: [] }, { fresh: true, character, body });
+      applyStartState(
+        inventory,
+        { ...start, kit: [], wounds: [], blockDamage: [] },
+        {
+          fresh: true,
+          character,
+          body,
+          damageCell: () => {
+            throw new Error('Unexpected start cell damage');
+          },
+        },
+      );
       for (const skill of registry.skills.keys()) {
         expect([start.id, skill, character.skills[skill]]).toEqual([start.id, skill, SKILL_LEVEL_MAX]);
       }
@@ -169,7 +180,16 @@ describe('new-game application', () => {
     const character = new Character(registry, { handedness });
     const inventory = new Inventory(registry, undefined, undefined, character);
     const body = new Body(claimed(registry.body, 'player')!);
-    return { registry, inventory, character, body, fresh: true };
+    return {
+      registry,
+      inventory,
+      character,
+      body,
+      fresh: true,
+      damageCell: () => {
+        throw new Error('Unexpected start cell damage');
+      },
+    };
   };
 
   it.each(['left', 'right'] as const)('uses ordinary inventory ownership and %s-handed roles', (handedness) => {
@@ -199,6 +219,26 @@ describe('new-game application', () => {
     expect(context.character.knownRecipes.has(start.recipes[0]!)).toBe(true);
     expect(context.body.bleedingTier(start.wounds[0]!.region)?.id).toBe(start.wounds[0]!.bleeding);
     expect(context.body.health).toBe(health);
+  });
+
+  it('lights an authored start lamp through the light owner at the start calendar and rejects non-lights', () => {
+    const start = makeStart({
+      kit: [{ id: 'lamp', item: 'oil_lamp', lit: true, destination: { kind: 'hand', role: 'dominant' } }],
+    });
+    expect(parse(StartSchema, start).kit[0]!.lit).toBe(true);
+    const context = setup(start);
+    const calendar = 12_345;
+    applyStartState(context.inventory, start, { ...context, calendar });
+    expect(context.inventory.hands.right?.on).toBe(true);
+    expect(context.inventory.hands.right?.litAtGameTimestamp).toBe(calendar);
+    context.registry.starts.set(start.id, start);
+    expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
+    start.kit[0]!.item = 'fixture_start_stock';
+    expect(startIssues(context.registry)).toContainEqual(
+      expect.objectContaining({ id: start.id, path: '.kit[0].lit' }),
+    );
+    const refused = setup(makeStart({ kit: [] }));
+    expect(() => applyStartState(refused.inventory, start, refused)).toThrow('kit entry "lamp"');
   });
 
   it('fills a magazine from authored rounds without sharing the row array', () => {

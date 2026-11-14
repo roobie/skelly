@@ -9,6 +9,9 @@ import { inventoryLightEntries, lightExposureFor } from './lights.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { DayCycleDef } from './schema.ts';
 import type { PoweredLight } from './sitePower.ts';
+
+type LightBody = PoweredLight['body'];
+
 import { skyAt } from './sky.ts';
 import type { SkyFields } from './skyField.ts';
 
@@ -40,18 +43,41 @@ const distanceAttenuation = (
   return falloff * edge * edge;
 };
 
-const cellOf = (point: Vec3): string => point.map(Math.floor).join(',');
-
-/** A source reaches a point when no blocking cell lies between them; their own cells never block. */
-const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt): boolean => {
+/**
+ * A source reaches a point when no blocking cell lies between them; the cells of the source, of the point and of the
+ * source's own `body` never block, so a lamp lights itself and the floor at its foot. The one wall check for light:
+ * the rules read it here and the picture reads it through `packages/engine/src/core/lampReach.ts`.
+ */
+export const reaches = (from: Vec3, to: Vec3, isBlocking: SolidAt, body?: LightBody): boolean => {
   const delta: Vec3 = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
   const length = Math.hypot(...delta);
   if (length === 0) {
     return true;
   }
-  const ends = new Set([cellOf(from), cellOf(to)]);
+  const fromX = Math.floor(from[0]);
+  const fromY = Math.floor(from[1]);
+  const fromZ = Math.floor(from[2]);
+  const toX = Math.floor(to[0]);
+  const toY = Math.floor(to[1]);
+  const toZ = Math.floor(to[2]);
   const dir: Vec3 = [delta[0] / length, delta[1] / length, delta[2] / length];
-  return !raycast(from, dir, length, (x, y, z) => !ends.has(`${x},${y},${z}`) && isBlocking(x, y, z));
+  return !raycast(from, dir, length, (x, y, z) => {
+    if ((x === fromX && y === fromY && z === fromZ) || (x === toX && y === toY && z === toZ)) {
+      return false;
+    }
+    if (
+      body !== undefined &&
+      x >= body.min[0] &&
+      x < body.max[0] &&
+      y >= body.min[1] &&
+      y < body.max[1] &&
+      z >= body.min[2] &&
+      z < body.max[2]
+    ) {
+      return false;
+    }
+    return isBlocking(x, y, z);
+  });
 };
 
 interface PointSource {
@@ -59,6 +85,7 @@ interface PointSource {
   intensity: number;
   radius: number;
   decay: number;
+  body?: LightBody;
 }
 
 function* pointSources(scene: IlluminationScene, pointDecay: number, renderLiftMetres: number): Generator<PointSource> {
@@ -88,7 +115,13 @@ function* pointSources(scene: IlluminationScene, pointDecay: number, renderLiftM
     }
   }
   for (const fixture of scene.fixtures) {
-    yield { pos: fixture.pos, intensity: fixture.intensity, radius: fixture.radius, decay: pointDecay };
+    yield {
+      pos: fixture.pos,
+      intensity: fixture.intensity,
+      radius: fixture.radius,
+      decay: pointDecay,
+      body: fixture.body,
+    };
   }
 }
 
@@ -99,7 +132,7 @@ export const illuminationAt = (scene: IlluminationScene, point: Vec3): number =>
   let total = scene.sky.visibilityAt(point) * (sky.lightIntensity + sky.ambientIntensity);
   for (const source of pointSources(scene, tuning.illumination.pointDecay, tuning.groundLight.renderLiftMetres)) {
     const metres = Math.hypot(...source.pos.map((value, axis) => (value - point[axis]!) * scene.blockSize));
-    if (metres < source.radius && reaches(source.pos, point, scene.isBlocking)) {
+    if (metres < source.radius && reaches(source.pos, point, scene.isBlocking, source.body)) {
       total +=
         source.intensity *
         distanceAttenuation(metres, source.radius, source.decay, tuning.illumination.nearFieldMetres);

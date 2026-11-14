@@ -1254,8 +1254,10 @@ const startPlayWith = (
   if (!options.restore) {
     applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
       fresh: true,
+      calendar: sim.calendar,
       character: session.character,
       body: sim.body,
+      damageCell: (cell, damage) => session.damageTerrainCell(cell, damage),
     });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
@@ -1301,6 +1303,7 @@ const startPlayWith = (
     ragdoll: options.ragdoll,
     probes: options.page.probes,
     poweredLights: () => session.power?.lights() ?? [],
+    lampReach: session.lampReach,
     physicalSolid: session.physicalSolid,
   });
   input.setMouseLookOverride((movementX, movementY) => {
@@ -1740,6 +1743,25 @@ const startPlayWith = (
     feet,
     showNotice,
     strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
+    // A look reaches cell repair with no player-facing view: the trigger is the known recipe naming the aimed block.
+    repairCell: (cell) => {
+      if (replayPlayer) {
+        return 'Input replay owns this run';
+      }
+      const block = registry.blocks[engine.world.getBlock(...cell)];
+      const recipe = [...session.character.knownRecipes]
+        .map((id) => registry.recipes.get(id))
+        .find((candidate) => candidate?.kind === 'repair' && candidate.repair?.block === block?.id);
+      if (!(block && recipe)) {
+        return `No known repair recipe for ${block?.name ?? 'that block'}`;
+      }
+      return router.dispatchScreenCommand({
+        kind: 'craft.repair-cell',
+        recipeId: recipe.id,
+        cell: [cell[0], cell[1], cell[2]],
+        preference: {},
+      });
+    },
     // A look reaches rubble clearing with no player-facing view: the trigger is the aimed rubble cell itself.
     takeApartCell: (cell) =>
       replayPlayer

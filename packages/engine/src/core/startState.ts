@@ -1,7 +1,9 @@
 import type { Body } from './body.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
+import type { Vec3 } from './coords.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { type Item, setInitialCylinder } from './items.ts';
+import { toggleLight } from './lights.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 
 const placeEntry = (
@@ -44,7 +46,7 @@ const startFailure = (inventory: Inventory, start: StartDef, path: string, reaso
   throw new Error(`Start "${start.id}" (${origin?.source ?? 'unattributed start'}) ${path}: ${String(reason)}`);
 };
 
-export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
+export const applyStartKit = (inventory: Inventory, start: StartDef, calendar = 0): void => {
   const parents = new Map<string, Item>();
   for (const entry of start.kit) {
     try {
@@ -56,6 +58,12 @@ export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
         setInitialCylinder(inventory.registry, item, entry.cylinder);
       }
       placeEntry(inventory, entry, item, parents);
+      if (entry.lit) {
+        const refusal = toggleLight(inventory.registry, item, calendar);
+        if (refusal !== undefined) {
+          throw new Error(refusal);
+        }
+      }
       parents.set(entry.id, item);
     } catch (error) {
       startFailure(inventory, start, `kit entry "${entry.id}"`, error);
@@ -80,12 +88,19 @@ export const startSkills = (
 export const applyStartState = (
   inventory: Inventory,
   start: StartDef,
-  context: { fresh: boolean; character: Character; body: Body },
+  context: {
+    fresh: boolean;
+    calendar?: number;
+    character: Character;
+    body: Body;
+    /** Records authored damage on a terrain cell, through the session's own damage owner. */
+    damageCell: (cell: Vec3, damage: number) => void;
+  },
 ): void => {
   if (!context.fresh) {
     return;
   }
-  applyStartKit(inventory, start);
+  applyStartKit(inventory, start, context.calendar);
   try {
     context.character.initializeProgression(startSkills(inventory.registry.skills, start), start.recipes);
   } catch (error) {
@@ -97,6 +112,13 @@ export const applyStartState = (
       context.body.impact(0, wound.region, { bleeding: tier, infectionAtRisk: false });
     } catch (error) {
       startFailure(inventory, start, `wounds[${index}]`, error);
+    }
+  }
+  for (const [index, entry] of (start.blockDamage ?? []).entries()) {
+    try {
+      context.damageCell(entry.cell, entry.damage);
+    } catch (error) {
+      startFailure(inventory, start, `blockDamage[${index}]`, error);
     }
   }
 };

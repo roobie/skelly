@@ -4,6 +4,7 @@ const modes = Object.freeze({
   'inventory-scroll': 'pixel',
   'ui-browser-contract': 'render-free',
   'melee-build-click': 'render-free',
+  'cell-repair-crack': 'pixel',
   'primary-action': 'render-free',
   'primary-action-pixel': 'pixel',
   'pump-handling': 'render-free',

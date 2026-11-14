@@ -1854,10 +1854,17 @@ const checkRepairDestination = (registry: Registry, recipe: RecipeDef, report: R
   if (repair.entity !== undefined && !registry.furniture.has(repair.entity)) {
     report('recipes', recipe.id, '.repair.entity', `no furniture "${repair.entity}"`);
   }
-  if (repair.entity === undefined && repair.amount > 1) {
+  const block = repair.block === undefined ? undefined : registry.blockIds.get(repair.block);
+  if (repair.block !== undefined && (block === undefined || !registry.blocks[block]!.solid)) {
+    report('recipes', recipe.id, '.repair.block', `no solid block "${repair.block}"`);
+  }
+  if (repair.entity !== undefined && repair.block !== undefined) {
+    report('recipes', recipe.id, '.repair', 'a repair names one world target, not both an entity and a block');
+  }
+  if (repair.entity === undefined && repair.block === undefined && repair.amount > 1) {
     report('recipes', recipe.id, '.repair.amount', 'item repair must be at most 1');
   }
-  if (recipe.activation && repair.entity !== undefined) {
+  if (recipe.activation && (repair.entity !== undefined || repair.block !== undefined)) {
     report('recipes', recipe.id, '.activation', 'held sharpening needs an item target');
   }
 };
@@ -2730,6 +2737,17 @@ export const blockId = (registry: Registry, id: string): number => {
     throw new Error(`content does not define block "${id}"`);
   }
   return n;
+};
+
+/** The display name of what a repair recipe mends: the furniture, the terrain block, or the result item. */
+export const repairTargetName = (registry: Registry, recipe: RecipeDef): string => {
+  if (recipe.repair?.entity) {
+    return registry.furniture.get(recipe.repair.entity)!.name;
+  }
+  if (recipe.repair?.block) {
+    return registry.blocks[blockId(registry, recipe.repair.block)]!.name;
+  }
+  return registry.items.get(recipe.result.item)!.name;
 };
 
 /** RGB bytes per runtime block id, for the mesher. */

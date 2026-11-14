@@ -54,7 +54,14 @@ local crouch = {
         groundLight: { senseHeightMetres: 0.075, renderLiftMetres: 0.4 },
         // Above the night sky, below dusk and a lantern held close.
         // nearFieldMetres stays low enough for lights to form pools, high enough to cap close-surface blowout.
-        illumination: { pointDecay: 1, nearFieldMetres: 1.3, readingThreshold: 0.6 },
+        // reach: one grid cell per block keeps wall edges as sharp as the blocks; the range caps each lamp's grid
+        // (cost grows with its cube), so a longer-radius lamp is walled only within it.
+        illumination: {
+          pointDecay: 1,
+          nearFieldMetres: 1.3,
+          readingThreshold: 0.6,
+          reach: { cellBlocks: 1, rangeMetres: 12 },
+        },
       },
     },
   ],

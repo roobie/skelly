@@ -30,6 +30,7 @@ import { skyAt, skyInWeather, sunShadowStrength, type Weather } from '@skelly/en
 import {
   type BlockEntities,
   type Body,
+  type LampReachCache,
   type PoweredLight,
   raycast,
   type SolidAt,
@@ -50,6 +51,7 @@ import { CaseEffects } from './caseEffects.ts';
 import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
+import { installFixtureReach } from './fixtureReach.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
@@ -74,6 +76,7 @@ import { applySky } from './sky.ts';
 import { createSkyDome, type SkyDome } from './skyDome.ts';
 import { createSkyEnvironment, type SkyEnvironment } from './skyEnvironment.ts';
 import { StepOffset } from './stepOffset.ts';
+import { TerrainCracks } from './terrainCracks.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
 
@@ -224,6 +227,8 @@ type PlayViewEngine = Readonly<
     | 'shadows'
     | 'sky'
     | 'isSolid'
+    | 'isOpaque'
+    | 'world'
     | 'entities'
     | 'skylight'
     | 'materialPatches'
@@ -242,6 +247,7 @@ export const createPlayView = (
     ragdoll,
     page = globalThis,
     poweredLights = () => [],
+    lampReach,
     physicalSolid = engine.isSolid,
     probes = {},
   }: {
@@ -253,6 +259,8 @@ export const createPlayView = (
     ragdoll: RagdollConfig;
     page?: Pick<EventTarget, 'addEventListener'>;
     poweredLights?: () => readonly PoweredLight[];
+    /** Where the rules' wall check stops each powered lamp; without it lamp light is not walled. */
+    lampReach?: LampReachCache;
     /** The session's physical query, with parked vehicles, for corpses, the camera and flare occlusion. */
     physicalSolid?: (x: number, y: number, z: number) => boolean;
     /** The developer's view probes, as the product read them from its page. */
@@ -309,6 +317,8 @@ export const createPlayView = (
   if (decals) {
     scene.add(decals.mesh);
   }
+  const cracks = new TerrainCracks({ seed: config.seed, blockSize: s, registry });
+  scene.add(cracks.mesh);
   const itemThrows = new ItemThrows(registry, models, s, config.seed);
   const targetCell = config.debug
     ? (block: Vec3) => {
@@ -355,12 +365,14 @@ export const createPlayView = (
     caseEffects.dispose();
     gore.dispose();
     decals?.dispose();
+    cracks.dispose();
     impactEffects.dispose();
     itemThrows.dispose();
     blastFlashes.dispose();
     leverProps.dispose();
     acidEffects.dispose();
     flashlight.dispose();
+    fixtureReach?.dispose();
     held.dispose();
     playerMeshes.dispose();
     avatarMannequin?.dispose();
@@ -392,6 +404,11 @@ export const createPlayView = (
   );
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
+  const fixtureReach = installFixtureReach(engine.materialPatches, lampReach, {
+    slots: lightPool.size,
+    blockSize: s,
+    tuning: lightTuning.illumination.reach,
+  });
   engine.shadows?.attachTorches(flashlight.lights);
   scene.add(
     piles.group,
@@ -615,9 +632,10 @@ export const createPlayView = (
       piles.sync(inventory, itemThrows.hiddenItemUids);
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles);
-      furniture.sync(entities);
+      furniture.sync(entities, poweredLights());
       corpses.sync(entities);
       decals?.sync(entities);
+      cracks.sync(engine.world, engine.isOpaque, meshes);
       const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
       actorMeshes.setCamera?.(camera);
@@ -746,6 +764,7 @@ export const createPlayView = (
         fixtures: poweredLights(),
         glows: acidGlows(actorMeshes.anchors?.() ?? []),
       });
+      fixtureReach?.update(lightPool.reachSlots);
       updateFlare(nightVision, dt);
     },
     render: (): number | null => {
