@@ -5,6 +5,7 @@ read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
+  - you're changing where keyboard focus goes in pointer-locked menus
   - you're changing single-choice shortcuts or battery refusal language
   - you're changing debug/playtest separation or inventory layout
   - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
@@ -80,7 +81,7 @@ Startup refusals and content errors that do not halt play land in one error log 
 
 ## Layout
 
-The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `packages/presentation/src/ui/style.css`, ":root", and `packages/presentation/src/ui/comboBox.ts`, `comboBox`.
+The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. A control clicked through the drawn cursor takes keyboard focus, and the main menu focuses its first control when it opens, so Enter and Space activate what the player just pointed at rather than the canvas. See `packages/presentation/src/ui/menuPointer.ts`, `mountMenuPointer`, and `packages/presentation/src/ui/focus.ts`, `firstFocusable`. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `packages/presentation/src/ui/style.css`, ":root", and `packages/presentation/src/ui/comboBox.ts`, `comboBox`.
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
 

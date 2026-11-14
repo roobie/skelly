@@ -5,6 +5,7 @@
 // excluded from the save fingerprint, so pointer fixes don't invalidate saves).
 
 import { placeFactDetail } from './factDetailPlacement.ts';
+import { focusableAround } from './focus.ts';
 import { wheelPane, wheelPixels } from './wheel.ts';
 
 /** The input state the cursor needs; `Input` satisfies it. */
@@ -223,8 +224,8 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   );
 
   // A real press lands on the locked canvas, so Firefox's default focus handling would blur the focused field,
-  // closing an open combo box before the forwarded click reaches its option. Focus moves only when a forwarded
-  // click lands on an input.
+  // closing an open combo box before the forwarded click reaches its option. The forwarded click moves focus
+  // instead, onto the control it lands on, so Enter and Space then activate what the player pointed at.
   document.addEventListener(
     'mousedown',
     (event) => {
@@ -251,9 +252,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
         if (target && target !== canvas && target.id !== 'game-cursor') {
           forwardingClick = true;
           try {
-            if (isInputElement(target)) {
-              target.focus();
-            }
+            focusableAround(target)?.focus({ preventScroll: true });
             target.dispatchEvent(
               new MouseEvent(type, {
                 detail: (e as MouseEvent).detail,
