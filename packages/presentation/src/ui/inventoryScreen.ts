@@ -1768,6 +1768,11 @@ export class InventoryScreen {
     if (scrollbar !== undefined) {
       this.root.style.setProperty('--inv-scrollbar-width', `${scrollbar}px`);
     }
+    // The head wraps with width and density, and the crafting panel stands below it, so the panel reads its bottom.
+    const head = this.root.querySelector<HTMLElement>('.inv-head');
+    if (head && !this.root.hidden) {
+      document.body.style.setProperty('--inventory-head-bottom', `${head.getBoundingClientRect().bottom}px`);
+    }
     const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
     const bounds = body ? splitBounds(body) : undefined;
     if (body && bounds) {
