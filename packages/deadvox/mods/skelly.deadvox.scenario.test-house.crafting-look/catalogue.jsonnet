@@ -2,10 +2,10 @@ local sample(i) = 'craft_look_result_' + i;
 local indices = std.range(1, 3072);
 {
   items: [
-    { id: 'craft_look_fibre', name: 'Look fibre', category: 'material', size: [1, 1], weight: 1 },
-    { id: 'craft_look_wood', name: 'Look wood', category: 'material', size: [1, 1], weight: 1 },
+    { id: 'craft_look_fibre', workInProgress: true, name: 'Look fibre', category: 'material', size: [1, 1], weight: 1 },
+    { id: 'craft_look_wood', workInProgress: true, name: 'Look wood', category: 'material', size: [1, 1], weight: 1 },
   ] + [
-    { id: sample(i), name: std.format('Catalogue sample %04d', i), category: 'material', size: [1, 1], weight: 1 }
+    { id: sample(i), workInProgress: true, name: std.format('Catalogue sample %04d', i), category: 'material', size: [1, 1], weight: 1 }
     for i in indices
   ],
   recipeCategories: [{ id: 'craft_look', label: 'Catalogue look', order: 0 }] + [

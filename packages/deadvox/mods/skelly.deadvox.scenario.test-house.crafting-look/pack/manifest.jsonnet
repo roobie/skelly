@@ -4,5 +4,5 @@ manifest(
   id='skelly.deadvox.scenario.test-house.crafting-look',
   tier='scenario', optIn=true,
   content=['starts', 'catalogue'],
-  dependencies=kit.dependencies(['skelly.deadvox.scenario.test-house', 'skelly.containers']),
+  dependencies=kit.dependencies(['skelly.deadvox', 'skelly.deadvox.scenario.test-house', 'skelly.containers']),
 )

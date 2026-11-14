@@ -2,6 +2,7 @@
   "dependencies": [
     "skelly.basic-recipes",
     "skelly.containers",
+    "skelly.deadvox",
     "skelly.deadvox.scenario.test-house",
     "skelly.hand-tools",
     "skelly.light-sources",
