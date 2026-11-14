@@ -47,6 +47,7 @@ const tuning = {
   spacing: 1,
   hudScale: 1,
   actionMenu: baseUi.ui[0]!.actionMenu,
+  crafting: baseUi.ui[0]!.crafting,
   refusalSound: refusalSound.id,
   audioVolumes: { master: 0.5, world: 0.5, body: 0.5, ui: 0.5 },
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },
