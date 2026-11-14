@@ -31,6 +31,7 @@ const tuning: GraphicsOptions = {
   fastCamo: toggle,
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
+  vehicleFinishes: toggle,
   msaaSamples: { label: 'Fixture smoothing', default: 0, choices: [{ value: 0, label: 'Fixture off' }] },
 };
 const opticLens = { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 };

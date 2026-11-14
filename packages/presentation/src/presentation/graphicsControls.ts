@@ -15,6 +15,7 @@ interface GraphicsTargets {
     setDrugVignetteScale: (value: number) => void;
   };
   shadows?: { setSmallSunMap: (value: boolean) => void };
+  vehicleFinishes?: { setEnabled: (value: boolean) => void };
   meshes: {
     setFastCamo: (value: boolean) => void;
     setCoarseWeathering: (value: boolean) => void;
@@ -80,6 +81,7 @@ export class GraphicsControls {
     this.targets.mood?.setBloomScale(values.bloomScale);
     this.targets.mood?.setDrugVignetteScale(values.drugVignette);
     this.targets.shadows?.setSmallSunMap(values.smallSunMap);
+    this.targets.vehicleFinishes?.setEnabled(values.vehicleFinishes);
     this.targets.meshes.setFastCamo(values.fastCamo);
     this.targets.meshes.setCoarseWeathering(values.coarseWeathering);
     this.targets.meshes.setCachedSurfaceNoise(values.cachedSurfaceNoise);

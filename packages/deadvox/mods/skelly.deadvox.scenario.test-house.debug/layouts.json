@@ -1926,6 +1926,979 @@
           "polygon": [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]]
         }
       ]
+    },
+    {
+      "actors": [],
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
+      "bays": [
+        {
+          "facing": "e",
+          "position": [-19, 21, -7]
+        },
+        {
+          "facing": "e",
+          "position": [-14, 21, -7]
+        }
+      ],
+      "bounds": {
+        "x0": -240,
+        "x1": 270,
+        "z0": -80,
+        "z1": 340
+      },
+      "buildings": [
+        {
+          "position": [4, 20.5, -4.5],
+          "rotation": 0,
+          "template": "test_house_home"
+        },
+        {
+          "position": [-5, 20.5, -7],
+          "rotation": 0,
+          "template": "test_house_shed"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [17, 1, 1],
+              "items": [
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "adjustable_pliers",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "blowtorch",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "bottle_jack",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "can_opener",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "crowbar",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "electrical_repair_kit",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "hammer",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "hand_saw",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "kabar",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "kitchen_knife",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "machete",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "repair_kit",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "scissor_jack",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "screwdriver",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "sewing_kit",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "sewing_repair_kit",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "sledgehammer",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "whetstone",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "wire_strippers",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "wrench",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 2,
+                  "item": "electrical_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 2,
+                  "item": "fuse",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 2,
+                  "item": "nylon_cord",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 5,
+                  "item": "scrap_metal",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 5,
+                  "item": "scrap_metal",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 6,
+                  "item": "sewing_thread",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 6,
+                  "item": "sewing_thread",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 2,
+                  "item": "sewing_thread",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 2,
+                  "item": "wood_offcut",
+                  "placement": "container"
+                }
+              ]
+            },
+            {
+              "at": [19, 1, 1],
+              "items": [
+                {
+                  "condition": 0.27173913043478259,
+                  "count": 1,
+                  "item": "kabar",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.29347826086956519,
+                  "count": 1,
+                  "item": "kitchen_knife",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.31521739130434784,
+                  "count": 1,
+                  "item": "machete",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.33695652173913043,
+                  "count": 1,
+                  "item": "kabar",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.35869565217391303,
+                  "count": 1,
+                  "item": "kitchen_knife",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.38043478260869568,
+                  "count": 1,
+                  "item": "machete",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.40217391304347827,
+                  "count": 1,
+                  "item": "baseball_bat",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.42391304347826086,
+                  "count": 1,
+                  "item": "cargo_pants",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.44565217391304346,
+                  "count": 1,
+                  "item": "crowbar",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.46739130434782605,
+                  "count": 1,
+                  "item": "fanny_pack",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.4891304347826087,
+                  "count": 1,
+                  "item": "flashlight",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.51086956521739135,
+                  "count": 1,
+                  "item": "hammer",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.53260869565217384,
+                  "count": 1,
+                  "item": "hiking_backpack",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.55434782608695654,
+                  "count": 1,
+                  "item": "hoodie",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.57608695652173914,
+                  "count": 1,
+                  "item": "jacket",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.59782608695652173,
+                  "count": 1,
+                  "item": "jeans",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.61956521739130432,
+                  "count": 1,
+                  "item": "kabar",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.64130434782608692,
+                  "count": 1,
+                  "item": "machete",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.66304347826086962,
+                  "count": 1,
+                  "item": "riot_helmet",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.68478260869565211,
+                  "count": 1,
+                  "item": "stab_vest",
+                  "placement": "container"
+                },
+                {
+                  "condition": 0.72826086956521741,
+                  "count": 1,
+                  "item": "utility_vest",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 8,
+                  "item": "cloth_strip",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 8,
+                  "item": "cloth_strip",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "duct_tape",
+                  "placement": "container"
+                }
+              ],
+              "lootUsage": ["Police"]
+            },
+            {
+              "at": [21, 1, 5],
+              "items": [
+                {
+                  "condition": 0.70652173913043481,
+                  "count": 1,
+                  "item": "steel_pipe",
+                  "placement": "container"
+                }
+              ]
+            }
+          ],
+          "position": [-22, 20.5, -12],
+          "rotation": 0,
+          "template": "test_house_garage"
+        },
+        {
+          "position": [-22.5, 20.5, -8.5],
+          "rotation": 0,
+          "template": "test_house_garage_ladder"
+        },
+        {
+          "position": [-2, 20.5, 4.5],
+          "rotation": 0,
+          "template": "test_house_garden_wall"
+        },
+        {
+          "position": [-4, 20.5, -1],
+          "rotation": 0,
+          "template": "test_house_path"
+        },
+        {
+          "position": [3, 20.5, -1.5],
+          "rotation": 0,
+          "template": "test_house_step"
+        },
+        {
+          "position": [2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_outdoor_stock"
+        },
+        {
+          "position": [-2, 20.5, 0.5],
+          "rotation": 0,
+          "template": "test_house_sign"
+        },
+        {
+          "position": [-2, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_loose_wardrobe"
+        },
+        {
+          "position": [-12.5, 20.5, -3],
+          "rotation": 0,
+          "template": "test_house_showroom"
+        },
+        {
+          "position": [0, 20.5, -11.5],
+          "rotation": 0,
+          "template": "test_house_reading_booth"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [3, 1, 24],
+              "items": [
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "rifle_hunting"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "pump_shotgun"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "rifle_ak"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "rifle_assault"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "pistol_service"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "revolver_357"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_357_h_magnum"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_9x19"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "shotshell_box"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_308_h_winchester"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_5_d_56x45"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_7_d_62x39"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_akm_30"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_pistol_9"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_stanag_20"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_stanag_30"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_308_h_winchester"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_357_h_magnum"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_5_d_56x45"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_7_d_62x39"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_9x19"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "shell_12_gauge_00_buck"
+                }
+              ]
+            }
+          ],
+          "lootContext": {
+            "lowerTiers": true,
+            "tier": "Tier4",
+            "usage": ["Residential", "Hunting", "Police", "Military"]
+          },
+          "position": [52.5, 21, -13.5],
+          "rotation": 0,
+          "template": "test_house_range"
+        }
+      ],
+      "demo": true,
+      "ground": 20.5,
+      "id": "testHouseFinishes",
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "player": {
+        "bearing": 270,
+        "position": [-1, 21, 17]
+      },
+      "showroom": {
+        "capacity": 3,
+        "catalogue": {
+          "blend": 4,
+          "floor": "concrete",
+          "position": [-160, 21, -60],
+          "spacing": 2,
+          "width": 50
+        },
+        "facing": "s",
+        "focusDistance": 1,
+        "row": [-12, 21.5, -1],
+        "slots": [
+          {
+            "furniture": "crate",
+            "items": [
+              {
+                "count": 1,
+                "item": "hand_saw",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "screwdriver",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "copper_wire",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "small_spring",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hinge_set",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "fastener_pack",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "taped_flashlight_mount",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "scrap_foregrip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "camp_craft_manual",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "workshop_manual",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "cloth_strip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "cloth_strip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "flashlight",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "aa_battery",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "baseball_bat",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hammer",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "stick",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "kitchen_knife",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nylon_cord",
+                "placement": "surface"
+              },
+              {
+                "count": 4,
+                "item": "paperback"
+              },
+              {
+                "count": 2,
+                "item": "duct_tape"
+              }
+            ]
+          },
+          {
+            "furniture": "shelf",
+            "items": [
+              {
+                "count": 1,
+                "item": "sledgehammer"
+              },
+              {
+                "count": 1,
+                "item": "paperback"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [-6.5, 21.5, 0.5]
+            }
+          },
+          {
+            "furniture": "workbench",
+            "items": [
+              {
+                "craftedLiquids": [
+                  {
+                    "liquid": "lamp_fuel",
+                    "volumeMicrolitres": 400000
+                  }
+                ],
+                "item": "oil_lamp",
+                "liquidContents": {
+                  "kind": "empty"
+                },
+                "placement": "surface"
+              },
+              {
+                "item": "lamp_oil",
+                "liquidContents": {
+                  "kind": "filled",
+                  "liquid": "lamp_fuel",
+                  "volumeMicrolitres": 500000
+                },
+                "placement": "surface"
+              },
+              {
+                "item": "lamp_oil",
+                "liquidContents": {
+                  "kind": "empty"
+                },
+                "placement": "surface"
+              }
+            ]
+          }
+        ],
+        "spacing": 1
+      },
+      "terrain": [
+        {
+          "centre": [-48, -25],
+          "kind": "hill",
+          "radii": [30, 24],
+          "rise": 5
+        },
+        {
+          "centre": [40, -12],
+          "kind": "hill",
+          "radii": [25, 24],
+          "rise": 3
+        },
+        {
+          "centre": [-60, 38],
+          "kind": "hill",
+          "radii": [45, 32],
+          "rise": 5
+        },
+        {
+          "centre": [30, 115],
+          "depth": 9,
+          "kind": "basin",
+          "radii": [190, 95]
+        },
+        {
+          "kind": "ridge",
+          "points": [[-200, 210], [-90, 235], [60, 230], [225, 205]],
+          "rise": 26,
+          "width": 70
+        },
+        {
+          "centre": [115, 235],
+          "kind": "hill",
+          "radii": [65, 48],
+          "rise": 36
+        }
+      ],
+      "tracks": [
+        {
+          "points": [[-4, -0.5], [3.5, -0.5]],
+          "surface": "dressed_stone",
+          "width": 1
+        },
+        {
+          "points": [[6, 6], [6, 12], [12, 25]],
+          "surface": "dressed_stone",
+          "width": 1
+        }
+      ],
+      "vehicles": [
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.parked-hatchback",
+          "position": [-19, 21, -7]
+        },
+        {
+          "blueprint": "hatchback",
+          "facing": "e",
+          "placementKey": "testHouse.finishes-gloss",
+          "position": [-8, 21, 14]
+        },
+        {
+          "blueprint": "fixture_tactical_vehicle",
+          "facing": "e",
+          "placementKey": "testHouse.finishes-flat",
+          "position": [-8, 21, 20]
+        }
+      ],
+      "water": [
+        {
+          "level": 19.5,
+          "polygon": [[-165, 115], [-120, 35], [25, 20], [165, 35], [225, 115], [165, 195], [25, 215], [-120, 195]],
+          "shore": 2
+        }
+      ],
+      "weatheringProfile": "proper",
+      "woodlands": [
+        {
+          "density": 0.94999999999999996,
+          "polygon": [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]]
+        }
+      ]
     }
   ],
   "templates": [

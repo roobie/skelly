@@ -9,6 +9,7 @@ read_if:
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
   - you're interpreting or changing debug draw submission counters
   - you're changing crowd pose texture transfers
+  - you're changing how vehicle bodies reflect the sky, their clear coats or the option that switches them
 ---
 
 # Deadvox graphics
@@ -47,7 +48,7 @@ Item light content owns focused-cone brightness, reach, shape and decay so autho
 
 Switching a light on or off, or dimming it, changes only uniforms, never which lights exist or cast shadows. three.js keys every lit program on the light and shadow-caster counts, so a changed count rebuilds the program of every visible lit material that warm-up did not compile for it, including those created after warm-up such as held items and mobs, and stalls the frame for up to seconds. Carried point lights are a fixed pool with zero intensity when unused, and every beam casts while beam shadows are on. While it is off or faint its depth pass is skipped and its shadow strength is zero, so a map it no longer refreshes cannot leave stale shadows and a faint beam looks the same whatever it did before. See `packages/presentation/src/render/lightPool.ts`, `LightPool`, `packages/presentation/src/render/flashlight.ts`, `Flashlight.shadowsAllowed`, and `packages/presentation/src/render/shadows.ts`, `beamMapDue`.
 
-Shader warm-up runs before the world is shown, because the first draw of an uncompiled program stalls the frame. It compiles the materials in the scene at that point, a hidden stand-in for each program variant a model material takes, and both the direct screen path and the post chain. Models load after warm-up, so stand-ins carry them: colour and finish are uniforms that share one program, so model count adds no wait. Both output paths are warmed because the look's post setting, goggles and optics switch between them during play. Warm-up can compile only what exists or has a stand-in, for the lights present when it runs. Materials built later with their own program, such as mobs', and every lit program after a light-count change therefore compile on first draw. So does a model material outside the stand-ins' variants, which `test/modelMaterials.test.ts` checks the pack for. See `packages/presentation/src/render/mood.ts`, `Mood.warmUp`, and `packages/presentation/src/render/modelMaterials.ts`, `modelMaterialWarmUp`.
+Shader warm-up runs before the world is shown, because the first draw of an uncompiled program stalls the frame. It compiles the materials in the scene at that point, a hidden stand-in for each program variant a model material takes, and both the direct screen path and the post chain. It applies the material patches first, because a patch joins the program key and a program warmed without it is one nothing draws. Models load after warm-up, so stand-ins carry them: colour and finish are uniforms that share one program, so model count adds no wait. Both output paths are warmed because the look's post setting, goggles and optics switch between them during play. Warm-up can compile only what exists or has a stand-in, for the lights present when it runs. Materials built later with their own program, such as mobs', and every lit program after a light-count change therefore compile on first draw. So does a model material outside the stand-ins' variants, which `test/modelMaterials.test.ts` checks the pack for. See `packages/presentation/src/render/mood.ts`, `Mood.warmUp`, and `packages/presentation/src/render/modelMaterials.ts`, `modelMaterialWarmUp`.
 
 Retune beam intensity and decay against three targets. A mid-grey surface at 10 m stays readable. Close surfaces stay under the bloom clip and the ACES shoulder, where a bright warm colour skews towards orange. Brightness varies by under 2x between 0.5 m and 2 m, where plain inverse-distance falloff varies 4x. The near-field offset makes the last two hold while keeping the reach, so a lower offset needs a lower intensity and a higher one allows more. See `packages/mods/skelly.senses/senses.jsonnet`, `nearFieldMetres`, and `test/lightFalloff.test.ts`, which checks the close-up variation.
 
@@ -117,6 +118,22 @@ Clearing a preference returns ownership to content rather than saving its resolv
 Debug overrides remain separate from preferences, and unrelated look changes must not promote
 player or mod values into the URL. See `packages/presentation/src/ui/graphicsOptions.ts`, `renderGraphicsOptions`,
 `packages/presentation/src/presentation/graphicsControls.ts`, `GraphicsControls`, and `src/debug/lookUrl.ts`, `writeLookParams`.
+
+## Vehicle finishes
+
+The sky reflection every model takes is spread by the paint's own roughness, so it brightens a vehicle body without making it read as glossy paint. The option gives vehicles, and nothing else, a clear coat that mirrors the sky over the paint, for these reasons:
+
+- The reflection sits on the finished copies' own map, which takes the place of the scene's sky reflection on them alone; a change to the scene's reflection reaches every model and every building.
+- Vehicles draw finished copies and models keep their shared originals, because the same model material also draws in hands, piles and the item viewer, and because off has to draw exactly what the game drew without the option.
+- Only the coat reflects: with the option on, a finished part drops the base layer's sky reflection that every model takes, and the coat's reflection replaces it. The hemisphere light is already the ambient term on these materials, and the rough layer under a coat spreads whatever it reflects evenly over the panel, so a reflection there as well reads as a pale film on the paint and lightens parts that were never glossy.
+- The coat's reflectance at grazing angles is capped below the physical limit, in content at `packages/engine/src/core/schema/graphics.ts`, `coatGrazing`. A voxel panel is flat, with no curve to break up what it mirrors, so a full Fresnel swaps the paint on a roof for one even sky colour, which reads as frost.
+- The map is drawn from the sky's colours rather than taken from the scene's sky bake, so it can carry the horizon band below. It stays behind `packages/presentation/src/render/skyReflection.ts`, `ReflectionMap`, so the world-following map of #1542 can take its place.
+- The sky's colours are display colours, so the map rescales them to the hemisphere light's brightness; otherwise a reflection outshines what the same sky lights. See `packages/presentation/src/render/skyReflection.ts`, `GradientTuning`.
+- The map's horizon stands brighter than the rest of it. A flat panel sees a narrow range of directions, so an even map only tints it; the bright band is what moves across a body as a sheen.
+- The map follows the time of day by redrawing only when the sky has drifted visibly, because a redraw every frame is cost with nothing to see.
+- Reflections dim per fragment by the same sky visibility that dims ambient light, so a car in a garage does not mirror a sky it cannot see.
+- A coat is finish content because how glossy a paint is belongs with the paint. A coat carries its own metalness: the older finishes raised metalness to stand in for gloss, and under a real coat that stand-in would tint the highlight. Glass carries a coat too, so that windows reflect.
+- The finished programs compile in the scene's warm-up even with the option off, so switching it during play does not stall.
 
 ## Performance diagnostics
 
