@@ -1724,10 +1724,72 @@ describe('content', () => {
 
 describe('condition bands', () => {
   const baseRow = (base.find((file) => file.source === 'inventory.json')!.data as ContentFile).inventory![0]!;
-  const withBands = (conditionBands: { from: number; word: string }[]) =>
-    buildRegistry([{ source: 'bands.json', data: { inventory: [{ ...baseRow, conditionBands }] } }]).issues.map(
-      ({ path }) => path,
-    );
+  // The repair ceiling names one of the bands, so each case names its own last band.
+  const withBands = (
+    conditionBands: { from: number; word: string }[],
+    repairCeiling = conditionBands.at(-1)?.word ?? baseRow.repairCeiling,
+  ) =>
+    buildRegistry([
+      {
+        source: 'bands.json',
+        data: {
+          inventory: [
+            {
+              ...baseRow,
+              // Every band carries a blip colour; these cases are about bounds and words, so any valid one serves.
+              conditionBands: conditionBands.map((band) => ({ color: '#808080', ...band })),
+              repairCeiling,
+            },
+          ],
+        },
+      },
+    ]).issues.map(({ path }) => path);
+
+  it('refuses a repair ceiling that names no band', () => {
+    expect(
+      withBands(
+        [
+          { from: 0, word: 'a' },
+          { from: 0.5, word: 'b' },
+        ],
+        'c',
+      ),
+    ).not.toEqual([]);
+  });
+
+  it("refuses a repair recipe's ceiling that names no band", () => {
+    const stock = 'fixture_ceiling_stock';
+    const issues = (ceiling: string) =>
+      buildRegistry([
+        {
+          source: 'ceiling.json',
+          data: {
+            inventory: [baseRow],
+            items: [{ id: stock, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
+            recipeCategories: [{ id: 'fixture', label: 'Fixture', order: 0 }],
+            recipes: [
+              {
+                id: 'fixture_ceiling_repair',
+                category: 'fixture',
+                tags: [],
+                searchTerms: [],
+                kind: 'repair',
+                result: { item: stock, count: 1 },
+                repair: { skill: 'crafting', amount: 0.2, perSkill: 0, ceiling },
+                timeGameMinutes: 1,
+                skills: {},
+                qualities: {},
+                components: [[{ item: stock, count: 1 }]],
+              },
+            ],
+          },
+        },
+      ])
+        .issues.filter(({ source }) => source === 'ceiling.json')
+        .map(({ path }) => path);
+    expect(issues('fixture_no_band').some((path) => path.endsWith('.repair.ceiling'))).toBe(true);
+    expect(issues(baseRow.repairCeiling)).toEqual([]);
+  });
 
   it('accepts bands that start at 0 and rise', () => {
     expect(

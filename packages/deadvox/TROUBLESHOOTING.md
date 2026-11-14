@@ -71,6 +71,8 @@ Native pointer activation of the practice death card's restart, which loads the 
 
 A busy-lock fixture uses an actual exclusive Web Lock in a same-origin blank document; it tests lock recovery without a second world or save worker. It simulates pointer lock and does not establish native-gesture coverage.
 
+DOM menu flows must share their simulated pointer-lock setup when split into independent modes. Native capture makes Playwright's absolute hover targeting disagree with the menu's drawn cursor; an interception error alone does not establish overlapping panes. Check layout hit testing separately rather than forcing the hover or changing product stacking. See `test/browser/inventory-scroll.mjs`, `scenarioFlow`, and `test/browser/craft-catalogue-flow.mjs`, `craftCatalogueFlow`.
+
 ## Tiled site export
 
 If Tiled reports an unrecognized project format, use the project action to regenerate Deadvox property types, then close and reopen the project before editing. Do not save a stale project state between regeneration and reopening. See `maps/extensions/deadvox.mjs`, `generatePropertyTypes` and `exportLayout`.

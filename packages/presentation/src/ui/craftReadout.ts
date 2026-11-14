@@ -1,6 +1,7 @@
 import type { RecipeDef, Registry, ScreenText } from '@skelly/engine/content';
 import { repairTargetName } from '@skelly/engine/content';
 import {
+  type ConditionBand,
   type CraftCommands,
   type CraftPreference,
   type CraftSources,
@@ -8,7 +9,9 @@ import {
   type Inventory,
   type Item,
   indexCraftReach,
+  pieceRecoveryWork,
   planCraft,
+  repairCeiling,
   requirementStatus,
 } from '@skelly/engine/inventory';
 import type { CraftCharacter, LongJob, ReachSnapshot } from '@skelly/engine/sim';
@@ -87,12 +90,18 @@ export interface CraftRow {
   name: string;
   /** The repair subject or craft result name, for the start button. */
   itemName: string;
-  kind: 'craft' | 'repair';
-  time: string;
+  kind: 'craft' | 'repair' | 'take_apart';
+  /** The commitment strip's formatted length line, from `craftTime`. */
+  length: string;
+  /** A world repair's condition bands now and after the repair. */
+  condition?: { now: ConditionBand; after: ConditionBand };
+  /** Take apart's read-only yield; crafting and repair choose inputs instead. */
+  yields?: { name: string; count: number }[];
   reason: string | undefined;
   components: {
     group: number;
     preferred: string;
+    selected: string;
     alternatives: { kind: 'item' | 'liquid'; id: string; name: string; needed: number; found: number }[];
     draws: string[];
     automatic: boolean;
@@ -106,7 +115,11 @@ const recipeStartReason = (
   recipe: RecipeDef,
   result: ReturnType<typeof planCraft>,
   reach: ReachSnapshot,
-  { startReason, noRepairTarget }: { startReason: string | undefined; noRepairTarget: string },
+  {
+    startReason,
+    noRepairTarget,
+    ceiling,
+  }: { startReason: string | undefined; noRepairTarget: string; ceiling: number },
 ): string | undefined => {
   if (startReason) {
     return startReason;
@@ -117,12 +130,37 @@ const recipeStartReason = (
   if (
     recipe.kind === 'repair' &&
     !reach.entries.some(
-      (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < 1,
+      (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < ceiling,
     )
   ) {
     return noRepairTarget;
   }
   return undefined;
+};
+
+/** Taking a pinned piece apart: the command owner's preview yield and refusal, read-only. */
+export const takeApartRow = (
+  registry: Registry,
+  target: BlockEntity,
+  crafting: Pick<CraftCommands, 'previewTakeApartEntity'>,
+): CraftRow => {
+  const text = craftingText(registry);
+  const { plan, refusal } = crafting.previewTakeApartEntity(target.uid);
+  const itemName = registry.furniture.get(target.type)!.name;
+  const gameSeconds = plan?.timeGameMinutes ?? pieceRecoveryWork(registry, target.type)?.timeGameMinutes ?? 0;
+  return {
+    id: `take_apart:${target.uid}`,
+    name: fillText(text.takeApartName, { item: itemName }),
+    itemName,
+    kind: 'take_apart',
+    length: craftTime(gameSeconds, text),
+    yields: (plan?.outputs ?? []).map(({ item, count }) => ({ name: registry.items.get(item)!.name, count })),
+    reason: refusal,
+    components: [],
+    qualities: [],
+    skills: [],
+    workstation: null,
+  };
 };
 
 export const craftRows = ({
@@ -133,6 +171,7 @@ export const craftRows = ({
   sources = {},
   startReason,
   entityRepair,
+  recipeIds,
 }: {
   registry: Registry;
   character: CraftCharacter;
@@ -141,11 +180,13 @@ export const craftRows = ({
   sources?: Readonly<Record<string, CraftSources>>;
   startReason: string | undefined;
   entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
+  recipeIds?: readonly string[];
 }): CraftRow[] =>
-  [...character.knownRecipes]
+  [...(recipeIds ?? character.knownRecipes)]
     .filter((id) => {
       const recipe = registry.recipes.get(id)!;
       return (
+        character.knownRecipes.has(id) &&
         !recipe.activation &&
         (entityRepair
           ? recipe.repair?.entity === entityRepair.target.type
@@ -158,20 +199,28 @@ export const craftRows = ({
       const prefer = preferences[id];
       const result = planCraft(recipe, reach, character, { prefer, sources: sources[id] });
       const status = requirementStatus(recipe, reach, character);
+      const selected = 'plan' in result ? result.plan.selectedAlternatives : {};
       const text = craftingText(registry);
       const itemName = repairTargetName(registry, recipe);
+      const world = entityRepair?.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]);
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
-        time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-        reason: entityRepair
-          ? entityRepair.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]).refusal
-          : recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
+        length: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
+        ...(world?.condition ? { condition: world.condition } : {}),
+        reason: world
+          ? world.refusal
+          : recipeStartReason(recipe, result, reach, {
+              startReason,
+              noRepairTarget: text.noRepairTarget,
+              ceiling: repairCeiling(registry, recipe),
+            }),
         components: status.components.map(({ alternatives, group }) => ({
           group,
           preferred: prefer?.[group] ? JSON.stringify(prefer[group]) : '',
+          selected: prefer?.[group] || selected[group] ? JSON.stringify(prefer?.[group] ?? selected[group]) : '',
           alternatives: alternatives.map((a) => ({
             kind: a.kind,
             id: JSON.stringify(a.kind === 'item' ? { kind: a.kind, item: a.item } : { kind: a.kind, liquid: a.liquid }),

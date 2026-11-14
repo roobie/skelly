@@ -54,6 +54,8 @@ export const RecipeSchema = strictObject({
       perSkill: NonNegative,
       entity: optional(Id),
       block: optional(Id),
+      /** A condition band word that replaces the content default repair ceiling for this recipe (`packages/deadvox/DESIGN.md`, "Repair ceiling"). */
+      ceiling: optional(Name),
     }),
   ),
   activation: optional(literal('sharpen')),

@@ -720,6 +720,77 @@ describe('input replay', () => {
     }
   });
 
+  it('records and decodes every screen command dispatched from the inventory, world work included', async () => {
+    // Keyed by every payload kind, so a new kind without a row fails typecheck here.
+    const commands: { [K in ReplayActionPayload['kind']]: Extract<ReplayActionPayload, { kind: K }> } = {
+      'liquid.pour': { kind: 'liquid.pour', sourceUid: 1, receiverUid: 2 },
+      'inventory.move': { kind: 'inventory.move', itemUid: 1, target: { kind: 'hand', side: 'right' }, count: 1 },
+      'inventory.to-hands': { kind: 'inventory.to-hands', itemUid: 1, feet: [0, 0, 0] },
+      'inventory.inspect': { kind: 'inventory.inspect', itemUid: 1 },
+      'inventory.activate': { kind: 'inventory.activate', itemUid: 1 },
+      'hand.action': { kind: 'hand.action', itemUid: 1, actionId: 'fixture' },
+      'inventory.wield-or-pocket': { kind: 'inventory.wield-or-pocket', itemUid: 1, feet: [0, 0, 0] },
+      'item.pickup': { kind: 'item.pickup', itemUid: 1, mode: 'pocket', feet: [0, 0, 0] },
+      'furniture.interact': { kind: 'furniture.interact', entityUid: 1, alternatives: true },
+      'furniture.lift': { kind: 'furniture.lift', entityUid: 1 },
+      'furniture.use': { kind: 'furniture.use', entityUid: 1 },
+      'furniture.slide': { kind: 'furniture.slide', entityUid: 1, way: 'push' },
+      'furniture.place': { kind: 'furniture.place', pos: [0, 0, 0] },
+      'power.set': { kind: 'power.set', entityUid: 1, enabled: true },
+      'charger.start': { kind: 'charger.start', entityUid: 1 },
+      'charger.stop': { kind: 'charger.stop', entityUid: 1 },
+      'furniture.turn': { kind: 'furniture.turn' },
+      'furniture.tip': { kind: 'furniture.tip' },
+      'actor.downed': { kind: 'actor.downed', actorId: 1, way: 'finish-off' },
+      'inventory.search': { kind: 'inventory.search', entityUid: 1 },
+      'inventory.work': { kind: 'inventory.work', itemUid: 1, operation: 'apart' },
+      'inventory.assign': { kind: 'inventory.assign', slot: 0, itemUid: 1 },
+      'inventory.cancel-handling': { kind: 'inventory.cancel-handling' },
+      'firearm.attachment.fit': { kind: 'firearm.attachment.fit', firearmUid: 1, slotId: 'fixture', attachmentUid: 2 },
+      'firearm.attachment.remove': { kind: 'firearm.attachment.remove', firearmUid: 1, slotId: 'fixture' },
+      'vehicle.work': {
+        kind: 'vehicle.work',
+        work: 'install',
+        vehicleId: 1,
+        fittingId: 'fixture',
+        itemUid: 1,
+        at: [0, 0, 0],
+        supportedBy: [],
+      },
+      'light.battery.load': { kind: 'light.battery.load', lightUid: 1, batteryUid: 2 },
+      'light.battery.unload': { kind: 'light.battery.unload', lightUid: 1, target: { kind: 'hand', side: 'left' } },
+      'craft.start': { kind: 'craft.start', recipeId: 'fixture' },
+      'craft.repair-entity': { kind: 'craft.repair-entity', recipeId: 'fixture', entityUid: 1, preference: {} },
+      'craft.repair-cell': { kind: 'craft.repair-cell', recipeId: 'fixture', cell: [0, 0, 0], preference: {} },
+      'craft.take-apart-entity': { kind: 'craft.take-apart-entity', entityUid: 1 },
+      'craft.take-apart-cell': { kind: 'craft.take-apart-cell', cell: [0, 0, 0] },
+      'craft.continue': { kind: 'craft.continue' },
+      'craft.stop': { kind: 'craft.stop' },
+      'action.wait': { kind: 'action.wait' },
+      'action.wake-hour': { kind: 'action.wake-hour', gameHour: null },
+      'item.throw.cancel': { kind: 'item.throw.cancel' },
+      'item.throw': { kind: 'item.throw', itemUid: 1, hand: 'right', distance: 1 },
+    };
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start, undefined, [], { contentLookup });
+    const sent = Object.values(commands);
+    const refused = sent.flatMap((payload) => {
+      try {
+        recorder.queueAction(payload.kind, 'down', 'inventory', { payload });
+        return [];
+      } catch {
+        return [payload.kind];
+      }
+    });
+    expect(refused).toEqual([]);
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
+      sent.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
+    );
+  });
+
   it('decodes every debug spawn the recorder accepted against the same content', async () => {
     expect(registry.actors.has(ABSENT_ACTOR)).toBe(false);
     const start = capture(createRuntime());

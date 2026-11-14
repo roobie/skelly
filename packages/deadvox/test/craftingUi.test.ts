@@ -1,8 +1,22 @@
 import { BindingRegistry } from '@skelly/engine/input';
-import { CraftCommands, HandlingQueue, Inventory, planCraft, requirementStatus } from '@skelly/engine/inventory';
+import {
+  CraftCommands,
+  conditionWord,
+  HandlingQueue,
+  Inventory,
+  pieceRecoveryWork,
+  planCraft,
+  requirementStatus,
+} from '@skelly/engine/inventory';
 import { bindReach, Character } from '@skelly/engine/sim';
-import { fillText } from '@skelly/engine/text';
-import { craftingText, craftRows, runningCraftPresentation } from '@skelly/presentation/internal/ui/craftReadout.ts';
+import { decimalText, fillText } from '@skelly/engine/text';
+import type { BlockEntity } from '@skelly/engine/world';
+import {
+  craftingText,
+  craftRows,
+  runningCraftPresentation,
+  takeApartRow,
+} from '@skelly/presentation/internal/ui/craftReadout.ts';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { INPUT_BINDINGS } from '../src/product/controls.ts';
@@ -111,6 +125,42 @@ describe('crafting read-only presentation', () => {
     expect(row.name).toBe(fillText(craftingText(repairRegistry).repairName, { item: name }));
   });
 
+  it("shows a pinned repair's condition band now and after the repair in its review", () => {
+    const fixture = repairFixture();
+    const row = fixture.rows(true).find(({ id }) => id === ENTITY_REPAIR)!;
+    const { condition } = fixture.crafting.previewEntityRepair(ENTITY_REPAIR, fixture.target.uid);
+    expect(condition?.now.word).toBe(
+      conditionWord(repairRegistry, fixture.inventory.entities.conditionOf(fixture.target)),
+    );
+    const root = document.createElement('section');
+    document.body.append(root);
+    try {
+      renderCrafting(
+        root,
+        [row],
+        { start: vi.fn(), prefer: vi.fn(), source: vi.fn() },
+        {
+          text: craftingText(repairRegistry),
+          world: { heading: row.name, depicted: false },
+        },
+      );
+      expect(root.querySelector('.craft-condition')?.textContent).toBe(
+        fillText(craftingText(repairRegistry).repairCondition, {
+          now: condition!.now.word,
+          after: condition!.after.word,
+        }),
+      );
+      // Each word's blip takes its band's colour from content.
+      expect(
+        [...root.querySelectorAll<HTMLElement>('.craft-condition .condition-blip')].map((blip) =>
+          blip.style.getPropertyValue('--blip'),
+        ),
+      ).toEqual([condition!.now.color, condition!.after.color]);
+    } finally {
+      root.remove();
+    }
+  });
+
   it('keeps live repair refusals focusable and does not dispatch Start', () => {
     const fixture = repairFixture();
     expect(fixture.inventory.add(fixture.inventory.create(STOCK), { kind: 'hand', side: 'left' })).toBe(true);
@@ -137,6 +187,16 @@ describe('crafting read-only presentation', () => {
     } finally {
       root.remove();
     }
+  });
+
+  it('shows take-apart length from the runtime game seconds without converting again', () => {
+    const furniture = [...registry.furniture.values()].find((piece) => piece.takeApart)!;
+    const gameSeconds = pieceRecoveryWork(registry, furniture.id)!.timeGameMinutes;
+    const target = { uid: 1, type: furniture.id } as BlockEntity;
+    const row = takeApartRow(registry, target, {
+      previewTakeApartEntity: () => ({ plan: undefined, refusal: 'refused' }),
+    });
+    expect(row.length).toBe(fillText(craftingText(registry).mins, { value: decimalText(gameSeconds / 60) }));
   });
 
   it.each([true, false])('keeps item repair admission and routing based on a damaged item in reach: %s', (withItem) => {
@@ -171,10 +231,12 @@ describe('crafting read-only presentation', () => {
     const torchRecipe = registry.recipes.get('torch')!;
     const torch = rows.find((row) => row.id === torchRecipe.id)!;
     const requirements = requirementStatus(torchRecipe, reachSnapshot, character);
+    const projection = planCraft(torchRecipe, reachSnapshot, character);
     expect(torch.components).toEqual(
       requirements.components.map(({ group, alternatives }) => ({
         group,
         preferred: '',
+        selected: 'plan' in projection ? JSON.stringify(projection.plan.selectedAlternatives[group]) : '',
         draws: [],
         automatic: true,
         vessels: [],

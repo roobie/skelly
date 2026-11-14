@@ -4,7 +4,7 @@ import type { RecipeDef } from '../core/content.ts';
 import { craftWorkDuration } from '../core/crafting.ts';
 import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
+import { defOf, type Item, repairCeiling, repairedCondition } from '../core/items.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import { recipeSkillLevel, recipeSkillRequirements } from '../core/recipeSkills.ts';
 import { craftingActivityTier } from '../core/skillTraining.ts';
@@ -93,7 +93,7 @@ export class Sharpening {
     if (!method) {
       return 'I cannot sharpen this here';
     }
-    if (blade.condition >= 1) {
+    if (blade.condition >= repairCeiling(this.inventory.registry, method)) {
       return 'My blade is already sharp';
     }
     if (this.queue.busy) {
@@ -153,7 +153,7 @@ export class Sharpening {
     if (typeof params.amount !== 'number') {
       return 'I cannot sharpen this';
     }
-    blade.condition = Math.min(1, blade.condition + params.amount);
+    blade.condition = repairedCondition(blade.condition, params.amount, repairCeiling(this.inventory.registry, method));
     this.inventory.version += 1;
     for (const { skill, level, provider } of recipeSkillRequirements(this.inventory.registry, method)) {
       const offset = provider.training!.craftingTierOffset!;

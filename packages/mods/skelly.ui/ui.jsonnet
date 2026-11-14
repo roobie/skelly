@@ -4,6 +4,7 @@
     capability: 'interface',
     spacing: 1,
     hudScale: 1,
+    crafting: { pageSize: 8, facetPageSize: 6 },
     actionMenu: {
       radiusPixels: 110,
       deadZonePixels: 30,

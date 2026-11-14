@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { craftCatalogueFlow } from './craft-catalogue-flow.mjs';
 import { gameUrl, inlineStartMod } from './gameUrl.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
@@ -65,8 +66,8 @@ const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 const [, , engine = 'chromium', scenarioFlow] = process.argv;
 assert.ok(['chromium', 'firefox'].includes(engine));
 assert.ok(
-  scenarioFlow === 'ui' || (scenarioFlow === 'handling' && engine === 'chromium'),
-  'choose ui or Chromium handling',
+  scenarioFlow === 'ui' || ((scenarioFlow === 'handling' || scenarioFlow === 'crafting') && engine === 'chromium'),
+  'choose ui or a Chromium handling/crafting flow',
 );
 const RACK_GRID = [5, 6];
 const {
@@ -435,7 +436,11 @@ ${marker}`,
         assert.ok(code.includes(marker), 'game instrumentation marker still exists');
         return code.replace(
           marker,
-          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [] };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [], eye, lookedAt: () => interactionTargetAt(), readyFlips: 0, worldReady: () => worldLoading.ready, blockSize: s };
+  const originalWorldCheck = worldLoading.check.bind(worldLoading);
+  worldLoading.check = (...args) => { const wasReady = worldLoading.ready; originalWorldCheck(...args); if (!wasReady && worldLoading.ready) { globalThis.foregripFitTest.readyFlips += 1; } };
+  const originalScreenClose = screen.close.bind(screen);
+  screen.close = () => { globalThis.foregripFitTest.closes = (globalThis.foregripFitTest.closes ?? 0) + 1; return originalScreenClose(); };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
         );
       },
     },
@@ -460,25 +465,12 @@ try {
     if (current.width === viewport.width && current.height === viewport.height) {
       return;
     }
-    // Layout can change before the native resize event refits facts. Observe it after the product's
-    // synchronous placement listener, registered when the fixture first renders a fact.
-    const resize = await page.evaluateHandle(({ width, height }) => {
-      const state = { observed: false };
-      window.addEventListener(
-        'resize',
-        () => {
-          state.observed = innerWidth === width && innerHeight === height;
-        },
-        { once: true },
-      );
-      return state;
-    }, viewport);
-    try {
-      await page.setViewportSize(viewport);
-      await page.waitForFunction((state) => state.observed, resize);
-    } finally {
-      await resize.dispose();
-    }
+    await page.setViewportSize(viewport);
+    // Waits on the size itself: a once-listener for the resize event could be spent by an earlier pending event.
+    // The browser runs resize listeners, the product's fact refit among them, before the next frame's callbacks,
+    // so one frame after the size lands the refit has happened.
+    await page.waitForFunction(({ width, height }) => innerWidth === width && innerHeight === height, viewport);
+    await page.evaluate(() => new Promise(requestAnimationFrame));
   };
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -1407,7 +1399,7 @@ try {
     );
     logPhase('render-free scroll contracts');
   }
-  if (scenarioFlow === 'handling') {
+  if (scenarioFlow === 'handling' || scenarioFlow === 'crafting') {
     await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       let locked = null;
@@ -1422,6 +1414,8 @@ try {
         document.dispatchEvent(new Event('pointerlockchange'));
       };
     });
+  }
+  if (scenarioFlow === 'handling') {
     await page.goto(
       browserStageUrl(
         'inventory-scroll',
@@ -1546,6 +1540,23 @@ try {
     await pressAction(page, 'inventory.find');
     const findField = page.locator('#inventory [data-inventory-find]');
     await findField.fill('fixture-filter-no-match');
+    await pressAction(page, 'inventory.control-next');
+    assert.equal(
+      await page.locator('#inventory .inv-help summary').evaluate((node) => document.activeElement === node),
+      true,
+      'bound next control leaves a text field for the next visible control',
+    );
+    await pressAction(page, 'inventory.control-previous');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), true);
+    assert.equal(await findField.inputValue(), 'fixture-filter-no-match', 'focus navigation retains the query');
+    await pressAction(page, 'inventory.control-activate');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), false);
+    assert.equal(
+      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      beforeFind,
+      'focused query activation spends nothing',
+    );
+    await findField.focus();
     await findField.press('Enter');
     assert.equal(await findField.evaluate((field) => document.activeElement === field), false, 'Enter leaves find');
     assert.equal(
@@ -2061,6 +2072,28 @@ try {
     process.stdout.write(
       `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
     );
+  }
+  if (scenarioFlow === 'crafting') {
+    // The crafting-look start is a second world boot, so it is its own flow and CI step, not a tail on handling.
+    // CI keeps the render-free contract run; a `pixel` argv[5] boots the same flow with rendering for the look
+    // screenshots, since only the item-pictures renderer draws the turnable target.
+    assert.ok(process.argv[5] === undefined || process.argv[5] === 'pixel', 'choose no render override or pixel');
+    const catalogueMetrics = await craftCatalogueFlow({
+      page,
+      resizeViewport,
+      output: process.argv[4],
+      depicted: process.argv[5] === 'pixel',
+      url: browserStageUrl(
+        'inventory-scroll',
+        gameUrl(`http://127.0.0.1:${address.port}`, {
+          startMod: 'skelly.deadvox.scenario.test-house.crafting-look',
+          hash: { debug: true, radius: 32 },
+        }),
+        process.argv[5] ?? 'render-free',
+      ),
+    });
+    process.stdout.write(`craft catalogue scale ${JSON.stringify(catalogueMetrics)}\n`);
+    logPhase('crafting catalogue, retained review and density');
   }
   if (scenarioFlow === 'ui') {
     await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);

@@ -10,7 +10,9 @@ import {
   batterySlotRefusal,
   bestPocket,
   GRID_CELL_REM as CELL_REM,
+  type ConditionBand,
   claimed,
+  conditionBand,
   conditionWord,
   defOf,
   dropTarget,
@@ -66,10 +68,11 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { blursFindField, type InputCommand } from '../presentation/inputBindings.ts';
 import { comboBox } from './comboBox.ts';
+import { conditionMark } from './conditionMark.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
-import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
+import { type InventoryTab, InventoryTabState, type WorldOperation } from './inventoryTabs.ts';
 import { ItemViewer, type ItemViewSource, isViewItemPress } from './itemViewer.ts';
 import { fillHint, type KeyLabels, keyCap } from './keyCap.ts';
 
@@ -79,6 +82,34 @@ const cellPx = (node: Element): number => {
   return CELL_REM * Number.parseFloat(defaultView!.getComputedStyle(documentElement).fontSize);
 };
 const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
+
+const inventoryControlVisible = (node: HTMLElement): boolean => {
+  if (
+    (node.tabIndex < 0 && !node.matches('summary:not([tabindex])')) ||
+    node.matches(':disabled') ||
+    node.closest('[hidden],[inert]')
+  ) {
+    return false;
+  }
+  for (let ancestor: HTMLElement | null = node; ancestor; ancestor = ancestor.parentElement) {
+    const style = node.ownerDocument.defaultView!.getComputedStyle(ancestor);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false;
+    }
+    if (ancestor.matches('details:not([open])') && !ancestor.querySelector('summary')?.contains(node)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const activateInventoryControl = (control: HTMLElement): void => {
+  if (control.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,select')) {
+    control.blur();
+  } else {
+    control.click();
+  }
+};
 
 export const targetForPackedFloorDrop = (
   inventory: Pick<Inventory, 'locate' | 'plan'>,
@@ -113,6 +144,8 @@ import type { VehicleInspectionViewModel, VehicleServiceAction, VehicleWorkPaylo
 export interface ScreenHooks {
   /** The page's key bindings: hints show their keys and inventory gestures read their commands. */
   bindings: BindingRegistry;
+  /** The existing crafting/world-work pane joins the screen's control order while that tab is active. */
+  reviewControls?: () => HTMLElement;
   charger?: (entity: BlockEntity) => ChargerPanel | undefined;
   chargerRevision?: () => number;
   /** The vehicle the player opened by interacting with it, while it stays in reach. */
@@ -242,7 +275,7 @@ interface VehicleSiteViewModel {
   readonly item?: ItemViewModel | undefined;
   readonly label: string;
   readonly site?: string | undefined;
-  readonly condition?: string | undefined;
+  readonly condition?: ConditionBand | undefined;
   readonly options: readonly VehicleOptionViewModel[];
   readonly noPart?: string | undefined;
 }
@@ -283,7 +316,7 @@ interface DetailsViewModel {
   readonly empty: boolean;
   readonly category?: string;
   readonly name?: string;
-  readonly condition?: string;
+  readonly condition?: ConditionBand;
   readonly description?: string | undefined;
   readonly lines: readonly string[];
   readonly options: readonly OptionViewModel[];
@@ -507,7 +540,7 @@ const vehicleTemplate = (
         <div class="inv-vehicle-site" data-vehicle-site=${site.id} data-occupied=${site.item !== undefined}>
           ${site.item ? itemTemplate(site.item) : html`<span class="inv-muted">${site.label}</span>`}
           ${site.site ? html`<span class="inv-muted">${site.site}</span>` : nothing}
-          ${site.condition ? html`<span class="inv-condition">${site.condition}</span>` : nothing}
+          ${site.condition ? html`<span class="inv-condition">${conditionMark(site.condition)}</span>` : nothing}
           ${site.options.map((option) => vehicleOptionTemplate(option, dispatch))}
           ${site.noPart ? html`<span class="inv-muted">${site.noPart}</span>` : nothing}
         </div>
@@ -591,7 +624,7 @@ const detailsTemplate = (
     <aside class="inv-details" data-pane="details" data-selected-uid=${item.uid}>
       <div class="inv-kicker">${vm.category}</div>
       <h3>${vm.name}</h3>
-      <div class="inv-condition">${vm.condition}</div>
+      <div class="inv-condition">${vm.condition ? conditionMark(vm.condition) : nothing}</div>
       ${vm.description ? html`<p class="inv-muted">${vm.description}</p>` : nothing}
       <div class="inv-kicker">${text.inspect}</div>
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
@@ -647,11 +680,17 @@ const inventoryTemplate = (
   vm: InventoryScreenViewModel,
   {
     tab,
-    repairAvailable,
+    worldOperation,
     splitRatio,
     text,
     keys,
-  }: { tab: InventoryTab; repairAvailable: boolean; splitRatio: number; text: InventoryText; keys: BindingRegistry },
+  }: {
+    tab: InventoryTab;
+    worldOperation: WorldOperation | undefined;
+    splitRatio: number;
+    text: InventoryText;
+    keys: BindingRegistry;
+  },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
@@ -676,10 +715,10 @@ const inventoryTemplate = (
   <header class="inv-head">
     <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
     <nav class="inv-tabs" aria-label=${text.tabsLabel}>
-      ${(['items', 'skills', 'crafting', 'actions', ...(repairAvailable ? ['repair' as const] : [])] as const).map(
+      ${(['items', 'skills', 'crafting', 'actions', ...(worldOperation ? ['repair' as const] : [])] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: worldOperation === 'take_apart' ? text.tabTakeApart : text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -698,7 +737,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
       <summary>${text.controls}</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(keys, id), action: keys.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(keys, `quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
+      <span>${['inventory.control-previous', 'inventory.control-next', 'inventory.control-activate', 'inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(keys, id), action: keys.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(keys, `quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -939,7 +978,7 @@ const openedVehicleKey = (opened: ReturnType<NonNullable<ScreenHooks['openedVehi
     ? `${opened.view.vehicleId}@${opened.distanceMetres.toFixed(1)}:${opened.view.sites
         .map(
           (site) =>
-            `${site.id}=${site.item?.uid ?? ''}/${site.condition ?? ''}/${site.actions
+            `${site.id}=${site.item?.uid ?? ''}/${site.condition?.word ?? ''}/${site.actions
               .map((action) => `${action.payload.itemUid}${action.refusal ?? ''}`)
               .join(',')}`,
         )
@@ -988,7 +1027,8 @@ export class InventoryScreen {
   private readonly hooks: ScreenHooks;
   private readonly bindings: BindingRegistry;
   private readonly tabs = new InventoryTabState();
-  private repairUid: number | undefined;
+  /** The pinned world-work target: Repair or Take apart of one chosen piece. */
+  private world: { uid: number; operation: WorldOperation } | undefined;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
@@ -1094,15 +1134,22 @@ export class InventoryScreen {
     return this.tabs.active;
   }
 
-  get repairTarget(): BlockEntity | undefined {
-    return this.repairUid === undefined ? undefined : this.inv.entities.byUid(this.repairUid);
+  /** The pinned world-work target and operation, while its piece still exists. */
+  get worldWork(): { target: BlockEntity; operation: WorldOperation } | undefined {
+    const target = this.world && this.inv.entities.byUid(this.world.uid);
+    return target && this.world && { target, operation: this.world.operation };
   }
 
-  openRepair(uid: number): void {
+  get repairTarget(): BlockEntity | undefined {
+    return this.worldWork?.target;
+  }
+
+  openWorldWork(uid: number, operation: WorldOperation): void {
     if (!this.inv.entities.byUid(uid)) {
       return;
     }
-    this.repairUid = uid;
+    this.world = { uid, operation };
+    this.drawn = '';
     this.openOnTab('repair');
   }
 
@@ -1117,11 +1164,20 @@ export class InventoryScreen {
   }
 
   close(): void {
+    // A field left focused inside the hidden screen would still take the next keys as text, so play's keys would
+    // be refused until the browser moved focus off it, if it ever does.
+    const focused = document.activeElement;
+    if (
+      focused instanceof HTMLElement &&
+      (this.root.contains(focused) || this.hooks.reviewControls?.().contains(focused))
+    ) {
+      focused.blur();
+    }
     this.cancelInput();
     this.targetKey = undefined;
     this.currentContainer = undefined;
     this.tabs.close();
-    this.repairUid = undefined;
+    this.world = undefined;
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
     this.findQuery = '';
@@ -1172,8 +1228,8 @@ export class InventoryScreen {
       return;
     }
     const { repairTarget } = this;
-    if (this.repairUid !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
-      this.repairUid = undefined;
+    if (this.world !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
+      this.world = undefined;
       if (this.tabs.active === 'repair') {
         this.tabs.select('items');
         this.root.dataset.tab = this.tabs.active;
@@ -1279,7 +1335,7 @@ export class InventoryScreen {
     if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
-    if (this.navigationAction(action)) {
+    if (this.controlAction(action) || this.navigationAction(action)) {
       return true;
     }
     const digit = this.quickbarDigit(action);
@@ -1296,6 +1352,41 @@ export class InventoryScreen {
       return true;
     }
     return this.selectedAction(action, item);
+  }
+
+  private controlAction(action: string): boolean {
+    if (!['inventory.control-previous', 'inventory.control-next', 'inventory.control-activate'].includes(action)) {
+      return false;
+    }
+    if (!this.isOpen) {
+      return true;
+    }
+    const roots = [this.root];
+    if (this.tabs.active === 'crafting' || this.tabs.active === 'repair') {
+      const review = this.hooks.reviewControls?.();
+      if (review) {
+        roots.push(review);
+      }
+    }
+    const controls = roots.flatMap((root) =>
+      [...root.querySelectorAll<HTMLElement>('button,input,textarea,select,summary,a[href],[tabindex]')].filter(
+        inventoryControlVisible,
+      ),
+    );
+    const active = this.root.ownerDocument.activeElement as HTMLElement | null;
+    const index = active ? controls.indexOf(active) : -1;
+    if (action === 'inventory.control-activate') {
+      if (index >= 0) {
+        activateInventoryControl(active!);
+      }
+      return true;
+    }
+    const step = action === 'inventory.control-next' ? 1 : -1;
+    const initial = step === 1 ? 0 : controls.length - 1;
+    const next = controls[index < 0 ? initial : (index + step + controls.length) % controls.length];
+    next?.focus();
+    next?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    return true;
   }
 
   private navigationAction(action: string): boolean {
@@ -1577,7 +1668,7 @@ export class InventoryScreen {
         vm,
         {
           tab: this.tabs.active,
-          repairAvailable: this.repairTarget !== undefined,
+          worldOperation: this.worldWork?.operation,
           splitRatio: this.splitRatio,
           text: this.text(),
           keys: this.bindings,
@@ -1684,6 +1775,11 @@ export class InventoryScreen {
     const scrollbar = scrollbarWidth(this.root);
     if (scrollbar !== undefined) {
       this.root.style.setProperty('--inv-scrollbar-width', `${scrollbar}px`);
+    }
+    // The head wraps with width and density, and the crafting panel stands below it, so the panel reads its bottom.
+    const head = this.root.querySelector<HTMLElement>('.inv-head');
+    if (head && !this.root.hidden) {
+      document.body.style.setProperty('--inventory-head-bottom', `${head.getBoundingClientRect().bottom}px`);
     }
     const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
     const bounds = body ? splitBounds(body) : undefined;
@@ -2017,7 +2113,7 @@ export class InventoryScreen {
       ...(battery ? { battery } : {}),
       category: def.category,
       name: item.count > 1 ? fillText(text.count, { item: name, count: countText(item.count) }) : name,
-      condition: conditionWord(this.inv.registry, item.condition),
+      condition: conditionBand(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
       ...(attachmentSlots.length > 0 ? { attachmentSlots } : {}),

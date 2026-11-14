@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { BindingRegistry } from '@skelly/engine/input';
-import { damageWord } from '@skelly/engine/inventory';
+import { damageBand } from '@skelly/engine/inventory';
 import { bodyRegionLabel } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
 import { BlockEntities } from '@skelly/engine/world';
@@ -270,7 +270,7 @@ it("names a damaged piece's band from the shared band table below the top band, 
       ),
     });
     const piece = entities.byUid(uid)!;
-    const damageText = damageWord(registry, entities.conditionOf(piece));
+    const band = damageBand(registry, entities.conditionOf(piece));
     const hint = playInteractionText(
       {
         door: false,
@@ -282,22 +282,26 @@ it("names a damaged piece's band from the shared band table below the top band, 
         searched: false,
         name,
         fullName: def.name,
-        damage: damageText,
+        damage: band,
       },
       text.interaction,
       inputBindings,
     );
-    return { word: damageText, shown: drawn(hint).textContent };
+    const element = drawn(hint);
+    const blip = element.querySelector<HTMLElement>('.condition-blip');
+    return { word: band?.word, shown: element.textContent, blip: blip?.style.getPropertyValue('--blip') };
   };
   const [top, ...below] = [...bands].reverse();
   for (const [index, band] of below.entries()) {
     const ceiling = (index === 0 ? top : below[index - 1])!.from;
-    const { word, shown } = hintAt((band.from + ceiling) / 2);
+    const { word, shown, blip } = hintAt((band.from + ceiling) / 2);
     expect(word).toBe(band.word);
     expect(shown).toContain(fillText(text.interaction.damaged, { damage: band.word, name }));
+    expect(blip, `${band.word} blip is its content colour`).toBe(band.color);
   }
   const intact = hintAt(1);
   expect(intact.word).toBeUndefined();
+  expect(intact.blip).toBeUndefined();
   expect(intact.shown).toContain(name);
   for (const band of below) {
     expect(intact.shown).not.toContain(band.word);

@@ -84,6 +84,117 @@ const { InventoryScreen, targetForPackedFloorDrop } = await import(
 
 afterAll(() => dom.happyDOM.abort());
 
+describe('inventory bound control navigation', () => {
+  it('steps visible controls in DOM order and keeps refused review controls reachable', () => {
+    const { root, screen, hooks, lastPayload } = setup();
+    const review = document.createElement('section');
+    review.innerHTML =
+      '<input aria-label="Query"><button aria-disabled="true">Start</button><details><summary>Sources</summary><button>Hidden source</button></details><button disabled>Unavailable</button><div hidden><button>Hidden</button></div>';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    screen.selectTab('crafting');
+    const field = review.querySelector('input')!;
+    const refused = review.querySelector('button')!;
+    const summary = review.querySelector('summary')!;
+    const click = vi.fn();
+    refused.addEventListener('click', click);
+    try {
+      field.focus();
+      screen.onAction('inventory.control-activate');
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+      field.focus();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(refused);
+      screen.onAction('inventory.control-activate');
+      expect(click).toHaveBeenCalledOnce();
+      expect(lastPayload()).toBeUndefined();
+      screen.onAction('inventory.control-next');
+      expect(document.activeElement).toBe(summary);
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+      screen.onAction('inventory.control-previous');
+      expect(document.activeElement).toBe(summary);
+      screen.selectTab('items');
+      screen.onAction('inventory.control-next');
+      expect(root.contains(document.activeElement)).toBe(true);
+    } finally {
+      review.remove();
+    }
+  });
+
+  it('closing the screen from a crafting query field leaves the next world key to play', () => {
+    const { screen, hooks } = setup();
+    const review = document.createElement('section');
+    review.innerHTML = '<input aria-label="Query">';
+    document.body.append(review);
+    Object.assign(hooks, { reviewControls: () => review });
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    const [toggle, interact] = ['ui.inventory-toggle', 'world.interact'].map((id) => bindings.chords(id)[0]!.code);
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: screen.isOpen ? 'inventory' : 'play', debug: false });
+    input.command = ({ action, phase }) => {
+      if (action === 'ui.inventory-toggle' && phase === 'down') {
+        screen.close();
+      }
+    };
+    const remove = input.install();
+    const key = (code: string, phase: 'keydown' | 'keyup') =>
+      document.activeElement!.dispatchEvent(
+        new KeyboardEvent(phase, { code, key: code, bubbles: true, cancelable: true }),
+      );
+    try {
+      screen.selectTab('crafting');
+      review.querySelector('input')!.focus();
+      key(toggle!, 'keydown');
+      key(toggle!, 'keyup');
+      expect(screen.isOpen).toBe(false);
+      key(interact!, 'keydown');
+      expect(input.held('world.interact')).toBe(true);
+      key(interact!, 'keyup');
+    } finally {
+      remove();
+      review.remove();
+    }
+  });
+
+  it('uses rebound navigation from a query field and leaves native caret keys alone', () => {
+    const { root, screen, lastPayload } = setup();
+    const bindings = new BindingRegistry(INPUT_BINDINGS);
+    expect(bindings.rebind('inventory.control-next', [{ code: 'Insert' }])).toBeUndefined();
+    const input = new KeyboardInput(bindings);
+    input.context = () => ({ context: 'inventory', debug: false });
+    input.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        screen.onAction(action);
+      }
+    };
+    const remove = input.install();
+    const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+    const key = (code: string, shiftKey = false) => {
+      const down = new KeyboardEvent('keydown', { code, key: code, shiftKey, bubbles: true, cancelable: true });
+      document.activeElement!.dispatchEvent(down);
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keyup', { code, shiftKey, bubbles: true }));
+      return down;
+    };
+    try {
+      field.focus();
+      expect(key('Home').defaultPrevented).toBe(false);
+      expect(key('End').defaultPrevented).toBe(false);
+      expect(key('PageDown').defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(field);
+      expect(key('Insert').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(root.querySelector('.inv-help summary'));
+      field.focus();
+      expect(key('Enter', true).defaultPrevented).toBe(true);
+      expect(document.activeElement).not.toBe(field);
+      expect(lastPayload()).toBeUndefined();
+    } finally {
+      remove();
+    }
+  });
+});
+
 function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
   const character = new Character(contentRegistry, { handedness });
@@ -660,7 +771,7 @@ describe('inventory screen Lit rendering', () => {
     const { screen, root, entity } = setup();
     expect(root.querySelector('[data-tab="repair"]')).toBeNull();
     screen.selectTab('crafting');
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     expect(screen.repairTarget).toBe(entity);
     expect(screen.activeTab).toBe('repair');
     expect(root.querySelector('[data-tab="repair"][aria-selected="true"]')).not.toBeNull();
@@ -675,7 +786,7 @@ describe('inventory screen Lit rendering', () => {
 
   it('drops the ephemeral view when its target disappears', () => {
     const { screen, root, inv, entity } = setup();
-    screen.openRepair(entity.uid);
+    screen.openWorldWork(entity.uid, 'repair');
     inv.entities.remove(entity);
     screen.update();
     expect(screen.repairTarget).toBeUndefined();
@@ -1577,7 +1688,8 @@ describe('inventory screen Lit rendering', () => {
           received.push(action);
         }
       };
-      const event = new KeyboardEvent('keydown', bindings.chords(binding.id)[0]);
+      const chord = bindings.chords(binding.id)[0]!;
+      const event = new KeyboardEvent('keydown', { ...chord, shiftKey: chord.modifier === 'shift' });
       expect(keyboard.press(event)).toBe(true);
       expect(received.at(-1)).toBe(binding.id);
       keyboard.release(event);

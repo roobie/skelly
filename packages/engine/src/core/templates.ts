@@ -142,6 +142,8 @@ interface Piece {
   lock?: DoorLockDef;
   fixed?: true;
   items?: readonly FixedLootItemDef[];
+  /** An authored worn share that replaces the furniture's seeded wear roll. */
+  wear?: number;
   furniture: string;
   /** The palette's loot table. */
   loot?: string | undefined;
@@ -864,6 +866,7 @@ export interface PlacedPiece {
   lock?: DoorLockDef;
   fixed?: true;
   items?: readonly FixedLootItemDef[];
+  wear?: number;
   furniture: string;
   loot?: string | undefined;
   facing: Facing;
@@ -884,6 +887,7 @@ export const placedPieces = ({ template, origin, turn }: Placement): PlacedPiece
       ...(piece.lock ? { lock: piece.lock } : {}),
       ...(piece.fixed ? { fixed: true as const } : {}),
       ...(piece.items ? { items: piece.items } : {}),
+      ...(piece.wear === undefined ? {} : { wear: piece.wear }),
       loot: piece.loot,
       ...(piece.lootUsage === undefined ? {} : { lootUsage: piece.lootUsage }),
       ...(piece.lootDepth === undefined ? {} : { lootDepth: piece.lootDepth }),

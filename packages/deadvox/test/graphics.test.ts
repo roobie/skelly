@@ -78,6 +78,7 @@ const source = (options: GraphicsOptions) => ({
           startPitchDegrees: 0,
           pitchLimitDegrees: 80,
           degreesPerPixel: 1,
+          turnStepDegrees: 45,
           zoomPerWheelPixel: 0.01,
           zoomMin: 0.5,
           zoomMax: 2,

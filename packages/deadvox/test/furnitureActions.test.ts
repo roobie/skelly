@@ -31,7 +31,7 @@ describe('furniture service choices', () => {
   it.each(['damaged', 'intact'] as const)('keeps lift in the held list on a small movable piece: %s', (state) => {
     const { inventory, target } = worldRepairFixture(registry);
     if (state === 'intact') {
-      expect(inventory.entities.repair(target, DURABILITY)).toBe(true);
+      expect(inventory.entities.repair(target, DURABILITY, 1)).toBe(true);
     }
     const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
     const choices = furnitureActionsFor(inventory, target, blockSize);

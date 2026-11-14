@@ -75,6 +75,7 @@
         "pitchLimitDegrees": 85,
         "startPitchDegrees": 26,
         "startYawDegrees": 45,
+        "turnStepDegrees": 45,
         "zoomMax": 4,
         "zoomMin": 0.5,
         "zoomPerWheelPixel": 0.002

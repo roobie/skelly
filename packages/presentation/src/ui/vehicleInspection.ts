@@ -1,5 +1,5 @@
 import type { ReplayActionPayload } from '@skelly/engine/input';
-import { claimed, conditionWord, type Inventory, type Item } from '@skelly/engine/inventory';
+import { type ConditionBand, claimed, conditionBand, type Inventory, type Item } from '@skelly/engine/inventory';
 import type { ReachSnapshot } from '@skelly/engine/sim';
 import { fillText } from '@skelly/engine/text';
 import {
@@ -28,7 +28,7 @@ interface VehicleInspectionSiteViewModel {
   readonly label: string;
   /** A serviceable site's content name, which tells paired parts apart while they are fitted. */
   readonly site: string | undefined;
-  readonly condition: string | undefined;
+  readonly condition: ConditionBand | undefined;
   readonly actions: readonly VehicleServiceAction[];
   /** An empty service site with nothing in reach to fit says so instead of listing no actions. */
   readonly noPart: string | undefined;
@@ -99,7 +99,7 @@ export const vehicleInspectionViewModel = (
         item: fitted,
         label: inventory.name(fitted),
         site: name,
-        condition: conditionWord(inventory.registry, fitted.condition),
+        condition: conditionBand(inventory.registry, fitted.condition),
         actions: service
           ? [
               action('remove', text.remove, {

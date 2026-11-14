@@ -16,6 +16,12 @@ import {
   REFUSED_MODIFIERS,
 } from '@skelly/engine/input';
 
+const INVENTORY_CONTROL_BINDINGS: ReadonlySet<string> = new Set([
+  'inventory.control-previous',
+  'inventory.control-next',
+  'inventory.control-activate',
+  'ui.inventory-toggle',
+]);
 const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set(['inventory.previous', 'inventory.next']);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
@@ -110,7 +116,7 @@ const nativeActivation = (event: Pick<KeyboardEvent, 'code'>): boolean =>
 /** What a key does in the game's combo box (`src/ui/comboBox.ts`). Like a native list control's keys, these are fixed. */
 export type ComboBoxKey = 'next' | 'previous' | 'collapse' | 'choose' | 'close';
 export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
-  if (!(event instanceof KeyboardEvent)) {
+  if (!(event instanceof KeyboardEvent) || event.defaultPrevented) {
     return;
   }
   if (event.key === 'ArrowDown') {
@@ -150,6 +156,9 @@ const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | u
   }
   if (typesCharacter(event)) {
     return undefined;
+  }
+  if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(event.code)) {
+    return INVENTORY_CONTROL_BINDINGS;
   }
   if (event.target.matches('[data-inventory-find]')) {
     // Vertical arrows can select an item; horizontal arrows still belong to native caret editing.
