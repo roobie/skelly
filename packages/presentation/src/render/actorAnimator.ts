@@ -13,6 +13,7 @@ import {
   modelToView,
   NEUTRAL_AIM,
   type OpticZoomFrame,
+  type PressCheckSample,
   readyFirearmPose,
   readyMeleePose,
   revolverChamberPoint,
@@ -29,7 +30,9 @@ import {
   type HeldActionPart,
   magazineMotion,
   poseActionParts,
+  posePartShares,
   poseRevolverParts,
+  pressCheckAt,
   rackGrip,
   revolverOpenAmount,
   sampleActionPose,
@@ -72,7 +75,7 @@ const THUMB_PRESS_WRIST: Vec3 = [-0.05, 0.012, 0.01];
 
 export interface HeldFirearmPose {
   readonly uid: number;
-  readonly mode: FirearmMode | 'load' | 'magazine' | 'revolver';
+  readonly mode: FirearmMode | 'load' | 'magazine' | 'press-check' | 'revolver';
   readonly revolver?: import('@skelly/engine/inventory').RevolverFrame;
   readonly elapsed: number;
   readonly duration?: number;
@@ -775,6 +778,11 @@ export class ActorAnimator {
     if (!action) {
       return;
     }
+    const clip = definition?.gun?.pressCheck;
+    if (clip && frame?.mode === 'press-check') {
+      this.posePressCheck(uid, parts, pressCheckAt(clip, frame));
+      return;
+    }
     const { mode, stroke, turn } = sampleActionPose(action, frame);
     poseActionParts(parts, mode, stroke, turn);
     this.updatePump(uid, frame, stroke);
@@ -805,6 +813,41 @@ export class ActorAnimator {
       arm.position.copy(arm.parent.worldToLocal(point));
       this.handsOff.add(side);
     }
+  }
+
+  /**
+   * Moves each action part by its share of its stroke and the off hand from its grip toward the charging handle's grip
+   * point, which rides the handle, and the ejection port, by the clip's weight on each.
+   */
+  private posePressCheck(uid: number, parts: readonly HeldActionPart[], sample: PressCheckSample): void {
+    posePartShares(parts, sample.parts);
+    const held = this.shown.get(uid);
+    if (!held) {
+      return;
+    }
+    held.updateMatrixWorld(true);
+    const reach = sample.offHand.handle + sample.offHand.port;
+    const point = new Vector3();
+    const handle = parts.find((part) => part.handGrip && !part.modes.includes('fire'));
+    if (handle?.node.parent && sample.offHand.handle > 0) {
+      const share = sample.parts[handle.id] ?? 0;
+      const grip = handle.node.parent.localToWorld(handle.handGrip!.clone().addScaledVector(handle.travel, share));
+      point.addScaledVector(grip, sample.offHand.handle);
+    }
+    const port = this.portPoint(uid);
+    if (port && sample.offHand.port > 0) {
+      point.addScaledVector(port, sample.offHand.port);
+    }
+    this.reachOffHand(uid, held, reach > 0 ? { point: point.divideScalar(reach), reach } : undefined);
+  }
+
+  /** The held gun's ejection port in world space, from its model's anchor. */
+  private portPoint(uid: number): Vector3 | undefined {
+    const item = this.itemByUid(uid);
+    const modelId = item && defOf(this.inventory.registry, item.type).model;
+    const anchor = modelId ? this.inventory.registry.models.get(modelId)?.anchors?.ejection : undefined;
+    const root = this.shown.get(uid)?.children[0];
+    return anchor && root ? heldModelFrame(root).localToWorld(new Vector3(...anchor)) : undefined;
   }
 
   /** Where the off hand holds the charging handle through a hand cycle: on its middle, rearmost once it lets go. */
