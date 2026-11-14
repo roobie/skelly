@@ -81,6 +81,30 @@ const timePhase = async (phase, action) => {
   }
 };
 const timeIfLighting = (phase, action) => (isLightingMode ? timePhase(phase, action) : action());
+// Loading owns its work-scaled deadline and ends in `ready` or `failed`; a stage deadline on top of it fails on
+// runner speed, because software GL spends tens of seconds compiling the game's shaders. A mounted debug panel
+// is not a readiness signal.
+const waitForWorldLoaded = (page) =>
+  page.evaluate(
+    () =>
+      new Promise((done, reject) => {
+        const loading = document.querySelector('#world-loading');
+        const observer = new MutationObserver(check);
+        function check() {
+          if (loading.dataset.state === 'loading') {
+            return;
+          }
+          observer.disconnect();
+          if (loading.dataset.state === 'ready') {
+            done();
+          } else {
+            reject(new Error(loading.textContent));
+          }
+        }
+        observer.observe(loading, { attributes: true, attributeFilter: ['data-state'] });
+        check();
+      }),
+  );
 const hasSkyControl = isLightingMode || mode === 'camo';
 const arrivalObservation =
   mode === 'camo'
@@ -306,29 +330,7 @@ try {
   if (mode === 'camo') {
     const requests = await page.evaluate(() => globalThis.camoPointerRequests);
     assert.deepEqual(requests, [{ active: true, playMounted: false }], 'capture the gesture before world construction');
-    // Loading owns its work-scaled deadline; a mounted debug panel is not a readiness signal.
-    await timePhase('camo-world-ready', () =>
-      page.evaluate(
-        () =>
-          new Promise((done, reject) => {
-            const loading = document.querySelector('#world-loading');
-            const observer = new MutationObserver(check);
-            function check() {
-              if (loading.dataset.state === 'loading') {
-                return;
-              }
-              observer.disconnect();
-              if (loading.dataset.state === 'ready') {
-                done();
-              } else {
-                reject(new Error(loading.textContent));
-              }
-            }
-            observer.observe(loading, { attributes: true, attributeFilter: ['data-state'] });
-            check();
-          }),
-      ),
-    );
+    await timePhase('camo-world-ready', () => waitForWorldLoaded(page));
     await page.waitForFunction(() => Boolean(document.pointerLockElement));
     await page.waitForFunction(() => Boolean(document.querySelector('[data-sky-route] textarea')?.value));
     const diagnostic = await page.locator('[data-sky-route] textarea').inputValue();
@@ -408,6 +410,10 @@ try {
     }
     assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode), true);
   }
+  if (isLightingMode) {
+    // Play drops action input until the world is ready, so a scenario press sent during loading is lost.
+    await timePhase('world-ready', () => waitForWorldLoaded(page));
+  }
   await timeIfLighting('initial-mesh-ready', () =>
     page.waitForFunction(
       (lighting) =>
@@ -421,14 +427,6 @@ try {
     ),
   );
   if (isLightingMode) {
-    // Play drops action input until the world is ready, so a scenario press sent during loading is lost.
-    await timePhase('world-ready', () =>
-      page.waitForFunction(
-        () =>
-          document.querySelector('#world-loading')?.dataset.state === 'ready' &&
-          document.querySelector('#world-loading').hidden,
-      ),
-    );
     const shaderErrors = errors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error'));
     assert.deepEqual(shaderErrors, [], 'chunk shaders compile before the lighting pixel checks');
     if (mode === 'lighting-residents') {
